@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <RootNamespace>CAServer.EntityEventHandler.Core</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+<!--        <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />-->
+        <ProjectReference Include="..\CAServer.Application\CAServer.Application.csproj" />
+        <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
+    </ItemGroup>
+
+</Project>

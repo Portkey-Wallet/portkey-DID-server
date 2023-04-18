@@ -1,0 +1,146 @@
+2023-01-07 18:47:22.188 +08:00 [INF] Starting CAServer.AuthServer.
+2023-01-07 18:47:29.651 +08:00 [INF] Loaded ABP modules:
+2023-01-07 18:47:29.658 +08:00 [INF] - CAServer.CAServerAuthServerModule
+2023-01-07 18:47:29.658 +08:00 [INF]   - Volo.Abp.Autofac.AbpAutofacModule
+2023-01-07 18:47:29.658 +08:00 [INF]     - Volo.Abp.Castle.AbpCastleCoreModule
+2023-01-07 18:47:29.658 +08:00 [INF]   - Volo.Abp.Caching.StackExchangeRedis.AbpCachingStackExchangeRedisModule
+2023-01-07 18:47:29.658 +08:00 [INF]     - Volo.Abp.Caching.AbpCachingModule
+2023-01-07 18:47:29.658 +08:00 [INF]       - Volo.Abp.Threading.AbpThreadingModule
+2023-01-07 18:47:29.658 +08:00 [INF]       - Volo.Abp.Serialization.AbpSerializationModule
+2023-01-07 18:47:29.658 +08:00 [INF]       - Volo.Abp.Uow.AbpUnitOfWorkModule
+2023-01-07 18:47:29.658 +08:00 [INF]       - Volo.Abp.MultiTenancy.AbpMultiTenancyModule
+2023-01-07 18:47:29.658 +08:00 [INF]         - Volo.Abp.Data.AbpDataModule
+2023-01-07 18:47:29.658 +08:00 [INF]           - Volo.Abp.ObjectExtending.AbpObjectExtendingModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.Localization.AbpLocalizationAbstractionsModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.Validation.AbpValidationAbstractionsModule
+2023-01-07 18:47:29.658 +08:00 [INF]           - Volo.Abp.EventBus.Abstractions.AbpEventBusAbstractionsModule
+2023-01-07 18:47:29.658 +08:00 [INF]         - Volo.Abp.Security.AbpSecurityModule
+2023-01-07 18:47:29.658 +08:00 [INF]       - Volo.Abp.Json.AbpJsonModule
+2023-01-07 18:47:29.658 +08:00 [INF]         - Volo.Abp.Timing.AbpTimingModule
+2023-01-07 18:47:29.658 +08:00 [INF]           - Volo.Abp.Localization.AbpLocalizationModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.VirtualFileSystem.AbpVirtualFileSystemModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.Settings.AbpSettingsModule
+2023-01-07 18:47:29.658 +08:00 [INF]   - Volo.Abp.DistributedLocking.AbpDistributedLockingModule
+2023-01-07 18:47:29.658 +08:00 [INF]     - Volo.Abp.DistributedLocking.AbpDistributedLockingAbstractionsModule
+2023-01-07 18:47:29.658 +08:00 [INF]   - Volo.Abp.Account.Web.AbpAccountWebOpenIddictModule
+2023-01-07 18:47:29.658 +08:00 [INF]     - Volo.Abp.Account.Web.AbpAccountWebModule
+2023-01-07 18:47:29.658 +08:00 [INF]       - Volo.Abp.Account.AbpAccountApplicationContractsModule
+2023-01-07 18:47:29.658 +08:00 [INF]         - Volo.Abp.Identity.AbpIdentityApplicationContractsModule
+2023-01-07 18:47:29.658 +08:00 [INF]           - Volo.Abp.Identity.AbpIdentityDomainSharedModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.Users.AbpUsersDomainSharedModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.Validation.AbpValidationModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.Features.AbpFeaturesModule
+2023-01-07 18:47:29.658 +08:00 [INF]               - Volo.Abp.Authorization.AbpAuthorizationAbstractionsModule
+2023-01-07 18:47:29.658 +08:00 [INF]           - Volo.Abp.Users.AbpUsersAbstractionModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.EventBus.AbpEventBusModule
+2023-01-07 18:47:29.658 +08:00 [INF]               - Volo.Abp.Guids.AbpGuidsModule
+2023-01-07 18:47:29.658 +08:00 [INF]               - Volo.Abp.BackgroundWorkers.AbpBackgroundWorkersModule
+2023-01-07 18:47:29.658 +08:00 [INF]           - Volo.Abp.Authorization.AbpAuthorizationModule
+2023-01-07 18:47:29.658 +08:00 [INF]           - Volo.Abp.PermissionManagement.AbpPermissionManagementApplicationContractsModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.Application.AbpDddApplicationContractsModule
+2023-01-07 18:47:29.658 +08:00 [INF]               - Volo.Abp.Auditing.AbpAuditingContractsModule
+2023-01-07 18:47:29.658 +08:00 [INF]             - Volo.Abp.PermissionManagement.AbpPermissionManagementDomainSharedModule
+2023-01-07 18:47:29.658 +08:00 [INF]       - Volo.Abp.Identity.AspNetCore.AbpIdentityAspNetCoreModule
+2023-01-07 18:47:29.658 +08:00 [INF]         - Volo.Abp.Identity.AbpIdentityDomainModule
+2023-01-07 18:47:29.659 +08:00 [INF]           - Volo.Abp.Domain.AbpDddDomainModule
+2023-01-07 18:47:29.659 +08:00 [INF]             - Volo.Abp.Auditing.AbpAuditingModule
+2023-01-07 18:47:29.659 +08:00 [INF]             - Volo.Abp.ObjectMapping.AbpObjectMappingModule
+2023-01-07 18:47:29.659 +08:00 [INF]             - Volo.Abp.ExceptionHandling.AbpExceptionHandlingModule
+2023-01-07 18:47:29.659 +08:00 [INF]             - Volo.Abp.Specifications.AbpSpecificationsModule
+2023-01-07 18:47:29.659 +08:00 [INF]           - Volo.Abp.Users.AbpUsersDomainModule
+2023-01-07 18:47:29.659 +08:00 [INF]           - Volo.Abp.AutoMapper.AbpAutoMapperModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.AspNetCore.Mvc.UI.Theme.Shared.AbpAspNetCoreMvcUiThemeSharedModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.AspNetCore.Mvc.UI.Bootstrap.AbpAspNetCoreMvcUiBootstrapModule
+2023-01-07 18:47:29.659 +08:00 [INF]           - Volo.Abp.AspNetCore.Mvc.UI.AbpAspNetCoreMvcUiModule
+2023-01-07 18:47:29.659 +08:00 [INF]             - Volo.Abp.AspNetCore.Mvc.AbpAspNetCoreMvcModule
+2023-01-07 18:47:29.659 +08:00 [INF]               - Volo.Abp.AspNetCore.AbpAspNetCoreModule
+2023-01-07 18:47:29.659 +08:00 [INF]                 - Volo.Abp.Http.AbpHttpModule
+2023-01-07 18:47:29.659 +08:00 [INF]                   - Volo.Abp.Http.AbpHttpAbstractionsModule
+2023-01-07 18:47:29.659 +08:00 [INF]                   - Volo.Abp.Minify.AbpMinifyModule
+2023-01-07 18:47:29.659 +08:00 [INF]               - Volo.Abp.ApiVersioning.AbpApiVersioningAbstractionsModule
+2023-01-07 18:47:29.659 +08:00 [INF]               - Volo.Abp.AspNetCore.Mvc.AbpAspNetCoreMvcContractsModule
+2023-01-07 18:47:29.659 +08:00 [INF]               - Volo.Abp.UI.Navigation.AbpUiNavigationModule
+2023-01-07 18:47:29.659 +08:00 [INF]                 - Volo.Abp.UI.AbpUiModule
+2023-01-07 18:47:29.659 +08:00 [INF]               - Volo.Abp.GlobalFeatures.AbpGlobalFeaturesModule
+2023-01-07 18:47:29.659 +08:00 [INF]               - Volo.Abp.Application.AbpDddApplicationModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.AspNetCore.Mvc.UI.Packages.AbpAspNetCoreMvcUiPackagesModule
+2023-01-07 18:47:29.659 +08:00 [INF]           - Volo.Abp.AspNetCore.Mvc.UI.Bundling.AbpAspNetCoreMvcUiBundlingAbstractionsModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.AspNetCore.Mvc.UI.Widgets.AbpAspNetCoreMvcUiWidgetsModule
+2023-01-07 18:47:29.659 +08:00 [INF]           - Volo.Abp.AspNetCore.Mvc.UI.Bundling.AbpAspNetCoreMvcUiBundlingModule
+2023-01-07 18:47:29.659 +08:00 [INF]     - Volo.Abp.OpenIddict.AbpOpenIddictAspNetCoreModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.AspNetCore.MultiTenancy.AbpAspNetCoreMultiTenancyModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.OpenIddict.AbpOpenIddictDomainModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.OpenIddict.AbpOpenIddictDomainSharedModule
+2023-01-07 18:47:29.659 +08:00 [INF]   - Volo.Abp.Account.AbpAccountApplicationModule
+2023-01-07 18:47:29.659 +08:00 [INF]     - Volo.Abp.Identity.AbpIdentityApplicationModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.PermissionManagement.AbpPermissionManagementApplicationModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.PermissionManagement.AbpPermissionManagementDomainModule
+2023-01-07 18:47:29.659 +08:00 [INF]     - Volo.Abp.Emailing.AbpEmailingModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.BackgroundJobs.AbpBackgroundJobsAbstractionsModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.TextTemplating.AbpTextTemplatingModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.TextTemplating.Scriban.AbpTextTemplatingScribanModule
+2023-01-07 18:47:29.659 +08:00 [INF]           - Volo.Abp.TextTemplating.AbpTextTemplatingCoreModule
+2023-01-07 18:47:29.659 +08:00 [INF]   - Volo.Abp.Account.AbpAccountHttpApiModule
+2023-01-07 18:47:29.659 +08:00 [INF]     - Volo.Abp.Identity.AbpIdentityHttpApiModule
+2023-01-07 18:47:29.659 +08:00 [INF]   - Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite.AbpAspNetCoreMvcUiLeptonXLiteThemeModule
+2023-01-07 18:47:29.659 +08:00 [INF]     - Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy.AbpAspNetCoreMvcUiMultiTenancyModule
+2023-01-07 18:47:29.659 +08:00 [INF]   - CAServer.MongoDB.CAServerMongoDbModule
+2023-01-07 18:47:29.659 +08:00 [INF]     - CAServer.CAServerDomainModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - CAServer.CAServerDomainSharedModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.AuditLogging.AbpAuditLoggingDomainSharedModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.BackgroundJobs.AbpBackgroundJobsDomainSharedModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.FeatureManagement.AbpFeatureManagementDomainSharedModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.SettingManagement.AbpSettingManagementDomainSharedModule
+2023-01-07 18:47:29.659 +08:00 [INF]         - Volo.Abp.TenantManagement.AbpTenantManagementDomainSharedModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.AuditLogging.AbpAuditLoggingDomainModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.FeatureManagement.AbpFeatureManagementDomainModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.PermissionManagement.OpenIddict.AbpPermissionManagementDomainOpenIddictModule
+2023-01-07 18:47:29.659 +08:00 [INF]       - Volo.Abp.PermissionManagement.Identity.AbpPermissionManagementDomainIdentityModule
+2023-01-07 18:47:29.660 +08:00 [INF]       - Volo.Abp.SettingManagement.AbpSettingManagementDomainModule
+2023-01-07 18:47:29.660 +08:00 [INF]       - Volo.Abp.TenantManagement.AbpTenantManagementDomainModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.PermissionManagement.MongoDB.AbpPermissionManagementMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]       - Volo.Abp.MongoDB.AbpMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.SettingManagement.MongoDB.AbpSettingManagementMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.Identity.MongoDB.AbpIdentityMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]       - Volo.Abp.Users.MongoDB.AbpUsersMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.OpenIddict.MongoDB.AbpOpenIddictMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.AuditLogging.MongoDB.AbpAuditLoggingMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.TenantManagement.MongoDB.AbpTenantManagementMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.FeatureManagement.MongoDB.AbpFeatureManagementMongoDbModule
+2023-01-07 18:47:29.660 +08:00 [INF]   - CAServer.CAServerApplicationContractsModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.FeatureManagement.AbpFeatureManagementApplicationContractsModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.SettingManagement.AbpSettingManagementApplicationContractsModule
+2023-01-07 18:47:29.660 +08:00 [INF]     - Volo.Abp.TenantManagement.AbpTenantManagementApplicationContractsModule
+2023-01-07 18:47:29.660 +08:00 [INF]   - Volo.Abp.AspNetCore.Serilog.AbpAspNetCoreSerilogModule
+2023-01-07 18:47:30.306 +08:00 [DBG] Started background worker: Volo.Abp.OpenIddict.Tokens.TokenCleanupBackgroundWorker
+2023-01-07 18:47:31.069 +08:00 [INF] User profile is available. Using '/Users/sunjianing/.aspnet/DataProtection-Keys' as key repository; keys will not be encrypted at rest.
+2023-01-07 18:47:31.496 +08:00 [INF] Initialized all ABP modules.
+2023-01-07 18:47:31.659 +08:00 [WRN] Overriding address(es) 'https://localhost:44317'. Binding to endpoints defined via IConfiguration and/or UseKestrel() instead.
+2023-01-07 18:47:31.676 +08:00 [INF] Now listening on: http://[::]:8080
+2023-01-07 18:47:31.676 +08:00 [INF] Application started. Press Ctrl+C to shut down.
+2023-01-07 18:47:31.676 +08:00 [INF] Hosting environment: Development
+2023-01-07 18:47:31.676 +08:00 [INF] Content root path: /Users/sunjianing/Code/CAServer/src/CAServer.AuthServer/
+2023-01-07 18:52:24.282 +08:00 [INF] Request starting HTTP/1.1 POST http://127.0.0.1:8080/connect/token multipart/form-data;+boundary=--------------------------281398176525751161287541 1169
+2023-01-07 18:52:25.451 +08:00 [INF] The request address matched a server endpoint: "Token".
+2023-01-07 18:52:25.452 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+InferEndpointType.
+2023-01-07 18:52:25.453 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+InferIssuerFromHost.
+2023-01-07 18:52:25.459 +08:00 [INF] The request was rejected because an invalid 'Content-Type' header was specified: multipart/form-data; boundary=--------------------------281398176525751161287541.
+2023-01-07 18:52:25.459 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ExtractPostRequest`1[[OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.459 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext was marked as rejected by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ExtractPostRequest`1[[OpenIddict.Server.OpenIddictServerEvents+ExtractTokenRequestContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.460 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ExtractTokenRequest.
+2023-01-07 18:52:25.460 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ProcessRequestContext was marked as rejected by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ExtractTokenRequest.
+2023-01-07 18:52:25.468 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+AttachHttpResponseCode`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.468 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+AttachCacheControlHeader`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.472 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+AttachWwwAuthenticateHeader`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.485 +08:00 [INF] The response was successfully returned as a JSON document: {
+  "error": "invalid_request",
+  "error_description": "The specified 'Content-Type' header is invalid.",
+  "error_uri": "https://documentation.openiddict.com/errors/ID2082"
+}.
+2023-01-07 18:52:25.492 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was successfully processed by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ProcessJsonResponse`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.492 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext was marked as handled by OpenIddict.Server.AspNetCore.OpenIddictServerAspNetCoreHandlers+ProcessJsonResponse`1[[OpenIddict.Server.OpenIddictServerEvents+ApplyTokenResponseContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.492 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext was successfully processed by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ApplyTokenResponse`1[[OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.492 +08:00 [DBG] The event OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext was marked as handled by OpenIddict.Server.OpenIddictServerHandlers+Exchange+ApplyTokenResponse`1[[OpenIddict.Server.OpenIddictServerEvents+ProcessErrorContext, OpenIddict.Server, Version=3.1.1.0, Culture=neutral, PublicKeyToken=35a561290d20de2f]].
+2023-01-07 18:52:25.501 +08:00 [INF] Request finished HTTP/1.1 POST http://127.0.0.1:8080/connect/token multipart/form-data;+boundary=--------------------------281398176525751161287541 1169 - 400 175 application/json;charset=UTF-8 1219.7935ms
+2023-01-07 18:53:24.231 +08:00 [INF] Application is shutting down...
+2023-01-07 18:53:24.284 +08:00 [DBG] Stopped background worker: Volo.Abp.OpenIddict.Tokens.TokenCleanupBackgroundWorker
