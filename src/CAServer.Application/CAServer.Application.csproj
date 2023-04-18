@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <RootNamespace>CAServer</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
+    <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
+    <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
+    <ProjectReference Include="..\CAServer.HttpApi\CAServer.HttpApi.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DistributedLock.Redis" Version="1.0.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
+    <PackageReference Include="Volo.Abp.Account.Application" Version="7.0.0" />
+    <PackageReference Include="Volo.Abp.DistributedLocking" Version="7.0.0" />
+    <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="7.0.0" />
+    <PackageReference Include="Volo.Abp.Identity.Application" Version="7.0.0" />
+    <PackageReference Include="Volo.Abp.PermissionManagement.Application" Version="7.0.0" />
+    <PackageReference Include="Volo.Abp.TenantManagement.Application" Version="7.0.0" />
+    <PackageReference Include="Volo.Abp.FeatureManagement.Application" Version="7.0.0" />
+    <PackageReference Include="Volo.Abp.SettingManagement.Application" Version="7.0.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="System.IdentityModel.Tokens.Jwt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Orleans_CodeGenInputs Remove="Test\BookService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.AspNetCore.SignalR.Core">
+      <HintPath>..\..\..\..\..\..\usr\local\share\dotnet\shared\Microsoft.AspNetCore.App\7.0.0\Microsoft.AspNetCore.SignalR.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Hubs\ICAHubProvider.cs" />
+  </ItemGroup>
+
+</Project>
