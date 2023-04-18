@@ -2,13 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CAServer.Grains.Grain.Tokens;
+using CAServer.Grains;
+using CAServer.Grains.Grain.Tokens.TokenPrice;
+using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using Volo.Abp;
 using Volo.Abp.Application.Dtos;
+using Volo.Abp.Auditing;
 
 namespace CAServer.Tokens;
 
+[RemoteService(IsEnabled = false)]
+[DisableAuditing]
 public class TokenAppService : CAServerAppService, ITokenAppService
 {
     private readonly IClusterClient _clusterClient;
@@ -17,6 +23,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     {
         _clusterClient = clusterClient;
     }
+
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
     {
         var result = new List<TokenPriceDataDto>();
@@ -27,39 +34,64 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
         try
         {
-            var symbolList = symbols.Select(s=>s.ToLower()).Distinct().ToList();
+            var symbolList = symbols.Distinct(StringComparer.InvariantCultureIgnoreCase).ToList();
             foreach (var symbol in symbolList)
             {
-                var grain = _clusterClient.GetGrain<ITokenPriceGrain>(symbol);
-                var tokenPrice = await grain.GetCurrentPriceAsync(symbol);
-                result.Add(tokenPrice);
+                var grainId = GrainIdHelper.GenerateGrainId(symbol);
+                var grain = _clusterClient.GetGrain<ITokenPriceGrain>(grainId);
+                var priceResult = await grain.GetCurrentPriceAsync(symbol);
+                if (!priceResult.Success)
+                {
+                    throw new UserFriendlyException(priceResult.Message);
+                }
+
+                result.Add(priceResult.Data);
             }
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Logger.LogError($"Get price failed. Error message:{e.Message}");
+            Logger.LogError(ex, $"Get price failed. Error message:{ex.Message}");
             throw;
         }
+
         return new ListResultDto<TokenPriceDataDto>
         {
             Items = result
         };
     }
 
-    public async Task<TokenPriceDataDto> GetTokenHistoryPriceDataAsync(string symbol, DateTime dateTime)
+    public async Task<ListResultDto<TokenPriceDataDto>> GetTokenHistoryPriceDataAsync(List<GetTokenHistoryPriceInput> inputs)
     {
-        TokenPriceDataDto result;
+        var result = new List<TokenPriceDataDto>();
         try
         {
-            var grain = _clusterClient.GetGrain<ITokenPriceSnapshotGrain>(symbol);
-            result = await grain.GetHistoryPriceAsync(symbol,dateTime);
+            foreach (var token in inputs)
+            {
+                var time = token.DateTime.ToString("dd-MM-yyyy");
+                if (token.Symbol.IsNullOrEmpty())
+                {
+                    result.Add(new TokenPriceDataDto());
+                    continue;
+                }
+                var grainId = GrainIdHelper.GenerateGrainId(token.Symbol.ToLower(), time);
+                var grain = _clusterClient.GetGrain<ITokenPriceSnapshotGrain>(grainId);
+                var priceResult = await grain.GetHistoryPriceAsync(token.Symbol.ToLower(), time);
+                if (!priceResult.Success)
+                {
+                    throw new UserFriendlyException(priceResult.Message);
+                }
+                result.Add(priceResult.Data);
+            }
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Logger.LogError($"Get price failed. Error message:{e.Message}");
+            Logger.LogError(ex, $"Get history price failed. Error message:{ex.Message}");
             throw;
         }
-        return result;
 
+        return new ListResultDto<TokenPriceDataDto>
+        {
+            Items = result
+        };
     }
 }

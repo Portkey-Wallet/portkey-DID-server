@@ -33,12 +33,14 @@ public class CAContactHandler : IDistributedEventHandler<ContactCreateEto>,
         try
         {
             var contact = _objectMapper.Map<ContactCreateEto, ContactIndex>(eventData);
+            contact.ModificationTime = DateTime.UtcNow;
+            
             await _contactRepository.AddAsync(contact);
             _logger.LogDebug("add success");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,"{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
         }
     }
 
@@ -53,8 +55,7 @@ public class CAContactHandler : IDistributedEventHandler<ContactCreateEto>,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,"{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
         }
     }
-    
 }

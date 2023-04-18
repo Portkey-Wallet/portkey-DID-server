@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using CAServer.Contract;
 using Localization.Resources.AbpUi;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
@@ -34,6 +35,7 @@ using Volo.Abp.UI.Navigation.Urls;
 using Volo.Abp.VirtualFileSystem;
 using Volo.Abp.OpenIddict.ExtensionGrantTypes;
 using Volo.Abp.EventBus.RabbitMq;
+using Volo.Abp.Uow;
 
 namespace CAServer;
 
@@ -63,6 +65,11 @@ public class CAServerAuthServerModule : AbpModule
             {
                 options.UseAspNetCore().DisableTransportSecurityRequirement();
                 options.SetIssuer(new Uri(configuration["AuthServer:IssuerUri"]));
+                int.TryParse(configuration["ExpirationHour"], out int expirationHour);
+                if (expirationHour > 0)
+                {
+                    options.SetAccessTokenLifetime(DateTime.Now.AddHours(expirationHour) - DateTime.Now);
+                }
             });
 
             builder.AddValidation(options =>
@@ -83,8 +90,14 @@ public class CAServerAuthServerModule : AbpModule
     {
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         var configuration = context.Services.GetConfiguration();
+        
+        Configure<AbpUnitOfWorkDefaultOptions>(options =>
+        {
+            options.TransactionBehavior = UnitOfWorkTransactionBehavior.Disabled;
+        });
 
         context.Services.Configure<GraphQLOption>(configuration.GetSection("GraphQL"));
+        context.Services.Configure<ChainOptions>(configuration.GetSection("Chains"));
         context.Services.Configure<TimeRangeOption>(option =>
         {
             option.TimeRange = Convert.ToInt32(configuration["TimeRange"]);
@@ -163,7 +176,7 @@ public class CAServerAuthServerModule : AbpModule
 
         Configure<AbpBackgroundJobOptions>(options => { options.IsJobExecutionEnabled = false; });
 
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
+        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:Auth:"; });
 
         var dataProtectionBuilder = context.Services.AddDataProtection().SetApplicationName("CAServer");
         if (!hostingEnvironment.IsDevelopment())

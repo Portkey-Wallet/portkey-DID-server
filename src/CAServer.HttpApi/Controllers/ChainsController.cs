@@ -9,7 +9,7 @@ namespace CAServer.Controllers;
 [RemoteService]
 [Area("app")]
 [ControllerName("Chains")]
-[Route("api/app/chain")]
+[Route("api/app/chains")]
 [Authorize(Roles = "admin")]
 public class ChainsController : CAServerController
 {

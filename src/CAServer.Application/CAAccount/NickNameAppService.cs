@@ -1,4 +1,5 @@
-﻿using CAServer.Dtos;
+﻿using System;
+using CAServer.Dtos;
 using System.Threading.Tasks;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;

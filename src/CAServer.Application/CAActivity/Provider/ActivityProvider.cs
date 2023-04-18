@@ -1,33 +1,43 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
+using CAServer.Entities.Es;
 using GraphQL;
+using Nest;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.CAActivity.Provider;
 
-public class ActivityProvider : IActivityProvider
+public class ActivityProvider : IActivityProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
 
-    public ActivityProvider(IGraphQLHelper graphQlHelper)
+
+    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
     {
         _graphQlHelper = graphQlHelper;
+        _caHolderIndexRepository = caHolderIndexRepository;
     }
 
-
-    public async Task<IndexerTransactions> GetActivitiesAsync(List<string> addresses, string inputChainId, string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
+    public async Task<IndexerTransactions> GetActivitiesAsync(List<string> addresses, string inputChainId,
+        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
     {
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
             Query = @"
-			    query($chainId:String,$symbol:String,$caAddresses:[String],$methodNames: [String],$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddresses:$caAddresses,methodNames:$methodNames,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        id, chainId, blockHash, blockHeight, previousBlockHash, transactionId, methodName, tokenInfo{symbol,decimals} nftInfo{url,alias,nftId} status, timestamp, transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId} fromAddress, transactionFees{symbol,amount}
+			    query($chainId:String,$symbol:String,$caAddresses:[String],$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddresses:$caAddresses,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount
                     }
                 }",
             Variables = new
             {
-                caAddresses = addresses, chainId = inputChainId, symbol = symbolOpt, methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                caAddresses = addresses, chainId = inputChainId, symbol = symbolOpt,
+                methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                startBlockHeight = 0, endBlockHeight = 0
             }
         });
     }
@@ -37,15 +47,26 @@ public class ActivityProvider : IActivityProvider
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
             Query = @"
-			    query($transactionId:String,$blockHash:String,$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderTransaction(dto: {transactionId:$transactionId,blockHash:$blockHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        id, chainId, blockHash, blockHeight, previousBlockHash, transactionId, methodName, tokenInfo{symbol,decimals} nftInfo{url,alias,nftId} status, timestamp, transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId} fromAddress, transactionFees{symbol,amount}
+			    query($transactionId:String,$blockHash:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {transactionId:$transactionId,blockHash:$blockHash,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount
                     }
                 }",
             Variables = new
             {
                 transactionId = inputTransactionId, blockHash = inputBlockHash, skipCount = 0, maxResultCount = 1,
+                startBlockHeight = 0, endBlockHeight = 0
             }
         });
+    }
+
+    public async Task<string> GetCaHolderNickName(Guid userId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
+        return caHolder?.NickName;
     }
 }

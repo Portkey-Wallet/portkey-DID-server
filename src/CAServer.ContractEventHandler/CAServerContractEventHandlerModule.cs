@@ -3,17 +3,23 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
+using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.BackgroundWorkers.Quartz;
+using Volo.Abp.Caching;
+using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
@@ -28,12 +34,14 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpBackgroundWorkersQuartzModule),
     typeof(AbpBackgroundWorkersModule),
     typeof(AbpAspNetCoreSerilogModule),
-    typeof(AbpEventBusRabbitMqModule))]
+    typeof(AbpEventBusRabbitMqModule),
+    typeof(AbpCachingStackExchangeRedisModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var configuration = context.Services.GetConfiguration();
+        var hostingEnvironment = context.Services.GetHostingEnvironment();
         //ConfigureEsIndexCreation();   
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<ContractSyncOptions>(configuration.GetSection("Sync"));
@@ -45,12 +53,33 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.Services.AddSingleton<IContractAppService, ContractAppService>();
         context.Services.AddSingleton<IContractProvider, ContractProvider>();
         context.Services.AddSingleton<IGraphQLProvider, GraphQLProvider>();
+        ConfigureCache(configuration);
+        ConfigureDataProtection(context, configuration, hostingEnvironment);
+    }
+    
+    private void ConfigureCache(IConfiguration configuration)
+    {
+        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
+    }
+    
+    private void ConfigureDataProtection(
+        ServiceConfigurationContext context,
+        IConfiguration configuration,
+        IWebHostEnvironment hostingEnvironment)
+    {
+        var dataProtectionBuilder = context.Services.AddDataProtection().SetApplicationName("CAServer");
+        if (!hostingEnvironment.IsDevelopment())
+        {
+            var redis = ConnectionMultiplexer.Connect(configuration["Redis:Configuration"]);
+            dataProtectionBuilder.PersistKeysToStackExchangeRedis(redis, "CAServer-Protection-Keys");
+        }
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
+        context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
@@ -81,6 +110,8 @@ public class CAServerContractEventHandlerModule : AbpModule
                 .Build();
         });
     }
+    
+   
 
     private static void StartOrleans(IServiceProvider serviceProvider)
     {

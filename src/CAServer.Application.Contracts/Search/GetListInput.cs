@@ -7,6 +7,11 @@ public class GetListInput : PagedResultRequestDto
 {
     public string Filter { get; set; }
     public string Sort {get; set; }
-    public SortOrder SortType { get; set; }
+    
+}
 
+public class SortType
+{
+    public string SortField { get; set; }
+    public SortOrder SortOrder { get; set; }
 }

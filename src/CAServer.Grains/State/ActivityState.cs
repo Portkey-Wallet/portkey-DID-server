@@ -4,5 +4,5 @@ namespace CAServer.Grains.State;
 
 public class ActivityState
 {
-    public List<GetActivitiesDto> ActivitiesDtos = new List<GetActivitiesDto>();
+    public List<GetActivityDto> ActivitiesDtos = new List<GetActivityDto>();
 }

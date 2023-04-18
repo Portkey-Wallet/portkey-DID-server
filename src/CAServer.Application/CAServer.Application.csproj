@@ -15,8 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DistributedLock.Redis" Version="1.0.2" />
-    <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
     <PackageReference Include="Volo.Abp.Account.Application" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.DistributedLocking" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="7.0.0" />
@@ -30,10 +28,6 @@
 
   <ItemGroup>
     <None Remove="System.IdentityModel.Tokens.Jwt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Orleans_CodeGenInputs Remove="Test\BookService.cs" />
   </ItemGroup>
 
   <ItemGroup>

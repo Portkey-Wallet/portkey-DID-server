@@ -1,4 +1,6 @@
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.Tokens.TokenPrice;
+using CAServer.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
@@ -16,7 +18,7 @@ public class CAServerGrainsModule : AbpModule
         var connStr = configuration["GraphQL:Configuration"];
 
         context.Services.Configure<CAAccountOption>(configuration.GetSection("CAAccountSetting"));
-
-        //context.Services.AddTransient<ITokenPriceProvider>();
+        context.Services.Configure<TokenPriceExpirationTimeOptions>(
+            configuration.GetSection("TokenPriceExpirationTime"));
     }
 }

@@ -1,10 +1,8 @@
 ﻿using AElf.Indexing.Elasticsearch;
 using AElf.Indexing.Elasticsearch.Options;
-using CAServer.Entities.Etos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using CAServer.MultiTenancy;
-using CAServer.Tokens;
 using Volo.Abp.AuditLogging;
 using Volo.Abp.Domain.Entities.Events.Distributed;
 using Volo.Abp.Emailing;
@@ -40,7 +38,10 @@ public class CAServerDomainModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         ConfigureEsIndexCreation();
-        Configure<AbpMultiTenancyOptions>(options => { options.IsEnabled = MultiTenancyConsts.IsEnabled; });
+        Configure<AbpMultiTenancyOptions>(options =>
+        {
+            options.IsEnabled = MultiTenancyConsts.IsEnabled;
+        });
 
 #if DEBUG
         context.Services.Replace(ServiceDescriptor.Singleton<IEmailSender, NullEmailSender>());
@@ -48,15 +49,15 @@ public class CAServerDomainModule : AbpModule
         Configure<AbpDistributedEntityEventOptions>(options =>
         {
             options.AutoEventSelectors.Add<IdentityUser>();
-            options.EtoMappings.Add<IdentityUser, UserEto>();
+            options.EtoMappings.Add<IdentityUser,UserEto>();
         });
-        Configure<AbpDistributedEntityEventOptions>(options =>
-        {
-            options.AutoEventSelectors.Add<UserToken>();
-            options.EtoMappings.Add<UserToken, UserTokenEto>();
-        });
+        // Configure<AbpDistributedEntityEventOptions>(options =>
+        // {
+        //     options.AutoEventSelectors.Add<UserToken>();
+        //     options.EtoMappings.Add<UserToken,UserTokenEto>();
+        // });
     }
-
+    
     private void ConfigureEsIndexCreation()
     {
         Configure<IndexCreateOption>(x => { x.AddModule(typeof(CAServerDomainModule)); });

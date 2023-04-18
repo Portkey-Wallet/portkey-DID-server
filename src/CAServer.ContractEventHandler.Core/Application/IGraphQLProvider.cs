@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using CAServer.CAActivity.Provider;
 using CAServer.Grains.Grain.ApplicationHandler;
 using GraphQL;
 using GraphQL.Client.Http;
@@ -16,7 +18,7 @@ namespace CAServer.ContractEventHandler.Core.Application;
 public interface IGraphQLProvider
 {
     public Task<long> GetIndexBlockHeightAsync(string chainId);
-    public Task<long> GetLastEndHeightAsync(string key);
+    public Task<long> GetLastEndHeightAsync(string chainId, string type);
     public Task SetLastEndHeightAsync(string chainId, string type, long height);
 
     public Task<List<QueryEventDto>> GetLoginGuardianAccountTransactionInfosAsync(
@@ -24,6 +26,12 @@ public interface IGraphQLProvider
 
     public Task<List<QueryEventDto>> GetManagerTransactionInfosAsync(string chainId,
         long startBlockHeight, long endBlockHeight);
+
+    Task<IndexerTransactions> GetToReceiveTransactionsAsync(string chainId, long startHeight,
+        long endHeight);
+
+    Task<IndexerTransaction> GetReceiveTransactionAsync(string chainId, string transferTxId, long endHeight);
+
 }
 
 public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
@@ -61,23 +69,23 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         JsonSerializer.Serialize(graphQLResponse, new JsonSerializerOptions { WriteIndented = true });
         if (graphQLResponse.Errors is { Length: > 0 })
         {
-            _logger.LogError("GetIndexBlockHeight err: {error}", graphQLResponse.Errors);
+            _logger.LogError("GetIndexBlockHeight on chain {id} err: {error}", chainId, graphQLResponse.Errors);
             return 0;
         }
 
         return graphQLResponse.Data.SyncState.ConfirmedBlockHeight;
     }
 
-    public async Task<long> GetLastEndHeightAsync(string key)
+    public async Task<long> GetLastEndHeightAsync(string chainId, string type)
     {
         try
         {
-            var grain = _clusterClient.GetGrain<IContractServiceGraphQLGrain>(key);
+            var grain = _clusterClient.GetGrain<IContractServiceGraphQLGrain>(type + chainId);
             return await grain.GetStateAsync();
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetIndexBlockHeight error");
+            _logger.LogError(e, "GetIndexBlockHeight on chain {id} error", chainId);
             return ContractAppServiceConstant.LongError;
         }
     }
@@ -92,7 +100,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "SetIndexBlockHeight error");
+            _logger.LogError(e, "SetIndexBlockHeight on chain {id} error", chainId);
         }
     }
 
@@ -124,7 +132,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         JsonSerializer.Serialize(graphQLResponse, new JsonSerializerOptions { WriteIndented = true });
         if (graphQLResponse.Errors is { Length: > 0 })
         {
-            _logger.LogError("GetManagerTransactionInfos err: {error}", graphQLResponse.Errors);
+            _logger.LogError("GetManagerTransactionInfos on chain {id} err: {error}", chainId, graphQLResponse.Errors);
             return null;
         }
 
@@ -176,7 +184,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         JsonSerializer.Serialize(graphQLResponse, new JsonSerializerOptions { WriteIndented = true });
         if (graphQLResponse.Errors is { Length: > 0 })
         {
-            _logger.LogError("GetManagerTransactionInfos err: {error}", graphQLResponse.Errors);
+            _logger.LogError("GetManagerTransactionInfos on chain {id} err: {error}", chainId, graphQLResponse.Errors);
             return null;
         }
 
@@ -198,5 +206,71 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         }
 
         return result;
+    }
+    
+    public async Task<IndexerTransactions> GetToReceiveTransactionsAsync(string chainId, long startHeight,
+        long endHeight)
+    {
+        var graphQLResponse = await _graphQLClient.SendQueryAsync<IndexerTransactions>(new GraphQLRequest
+        {
+            Query =
+                @"query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$methodNames: [String],$skipCount:Int!,$maxResultCount:Int!){
+            caHolderTransaction(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight, methodNames:$methodNames,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                totalRecordCount,
+                data{
+                    blockHash,
+                    blockHeight,
+                    transactionId,
+                    methodName,
+                    transferInfo{
+                        fromChainId,
+                        toChainId
+                    }
+                }
+            }
+        }",
+            Variables = new
+            {
+                chainId = chainId, 
+                startBlockHeight = startHeight, 
+                endBlockHeight = endHeight,
+                methodNames = new List<string> { "CrossChainTransfer" }, 
+                skipCount = 0, 
+                maxResultCount = 10000
+            }
+        });
+
+        return graphQLResponse.Data;
+    }
+    
+    public async Task<IndexerTransaction> GetReceiveTransactionAsync(string chainId, string transferTxId, long endHeight)
+    {
+        // var blockHeight = await GetIndexBlockHeightAsync(chainId);
+        // var endHeight = blockHeight - _indexOptions.IndexSafe;
+        
+        var txs = await _graphQLClient.SendQueryAsync<IndexerTransactions>(new GraphQLRequest
+        {
+            Query =
+                @"query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$methodNames: [String],$transferTransactionId:String,$skipCount:Int!,$maxResultCount:Int!){
+            caHolderTransaction(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight, methodNames:$methodNames,transferTransactionId:$transferTransactionId,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                totalRecordCount,
+                data{
+                    id
+                }
+            }
+        }",
+            Variables = new
+            {
+                chainId = chainId, 
+                startBlockHeight = 0, 
+                endBlockHeight = endHeight,
+                methodNames = new List<string> { "CrossChainReceiveToken" }, 
+                transferTransactionId = transferTxId,
+                skipCount = 0, 
+                maxResultCount = 10000
+            }
+        });
+
+        return txs.Data.CaHolderTransaction.Data.FirstOrDefault();
     }
 }

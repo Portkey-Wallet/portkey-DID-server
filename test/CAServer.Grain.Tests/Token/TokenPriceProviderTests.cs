@@ -1,48 +1,33 @@
-using CAServer.Grains.Grain.Tokens;
-using CAServer.Grains.Grain;
+using CAServer.Grains;
+using CAServer.Grains.Grain.Tokens.TokenPrice;
 using Shouldly;
-using Volo.Abp.Caching;
 using Xunit;
 
 namespace CAServer.Grain.Tests.Token;
 
-public class TokenPriceProviderTests : CAServerGrainOrleansTestBase
+[Collection(ClusterCollection.Name)]
+public class TokenPriceGrainTests : CAServerGrainTestBase
 {
     private const string ELFTokenSymbol = "ELF";
-    
 
-    // [Fact]
-    // public async Task GetTokenPrice_Test()
-    // {
-    //     var tokenPriceGrain = Cluster.Client.GetGrain<ITokenPriceProviderGrain>(0);
-    //     var price = await tokenPriceGrain.GetPriceAsync(ELFTokenSymbol);
-    //     price.ShouldBeGreaterThan(0);
-    // }
-    //
-    // [Fact]
-    // public async Task GetTokenHistoryPrice_Test()
-    // {
-    //     var time = DateTime.UtcNow;
-    //     var tokenPriceGrain = Cluster.Client.GetGrain<ITokenPriceProviderGrain>(0);
-    //     var price = await tokenPriceGrain.GetHistoryPriceAsync(ELFTokenSymbol,time);
-    //     price.ShouldBeGreaterThan(0);
-    // }
-    //
-    // [Fact]
-    // public async Task GetTokenPrice_Test_NoPrice()
-    // {
-    //     var tokenPriceGrain = Cluster.Client.GetGrain<ITokenPriceProviderGrain>(0);
-    //     var price = await tokenPriceGrain.GetPriceAsync("cpu");
-    //     price.ShouldBe(0);
-    // }
-    //
-    // [Fact]
-    // public async Task GetTokenHistoryPrice_Test_NoPrice()
-    // {
-    //     var time = DateTime.UtcNow;
-    //     var tokenPriceGrain = Cluster.Client.GetGrain<ITokenPriceProviderGrain>(0);
-    //     var price = await tokenPriceGrain.GetHistoryPriceAsync(ELFTokenSymbol,time);
-    //     price.ShouldBeGreaterThan(0);
-    // }
+    [Fact]
+    public async Task GetTokenPriceTest()
+    {
+        var grain = Cluster.Client.GetGrain<ITokenPriceGrain>(ELFTokenSymbol);
+        var result = await grain.GetCurrentPriceAsync(ELFTokenSymbol);
+        result.Success.ShouldBeTrue();
+        result.Data.PriceInUsd.ShouldBeGreaterThan(0);
+    }
     
+    [Fact]
+    public async Task GetTokenHistoryPriceTest()
+    {
+        var time = DateTime.UtcNow.ToString("dd-MM-yyyy");
+        var grainId = GrainIdHelper.GenerateGrainId("ELF", time);
+        var grain = Cluster.Client.GetGrain<ITokenPriceSnapshotGrain>(grainId);
+        var result = await grain.GetHistoryPriceAsync(ELFTokenSymbol,time);
+        result.Success.ShouldBeTrue();
+        result.Data.PriceInUsd.ShouldBeGreaterThan(0);
+    }
+
 }

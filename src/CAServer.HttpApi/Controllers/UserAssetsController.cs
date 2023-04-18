@@ -11,6 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("UserAssets")]
 [Route("api/app/user/assets")]
+[Authorize]
 public class UserAssetsController
 {
     private readonly IUserAssetsAppService _userAssetsAppService;
@@ -26,14 +27,14 @@ public class UserAssetsController
         return await _userAssetsAppService.GetTokenAsync(requestDto);
     }
 
-    [HttpPost("nftProtocols")]
-    public async Task<GetNFTProtocolsDto> GetNFTProtocolsAsync(GetNFTProtocolsRequestDto requestDto)
+    [HttpPost("nftCollections")]
+    public async Task<GetNftCollectionsDto> GetNFTCollectionsAsync(GetNftCollectionsRequestDto requestDto)
     {
-        return await _userAssetsAppService.GetNFTProtocolsAsync(requestDto);
+        return await _userAssetsAppService.GetNFTCollectionsAsync(requestDto);
     }
 
     [HttpPost("nftItems")]
-    public async Task<GetNFTItemsDto> GetNFTItemsAsync(GetNftItemsRequestDto requestDto)
+    public async Task<GetNftItemsDto> GetNFTItemsAsync(GetNftItemsRequestDto requestDto)
     {
         return await _userAssetsAppService.GetNFTItemsAsync(requestDto);
     }
@@ -48,5 +49,11 @@ public class UserAssetsController
     public async Task<SearchUserAssetsDto> SearchUserAssetsAsync(SearchUserAssetsRequestDto requestDto)
     {
         return await _userAssetsAppService.SearchUserAssetsAsync(requestDto);
+    }
+
+    [HttpGet("symbolImages")]
+    public SymbolImagesDto GetSymbolImagesAsync()
+    {
+        return _userAssetsAppService.GetSymbolImagesAsync();
     }
 }

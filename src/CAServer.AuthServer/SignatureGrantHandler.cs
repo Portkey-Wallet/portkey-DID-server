@@ -5,10 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Client.Dto;
+using AElf.Client.Service;
 using AElf.Types;
+using CAServer.AuthServer;
+using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
 using CAServer.Model;
+using Google.Protobuf;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -16,9 +21,11 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Identity;
 using Volo.Abp.OpenIddict;
@@ -31,37 +38,55 @@ namespace CAServer;
 public class SignatureGrantHandler : ITokenExtensionGrant
 {
     private IDistributedEventBus _distributedEventBus;
+    private ILogger<SignatureGrantHandler> _logger;
+    private IAbpDistributedLock _distributedLock;
+    private readonly string _lockKeyPrefix = "CAServer:Auth:SignatureGrantHandler:";
 
     public async Task<IActionResult> HandleAsync(ExtensionGrantContext context)
     {
-        var publicKey = ByteArrayHelper.HexStringToByteArray(context.Request.GetParameter("pubkey").ToString());
-        var signature = ByteArrayHelper.HexStringToByteArray(context.Request.GetParameter("signature").ToString());
-        var timestamp = long.Parse(context.Request.GetParameter("timestamp").ToString());
-        var caHash = context.Request.GetParameter("cahash").ToString();
+        var publicKeyVal = context.Request.GetParameter("pubkey").ToString();
+        var signatureVal = context.Request.GetParameter("signature").ToString();
+        var timestampVal = context.Request.GetParameter("timestamp").ToString();
+        var caHash = context.Request.GetParameter("ca_hash").ToString();
+        var chainId = context.Request.GetParameter("chain_id").ToString();
+
+        var invalidParamResult = CheckParams(publicKeyVal, signatureVal, timestampVal, caHash, chainId);
+        if (invalidParamResult != null)
+        {
+            return invalidParamResult;
+        }
+
+        var publicKey = ByteArrayHelper.HexStringToByteArray(publicKeyVal);
+        var signature = ByteArrayHelper.HexStringToByteArray(signatureVal);
+        var timestamp = long.Parse(timestampVal);
         var address = Address.FromPublicKey(publicKey).ToBase58();
 
         var time = DateTime.UnixEpoch.AddMilliseconds(timestamp);
         var timeRangeConfig = context.HttpContext.RequestServices.GetRequiredService<IOptions<TimeRangeOption>>().Value;
-        
+        _logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<SignatureGrantHandler>>();
+        _distributedLock = context.HttpContext.RequestServices.GetRequiredService<IAbpDistributedLock>();
+
         if (time < DateTime.UtcNow.AddMinutes(-timeRangeConfig.TimeRange) ||
             time > DateTime.UtcNow.AddMinutes(timeRangeConfig.TimeRange))
         {
             return GetForbidResult(OpenIddictConstants.Errors.InvalidRequest,
                 $"The time should be {timeRangeConfig.TimeRange} minutes before and after the current time.");
         }
-        
+
         var hash = Encoding.UTF8.GetBytes(address + "-" + timestamp).ComputeHash();
         if (!AElf.Cryptography.CryptoHelper.VerifySignature(signature, hash, publicKey))
         {
             return GetForbidResult(OpenIddictConstants.Errors.InvalidRequest, "Signature validation failed.");
         }
-        
-        // //Find manager by caHash
+
+        //Find manager by caHash
         var graphqlConfig = context.HttpContext.RequestServices.GetRequiredService<IOptions<GraphQLOption>>().Value;
-        
-        var managerAddressCheck = await CheckAddress(graphqlConfig.Url, caHash, address);
+        var chainOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<ChainOptions>>().Value;
+
+        var managerAddressCheck = await CheckAddressAsync(chainId, graphqlConfig.Url, caHash, address, chainOptions);
         if (!managerAddressCheck.HasValue || !managerAddressCheck.Value)
         {
+            _logger.LogError($"ManagerAddress validation failed. caHash:{caHash}, address:{address}, chainId:{chainId}");
             return GetForbidResult(OpenIddictConstants.Errors.InvalidRequest, "ManagerAddress validation failed.");
         }
 
@@ -72,8 +97,8 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         if (user == null)
         {
             var userId = Guid.NewGuid();
-            var identityResult = await CreateUserAsync(userManager, userId, caHash, address);
-            if (!identityResult.Succeeded)
+            var createUserResult = await CreateUserAsync(userManager, userId, caHash);
+            if (!createUserResult)
             {
                 return GetForbidResult(OpenIddictConstants.Errors.ServerError, "Create user failed.");
             }
@@ -96,32 +121,174 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         return new SignInResult(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme, claimsPrincipal);
     }
 
-    private async Task<IdentityResult> CreateUserAsync(IdentityUserManager userManager, Guid userId, string caHash,
-        string caAddress)
+    private ForbidResult CheckParams(string publicKeyVal, string signatureVal, string timestampVal, string caHash,
+        string chainId)
     {
-        var user = new IdentityUser(userId, userName: caHash, email: Guid.NewGuid().ToString("N") + "@ABP.IO");
-        var identityResult = await userManager.CreateAsync(user);
-
-        if (identityResult.Succeeded)
+        var errors = new List<string>();
+        if (string.IsNullOrWhiteSpace(publicKeyVal))
         {
-            await _distributedEventBus.PublishAsync(new CreateUserEto
-            {
-                Id = userId,
-                UserId = userId,
-                CaAddress = caAddress,
-                CaHash = caHash,
-                CreateTime = DateTime.UtcNow
-            });
+            errors.Add("invalid parameter pubkey.");
         }
 
-        return identityResult;
+        if (string.IsNullOrWhiteSpace(signatureVal))
+        {
+            errors.Add("invalid parameter signature.");
+        }
+
+        if (string.IsNullOrWhiteSpace(timestampVal) || !long.TryParse(timestampVal, out var time) || time <= 0)
+        {
+            errors.Add("invalid parameter timestamp.");
+        }
+
+        if (string.IsNullOrWhiteSpace(caHash))
+        {
+            errors.Add("invalid parameter ca_hash.");
+        }
+
+        if (string.IsNullOrWhiteSpace(chainId))
+        {
+            errors.Add("invalid parameter chain_id.");
+        }
+
+        if (errors.Count > 0)
+        {
+            return new ForbidResult(
+                new[] { OpenIddictServerAspNetCoreDefaults.AuthenticationScheme },
+                properties: new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidRequest,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = GetErrorMessage(errors)
+                }));
+        }
+
+        return null;
     }
 
-    private async Task<bool?> CheckAddress(string url, string caHash, string managerAddress)
+    private string GetErrorMessage(List<string> errors)
+    {
+        var message = string.Empty;
+
+        errors?.ForEach(t => message += $"{t}, ");
+        if (message.Contains(','))
+        {
+            return message.TrimEnd().TrimEnd(',');
+        }
+
+        return message;
+    }
+
+    private async Task<bool> CreateUserAsync(IdentityUserManager userManager, Guid userId, string caHash)
+    {
+        var result = false;
+        await using var handle =
+            await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + caHash);
+        //get shared lock
+        if (handle != null)
+        {
+            var user = new IdentityUser(userId, userName: caHash, email: Guid.NewGuid().ToString("N") + "@ABP.IO");
+            var identityResult = await userManager.CreateAsync(user);
+
+            if (identityResult.Succeeded)
+            {
+                _logger.LogInformation("Send create user event...");
+                await _distributedEventBus.PublishAsync(new CreateUserEto
+                {
+                    Id = userId,
+                    UserId = userId,
+                    CaHash = caHash,
+                    CreateTime = DateTime.UtcNow
+                });
+
+                _logger.LogDebug($"create user success: {userId.ToString()}");
+            }
+
+            result = identityResult.Succeeded;
+        }
+        else
+        {
+            _logger.LogError($"do not get lock, keys already exits. userId: {userId.ToString()}");
+        }
+
+        return result;
+    }
+
+    private async Task<bool?> CheckAddressAsync(string chainId, string graphQlUrl, string caHash, string managerAddress,
+        ChainOptions chainOptions)
+    {
+        var graphQlResult = await CheckAddressFromGraphQlAsync(graphQlUrl, caHash, managerAddress);
+        if (!graphQlResult.HasValue || !graphQlResult.Value)
+        {
+            _logger.LogDebug("graphql is invalid.");
+            return await CheckAddressFromContractAsync(chainId, caHash, managerAddress, chainOptions);
+        }
+
+        return true;
+    }
+
+    private async Task<bool?> CheckAddressFromGraphQlAsync(string url, string caHash,
+        string managerAddress)
     {
         var caHolderManagerInfo = await GetManagerList(url, caHash);
         var caHolderManager = caHolderManagerInfo?.CaHolderManagerInfo.FirstOrDefault();
         return caHolderManager?.Managers.Any(t => t.Manager == managerAddress);
+    }
+
+    private async Task<bool?> CheckAddressFromContractAsync(string chainId, string caHash, string managerAddress,
+        ChainOptions chainOptions)
+    {
+        var param = new GetHolderInfoInput
+        {
+            CaHash = Hash.LoadFromHex(caHash),
+            LoginGuardianAccount = string.Empty
+        };
+
+        var output =
+            await CallTransactionAsync<GetHolderInfoOutput>(chainId, MethodName.GetHolderInfo, param, false,
+                chainOptions);
+
+        return output?.Managers?.Any(t => t.ManagerAddress.ToBase58() == managerAddress);
+    }
+
+    private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,
+        bool isCrossChain, ChainOptions chainOptions) where T : class, IMessage<T>, new()
+    {
+        try
+        {
+            var chainInfo = chainOptions.ChainInfos[chainId];
+
+            var client = new AElfClient(chainInfo.BaseUrl);
+            await client.IsConnectedAsync();
+            var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
+            var contractAddress = isCrossChain
+                ? (await client.GetContractAddressByNameAsync(HashHelper.ComputeFrom(ContractName.CrossChain)))
+                .ToBase58()
+                : chainInfo.ContractAddress;
+
+            var transaction =
+                await client.GenerateTransactionAsync(ownAddress, contractAddress,
+                    methodName, param);
+            var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
+
+            var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
+            {
+                RawTransaction = txWithSign.ToByteArray().ToHex()
+            });
+
+            var value = new T();
+            value.MergeFrom(ByteArrayHelper.HexStringToByteArray(result));
+
+            return value;
+        }
+        catch (Exception e)
+        {
+            if (methodName != MethodName.GetHolderInfo)
+            {
+                _logger.LogError(e, methodName + " error: {param}", param);
+            }
+
+            _logger.LogError("{Message}", e);
+            return null;
+        }
     }
 
     private async Task<CAHolderManagerInfo> GetManagerList(string url, string caHash)

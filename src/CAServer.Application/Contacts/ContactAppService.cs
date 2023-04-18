@@ -55,14 +55,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
     {
         var userId = CurrentUser.GetId();
 
-        var contactNameGrain =
-            _clusterClient.GetGrain<IContactNameGrain>(GrainIdHelper.GenerateGrainId(userId.ToString("N"), input.Name));
-        var existed = await contactNameGrain.IsNameExist(input.Name);
-        if (!existed)
-        {
-            throw new UserFriendlyException(ContactMessage.NotExistMessage);
-        }
-
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
         var result =
             await contactGrain.UpdateContactAsync(userId,

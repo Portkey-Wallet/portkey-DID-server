@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CAServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
-namespace AElf.CA
+namespace CAServer.EntityEventHandler
 {
     public class Program
     {

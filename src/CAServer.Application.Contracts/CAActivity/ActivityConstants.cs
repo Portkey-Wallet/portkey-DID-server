@@ -13,4 +13,14 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManager", "AddManager"
     };
+    
+    public static readonly List<string> TransferTypes = new()
+    {
+        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken"
+    };
+    
+    public static readonly List<string> ContractTypes = new()
+    {
+        "SocialRecovery", "RemoveManager", "AddManager"
+    };
 }

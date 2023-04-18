@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CAServer.CAActivity.Dto;
+namespace CAServer.CAActivity.Dtos;
 
 public class ActivityBase
 {
@@ -9,10 +9,11 @@ public class ActivityBase
     public string TransactionType { get; set; }
     public string Amount { get; set; }
     public string Symbol { get; set; }
-    public string Decimal { get; set; }
+    public string Decimals { get; set; }
 
     public string Status { get; set; }
-    public string TimeStamp { get; set; }
+    public string Timestamp { get; set; }
+    public bool IsReceived { get; set; }
 
     public string From { get; set; }
     public string To { get; set; }

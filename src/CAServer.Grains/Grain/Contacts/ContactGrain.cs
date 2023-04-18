@@ -28,6 +28,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
 
     public async Task<GrainResultDto<ContactGrainDto>> AddContactAsync(Guid userId, ContactGrainDto contactDto)
     {
+        //await ReadStateAsync();
         var result = new GrainResultDto<ContactGrainDto>();
         var contactNameGrain = GetContactNameGrain(userId, contactDto.Name);
         var addContactNameResult = await contactNameGrain.AddContactNameAsync(userId, contactDto.Name);
@@ -55,7 +56,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
     public async Task<GrainResultDto<ContactGrainDto>> UpdateContactAsync(Guid userId, ContactGrainDto contactDto)
     {
         var result = new GrainResultDto<ContactGrainDto>();
-        if (State.IsDeleted)
+        if (string.IsNullOrWhiteSpace(State.Name) || State.IsDeleted)
         {
             result.Message = ContactMessage.NotExistMessage;
             return result;
@@ -71,7 +72,8 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
                 return result;
             }
 
-            await contactNameGrain.DeleteContactNameAsync(userId, State.Name);
+            var oldContactNameGrain = GetContactNameGrain(userId, State.Name);
+            await oldContactNameGrain.DeleteContactNameAsync(userId, State.Name);
         }
 
         State.Index = GetIndex(contactDto.Name);

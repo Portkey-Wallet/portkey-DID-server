@@ -33,7 +33,7 @@ public class ContactNameGrain : Grain<ContactNameState>, IContactNameGrain
 
     public async Task DeleteContactNameAsync(Guid userId, string name)
     {
-        if (State.UserId == userId)
+        if (State.UserId == userId && State.ContactName == name)
         {
             State.IsDeleted = true;
             await WriteStateAsync();

@@ -1,97 +1,186 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
+using CAServer.Entities.Es;
+using CAServer.UserAssets.Dtos;
 using GraphQL;
+using Nest;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.UserAssets.Provider;
 
-public class UserAssetsProvider : IUserAssetsProvider
+public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly INESTRepository<UserTokenIndex, Guid> _userTokenIndexRepository;
 
-    public UserAssetsProvider(IGraphQLHelper graphQlHelper)
+    public UserAssetsProvider(IGraphQLHelper graphQlHelper,
+        INESTRepository<UserTokenIndex, Guid> userTokenIndexRepository)
     {
         _graphQlHelper = graphQlHelper;
+        _userTokenIndexRepository = userTokenIndexRepository;
     }
 
-
-    public async Task<IndexerTokenBalance> GetTokenAsync(List<string> userCaAddresses, int inputSkipCount, int inputMaxResultCount)
+    public async Task<InderxerChainIds> GetUserChainIdsAsync(List<string> userCaAddresses)
     {
-        return await _graphQlHelper.QueryAsync<IndexerTokenBalance>(new GraphQLRequest
+        return await _graphQlHelper.QueryAsync<InderxerChainIds>(new GraphQLRequest
         {
             Query = @"
-			    query($chainId:String,$symbol:String,$caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderTokenBalanceInfo(dto: {chainId:$chainId,symbol:$symbol,caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        chainId, tokenInfo{symbol,decimals}, balance}
+			    query($caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderManagerInfo(dto: {caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        chainId}
                 }",
             Variables = new
             {
-                caAddresses = userCaAddresses, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                caAddresses = userCaAddresses, skipCount = 0, maxResultCount = userCaAddresses.Count
             }
         });
     }
 
-    public async Task<IndexerNFTProtocol> GetNFTProtocolsAsync(List<string> userCaAddresses, int inputSkipCount, int inputMaxResultCount)
+    public async Task<IndexerTokenInfos> GetUserTokenInfoAsync(List<string> userCaAddresses, string symbol,
+        int inputSkipCount, int inputMaxResultCount)
     {
-        return await _graphQlHelper.QueryAsync<IndexerNFTProtocol>(new GraphQLRequest
+        return await _graphQlHelper.QueryAsync<IndexerTokenInfos>(new GraphQLRequest
         {
             Query = @"
-			    query($chainId:String,$symbol:String,$caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
-                    userNFTProtocolInfo(dto: {chainId:$chainId,symbol:$symbol,caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        chainId, tokenIds, nftProtocolInfo{symbol,nftType,protocolName,supply,totalSupply,issueChainId,imageUrl}}
+			    query($symbol:String,$caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTokenBalanceInfo(dto: {symbol:$symbol,caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{chainId,balance,caAddress,tokenIds,tokenInfo{symbol,tokenContractAddress,decimals,tokenName,totalSupply}},totalRecordCount}
                 }",
             Variables = new
             {
-                caAddresses = userCaAddresses, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                caAddresses = userCaAddresses, symbol, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
             }
         });
     }
 
-    public async Task<IndexerNftInfo> GetNftInfosAsync(List<string> userCaAddresses, string symbolOpt, int inputSkipCount, int inputMaxResultCount)
+    public async Task<IndexerNftCollectionInfos> GetUserNftCollectionInfoAsync(List<string> userCaAddresses,
+        int inputSkipCount, int inputMaxResultCount)
     {
-        return await _graphQlHelper.QueryAsync<IndexerNftInfo>(new GraphQLRequest
+        return await _graphQlHelper.QueryAsync<IndexerNftCollectionInfos>(new GraphQLRequest
         {
             Query = @"
-			    query($chainId:String,$symbol:String,$caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
-                    userNFTInfo(dto: {chainId:$chainId,symbol:$symbol,caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        chainId, balance, nftInfo{symbol,tokenId,alias,imageUrl}}
+			    query($caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderNFTCollectionBalanceInfo(dto:{caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{id,chainId,caAddress,tokenIds,nftCollectionInfo{symbol,decimals,tokenName,imageUrl,totalSupply}},totalRecordCount}
                 }",
             Variables = new
             {
-                caAddresses = userCaAddresses, symbol = symbolOpt, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                caAddresses = userCaAddresses, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
             }
         });
     }
 
-    public async Task<IndexerRecentTransactionUsers> GetRecentTransactionUsersAsync(List<string> userCaAddresses, int inputSkipCount, int inputMaxResultCount)
+    public async Task<IndexerNftInfos> GetUserNftInfoAsync(List<string> userCaAddresses, string symbol,
+        int inputSkipCount, int inputMaxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerNftInfos>(new GraphQLRequest
+        {
+            Query = @"
+			    query($collectionSymbol:String,$caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderNFTBalanceInfo(dto: {collectionSymbol:$collectionSymbol,caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,tokenContractAddress}},totalRecordCount}
+                }",
+            Variables = new
+            {
+                caAddresses = userCaAddresses, collectionSymbol = symbol, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
+            }
+        });
+    }
+
+    public async Task<IndexerRecentTransactionUsers> GetRecentTransactionUsersAsync(List<string> userCaAddresses,
+        int inputSkipCount, int inputMaxResultCount)
     {
         return await _graphQlHelper.QueryAsync<IndexerRecentTransactionUsers>(new GraphQLRequest
         {
             Query = @"
 			    query($caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
-                    userNFTInfo(dto: {caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        chainId, caAddress, transactionTime}
+                    caHolderTransactionAddressInfo(dto: {caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{chainId,caAddress,address,addressChainId,transactionTime},totalRecordCount}
                 }",
             Variables = new
             {
-                caAddresses = userCaAddresses, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                caAddresses = userCaAddresses, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
             }
         });
     }
 
-    public async Task<IndexerUserAssets> SearchUserAssetsAsync(List<string> userCaAddresses, string keyWord, int inputSkipCount, int inputMaxResultCount)
+    public async Task<IndexerSearchTokenNfts> SearchUserAssetsAsync(List<string> userCaAddresses, string keyword,
+        int inputSkipCount, int inputMaxResultCount)
     {
-        return await _graphQlHelper.QueryAsync<IndexerUserAssets>(new GraphQLRequest
+        return await _graphQlHelper.QueryAsync<IndexerSearchTokenNfts>(new GraphQLRequest
         {
             Query = @"
 			    query($searchWord:String,$caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderSearchTokenNFT(dto: {searchWord:$searchWord,caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        chainId,balance,caAddress,tokenInfo{symbol,tokenContractAddress,decimals},nftInfo{ protocolName, symbol, tokenId, nftContractAddress}}
+                        data{chainId,balance,caAddress,tokenId,tokenInfo{type,symbol,tokenContractAddress,decimals,tokenName,totalSupply},nftInfo{symbol,decimals,imageUrl,collectionSymbol,collectionName,tokenName,totalSupply,tokenContractAddress}},totalRecordCount}
                 }",
             Variables = new
             {
-                caAddresses = userCaAddresses, searchWord = keyWord, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
+                caAddresses = userCaAddresses, searchWord = keyword, skipCount = inputSkipCount,
+                maxResultCount = inputMaxResultCount
             }
         });
+    }
+
+    public async Task<List<UserTokenIndex>> GetUserDefaultTokenSymbolAsync(Guid userId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<UserTokenIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDefault).Value(true)));
+        QueryContainer Filter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
+
+        IPromise<IList<ISort>> Sort(SortDescriptor<UserTokenIndex> s) => s.Descending(a => a.SortWeight)
+            .Ascending(a => a.Token.Symbol).Ascending(a => a.Token.ChainId);
+        
+        var (totalCount, userTokenIndices) = await _userTokenIndexRepository.GetSortListAsync(Filter, sortFunc: Sort);
+
+        if (totalCount <= 0 || userTokenIndices.IsNullOrEmpty())
+        {
+            return new List<UserTokenIndex>();
+        }
+
+        return userTokenIndices;
+    }
+
+    public async Task<List<UserTokenIndex>> GetUserIsDisplayTokenSymbolAsync(Guid userId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<UserTokenIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDefault).Value(false)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDisplay).Value(true)));
+        QueryContainer Filter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
+
+        IPromise<IList<ISort>> Sort(SortDescriptor<UserTokenIndex> s) => s.Descending(a => a.SortWeight)
+            .Ascending(a => a.Token.Symbol).Ascending(a => a.Token.ChainId);
+        
+        var (totalCount, userTokenIndices) = await _userTokenIndexRepository.GetSortListAsync(Filter, sortFunc: Sort);
+
+        if (totalCount <= 0 || userTokenIndices.IsNullOrEmpty())
+        {
+            return new List<UserTokenIndex>();
+        }
+
+        return userTokenIndices;
+    }
+    
+    public async Task<List<(string, string)>> GetUserNotDisplayTokenAsync(Guid userId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<UserTokenIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDisplay).Value(false)));
+        QueryContainer Filter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
+
+        var (totalCount, userTokenIndices) = await _userTokenIndexRepository.GetListAsync(Filter);
+
+        if (totalCount <= 0 || userTokenIndices.IsNullOrEmpty())
+        {
+            return new List<(string, string)>();
+        }
+
+        return userTokenIndices.Select(t => (t.Token.Symbol, t.Token.ChainId)).ToList();
     }
 }

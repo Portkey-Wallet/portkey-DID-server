@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.Grains.Grain.Tokens;
+using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CoinGecko.Clients;
 using CoinGecko.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -10,7 +10,7 @@ using Volo.Abp.DependencyInjection;
 
 namespace CAServer.CoinGeckoApi;
 
-public class TokenPriceProvider : ITokenPriceProvider,ITransientDependency
+public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 {
     private readonly ICoinGeckoClient _coinGeckoClient;
     private readonly IRequestLimitProvider _requestLimitProvider;
@@ -27,13 +27,14 @@ public class TokenPriceProvider : ITokenPriceProvider,ITransientDependency
         _coinGeckoOptions = options.Value;
         Logger = NullLogger<TokenPriceProvider>.Instance;
     }
-    
+
     public async Task<decimal> GetPriceAsync(string symbol)
     {
         if (string.IsNullOrEmpty(symbol))
         {
             return 0;
         }
+
         var coinId = GetCoinIdAsync(symbol);
         if (coinId == null)
         {
@@ -45,9 +46,9 @@ public class TokenPriceProvider : ITokenPriceProvider,ITransientDependency
         {
             var coinData =
                 await RequestAsync(async () =>
-                    await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] {coinId}, new[] { UsdSymbol }));
- 
-            if (!coinData.TryGetValue(coinId,out var value))
+                    await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] {coinId}, new[] {UsdSymbol}));
+
+            if (!coinData.TryGetValue(coinId, out var value))
             {
                 return 0;
             }
@@ -61,12 +62,13 @@ public class TokenPriceProvider : ITokenPriceProvider,ITransientDependency
         }
     }
 
-    public async Task<decimal> GetHistoryPriceAsync(string symbol, DateTime dateTime)
+    public async Task<decimal> GetHistoryPriceAsync(string symbol, string dateTime)
     {
         if (string.IsNullOrEmpty(symbol))
         {
             return 0;
         }
+
         var coinId = GetCoinIdAsync(symbol);
         if (coinId == null)
         {
@@ -78,7 +80,7 @@ public class TokenPriceProvider : ITokenPriceProvider,ITransientDependency
         {
             var coinData =
                 await RequestAsync(async () => await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
-                    dateTime.ToString("dd-MM-yyyy"), "false"));
+                    dateTime, "false"));
 
             if (coinData.MarketData == null)
             {
@@ -93,11 +95,12 @@ public class TokenPriceProvider : ITokenPriceProvider,ITransientDependency
             throw;
         }
     }
-    
+
     private string GetCoinIdAsync(string symbol)
     {
         return _coinGeckoOptions.CoinIdMapping.TryGetValue(symbol.ToUpper(), out var id) ? id : null;
     }
+
     private async Task<T> RequestAsync<T>(Func<Task<T>> task)
     {
         await _requestLimitProvider.RecordRequestAsync();

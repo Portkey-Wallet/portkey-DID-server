@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
@@ -44,7 +45,12 @@ public class ChainAppService : CAServerAppService, IChainAppService
 
     public async Task<ChainResultDto> UpdateAsync(string id, CreateUpdateChainDto input)
     {
-        var chainGrain = _clusterClient.GetGrain<IChainGrain>(input.ChainId);
+        if (id != input.ChainId)
+        {
+            throw new UserFriendlyException("chainId can not modify.");
+        }
+
+        var chainGrain = _clusterClient.GetGrain<IChainGrain>(id);
         var result =
             await chainGrain.UpdateChainAsync(ObjectMapper.Map<CreateUpdateChainDto, ChainGrainDto>(input));
 

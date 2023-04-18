@@ -6,6 +6,8 @@ using AElf.Indexing.Elasticsearch.Options;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Authorization;
+using Volo.Abp.Users;
 
 namespace CAServer.Search;
 
@@ -22,7 +24,7 @@ public class SearchAppService : CAServerAppService, ISearchAppService
         _esServices = esServices;
         _indexSettingOptions = indexSettingOptions.Value;
     }
-    
+
     public async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
     {
         try
@@ -35,10 +37,12 @@ public class SearchAppService : CAServerAppService, ISearchAppService
                 input.MaxResultCount = 1000;
             }
 
-            // if (index.Equals($"{indexPrefix}.usertokenindex") || index.Equals($"{indexPrefix}.contactindex"))
-            // {
-            //     input.Filter = await CheckUserPermission(input.Filter);
-            // }
+            if (index.Equals($"{indexPrefix}.usertokenindex") || 
+                index.Equals($"{indexPrefix}.contactindex") ||
+                index.Equals($"{indexPrefix}.caholderindex"))
+            {
+                input.Filter = await CheckUserPermission(input.Filter);
+            }
 
             return esService == null ? null : await esService.GetListByLucenceAsync(index, input);
         }
@@ -49,15 +53,15 @@ public class SearchAppService : CAServerAppService, ISearchAppService
         }
     }
 
-    // private Task<string> CheckUserPermission(string filter)
-    // {
-    //     if (!CurrentUser.Id.HasValue)
-    //     {
-    //         throw new AbpAuthorizationException("Unauthorized.");
-    //     }
-    //
-    //     var userId = CurrentUser.GetId();
-    //     filter = filter.IsNullOrEmpty() ? $"userId:{userId.ToString()}" : $"{filter} && userId:{userId.ToString()}";
-    //     return Task.FromResult(filter);
-    // }
+    private Task<string> CheckUserPermission(string filter)
+    {
+        if (!CurrentUser.Id.HasValue)
+        {
+            throw new AbpAuthorizationException("Unauthorized.");
+        }
+
+        var userId = CurrentUser.GetId();
+        filter = filter.IsNullOrEmpty() ? $"userId:{userId.ToString()}" : $"{filter} && userId:{userId.ToString()}";
+        return Task.FromResult(filter);
+    }
 }
