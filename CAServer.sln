@@ -63,6 +63,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Redis", "src\CASer
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.EntityEventHandler.Core.Tests", "test\CAServer.EntityEventHandler.Core.Tests\CAServer.EntityEventHandler.Core.Tests.csproj", "{484F985C-3BCC-484D-B2D4-5A366388C249}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.HttpApi.Tests", "test\CAServer.HttpApi.Tests\CAServer.HttpApi.Tests.csproj", "{A79C3A46-D7FA-435F-BFB0-6C41B27C33EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -181,6 +183,10 @@ Global
 		{484F985C-3BCC-484D-B2D4-5A366388C249}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{484F985C-3BCC-484D-B2D4-5A366388C249}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{484F985C-3BCC-484D-B2D4-5A366388C249}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A79C3A46-D7FA-435F-BFB0-6C41B27C33EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A79C3A46-D7FA-435F-BFB0-6C41B27C33EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A79C3A46-D7FA-435F-BFB0-6C41B27C33EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A79C3A46-D7FA-435F-BFB0-6C41B27C33EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -214,6 +220,7 @@ Global
 		{4505F89E-AE90-44F2-A4F4-CE0B8646643C} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{1B1FA09C-98AC-4893-9D76-EC34071E55C5} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{484F985C-3BCC-484D-B2D4-5A366388C249} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
+		{A79C3A46-D7FA-435F-BFB0-6C41B27C33EE} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}

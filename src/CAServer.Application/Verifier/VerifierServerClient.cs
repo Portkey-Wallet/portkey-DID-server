@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
-using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Settings;
@@ -31,7 +30,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
-        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, true);
+        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory,true);
         _httpClientFactory = httpClientFactory;
     }
 

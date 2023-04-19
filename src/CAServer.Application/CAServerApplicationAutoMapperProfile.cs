@@ -18,6 +18,7 @@ using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.Notify;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
@@ -28,6 +29,8 @@ using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
+using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.UserAssets.Dtos;
@@ -254,6 +257,15 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Code, m => m.MapFrom(f => f.CountryCode))
             .ForPath(t => t.Iso, m => m.MapFrom(f => f.Location.CallingCode));
 
+        CreateMap<CreateUserOrderDto, OrderGrainDto>();
+        CreateMap<OrderGrainDto, OrderDto>();
+        CreateMap<OrderDto, OrderGrainDto>();
+        CreateMap<OrderGrainDto, OrderEto>();
+        CreateMap<OrderIndex, OrderDto>();
+        CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
+            .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
+            .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType));
+
         CreateMap<CreateNotifyDto, NotifyGrainDto>();
         CreateMap<UpdateNotifyDto, NotifyGrainDto>();
         CreateMap<NotifyGrainDto, NotifyResultDto>();
@@ -261,5 +273,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<NotifyGrainDto, NotifyEto>();
         CreateMap<NotifyGrainDto, PullNotifyResultDto>();
         CreateMap<ScanLoginDto, ScanLoginEto>().BeforeMap((src, dest) => { dest.Message = "Login Successful"; });
+        
+        CreateMap<CreateUserEto, CAHolderIndex>();
     }
 }

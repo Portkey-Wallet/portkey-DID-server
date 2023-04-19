@@ -8,21 +8,21 @@ namespace CAServer.UserAssets.Provider;
 
 public interface IUserAssetsProvider
 {
-    Task<IndexerTokenInfos> GetUserTokenInfoAsync(List<string> userCaAddresses, string symbol, int inputSkipCount,
+    Task<IndexerTokenInfos> GetUserTokenInfoAsync(List<CAAddressInfo> caAddressInfos, string symbol, int inputSkipCount,
         int inputMaxResultCount);
 
     Task<IndexerChainIds> GetUserChainIdsAsync(List<string> userCaAddresses);
 
-    Task<IndexerNftCollectionInfos> GetUserNftCollectionInfoAsync(List<string> userCaAddresses, int inputSkipCount,
+    Task<IndexerNftCollectionInfos> GetUserNftCollectionInfoAsync(List<CAAddressInfo> caAddressInfos, int inputSkipCount,
         int inputMaxResultCount);
 
-    Task<IndexerNftInfos> GetUserNftInfoAsync(List<string> userCaAddresses, string symbol, int inputSkipCount,
+    Task<IndexerNftInfos> GetUserNftInfoAsync(List<CAAddressInfo> caAddressInfos, string symbol, int inputSkipCount,
         int inputMaxResultCount);
 
-    Task<IndexerRecentTransactionUsers> GetRecentTransactionUsersAsync(List<string> userCaAddresses, int inputSkipCount,
+    Task<IndexerRecentTransactionUsers> GetRecentTransactionUsersAsync(List<CAAddressInfo> caAddressInfos, int inputSkipCount,
         int inputMaxResultCount);
 
-    Task<IndexerSearchTokenNfts> SearchUserAssetsAsync(List<string> userCaAddresses, string keyword, int inputSkipCount,
+    Task<IndexerSearchTokenNfts> SearchUserAssetsAsync(List<CAAddressInfo> caAddressInfos, string keyword, int inputSkipCount,
         int inputMaxResultCount);
 
     Task<List<UserTokenIndex>> GetUserDefaultTokenSymbolAsync(Guid userId);

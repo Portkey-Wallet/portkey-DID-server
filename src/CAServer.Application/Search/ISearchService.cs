@@ -21,7 +21,7 @@ public interface ISearchService
     Task<string> GetListByLucenceAsync(string indexName, GetListInput input);
 }
 
-public abstract class SearchService<TEntity, TKey> : ISearchService 
+public abstract class SearchService<TEntity, TKey> : ISearchService
     where TEntity : class, IEntity<TKey>, new()
 {
     public abstract string IndexName { get; }
@@ -149,6 +149,52 @@ public class AccountRegisterSearchService : SearchService<AccountRegisterIndex, 
         _indexSettingOptions = indexSettingOptions.Value;
     }
 }
+public class OrderSearchService : SearchService<OrderIndex, Guid>
+{
+    private readonly IndexSettingOptions _indexSettingOptions;
+    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.orderindex";
+
+    public OrderSearchService(INESTRepository<OrderIndex, Guid> nestRepository,
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+    {
+        _indexSettingOptions = indexSettingOptions.Value;
+    }
+}
+public class UserExtraInfoSearchService : SearchService<UserExtraInfoIndex, String>
+{
+    private readonly IndexSettingOptions _indexSettingOptions;
+    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.userextrainfoindex";
+
+    public UserExtraInfoSearchService(INESTRepository<UserExtraInfoIndex, String> nestRepository,
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+    {
+        _indexSettingOptions = indexSettingOptions.Value;
+    }
+}
+
+public class NotifySearchService : SearchService<NotifyRulesIndex, Guid>
+{
+    private readonly IndexSettingOptions _indexSettingOptions;
+    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.notifyrulesindex";
+
+    public NotifySearchService(INESTRepository<NotifyRulesIndex, Guid> nestRepository,
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+    {
+        _indexSettingOptions = indexSettingOptions.Value;
+    }
+}
+
+public class GuardianSearchService : SearchService<GuardianIndex, String>
+{
+    private readonly IndexSettingOptions _indexSettingOptions;
+    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.guardianindex";
+
+    public GuardianSearchService(INESTRepository<GuardianIndex, String> nestRepository,
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+    {
+        _indexSettingOptions = indexSettingOptions.Value;
+    }
+}
 
 public class CAHolderSearchService : SearchService<CAHolderIndex, Guid>
 {
@@ -160,4 +206,5 @@ public class CAHolderSearchService : SearchService<CAHolderIndex, Guid>
     {
         _indexSettingOptions = indexSettingOptions.Value;
     }
+    
 }

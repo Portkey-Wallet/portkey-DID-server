@@ -60,7 +60,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "{Message}: {Data}", "Create CA holder fail", JsonConvert.SerializeObject(eventData));
         }
     }
 

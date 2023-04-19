@@ -81,7 +81,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         catch (Exception e)
         {
             var endTime = DateTime.UtcNow.ToUniversalTime();
-            var costTime = (startTime - endTime).TotalMilliseconds;
+            var costTime = (endTime - startTime).TotalMilliseconds;
             _logger.LogDebug("TotalCount Time is {time}", (long)costTime);
             _logger.LogError(e, "{Message}", e.Message);
             throw new UserFriendlyException(e.Message);

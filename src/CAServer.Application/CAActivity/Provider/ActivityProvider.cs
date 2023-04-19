@@ -5,6 +5,7 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.UserAssets;
 using GraphQL;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -27,20 +28,20 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         _chainOptions = chainOptions.Value;
     }
 
-    public async Task<IndexerTransactions> GetActivitiesAsync(List<string> addresses, string inputChainId,
+    public async Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> caAddressInfos, string inputChainId,
         string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
     {
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
             Query = @"
-			    query($chainId:String,$symbol:String,$caAddresses:[String],$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddresses:$caAddresses,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount
                     }
                 }",
             Variables = new
             {
-                caAddresses = addresses, chainId = inputChainId, symbol = symbolOpt,
+                caAddressInfos = caAddressInfos, chainId = inputChainId, symbol = symbolOpt,
                 methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
                 startBlockHeight = 0, endBlockHeight = 0
             }

@@ -6,6 +6,7 @@ public class AppleAuthOptions
 {
     public List<string> Audiences { get; set; }
     public string RedirectUrl { get; set; }
+    public string BingoRedirectUrl { get; set; }
     public ExtensionConfig ExtensionConfig { get; set; }
 }
 

@@ -10,5 +10,6 @@ public class CAServerGrainTestBase :CAServerTestBase<CAServerGrainTestModule>
     public CAServerGrainTestBase()
     {
         Cluster = GetRequiredService<ClusterFixture>().Cluster;
+
     }
 }

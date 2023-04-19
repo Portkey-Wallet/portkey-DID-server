@@ -7,6 +7,7 @@ using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.CrossChain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.Notify;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
@@ -14,8 +15,10 @@ using CAServer.Grains.State.Chain;
 using CAServer.Grains.State.Contacts;
 using CAServer.Grains.State.CrossChain;
 using CAServer.Grains.State.Notify;
+using CAServer.Grains.State.Order;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
+using CAServer.ThirdPart.Dtos;
 using Google.Protobuf.Collections;
 using Portkey.Contracts.CA;
 
@@ -85,6 +88,9 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 opt => opt.MapFrom(g => g.CaHash));
 
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoState>().ReverseMap();
+        CreateMap<OrderState, OrderGrainDto>();
+        CreateMap<OrderGrainDto, OrderCreatedDto>();
+        CreateMap<OrderGrainDto, OrderState>();
         CreateMap<NotifyGrainDto, NotifyState>().ReverseMap();
         CreateMap<NotifyGrainDto, NotifyRulesGrainDto>();
         CreateMap<NotifyRulesGrainDto, NotifyRulesState>().ReverseMap();

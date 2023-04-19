@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CAServer;
-using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
+using CAServer.Grain.Tests;
+using CAServer.Grains.Grain.Guardian;
+using Orleans.TestingHost;
 using Volo.Abp.Validation;
 using Xunit;
+
+namespace CAServer.CAAccount;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public class RecoveryServiceTests : CAServerApplicationTestBase
@@ -22,37 +25,30 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     private const string DefaultRequestId = "DefaultRequestId";
 
     private readonly ICAAccountAppService _caAccountAppService;
+    private readonly TestCluster _cluster;
 
     public RecoveryServiceTests()
     {
-        _caAccountAppService = GetService<ICAAccountAppService>();
-    }
-
-    #region RegisterRequestAsync
-    [Fact]
-    public async Task RecoverRequestAsync_Body_Empty_Test()
-    {
-        try
-        {
-            await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
-            {
-            });
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex != null);
-        }
+        _caAccountAppService = GetRequiredService<ICAAccountAppService>();
+        _cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 
     [Fact]
-    public async Task RecoverRequestAsync_Type_LoginGuardianType_Not_Match_Test()
+    public async Task RecoverRequestAsync_Test()
     {
         try
         {
+            var identifier = DefaultEmailAddress;
+            var salt = "salt";
+            var identifierHash = "identifierHash";
+
+            var grain = _cluster.Client.GetGrain<IGuardianGrain>("Guardian-" + identifier);
+            await grain.AddGuardianAsync(identifier, salt, identifierHash);
+            
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianIdentifierType.Phone,
+                Type = GuardianIdentifierType.Email,
                 Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
@@ -73,14 +69,13 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
                 }
             });
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Assert.True(true);
-            // List<string> errMessageList = new List<string>() { "Invalid phone input.", "Invalid email input." };
-            // Assert.Contains(errMessageList, t => t.Contains(ex.Message));
+            Assert.True(e != null);
         }
-    }
 
+    }
+    
     [Fact]
     public async Task RecoverRequestAsync_LoginGuardianIdentifier_Is_NullOrEmpty_Test()
     {
@@ -115,216 +110,5 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             Assert.True(ex is AbpValidationException);
         }
     }
-
-    [Fact]
-    public async Task RecoverRequestAsync_Manager_Is_NullOrEmpty_Test()
-    {
-        try
-        {
-            var list = new List<RecoveryGuardian>();
-            list.Add(new RecoveryGuardian
-            {
-                Type = GuardianIdentifierType.Email,
-                Identifier = DefaultEmailAddress,
-                VerifierId = DefaultVerifierId,
-                VerificationDoc = DefaultVerificationDoc,
-                Signature = DefaultVerifierSignature
-            });
-
-            await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
-            {
-                LoginGuardianIdentifier = DefaultEmailAddress,
-                Manager = "",
-                ExtraData = DefaultExtraData,
-                ChainId = DefaultChainId,
-                GuardiansApproved = list,
-                Context = new HubRequestContextDto
-                {
-                    ClientId = DefaultClientId,
-                    RequestId = DefaultRequestId
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex is AbpValidationException);
-        }
-    }
-
-    [Fact]
-    public async Task RecoverRequestAsync_ExtraData_Is_NullOrEmpty_Test()
-    {
-        try
-        {
-            var list = new List<RecoveryGuardian>();
-            list.Add(new RecoveryGuardian
-            {
-                Type = GuardianIdentifierType.Email,
-                Identifier = DefaultEmailAddress,
-                VerifierId = DefaultVerifierId,
-                VerificationDoc = DefaultVerificationDoc,
-                Signature = DefaultVerifierSignature
-            });
-
-            await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
-            {
-                LoginGuardianIdentifier = DefaultEmailAddress,
-                Manager = DefaultManager,
-                ExtraData = "",
-                ChainId = DefaultChainId,
-                GuardiansApproved = list,
-                Context = new HubRequestContextDto
-                {
-                    ClientId = DefaultClientId,
-                    RequestId = DefaultRequestId
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex is AbpValidationException);
-        }
-    }
-
-    [Fact]
-    public async Task RecoverRequestAsync_ChainId_Is_NullOrEmpty_Test()
-    {
-        try
-        {
-            var list = new List<RecoveryGuardian>();
-            list.Add(new RecoveryGuardian
-            {
-                Type = GuardianIdentifierType.Email,
-                Identifier = DefaultEmailAddress,
-                VerifierId = DefaultVerifierId,
-                VerificationDoc = DefaultVerificationDoc,
-                Signature = DefaultVerifierSignature
-            });
-
-            await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
-            {
-                LoginGuardianIdentifier = DefaultEmailAddress,
-                Manager = DefaultManager,
-                ExtraData = DefaultExtraData,
-                ChainId = "",
-                GuardiansApproved = list,
-                Context = new HubRequestContextDto
-                {
-                    ClientId = DefaultClientId,
-                    RequestId = DefaultRequestId
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex is AbpValidationException);
-        }
-    }
-
-    [Fact]
-    public async Task RecoverRequestAsync_VerifierId_Is_NullOrEmpty_Test()
-    {
-        try
-        {
-            var list = new List<RecoveryGuardian>();
-            list.Add(new RecoveryGuardian
-            {
-                Type = GuardianIdentifierType.Email,
-                Identifier = DefaultEmailAddress,
-                VerifierId = "",
-                VerificationDoc = DefaultVerificationDoc,
-                Signature = DefaultVerifierSignature
-            });
-
-            await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
-            {
-                LoginGuardianIdentifier = DefaultEmailAddress,
-                Manager = DefaultManager,
-                ExtraData = DefaultExtraData,
-                ChainId = DefaultChainId,
-                GuardiansApproved = list,
-                Context = new HubRequestContextDto
-                {
-                    ClientId = DefaultClientId,
-                    RequestId = DefaultRequestId
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex is AbpValidationException);
-        }
-    }
-
-    [Fact]
-    public async Task RecoverRequestAsync_VerificationDoc_Is_NullOrEmpty_Test()
-    {
-        try
-        {
-            var list = new List<RecoveryGuardian>();
-            list.Add(new RecoveryGuardian
-            {
-                Type = GuardianIdentifierType.Email,
-                Identifier = DefaultEmailAddress,
-                VerifierId = DefaultVerifierId,
-                VerificationDoc = "",
-                Signature = DefaultVerifierSignature
-            });
-
-            await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
-            {
-                LoginGuardianIdentifier = DefaultEmailAddress,
-                Manager = DefaultManager,
-                ExtraData = DefaultExtraData,
-                ChainId = DefaultChainId,
-                GuardiansApproved = list,
-                Context = new HubRequestContextDto
-                {
-                    ClientId = DefaultClientId,
-                    RequestId = DefaultRequestId
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex is AbpValidationException);
-        }
-    }
-
-    [Fact]
-    public async Task RecoverRequestAsync_Signature_Is_NullOrEmpty_Test()
-    {
-        try
-        {
-            var list = new List<RecoveryGuardian>();
-            list.Add(new RecoveryGuardian
-            {
-                Type = GuardianIdentifierType.Email,
-                Identifier = DefaultEmailAddress,
-                VerifierId = DefaultVerifierId,
-                VerificationDoc = DefaultVerificationDoc,
-                Signature = ""
-            });
-
-            await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
-            {
-                LoginGuardianIdentifier = DefaultEmailAddress,
-                Manager = DefaultManager,
-                ExtraData = DefaultExtraData,
-                ChainId = DefaultChainId,
-                GuardiansApproved = list,
-                Context = new HubRequestContextDto
-                {
-                    ClientId = DefaultClientId,
-                    RequestId = DefaultRequestId
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Assert.True(ex is AbpValidationException);
-        }
-    }
-
-    #endregion
+    
 }

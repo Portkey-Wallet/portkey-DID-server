@@ -63,6 +63,14 @@
     <Orleans_CodeGenInputs Remove="Etos\CAAccountRecoveryEto.cs" />
     <Orleans_CodeGenInputs Remove="Service\HttpService.cs" />
     <Orleans_CodeGenInputs Remove="Service\IVerifierServerClient.cs" />
+    <Orleans_CodeGenInputs Remove="Merchant\Dtos\IndexerOrderInfo.cs" />
+    <Orleans_CodeGenInputs Remove="Merchant\Dtos\OrderEnum.cs" />
+    <Orleans_CodeGenInputs Remove="Merchant\Dtos\UserOrderRequestDto.cs" />
+    <Orleans_CodeGenInputs Remove="Merchant\Dtos\UserOrderResponseDto.cs" />
+    <Orleans_CodeGenInputs Remove="Merchant\Etos\OrderEto.cs" />
+    <Orleans_CodeGenInputs Remove="Merchant\IMerchant.cs" />
+    <Orleans_CodeGenInputs Remove="Merchant\IOrderStatus.cs" />
+    <Orleans_CodeGenInputs Remove="Merchant\MerchantType.cs" />
   </ItemGroup>
 
   <ItemGroup>

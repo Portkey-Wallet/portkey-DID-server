@@ -12,6 +12,7 @@ public class Token
 {
     public string ChainId { get; set; }
     public string Symbol { get; set; }
+    public decimal Price { get; set; }
     public string Balance { get; set; }
     public int Decimals { get; set; }
     public string BalanceInUsd { get; set; }

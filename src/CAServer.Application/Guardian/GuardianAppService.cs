@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
+using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Entities.Es;
@@ -32,6 +33,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly ChainOptions _chainOptions;
     private readonly IGuardianProvider _guardianProvider;
     private readonly IClusterClient _clusterClient;
+    private readonly IAppleUserProvider _appleUserProvider;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository,
@@ -39,7 +41,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions,
         IGuardianProvider guardianProvider,
-        IClusterClient clusterClient)
+        IClusterClient clusterClient,
+        IAppleUserProvider appleUserProvider)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -47,6 +50,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _chainOptions = chainOptions.Value;
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
+        _appleUserProvider = appleUserProvider;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -74,7 +78,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException("This address is already registered on another chain.", "20004");
         }
 
-        AddGuardianInfo(guardianResult?.GuardianList?.Guardians, hashDic, userExtraInfos);
+        await AddGuardianInfoAsync(guardianResult?.GuardianList?.Guardians, hashDic, userExtraInfos);
 
         return guardianResult;
     }
@@ -85,11 +89,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
 
         var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
-        
-        var  originChainId = guardian == null
-            ? await GetOrigianChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
+
+        var originChainId = guardian == null
+            ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
             : guardian.OriginChainId;
-        
+
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 
@@ -110,13 +114,14 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         return guardianGrainDto.Data.IdentifierHash;
     }
 
-    private async Task<string> GetOrigianChainIdAsync(string guardianIdentifierHash, string caHash)
+    private async Task<string> GetOriginChainIdAsync(string guardianIdentifierHash, string caHash)
     {
         foreach (var chainInfo in _chainOptions.ChainInfos)
         {
             try
             {
-                var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
+                //var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
+                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
                 if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
             }
             catch (Exception e)
@@ -132,7 +137,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         throw new UserFriendlyException("This address is not registered.", GuardianMessageCode.NotExist);
     }
 
-    private void AddGuardianInfo(List<GuardianDto> guardians, Dictionary<string, string> hashDic,
+    private async Task AddGuardianInfoAsync(List<GuardianDto> guardians, Dictionary<string, string> hashDic,
         List<UserExtraInfoIndex> userExtraInfos)
     {
         if (guardians == null || guardians.Count == 0)
@@ -140,27 +145,27 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             return;
         }
 
-        guardians.ForEach(t =>
+        foreach (var guardian in guardians)
         {
-            t.GuardianIdentifier = hashDic.GetValueOrDefault(t.IdentifierHash);
+            guardian.GuardianIdentifier = hashDic.GetValueOrDefault(guardian.IdentifierHash);
 
-            var extraInfo = userExtraInfos?.FirstOrDefault(f => f.Id == t.GuardianIdentifier);
+            var extraInfo = userExtraInfos?.FirstOrDefault(f => f.Id == guardian.GuardianIdentifier);
             if (extraInfo != null)
             {
-                if (t.Type == GuardianIdentifierType.Google.ToString() ||
-                    t.Type == GuardianIdentifierType.Apple.ToString())
+                guardian.ThirdPartyEmail = extraInfo.Email;
+                if (guardian.Type == GuardianIdentifierType.Google.ToString())
                 {
-                    t.ThirdPartyEmail = extraInfo.Email;
-                    t.FirstName = extraInfo.FirstName;
-                    t.LastName = extraInfo.LastName;
+                    guardian.FirstName = extraInfo.FirstName;
+                    guardian.LastName = extraInfo.LastName;
                 }
 
-                if (t.Type == GuardianIdentifierType.Apple.ToString())
+                if (guardian.Type == GuardianIdentifierType.Apple.ToString())
                 {
-                    t.IsPrivate = extraInfo.IsPrivateEmail;
+                    await SetNameAsync(guardian);
+                    guardian.IsPrivate = extraInfo.IsPrivateEmail;
                 }
             }
-        });
+        }
     }
 
     private async Task<string> GetHashFromIdentifierAsync(string guardianIdentifier)
@@ -182,13 +187,15 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         try
         {
             var chainInfo = _chainOptions.ChainInfos[chainId];
-            return await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
+            //return await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
+            return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "guardian hash call contract GetHolderInfo fail.");
             if (!ex.Message.Contains("Not found ca_hash"))
             {
+                _logger.LogError(ex, "{Message}, {Data}", "guardian hash call contract GetHolderInfo fail.",
+                    $"guardianIdentifierHash={guardianIdentifierHash ?? ""}, chainId={chainId ?? ""}, caHash={caHash ?? ""}, guardianIdentifier={guardianIdentifier ?? ""}");
                 throw new UserFriendlyException(ex.Message);
             }
 
@@ -243,19 +250,37 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
     {
-        if (identifiers == null || identifiers.Count == 0)
+        try
         {
-            return new List<UserExtraInfoIndex>();
+            if (identifiers == null || identifiers.Count == 0)
+            {
+                return new List<UserExtraInfoIndex>();
+            }
+
+            var mustQuery = new List<Func<QueryContainerDescriptor<UserExtraInfoIndex>, QueryContainer>>() { };
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(identifiers)));
+
+            QueryContainer Filter(QueryContainerDescriptor<UserExtraInfoIndex> f) =>
+                f.Bool(b => b.Must(mustQuery));
+
+            var userExtraInfos = await _userExtraInfoRepository.GetListAsync(Filter);
+
+            return userExtraInfos.Item2;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,"in GetUserExtraInfoAsync");
         }
 
-        var mustQuery = new List<Func<QueryContainerDescriptor<UserExtraInfoIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(identifiers)));
+        return new List<UserExtraInfoIndex>();
+    }
 
-        QueryContainer Filter(QueryContainerDescriptor<UserExtraInfoIndex> f) =>
-            f.Bool(b => b.Must(mustQuery));
+    private async Task SetNameAsync(GuardianDto guardian)
+    {
+        var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(guardian.GuardianIdentifier);
+        if (userInfo == null) return;
 
-        var userExtraInfos = await _userExtraInfoRepository.GetListAsync(Filter);
-
-        return userExtraInfos.Item2;
+        guardian.FirstName = userInfo.FirstName;
+        guardian.LastName = userInfo.LastName;
     }
 }

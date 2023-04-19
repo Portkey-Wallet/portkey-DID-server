@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.UserAssets;
 using Microsoft.Extensions.Options;
 using Moq;
 using Volo.Abp.Application.Dtos;
@@ -17,7 +19,7 @@ public partial class UserActivityAppServiceTests
     {
         var mockActivityProvider = new Mock<IActivityProvider>();
 
-        mockActivityProvider.Setup(m => m.GetActivitiesAsync(It.IsAny<List<string>>(), It.IsAny<string>(),
+        mockActivityProvider.Setup(m => m.GetActivitiesAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(),
             It.IsAny<string>(), It.IsAny<List<string>>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
             new IndexerTransactions
             {
@@ -87,7 +89,7 @@ public partial class UserActivityAppServiceTests
         {
             TokenInfo = new List<SymbolInfo>
             {
-                new ()
+                new()
                 {
                     Decimals = 8
                 }

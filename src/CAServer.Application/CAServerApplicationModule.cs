@@ -1,6 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
-using CAServer.Alchemy;
 using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Device;
@@ -47,6 +46,12 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, AccountRecoverySearchService>();
         context.Services.AddSingleton<ISearchService, AccountRegisterSearchService>();
         context.Services.AddSingleton<ISearchService, CAHolderSearchService>();
+        context.Services.AddSingleton<ISearchService, OrderSearchService>();
+        context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
+        context.Services.AddSingleton<ISearchService, NotifySearchService>();
+        context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        
+        
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -56,9 +61,10 @@ public class CAServerApplicationModule : AbpModule
         //Configure<IndexPrefixOptions>(configuration.GetSection("IndexPrefixSetting"));
         Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
         Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
-        Configure<AlchemyOptions>(configuration.GetSection("Alchemy"));
+        Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
         Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
         Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));
+        Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

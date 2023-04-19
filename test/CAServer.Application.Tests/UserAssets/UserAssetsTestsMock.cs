@@ -34,7 +34,7 @@ public partial class UserAssetsTests
             });
 
         mockUserAssetsProvider.Setup(m =>
-                m.GetUserTokenInfoAsync(It.IsAny<List<string>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                m.GetUserTokenInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new IndexerTokenInfos
             {
                 CaHolderTokenBalanceInfo = new CaHolderTokenBalanceInfo
@@ -62,7 +62,7 @@ public partial class UserAssetsTests
             });
 
         mockUserAssetsProvider.Setup(m =>
-            m.GetUserNftCollectionInfoAsync(It.IsAny<List<string>>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            m.GetUserNftCollectionInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
             new IndexerNftCollectionInfos
             {
                 CaHolderNFTCollectionBalanceInfo = new CaHolderNFTCollectionBalanceInfo
@@ -88,7 +88,7 @@ public partial class UserAssetsTests
             });
 
         mockUserAssetsProvider.Setup(m =>
-                m.GetUserNftInfoAsync(It.IsAny<List<string>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                m.GetUserNftInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(
                 new IndexerNftInfos
                 {
@@ -135,7 +135,7 @@ public partial class UserAssetsTests
             });
 
         mockUserAssetsProvider.Setup(m =>
-            m.GetRecentTransactionUsersAsync(It.IsAny<List<string>>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            m.GetRecentTransactionUsersAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
             new IndexerRecentTransactionUsers
             {
                 CaHolderTransactionAddressInfo = new CaHolderTransactionAddressInfo
@@ -156,7 +156,7 @@ public partial class UserAssetsTests
             });
         
         mockUserAssetsProvider.Setup(m =>
-            m.SearchUserAssetsAsync(It.IsAny<List<string>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            m.SearchUserAssetsAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
             new IndexerSearchTokenNfts
             {
                 CaHolderSearchTokenNFT = new CaHolderSearchTokenNFT

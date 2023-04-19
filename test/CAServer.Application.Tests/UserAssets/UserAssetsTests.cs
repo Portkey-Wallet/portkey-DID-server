@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.UserAssets.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Shouldly;
@@ -36,7 +37,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         _currentUser.Id.Returns(userId);
         _currentUser.IsAuthenticated.Returns(true);
     }
-    
+
     [Fact]
     public async Task GetTokenTest()
     {
@@ -51,12 +52,12 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
 
         var result = await _userAssetsAppService.GetTokenAsync(param);
         result.TotalRecordCount.ShouldBe(1);
-        
+
         var data = result.Data.First();
         data.Balance.ShouldBe(1000.ToString());
         data.Symbol.ShouldBe("ELF");
         data.ChainId.ShouldBe("AELF");
-        data.BalanceInUsd.ShouldBe(2000.ToString());
+        data.BalanceInUsd.ShouldBe("0.00002");
     }
 
     [Fact]
@@ -72,7 +73,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
 
         var result = await _userAssetsAppService.GetNFTCollectionsAsync(param);
         result.TotalRecordCount.ShouldBe(1);
-        
+
         var data = result.Data.First();
         data.Symbol.ShouldBe("TEST-0");
         data.ChainId.ShouldBe("AELF");
@@ -92,7 +93,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
 
         var result = await _userAssetsAppService.GetNFTItemsAsync(param);
         result.TotalRecordCount.ShouldBe(1);
-        
+
         var data = result.Data.First();
         data.Symbol.ShouldBe("TEST-1");
         data.ChainId.ShouldBe("AELF");
@@ -111,7 +112,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
 
         var result = await _userAssetsAppService.GetRecentTransactionUsersAsync(param);
         result.TotalRecordCount.ShouldBe(1);
-        
+
         var data = result.Data.First();
         data.ChainId.ShouldBe("AELF");
         data.Name.ShouldBe("test");
@@ -131,10 +132,21 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
 
         var result = await _userAssetsAppService.SearchUserAssetsAsync(param);
         result.TotalRecordCount.ShouldBe(1);
-        
+
         var data = result.Data.First();
         data.Symbol.ShouldBe("ELF");
         data.ChainId.ShouldBe("AELF");
-        data.TokenInfo.BalanceInUsd.ShouldBe(2000.ToString());
+        data.TokenInfo.BalanceInUsd.ShouldBe("0.00002");
+    }
+
+    [Fact]
+    public async Task GetSymbolImagesAsyncTest()
+    {
+        Login(Guid.NewGuid());
+        var result = _userAssetsAppService.GetSymbolImagesAsync();
+        result.SymbolImages.Count().ShouldBe(1);
+        var data = result.SymbolImages.First();
+        data.Key.ShouldBe("ELF");
+        data.Value.ShouldBe("ImageUrl");
     }
 }

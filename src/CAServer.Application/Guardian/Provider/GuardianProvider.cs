@@ -1,10 +1,13 @@
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.Common;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Portkey.Contracts.CA;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Guardian.Provider;
@@ -23,11 +26,6 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
         return await GetGuardianListByScanAsync(loginGuardianIdentifierHash, caHash);
     }
 
-    public Task<string> GetRegisterChainIdAsync(string loginGuardianIdentifierHash, string caHash)
-    {
-        throw new System.NotImplementedException();
-    }
-
     private async Task<GuardiansDto> GetGuardianListByScanAsync(string loginGuardianIdentifierHash, string caHash)
     {
         return await _graphQlHelper.QueryAsync<GuardiansDto>(new GraphQLRequest
@@ -42,5 +40,30 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
                 caHash, loginGuardianIdentifierHash, skipCount = 0, maxResultCount = 10
             }
         });
+    }
+
+    public async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(
+        string guardianIdentifierHash,
+        string caHash,
+        ChainInfo chainInfo)
+    {
+        var param = new GetHolderInfoInput();
+
+        if (!string.IsNullOrWhiteSpace(caHash))
+        {
+            param.CaHash = Hash.LoadFromHex(caHash);
+            param.LoginGuardianIdentifierHash = null;
+        }
+        else
+        {
+            param.LoginGuardianIdentifierHash = Hash.LoadFromHex(guardianIdentifierHash);
+            param.CaHash = null;
+        }
+
+        var output =
+            await ContractHelper.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param, false,
+                chainInfo);
+
+        return output;
     }
 }
