@@ -78,10 +78,11 @@ public class NotifyGrain : Grain<NotifyState>, INotifyGrain
             return result;
         }
 
-        State = _objectMapper.Map<NotifyGrainDto, NotifyState>(notifyDto);
-        //State.Id = this.GetPrimaryKey();
         var rules = await AddOrUpdateRulesAsync(State.RulesId, notifyDto);
-
+        State = _objectMapper.Map<NotifyGrainDto, NotifyState>(notifyDto);
+        State.Id = this.GetPrimaryKey();
+        State.RulesId = rules.Id;
+        
         await WriteStateAsync();
 
         var notifyData = _objectMapper.Map<NotifyState, NotifyGrainDto>(State);

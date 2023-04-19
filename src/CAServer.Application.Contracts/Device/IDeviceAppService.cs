@@ -7,5 +7,5 @@ public interface IDeviceAppService
 {
     Task<DeviceServiceResultDto> EncryptDeviceInfoAsync(DeviceServiceDto serviceDto);
     Task<DeviceServiceResultDto> DecryptDeviceInfoAsync(DeviceServiceDto serviceDto);
-    Task<string> EncryptExtraDataAsync(string extraData);
+    Task<string> EncryptExtraDataAsync(string extraData, string str);
 }

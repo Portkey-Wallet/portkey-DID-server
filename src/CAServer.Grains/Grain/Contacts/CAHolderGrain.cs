@@ -63,4 +63,9 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
         return result;
     }
+
+    public Task<string> GetCAHashAsync()
+    {
+        return Task.FromResult(State.CaHash);
+    }
 }

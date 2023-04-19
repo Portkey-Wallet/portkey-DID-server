@@ -1,7 +1,6 @@
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
-using AElf.Contracts.MultiToken;
 using AElf.Standards.ACS7;
 using AElf.Types;
 using Google.Protobuf;
@@ -151,7 +150,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             {
                 syncHolderInfoInput = await UpdateMerkleTreeAsync(chainId, client, syncHolderInfoInput);
             }
-            
+
             return syncHolderInfoInput;
         }
         catch (Exception e)
@@ -161,7 +160,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
-    private async Task<SyncHolderInfoInput> UpdateMerkleTreeAsync(string chainId, AElfClient client, 
+    private async Task<SyncHolderInfoInput> UpdateMerkleTreeAsync(string chainId, AElfClient client,
         SyncHolderInfoInput syncHolderInfoInput)
     {
         try
@@ -185,7 +184,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             var context = CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
 
-            syncHolderInfoInput.VerificationTransactionInfo.MerklePath.MerklePathNodes.AddRange(context.MerklePathFromParentChain.MerklePathNodes);
+            syncHolderInfoInput.VerificationTransactionInfo.MerklePath.MerklePathNodes.AddRange(
+                context.MerklePathFromParentChain.MerklePathNodes);
 
             syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight = context.BoundParentChainHeight;
 
@@ -193,7 +193,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdateMerkleTree error, syncHolderInfoInput: {info}", JsonConvert.SerializeObject(syncHolderInfoInput.VerificationTransactionInfo.ToString()));
+            _logger.LogError(e, "UpdateMerkleTree error, syncHolderInfoInput: {info}",
+                JsonConvert.SerializeObject(syncHolderInfoInput.VerificationTransactionInfo.ToString()));
             return new SyncHolderInfoInput();
         }
     }

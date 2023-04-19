@@ -44,7 +44,7 @@ public class EncryptionProvider : IEncryptionProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "AESEncrypt Error");
+            _logger.LogError(e, "AESEncrypt Error: {str}", encryptStr);
             throw new Exception("AESEncrypt Error");
         }
     }
@@ -73,7 +73,7 @@ public class EncryptionProvider : IEncryptionProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "AESDecrypt Error");
+            _logger.LogError(e, "AESDecrypt Error: {str}", decryptStr);
             throw new Exception("AESDecrypt Error");
         }
     }

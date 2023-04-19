@@ -7,7 +7,9 @@ using CAServer.ContractEventHandler;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
+using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.Device;
 using CAServer.Hubs;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -88,6 +90,9 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         try
         {
             _logger.LogDebug("the second event: update register grain.");
+
+            await SwapGrainStateAsync(eventData.CaHash, eventData.GrainId);
+            
             var grain = _clusterClient.GetGrain<IRegisterGrain>(eventData.GrainId);
             var result =
                 await grain.UpdateRegisterResultAsync(
@@ -178,4 +183,12 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         : accountSuccess.Value
             ? AccountOperationStatus.Pass
             : AccountOperationStatus.Fail;
+
+    private async Task SwapGrainStateAsync(string caHash, string grainId)
+    {
+        var newDeviceGrain = _clusterClient.GetGrain<IDeviceGrain>(GrainIdHelper.GenerateGrainId("Device", caHash));
+        var prevDeviceGrain = _clusterClient.GetGrain<IDeviceGrain>(GrainIdHelper.GenerateGrainId("Device", grainId));
+        var salt = await prevDeviceGrain.GetOrGenerateSaltAsync();
+        await newDeviceGrain.SetSaltAsync(salt);
+    }
 }

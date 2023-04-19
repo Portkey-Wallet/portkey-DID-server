@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Device.Dtos;
 using CAServer.Grains;
+using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Device;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -34,26 +37,20 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
 
     public async Task<DeviceServiceResultDto> EncryptDeviceInfoAsync(DeviceServiceDto serviceDto)
     {
-        return await ProcessDeviceInfoAsync(serviceDto, EncryptAsync);
+        return await ProcessDeviceInfoAsync(serviceDto, Encrypt);
     }
 
     public async Task<DeviceServiceResultDto> DecryptDeviceInfoAsync(DeviceServiceDto serviceDto)
     {
-        return await ProcessDeviceInfoAsync(serviceDto, DecryptAsync);
+        return await ProcessDeviceInfoAsync(serviceDto, Decrypt);
     }
 
-    public async Task<string> EncryptExtraDataAsync(string extraData)
+    public async Task<string> EncryptExtraDataAsync(string extraData, string str)
     {
         try
         {
-            var salt = await GetSaltAsync();
-
-            if (extraData.IsNullOrWhiteSpace())
-            {
-                _logger.LogWarning("ExtraDataEncrypt Error: extra data is empty");
-                return extraData;
-            }
-
+            var salt = await GetSaltAsync(str);
+            
             var data = JsonConvert.DeserializeObject<ExtraDataType>(extraData);
 
             if (data.DeviceInfo.IsNullOrWhiteSpace())
@@ -62,18 +59,28 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
                 return extraData;
             }
 
-            data.DeviceInfo = EncryptAsync(data.DeviceInfo, salt);
+            data.DeviceInfo = Encrypt(data.DeviceInfo, salt);
 
-            return JsonConvert.SerializeObject(data);
+            var jsonSerializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            };
+
+            return JsonConvert.SerializeObject(data, jsonSerializerSettings);
+        }
+        catch (JsonSerializationException e)
+        {
+            _logger.LogError("ExtraDataEncrypt JsonSerialization Error: {extraData}", extraData);
+            return extraData;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "ExtraDataEncrypt Error: {extraData}", extraData);
-            return string.Empty;
+            return TimeStampHelper.GetTimeStampInMilliseconds();
         }
     }
 
-    private string EncryptAsync(string input, string salt)
+    private string Encrypt(string input, string salt)
     {
         try
         {
@@ -82,11 +89,11 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
         catch (Exception e)
         {
             _logger.LogError(e, "Encrypt Error");
-            return string.Empty;
+            return TimeStampHelper.GetTimeStampInMilliseconds();
         }
     }
 
-    private string DecryptAsync(string input, string salt)
+    private string Decrypt(string input, string salt)
     {
         try
         {
@@ -95,13 +102,13 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
         catch (Exception e)
         {
             _logger.LogError(e, "Decrypt Error");
-            return string.Empty;
+            return TimeStampHelper.GetTimeStampInMilliseconds();
         }
     }
 
-    private async Task<string> GetSaltAsync()
+    private async Task<string> GetSaltAsync(string str)
     {
-        var grainId = GrainIdHelper.GenerateGrainId("Device", CurrentUser.GetId());
+        var grainId = GrainIdHelper.GenerateGrainId("Device", str);
         var grain = _clusterClient.GetGrain<IDeviceGrain>(grainId);
         var salt = await grain.GetOrGenerateSaltAsync();
 
@@ -113,7 +120,10 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
     private async Task<DeviceServiceResultDto> ProcessDeviceInfoAsync(DeviceServiceDto serviceDto,
         DeviceDelegation delegation)
     {
-        var salt = await GetSaltAsync();
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(CurrentUser.GetId());
+        var str = grain.GetCAHashAsync().Result;
+
+        var salt = await GetSaltAsync(str);
 
         var result = new List<string>();
 
@@ -132,7 +142,7 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
                 result.Add(delegation(info, salt));
             }
         }
-        
+
         serviceDto.Data = result;
 
         return new DeviceServiceResultDto

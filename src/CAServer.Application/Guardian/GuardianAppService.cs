@@ -65,11 +65,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         var identifierHashList = holderInfo.GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex()).ToList();
         var hashDic = await GetIdentifiersAsync(identifierHashList);
-
-        var identifiers = guardianResult?.GuardianList?.Guardians?.Where(t =>
-                t.Type == GuardianIdentifierType.Google.ToString() || t.Type == GuardianIdentifierType.Apple.ToString())
-            ?
-            .Select(t => t.GuardianIdentifier)?.ToList();
+        var identifiers = hashDic?.Values?.ToList();
 
         var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
 

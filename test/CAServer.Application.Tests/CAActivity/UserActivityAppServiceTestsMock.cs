@@ -85,9 +85,9 @@ public partial class UserActivityAppServiceTests
         mockActivityProvider.Setup(m => m.GetCaHolderNickName(It.IsAny<Guid>())).ReturnsAsync("nickname");
         mockActivityProvider.Setup(m => m.GetTokenDecimalsAsync(It.IsAny<string>())).ReturnsAsync(new IndexerSymbols
         {
-            TokenInfo =
+            TokenInfo = new List<SymbolInfo>
             {
-                new SymbolInfo
+                new ()
                 {
                     Decimals = 8
                 }

@@ -20,27 +20,27 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IContractProvider
 {
-    public Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId,
+    Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId,
         Hash loginGuardian, string caHash);
 
-    public Task<int> GetChainIdAsync(string chainId);
-    public Task<long> GetBlockHeightAsync(string chainId);
-    public Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string txId);
-    public Task<long> GetIndexHeightFromSideChainAsync(string sideChainId);
-    public Task<long> GetIndexHeightFromMainChainAsync(string chainId, int sideChainId);
-    public Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto);
-    public Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto);
+    Task<int> GetChainIdAsync(string chainId);
+    Task<long> GetBlockHeightAsync(string chainId);
+    Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string txId);
+    Task<long> GetIndexHeightFromSideChainAsync(string sideChainId);
+    Task<long> GetIndexHeightFromMainChainAsync(string chainId, int sideChainId);
+    Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto);
+    Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto);
 
-    public Task<TransactionInfoDto> ValidateTransactionAsync(string chainId,
+    Task<TransactionInfoDto> ValidateTransactionAsync(string chainId,
         GetHolderInfoOutput result, RepeatedField<string> unsetLoginGuardians);
 
-    public Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfoDto transactionInfoDto);
+    Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfoDto transactionInfoDto);
 
-    public Task<TransactionResultDto> SyncTransactionAsync(string chainId,
+    Task<TransactionResultDto> SyncTransactionAsync(string chainId,
         SyncHolderInfoInput syncHolderInfoInput);
 
-    public Task MainChainCheckSideChainBlockIndex(string chainIdSide, long txHeight);
-    public Task SideChainCheckMainChainBlockIndex(string sideChainId, long txHeight);
+    Task MainChainCheckSideChainBlockIndexAsync(string chainIdSide, long txHeight);
+    Task SideChainCheckMainChainBlockIndexAsync(string sideChainId, long txHeight);
 
     Task<ChainStatusDto> GetChainStatusAsync(string chainId);
     Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false);
@@ -302,7 +302,8 @@ public class ContractProvider : IContractProvider
 
             if (chainId != ContractAppServiceConstant.MainChainId)
             {
-                await MainChainCheckSideChainBlockIndex(chainId, transactionInfoDto.TransactionResultDto.BlockNumber);
+                await MainChainCheckSideChainBlockIndexAsync(chainId,
+                    transactionInfoDto.TransactionResultDto.BlockNumber);
             }
 
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
@@ -321,7 +322,7 @@ public class ContractProvider : IContractProvider
         }
     }
 
-    public async Task MainChainCheckSideChainBlockIndex(string chainIdSide, long txHeight)
+    public async Task MainChainCheckSideChainBlockIndexAsync(string chainIdSide, long txHeight)
     {
         var mainHeight = long.MaxValue;
         var checkResult = false;
@@ -353,7 +354,7 @@ public class ContractProvider : IContractProvider
         CheckIndexBlockHeightResult(checkResult, time);
     }
 
-    public async Task SideChainCheckMainChainBlockIndex(string sideChainId, long txHeight)
+    public async Task SideChainCheckMainChainBlockIndexAsync(string sideChainId, long txHeight)
     {
         var checkResult = false;
         var time = 0;
