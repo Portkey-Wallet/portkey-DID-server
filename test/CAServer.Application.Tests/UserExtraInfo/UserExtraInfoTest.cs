@@ -20,7 +20,7 @@ public partial class UserExtraInfoTest : CAServerApplicationTestBase
 
     public UserExtraInfoTest()
     {
-        _userExtraInfoAppService = GetService<IUserExtraInfoAppService>();
+        _userExtraInfoAppService = GetRequiredService<IUserExtraInfoAppService>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
