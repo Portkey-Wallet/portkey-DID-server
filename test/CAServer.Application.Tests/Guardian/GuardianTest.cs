@@ -31,8 +31,8 @@ public partial class GuardianTest : CAServerApplicationTestBase
 
     public GuardianTest()
     {
-        _guardianAppService = GetService<IGuardianAppService>();
-        _guardiansRepository = GetService<INESTRepository<GuardianIndex, string>>();
+        _guardianAppService = GetRequiredService<IGuardianAppService>();
+        _guardiansRepository = GetRequiredService<INESTRepository<GuardianIndex, string>>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 

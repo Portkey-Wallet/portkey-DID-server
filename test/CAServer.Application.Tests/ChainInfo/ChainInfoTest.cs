@@ -20,7 +20,7 @@ public class ChainInfoTest : CAServerApplicationTestBase
 
     public ChainInfoTest()
     {
-        _chainsService = GetService<IChainAppService>();
+        _chainsService = GetRequiredService<IChainAppService>();
     }
 
     [Fact]

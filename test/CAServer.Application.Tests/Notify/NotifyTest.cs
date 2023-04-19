@@ -17,8 +17,8 @@ public class NotifyTest : CAServerApplicationTestBase
 
     public NotifyTest()
     {
-        _notifyAppService = GetService<INotifyAppService>();
-        _notifyRulesRepository = GetService<INESTRepository<NotifyRulesIndex, Guid>>();
+        _notifyAppService = GetRequiredService<INotifyAppService>();
+        _notifyRulesRepository = GetRequiredService<INESTRepository<NotifyRulesIndex, Guid>>();
     }
 
     [Fact]

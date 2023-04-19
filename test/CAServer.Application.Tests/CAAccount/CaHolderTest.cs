@@ -26,7 +26,7 @@ public class CaHolderTest : CAServerApplicationTestBase
     
     public CaHolderTest()
     {
-        _nickNameAppService = GetService<INickNameAppService>();
+        _nickNameAppService = GetRequiredService<INickNameAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 
