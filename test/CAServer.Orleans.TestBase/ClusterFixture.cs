@@ -1,3 +1,4 @@
+using System.Net;
 using AutoMapper;
 using CAServer.Grains;
 using Microsoft.Extensions.Caching.Distributed;
@@ -35,7 +36,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     {
         public void Configure(ISiloHostBuilder hostBuilder)
         {
-            hostBuilder.ConfigureServices(services =>
+            hostBuilder.ConfigureEndpoints(
+                    IPAddress.Parse("127.0.0.1"), 10001, 20001, true
+                ).ConfigureServices(services =>
                 {
                     // services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
                     // services.AddSingleton<IRequestLimitProvider, RequestLimitProvider>();
@@ -47,10 +50,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     // services.AddSingleton(typeof(IDistributedCache<>), typeof(MemoryDistributedCache<>));
                     services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
 
-                    services.Configure<AbpDistributedCacheOptions>(cacheOptions =>
-                    {
-                        cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);
-                    });
+                    services.Configure<AbpDistributedCacheOptions>(cacheOptions => { cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20); });
                     // services.AddSingleton<ICancellationTokenProvider>(NullCancellationTokenProvider.Instance);
                     // services.AddTransient(
                     //     typeof(IDistributedCacheSerializer),
@@ -97,7 +97,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                         Mapper = sp.GetRequiredService<IMapper>()
                     });
                     services.AddTransient<IMapperAccessor>(provider => provider.GetRequiredService<MapperAccessor>());
-                    
+
                     // services.Configure<CoinGeckoOptions>(o => { o.CoinIdMapping["ELF"] = "aelf"; });
                 })
                 // .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName)

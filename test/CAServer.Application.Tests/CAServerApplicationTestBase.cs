@@ -12,9 +12,9 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
         Cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 
-    public override void Dispose()
-    {
-        Cluster.Dispose();
-        base.Dispose();
-    }
+    // public override void Dispose()
+    // {
+    //     // Cluster.Dispose();
+    //     // base.Dispose();
+    // }
 }
