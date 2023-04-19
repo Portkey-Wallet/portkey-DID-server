@@ -23,6 +23,7 @@ public class IndexOptions
     public int IndexDelay { get; set; }
     public long IndexInterval { get; set; }
     public long IndexSafe { get; set; }
+    public long IndexTimes { get; set; }
 }
 
 public class GraphQLOptions

@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
+using Portkey.Contracts.CA;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -35,11 +36,11 @@ public class ContractAppService : IContractAppService
     private readonly ILogger<ContractAppService> _logger;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptions<ChainOptions> chainOptions,
-        IOptions<IndexOptions> contractOptions, IGraphQLProvider graphQLProvider, IContractProvider contractProvider,
+        IOptions<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider, IContractProvider contractProvider,
         IObjectMapper objectMapper, ILogger<ContractAppService> logger)
     {
         _distributedEventBus = distributedEventBus;
-        _indexOptions = contractOptions.Value;
+        _indexOptions = indexOptions.Value;
         _chainOptions = chainOptions.Value;
         _graphQLProvider = graphQLProvider;
         _contractProvider = contractProvider;
@@ -80,11 +81,11 @@ public class ContractAppService : IContractAppService
             return;
         }
 
-        var checkCaHolderExists = await CheckHolderExistsOnBothChains(createHolderDto.GuardianAccountInfo.Value);
+        var checkCaHolderExists = await CheckHolderExistsOnBothChains(createHolderDto.GuardianInfo.IdentifierHash);
 
         if (!checkCaHolderExists)
         {
-            registerResult.RegisterMessage = "LoginGuardianAccount: " + createHolderDto.GuardianAccountInfo.Value +
+            registerResult.RegisterMessage = "LoginGuardian: " + createHolderDto.GuardianInfo.IdentifierHash +
                                              " already exists";
             registerResult.RegisterSuccess = false;
 
@@ -114,9 +115,9 @@ public class ContractAppService : IContractAppService
 
         var outputGetHolderInfo =
             await _contractProvider.GetHolderInfoFromChainAsync(createHolderDto.ChainId,
-                createHolderDto.GuardianAccountInfo.Value, null);
+                createHolderDto.GuardianInfo.IdentifierHash, null);
 
-        if (outputGetHolderInfo.CaHash.IsNullOrEmpty())
+        if (outputGetHolderInfo.CaHash == null || outputGetHolderInfo.CaHash.Value.IsEmpty)
         {
             registerResult.RegisterMessage = "No account found";
             registerResult.RegisterSuccess = false;
@@ -188,9 +189,9 @@ public class ContractAppService : IContractAppService
         }
 
         var outputGetHolderInfo = await _contractProvider.GetHolderInfoFromChainAsync(socialRecoveryDto.ChainId,
-            socialRecoveryDto.LoginGuardianAccount, null);
+            socialRecoveryDto.LoginGuardianIdentifierHash, null);
 
-        if (outputGetHolderInfo.CaHash.IsNullOrEmpty())
+        if (outputGetHolderInfo.CaHash == null || outputGetHolderInfo.CaHash.Value.IsEmpty)
         {
             recoveryResult.RecoveryMessage = "No account found";
             recoveryResult.RecoverySuccess = false;
@@ -219,7 +220,8 @@ public class ContractAppService : IContractAppService
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var transactionDto =
             await _contractProvider.ValidateTransactionAsync(chainId, result, null);
-        var syncHolderInfoInput = await _contractProvider.GetSyncHolderInfoInputAsync(chainId, transactionDto);
+        var syncHolderInfoInput =
+            await _contractProvider.GetSyncHolderInfoInputAsync(chainId, transactionDto);
 
         var syncSucceed = true;
 
@@ -233,7 +235,7 @@ public class ContractAppService : IContractAppService
             foreach (var sideChain in _chainOptions.ChainInfos.Values.Where(c =>
                          !c.IsMainChain && c.ChainId != optionChainId))
             {
-                await SideChainCheckMainChainBlockIndex(sideChain.ChainId,
+                await _contractProvider.SideChainCheckMainChainBlockIndex(sideChain.ChainId,
                     syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight);
 
                 var resultDto = await _contractProvider.SyncTransactionAsync(sideChain.ChainId, syncHolderInfoInput);
@@ -242,89 +244,43 @@ public class ContractAppService : IContractAppService
         }
         else
         {
-            var mainChain = _chainOptions.ChainInfos.Values.First(c => c.IsMainChain);
-            await MainChainCheckSideChainBlockIndex(chainId,
-                syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight);
+            var syncResult =
+                await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
+                    syncHolderInfoInput);
 
-            await _contractProvider.SyncTransactionAsync(mainChain.ChainId, syncHolderInfoInput);
-
-            syncSucceed = await ValidateTransactionAndSyncAsync(mainChain.ChainId, result, chainId);
+            // result = await _contractProvider.GetHolderInfoFromChainAsync(ContractAppServiceConstant.MainChainId, Hash.Empty, result.CaHash.ToHex());
+            //
+            // syncSucceed =
+            //     await ValidateTransactionAndSyncAsync(ContractAppServiceConstant.MainChainId, result, chainId);
+            syncSucceed = syncResult.Status == TransactionState.Mined;
         }
 
         return syncSucceed;
     }
 
-    private async Task MainChainCheckSideChainBlockIndex(string chainIdSide, long txHeight)
-    {
-        var mainHeight = long.MaxValue;
-        var checkResult = false;
-        var sideChainIdInInt = await _contractProvider.GetChainIdAsync(chainIdSide);
-
-        var mainChain = _chainOptions.ChainInfos.Values.First(c => c.IsMainChain);
-
-        while (!checkResult)
-        {
-            var indexSideChainBlock =
-                await _contractProvider.GetIndexHeightFromMainChainAsync(mainChain.ChainId, sideChainIdInInt);
-
-            if (indexSideChainBlock < txHeight)
-            {
-                _logger.LogInformation("Block is not recorded, waiting...");
-                await Task.Delay(_indexOptions.IndexDelay);
-                continue;
-            }
-
-            mainHeight = mainHeight == long.MaxValue
-                ? await _contractProvider.GetBlockHeightAsync(mainChain.ChainId)
-                : mainHeight;
-
-            var indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainIdSide);
-            checkResult = indexMainChainBlock > mainHeight;
-        }
-    }
-
-    private async Task SideChainCheckMainChainBlockIndex(string chainIdSide, long txHeight)
-    {
-        var checkResult = false;
-
-        while (!checkResult)
-        {
-            var indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainIdSide);
-
-            if (indexMainChainBlock < txHeight)
-            {
-                _logger.LogInformation("Block is not recorded, waiting...");
-                await Task.Delay(_indexOptions.IndexDelay);
-                continue;
-            }
-
-            checkResult = true;
-        }
-    }
-
-    private async Task<bool> CheckHolderExistsOnBothChains(string loginGuardianAccount)
+    private async Task<bool> CheckHolderExistsOnBothChains(Hash loginGuardian)
     {
         var tasks = new List<Task<bool>>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            tasks.Add(CheckHolderExists(chainId, loginGuardianAccount));
+            tasks.Add(CheckHolderExists(chainId, loginGuardian));
         }
 
         var results = await tasks.WhenAll();
 
-        return results.All(r => r == false);
+        return results.All(r => !r);
     }
 
-    private async Task<bool> CheckHolderExists(string chainId, string loginGuardianAccount)
+    private async Task<bool> CheckHolderExists(string chainId, Hash loginGuardian)
     {
-        var outputMain = await _contractProvider.GetHolderInfoFromChainAsync(chainId, loginGuardianAccount, null);
-        if (outputMain.CaHash.IsNullOrEmpty())
+        var outputMain = await _contractProvider.GetHolderInfoFromChainAsync(chainId, loginGuardian, null);
+        if (outputMain.CaHash == null || outputMain.CaHash.Value.IsEmpty)
         {
             return false;
         }
 
-        _logger.LogInformation("LoginGuardianAccount: {loginGuardianAccount} on chain {id} is occupied",
-            loginGuardianAccount, chainId);
+        _logger.LogInformation("LoginGuardian: {loginGuardian} on chain {id} is occupied",
+            loginGuardian.ToHex(), chainId);
         return true;
     }
 
@@ -333,7 +289,7 @@ public class ContractAppService : IContractAppService
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
             _logger.LogInformation("QueryEventsAndSync on chain: {id} Starts", chainId);
-            await QueryLoginGuardianAccountEventsAndSyncAsync(chainId);
+            await QueryLoginGuardianEventsAndSyncAsync(chainId);
             await QueryManagerEventsAndSyncAsync(chainId);
         }
     }
@@ -345,10 +301,10 @@ public class ContractAppService : IContractAppService
             return ContractAppServiceConstant.LongError;
         }
 
-        var height = lastEndHeight + 1 + interval;
-        var height2 = currentIndexHeight - _indexOptions.IndexSafe;
+        var nextQueryHeight = lastEndHeight + 1 + interval;
+        var currentSafeIndexHeight = currentIndexHeight - _indexOptions.IndexSafe;
 
-        return height < height2 ? height : height2;
+        return nextQueryHeight < currentSafeIndexHeight ? nextQueryHeight : currentSafeIndexHeight;
     }
 
     private async Task SyncQueryEventsAsync(string chainId, long lastChainHeight,
@@ -359,7 +315,7 @@ public class ContractAppService : IContractAppService
         {
             foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
             {
-                await SideChainCheckMainChainBlockIndex(info.ChainId, lastChainHeight);
+                await _contractProvider.SideChainCheckMainChainBlockIndex(info.ChainId, lastChainHeight);
 
                 foreach (var dto in dict.Keys)
                 {
@@ -373,37 +329,36 @@ public class ContractAppService : IContractAppService
 
                     await _graphQLProvider.SetLastEndHeightAsync(chainId, queryType, dto.BlockHeight);
                     _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
-                        dto.ChangeType,
-                        chainInfo.ChainId, dto.CaHash);
+                        dto.ChangeType, chainInfo.ChainId, dto.CaHash);
                 }
             }
         }
         else
         {
-            await MainChainCheckSideChainBlockIndex(chainId, lastChainHeight);
-            var mainChain = _chainOptions.ChainInfos.Values.First(c => c.IsMainChain);
-
             foreach (var dto in dict.Keys)
             {
                 var result =
-                    await _contractProvider.SyncTransactionAsync(mainChain.ChainId, dict[dto]);
+                    await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId, dict[dto]);
                 if (result.Status != TransactionState.Mined)
                 {
                     _logger.LogError("{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}",
-                        dto.ChangeType, mainChain.ChainId, dto.CaHash, result.Error);
+                        dto.ChangeType, ContractAppServiceConstant.MainChainId, dto.CaHash, result.Error);
                     return;
                 }
 
-                var output = await _contractProvider.GetHolderInfoFromChainAsync(mainChain.ChainId, "", dto.CaHash);
-
-                var syncResult = await ValidateTransactionAndSyncAsync(mainChain.ChainId, output, chainId);
-
-                if (!syncResult)
-                {
-                    _logger.LogError("{type} SyncToOthers failed on chain: {id} of account: {hash}, error: {error}",
-                        dto.ChangeType, chainInfo.ChainId, dto.CaHash, result.Error);
-                    return;
-                }
+                // var output =
+                //     await _contractProvider.GetHolderInfoFromChainAsync(ContractAppServiceConstant.MainChainId,
+                //         Hash.Empty, dto.CaHash);
+                //
+                // var syncResult =
+                //     await ValidateTransactionAndSyncAsync(ContractAppServiceConstant.MainChainId, output, chainId);
+                //
+                // if (!syncResult)
+                // {
+                //     _logger.LogError("{type} SyncToOthers failed on chain: {id} of account: {hash}, error: {error}",
+                //         dto.ChangeType, chainInfo.ChainId, dto.CaHash, result.Error);
+                //     return;
+                // }
 
                 await _graphQLProvider.SetLastEndHeightAsync(chainId, queryType, dto.BlockHeight);
                 _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}", dto.ChangeType,
@@ -412,23 +367,23 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    private async Task QueryLoginGuardianAccountEventsAndSyncAsync(string chainId)
+    private async Task QueryLoginGuardianEventsAndSyncAsync(string chainId)
     {
         try
         {
-            var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardianAccount);
+            var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardian);
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
             var endBlockHeight = GetEndBlockHeight(lastEndHeight, _indexOptions.IndexInterval, currentIndexHeight);
 
             if (endBlockHeight == ContractAppServiceConstant.LongError)
             {
                 _logger.LogWarning(
-                    "QueryLoginGuardianAccountEventsAndSync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index}",
+                    "QueryLoginGuardianEventsAndSync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index}",
                     chainId, lastEndHeight, currentIndexHeight);
                 return;
             }
 
-            var queryEvents = await _graphQLProvider.GetLoginGuardianAccountTransactionInfosAsync(
+            var queryEvents = await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
                 chainId, lastEndHeight + 1, endBlockHeight);
 
             if (queryEvents.IsNullOrEmpty())
@@ -437,24 +392,24 @@ public class ContractAppService : IContractAppService
                     ? endBlockHeight + 1
                     : currentIndexHeight - _indexOptions.IndexSafe;
 
-                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardianAccount, nextIndexHeight);
+                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardian, nextIndexHeight);
 
                 _logger.LogInformation(
-                    "Found no LoginGuardianAccount events on chain: {id}. Next index block height: {height}", chainId,
+                    "Found no LoginGuardian events on chain: {id}. Next index block height: {height}", chainId,
                     nextIndexHeight);
                 return;
             }
 
             queryEvents = OptimizeQueryEvents(queryEvents);
             _logger.LogInformation(
-                "Found {num} LoginGuardianAccount events on chain: {id}", queryEvents.Count, chainId);
+                "Found {num} LoginGuardian events on chain: {id}", queryEvents.Count, chainId);
 
 
-            await ValidateQueryEventsAndSyncAsync(chainId, queryEvents, QueryType.LoginGuardianAccount);
+            await ValidateQueryEventsAndSyncAsync(chainId, queryEvents, QueryType.LoginGuardian);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "QueryLoginGuardianAccountEventsAndSync on chain: {id} Error", chainId);
+            _logger.LogError(e, "QueryLoginGuardianEventsAndSync on chain: {id} Error", chainId);
         }
     }
 
@@ -462,7 +417,7 @@ public class ContractAppService : IContractAppService
     {
         try
         {
-            var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.Manager);
+            var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.ManagerInfo);
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
             var endBlockHeight = GetEndBlockHeight(lastEndHeight, _indexOptions.IndexInterval, currentIndexHeight);
 
@@ -482,7 +437,7 @@ public class ContractAppService : IContractAppService
                 var nextIndexHeight = endBlockHeight < currentIndexHeight
                     ? endBlockHeight + 1
                     : currentIndexHeight - _indexOptions.IndexSafe;
-                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.Manager, nextIndexHeight);
+                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo, nextIndexHeight);
 
                 _logger.LogInformation("Found no Manager events on chain: {id}. Next index block height: {height}",
                     chainId, nextIndexHeight);
@@ -492,7 +447,7 @@ public class ContractAppService : IContractAppService
             queryEvents = OptimizeQueryEvents(queryEvents);
             _logger.LogInformation("Found {num} Manager events on chain: {id}", queryEvents.Count, chainId);
 
-            await ValidateQueryEventsAndSyncAsync(chainId, queryEvents, QueryType.Manager);
+            await ValidateQueryEventsAndSyncAsync(chainId, queryEvents, QueryType.ManagerInfo);
         }
         catch (Exception e)
         {
@@ -518,33 +473,35 @@ public class ContractAppService : IContractAppService
 
                 if (currentBlockHeight <= dto.BlockHeight)
                 {
-                    _logger.LogWarning("Current node block height should be large than the event");
+                    _logger.LogWarning(LoggerMsg.NodeBlockHeightWarning);
                     break;
                 }
 
-                var unsetLoginGuardianAccounts = new RepeatedField<string>();
+                var unsetLoginGuardians = new RepeatedField<string>();
+
                 switch (dto.ChangeType)
                 {
-                    case QueryLoginGuardianAccountType.LoginGuardianAccountAdded:
-                        unsetLoginGuardianAccounts = null;
+                    case QueryLoginGuardianType.LoginGuardianAdded:
+                        unsetLoginGuardians = null;
                         break;
-                    case QueryLoginGuardianAccountType.LoginGuardianAccountUnbound:
-                        unsetLoginGuardianAccounts.Add(dto.Value);
+                    case QueryLoginGuardianType.LoginGuardianUnbound:
+                        unsetLoginGuardians.Add(dto.Value);
                         break;
                 }
 
                 var outputGetHolderInfo =
-                    await _contractProvider.GetHolderInfoFromChainAsync(chainId, "", dto.CaHash);
+                    await _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, dto.CaHash);
                 var transactionDto =
                     await _contractProvider.ValidateTransactionAsync(chainId, outputGetHolderInfo,
-                        unsetLoginGuardianAccounts);
+                        unsetLoginGuardians);
 
                 if (transactionDto.TransactionResultDto.Status != TransactionState.Mined)
                 {
                     break;
                 }
 
-                var syncHolderInfoInput = await _contractProvider.GetSyncHolderInfoInputAsync(chainId, transactionDto);
+                var syncHolderInfoInput =
+                    await _contractProvider.GetSyncHolderInfoInputAsync(chainId, transactionDto);
 
                 if (syncHolderInfoInput.VerificationTransactionInfo == null)
                 {
@@ -574,9 +531,8 @@ public class ContractAppService : IContractAppService
         while (index > 0)
         {
             var neededDeleteEvent = queryEvents.FirstOrDefault(e =>
-                e.ChangeType != QueryLoginGuardianAccountType.LoginGuardianAccountUnbound &&
-                e.CaHash == queryEvents[index].CaHash &&
-                e.BlockHeight < queryEvents[index].BlockHeight);
+                e.ChangeType != QueryLoginGuardianType.LoginGuardianUnbound &&
+                e.BlockHeight < queryEvents[index].BlockHeight && e.CaHash == queryEvents[index].CaHash);
             if (neededDeleteEvent != null)
             {
                 queryEvents.Remove(neededDeleteEvent);
@@ -593,19 +549,19 @@ public class ContractAppService : IContractAppService
         var tasks = new List<Task>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            var height = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardianAccount);
-            var height1 = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.Manager);
+            var loginGuardianHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardian);
+            var managerInfoHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.ManagerInfo);
 
             var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
-            if (height == 0)
+            if (loginGuardianHeight == 0)
             {
-                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardianAccount,
+                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardian,
                     indexHeight - _indexOptions.IndexSafe));
             }
 
-            if (height1 == 0)
+            if (managerInfoHeight == 0)
             {
-                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.Manager,
+                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo,
                     indexHeight - _indexOptions.IndexSafe));
             }
         }
@@ -618,8 +574,8 @@ public class ContractAppService : IContractAppService
         var tasks = new List<Task>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardianAccount, blockHeight));
-            tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.Manager, blockHeight));
+            tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardian, blockHeight));
+            tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo, blockHeight));
         }
 
         await tasks.WhenAll();

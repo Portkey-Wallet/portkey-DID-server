@@ -13,8 +13,10 @@ namespace CAServer.CAActivity.Provider;
 public interface IUserContactProvider
 {
     [ItemCanBeNull]
-    Task<List<Tuple<ContactAddress, string>>> GetUserNameBatch(IEnumerable<string> usersAddresses, Guid userId,
+    Task<List<Tuple<ContactAddress, string>>> BatchGetUserNameAsync(IEnumerable<string> usersAddresses, Guid userId,
         string chainId = null);
+    
+    Task<List<ContactAddress>> GetContactByUserNameAsync(string name, Guid userId);
 }
 
 public class UserContactProvider : IUserContactProvider, ISingletonDependency
@@ -26,7 +28,7 @@ public class UserContactProvider : IUserContactProvider, ISingletonDependency
         _contactIndexRepository = contactIndexRepository;
     }
 
-    public async Task<List<Tuple<ContactAddress, string>>> GetUserNameBatch(IEnumerable<string> usersAddresses,
+    public async Task<List<Tuple<ContactAddress, string>>> BatchGetUserNameAsync(IEnumerable<string> usersAddresses,
         Guid userId,
         string chainId = null)
     {
@@ -62,5 +64,17 @@ public class UserContactProvider : IUserContactProvider, ISingletonDependency
         }
 
         return ans;
+    }
+    
+    public async Task<List<ContactAddress>> GetContactByUserNameAsync(string name, Guid userId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Name).Value(name)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var contact = await _contactIndexRepository.GetAsync(Filter);
+        return contact?.Addresses;
     }
 }

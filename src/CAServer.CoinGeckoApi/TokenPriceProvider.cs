@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CoinGecko.Clients;
@@ -20,10 +21,11 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 
     public ILogger<TokenPriceProvider> Logger { get; set; }
 
-    public TokenPriceProvider(IRequestLimitProvider requestLimitProvider, IOptionsSnapshot<CoinGeckoOptions> options)
+    public TokenPriceProvider(IRequestLimitProvider requestLimitProvider, IOptionsSnapshot<CoinGeckoOptions> options,
+        IHttpClientFactory httpClientFactory)
     {
         _requestLimitProvider = requestLimitProvider;
-        _coinGeckoClient = CoinGeckoClient.Instance;
+        _coinGeckoClient = new CoinGeckoClient(httpClientFactory.CreateClient());
         _coinGeckoOptions = options.Value;
         Logger = NullLogger<TokenPriceProvider>.Instance;
     }
@@ -46,7 +48,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         {
             var coinData =
                 await RequestAsync(async () =>
-                    await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] {coinId}, new[] {UsdSymbol}));
+                    await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] { coinId }, new[] { UsdSymbol }));
 
             if (!coinData.TryGetValue(coinId, out var value))
             {
@@ -87,7 +89,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
                 return 0;
             }
 
-            return (decimal) coinData.MarketData.CurrentPrice[UsdSymbol].Value;
+            return (decimal)coinData.MarketData.CurrentPrice[UsdSymbol].Value;
         }
         catch (Exception ex)
         {

@@ -11,7 +11,7 @@ public class RegisterState
 public class RegisterInfo : CAAccountBase
 {
     public string GrainId { get; set; }
-    public GuardianAccountInfo GuardianAccountInfo { get; set; }
+    public GuardianInfo GuardianInfo { get; set; }
     public DateTime? RegisteredTime { get; set; }
     public bool? RegisterSuccess { get; set; }
     public string RegisterMessage { get; set; }

@@ -34,4 +34,5 @@ public class TransactionFee
     public string Symbol { get; set; }
     public long? Fee { get; set; }
     public string FeeInUsd { get; set; }
+    public string Decimals { get; set; }
 }

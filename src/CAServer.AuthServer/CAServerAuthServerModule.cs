@@ -148,8 +148,9 @@ public class CAServerAuthServerModule : AbpModule
 
         Configure<AbpAuditingOptions>(options =>
         {
+            options.IsEnabled = false; 
             //options.IsEnabledForGetRequests = true;
-            options.ApplicationName = "AuthServer";
+            //options.ApplicationName = "AuthServer";
         });
 
         if (hostingEnvironment.IsDevelopment())

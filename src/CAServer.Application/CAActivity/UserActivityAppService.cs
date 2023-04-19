@@ -8,6 +8,8 @@ using CAServer.CAActivity.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.UserAssets;
+using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -27,16 +29,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IActivityProvider _activityProvider;
     private readonly IUserContactProvider _userContactProvider;
     private readonly ActivitiesIcon _activitiesIcon;
+    private readonly IImageProcessProvider _imageProcessProvider;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
-        IOptions<ActivitiesIcon> activitiesIconOption)
+        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
         _activityProvider = activityProvider;
         _userContactProvider = userContactProvider;
         _activitiesIcon = activitiesIconOption?.Value;
+        _imageProcessProvider = imageProcessProvider;
     }
 
     public async Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto request)
@@ -46,7 +50,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var filterTypes = FilterTypes(request.TransactionTypes);
             var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddresses, request.ChainId,
                 request.Symbol, filterTypes, request.SkipCount, request.MaxResultCount);
-            return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId);
+            return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width, request.Height);
         }
         catch (Exception e)
         {
@@ -74,7 +78,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
-            var activitiesDto = await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null);
+            var activitiesDto = await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
@@ -128,7 +132,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         var nameList =
-            await _userContactProvider.GetUserNameBatch(new List<string> { anotherAddress }, CurrentUser.GetId(),
+            await _userContactProvider.BatchGetUserNameAsync(new List<string> { anotherAddress }, CurrentUser.GetId(),
                 chainId);
 
         var contactName = nameList.FirstOrDefault()?.Item2;
@@ -143,7 +147,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     }
 
     private async Task<GetActivitiesDto> IndexerTransaction2Dto(List<string> caAddresses,
-        IndexerTransactions indexerTransactions, [CanBeNull] string chainId)
+        IndexerTransactions indexerTransactions, [CanBeNull] string chainId, int weidth, int height)
     {
         var result = new GetActivitiesDto
         {
@@ -158,14 +162,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         var getActivitiesDto = new List<GetActivityDto>();
+        var dict = new Dictionary<string, string>();
+
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
             var dto = ObjectMapper.Map<IndexerTransaction, GetActivityDto>(ht);
+
             var transactionTime = MsToDateTime(ht.Timestamp * 1000);
+
             if (dto.Symbol != null)
             {
-                var price = await GetTokenPrice(dto.Symbol, transactionTime);
+                var price = await GetTokenPriceAsync(dto.Symbol, transactionTime);
                 dto.PriceInUsd = price.ToString();
+
+                if (!dto.Decimals.IsNullOrWhiteSpace() && dto.Decimals != ActivityConstants.Zero && !dict.ContainsKey(dto.Symbol))
+                {
+                    dict.Add(dto.Symbol, dto.Decimals);
+                }
             }
 
             if (ht.TransferInfo != null)
@@ -184,16 +197,24 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (ht.TransactionFees != null)
             {
                 dto.TransactionFees = new List<TransactionFee>(ht.TransactionFees.Count);
+
                 foreach (var fee in ht.TransactionFees.Select(tFee => new TransactionFee()
                              { Symbol = tFee.Symbol, Fee = tFee.Amount }))
                 {
+                    if (!dict.ContainsKey(fee.Symbol))
+                    {
+                        var decimals = await _activityProvider.GetTokenDecimalsAsync(fee.Symbol);
+                        dict.Add(fee.Symbol, decimals.TokenInfo.FirstOrDefault()?.Decimals.ToString());
+                    }
+
+                    fee.Decimals = dict[fee.Symbol];
                     dto.TransactionFees.Add(fee);
                 }
 
                 if (dto.TransactionFees.Count > 0)
                 {
                     var symbols = dto.TransactionFees.Select(f => f.Symbol).ToList();
-                    var priceList = await GetFeePriceList(symbols, transactionTime);
+                    var priceList = await GetFeePriceListAsync(symbols, transactionTime);
                     for (var i = 0; i < symbols.Count; i++)
                     {
                         if (dto.TransactionFees[i].Fee > 0 && priceList[i] > 0)
@@ -216,11 +237,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
                 var nftId = ht.NftInfo.Symbol.Split("-").Last();
                 dto.NftInfo.NftId = nftId;
-
-                dto.NftInfo.ImageUrl =
-                    ht.NftInfo.ImageUrl;
-
-                dto.NftInfo.Alias = ht.NftInfo.TokenName;
+                
+              dto.NftInfo.ImageUrl = _imageProcessProvider.GetResizeImage(ht.NftInfo.ImageUrl, weidth, height);
+              dto.NftInfo.Alias = ht.NftInfo.TokenName;
             }
 
             dto.ListIcon = GetIconByType(dto.TransactionType);
@@ -252,7 +271,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(ms).ToLocalTime();
     }
 
-    private async Task<decimal> GetTokenPrice(string symbol, DateTime time)
+    private async Task<decimal> GetTokenPriceAsync(string symbol, DateTime time)
     {
         ListResultDto<TokenPriceDataDto> price;
         try
@@ -275,7 +294,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return price.Items.First().PriceInUsd;
     }
 
-    private async Task<List<decimal>> GetFeePriceList(IEnumerable<string> symbolList, DateTime time)
+    private async Task<List<decimal>> GetFeePriceListAsync(IEnumerable<string> symbolList, DateTime time)
     {
         try
         {

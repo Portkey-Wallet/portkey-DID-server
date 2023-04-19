@@ -24,9 +24,9 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         _userTokenIndexRepository = userTokenIndexRepository;
     }
 
-    public async Task<InderxerChainIds> GetUserChainIdsAsync(List<string> userCaAddresses)
+    public async Task<IndexerChainIds> GetUserChainIdsAsync(List<string> userCaAddresses)
     {
-        return await _graphQlHelper.QueryAsync<InderxerChainIds>(new GraphQLRequest
+        return await _graphQlHelper.QueryAsync<IndexerChainIds>(new GraphQLRequest
         {
             Query = @"
 			    query($caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
@@ -86,7 +86,8 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
                 }",
             Variables = new
             {
-                caAddresses = userCaAddresses, collectionSymbol = symbol, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
+                caAddresses = userCaAddresses, collectionSymbol = symbol, skipCount = inputSkipCount,
+                maxResultCount = inputMaxResultCount
             }
         });
     }
@@ -135,7 +136,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 
         IPromise<IList<ISort>> Sort(SortDescriptor<UserTokenIndex> s) => s.Descending(a => a.SortWeight)
             .Ascending(a => a.Token.Symbol).Ascending(a => a.Token.ChainId);
-        
+
         var (totalCount, userTokenIndices) = await _userTokenIndexRepository.GetSortListAsync(Filter, sortFunc: Sort);
 
         if (totalCount <= 0 || userTokenIndices.IsNullOrEmpty())
@@ -156,7 +157,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 
         IPromise<IList<ISort>> Sort(SortDescriptor<UserTokenIndex> s) => s.Descending(a => a.SortWeight)
             .Ascending(a => a.Token.Symbol).Ascending(a => a.Token.ChainId);
-        
+
         var (totalCount, userTokenIndices) = await _userTokenIndexRepository.GetSortListAsync(Filter, sortFunc: Sort);
 
         if (totalCount <= 0 || userTokenIndices.IsNullOrEmpty())
@@ -166,7 +167,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 
         return userTokenIndices;
     }
-    
+
     public async Task<List<(string, string)>> GetUserNotDisplayTokenAsync(Guid userId)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<UserTokenIndex>, QueryContainer>>();

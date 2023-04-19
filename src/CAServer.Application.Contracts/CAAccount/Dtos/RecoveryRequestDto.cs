@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.Commons;
 
@@ -9,19 +8,19 @@ namespace CAServer.Dtos;
 
 public class RecoveryRequestDto
 {
-    [Required] public string LoginGuardianAccount { get; set; }
+    [Required] public string LoginGuardianIdentifier { get; set; }
 
-    [ValidManagerAddress] [Required] public string ManagerAddress { get; set; }
+    [ValidManager] [Required] public string Manager { get; set; }
     [Required] public List<RecoveryGuardian> GuardiansApproved { get; set; }
-    [Required] public string DeviceString { get; set; }
+    [Required] public string ExtraData { get; set; }
     [Required] public string ChainId { get; set; }
     [Required] public HubRequestContextDto Context { get; set; }
 }
 
 public class RecoveryGuardian : IValidatableObject
 {
-    public GuardianTypeDto Type { get; set; }
-    [Required] public string Value { get; set; }
+    public GuardianIdentifierType Type { get; set; }
+    [Required] public string Identifier { get; set; }
     [Required] public string VerifierId { get; set; }
     [Required] public string VerificationDoc { get; set; }
     [Required] public string Signature { get; set; }
@@ -36,21 +35,21 @@ public class RecoveryGuardian : IValidatableObject
                 new[] { "type" }
             );
         }
-        
-        if (Type == GuardianTypeDto.Email && !VerifyHelper.VerifyEmail(Value))
+
+        if (Type == GuardianIdentifierType.Email && !VerifyHelper.VerifyEmail(Identifier))
         {
             yield return new ValidationResult(
                 "Invalid email input.",
-                new[] { "loginGuardianAccount" }
+                new[] { "identifier" }
             );
         }
 
-        if (Type == GuardianTypeDto.PhoneNumber && !VerifyHelper.VerifyPhone(Value))
-        {
-            yield return new ValidationResult(
-                "Invalid phone number input.",
-                new[] { "loginGuardianAccount" }
-            );
-        }
+        // if (Type == GuardianIdentifierType.Phone && !VerifyHelper.VerifyPhone(Identifier))
+        // {
+        //     yield return new ValidationResult(
+        //         "Invalid phone number input.",
+        //         new[] { "identifier" }
+        //     );
+        // }
     }
 }

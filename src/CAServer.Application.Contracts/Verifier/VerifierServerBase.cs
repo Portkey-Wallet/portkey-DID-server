@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace CAServer.Verifier;
@@ -9,7 +8,7 @@ public class VerifierServerBase
     public string Type { get; set; }
     
     [Required]
-    public string GuardianAccount{ get; set; }
+    public string GuardianIdentifier{ get; set; }
     
     [Required]
     public string VerifierId { get; set; }    

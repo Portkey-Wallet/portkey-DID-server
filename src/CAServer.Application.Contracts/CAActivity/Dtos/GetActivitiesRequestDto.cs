@@ -12,6 +12,10 @@ public class GetActivitiesRequestDto : PagedResultRequestDto
     public string ChainId { get; set; }
     public string Symbol { get; set; }
 
+    public int Width { get; set; }
+    
+    public int Height { get; set; }
+
     public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (CaAddresses == null || CaAddresses.Count == 0 || CaAddresses.Any(string.IsNullOrEmpty))

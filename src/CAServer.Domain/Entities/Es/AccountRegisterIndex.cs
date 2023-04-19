@@ -9,10 +9,10 @@ public class AccountRegisterIndex : CAServerEsEntity<Guid>, IIndexBuild
 {
     public DateTime? CreateTime { get; set; }
     [Keyword] public string ChainId { get; set; }
-    public Manager Manager { get; set; }
+    public ManagerInfo ManagerInfo { get; set; }
     [Keyword] public string CaHash { get; set; }
     [Keyword] public string CaAddress { get; set; }
-    public GuardianAccountInfo GuardianAccountInfo { get; set; }
+    public GuardianInfo GuardianInfo { get; set; }
     public DateTime? RegisteredTime { get; set; }
     public bool? RegisterSuccess { get; set; }
     [Keyword] public string RegisterMessage { get; set; }

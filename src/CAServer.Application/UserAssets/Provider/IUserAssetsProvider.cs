@@ -11,7 +11,7 @@ public interface IUserAssetsProvider
     Task<IndexerTokenInfos> GetUserTokenInfoAsync(List<string> userCaAddresses, string symbol, int inputSkipCount,
         int inputMaxResultCount);
 
-    Task<InderxerChainIds> GetUserChainIdsAsync(List<string> userCaAddresses);
+    Task<IndexerChainIds> GetUserChainIdsAsync(List<string> userCaAddresses);
 
     Task<IndexerNftCollectionInfos> GetUserNftCollectionInfoAsync(List<string> userCaAddresses, int inputSkipCount,
         int inputMaxResultCount);

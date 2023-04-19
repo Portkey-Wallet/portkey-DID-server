@@ -16,9 +16,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\CAServer.Application\CAServer.Application.csproj" />
-        <ProjectReference Include="..\..\src\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
-        <ProjectReference Include="..\..\src\CAServer.EntityEventHandler\CAServer.EntityEventHandler.csproj" />
         <ProjectReference Include="..\..\src\CAServer.Grains\CAServer.Grains.csproj" />
         <ProjectReference Include="..\CAServer.TestBase\CAServer.TestBase.csproj" />
     </ItemGroup>

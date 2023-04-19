@@ -46,3 +46,18 @@ public class IndexerTransactionFee
     public string Symbol { get; set; }
     public long? Amount { get; set; }
 }
+
+public class IndexerSymbols
+{
+    public List<SymbolInfo> TokenInfo { get; set; }
+}
+
+public class SymbolInfo
+{
+    public int Decimals { get; set; } 
+}
+
+public class CaHolderTransactionInfos
+{
+    public CaHolderTransaction CaHolderTransactionInfo { get; set; }
+}

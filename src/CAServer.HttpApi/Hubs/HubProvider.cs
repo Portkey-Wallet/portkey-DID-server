@@ -1,7 +1,10 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Hub;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Hubs;
@@ -13,7 +16,8 @@ public class HubProvider : IHubProvider, ISingletonDependency
     private readonly IHubCacheProvider _hubCacheProvider;
     private readonly ILogger<HubProvider> _logger;
 
-    public HubProvider(IConnectionProvider connectionProvider, IHubContext<CAHub> hubContext, ILogger<HubProvider> logger, IHubCacheProvider hubCacheProvider)
+    public HubProvider(IConnectionProvider connectionProvider, IHubContext<CAHub> hubContext,
+        ILogger<HubProvider> logger, IHubCacheProvider hubCacheProvider)
     {
         _connectionProvider = connectionProvider;
         _hubContext = hubContext;
@@ -25,7 +29,8 @@ public class HubProvider : IHubProvider, ISingletonDependency
     {
         if (isFirstTime)
         {
-            _hubCacheProvider.SetResponseAsync(new HubResponseCacheEntity<T>(res.Body, res.RequestId, method), clientId);
+            _hubCacheProvider.SetResponseAsync(
+                new HubResponseCacheEntity<T>(res.Body, res.RequestId, method, typeof(T)), clientId);
         }
 
         var connection = _connectionProvider.GetConnectionByClientId(clientId);
@@ -35,7 +40,31 @@ public class HubProvider : IHubProvider, ISingletonDependency
             return;
         }
 
-        _logger.LogInformation("provider sync requestId={res.RequestId} to clientId={clientId} method={method} body={body}", res.RequestId, clientId, method, res.Body);
+        _logger.LogInformation(
+            "provider sync requestId={requestId} to clientId={clientId} method={method} body={body}", res.RequestId,
+            clientId, method, JsonConvert.SerializeObject(res.Body));
+        
+        await _hubContext.Clients.Clients(connection.ConnectionId).SendAsync(method, res);
+    }
+
+    public async Task ResponseAsync(HubResponse<object> res, string clientId, string method, Type type)
+    {
+        var connection = _connectionProvider.GetConnectionByClientId(clientId);
+        if (connection == null)
+        {
+            _logger.LogError("connection not found by clientId={clientId}", clientId);
+            return;
+        }
+
+        if (res.Body is JObject jObject)
+        {
+            res.Body = jObject.ToObject(type);
+        }
+
+        _logger.LogInformation(
+            "provider sync requestId={requestId} to clientId={clientId} method={method} body={body}", res.RequestId,
+            clientId, method, JsonConvert.SerializeObject(res.Body));
+
         await _hubContext.Clients.Clients(connection.ConnectionId).SendAsync(method, res);
     }
 }

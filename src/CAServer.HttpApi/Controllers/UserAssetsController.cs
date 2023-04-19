@@ -40,7 +40,8 @@ public class UserAssetsController
     }
 
     [HttpPost("recentTransactionUsers")]
-    public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(GetRecentTransactionUsersRequestDto requestDto)
+    public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(
+        GetRecentTransactionUsersRequestDto requestDto)
     {
         return await _userAssetsAppService.GetRecentTransactionUsersAsync(requestDto);
     }
@@ -51,6 +52,7 @@ public class UserAssetsController
         return await _userAssetsAppService.SearchUserAssetsAsync(requestDto);
     }
 
+    [AllowAnonymous]
     [HttpGet("symbolImages")]
     public SymbolImagesDto GetSymbolImagesAsync()
     {

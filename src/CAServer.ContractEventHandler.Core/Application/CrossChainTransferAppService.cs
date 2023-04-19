@@ -103,7 +103,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
             while (true)
             {
                 var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endHeight);
-                var queryTransfers = list.CaHolderTransaction.Data.Select(tx => new CrossChainTransferDto
+                var queryTransfers = list.CaHolderTransactionInfo.Data.Select(tx => new CrossChainTransferDto
                 {
                     Id = tx.TransactionId,
                     FromChainId = tx.TransferInfo.FromChainId,

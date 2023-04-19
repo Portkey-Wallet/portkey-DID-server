@@ -16,4 +16,5 @@ public class NftItem
     public string Balance { get; set; }
     public string ImageUrl { get; set; }
     public string TokenContractAddress { get; set; }
+    public string ImageLargeUrl { get; set; }
 }

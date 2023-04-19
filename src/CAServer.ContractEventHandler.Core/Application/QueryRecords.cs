@@ -2,9 +2,9 @@ using System.Collections.Generic;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
-public class LoginGuardianAccountChangeRecords
+public class LoginGuardianChangeRecords
 {
-    public List<LoginGuardianAccountChangeRecordDto> LoginGuardianAccountChangeRecordInfo { get; set; }
+    public List<LoginGuardianChangeRecordDto> LoginGuardianChangeRecordInfo { get; set; }
 }
 
 public class ChangeRecordDto
@@ -15,15 +15,15 @@ public class ChangeRecordDto
     public long BlockHeight { get; set; }
 }
 
-public class LoginGuardianAccountChangeRecordDto : ChangeRecordDto
+public class LoginGuardianChangeRecordDto : ChangeRecordDto
 {
     public string Id { get; set; }
-    public LoginGuardianAccount LoginGuardianAccount { get; set; }
+    public LoginGuardian LoginGuardian { get; set; }
 }
 
-public class LoginGuardianAccount
+public class LoginGuardian
 {
-    public string Value { get; set; }
+    public string IdentifierHash { get; set; }
 }
 
 public class CAHolderManagerChangeRecords
@@ -33,7 +33,7 @@ public class CAHolderManagerChangeRecords
 
 public class CAHolderManagerChangeRecordDto : ChangeRecordDto
 {
-    public string Manager { get; set; }
+    public string Address { get; set; }
 }
 
 public class ConfirmedBlockHeightRecord

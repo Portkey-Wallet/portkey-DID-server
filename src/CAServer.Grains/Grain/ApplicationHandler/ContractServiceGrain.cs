@@ -1,12 +1,17 @@
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
+using AElf.Standards.ACS7;
 using AElf.Types;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans.Concurrency;
+using Portkey.Contracts.CA;
+using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
 
@@ -15,70 +20,66 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 {
     private readonly GrainOptions _grainOptions;
     private readonly ChainOptions _chainOptions;
+    private readonly IObjectMapper _objectMapper;
+    private readonly ILogger<ContractServiceGrain> _logger;
 
-    public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions)
+    public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions,
+        IObjectMapper objectMapper, ILogger<ContractServiceGrain> logger)
     {
+        _objectMapper = objectMapper;
+        _logger = logger;
         _grainOptions = grainOptions.Value;
         _chainOptions = chainOptions.Value;
     }
 
-    private async Task<TransactionDto> SendTransactionToChainAsync(string chainId, IMessage param, string methodName)
+    private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
+        string methodName)
     {
-        var chainInfo = _chainOptions.ChainInfos[chainId];
-        var client = new AElfClient(chainInfo.BaseUrl);
-        await client.IsConnectedAsync();
-        var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
-
-        var transaction =
-            await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
-                param);
-        var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
-
-        var result = await client.SendTransactionAsync(new SendTransactionInput
+        try
         {
-            RawTransaction = txWithSign.ToByteArray().ToHex()
-        });
+            var chainInfo = _chainOptions.ChainInfos[chainId];
+            var client = new AElfClient(chainInfo.BaseUrl);
+            await client.IsConnectedAsync();
+            var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
 
-        await Task.Delay(_grainOptions.Delay);
+            var transaction =
+                await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
+                    param);
+            var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
 
-        var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+            var result = await client.SendTransactionAsync(new SendTransactionInput
+            {
+                RawTransaction = txWithSign.ToByteArray().ToHex()
+            });
 
-        var times = 0;
-        while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
-        {
-            times++;
-            await Task.Delay(_grainOptions.RetryDelay);
-            transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+            await Task.Delay(_grainOptions.Delay);
+
+            var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+
+            var times = 0;
+            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+            {
+                times++;
+                await Task.Delay(_grainOptions.RetryDelay);
+                transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+            }
+
+            return new TransactionInfoDto
+            {
+                Transaction = transaction,
+                TransactionResultDto = transactionResult
+            };
         }
-
-        return new TransactionDto
+        catch (Exception e)
         {
-            Transaction = transaction,
-            TransactionResultDto = transactionResult
-        };
+            _logger.LogError(e, methodName + " error: {param}", param);
+            return new TransactionInfoDto();
+        }
     }
 
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
     {
-        var param = new CreateCAHolderInput
-        {
-            GuardianApproved = new GuardianAccountInfo
-            {
-                Value = createHolderDto.GuardianAccountInfo.Value,
-                Type = createHolderDto.GuardianAccountInfo.Type,
-                VerificationInfo = new VerificationInfo
-                {
-                    Id = createHolderDto.GuardianAccountInfo.VerificationInfo.Id,
-                    Signature = createHolderDto.GuardianAccountInfo.VerificationInfo.Signature,
-                    VerificationDoc = createHolderDto.GuardianAccountInfo.VerificationInfo.VerificationDoc
-                }
-            },
-            Manager = new Manager
-            {
-                ManagerAddress = createHolderDto.Manager.ManagerAddress,
-                DeviceString = createHolderDto.Manager.DeviceString
-            }
-        };
+        var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
 
         var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
         return result.TransactionResultDto;
@@ -86,56 +87,22 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
     public async Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto)
     {
-        var param = new SocialRecoveryInput
-        {
-            LoginGuardianAccount = socialRecoveryDto.LoginGuardianAccount,
-            Manager = new Manager
-            {
-                DeviceString = socialRecoveryDto.Manager.DeviceString,
-                ManagerAddress = socialRecoveryDto.Manager.ManagerAddress
-            }
-        };
-
-        foreach (var guardian in socialRecoveryDto.GuardianApproved)
-        {
-            param.GuardiansApproved.Add(new GuardianAccountInfo
-            {
-                Value = guardian.Value,
-                Type = guardian.Type,
-                VerificationInfo = new VerificationInfo
-                {
-                    Id = guardian.VerificationInfo.Id,
-                    Signature = guardian.VerificationInfo.Signature,
-                    VerificationDoc = guardian.VerificationInfo.VerificationDoc
-                }
-            });
-        }
+        var param = _objectMapper.Map<SocialRecoveryDto, SocialRecoveryInput>(socialRecoveryDto);
 
         var result = await SendTransactionToChainAsync(socialRecoveryDto.ChainId, param, MethodName.SocialRecovery);
         return result.TransactionResultDto;
     }
 
-    public async Task<TransactionDto> ValidateTransactionAsync(string chainId,
-        GetHolderInfoOutput output, RepeatedField<string> unsetLoginGuardianAccounts)
+    public async Task<TransactionInfoDto> ValidateTransactionAsync(string chainId,
+        GetHolderInfoOutput output, RepeatedField<string> unsetLoginGuardians)
     {
-        var list = new RepeatedField<string>();
-        foreach (var index in output.GuardiansInfo.LoginGuardianAccountIndexes)
-        {
-            list.Add(output.GuardiansInfo.GuardianAccounts[index].Value);
-        }
+        var param = _objectMapper.Map<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>(output);
 
-        var param = new ValidateCAHolderInfoWithManagersExistsInput
+        if (unsetLoginGuardians != null)
         {
-            CaHash = output.CaHash,
-            Managers = { output.Managers },
-            LoginGuardianAccounts = { list }
-        };
-
-        if (unsetLoginGuardianAccounts != null)
-        {
-            foreach (var notLoginGuardianAccount in unsetLoginGuardianAccounts)
+            foreach (var notLoginGuardian in unsetLoginGuardians)
             {
-                param.NotLoginGuardianAccounts.Add(notLoginGuardianAccount);
+                param.NotLoginGuardians.Add(Hash.LoadFromHex(notLoginGuardian));
             }
         }
 
@@ -144,85 +111,90 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         return result;
     }
 
-    public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionDto transactionDto)
+    public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId,
+        TransactionInfoDto transactionInfoDto)
     {
-        var chainInfo = _chainOptions.ChainInfos[chainId];
-        var client = new AElfClient(chainInfo.BaseUrl);
-        await client.IsConnectedAsync();
-
-        var syncHolderInfoInput = new SyncHolderInfoInput();
-
-        var validateTokenHeight = transactionDto.TransactionResultDto.BlockNumber;
-
-        var merklePathDto =
-            await client.GetMerklePathByTransactionIdAsync(transactionDto.TransactionResultDto.TransactionId);
-        var merklePath = new MerklePath();
-        foreach (var node in merklePathDto.MerklePathNodes)
+        try
         {
-            merklePath.MerklePathNodes.Add(new MerklePathNode
+            var chainInfo = _chainOptions.ChainInfos[chainId];
+            var client = new AElfClient(chainInfo.BaseUrl);
+            await client.IsConnectedAsync();
+
+            var syncHolderInfoInput = new SyncHolderInfoInput();
+
+            var validateTokenHeight = transactionInfoDto.TransactionResultDto.BlockNumber;
+
+            var merklePathDto =
+                await client.GetMerklePathByTransactionIdAsync(transactionInfoDto.TransactionResultDto.TransactionId);
+            var merklePath = new MerklePath();
+            foreach (var node in merklePathDto.MerklePathNodes)
             {
-                Hash = Hash.LoadFromHex(node.Hash),
-                IsLeftChildNode = node.IsLeftChildNode
-            });
-        }
+                merklePath.MerklePathNodes.Add(new MerklePathNode
+                {
+                    Hash = new Hash { Value = Hash.LoadFromHex(node.Hash).Value },
+                    IsLeftChildNode = node.IsLeftChildNode
+                });
+            }
 
-        var verificationTransactionInfo = new VerificationTransactionInfo
-        {
-            FromChainId = ChainHelper.ConvertBase58ToChainId(chainId),
-            MerklePath = merklePath,
-            ParentChainHeight = validateTokenHeight,
-            TransactionBytes = transactionDto.Transaction.ToByteString()
-        };
+            var verificationTransactionInfo = new VerificationTransactionInfo
+            {
+                FromChainId = ChainHelper.ConvertBase58ToChainId(chainId),
+                MerklePath = merklePath,
+                ParentChainHeight = validateTokenHeight,
+                TransactionBytes = transactionInfoDto.Transaction.ToByteString()
+            };
 
-        syncHolderInfoInput.VerificationTransactionInfo = verificationTransactionInfo;
+            syncHolderInfoInput.VerificationTransactionInfo = verificationTransactionInfo;
 
-        if (chainInfo.IsMainChain)
-        {
+            if (!chainInfo.IsMainChain)
+            {
+                syncHolderInfoInput = await UpdateMerkleTreeAsync(chainId, client, syncHolderInfoInput);
+            }
+            
             return syncHolderInfoInput;
         }
-
-        return await UpdateMerkleTreeAsync(chainId, syncHolderInfoInput);
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetSyncHolderInfoInput error: ");
+            return new SyncHolderInfoInput();
+        }
     }
 
-    private async Task<SyncHolderInfoInput> UpdateMerkleTreeAsync(string chainId,
+    private async Task<SyncHolderInfoInput> UpdateMerkleTreeAsync(string chainId, AElfClient client, 
         SyncHolderInfoInput syncHolderInfoInput)
     {
-        var chainInfo = _chainOptions.ChainInfos[chainId];
-        var client = new AElfClient(chainInfo.BaseUrl);
-        await client.IsConnectedAsync();
-
-        var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
-
-        var address =
-            await client.GetContractAddressByNameAsync(HashHelper.ComputeFrom(ContractName.CrossChain));
-
-        var transaction = await client.GenerateTransactionAsync(ownAddress, address.ToBase58(),
-            MethodName.UpdateMerkleTree,
-            new Int64Value
-            {
-                Value = syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight
-            });
-        var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
-
-        var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
+        try
         {
-            RawTransaction = txWithSign.ToByteArray().ToHex()
-        });
+            var chainInfo = _chainOptions.ChainInfos[chainId];
 
-        var context = CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+            var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
 
-        foreach (var node in context.MerklePathFromParentChain.MerklePathNodes)
-        {
-            syncHolderInfoInput.VerificationTransactionInfo.MerklePath.MerklePathNodes.Add(new MerklePathNode
+            var transaction = await client.GenerateTransactionAsync(ownAddress, chainInfo.CrossChainContractAddress,
+                MethodName.UpdateMerkleTree,
+                new Int64Value
+                {
+                    Value = syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight
+                });
+            var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
+
+            var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
-                Hash = node.Hash,
-                IsLeftChildNode = node.IsLeftChildNode
+                RawTransaction = txWithSign.ToByteArray().ToHex()
             });
+
+            var context = CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+
+            syncHolderInfoInput.VerificationTransactionInfo.MerklePath.MerklePathNodes.AddRange(context.MerklePathFromParentChain.MerklePathNodes);
+
+            syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight = context.BoundParentChainHeight;
+
+            return syncHolderInfoInput;
         }
-
-        syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight = context.BoundParentChainHeight;
-
-        return syncHolderInfoInput;
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UpdateMerkleTree error, syncHolderInfoInput: {info}", JsonConvert.SerializeObject(syncHolderInfoInput.VerificationTransactionInfo.ToString()));
+            return new SyncHolderInfoInput();
+        }
     }
 
     public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)

@@ -15,8 +15,8 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     private const string DefaultVerifierId = "DefaultVerifierId";
     private const string DefaultVerificationDoc = "DefaultVerificationDoc";
     private const string DefaultVerifierSignature = "DefaultVerifierSignature";
-    private const string DefaultManagerAddress = "2ZCRxumsuLDQhFcNChqGmt9VJCxuQbcDpkCddoWqC2JC6G6EHh";
-    private const string DefaultDeviceString = "DefaultDeviceString";
+    private const string DefaultManager = "2ZCRxumsuLDQhFcNChqGmt9VJCxuQbcDpkCddoWqC2JC6G6EHh";
+    private const string DefaultExtraData = "DefaultDeviceString";
     private const string DefaultChainId = "DefaultChainId";
     private const string DefaultClientId = "DefaultClientId";
     private const string DefaultRequestId = "DefaultRequestId";
@@ -29,35 +29,6 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     }
 
     #region RegisterRequestAsync
-
-    // [Fact]
-    // public async Task RegisterRequestAsync_Recovery_Success_Test()
-    // {
-    //     var list = new List<RecoveryGuardian>();
-    //     list.Add(new RecoveryGuardian
-    //     {
-    //         Type = GuardianTypeDto.Email,
-    //         Value = DefaultEmailAddress,
-    //         VerifierId = DefaultVerifierId,
-    //         VerificationDoc = DefaultVerificationDoc,
-    //         Signature = DefaultVerifierSignature
-    //     });
-    //
-    //     await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
-    //     {
-    //         LoginGuardianAccount = DefaultEmailAddress,
-    //         ManagerAddress = DefaultManagerAddress,
-    //         DeviceString = DefaultDeviceString,
-    //         ChainId = DefaultChainId,
-    //         GuardiansApproved = list,
-    //         Context = new HubRequestContextDto
-    //         {
-    //             ClientId = DefaultClientId,
-    //             RequestId = DefaultRequestId
-    //         }
-    //     });
-    // }
-
     [Fact]
     public async Task RecoverRequestAsync_Body_Empty_Test()
     {
@@ -81,8 +52,8 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianTypeDto.PhoneNumber,
-                Value = DefaultEmailAddress,
+                Type = GuardianIdentifierType.Phone,
+                Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
                 Signature = DefaultVerifierSignature
@@ -90,9 +61,9 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
             {
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 GuardiansApproved = list,
                 Context = new HubRequestContextDto
@@ -111,15 +82,15 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async Task RecoverRequestAsync_LoginGuardianAccount_Is_NullOrEmpty_Test()
+    public async Task RecoverRequestAsync_LoginGuardianIdentifier_Is_NullOrEmpty_Test()
     {
         try
         {
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianTypeDto.Email,
-                Value = DefaultEmailAddress,
+                Type = GuardianIdentifierType.Email,
+                Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
                 Signature = DefaultVerifierSignature
@@ -127,9 +98,9 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
             {
-                LoginGuardianAccount = "",
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = "",
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 GuardiansApproved = list,
                 Context = new HubRequestContextDto
@@ -146,15 +117,15 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async Task RecoverRequestAsync_ManagerAddress_Is_NullOrEmpty_Test()
+    public async Task RecoverRequestAsync_Manager_Is_NullOrEmpty_Test()
     {
         try
         {
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianTypeDto.Email,
-                Value = DefaultEmailAddress,
+                Type = GuardianIdentifierType.Email,
+                Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
                 Signature = DefaultVerifierSignature
@@ -162,9 +133,9 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
             {
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = "",
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = "",
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 GuardiansApproved = list,
                 Context = new HubRequestContextDto
@@ -181,15 +152,15 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async Task RecoverRequestAsync_DeviceString_Is_NullOrEmpty_Test()
+    public async Task RecoverRequestAsync_ExtraData_Is_NullOrEmpty_Test()
     {
         try
         {
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianTypeDto.Email,
-                Value = DefaultEmailAddress,
+                Type = GuardianIdentifierType.Email,
+                Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
                 Signature = DefaultVerifierSignature
@@ -197,9 +168,9 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
             {
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = "",
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = "",
                 ChainId = DefaultChainId,
                 GuardiansApproved = list,
                 Context = new HubRequestContextDto
@@ -223,8 +194,8 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianTypeDto.Email,
-                Value = DefaultEmailAddress,
+                Type = GuardianIdentifierType.Email,
+                Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
                 Signature = DefaultVerifierSignature
@@ -232,9 +203,9 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
             {
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = "",
                 GuardiansApproved = list,
                 Context = new HubRequestContextDto
@@ -258,8 +229,8 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianTypeDto.Email,
-                Value = DefaultEmailAddress,
+                Type = GuardianIdentifierType.Email,
+                Identifier = DefaultEmailAddress,
                 VerifierId = "",
                 VerificationDoc = DefaultVerificationDoc,
                 Signature = DefaultVerifierSignature
@@ -267,9 +238,9 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
             {
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultChainId,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 GuardiansApproved = list,
                 Context = new HubRequestContextDto
@@ -293,8 +264,8 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianTypeDto.Email,
-                Value = DefaultEmailAddress,
+                Type = GuardianIdentifierType.Email,
+                Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = "",
                 Signature = DefaultVerifierSignature
@@ -302,9 +273,9 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
             {
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultChainId,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 GuardiansApproved = list,
                 Context = new HubRequestContextDto
@@ -328,8 +299,8 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
-                Type = GuardianTypeDto.Email,
-                Value = DefaultEmailAddress,
+                Type = GuardianIdentifierType.Email,
+                Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
                 Signature = ""
@@ -337,9 +308,9 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
             {
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultChainId,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 GuardiansApproved = list,
                 Context = new HubRequestContextDto

@@ -15,6 +15,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUglify.Helpers;
+using Portkey.Contracts.CA;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using ChainOptions = CAServer.Options.ChainOptions;

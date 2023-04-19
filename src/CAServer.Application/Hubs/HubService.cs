@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.Account;
 using CAServer.Hub;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
@@ -17,7 +16,8 @@ public class HubService : CAServerAppService, IHubService
     private readonly IConnectionProvider _connectionProvider;
     private readonly ILogger<HubService> _logger;
 
-    public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IConnectionProvider connectionProvider, ILogger<HubService> logger)
+    public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider,
+        IConnectionProvider connectionProvider, ILogger<HubService> logger)
     {
         _hubProvider = hubProvider;
         _hubCacheProvider = hubCacheProvider;
@@ -28,7 +28,8 @@ public class HubService : CAServerAppService, IHubService
     public async Task Ping(HubRequestContext context, string content)
     {
         const string PingMethodName = "Ping";
-        _hubProvider.ResponseAsync(new HubResponse<string>() { RequestId = context.RequestId, Body = content }, context.ClientId, PingMethodName);
+        _hubProvider.ResponseAsync(new HubResponse<string>() { RequestId = context.RequestId, Body = content },
+            context.ClientId, PingMethodName);
     }
 
     public async Task<HubResponse<object>> GetResponse(HubRequestContext context)
@@ -73,12 +74,15 @@ public class HubService : CAServerAppService, IHubService
                 await _hubProvider.ResponseAsync(new HubResponse<object>()
                 {
                     RequestId = res.Response.RequestId, Body = res.Response.Body
-                }, clientId, res.Method, false);
-                _logger.LogInformation("syncOnConnect requestId={requestId} to clientId={clientId} method={res.Method}", res.Response.RequestId, clientId, res.Method);
+                }, clientId, res.Method, res.Type);
+                _logger.LogInformation("syncOnConnect requestId={requestId} to clientId={clientId} method={method}",
+                    res.Response.RequestId, clientId, res.Method);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "syncOnConnect failed requestId={requestId} to clientId={clientId} method={res.Method}, exception={e.Message}", res.Response.RequestId, clientId, res.Method, e.Message);
+                _logger.LogError(e,
+                    "syncOnConnect failed requestId={requestId} to clientId={clientId} method={method}, exception={message}",
+                    res.Response.RequestId, clientId, res.Method, e.Message);
             }
         }
     }

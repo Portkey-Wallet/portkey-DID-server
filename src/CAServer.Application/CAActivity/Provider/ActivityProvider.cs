@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.Contracts.MultiToken;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
+using CAServer.Grains.Grain.ApplicationHandler;
 using GraphQL;
+using Microsoft.Extensions.Options;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
@@ -14,12 +17,15 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
+    private readonly ChainOptions _chainOptions;
 
 
-    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
+    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
+        IOptions<ChainOptions> chainOptions)
     {
         _graphQlHelper = graphQlHelper;
         _caHolderIndexRepository = caHolderIndexRepository;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task<IndexerTransactions> GetActivitiesAsync(List<string> addresses, string inputChainId,
@@ -68,5 +74,22 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
         var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
         return caHolder?.NickName;
+    }
+
+    public async Task<IndexerSymbols> GetTokenDecimalsAsync(string symbol)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerSymbols>(new GraphQLRequest
+        {
+            Query = @"
+			    query($symbol:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    tokenInfo(dto: {symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        decimals
+                    }
+                }",
+            Variables = new
+            {
+                symbol, skipCount = 0, maxResultCount = 1
+            }
+        });
     }
 }

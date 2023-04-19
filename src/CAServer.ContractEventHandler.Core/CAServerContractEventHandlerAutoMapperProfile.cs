@@ -4,7 +4,7 @@ using AElf.Types;
 using AutoMapper;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
-using GuardianType = CAServer.Account.GuardianType;
+using Portkey.Contracts.CA;
 
 namespace CAServer.ContractEventHandler.Core;
 
@@ -13,33 +13,29 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
     public CAServerContractEventHandlerAutoMapperProfile()
     {
         CreateMap<AccountRegisterCreateEto, CreateHolderDto>()
-            .ForMember(d => d.GuardianAccountInfo, opt => opt.MapFrom(e => new GuardianAccountInfo
+            .ForMember(d => d.GuardianInfo, opt => opt.MapFrom(e => new GuardianInfo
             {
-                Type = e.GuardianAccountInfo.Type == GuardianType.GUARDIAN_TYPE_OF_EMAIL
-                    ? Grains.Grain.ApplicationHandler.GuardianType.OfEmail
-                    : Grains.Grain.ApplicationHandler.GuardianType.OfPhone,
-                Value = e.GuardianAccountInfo.Value,
+                Type = (GuardianType)(int)e.GuardianInfo.Type,
+                IdentifierHash = Hash.LoadFromHex(e.GuardianInfo.IdentifierHash),
                 VerificationInfo = new VerificationInfo
                 {
-                    Id = Hash.LoadFromHex(e.GuardianAccountInfo.VerificationInfo.Id),
-                    Signature = ByteStringHelper.FromHexString(e.GuardianAccountInfo.VerificationInfo.Signature),
-                    VerificationDoc = e.GuardianAccountInfo.VerificationInfo.VerificationDoc
+                    Id = Hash.LoadFromHex(e.GuardianInfo.VerificationInfo.Id),
+                    Signature = ByteStringHelper.FromHexString(e.GuardianInfo.VerificationInfo.Signature),
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
                 }
             }))
-            .ForMember(d => d.Manager, opt => opt.MapFrom(e => new Manager
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
-                ManagerAddress = Address.FromBase58(e.Manager.ManagerAddress),
-                DeviceString = e.Manager.DeviceString
+                Address = Address.FromBase58(e.ManagerInfo.Address),
+                ExtraData = e.ManagerInfo.ExtraData
             }));
 
         CreateMap<AccountRecoverCreateEto, SocialRecoveryDto>()
             .ForMember(d => d.GuardianApproved,
-                opt => opt.MapFrom(e => e.GuardianApproved.Select(g => new GuardianAccountInfo
+                opt => opt.MapFrom(e => e.GuardianApproved.Select(g => new GuardianInfo
                 {
-                    Type = g.Type == GuardianType.GUARDIAN_TYPE_OF_EMAIL
-                        ? Grains.Grain.ApplicationHandler.GuardianType.OfEmail
-                        : Grains.Grain.ApplicationHandler.GuardianType.OfPhone,
-                    Value = g.Value,
+                    Type = (GuardianType)(int)g.Type,
+                    IdentifierHash = Hash.LoadFromHex(g.IdentifierHash),
                     VerificationInfo = new VerificationInfo
                     {
                         Id = Hash.LoadFromHex(g.VerificationInfo.Id),
@@ -47,10 +43,12 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
                         VerificationDoc = g.VerificationInfo.VerificationDoc
                     }
                 }).ToList()))
-            .ForMember(d => d.Manager, opt => opt.MapFrom(e => new Manager
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
             {
-                ManagerAddress = Address.FromBase58(e.Manager.ManagerAddress),
-                DeviceString = e.Manager.DeviceString
-            }));
+                Address = Address.FromBase58(e.ManagerInfo.Address),
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(d => d.LoginGuardianIdentifierHash,
+                opt => opt.MapFrom(g => Hash.LoadFromHex(g.LoginGuardianIdentifierHash)));
     }
 }
