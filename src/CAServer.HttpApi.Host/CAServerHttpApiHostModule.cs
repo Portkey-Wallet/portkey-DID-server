@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Hub;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
+using CAServer.Options;
 using CAServer.Redis;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -64,6 +63,8 @@ public class CAServerHttpApiHostModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
+        
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();

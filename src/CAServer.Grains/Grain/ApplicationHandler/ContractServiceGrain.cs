@@ -1,6 +1,7 @@
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
+using AElf.Contracts.MultiToken;
 using AElf.Standards.ACS7;
 using AElf.Types;
 using Google.Protobuf;

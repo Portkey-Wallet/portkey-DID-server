@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElf.Contracts.MultiToken;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;

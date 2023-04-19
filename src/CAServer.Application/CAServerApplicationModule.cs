@@ -2,6 +2,7 @@
 using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
+using CAServer.Device;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Options;
@@ -46,6 +47,7 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, AccountRegisterSearchService>();
         context.Services.AddSingleton<ISearchService, CAHolderSearchService>();
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
         Configure<AdaptableVariableOptions>(configuration.GetSection("AdaptableVariableSetting"));
         context.Services.AddSingleton<IAccountValidator, EmailValidator>();

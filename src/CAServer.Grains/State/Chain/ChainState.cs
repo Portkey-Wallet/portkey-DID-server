@@ -1,3 +1,5 @@
+using CAServer.Chain;
+
 namespace CAServer.Grains.State.Chain;
 
 public class ChainState
@@ -9,5 +11,6 @@ public class ChainState
     public string ExplorerUrl { get; set; }
     public string CaContractAddress { get; set; }
     public DateTime LastModifyTime { get; set; }
+    public DefaultToken DefaultToken { get; set; }
     public bool IsDeleted { get; set; } = false;
 }

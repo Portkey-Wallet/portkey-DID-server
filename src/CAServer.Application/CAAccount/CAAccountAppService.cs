@@ -1,7 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Device;
 using CAServer.Dtos;
 using CAServer.Etos;
 using CAServer.Grains;
@@ -23,18 +22,22 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<CAAccountAppService> _logger;
+    private readonly IDeviceAppService _deviceAppService;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
-        ILogger<CAAccountAppService> logger)
+        ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _logger = logger;
+        _deviceAppService = deviceAppService;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
+        input.ExtraData = await _deviceAppService.EncryptExtraDataAsync(input.ExtraData);
+
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
         registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
@@ -75,6 +78,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<AccountResultDto> RecoverRequestAsync(RecoveryRequestDto input)
     {
+        input.ExtraData = await _deviceAppService.EncryptExtraDataAsync(input.ExtraData);
+
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
         var recoveryDto = ObjectMapper.Map<RecoveryRequestDto, RecoveryDto>(input);
 

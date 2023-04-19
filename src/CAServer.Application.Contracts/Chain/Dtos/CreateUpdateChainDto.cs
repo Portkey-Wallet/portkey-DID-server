@@ -9,4 +9,5 @@ public class CreateUpdateChainDto
     [Required] public string EndPoint { get; set; }
     [Required] public string ExplorerUrl { get; set; }
     [Required] public string CaContractAddress { get; set; }
+    public DefaultToken DefaultToken { get; set; }
 }
