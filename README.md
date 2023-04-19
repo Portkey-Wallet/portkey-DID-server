@@ -2,7 +2,8 @@
 
 BRANCH | AZURE PIPELINES                                                                                                                                                                                                                                                  | TESTS                                                                                                                                                                                                                        | CODE COVERAGE
 -------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------
-MASTER | [![Build Status](https://dev.azure.com/Portkey-Finance/Portkey-Finance/_apis/build/status%2FPortkey-Wallet.portkey-DID-server?branchName=master)](https://dev.azure.com/Portkey-Finance/Portkey-Finance/_build/latest?definitionId=9&branchName=master) | [![Test Status](https://img.shields.io/azure-devops/tests/Portkey-Finance/Portkey-Finance/9/master)](https://dev.azure.com/Portkey-Finance/Portkey-Finance/_build/latest?definitionId=9&branchName=master) | [![codecov](https://codecov.io/github/Portkey-Wallet/portkey-DID-server/branch/master/graph/badge.svg?token=2TWAZLIGG8)](https://codecov.io/github/Portkey-Wallet/portkey-DID-server)
+MASTER | [![Build Status](https://dev.azure.com/Portkey-Finance/Portkey-Finance/_apis/build/status%2FPortkey-Wallet.portkey-DID-server?branchName=master)](https://dev.azure.com/Portkey-Finance/Portkey-Finance/_build/latest?definitionId=9&branchName=master) | [![Test Status](https://dev.azure.com/Portkey-Finance/Portkey-Finance/_apis/build/status%2FPortkey-Wallet.portkey-DID-server?branchName=master)](https://dev.azure.com/Portkey-Finance/Portkey-Finance/_build/latest?definitionId=9&branchName=master) | [![codecov](https://codecov.io/github/Portkey-Wallet/portkey-DID-server/branch/master/graph/badge.svg?token=2TWAZLIGG8)](https://codecov.io/github/Portkey-Wallet/portkey-DID-server)
+
 
 Portkey DID Server provides interface services for the Portkey wallet. In terms of project architecture, the project is developed based on the ABP framework. It uses Orleans, which is a framework for building reliable and scalable distributed applications that can simplify the complexity of distributed computing. In terms of data storage, the project uses Grain and Elasticsearch for data storage and retrieval. Grain is the core component of Orleans and represents an automatically scalable and fault-tolerant entity. In summary, Portkey DID Server combines the advantages of the ABP framework, Orleans, and Elasticsearch to achieve a high-performance and scalable distributed wallet interface service.
 ## Getting Started
@@ -73,7 +74,8 @@ Portkey DID Server includes the following services:
 
 ## Contributing
 
-We welcome contributions to the Portkey DID Server project. If you would like to contribute, please fork the repository and submit a pull request with your changes. Before submitting a pull request, please ensure that your code is well-tested and adheres to the aelf coding standards.
+We welcome contributions to the Portkey DID Server project. If you would like to contribute, please fork the repository and submit a pull request with your changes. Before submitting a pull request, please ensure that your code is well-tested.
+
 
 ## License
 
