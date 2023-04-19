@@ -73,7 +73,7 @@ Portkey DID Server includes the following services:
 
 ## Contributing
 
-We welcome contributions to the Portkey DID Server project. If you would like to contribute, please fork the repository and submit a pull request with your changes. Before submitting a pull request, please ensure that your code is well-tested and adheres to the aelf coding standards.
+We welcome contributions to the Portkey DID Server project. If you would like to contribute, please fork the repository and submit a pull request with your changes. Before submitting a pull request, please ensure that your code is well-tested.
 
 ## License
 
