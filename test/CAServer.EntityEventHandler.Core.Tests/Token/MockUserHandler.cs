@@ -13,6 +13,7 @@ public class MockUserHandler:IDistributedEventHandler<CreateUserEto>,ITransientD
     public MockUserHandler(IUserTokenAppService userTokenAppService)
     {
         _userTokenAppService = userTokenAppService;
+        
     }
 
     public async Task HandleEventAsync(CreateUserEto eventData)

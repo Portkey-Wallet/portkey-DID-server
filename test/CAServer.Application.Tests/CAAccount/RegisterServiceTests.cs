@@ -3,6 +3,11 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
+using CAServer.Grain.Tests;
+using CAServer.Grains.Grain.Guardian;
+using Microsoft.Extensions.DependencyInjection;
+using Orleans.TestingHost;
+using Shouldly;
 using Volo.Abp.Validation;
 using Xunit;
 
@@ -22,12 +27,14 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     private const string DefaultRequestId = "DefaultRequestId";
 
     private readonly ICAAccountAppService _caAccountAppService;
+    private readonly TestCluster _cluster;
 
     public RegisterServiceTests()
     {
         _caAccountAppService = GetService<ICAAccountAppService>();
+        _cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
-    
+
     private bool VerifyEmail(string address)
     {
         // string emailRegex =
@@ -47,6 +54,37 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     }
 
     #region RegisterRequestAsync
+
+    [Fact]
+    public async Task RegisterRequestAsync_Register_Success_Test()
+    {
+        var identifier = DefaultEmailAddress;
+        var salt = "salt";
+        var identifierHash = "identifierHash";
+
+        var grain = _cluster.Client.GetGrain<IGuardianGrain>("Guardian-" + identifier);
+        await grain.AddGuardianAsync(identifier, salt, identifierHash);
+
+        var result = await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
+        {
+            Type = GuardianIdentifierType.Email,
+            LoginGuardianIdentifier = DefaultEmailAddress,
+            Manager = DefaultManager,
+            ExtraData = DefaultExtraData,
+            ChainId = DefaultChainId,
+            VerifierId = DefaultVerifierId,
+            VerificationDoc = DefaultVerificationDoc,
+            Signature = DefaultVerifierSignature,
+            Context = new HubRequestContextDto
+            {
+                ClientId = DefaultClientId,
+                RequestId = DefaultRequestId
+            }
+        });
+
+        result.ShouldNotBeNull();
+        result.SessionId.ShouldNotBeEmpty();
+    }
 
     [Fact]
     public async Task RegisterRequestAsync_Register_Body_Empty_Test()

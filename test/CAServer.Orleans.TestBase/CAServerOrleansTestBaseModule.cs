@@ -10,7 +10,6 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Orleans.TestBase;
 
-
 [DependsOn(
     typeof(AbpAutofacModule),
     typeof(AbpTestBaseModule),
@@ -20,11 +19,16 @@ namespace CAServer.Orleans.TestBase;
     typeof(AbpAutoMapperModule),
     typeof(AbpObjectMappingModule)
 )]
-public class CAServerOrleansTestBaseModule:AbpModule
+public class CAServerOrleansTestBaseModule : AbpModule
 {
+    private ClusterFixture _fixture;
+
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        context.Services.AddSingleton<IClusterClient>(sp => sp.GetService<ClusterFixture>().Cluster.Client);
+        if (_fixture == null)
+            _fixture = new ClusterFixture();
+        context.Services.AddSingleton(_fixture);
+        context.Services.AddSingleton<IClusterClient>(sp => _fixture.Cluster.Client);
         // context.Services.Configure<CoinGeckoOptions>(o =>
         // {
         //     o.CoinIdMapping["ELF"] = "aelf";

@@ -6,6 +6,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using System.Net.Http;
 using CAServer.AppleAuth;
+using CAServer.AppleAuth.Provider;
 using CAServer.AppleVerify;
 using CAServer.CAAccount.Dtos;
 using CAServer.UserExtraInfo.Dtos;
@@ -32,13 +33,15 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
     private readonly IClusterClient _clusterClient;
     private readonly IHttpClientService _httpClientService;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly IAppleUserProvider _appleUserProvider;
 
     public UserExtraInfoAppService(IHttpClientFactory httpClientFactory,
         IOptions<AppleAuthOptions> appleAuthVerifyOption,
         IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
         IHttpClientService httpClientService,
-        JwtSecurityTokenHandler jwtSecurityTokenHandler)
+        JwtSecurityTokenHandler jwtSecurityTokenHandler,
+        IAppleUserProvider appleUserProvider)
     {
         _httpClientFactory = httpClientFactory;
         _appleAuthOptions = appleAuthVerifyOption.Value;
@@ -46,6 +49,7 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
         _distributedEventBus = distributedEventBus;
         _httpClientService = httpClientService;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
+        _appleUserProvider = appleUserProvider;
     }
 
 
@@ -62,6 +66,13 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
             GuardianType = GuardianIdentifierType.Apple.ToString(),
             AuthTime = DateTime.UtcNow
         };
+
+        await _appleUserProvider.SetUserExtraInfoAsync(new AppleUserExtraInfo
+        {
+            UserId = userInfo.Id,
+            FirstName = userInfo.FirstName,
+            LastName = userInfo.LastName,
+        });
 
         if (jwtPayload.ContainsKey("email_verified"))
         {
@@ -89,6 +100,8 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
         {
             throw new UserFriendlyException(resultDto.Message);
         }
+
+        await SetNameAsync(resultDto.Data);
 
         return ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoResultDto>(resultDto.Data);
     }
@@ -161,5 +174,14 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
     {
         var appleKeyUrl = "https://appleid.apple.com/auth/keys";
         return await _httpClientService.GetAsync<AppleKeys>(appleKeyUrl);
+    }
+
+    private async Task SetNameAsync(UserExtraInfoGrainDto userExtraInfo)
+    {
+        var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(userExtraInfo.Id);
+        if (userInfo == null) return;
+
+        userExtraInfo.FirstName = userInfo.FirstName;
+        userExtraInfo.LastName = userInfo.LastName;
     }
 }

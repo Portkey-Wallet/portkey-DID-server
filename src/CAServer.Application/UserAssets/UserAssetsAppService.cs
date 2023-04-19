@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
+using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -10,6 +11,7 @@ using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Users;
@@ -46,9 +48,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var res = await _userAssetsProvider.GetUserTokenInfoAsync(requestDto.CaAddresses, "",
+            var caAddressInfos = requestDto.CaAddressInfos;
+            if (caAddressInfos == null)
+            {
+                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
+            var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
                 0, requestDto.SkipCount + requestDto.MaxResultCount);
-            
+
             res.CaHolderTokenBalanceInfo.Data =
                 res.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
 
@@ -87,7 +96,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     t.TokenInfo.Symbol == symbol.Token.Symbol && t.ChainId == symbol.Token.ChainId);
                 if (tokenInfo == null)
                 {
-                    var data = await _userAssetsProvider.GetUserTokenInfoAsync(requestDto.CaAddresses,
+                    var data = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos,
                         symbol.Token.Symbol, 0, requestDto.CaAddresses.Count);
                     tokenInfo = data.CaHolderTokenBalanceInfo.Data.FirstOrDefault(
                         t => t.ChainId == symbol.Token.ChainId);
@@ -166,7 +175,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     continue;
                 }
 
-                var balanceInUsd = priceDict[token.Symbol] * long.Parse(token.Balance);
+                var balanceInUsd = CalculationHelper.GetBalanceInUsd(priceDict[token.Symbol], long.Parse(token.Balance),
+                    token.Decimals);
+                token.Price = priceDict[token.Symbol];
                 token.BalanceInUsd = balanceInUsd.ToString();
             }
 
@@ -183,7 +194,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var res = await _userAssetsProvider.GetUserNftCollectionInfoAsync(requestDto.CaAddresses,
+            var caAddressInfos = requestDto.CaAddressInfos;
+            if (caAddressInfos == null)
+            {
+                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
+            var res = await _userAssetsProvider.GetUserNftCollectionInfoAsync(caAddressInfos,
                 requestDto.SkipCount, requestDto.MaxResultCount);
 
             var dto = new GetNftCollectionsDto
@@ -227,7 +245,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var res = await _userAssetsProvider.GetUserNftInfoAsync(requestDto.CaAddresses,
+            var caAddressInfos = requestDto.CaAddressInfos;
+            if (caAddressInfos == null)
+            {
+                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
+            var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
                 requestDto.Symbol, requestDto.SkipCount, requestDto.MaxResultCount);
 
             var dto = new GetNftItemsDto
@@ -258,7 +283,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 dto.Data.Add(nftItem);
             }
-            
+
             return dto;
         }
         catch (Exception e)
@@ -274,7 +299,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var res = await _userAssetsProvider.GetRecentTransactionUsersAsync(requestDto.CaAddresses,
+            var caAddressInfos = requestDto.CaAddressInfos;
+            if (caAddressInfos == null)
+            {
+                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
+            var res = await _userAssetsProvider.GetRecentTransactionUsersAsync(caAddressInfos,
                 requestDto.SkipCount, requestDto.MaxResultCount);
 
             var dto = new GetRecentTransactionUsersDto
@@ -412,7 +444,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var res = await _userAssetsProvider.SearchUserAssetsAsync(requestDto.CaAddresses,
+            var caAddressInfos = requestDto.CaAddressInfos;
+            if (caAddressInfos == null)
+            {
+                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
+            var res = await _userAssetsProvider.SearchUserAssetsAsync(caAddressInfos,
                 requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword,
                 requestDto.SkipCount, requestDto.MaxResultCount);
 
@@ -444,7 +483,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     }
 
                     var tokenInfo = ObjectMapper.Map<IndexerSearchTokenNft, TokenInfoDto>(searchItem);
-                    tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = (searchItem.Balance * price).ToString();
+                    tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
+                        .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
+
                     item.TokenInfo = tokenInfo;
                 }
 

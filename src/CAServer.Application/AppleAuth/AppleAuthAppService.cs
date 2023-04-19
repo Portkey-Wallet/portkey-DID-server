@@ -7,7 +7,9 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using CAServer.AppleAuth.Dtos;
+using CAServer.AppleAuth.Provider;
 using CAServer.AppleVerify;
+using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
@@ -35,6 +37,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
     private readonly IHttpClientService _httpClientService;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IAppleUserProvider _appleUserProvider;
 
     public AppleAuthAppService(IHttpClientFactory httpClientFactory,
         IOptions<AppleAuthOptions> appleAuthVerifyOption,
@@ -42,7 +45,8 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         IClusterClient clusterClient,
         IHttpClientService httpClientService,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IAppleUserProvider appleUserProvider)
     {
         _httpClientFactory = httpClientFactory;
         _appleAuthOptions = appleAuthVerifyOption.Value;
@@ -51,6 +55,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         _httpClientService = httpClientService;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _httpContextAccessor = httpContextAccessor;
+        _appleUserProvider = appleUserProvider;
     }
 
     public async Task ReceiveAsync(AppleAuthDto appleAuthDto)
@@ -83,9 +88,17 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
             FirstName = userExtraInfo.Name.FirstName,
             LastName = userExtraInfo.Name.LastName,
             Email = userExtraInfo.Email,
+            GuardianType = GuardianIdentifierType.Apple.ToString(),
             AuthTime = DateTime.UtcNow
         };
-        
+
+        await _appleUserProvider.SetUserExtraInfoAsync(new AppleUserExtraInfo
+        {
+            UserId = userInfo.Id,
+            FirstName = userInfo.FirstName,
+            LastName = userInfo.LastName,
+        });
+
         if (jwtPayload.ContainsKey("email_verified"))
         {
             userInfo.VerifiedEmail = Convert.ToBoolean(jwtPayload["email_verified"]);

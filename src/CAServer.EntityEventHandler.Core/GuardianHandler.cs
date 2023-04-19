@@ -39,7 +39,8 @@ public class GuardianHandler : IDistributedEventHandler<GuardianEto>, ITransient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "{Message}: {Data}", "Guardian add fail",
+                JsonConvert.SerializeObject(eventData));
         }
     }
 }

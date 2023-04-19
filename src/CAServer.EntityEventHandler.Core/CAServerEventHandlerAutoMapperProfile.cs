@@ -8,6 +8,7 @@ using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Notify.Etos;
+using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Etos;
 using CAServer.Verifier.Etos;
 using ContactAddress = CAServer.Entities.Es.ContactAddress;
@@ -19,7 +20,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
     public CAServerEventHandlerAutoMapperProfile()
     {
         CreateMap<ContactIndex, ContactCreateEto>().ReverseMap();
-        CreateMap<ContactUpdateEto,ContactIndex>();
+        CreateMap<ContactUpdateEto, ContactIndex>();
         CreateMap<ContactAddress, ContactAddressEto>().ReverseMap();
         CreateMap<CreateHolderEto, CreateHolderResultGrainDto>();
         CreateMap<RegisterGrainDto, AccountRegisterIndex>();
@@ -40,6 +41,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<ChainUpdateEto, ChainsInfoIndex>();
         CreateMap<ChainDeleteEto, ChainsInfoIndex>();
         CreateMap<GuardianEto, GuardianIndex>();
+        CreateMap<OrderEto, OrderIndex>();
         CreateMap<UserExtraInfoEto, UserExtraInfoIndex>();
         CreateMap<NotifyEto, NotifyRulesIndex>();
         CreateMap<DeleteNotifyEto, NotifyRulesIndex>();

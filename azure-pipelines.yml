@@ -31,8 +31,8 @@ jobs:
 #       - script: PowerShell.exe -file build.ps1 --target=Upload-Coverage-Azure
 #         displayName: 'Upload data to Codecov'
   # All tasks on Linux
-#  - job: build_all_linux
-#    displayName: Build all tasks (Linux)
+  - job: build_all_linux
+    displayName: Build all tasks (Linux)
 #    timeoutInMinutes: 120
 #    pool:
 #      vmImage: ubuntu-latest
@@ -60,11 +60,13 @@ jobs:
 #      - script: bash build.sh --target=Upload-Coverage-Azure
 #        displayName: 'Upload data to Codecov'
   #All tasks on macOS
-  - job: build_all_darwin
-    displayName: Build all tasks (macOS)
+#  - job: build_all_darwin
+#    displayName: Build all tasks (macOS)
     timeoutInMinutes: 120
     pool:
-      vmImage: macos-latest
+      name: Default
+      demands:
+          - Agent.OS -equals Linux
     variables:
       CI_TEST: true
     steps:
@@ -72,7 +74,7 @@ jobs:
         displayName: 'Install .NET Core SDK'
         inputs:
           version: 7.0.x
-      - script: cd scripts && bash elasticsearch-macOS.sh
+      - script: cd scripts && bash elasticsearch-linux.sh
         displayName: 'Start an elasticsearch'
       - script: bash build.sh --target=Test-with-Codecov
         displayName: 'Build and Test'

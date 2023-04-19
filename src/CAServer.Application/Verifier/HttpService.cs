@@ -36,11 +36,13 @@ public class HttpService : IHttpService
     private readonly bool _useCamelCase;
     private HttpClient? Client { get; set; }
     private int TimeoutSeconds { get; }
+    private readonly IHttpClientFactory _httpClientFactory;
     
-    public HttpService(int timeoutSeconds, bool useCamelCase = false)
+    public HttpService(int timeoutSeconds, IHttpClientFactory httpClientFactory, bool useCamelCase = false)
     {
         _useCamelCase = useCamelCase;
         TimeoutSeconds = timeoutSeconds;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<T?> GetResponseAsync<T>(string url, string? version = null,
@@ -116,16 +118,19 @@ public class HttpService : IHttpService
     
     private HttpClient GetHttpClient(string? version = null)
     {
-        if (Client != null) return Client;
-        Client = new HttpClient
+        if (Client != null)
         {
-            Timeout = TimeSpan.FromSeconds(TimeoutSeconds)
-        };
+            return Client;
+        }
+
+        Client = _httpClientFactory.CreateClient();
+        Client.Timeout = TimeSpan.FromSeconds(TimeoutSeconds);
         Client.DefaultRequestHeaders.Accept.Clear();
         Client.DefaultRequestHeaders.Accept.Add(
             MediaTypeWithQualityHeaderValue.Parse($"application/json{version}"));
         Client.DefaultRequestHeaders.Add("Connection", "close");
         return Client;
+
     }
     
     private async Task<HttpResponseMessage> PostResponseAsync(string url,

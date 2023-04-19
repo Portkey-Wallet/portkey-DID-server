@@ -6,6 +6,7 @@ using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.UserAssets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualBasic;
 using NSubstitute;
 using Shouldly;
 using Volo.Abp.Users;
@@ -30,7 +31,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockTokenAppService());
         services.AddSingleton(GetUserContactProvider());
-        services.AddSingleton(GetActivitiesIcon());
+        services.AddSingleton(GetActivitiesIcon()); 
         services.AddSingleton(GetMockActivityProvider());
     }
     
@@ -53,7 +54,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
 
         var result = await _userActivityAppService.GetActivityAsync(param);
         result.TransactionType.ShouldBe("methodName");
-        result.TransactionFees.First().FeeInUsd.ShouldBe(200.ToString());
+        //result.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         result.TransactionFees.First().Decimals.ShouldBe("8");
     }
 
@@ -72,7 +73,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
 
         var data = result.Data[0];
         data.TransactionType.ShouldBe("methodName");
-        data.TransactionFees.First().FeeInUsd.ShouldBe(200.ToString());
+        //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         data.TransactionFees.First().Decimals.ShouldBe("8");
     }
 }

@@ -137,7 +137,8 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("Register state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));
         
-        ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "");
+        // ValidateAndSync can be very time consuming, so don't wait for it to finish
+        _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "");
     }
 
     public async Task SocialRecoveryAsync(AccountRecoverCreateEto message)

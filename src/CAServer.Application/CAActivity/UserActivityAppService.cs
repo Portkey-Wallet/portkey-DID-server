@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
+using CAServer.Common;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
@@ -13,6 +14,7 @@ using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -47,10 +49,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
+            var caAddressInfos = request.CaAddressInfos;
+            if (caAddressInfos == null)
+            {
+                caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
             var filterTypes = FilterTypes(request.TransactionTypes);
-            var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddresses, request.ChainId,
+            var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, request.ChainId,
                 request.Symbol, filterTypes, request.SkipCount, request.MaxResultCount);
-            return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width, request.Height);
+            return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
+                request.Height);
         }
         catch (Exception e)
         {
@@ -178,7 +188,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 var price = await GetTokenPriceAsync(dto.Symbol, transactionTime);
                 dto.PriceInUsd = price.ToString();
 
-                if (!dto.Decimals.IsNullOrWhiteSpace() && dto.Decimals != ActivityConstants.Zero && !dict.ContainsKey(dto.Symbol))
+                if (!dto.Decimals.IsNullOrWhiteSpace() && dto.Decimals != ActivityConstants.Zero &&
+                    !dict.ContainsKey(dto.Symbol))
                 {
                     dict.Add(dto.Symbol, dto.Decimals);
                 }
@@ -222,8 +233,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     {
                         if (dto.TransactionFees[i].Fee > 0 && priceList[i] > 0)
                         {
-                            dto.TransactionFees[i].FeeInUsd =
-                                (priceList[i] * dto.TransactionFees[i].Fee).ToString();
+                            dto.TransactionFees[i].FeeInUsd = CalculationHelper
+                                .GetBalanceInUsd(priceList[i] * dto.TransactionFees[i].Fee,
+                                    Convert.ToInt32(dto.TransactionFees[i].Decimals)).ToString();
                         }
                     }
                 }
@@ -238,6 +250,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     Alias = ht.NftInfo.TokenName
                 };
             }
+            //
+            // dto.PriceInUsd = CalculationHelper
+            //     .GetBalanceInUsd(Convert.ToDecimal(dto.PriceInUsd), Convert.ToInt32(dto.Decimals)).ToString();
 
             dto.ListIcon = GetIconByType(dto.TransactionType);
             getActivitiesDto.Add(dto);
@@ -247,7 +262,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         return result;
     }
-    
+
     private string GetIconByType(string transactionType)
     {
         string icon = string.Empty;

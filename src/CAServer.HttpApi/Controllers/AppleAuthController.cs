@@ -29,4 +29,11 @@ public class AppleAuthController : CAServerController
         await _appleAuthAppService.ReceiveAsync(appleAuthDto);
         return Redirect($"{_appleAuthOptions.RedirectUrl}?id_token={appleAuthDto.Id_token}");
     }
+    
+    [HttpPost("bingoReceive")]
+    public async Task<IActionResult> BingoReceiveAsync([FromForm] AppleAuthDto appleAuthDto)
+    {
+        await _appleAuthAppService.ReceiveAsync(appleAuthDto);
+        return Redirect($"{_appleAuthOptions.BingoRedirectUrl}?id_token={appleAuthDto.Id_token}");
+    }
 }

@@ -1,6 +1,10 @@
+using AElf;
+using AElf.Types;
 using AutoMapper;
 using CAServer.CoinGeckoApi;
 using CAServer.Grains;
+using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -8,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Orleans;
 using Orleans.Hosting;
 using Orleans.TestingHost;
@@ -52,12 +57,54 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                 {
                     services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
                     services.AddSingleton<IRequestLimitProvider, RequestLimitProvider>();
+                    services.Configure<ChainOptions>(o =>
+                    {
+                        o.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
+                        {
+                            {
+                                "AELF", new Grains.Grain.ApplicationHandler.ChainInfo
+                                {
+                                    ChainId = "AELF",
+                                    BaseUrl = "url",
+                                    ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                    TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                    CrossChainContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                    PrivateKey = HashHelper.ComputeFrom("private").ToHex(),
+                                    IsMainChain = true
+                                }
+                            },
+                            {
+                                "tDVV", new Grains.Grain.ApplicationHandler.ChainInfo
+                                {
+                                    ChainId = "tDVV",
+                                    BaseUrl = "url",
+                                    ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                    TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                    CrossChainContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                    PrivateKey = "private",
+                                    IsMainChain = false
+                                }
+                            }
+                        };
+                    });
+
+                    services.Configure<GrainOptions>(o =>
+                    {
+                        o.Delay = 1;
+                        o.RetryDelay = 1;
+                        o.RetryTimes = 1;
+                    });
                     services.Configure<CoinGeckoOptions>(o =>
                     {
                         o.CoinIdMapping = new Dictionary<string, string>
                         {
                             {"ELF","aelf"}
                         };
+                    });
+                    services.Configure<CAAccountOption>(o =>
+                    {
+                        o.CAAccountRequestInfoMaxLength = 100;
+                        o.CAAccountRequestInfoExpirationTime = 1;
                     });
                     services.AddMemoryCache();
                     services.AddDistributedMemoryCache();
