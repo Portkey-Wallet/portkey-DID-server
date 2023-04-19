@@ -35,7 +35,7 @@ public partial class TokenAppServiceHistoryTest
                         Symbol = Symbol,
                         PriceInUsd = 1000,
                     }
-                }
+                } 
             );
 
         return mockITokenPriceGrainClient.Object;
