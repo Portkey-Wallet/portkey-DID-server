@@ -1,5 +1,3 @@
-using CAServer.CoinGeckoApi;
-using CAServer.EntityEventHandler.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans;
 using Volo.Abp;
@@ -18,20 +16,18 @@ namespace CAServer.Orleans.TestBase;
     typeof(AbpTestBaseModule),
     typeof(AbpAuthorizationModule),
     typeof(CAServerDomainModule),
-    typeof(CAServerCoinGeckoApiModule),
     typeof(AbpCachingModule),
     typeof(AbpAutoMapperModule),
-    typeof(AbpObjectMappingModule),
-    typeof(CAServerEntityEventHandlerCoreModule)
+    typeof(AbpObjectMappingModule)
 )]
 public class CAServerOrleansTestBaseModule:AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         context.Services.AddSingleton<IClusterClient>(sp => sp.GetService<ClusterFixture>().Cluster.Client);
-        context.Services.Configure<CoinGeckoOptions>(o =>
-        {
-            o.CoinIdMapping["ELF"] = "aelf";
-        });
+        // context.Services.Configure<CoinGeckoOptions>(o =>
+        // {
+        //     o.CoinIdMapping["ELF"] = "aelf";
+        // });
     }
 }

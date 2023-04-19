@@ -23,7 +23,8 @@ public class HubCacheProvider : IHubCacheProvider, ISingletonDependency
     private readonly HubCacheOptions _hubCacheOptions;
     private readonly ILogger<HubCacheProvider> _logger;
 
-    public HubCacheProvider(ICacheProvider cacheProvider, IOptions<HubCacheOptions> hubCacheOptions, ILogger<HubCacheProvider> logger)
+    public HubCacheProvider(ICacheProvider cacheProvider, IOptions<HubCacheOptions> hubCacheOptions,
+        ILogger<HubCacheProvider> logger)
     {
         _cacheProvider = cacheProvider;
         _logger = logger;
@@ -39,7 +40,9 @@ public class HubCacheProvider : IHubCacheProvider, ISingletonDependency
         await _cacheProvider.Set(requestCacheKey, resJsonStr, GetMethodResponseTtl(res.Method));
         _logger.Debug("set cache={requestCacheKey} body={body}", requestCacheKey, resJsonStr);
         _cacheProvider.HSetWithExpire(clientCacheKey, res.Response.RequestId, "", GetClientCacheTtl());
-        _logger.LogInformation("set requestCacheKey={requestCacheKey}, clientCacheKey={clientCacheKey}, requestId={RequestId}", requestCacheKey, clientCacheKey, res.Response.RequestId);
+        _logger.LogInformation(
+            "set requestCacheKey={requestCacheKey}, clientCacheKey={clientCacheKey}, requestId={RequestId}",
+            requestCacheKey, clientCacheKey, res.Response.RequestId);
     }
 
     public async Task<List<HubResponseCacheEntity<object>>> GetResponseByClientId(string clientId)
@@ -106,7 +109,8 @@ public class HubCacheProvider : IHubCacheProvider, ISingletonDependency
 
     private TimeSpan GetClientCacheTtl()
     {
-        var max = _hubCacheOptions.MethodResponseTtl.Select(kv => kv.Value).Prepend(_hubCacheOptions.DefaultResponseTtl).Max();
+        var max = _hubCacheOptions.MethodResponseTtl.Select(kv => kv.Value).Prepend(_hubCacheOptions.DefaultResponseTtl)
+            .Max();
         return new TimeSpan(0, 0, max);
     }
 }
@@ -117,14 +121,16 @@ public class HubResponseCacheEntity<T>
     {
     }
 
-    public HubResponseCacheEntity(T body, string requestId, string method)
+    public HubResponseCacheEntity(T body, string requestId, string method, Type type)
     {
         Response = new HubResponse<T>() { RequestId = requestId, Body = body };
         Method = method;
+        Type = type;
     }
 
     public HubResponse<T> Response { get; set; }
     public string Method { get; set; }
+    public Type Type { get; set; }
 }
 
 public class HubResponse<T>

@@ -8,7 +8,6 @@ using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
-using CAServer.AuthServer;
 using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
@@ -25,6 +24,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using Portkey.Contracts.CA;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Identity;
@@ -83,11 +83,12 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         var graphqlConfig = context.HttpContext.RequestServices.GetRequiredService<IOptions<GraphQLOption>>().Value;
         var chainOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<ChainOptions>>().Value;
 
-        var managerAddressCheck = await CheckAddressAsync(chainId, graphqlConfig.Url, caHash, address, chainOptions);
-        if (!managerAddressCheck.HasValue || !managerAddressCheck.Value)
+        var managerCheck = await CheckAddressAsync(chainId, graphqlConfig.Url, caHash, address, chainOptions);
+        if (!managerCheck.HasValue || !managerCheck.Value)
         {
-            _logger.LogError($"ManagerAddress validation failed. caHash:{caHash}, address:{address}, chainId:{chainId}");
-            return GetForbidResult(OpenIddictConstants.Errors.InvalidRequest, "ManagerAddress validation failed.");
+            _logger.LogError(
+                $"Manager validation failed. caHash:{caHash}, address:{address}, chainId:{chainId}");
+            return GetForbidResult(OpenIddictConstants.Errors.InvalidRequest, "Manager validation failed.");
         }
 
         var userManager = context.HttpContext.RequestServices.GetRequiredService<IdentityUserManager>();
@@ -212,41 +213,41 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         return result;
     }
 
-    private async Task<bool?> CheckAddressAsync(string chainId, string graphQlUrl, string caHash, string managerAddress,
+    private async Task<bool?> CheckAddressAsync(string chainId, string graphQlUrl, string caHash, string manager,
         ChainOptions chainOptions)
     {
-        var graphQlResult = await CheckAddressFromGraphQlAsync(graphQlUrl, caHash, managerAddress);
+        var graphQlResult = await CheckAddressFromGraphQlAsync(graphQlUrl, caHash, manager);
         if (!graphQlResult.HasValue || !graphQlResult.Value)
         {
             _logger.LogDebug("graphql is invalid.");
-            return await CheckAddressFromContractAsync(chainId, caHash, managerAddress, chainOptions);
+            return await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
         }
 
         return true;
     }
 
     private async Task<bool?> CheckAddressFromGraphQlAsync(string url, string caHash,
-        string managerAddress)
+        string manager)
     {
         var caHolderManagerInfo = await GetManagerList(url, caHash);
         var caHolderManager = caHolderManagerInfo?.CaHolderManagerInfo.FirstOrDefault();
-        return caHolderManager?.Managers.Any(t => t.Manager == managerAddress);
+        return caHolderManager?.Managers.Any(t => t.Manager == manager);
     }
 
-    private async Task<bool?> CheckAddressFromContractAsync(string chainId, string caHash, string managerAddress,
+    private async Task<bool?> CheckAddressFromContractAsync(string chainId, string caHash, string manager,
         ChainOptions chainOptions)
     {
         var param = new GetHolderInfoInput
         {
             CaHash = Hash.LoadFromHex(caHash),
-            LoginGuardianAccount = string.Empty
+            LoginGuardianIdentifierHash = Hash.Empty
         };
 
         var output =
             await CallTransactionAsync<GetHolderInfoOutput>(chainId, MethodName.GetHolderInfo, param, false,
                 chainOptions);
 
-        return output?.Managers?.Any(t => t.ManagerAddress.ToBase58() == managerAddress);
+        return output?.ManagerInfos?.Any(t => t.Address.ToBase58() == manager);
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,

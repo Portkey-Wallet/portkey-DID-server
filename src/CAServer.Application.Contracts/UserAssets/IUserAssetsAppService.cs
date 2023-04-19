@@ -13,4 +13,6 @@ public interface IUserAssetsAppService
     Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(GetRecentTransactionUsersRequestDto requestDto);
     Task<SearchUserAssetsDto> SearchUserAssetsAsync(SearchUserAssetsRequestDto requestDto);
     SymbolImagesDto GetSymbolImagesAsync();
+
+
 }

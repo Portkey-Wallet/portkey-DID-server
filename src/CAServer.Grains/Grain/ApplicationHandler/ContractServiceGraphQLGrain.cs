@@ -11,12 +11,6 @@ public class ContractServiceGraphQLGrain : Grain<GraphQlState>, IContractService
         return base.OnActivateAsync();
     }
 
-    public override Task OnDeactivateAsync()
-    {
-        WriteStateAsync();
-        return base.OnDeactivateAsync();
-    }
-
     public async Task SetStateAsync(long height)
     {
         State.EndHeight = height;

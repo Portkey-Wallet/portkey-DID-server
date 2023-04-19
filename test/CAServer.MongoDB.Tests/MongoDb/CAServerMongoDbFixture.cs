@@ -10,7 +10,7 @@ public class CAServerMongoDbFixture : IDisposable
 
     static CAServerMongoDbFixture()
     {
-        MongoDbRunner = MongoDbRunner.Start(singleNodeReplSet: true, singleNodeReplSetWaitTimeout: 20);
+        MongoDbRunner = MongoDbRunner.Start(singleNodeReplSet: true, singleNodeReplSetWaitTimeout: 10);
         ConnectionString = MongoDbRunner.ConnectionString;
     }
 

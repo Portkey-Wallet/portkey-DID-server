@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CAServer.Grains;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Hub;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
@@ -62,6 +63,7 @@ public class CAServerHttpApiHostModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
+        Configure<ChainOptions>(configuration.GetSection("Chains"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -307,7 +309,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseAuthorization();
 
-        if (env.IsDevelopment())
+        //if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>

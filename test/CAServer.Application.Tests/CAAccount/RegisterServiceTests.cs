@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
@@ -14,8 +15,8 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     private const string DefaultVerifierId = "DefaultVerifierId";
     private const string DefaultVerificationDoc = "DefaultVerificationDoc";
     private const string DefaultVerifierSignature = "DefaultVerifierSignature";
-    private const string DefaultManagerAddress = "2ZCRxumsuLDQhFcNChqGmt9VJCxuQbcDpkCddoWqC2JC6G6EHh";
-    private const string DefaultDeviceString = "DefaultDeviceString";
+    private const string DefaultManager = "2ZCRxumsuLDQhFcNChqGmt9VJCxuQbcDpkCddoWqC2JC6G6EHh";
+    private const string DefaultExtraData = "DefaultDeviceString";
     private const string DefaultChainId = "DefaultChainId";
     private const string DefaultClientId = "DefaultClientId";
     private const string DefaultRequestId = "DefaultRequestId";
@@ -26,30 +27,26 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     {
         _caAccountAppService = GetService<ICAAccountAppService>();
     }
+    
+    private bool VerifyEmail(string address)
+    {
+        // string emailRegex =
+        //     @"([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,5})+";
+
+        var emailRegex = @"^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$";
+        var emailReg = new Regex(emailRegex);
+        return emailReg.IsMatch(address.Trim());
+    }
+
+    [Fact]
+    public void TestEmailRegex()
+    {
+        string email = "b@b.b";
+        var res = VerifyEmail(email);
+        Assert.True(res);
+    }
 
     #region RegisterRequestAsync
-
-    // [Fact]
-    // public async Task RegisterRequestAsync_Recovery_Success_Test()
-    // {
-    //     //success
-    //     await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
-    //     {
-    //         Type = 0,
-    //         LoginGuardianAccount = DefaultEmailAddress,
-    //         ManagerAddress = DefaultManagerAddress,
-    //         DeviceString = DefaultDeviceString,
-    //         ChainId = DefaultChainId,
-    //         VerifierId = DefaultVerifierId,
-    //         VerificationDoc = DefaultVerificationDoc,
-    //         Signature = DefaultVerifierSignature,
-    //         Context = new HubRequestContextDto
-    //         {
-    //             ClientId = DefaultClientId,
-    //             RequestId = DefaultRequestId
-    //         }
-    //     });
-    // }
 
     [Fact]
     public async Task RegisterRequestAsync_Register_Body_Empty_Test()
@@ -73,10 +70,10 @@ public class RegisterServiceTests : CAServerApplicationTestBase
         {
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
-                Type = GuardianTypeDto.PhoneNumber,
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                Type = GuardianIdentifierType.Phone,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
@@ -97,16 +94,16 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async Task RegisterRequestAsync_Register_LoginGuardianAccount_Is_NullOrEmpty_Test()
+    public async Task RegisterRequestAsync_Register_LoginGuardianIdentifier_Is_NullOrEmpty_Test()
     {
         try
         {
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
-                Type = GuardianTypeDto.Email,
-                LoginGuardianAccount = "",
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                Type = GuardianIdentifierType.Email,
+                LoginGuardianIdentifier = "",
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
@@ -126,16 +123,16 @@ public class RegisterServiceTests : CAServerApplicationTestBase
 
 
     [Fact]
-    public async Task RegisterRequestAsync_Register_ManagerAddress_Is_NullOrEmpty_Test()
+    public async Task RegisterRequestAsync_Register_Address_Is_NullOrEmpty_Test()
     {
         try
         {
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
                 Type = 0,
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = "",
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = "",
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
@@ -161,9 +158,9 @@ public class RegisterServiceTests : CAServerApplicationTestBase
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
                 Type = 0,
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = "",
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = "",
                 ChainId = DefaultChainId,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
@@ -189,9 +186,9 @@ public class RegisterServiceTests : CAServerApplicationTestBase
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
                 Type = 0,
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = "",
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
@@ -217,9 +214,9 @@ public class RegisterServiceTests : CAServerApplicationTestBase
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
                 Type = 0,
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 VerifierId = "",
                 VerificationDoc = DefaultVerificationDoc,
@@ -245,9 +242,9 @@ public class RegisterServiceTests : CAServerApplicationTestBase
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
                 Type = 0,
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = "",
@@ -273,9 +270,9 @@ public class RegisterServiceTests : CAServerApplicationTestBase
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
                 Type = 0,
-                LoginGuardianAccount = DefaultEmailAddress,
-                ManagerAddress = DefaultManagerAddress,
-                DeviceString = DefaultDeviceString,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
                 ChainId = DefaultChainId,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,

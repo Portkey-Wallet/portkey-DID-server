@@ -1,8 +1,8 @@
 namespace CAServer.Account;
 
-public class GuardianAccountInfo
+public class GuardianInfo
 {
-    public string Value { get; set; }
+    public string IdentifierHash { get; set; }
     public GuardianType Type { get; set; }
     public VerificationInfo VerificationInfo { get; set; }
 }

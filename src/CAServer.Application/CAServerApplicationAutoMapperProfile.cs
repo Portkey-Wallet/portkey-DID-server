@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using AutoMapper;
+using CAServer.CAAccount.Dtos;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -13,17 +16,32 @@ using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Grains.Grain.Guardian;
+using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.Tokens.UserTokens;
+using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Guardian;
 using CAServer.Hubs;
+using CAServer.IpInfo;
+using CAServer.Notify.Dtos;
+using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using CAServer.UserExtraInfo.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
+using CAServer.Verifier.Etos;
+using MongoDB.Bson.Serialization.IdGenerators;
+using Portkey.Contracts.CA;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
+using GuardianInfo = CAServer.Account.GuardianInfo;
+using GuardianType = CAServer.Account.GuardianType;
+using ManagerInfo = CAServer.Account.ManagerInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
+using VerificationInfo = CAServer.Account.VerificationInfo;
 
 namespace CAServer;
 
@@ -165,5 +183,80 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<VerifierServerInput, SendVerificationRequestInput>();
         CreateMap<SendVerificationRequestInput, VerifierCodeRequestDto>();
+        CreateMap<GuardianGrainDto, GuardianEto>();
+
+        CreateMap<Portkey.Contracts.CA.ManagerInfo, ManagerInfoDto>()
+            .ForMember(t => t.Address, m => m.MapFrom(f => f.Address.ToBase58()));
+        CreateMap<Portkey.Contracts.CA.Guardian, GuardianDto>()
+            .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
+            .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()))
+            .ForMember(t => t.Type, m => m.MapFrom(f => (GuardianIdentifierType)(int)f.Type));
+
+        CreateMap<Portkey.Contracts.CA.GuardianList, GuardianListDto>();
+
+        CreateMap<GetHolderInfoOutput, GuardianResultDto>()
+            .ForMember(t => t.CaHash, m => m.MapFrom(f => f.CaHash.ToHex()))
+            .ForMember(t => t.CaAddress, m => m.MapFrom(f => f.CaAddress.ToBase58()));
+        // .ForPath(t => t.GuardianList, m => m.MapFrom(f => f.GuardianList.Guardians));
+
+        CreateMap<RegisterRequestDto, RegisterDto>().BeforeMap((src, dest) =>
+            {
+                dest.ManagerInfo = new ManagerInfo();
+                dest.GuardianInfo = new GuardianInfo
+                {
+                    VerificationInfo = new VerificationInfo()
+                };
+                dest.Id = Guid.NewGuid();
+            })
+            .ForPath(t => t.ManagerInfo.Address, m => m.MapFrom(f => f.Manager))
+            .ForPath(t => t.ManagerInfo.ExtraData, m => m.MapFrom(f => f.ExtraData))
+            .ForPath(t => t.GuardianInfo.Type, m => m.MapFrom(f => (GuardianType)(int)f.Type))
+            .ForPath(t => t.GuardianInfo.IdentifierHash, m => m.MapFrom(f => f.LoginGuardianIdentifier))
+            .ForPath(t => t.GuardianInfo.VerificationInfo.Id, m => m.MapFrom(f => f.VerifierId))
+            .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
+            .ForPath(t => t.GuardianInfo.VerificationInfo.VerificationDoc, m => m.MapFrom(f => f.VerificationDoc))
+            .ForPath(t => t.GuardianInfo.VerificationInfo.Signature, m => m.MapFrom(f => f.Signature));
+
+        CreateMap<RecoveryRequestDto, RecoveryDto>().BeforeMap((src, dest) =>
+            {
+                dest.ManagerInfo = new ManagerInfo();
+                dest.GuardianApproved = new List<GuardianInfo>();
+                dest.Id = Guid.NewGuid();
+            })
+            .ForPath(t => t.ManagerInfo.Address, m => m.MapFrom(f => f.Manager))
+            .ForPath(t => t.ManagerInfo.ExtraData, m => m.MapFrom(f => f.ExtraData))
+            .ForPath(t => t.GuardianApproved, m => m.MapFrom(f => f.GuardiansApproved.Select(
+                t => new GuardianInfo
+                {
+                    Type = (GuardianType)(int)t.Type,
+                    IdentifierHash = t.Identifier,
+                    VerificationInfo = new VerificationInfo
+                    {
+                        Id = t.VerifierId,
+                        VerificationDoc = t.VerificationDoc,
+                        Signature = t.Signature
+                    }
+                }).ToList()));
+
+        CreateMap<CAServer.Entities.Es.ContactAddress, UserContactAddressDto>();
+        CreateMap<AppleUserExtraInfo, UserExtraInfoGrainDto>();
+        CreateMap<GoogleUserExtraInfo, UserExtraInfoGrainDto>();
+        CreateMap<GoogleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<AppleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>();
+        CreateMap<UserExtraInfoGrainDto, UserExtraInfoEto>();
+        CreateMap<UserExtraInfoGrainDto, UserExtraInfoResultDto>()
+            .ForMember(t => t.IsPrivate, m => m.MapFrom(f => f.IsPrivateEmail));
+        CreateMap<DefaultIpInfoOptions, IpInfoResultDto>();
+        CreateMap<IpInfoDto, IpInfoResultDto>().ForMember(t => t.Country, m => m.MapFrom(f => f.CountryName))
+            .ForMember(t => t.Code, m => m.MapFrom(f => f.CountryCode))
+            .ForPath(t => t.Iso, m => m.MapFrom(f => f.Location.CallingCode));
+        
+        CreateMap<CreateNotifyDto, NotifyGrainDto>();
+        CreateMap<UpdateNotifyDto, NotifyGrainDto>();
+        CreateMap<NotifyGrainDto, NotifyResultDto>();
+        CreateMap<NotifyGrainDto, DeleteNotifyEto>();
+        CreateMap<NotifyGrainDto, NotifyEto>();
+        CreateMap<NotifyGrainDto, PullNotifyResultDto>();
     }
 }

@@ -1,7 +1,7 @@
-using System;
 using System.Threading.Tasks;
 using CAServer.Dtos;
 using CAServer.Verifier;
+using CAServer.Verifier.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
@@ -26,9 +26,9 @@ public class CAVerifierController : CAServerController
     [HttpPost("sendVerificationRequest")]
     public async Task<VerifierServerResponse> SendVerificationRequest(VerifierServerInput verifierServerInput)
     {
-        var sendVerificationRequestInput = _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        return  await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-        
+        var sendVerificationRequestInput =
+            _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
     }
 
 
@@ -37,4 +37,17 @@ public class CAVerifierController : CAServerController
     {
         return await _verifierAppService.VerifyCodeAsync(requestDto);
     }
+    
+    [HttpPost("verifyGoogleToken")]
+    public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        return await _verifierAppService.VerifyGoogleTokenAsync(requestDto);
+    }
+    
+    [HttpPost("verifyAppleToken")]
+    public async Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
+    }
+    
 }

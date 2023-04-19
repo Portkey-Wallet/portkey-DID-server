@@ -27,16 +27,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly IUserContactProvider _userContactProvider;
     private readonly TokenInfoOptions _tokenInfoOptions;
+    private readonly IImageProcessProvider _imageProcessProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
-        IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions)
+        IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
+        IImageProcessProvider imageProcessProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
         _userContactProvider = userContactProvider;
         _tokenInfoOptions = tokenInfoOptions.Value;
         _tokenAppService = tokenAppService;
+        _imageProcessProvider = imageProcessProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -194,7 +197,18 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
             {
-                dto.Data.Add(ObjectMapper.Map<IndexerNftCollectionInfo, NftCollection>(nftCollectionInfo));
+                var nftCollection =
+                    ObjectMapper.Map<IndexerNftCollectionInfo, NftCollection>(nftCollectionInfo);
+                if (nftCollectionInfo == null || nftCollectionInfo.NftCollectionInfo == null)
+                {
+                    dto.Data.Add(nftCollection);
+                }
+                else
+                {
+                    nftCollection.ImageUrl = _imageProcessProvider.GetResizeImage(
+                        nftCollectionInfo.NftCollectionInfo.ImageUrl, requestDto.Width, requestDto.Height);
+                    dto.Data.Add(nftCollection);
+                }
             }
 
             return dto;
@@ -234,6 +248,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 var nftItem = ObjectMapper.Map<IndexerNftInfo, NftItem>(nftInfo);
 
                 nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
+                nftItem.ImageUrl =
+                    _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height);
+                nftItem.ImageLargeUrl = _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl,
+                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO);
 
                 dto.Data.Add(nftItem);
             }
@@ -247,6 +265,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
+    //Data with the same name needs to be deduplicated
     public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(
         GetRecentTransactionUsersRequestDto requestDto)
     {
@@ -266,27 +285,40 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return dto;
             }
 
-            var userCaAddresses = new List<string>();
+            var userCaAddresses = res.CaHolderTransactionAddressInfo.Data.Select(t => t.Address)?.Distinct()?.ToList();
 
             foreach (var info in res.CaHolderTransactionAddressInfo.Data)
             {
                 dto.Data.Add(ObjectMapper.Map<CAHolderTransactionAddress, RecentTransactionUser>(info));
-
-                if (!userCaAddresses.Contains(info.Address))
-                {
-                    userCaAddresses.Add(info.Address);
-                }
             }
 
-            var contactList = await _userContactProvider.GetUserNameBatch(userCaAddresses, CurrentUser.GetId());
-            var nameList = contactList.Select(t => t.Item1.Address).ToList();
-            foreach (var user in dto.Data.Where(user => nameList.Contains(user.Address)))
+            var contactList = await _userContactProvider.BatchGetUserNameAsync(userCaAddresses, CurrentUser.GetId());
+            if (contactList == null)
+            {
+                return dto;
+            }
+
+            var addressList = contactList.Select(t => t.Item1.Address).ToList();
+            foreach (var user in dto.Data.Where(user => addressList.Contains(user.Address)))
             {
                 var contact =
-                    contactList.FirstOrDefault(t => t.Item1.Address == user.Address && t.Item1.ChainId == user.ChainId);
+                    contactList?.OrderBy(t => GetIndex(t.Item2)).FirstOrDefault(t =>
+                        t.Item1.Address == user.Address && t.Item1.ChainId == user.AddressChainId);
 
                 user.Name = contact?.Item2;
+                user.Index = GetIndex(user.Name);
+
+                if (!string.IsNullOrWhiteSpace(user.Name))
+                {
+                    await AssembleAddressesAsync(user);
+                }
             }
+            //  At this time, maybe there is data in the list with the same name but different address
+
+            var users = GetDuplicatedUser(dto.Data);
+
+            dto.Data = users;
+            dto.TotalRecordCount = res.CaHolderTransactionAddressInfo.TotalRecordCount;
 
             return dto;
         }
@@ -295,6 +327,82 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "GetRecentTransactionUsersAsync Error. {dto}", requestDto);
             return new GetRecentTransactionUsersDto { Data = new List<RecentTransactionUser>(), TotalRecordCount = 0 };
         }
+    }
+
+    // Get a list of all addresses below according to name（same name,same address list）
+    private async Task AssembleAddressesAsync(RecentTransactionUser user)
+    {
+        var contactAddresses =
+            await _userContactProvider.GetContactByUserNameAsync(user.Name, CurrentUser.GetId());
+        user.Addresses = ObjectMapper.Map<List<ContactAddress>, List<UserContactAddressDto>>(contactAddresses);
+        user.Addresses?.ForEach(t =>
+        {
+            if (t.ChainId == user.AddressChainId && t.Address == user.Address)
+            {
+                t.TransactionTime = user.TransactionTime;
+            }
+        });
+    }
+
+    //Deduplicate data with same name，And put the TransactionTime of the corresponding address list in the position of the corresponding address list of the unremoved name, Then sort according to the time
+    private List<RecentTransactionUser> GetDuplicatedUser(List<RecentTransactionUser> users)
+    {
+        var userDic = new Dictionary<string, RecentTransactionUser>();
+        var result = new List<RecentTransactionUser>();
+        if (users == null)
+        {
+            return result;
+        }
+
+        foreach (var user in users)
+        {
+            if (string.IsNullOrWhiteSpace(user.Name))
+            {
+                result.Add(user);
+                continue;
+            }
+
+            if (userDic.ContainsKey(user.Name))
+            {
+                var contactAddressDto =
+                    user.Addresses.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.TransactionTime));
+
+                if (contactAddressDto == null) continue;
+
+                var preContactAddressDto = userDic[user.Name].Addresses.First(t =>
+                    t.ChainId == contactAddressDto.ChainId && t.Address == contactAddressDto.Address);
+
+                preContactAddressDto.TransactionTime = contactAddressDto.TransactionTime;
+            }
+            else
+            {
+                userDic.Add(user.Name, user);
+                result.Add(user);
+            }
+        }
+
+        users.ForEach(t =>
+        {
+            t.Addresses ??= new List<UserContactAddressDto>();
+            t.Addresses = t.Addresses
+                .OrderByDescending(f => string.IsNullOrEmpty(f.TransactionTime) ? 0 : long.Parse(f.TransactionTime))
+                .ToList();
+        });
+
+        return result;
+    }
+
+    private string GetIndex(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "#";
+
+        var firstChar = char.ToUpperInvariant(name[0]);
+        if (firstChar >= 'A' && firstChar <= 'Z')
+        {
+            return firstChar.ToString();
+        }
+
+        return "#";
     }
 
     public async Task<SearchUserAssetsDto> SearchUserAssetsAsync(SearchUserAssetsRequestDto requestDto)
@@ -347,6 +455,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
 
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
+
+                    item.NftInfo.ImageUrl =
+                        _imageProcessProvider.GetResizeImage(searchItem.NftInfo.ImageUrl, requestDto.Width,
+                            requestDto.Height);
                 }
 
                 dto.Data.Add(item);

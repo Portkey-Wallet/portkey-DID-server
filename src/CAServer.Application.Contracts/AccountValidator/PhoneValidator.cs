@@ -5,7 +5,7 @@ namespace CAServer.AccountValidator;
 
 public class PhoneValidator : IAccountValidator
 {
-    public string Type => "PhoneNumber";
+    public string Type => "Phone";
     private readonly Regex _regex;
 
     public PhoneValidator()
@@ -15,6 +15,6 @@ public class PhoneValidator : IAccountValidator
     
     public bool Validate(string account)
     {
-        return !string.IsNullOrWhiteSpace(account) && _regex.IsMatch(account);
+        return !string.IsNullOrWhiteSpace(account);
     }
 }

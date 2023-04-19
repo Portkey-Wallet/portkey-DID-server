@@ -9,12 +9,12 @@ namespace CAServer.Dtos;
 
 public class RegisterRequestDto : IValidatableObject
 {
-    [Required] public GuardianTypeDto Type { get; set; }
-    [Required] public string LoginGuardianAccount { get; set; }
+    [Required] public GuardianIdentifierType Type { get; set; }
+    [Required] public string LoginGuardianIdentifier { get; set; }
 
-    [ValidManagerAddress] [Required] public string ManagerAddress { get; set; }
+    [ValidManager] [Required] public string Manager { get; set; }
 
-    [Required] public string DeviceString { get; set; }
+    [Required] public string ExtraData { get; set; }
     [Required] public string ChainId { get; set; }
     [Required] public string VerifierId { get; set; }
     [Required] public string VerificationDoc { get; set; }
@@ -32,20 +32,20 @@ public class RegisterRequestDto : IValidatableObject
             );
         }
         
-        if (Type == GuardianTypeDto.Email && !VerifyHelper.VerifyEmail(LoginGuardianAccount))
+        if (Type == GuardianIdentifierType.Email && !VerifyHelper.VerifyEmail(LoginGuardianIdentifier))
         {
             yield return new ValidationResult(
                 "Invalid email input.",
-                new[] { "LoginGuardianAccount" }
+                new[] { "LoginGuardianIdentifier" }
             );
         }
 
-        if (Type == GuardianTypeDto.PhoneNumber && !VerifyHelper.VerifyPhone(LoginGuardianAccount))
-        {
-            yield return new ValidationResult(
-                "Invalid phone number input.",
-                new[] { "LoginGuardianAccount" }
-            );
-        }
+        // if (Type == GuardianIdentifierType.Phone && !VerifyHelper.VerifyPhone(LoginGuardianIdentifier))
+        // {
+        //     yield return new ValidationResult(
+        //         "Invalid phone number input.",
+        //         new[] { "LoginGuardianIdentifier" }
+        //     );
+        // }
     }
 }

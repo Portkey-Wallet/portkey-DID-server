@@ -1,11 +1,14 @@
 using AutoMapper;
+using CAServer.Guardian;
 using CAServer.ContractEventHandler;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Notify.Etos;
 using CAServer.Tokens.Etos;
+using CAServer.Verifier.Etos;
 using ContactAddress = CAServer.Entities.Es.ContactAddress;
 
 namespace CAServer.EntityEventHandler.Core;
@@ -34,5 +37,9 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<ChainCreateEto, ChainsInfoIndex>();
         CreateMap<ChainUpdateEto, ChainsInfoIndex>();
         CreateMap<ChainDeleteEto, ChainsInfoIndex>();
+        CreateMap<GuardianEto, GuardianIndex>();
+        CreateMap<UserExtraInfoEto, UserExtraInfoIndex>();
+        CreateMap<NotifyEto, NotifyRulesIndex>();
+        CreateMap<DeleteNotifyEto, NotifyRulesIndex>();
     }
 }

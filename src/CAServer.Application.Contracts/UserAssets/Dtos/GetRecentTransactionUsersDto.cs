@@ -15,5 +15,14 @@ public class RecentTransactionUser
     public string Address { get; set; }
     public string AddressChainId { get; set; }
     public string TransactionTime { get; set; }
+    public string Index { get; set; }
     public string Name { get; set; }
+    public List<UserContactAddressDto> Addresses { get; set; }
+}
+
+public class UserContactAddressDto
+{
+    public string ChainId { get; set; }
+    public string Address { get; set; }
+    public string TransactionTime { get; set; }
 }

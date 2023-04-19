@@ -1,8 +1,13 @@
-﻿using CAServer.AccountValidator;
+﻿using System.IdentityModel.Tokens.Jwt;
+using CAServer.AccountValidator;
+using CAServer.AppleAuth;
+using CAServer.Common;
 using CAServer.Grains;
+using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
@@ -46,5 +51,13 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<IAccountValidator, EmailValidator>();
         context.Services.AddSingleton<IAccountValidator, PhoneValidator>();
         //Configure<IndexPrefixOptions>(configuration.GetSection("IndexPrefixSetting"));
+        Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
+        Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
+        Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
+        context.Services.AddHttpClient();
+        context.Services.AddScoped<JwtSecurityTokenHandler>();
+        context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
+        context.Services.AddScoped<IHttpClientService, HttpClientService>();
+        context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
     }
 }

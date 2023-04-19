@@ -15,8 +15,8 @@ namespace CAServer.CoinGeckoApi{
     {
         private readonly IDistributedCache<RequestTime> _requestTimeCache;
 
-        // The CoinGecko limit 100 requests/minute;
-        private const int MaxRequestTime = 90;
+        // The CoinGecko limit 10-30 requests/minute;
+        private const int MaxRequestTime = 10;
 
         public RequestLimitProvider(IDistributedCache<RequestTime> requestTimeCache)
         {

@@ -16,7 +16,7 @@ public interface IHttpService
     
     Task<T> GetResponseAsync<T>(string url, string? version = null,
         HttpStatusCode expectedStatusCode = HttpStatusCode.OK);
-
+    
     Task<T?> PostResponseAsync<T>(string url, Dictionary<string, string> parameters,
         string? version = null, HttpStatusCode expectedStatusCode = HttpStatusCode.OK,
         AuthenticationHeaderValue? authenticationHeaderValue = null);
@@ -56,8 +56,7 @@ public class HttpService : IHttpService
             : new JsonSerializerOptions();
         return await JsonSerializer.DeserializeAsync<T>(stream, jsonSerializerOptions);
     }
-
-
+    
     public async Task<T?> PostResponseAsync<T>(string url, Dictionary<string, string> parameters,
         string? version = null,
         HttpStatusCode expectedStatusCode = HttpStatusCode.OK,

@@ -6,12 +6,12 @@ public static class ActivityConstants
 {
     public static readonly List<string> DefaultTypes = new()
     {
-        "Transfer", "SocialRecovery", "RemoveManager", "AddManager"
+        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
     };
 
     public static readonly HashSet<string> AllSupportTypes = new()
     {
-        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManager", "AddManager"
+        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
     };
     
     public static readonly List<string> TransferTypes = new()
@@ -21,6 +21,8 @@ public static class ActivityConstants
     
     public static readonly List<string> ContractTypes = new()
     {
-        "SocialRecovery", "RemoveManager", "AddManager"
+        "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
     };
+    
+    public static readonly string Zero = "0";
 }

@@ -1,12 +1,7 @@
 using AutoMapper;
-using CAServer.CoinGeckoApi;
 using CAServer.Grains;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
-using CAServer.Grains.Grain.Tokens.UserTokens;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Orleans;
 using Orleans.Hosting;
 using Orleans.TestingHost;
 using Volo.Abp.AutoMapper;
@@ -23,7 +18,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     {
         var builder = new TestClusterBuilder();
         builder.AddSiloBuilderConfigurator<TestSiloConfigurations>();
-        builder.AddClientBuilderConfigurator<TestClientBuilderConfigurator>();
+        // builder.AddClientBuilderConfigurator<TestClientBuilderConfigurator>();
         Cluster = builder.Build();
         Cluster.Deploy();
     }
@@ -42,8 +37,8 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         {
             hostBuilder.ConfigureServices(services =>
                 {
-                    services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
-                    services.AddSingleton<IRequestLimitProvider, RequestLimitProvider>();
+                    // services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
+                    // services.AddSingleton<IRequestLimitProvider, RequestLimitProvider>();
                     services.AddMemoryCache();
                     services.AddDistributedMemoryCache();
                     services.AddAutoMapper(typeof(CAServerGrainsModule).Assembly);
@@ -103,9 +98,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     });
                     services.AddTransient<IMapperAccessor>(provider => provider.GetRequiredService<MapperAccessor>());
                     
-                    services.Configure<CoinGeckoOptions>(o => { o.CoinIdMapping["ELF"] = "aelf"; });
+                    // services.Configure<CoinGeckoOptions>(o => { o.CoinIdMapping["ELF"] = "aelf"; });
                 })
-                .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName)
+                // .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName)
                 .AddMemoryGrainStorage("PubSubStore")
                 .AddMemoryGrainStorageAsDefault();
         }
@@ -116,9 +111,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         public IMapper Mapper { get; set; }
     }
 
-    private class TestClientBuilderConfigurator : IClientBuilderConfigurator
-    {
-        public void Configure(IConfiguration configuration, IClientBuilder clientBuilder) => clientBuilder
-            .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName);
-    }
+    // private class TestClientBuilderConfigurator : IClientBuilderConfigurator
+    // {
+    //     public void Configure(IConfiguration configuration, IClientBuilder clientBuilder) => clientBuilder
+    //         .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName);
+    // }
 }
