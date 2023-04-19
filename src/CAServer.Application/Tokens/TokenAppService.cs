@@ -4,8 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
+using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -18,10 +20,12 @@ namespace CAServer.Tokens;
 public class TokenAppService : CAServerAppService, ITokenAppService
 {
     private readonly IClusterClient _clusterClient;
+    private readonly ContractAddressOptions _contractAddressOptions;
 
-    public TokenAppService(IClusterClient clusterClient)
+    public TokenAppService(IClusterClient clusterClient, IOptions<ContractAddressOptions> contractAddressesOptions)
     {
         _clusterClient = clusterClient;
+        _contractAddressOptions = contractAddressesOptions.Value;
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -60,7 +64,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         };
     }
 
-    public async Task<ListResultDto<TokenPriceDataDto>> GetTokenHistoryPriceDataAsync(List<GetTokenHistoryPriceInput> inputs)
+    public async Task<ListResultDto<TokenPriceDataDto>> GetTokenHistoryPriceDataAsync(
+        List<GetTokenHistoryPriceInput> inputs)
     {
         var result = new List<TokenPriceDataDto>();
         try
@@ -73,6 +78,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
                     result.Add(new TokenPriceDataDto());
                     continue;
                 }
+
                 var grainId = GrainIdHelper.GenerateGrainId(token.Symbol.ToLower(), time);
                 var grain = _clusterClient.GetGrain<ITokenPriceSnapshotGrain>(grainId);
                 var priceResult = await grain.GetHistoryPriceAsync(token.Symbol.ToLower(), time);
@@ -80,6 +86,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
                 {
                     throw new UserFriendlyException(priceResult.Message);
                 }
+
                 result.Add(priceResult.Data);
             }
         }
@@ -93,5 +100,15 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         {
             Items = result
         };
+    }
+
+    public Task<ContractAddressDto> GetContractAddressAsync()
+    {
+        return Task.FromResult(new ContractAddressDto
+        {
+            ContractName = _contractAddressOptions.TokenClaimAddress.ContractName,
+            MainChainAddress = _contractAddressOptions.TokenClaimAddress.MainChainAddress,
+            SideChainAddress = _contractAddressOptions.TokenClaimAddress.SideChainAddress
+        });
     }
 }

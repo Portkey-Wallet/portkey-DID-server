@@ -16,14 +16,14 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IGraphQLProvider
 {
-    public Task<long> GetIndexBlockHeightAsync(string chainId);
-    public Task<long> GetLastEndHeightAsync(string chainId, string type);
-    public Task SetLastEndHeightAsync(string chainId, string type, long height);
+    Task<long> GetIndexBlockHeightAsync(string chainId);
+    Task<long> GetLastEndHeightAsync(string chainId, string type);
+    Task SetLastEndHeightAsync(string chainId, string type, long height);
 
-    public Task<List<QueryEventDto>> GetLoginGuardianTransactionInfosAsync(
+    Task<List<QueryEventDto>> GetLoginGuardianTransactionInfosAsync(
         string chainId, long startBlockHeight, long endBlockHeight);
 
-    public Task<List<QueryEventDto>> GetManagerTransactionInfosAsync(string chainId,
+    Task<List<QueryEventDto>> GetManagerTransactionInfosAsync(string chainId,
         long startBlockHeight, long endBlockHeight);
 
     Task<CaHolderTransactionInfos> GetToReceiveTransactionsAsync(string chainId, long startHeight,

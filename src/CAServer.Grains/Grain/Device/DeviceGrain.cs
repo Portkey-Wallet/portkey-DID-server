@@ -39,4 +39,10 @@ public class DeviceGrain : Grain<DeviceState>, IDeviceGrain
 
         return Convert.ToBase64String(salt).Substring(0, size);
     }
+
+    public async Task SetSaltAsync(string salt)
+    {
+        State.Salt = salt;
+        await WriteStateAsync();
+    }
 }

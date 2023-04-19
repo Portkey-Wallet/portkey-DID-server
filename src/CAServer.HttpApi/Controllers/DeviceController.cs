@@ -3,7 +3,6 @@ using CAServer.Device;
 using CAServer.Device.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Volo.Abp;
 
 namespace CAServer.Controllers;
 
@@ -19,15 +18,15 @@ public class DeviceController
     {
         _deviceAppService = deviceAppService;
     }
-    
+
     [HttpPost("device/encrypt")]
-    public async Task<DeviceServiceResultDto> EncryptDeviceInfoAsync(DeviceServiceDto input)
+    public async Task<DeviceServiceResultDto> EncryptDeviceInfoAsync([FromBody] DeviceServiceDto input)
     {
         return await _deviceAppService.EncryptDeviceInfoAsync(input);
     }
 
     [HttpPost("device/decrypt")]
-    public async Task<DeviceServiceResultDto> DecryptDeviceInfoAsync(DeviceServiceDto input)
+    public async Task<DeviceServiceResultDto> DecryptDeviceInfoAsync([FromBody] DeviceServiceDto input)
     {
         return await _deviceAppService.DecryptDeviceInfoAsync(input);
     }

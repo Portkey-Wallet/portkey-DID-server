@@ -103,6 +103,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     private async Task GetActivityName(List<string> addresses, GetActivityDto dto, IndexerTransaction transaction)
     {
+        // cross chain transfer to self(such as from main to side)
+        // first: transfer to manager.
+        // second: manager to side address.
         var isCrossFirstTransfer = string.Equals(dto.TransactionType, "Transfer")
                                    && transaction.TransferInfo != null
                                    && string.Equals(transaction.FromAddress, transaction.TransferInfo.ToAddress)

@@ -27,4 +27,10 @@ public class TokenController : CAServerController
     {
         return await _tokenAppService.GetTokenPriceListAsync(symbols);
     }
+
+    [HttpGet("contractAddress")]
+    public Task<ContractAddressDto> GetContractAddressAsync()
+    {
+        return _tokenAppService.GetContractAddressAsync();
+    }
 }

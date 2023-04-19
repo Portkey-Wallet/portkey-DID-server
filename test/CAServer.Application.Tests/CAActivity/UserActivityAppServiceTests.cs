@@ -28,10 +28,10 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
     {
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
-        services.AddSingleton(GetMockActivityProvider());
         services.AddSingleton(GetMockTokenAppService());
         services.AddSingleton(GetUserContactProvider());
         services.AddSingleton(GetActivitiesIcon());
+        services.AddSingleton(GetMockActivityProvider());
     }
     
     private void Login(Guid userId)

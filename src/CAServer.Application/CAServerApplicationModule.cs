@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
+using CAServer.Alchemy;
 using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Device;
@@ -55,7 +56,9 @@ public class CAServerApplicationModule : AbpModule
         //Configure<IndexPrefixOptions>(configuration.GetSection("IndexPrefixSetting"));
         Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
         Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
+        Configure<AlchemyOptions>(configuration.GetSection("Alchemy"));
         Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
+        Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

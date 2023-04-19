@@ -18,11 +18,11 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IContractAppService
 {
-    public Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
-    public Task SocialRecoveryAsync(AccountRecoverCreateEto message);
-    public Task QueryEventsAndSyncAsync();
-    public Task InitializeIndexAsync();
-    public Task InitializeIndexAsync(long blockHeight);
+    Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
+    Task SocialRecoveryAsync(AccountRecoverCreateEto message);
+    Task QueryEventsAndSyncAsync();
+    Task InitializeIndexAsync();
+    Task InitializeIndexAsync(long blockHeight);
 }
 
 public class ContractAppService : IContractAppService
@@ -136,8 +136,8 @@ public class ContractAppService : IContractAppService
 
         _logger.LogInformation("Register state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));
-
-        await ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "");
+        
+        ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "");
     }
 
     public async Task SocialRecoveryAsync(AccountRecoverCreateEto message)
@@ -211,7 +211,7 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("Recovery state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
-        await ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "");
+        ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "");
     }
 
     private async Task<bool> ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
@@ -235,7 +235,7 @@ public class ContractAppService : IContractAppService
             foreach (var sideChain in _chainOptions.ChainInfos.Values.Where(c =>
                          !c.IsMainChain && c.ChainId != optionChainId))
             {
-                await _contractProvider.SideChainCheckMainChainBlockIndex(sideChain.ChainId,
+                await _contractProvider.SideChainCheckMainChainBlockIndexAsync(sideChain.ChainId,
                     syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight);
 
                 var resultDto = await _contractProvider.SyncTransactionAsync(sideChain.ChainId, syncHolderInfoInput);
@@ -315,7 +315,7 @@ public class ContractAppService : IContractAppService
         {
             foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
             {
-                await _contractProvider.SideChainCheckMainChainBlockIndex(info.ChainId, lastChainHeight);
+                await _contractProvider.SideChainCheckMainChainBlockIndexAsync(info.ChainId, lastChainHeight);
 
                 foreach (var dto in dict.Keys)
                 {

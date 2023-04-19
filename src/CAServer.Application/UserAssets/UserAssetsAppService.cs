@@ -48,6 +48,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             var res = await _userAssetsProvider.GetUserTokenInfoAsync(requestDto.CaAddresses, "",
                 0, requestDto.SkipCount + requestDto.MaxResultCount);
+            
+            res.CaHolderTokenBalanceInfo.Data =
+                res.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
 
             var chainInfos = await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddresses);
             var chainIds = chainInfos.CaHolderManagerInfo.Select(c => c.ChainId).Distinct().ToList();

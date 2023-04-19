@@ -10,6 +10,4 @@ public static class TimeHelper
         //return start.AddMilliseconds(timeStamp).ToLocalTime(); // DateTime.UtcNow.
         return start.AddMilliseconds(timeStamp).ToUniversalTime();
     }
-    
-    
 }

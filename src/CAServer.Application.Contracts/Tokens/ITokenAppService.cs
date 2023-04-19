@@ -10,4 +10,6 @@ public interface ITokenAppService
 {
     Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols);
     Task<ListResultDto<TokenPriceDataDto>> GetTokenHistoryPriceDataAsync(List<GetTokenHistoryPriceInput> inputs);
+
+    Task<ContractAddressDto> GetContractAddressAsync();
 }
