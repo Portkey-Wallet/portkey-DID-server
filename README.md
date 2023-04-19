@@ -73,7 +73,7 @@ We welcome contributions to the Portkey DID Server project. If you would like to
 
 ## License
 
-Portkey Contract is licensed under [MIT](https://github.com/Portkey-Wallet/portkey-DID-server/blob/master/LICENSE).
+Portkey DID Server is licensed under [MIT](https://github.com/Portkey-Wallet/portkey-DID-server/blob/master/LICENSE).
 
 ## Contact
 
