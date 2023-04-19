@@ -43,6 +43,7 @@ public class ChainGrain : Grain<ChainState>, IChainGrain
         State.CaContractAddress = chainDto.CaContractAddress;
         State.ExplorerUrl = chainDto.ExplorerUrl;
         State.LastModifyTime = DateTime.UtcNow;
+        State.IsDeleted = false;
 
         await WriteStateAsync();
 
@@ -62,7 +63,6 @@ public class ChainGrain : Grain<ChainState>, IChainGrain
         }
 
         State.Id = this.GetPrimaryKeyString();
-        State.ChainId = chainDto.ChainId;
         State.ChainName = chainDto.ChainName;
         State.EndPoint = chainDto.EndPoint;
         State.CaContractAddress = chainDto.CaContractAddress;

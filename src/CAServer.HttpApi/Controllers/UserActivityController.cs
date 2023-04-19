@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.CAActivity;
 using CAServer.CAActivity.Dto;
@@ -7,12 +6,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
-namespace Controllers.Controllers;
+namespace CAServer.Controllers;
 
 [RemoteService]
 [Area("app")]
 [ControllerName("UserActivity")]
 [Route("api/app/user/activities")]
+[Authorize]
 public class UserActivityController
 {
     private readonly IUserActivityAppService _userActivityAppService;
@@ -23,13 +23,13 @@ public class UserActivityController
     }
 
     [HttpPost("activities")]
-    public async Task<List<GetActivitiesDto>> GetActivitiesAsync(GetActivitiesRequestDto requestDto)
+    public async Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto requestDto)
     {
         return await _userActivityAppService.GetActivitiesAsync(requestDto);
     }
 
     [HttpPost("activity")]
-    public async Task<GetActivitiesDto> GetActivityAsync(GetActivityRequestDto requestDto)
+    public async Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto requestDto)
     {
         return await _userActivityAppService.GetActivityAsync(requestDto);
     }

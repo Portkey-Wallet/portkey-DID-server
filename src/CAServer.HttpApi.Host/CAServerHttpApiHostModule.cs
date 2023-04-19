@@ -107,7 +107,10 @@ public class CAServerHttpApiHostModule : AbpModule
 
     private void ConfigureConventionalControllers()
     {
-        Configure<AbpAspNetCoreMvcOptions>(options => { options.ConventionalControllers.Create(typeof(CAServerApplicationModule).Assembly); });
+        Configure<AbpAspNetCoreMvcOptions>(options =>
+        {
+            options.ConventionalControllers.Create(typeof(CAServerApplicationModule).Assembly);
+        });
     }
 
     private void ConfigureAuthentication(ServiceConfigurationContext context, IConfiguration configuration)
@@ -123,18 +126,44 @@ public class CAServerHttpApiHostModule : AbpModule
 
     private static void ConfigureSwaggerServices(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        context.Services.AddAbpSwaggerGenWithOAuth(
-            configuration["AuthServer:Authority"],
-            new Dictionary<string, string>
-            {
-                { "CAServer", "CAServer API" }
-            },
-            options =>
+        context.Services.AddAbpSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", Version = "v1" });
                 options.DocInclusionPredicate((docName, description) => true);
                 options.CustomSchemaIds(type => type.FullName);
-            });
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+                {
+                    Name = "Authorization",
+                    Scheme = "bearer",
+                    Description = "Specify the authorization token.",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                        },
+                        new string[] { }
+                    }
+                });
+            }
+        );
+        // context.Services.AddAbpSwaggerGenWithOAuth(
+        //     configuration["AuthServer:Authority"],
+        //     new Dictionary<string, string>
+        //     {
+        //         { "CAServer", "CAServer API" }
+        //     },
+        //     options =>
+        //     {
+        //         options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", Version = "v1" });
+        //         options.DocInclusionPredicate((docName, description) => true);
+        //         options.CustomSchemaIds(type => type.FullName);
+        //     });
     }
 
     private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
@@ -227,7 +256,8 @@ public class CAServerHttpApiHostModule : AbpModule
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
     {
-        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"], new NewtonsoftJsonSerializer()));
+        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
+            new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
 
@@ -277,16 +307,19 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseAuthorization();
 
-        app.UseSwagger();
-        app.UseAbpSwaggerUI(options =>
+        if (env.IsDevelopment())
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API");
+            app.UseSwagger();
+            app.UseAbpSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API");
 
-            var configuration = context.GetConfiguration();
-            options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
-            options.OAuthScopes("CAServer");
-        });
-
+                // var configuration = context.GetConfiguration();
+                // options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
+                // options.OAuthScopes("CAServer");
+            });
+        }
+        
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();

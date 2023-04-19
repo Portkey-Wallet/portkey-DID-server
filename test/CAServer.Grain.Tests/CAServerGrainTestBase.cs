@@ -13,8 +13,3 @@ public class CAServerGrainTestBase :CAServerTestBase<CAServerGrainTestModule>
         Cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 }
-
-public class CAServerGrainOrleansTestBase:CAServerOrleansTestBase<CAServerGrainTestModule>
-{
-    
-}

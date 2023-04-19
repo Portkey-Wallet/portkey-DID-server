@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElf.Indexing.Elasticsearch.Options;
 using CAServer.Entities.Es;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Volo.Abp.Application.Dtos;
@@ -32,8 +35,17 @@ public abstract class SearchService<TEntity, TKey> : ISearchService
 
     public async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
     {
-        
-        var (totalCount, items) = await _nestRepository.GetListByLucenceAsync(input.Filter, input.Sort, input.SortType,
+        Func<SortDescriptor<TEntity>, IPromise<IList<ISort>>> sort = null;
+        if (!string.IsNullOrEmpty(input.Sort))
+        {
+            var sortList = ConvertSortOrder(input.Sort);
+            var sortDescriptor = new SortDescriptor<TEntity>();
+            sortDescriptor = sortList.Aggregate(sortDescriptor,
+                (current, sortType) => current.Field(new Field(sortType.SortField), sortType.SortOrder));
+            sort = s => sortDescriptor;
+        }
+
+        var (totalCount, items) = await _nestRepository.GetListByLucenceAsync(input.Filter, sort,
             input.MaxResultCount,
             input.SkipCount, indexName);
 
@@ -46,6 +58,34 @@ public abstract class SearchService<TEntity, TKey> : ISearchService
             Items = items,
             TotalCount = totalCount
         }, Formatting.None, serializeSetting);
+    }
+
+    private static IEnumerable<SortType> ConvertSortOrder(string sort)
+    {
+        var sortList = new List<SortType>();
+        foreach (var sortOrder in sort.Split(","))
+        {
+            var array = sortOrder.Split(" ");
+            var order = SortOrder.Ascending;
+            if (string.Equals(array.Last(), "asc", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(array.Last(), "ascending", StringComparison.OrdinalIgnoreCase))
+            {
+                order = SortOrder.Ascending;
+            }
+            else if (string.Equals(array.Last(), "desc", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(array.Last(), "descending", StringComparison.OrdinalIgnoreCase))
+            {
+                order = SortOrder.Descending;
+            }
+
+            sortList.Add(new SortType
+            {
+                SortField = array.First(),
+                SortOrder = order
+            });
+        }
+
+        return sortList;
     }
 }
 

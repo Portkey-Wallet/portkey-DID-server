@@ -49,7 +49,7 @@ public class ContactTest : CAServerApplicationTestBase
         }
         catch (Exception e)
         {
-            Assert.True(e is NullReferenceException);
+            Assert.True(e is AbpValidationException);
         }
     }
 

@@ -21,7 +21,7 @@ public interface IContractAppService
     public Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     public Task QueryEventsAndSyncAsync();
     public Task InitializeIndexAsync();
-    public Task InitializeIndexAsync(long startBlockHeight);
+    public Task InitializeIndexAsync(long blockHeight);
 }
 
 public class ContractAppService : IContractAppService
@@ -323,7 +323,7 @@ public class ContractAppService : IContractAppService
             return false;
         }
 
-        _logger.LogWarning("LoginGuardianAccount: {loginGuardianAccount} on chain {id} is occupied",
+        _logger.LogInformation("LoginGuardianAccount: {loginGuardianAccount} on chain {id} is occupied",
             loginGuardianAccount, chainId);
         return true;
     }
@@ -416,7 +416,7 @@ public class ContractAppService : IContractAppService
     {
         try
         {
-            var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(QueryType.LoginGuardianAccount + chainId);
+            var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardianAccount);
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
             var endBlockHeight = GetEndBlockHeight(lastEndHeight, _indexOptions.IndexInterval, currentIndexHeight);
 
@@ -462,14 +462,14 @@ public class ContractAppService : IContractAppService
     {
         try
         {
-            var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(QueryType.Manager + chainId);
+            var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.Manager);
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
             var endBlockHeight = GetEndBlockHeight(lastEndHeight, _indexOptions.IndexInterval, currentIndexHeight);
 
             if (endBlockHeight == ContractAppServiceConstant.LongError)
             {
                 _logger.LogWarning(
-                    "QueryManagerEventsAndSyncAsync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index} ",
+                    "QueryManagerEventsAndSyncAsync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index}",
                     chainId, lastEndHeight, currentIndexHeight);
                 return;
             }
@@ -515,6 +515,7 @@ public class ContractAppService : IContractAppService
                     dto.ChangeType, chainId, dto.CaHash, dto.BlockHeight);
 
                 var currentBlockHeight = await _contractProvider.GetBlockHeightAsync(chainId);
+
                 if (currentBlockHeight <= dto.BlockHeight)
                 {
                     _logger.LogWarning("Current node block height should be large than the event");
@@ -592,8 +593,8 @@ public class ContractAppService : IContractAppService
         var tasks = new List<Task>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            var height = await _graphQLProvider.GetLastEndHeightAsync(QueryType.LoginGuardianAccount + chainId);
-            var height1 = await _graphQLProvider.GetLastEndHeightAsync(QueryType.Manager + chainId);
+            var height = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardianAccount);
+            var height1 = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.Manager);
 
             var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
             if (height == 0)

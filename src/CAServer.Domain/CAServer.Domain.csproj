@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AElf.Indexing.ElasticSearch" Version="0.0.13" />
+    <PackageReference Include="AElf.Indexing.ElasticSearch" Version="0.0.16" />
     <PackageReference Include="Volo.Abp.Emailing" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.Identity.Domain" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.PermissionManagement.Domain.Identity" Version="7.0.0" />
@@ -29,10 +29,10 @@
     <PackageReference Include="Volo.Abp.PermissionManagement.Domain.OpenIddict" Version="7.0.0" />
     <!--<PackageReference Include="AElf.Indexing.Elasticsearch" Version="0.0.12" />-->
     <PackageReference Include="AElf.Client" Version="1.1.0" />
-    <PackageReference Include="AElf.Core" Version="1.2.2" />
-    <PackageReference Include="AElf.CSharp.Core" Version="1.2.2" />
-    <PackageReference Include="AElf.Kernel.Types" Version="1.2.2" />
-    <PackageReference Include="AElf.Types" Version="1.2.2" />
+    <PackageReference Include="AElf.Core" Version="1.2.3" />
+    <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
+    <PackageReference Include="AElf.Kernel.Types" Version="1.2.3" />
+    <PackageReference Include="AElf.Types" Version="1.2.3" />
     <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
   </ItemGroup>
 
@@ -47,6 +47,9 @@
     <Reference Include="Microsoft.AspNetCore.SignalR.Core">
       <HintPath>..\..\..\..\..\..\usr\local\share\dotnet\shared\Microsoft.AspNetCore.App\7.0.0\Microsoft.AspNetCore.SignalR.Core.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Entities\Etos" />
   </ItemGroup>
 
 </Project>

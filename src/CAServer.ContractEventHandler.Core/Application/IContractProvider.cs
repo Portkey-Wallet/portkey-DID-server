@@ -37,6 +37,9 @@ public interface IContractProvider
 
     public Task<TransactionResultDto> SyncTransactionAsync(string chainId,
         SyncHolderInfoInput syncHolderInfoInput);
+
+    Task<ChainStatusDto> GetChainStatusAsync(string chainId);
+    Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false);
 }
 
 public class ContractProvider : IContractProvider
@@ -117,7 +120,7 @@ public class ContractProvider : IContractProvider
             return new GetHolderInfoOutput();
         }
 
-        _logger.LogInformation(MethodName.GetHolderInfo + " result: {output}",
+        _logger.LogDebug(MethodName.GetHolderInfo + " result: {output}",
             JsonConvert.SerializeObject(output.ToString(), Formatting.Indented));
 
         return output;
@@ -182,7 +185,7 @@ public class ContractProvider : IContractProvider
             return result.Value;
         }
 
-        _logger.LogInformation(MethodName.GetParentChainHeight + ": Empty result");
+        _logger.LogError(MethodName.GetParentChainHeight + ": Empty result");
         return ContractAppServiceConstant.LongError;
     }
 
@@ -199,7 +202,7 @@ public class ContractProvider : IContractProvider
             return result.Value;
         }
 
-        _logger.LogInformation(MethodName.GetSideChainHeight + ": Empty result");
+        _logger.LogError(MethodName.GetSideChainHeight + ": Empty result");
         return ContractAppServiceConstant.LongError;
     }
 
@@ -331,5 +334,19 @@ public class ContractProvider : IContractProvider
                 JsonConvert.SerializeObject(input.ToString(), Formatting.Indented));
             return new TransactionResultDto();
         }
+    }
+    
+    public async Task<ChainStatusDto> GetChainStatusAsync(string chainId)
+    {
+        var chainInfo = _chainOptions.ChainInfos[chainId];
+        var client = new AElfClient(chainInfo.BaseUrl);
+        return await client.GetChainStatusAsync();
+    }
+
+    public async Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false)
+    {
+        var chainInfo = _chainOptions.ChainInfos[chainId];
+        var client = new AElfClient(chainInfo.BaseUrl);
+        return await client.GetBlockByHeightAsync(height, includeTransactions);
     }
 }

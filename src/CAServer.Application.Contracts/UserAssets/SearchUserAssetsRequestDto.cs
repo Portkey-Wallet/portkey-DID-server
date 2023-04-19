@@ -1,8 +1,10 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace CAServer.UserAssets;
 
 public class SearchUserAssetsRequestDto : GetAssetsBase
 {
-    [Required] [Range(1, 100)] public string KeyWord { get; set; }
+    [MaxLength(100)] public string Keyword { get; set; }
 }

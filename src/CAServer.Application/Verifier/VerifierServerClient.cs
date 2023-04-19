@@ -18,7 +18,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly ILogger<VerifierServerClient> _logger;
 
 
-    public VerifierServerClient(IOptions<AdaptableVariableOptions> adaptableVariableOptions, IGetVerifierServerProvider getVerifierServerProvider, ILogger<VerifierServerClient> logger)
+    public VerifierServerClient(IOptions<AdaptableVariableOptions> adaptableVariableOptions,
+        IGetVerifierServerProvider getVerifierServerProvider, ILogger<VerifierServerClient> logger)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
@@ -42,18 +43,20 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
     }
 
-    public async Task<ResponseResultDto<VerifierServerResponse>> SendVerificationRequestAsync(VerifierCodeRequestDto dto)
+    public async Task<ResponseResultDto<VerifierServerResponse>> SendVerificationRequestAsync(
+        VerifierCodeRequestDto dto)
     {
-        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId,dto.ChainId);
+        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
         if (null == endPoint)
         {
-            _logger.LogInformation("No Available Service Tips.{verifierId}",dto.VerifierId);
+            _logger.LogInformation("No Available Service Tips.{verifierId}", dto.VerifierId);
             return new ResponseResultDto<VerifierServerResponse>
             {
                 Success = false,
                 Message = "No Available Service Tips."
             };
         }
+
         var url = endPoint + "/api/app/account/sendVerificationRequest";
         var parameters = new Dictionary<string, string>
         {
@@ -66,16 +69,18 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
     public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input)
     {
-        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId,input.ChainId);
+        var endPoint =
+            await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
         if (null == endPoint)
         {
-            _logger.LogInformation("No Available Service Tips.{VerifierId}",input.VerifierId);
+            _logger.LogInformation("No Available Service Tips.{VerifierId}", input.VerifierId);
             return new ResponseResultDto<VerificationCodeResponse>
             {
                 Success = false,
                 Message = "No Available Service Tips."
             };
         }
+
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {

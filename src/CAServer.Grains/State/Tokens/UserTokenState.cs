@@ -1,4 +1,4 @@
-using CAServer.Tokens;
+using CAServer.Tokens.Dtos;
 
 namespace CAServer.Grains.State.Tokens;
 
@@ -11,11 +11,3 @@ public class UserTokenState
     public int SortWeight { get; set; }
     public Token Token { get; set; }
 }
-// public class Token
-// {
-//     public Guid Id { get; set; }
-//     public string ChainId {get; set; }
-//     public string Address { get; set; }
-//     public string Symbol { get; set; }
-//     public int Decimals { get; set; }
-// }

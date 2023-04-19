@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using CAServer.CAAccount.Dtos;
 using CAServer.Hubs;
 using Volo.Abp.Account;
 using Volo.Abp.DependencyInjection;
@@ -31,11 +32,18 @@ public class ClientDemoService : ITransientDependency
         try
         {
             var connection = new HubConnectionBuilder()
-                .WithUrl("http://127.0.0.1:5577/ca")
+                .WithUrl("http://localhost:5577/ca")
                 .Build();
 
             //connection.On<HubResponse<string>>("Sin2", s => { Console.WriteLine($"Receive ping, requestId={s.RequestId} body={s.Body}"); });
-            connection.On<HubResponse<string>>("Ping",          
+            // connection.On<HubResponse<CAServer.Dtos.RegisterCompletedMessageDto>>("caAccountRegister",          
+            //     s =>
+            //     {
+            //         Console.WriteLine(
+            //             $"Receive ping, requestId={s.RequestId} body={JsonConvert.SerializeObject(s.Body)}");
+            //     });
+            
+            connection.On<HubResponse<RecoveryCompletedMessageDto>>("caAccountRecover",          
                 s =>
                 {
                     Console.WriteLine(
@@ -45,7 +53,7 @@ public class ClientDemoService : ITransientDependency
             await connection.StartAsync().ConfigureAwait(false);
 
             await connection.InvokeAsync("Connect",
-                "client_64641");
+                "client_646411");
         }
         catch (Exception e)
         {

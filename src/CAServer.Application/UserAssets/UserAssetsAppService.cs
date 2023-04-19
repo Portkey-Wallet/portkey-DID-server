@@ -2,172 +2,375 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.CAActivity.Provider;
+using CAServer.Entities.Es;
+using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.Auditing;
-using Volo.Abp.Validation;
-using NftProtocol = CAServer.UserAssets.Dtos.NftProtocol;
+using Volo.Abp.Users;
 using Token = CAServer.UserAssets.Dtos.Token;
+using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
 
 namespace CAServer.UserAssets;
 
 [RemoteService(false)]
 [DisableAuditing]
-public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService, IValidationEnabled
+public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 {
     private readonly ILogger<UserAssetsAppService> _logger;
     private readonly ITokenAppService _tokenAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
+    private readonly IUserContactProvider _userContactProvider;
+    private readonly TokenInfoOptions _tokenInfoOptions;
 
     public UserAssetsAppService(
-        ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider)
+        ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
+        IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
+        _userContactProvider = userContactProvider;
+        _tokenInfoOptions = tokenInfoOptions.Value;
+        _tokenAppService = tokenAppService;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
     {
-        var res = await _userAssetsProvider.GetTokenAsync(requestDto.CaAddresses, requestDto.SkipCount, requestDto.MaxResultCount);
-        if (res?.CaHolderTokenBalanceInfo == null)
+        try
         {
-            _logger.LogError("get none of result from token grain, address={caAddresses}", requestDto.CaAddresses);
-            return null;
-        }
+            var res = await _userAssetsProvider.GetUserTokenInfoAsync(requestDto.CaAddresses, "",
+                0, requestDto.SkipCount + requestDto.MaxResultCount);
 
-        var defaultTokenSymbol = await GetUserDefaultToken();
-        var symbols = new List<string>();
-        var dto = new GetTokenDto() { Tokens = new List<Token>() };
-        foreach (var tokenBalance in res.CaHolderTokenBalanceInfo.Where(tokenBalance => tokenBalance.Balance != 0 || tokenBalance.IndexerTokenInfo.Symbol == defaultTokenSymbol))
-        {
-            dto.Tokens.Add(ObjectMapper.Map<TokenBalance, Token>(tokenBalance));
-            symbols.Add(tokenBalance.IndexerTokenInfo.Symbol);
-        }
+            var chainInfos = await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddresses);
+            var chainIds = chainInfos.CaHolderManagerInfo.Select(c => c.ChainId).Distinct().ToList();
 
-        var priceDict = await GetSymbolPrice(symbols);
-        foreach (var token in dto.Tokens)
-        {
-            if (!priceDict.ContainsKey(token.Symbol))
+            var dto = new GetTokenDto
             {
-                continue;
+                Data = new List<Token>(),
+                TotalRecordCount = 0
+            };
+
+            var userDefaultTokenSymbols = await _userAssetsProvider.GetUserDefaultTokenSymbolAsync(CurrentUser.GetId());
+
+            var userTokenSymbols = new List<UserTokenIndex>();
+
+            userTokenSymbols.AddRange(userDefaultTokenSymbols);
+            userTokenSymbols.AddRange(await _userAssetsProvider.GetUserIsDisplayTokenSymbolAsync(CurrentUser.GetId()));
+
+            if (userTokenSymbols.IsNullOrEmpty())
+            {
+                _logger.LogError("get no result from current user {id}", CurrentUser.GetId());
+                return dto;
             }
 
-            var balanceInUsd = priceDict[token.Symbol] * long.Parse(token.Balance);
-            token.BalanceInUsd = balanceInUsd.ToString();
-        }
+            var list = new List<Token>();
 
-        return dto;
-    }
-
-    private async Task<string> GetUserDefaultToken()
-    {
-        return ""; //todo get default token
-    }
-
-    public async Task<GetNFTProtocolsDto> GetNFTProtocolsAsync(GetNFTProtocolsRequestDto requestDto)
-    {
-        var res = await _userAssetsProvider.GetNFTProtocolsAsync(requestDto.CaAddresses, requestDto.SkipCount, requestDto.MaxResultCount);
-        if (res?.userNFTProtocolInfo == null || res.userNFTProtocolInfo.Count == 0)
-        {
-            return new GetNFTProtocolsDto();
-        }
-
-        var dto = new GetNFTProtocolsDto() { Data = new List<NftProtocol>(res.userNFTProtocolInfo.Count) };
-        foreach (var protocol in res.userNFTProtocolInfo.Where(protocol => protocol.TokenIds != null && protocol.TokenIds.Count != 0 && protocol.NftProtocolInfo != null))
-        {
-            dto.Data.Add(ObjectMapper.Map<Provider.NftProtocol, NftProtocol>(protocol));
-        }
-
-        return dto;
-    }
-
-    public async Task<GetNFTItemsDto> GetNFTItemsAsync(GetNftItemsRequestDto requestDto)
-    {
-        const int getItemsSkipCount = 0;
-        const int getItemsMaxResultCount = 2;
-        var res = await _userAssetsProvider.GetNftInfosAsync(requestDto.CaAddresses, requestDto.Symbol, getItemsSkipCount, getItemsMaxResultCount);
-        if (res?.UserNFTInfo == null || res.UserNFTInfo.Count == 0)
-        {
-            return new GetNFTItemsDto();
-        }
-
-        var dto = new GetNFTItemsDto() { Data = new List<NftItem>(res.UserNFTInfo.Count) };
-        foreach (var info in res.UserNFTInfo.Where(info => info.NftInfo != null))
-        {
-            dto.Data.Add(ObjectMapper.Map<UserNftInfo, NftItem>(info));
-        }
-
-        return dto;
-    }
-
-    public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(GetRecentTransactionUsersRequestDto requestDto)
-    {
-        var res = await _userAssetsProvider.GetRecentTransactionUsersAsync(requestDto.CaAddresses, requestDto.SkipCount, requestDto.MaxResultCount);
-        if (res?.CaHolderTransactionAddressInfo == null || res.CaHolderTransactionAddressInfo.Count == 0)
-        {
-            return new GetRecentTransactionUsersDto();
-        }
-
-        var dto = new GetRecentTransactionUsersDto() { Data = new List<RecentTransactionUser>(res.CaHolderTransactionAddressInfo.Count) };
-        var userCaAddresses = new List<ValueTuple<string, string>>();
-        foreach (var info in res.CaHolderTransactionAddressInfo)
-        {
-            dto.Data.Add(ObjectMapper.Map<CAHolderTransactionAddress, RecentTransactionUser>(info));
-            userCaAddresses.Add(new ValueTuple<string, string>(info.CaAddress, info.ChainId));
-        }
-
-        //get all user's managerAddress
-        var managerDict = await GetUserNameBatch(userCaAddresses);
-        foreach (var user in dto.Data)
-        {
-            var userAddress = new ValueTuple<string, string>(user.CaAddress, user.ChainId);
-            if (!managerDict.ContainsKey(userAddress))
+            foreach (var symbol in userTokenSymbols)
             {
-                continue;
+                if (!chainIds.Contains(symbol.Token.ChainId))
+                {
+                    continue;
+                }
+
+                var tokenInfo = res.CaHolderTokenBalanceInfo.Data.FirstOrDefault(t =>
+                    t.TokenInfo.Symbol == symbol.Token.Symbol && t.ChainId == symbol.Token.ChainId);
+                if (tokenInfo == null)
+                {
+                    var data = await _userAssetsProvider.GetUserTokenInfoAsync(requestDto.CaAddresses,
+                        symbol.Token.Symbol, 0, requestDto.CaAddresses.Count);
+                    tokenInfo = data.CaHolderTokenBalanceInfo.Data.FirstOrDefault(
+                        t => t.ChainId == symbol.Token.ChainId);
+                    tokenInfo ??= new IndexerTokenInfo
+                    {
+                        Balance = 0,
+                        ChainId = symbol.Token.ChainId,
+                        TokenInfo = new TokenInfo
+                        {
+                            Decimals = symbol.Token.Decimals,
+                            Symbol = symbol.Token.Symbol,
+                            TokenContractAddress = symbol.Token.Address
+                        }
+                    };
+                }
+                else
+                {
+                    res.CaHolderTokenBalanceInfo.Data.Remove(tokenInfo);
+                }
+
+                var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
+
+                if (_tokenInfoOptions.TokenInfos.ContainsKey(token.Symbol))
+                {
+                    token.ImageUrl = _tokenInfoOptions.TokenInfos[token.Symbol].ImageUrl;
+                }
+
+                list.Add(token);
             }
 
-            user.Name = managerDict[userAddress];
-        }
+            if (!res.CaHolderTokenBalanceInfo.Data.IsNullOrEmpty())
+            {
+                var userNotDisplayTokenAsync =
+                    await _userAssetsProvider.GetUserNotDisplayTokenAsync(CurrentUser.GetId());
 
-        return dto;
+                while (list.Count < requestDto.MaxResultCount + requestDto.SkipCount)
+                {
+                    var userAsset = res.CaHolderTokenBalanceInfo.Data.FirstOrDefault();
+                    if (userAsset == null)
+                    {
+                        break;
+                    }
+
+                    if (!userNotDisplayTokenAsync.Contains((userAsset.TokenInfo.Symbol, userAsset.ChainId)))
+                    {
+                        list.Add(ObjectMapper.Map<IndexerTokenInfo, Token>(userAsset));
+                    }
+
+                    res.CaHolderTokenBalanceInfo.Data.Remove(userAsset);
+                }
+            }
+
+            dto.TotalRecordCount = list.Count;
+
+            var resultList = new List<Token>();
+
+            list.Sort((t1, t2) => t1.Symbol != t2.Symbol
+                ? string.Compare(t1.Symbol, t2.Symbol, StringComparison.Ordinal)
+                : string.Compare(t1.ChainId, t2.ChainId, StringComparison.Ordinal));
+
+            resultList.AddRange(list.Where(t => userDefaultTokenSymbols.Select(s => s.Token.Symbol).Contains(t.Symbol))
+                .ToList());
+            resultList.AddRange(list.Where(t => !userDefaultTokenSymbols.Select(s => s.Token.Symbol).Contains(t.Symbol))
+                .ToList());
+
+            resultList = resultList.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
+            var symbols = resultList.Select(t => t.Symbol).ToList();
+
+            dto.Data.AddRange(resultList);
+
+            var priceDict = await GetSymbolPrice(symbols);
+            foreach (var token in dto.Data)
+            {
+                if (!priceDict.ContainsKey(token.Symbol))
+                {
+                    continue;
+                }
+
+                var balanceInUsd = priceDict[token.Symbol] * long.Parse(token.Balance);
+                token.BalanceInUsd = balanceInUsd.ToString();
+            }
+
+            return dto;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetTokenAsync Error. {dto}", requestDto);
+            return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
+        }
+    }
+
+    public async Task<GetNftCollectionsDto> GetNFTCollectionsAsync(GetNftCollectionsRequestDto requestDto)
+    {
+        try
+        {
+            var res = await _userAssetsProvider.GetUserNftCollectionInfoAsync(requestDto.CaAddresses,
+                requestDto.SkipCount, requestDto.MaxResultCount);
+
+            var dto = new GetNftCollectionsDto
+            {
+                Data = new List<NftCollection>(),
+                TotalRecordCount = res?.CaHolderNFTCollectionBalanceInfo?.TotalRecordCount ?? 0
+            };
+
+            if (res?.CaHolderNFTCollectionBalanceInfo?.Data == null ||
+                res.CaHolderNFTCollectionBalanceInfo.Data.Count == 0)
+            {
+                return dto;
+            }
+
+            foreach (var nftCollectionInfo in res.CaHolderNFTCollectionBalanceInfo.Data)
+            {
+                dto.Data.Add(ObjectMapper.Map<IndexerNftCollectionInfo, NftCollection>(nftCollectionInfo));
+            }
+
+            return dto;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetNFTCollectionsAsync Error. {dto}", requestDto);
+            return new GetNftCollectionsDto { Data = new List<NftCollection>(), TotalRecordCount = 0 };
+        }
+    }
+
+    public async Task<GetNftItemsDto> GetNFTItemsAsync(GetNftItemsRequestDto requestDto)
+    {
+        try
+        {
+            var res = await _userAssetsProvider.GetUserNftInfoAsync(requestDto.CaAddresses,
+                requestDto.Symbol, requestDto.SkipCount, requestDto.MaxResultCount);
+
+            var dto = new GetNftItemsDto
+            {
+                Data = new List<NftItem>(),
+                TotalRecordCount = res?.CaHolderNFTBalanceInfo?.TotalRecordCount ?? 0
+            };
+
+            if (res?.CaHolderNFTBalanceInfo?.Data == null || res.CaHolderNFTBalanceInfo.Data.Count == 0)
+            {
+                return dto;
+            }
+
+            foreach (var nftInfo in res.CaHolderNFTBalanceInfo.Data.Where(n => n.NftInfo != null))
+            {
+                if (nftInfo.NftInfo.Symbol.IsNullOrEmpty())
+                {
+                    continue;
+                }
+
+                var nftItem = ObjectMapper.Map<IndexerNftInfo, NftItem>(nftInfo);
+
+                nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
+
+                dto.Data.Add(nftItem);
+            }
+
+            return dto;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetNFTItemsAsync Error. {dto}", requestDto);
+            return new GetNftItemsDto { Data = new List<NftItem>(), TotalRecordCount = 0 };
+        }
+    }
+
+    public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(
+        GetRecentTransactionUsersRequestDto requestDto)
+    {
+        try
+        {
+            var res = await _userAssetsProvider.GetRecentTransactionUsersAsync(requestDto.CaAddresses,
+                requestDto.SkipCount, requestDto.MaxResultCount);
+
+            var dto = new GetRecentTransactionUsersDto
+            {
+                Data = new List<RecentTransactionUser>(),
+                TotalRecordCount = res?.CaHolderTransactionAddressInfo?.TotalRecordCount ?? 0
+            };
+
+            if (res?.CaHolderTransactionAddressInfo?.Data == null || res.CaHolderTransactionAddressInfo.Data.Count == 0)
+            {
+                return dto;
+            }
+
+            var userCaAddresses = new List<string>();
+
+            foreach (var info in res.CaHolderTransactionAddressInfo.Data)
+            {
+                dto.Data.Add(ObjectMapper.Map<CAHolderTransactionAddress, RecentTransactionUser>(info));
+
+                if (!userCaAddresses.Contains(info.Address))
+                {
+                    userCaAddresses.Add(info.Address);
+                }
+            }
+
+            var contactList = await _userContactProvider.GetUserNameBatch(userCaAddresses, CurrentUser.GetId());
+            var nameList = contactList.Select(t => t.Item1.Address).ToList();
+            foreach (var user in dto.Data.Where(user => nameList.Contains(user.Address)))
+            {
+                var contact =
+                    contactList.FirstOrDefault(t => t.Item1.Address == user.Address && t.Item1.ChainId == user.ChainId);
+
+                user.Name = contact?.Item2;
+            }
+
+            return dto;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetRecentTransactionUsersAsync Error. {dto}", requestDto);
+            return new GetRecentTransactionUsersDto { Data = new List<RecentTransactionUser>(), TotalRecordCount = 0 };
+        }
     }
 
     public async Task<SearchUserAssetsDto> SearchUserAssetsAsync(SearchUserAssetsRequestDto requestDto)
     {
-        var res = await _userAssetsProvider.SearchUserAssetsAsync(requestDto.CaAddresses, requestDto.KeyWord, requestDto.SkipCount, requestDto.MaxResultCount);
-        if (res?.caHolderSearchTokenNFT == null)
+        try
         {
-            return new SearchUserAssetsDto();
-        }
+            var res = await _userAssetsProvider.SearchUserAssetsAsync(requestDto.CaAddresses,
+                requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword,
+                requestDto.SkipCount, requestDto.MaxResultCount);
 
-        var dto = new SearchUserAssetsDto() { Data = new List<UserAsset>(res.caHolderSearchTokenNFT.Count) };
-        var symbols = (from searchItem in res.caHolderSearchTokenNFT where searchItem.IndexerTokenInfo != null select searchItem.IndexerTokenInfo.Symbol).ToList();
-        var symbolPrices = await GetSymbolPrice(symbols);
-        foreach (var searchItem in res.caHolderSearchTokenNFT)
-        {
-            var item = ObjectMapper.Map<IndexerUserAsset, UserAsset>(searchItem);
-            if (searchItem.IndexerTokenInfo != null)
+            var dto = new SearchUserAssetsDto
             {
-                decimal price = 0;
-                if (symbolPrices.ContainsKey(item.Symbol))
+                Data = new List<UserAsset>(),
+                TotalRecordCount = res?.CaHolderSearchTokenNFT?.TotalRecordCount ?? 0
+            };
+
+            if (res?.CaHolderSearchTokenNFT?.Data == null || res.CaHolderSearchTokenNFT.Data.Count == 0)
+            {
+                return dto;
+            }
+
+            var symbols = (from searchItem in res.CaHolderSearchTokenNFT.Data
+                where searchItem.TokenInfo != null
+                select searchItem.TokenInfo.Symbol).ToList();
+            var symbolPrices = await GetSymbolPrice(symbols);
+            foreach (var searchItem in res.CaHolderSearchTokenNFT.Data)
+            {
+                var item = ObjectMapper.Map<IndexerSearchTokenNft, UserAsset>(searchItem);
+
+                if (searchItem.TokenInfo != null)
                 {
-                    price = symbolPrices[item.Symbol];
+                    var price = decimal.Zero;
+                    if (symbolPrices.ContainsKey(item.Symbol))
+                    {
+                        price = symbolPrices[item.Symbol];
+                    }
+
+                    var tokenInfo = ObjectMapper.Map<IndexerSearchTokenNft, TokenInfoDto>(searchItem);
+                    tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = (searchItem.Balance * price).ToString();
+                    item.TokenInfo = tokenInfo;
                 }
 
-                var tokenInfo = ObjectMapper.Map<IndexerUserAsset, TokenInfo>(searchItem);
-                tokenInfo.BalanceInUsd = (searchItem.Balance * price).ToString();
-                item.TokenInfo = tokenInfo;
-            }
-            else if (searchItem.NftInfo != null)
-            {
-                item.NftInfo = ObjectMapper.Map<IndexerUserAsset, NftInfo>(searchItem);
+                if (searchItem.NftInfo != null)
+                {
+                    if (searchItem.NftInfo.Symbol.IsNullOrEmpty())
+                    {
+                        continue;
+                    }
+
+                    item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
+
+                    item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
+                }
+
+                dto.Data.Add(item);
             }
 
-            dto.Data.Add(item);
+            return dto;
         }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "SearchUserAssetsAsync Error. {dto}", requestDto);
+            return new SearchUserAssetsDto { Data = new List<UserAsset>(), TotalRecordCount = 0 };
+        }
+    }
+
+    public SymbolImagesDto GetSymbolImagesAsync()
+    {
+        var dto = new SymbolImagesDto { SymbolImages = new Dictionary<string, string>() };
+
+        if (_tokenInfoOptions.TokenInfos.IsNullOrEmpty())
+        {
+            return dto;
+        }
+
+        dto.SymbolImages = _tokenInfoOptions.TokenInfos.ToDictionary(k => k.Key, v => v.Value.ImageUrl);
 
         return dto;
     }
@@ -185,7 +388,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService, I
 
             foreach (var price in priceList.Items)
             {
-                dict[price.Symbol] = price.PriceInUsd;
+                dict[price.Symbol.ToUpper()] = price.PriceInUsd;
             }
 
             return dict;
@@ -193,12 +396,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService, I
         catch (Exception e)
         {
             _logger.LogError(e, "get symbols price failed, symbol={symbols}", symbols);
-            throw e;
+            return new Dictionary<string, decimal>();
         }
-    }
-
-    private async Task<Dictionary<ValueTuple<string, string>, string>> GetUserNameBatch(List<ValueTuple<string, string>> usersAddresses)
-    {
-        return new Dictionary<ValueTuple<string, string>, string>();
     }
 }

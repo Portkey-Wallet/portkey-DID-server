@@ -69,6 +69,7 @@ artifacts/
 *.pidb
 *.svclog
 *.scc
+*.dll
 
 # Chutzpah Test files
 _Chutzpah*
@@ -268,8 +269,6 @@ __pycache__/
 slnx.sqlite
 
 # Generated Protobuf classes
-*.g.cs
-*.c.cs
 grpc_csharp_plugin
 *Grpc.cs
 **/Generated/*.cs

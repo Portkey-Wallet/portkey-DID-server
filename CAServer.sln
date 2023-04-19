@@ -61,6 +61,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Hub", "src\CAServe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Redis", "src\CAServer.Redis\CAServer.Redis.csproj", "{1B1FA09C-98AC-4893-9D76-EC34071E55C5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.EntityEventHandler.Core.Tests", "test\CAServer.EntityEventHandler.Core.Tests\CAServer.EntityEventHandler.Core.Tests.csproj", "{484F985C-3BCC-484D-B2D4-5A366388C249}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -175,6 +177,10 @@ Global
 		{1B1FA09C-98AC-4893-9D76-EC34071E55C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B1FA09C-98AC-4893-9D76-EC34071E55C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B1FA09C-98AC-4893-9D76-EC34071E55C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{484F985C-3BCC-484D-B2D4-5A366388C249}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{484F985C-3BCC-484D-B2D4-5A366388C249}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{484F985C-3BCC-484D-B2D4-5A366388C249}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{484F985C-3BCC-484D-B2D4-5A366388C249}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -207,6 +213,7 @@ Global
 		{688636D6-6653-4088-9FF2-36ED8F7CC490} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{4505F89E-AE90-44F2-A4F4-CE0B8646643C} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{1B1FA09C-98AC-4893-9D76-EC34071E55C5} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{484F985C-3BCC-484D-B2D4-5A366388C249} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}

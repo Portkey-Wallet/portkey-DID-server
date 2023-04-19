@@ -7,9 +7,10 @@ public interface IUserAssetsAppService
 {
     Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto);
 
-    Task<GetNFTProtocolsDto> GetNFTProtocolsAsync(GetNFTProtocolsRequestDto requestDto);
+    Task<GetNftCollectionsDto> GetNFTCollectionsAsync(GetNftCollectionsRequestDto requestDto);
 
-    Task<GetNFTItemsDto> GetNFTItemsAsync(GetNftItemsRequestDto requestDto);
+    Task<GetNftItemsDto> GetNFTItemsAsync(GetNftItemsRequestDto requestDto);
     Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(GetRecentTransactionUsersRequestDto requestDto);
     Task<SearchUserAssetsDto> SearchUserAssetsAsync(SearchUserAssetsRequestDto requestDto);
+    SymbolImagesDto GetSymbolImagesAsync();
 }
