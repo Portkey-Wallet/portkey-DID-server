@@ -43,6 +43,7 @@ public class ChainGrain : Grain<ChainState>, IChainGrain
         State.CaContractAddress = chainDto.CaContractAddress;
         State.ExplorerUrl = chainDto.ExplorerUrl;
         State.LastModifyTime = DateTime.UtcNow;
+        State.DefaultToken = chainDto.DefaultToken;
         State.IsDeleted = false;
 
         await WriteStateAsync();
@@ -68,6 +69,7 @@ public class ChainGrain : Grain<ChainState>, IChainGrain
         State.CaContractAddress = chainDto.CaContractAddress;
         State.ExplorerUrl = chainDto.ExplorerUrl;
         State.LastModifyTime = DateTime.UtcNow;
+        State.DefaultToken = chainDto.DefaultToken;
 
         await WriteStateAsync();
 

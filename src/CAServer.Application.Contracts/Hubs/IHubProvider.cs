@@ -7,4 +7,5 @@ public interface IHubProvider
 {
     Task ResponseAsync<T>(HubResponse<T> res, string clientId, string method, bool isFirstTime = true);
     Task ResponseAsync(HubResponse<object> res, string clientId, string method,Type type);
+    Task ResponseAsync<T>(HubResponseBase<T> res, string clientId, string method);
 }

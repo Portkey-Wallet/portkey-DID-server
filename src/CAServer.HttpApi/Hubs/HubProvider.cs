@@ -43,7 +43,7 @@ public class HubProvider : IHubProvider, ISingletonDependency
         _logger.LogInformation(
             "provider sync requestId={requestId} to clientId={clientId} method={method} body={body}", res.RequestId,
             clientId, method, JsonConvert.SerializeObject(res.Body));
-        
+
         await _hubContext.Clients.Clients(connection.ConnectionId).SendAsync(method, res);
     }
 
@@ -64,6 +64,22 @@ public class HubProvider : IHubProvider, ISingletonDependency
         _logger.LogInformation(
             "provider sync requestId={requestId} to clientId={clientId} method={method} body={body}", res.RequestId,
             clientId, method, JsonConvert.SerializeObject(res.Body));
+
+        await _hubContext.Clients.Clients(connection.ConnectionId).SendAsync(method, res);
+    }
+
+    public async Task ResponseAsync<T>(HubResponseBase<T> res, string clientId, string method)
+    {
+        var connection = _connectionProvider.GetConnectionByClientId(clientId);
+        if (connection == null)
+        {
+            _logger.LogError("connection not found by clientId={clientId}", clientId);
+            return;
+        }
+
+        _logger.LogInformation(
+            "provider sync to clientId={clientId} method={method} body={body}", clientId, method,
+            JsonConvert.SerializeObject(res.Body));
 
         await _hubContext.Clients.Clients(connection.ConnectionId).SendAsync(method, res);
     }

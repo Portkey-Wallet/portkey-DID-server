@@ -1,4 +1,5 @@
 using AutoMapper;
+using CAServer.Chain;
 using CAServer.Guardian;
 using CAServer.ContractEventHandler;
 using CAServer.Entities.Es;
@@ -34,6 +35,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
             .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address));
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
         CreateMap<UpdateCAHolderEto, CAHolderIndex>();
+        CreateMap<DefaultToken, DefaultTokenInfo>();
         CreateMap<ChainCreateEto, ChainsInfoIndex>();
         CreateMap<ChainUpdateEto, ChainsInfoIndex>();
         CreateMap<ChainDeleteEto, ChainsInfoIndex>();

@@ -7,10 +7,15 @@ using AElf.Types;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Entities.Es;
+using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.Guardian;
+using CAServer.Guardian.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Newtonsoft.Json;
+using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -25,17 +30,23 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly ILogger<GuardianAppService> _logger;
     private readonly ChainOptions _chainOptions;
+    private readonly IGuardianProvider _guardianProvider;
+    private readonly IClusterClient _clusterClient;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
         ILogger<GuardianAppService> logger,
-        IOptions<ChainOptions> chainOptions)
+        IOptions<ChainOptions> chainOptions,
+        IGuardianProvider guardianProvider,
+        IClusterClient clusterClient)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
         _logger = logger;
         _chainOptions = chainOptions.Value;
+        _guardianProvider = guardianProvider;
+        _clusterClient = clusterClient;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -70,6 +81,59 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         AddGuardianInfo(guardianResult?.GuardianList?.Guardians, hashDic, userExtraInfos);
 
         return guardianResult;
+    }
+
+    public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
+    {
+        var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
+        var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
+
+        var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
+        
+        var  originChainId = guardian == null
+            ? await GetOrigianChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
+            : guardian.OriginChainId;
+        
+        return new RegisterInfoResultDto { OriginChainId = originChainId };
+    }
+
+    private string GetHash(string guardianIdentifier)
+    {
+        if (string.IsNullOrWhiteSpace(guardianIdentifier)) return string.Empty;
+
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
+
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardianGrainDto = guardianGrain.GetGuardianAsync(guardianIdentifier).Result;
+        if (!guardianGrainDto.Success)
+        {
+            _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
+            throw new UserFriendlyException(guardianGrainDto.Message, GuardianMessageCode.NotExist);
+        }
+
+        return guardianGrainDto.Data.IdentifierHash;
+    }
+
+    private async Task<string> GetOrigianChainIdAsync(string guardianIdentifierHash, string caHash)
+    {
+        foreach (var chainInfo in _chainOptions.ChainInfos)
+        {
+            try
+            {
+                var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
+                if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
+            }
+            catch (Exception e)
+            {
+                if (!e.Message.Contains("Not found ca_hash"))
+                {
+                    _logger.LogError(e, "GetRegisterHolderInfoAsync: guardian hash call contract GetHolderInfo fail.");
+                    throw new UserFriendlyException(e.Message);
+                }
+            }
+        }
+
+        throw new UserFriendlyException("This address is not registered.", GuardianMessageCode.NotExist);
     }
 
     private void AddGuardianInfo(List<GuardianDto> guardians, Dictionary<string, string> hashDic,

@@ -4,6 +4,7 @@ using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using CAServer.CAAccount.Dtos;
 using CAServer.Guardian;
 using Volo.Abp;
 
@@ -41,5 +42,11 @@ public class CAAccountController : CAServerController
         [FromQuery] GuardianIdentifierDto guardianIdentifierDto)
     {
         return await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+    }
+
+    [HttpGet("registerInfo")]
+    public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
+    {
+        return await _guardianAppService.GetRegisterInfoAsync(requestDto);
     }
 }

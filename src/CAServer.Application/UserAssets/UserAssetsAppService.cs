@@ -255,7 +255,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 dto.Data.Add(nftItem);
             }
-
+            
             return dto;
         }
         catch (Exception e)

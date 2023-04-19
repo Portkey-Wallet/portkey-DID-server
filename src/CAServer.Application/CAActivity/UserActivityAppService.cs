@@ -226,20 +226,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 }
             }
 
-            if (ht.NftInfo != null)
+            if (ht.NftInfo != null && !ht.NftInfo.Symbol.IsNullOrWhiteSpace())
             {
-                if (ht.NftInfo.Symbol.IsNullOrEmpty())
+                dto.NftInfo = new NftDetail
                 {
-                    continue;
-                }
-
-                dto.NftInfo = new NftDetail();
-
-                var nftId = ht.NftInfo.Symbol.Split("-").Last();
-                dto.NftInfo.NftId = nftId;
-                
-              dto.NftInfo.ImageUrl = _imageProcessProvider.GetResizeImage(ht.NftInfo.ImageUrl, weidth, height);
-              dto.NftInfo.Alias = ht.NftInfo.TokenName;
+                    NftId = ht.NftInfo.Symbol.Split("-").Last(),
+                    ImageUrl = _imageProcessProvider.GetResizeImage(ht.NftInfo.ImageUrl, weidth, height),
+                    Alias = ht.NftInfo.TokenName
+                };
             }
 
             dto.ListIcon = GetIconByType(dto.TransactionType);
@@ -250,7 +244,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         return result;
     }
-
+    
     private string GetIconByType(string transactionType)
     {
         string icon = string.Empty;

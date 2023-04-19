@@ -23,6 +23,8 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
+using CAServer.Message.Dtos;
+using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
@@ -251,12 +253,13 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<IpInfoDto, IpInfoResultDto>().ForMember(t => t.Country, m => m.MapFrom(f => f.CountryName))
             .ForMember(t => t.Code, m => m.MapFrom(f => f.CountryCode))
             .ForPath(t => t.Iso, m => m.MapFrom(f => f.Location.CallingCode));
-        
+
         CreateMap<CreateNotifyDto, NotifyGrainDto>();
         CreateMap<UpdateNotifyDto, NotifyGrainDto>();
         CreateMap<NotifyGrainDto, NotifyResultDto>();
         CreateMap<NotifyGrainDto, DeleteNotifyEto>();
         CreateMap<NotifyGrainDto, NotifyEto>();
         CreateMap<NotifyGrainDto, PullNotifyResultDto>();
+        CreateMap<ScanLoginDto, ScanLoginEto>().BeforeMap((src, dest) => { dest.Message = "Login Successful"; });
     }
 }
