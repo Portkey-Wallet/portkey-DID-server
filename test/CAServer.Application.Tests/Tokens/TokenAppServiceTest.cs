@@ -1,18 +1,8 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CAServer.Grain.Tests;
-using CAServer.Grains;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
-using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Security;
-using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.DependencyInjection;
-using Mongo2Go;
-using Moq;
-using Orleans;
-using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Users;
 using Xunit;
@@ -24,14 +14,12 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
 {
     private readonly ITokenAppService _tokenAppService;
     public const string Symbol = "AELF";
-    protected readonly TestCluster Cluster;
     protected ICurrentUser _currentUser;
 
     public TokenAppServiceTest()
     {
         _tokenAppService = GetRequiredService<ITokenAppService>();
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
-        Cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 
     protected override void AfterAddApplication(IServiceCollection services)

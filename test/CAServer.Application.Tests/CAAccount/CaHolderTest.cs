@@ -1,17 +1,10 @@
-using System;
 using System.Threading.Tasks;
 using CAServer.Dtos;
-using CAServer.Grain.Tests;
-using CAServer.Grains.Grain.Chain;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Security;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
-using NSubstitute;
-using OpenIddict.Abstractions;
 using Orleans.TestingHost;
 using Shouldly;
-using Volo.Abp.Security.Claims;
 using Volo.Abp.Users;
 using Xunit;
 
@@ -27,7 +20,7 @@ public class CaHolderTest : CAServerApplicationTestBase
     public CaHolderTest()
     {
         _nickNameAppService = GetService<INickNameAppService>();
-        _cluster = GetRequiredService<ClusterFixture>().Cluster;
+        _cluster = Cluster;
     }
 
     protected override void AfterAddApplication(IServiceCollection services)

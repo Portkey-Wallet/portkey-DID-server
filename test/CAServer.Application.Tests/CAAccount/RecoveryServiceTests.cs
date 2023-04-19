@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
-using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using Orleans.TestingHost;
 using Volo.Abp.Validation;
@@ -30,7 +29,7 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     public RecoveryServiceTests()
     {
         _caAccountAppService = GetService<ICAAccountAppService>();
-        _cluster = GetRequiredService<ClusterFixture>().Cluster;
+        _cluster = Cluster;
     }
 
     [Fact]

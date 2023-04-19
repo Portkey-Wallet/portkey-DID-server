@@ -5,10 +5,8 @@ using AElf;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAAccount.Dtos;
 using CAServer.Entities.Es;
-using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
-using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Orleans.TestingHost;
@@ -33,7 +31,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
     {
         _guardianAppService = GetService<IGuardianAppService>();
         _guardiansRepository = GetService<INESTRepository<GuardianIndex, string>>();
-        _cluster = GetRequiredService<ClusterFixture>().Cluster;
+        _cluster = Cluster;
     }
 
     protected override void AfterAddApplication(IServiceCollection services)

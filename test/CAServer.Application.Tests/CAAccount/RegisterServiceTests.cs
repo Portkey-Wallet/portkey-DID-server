@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
-using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using Orleans.TestingHost;
 using Shouldly;
@@ -30,7 +29,7 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     public RegisterServiceTests()
     {
         _caAccountAppService = GetService<ICAAccountAppService>();
-        _cluster = GetRequiredService<ClusterFixture>().Cluster;
+        _cluster = Cluster;
     }
 
     [Fact]

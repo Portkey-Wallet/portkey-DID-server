@@ -1,17 +1,11 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.Grain.Tests;
-using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Security;
-using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using Orleans.TestingHost;
 using Shouldly;
-using Volo.Abp;
-using Volo.Abp.Auditing;
 using Volo.Abp.Users;
 using Xunit;
 
@@ -21,14 +15,12 @@ namespace CAServer.Tokens;
 public class UserTokenAppServiceTests : CAServerApplicationTestBase
 {
     private readonly IUserTokenAppService _userTokenAppService;
-    protected readonly TestCluster Cluster;
 
     protected ICurrentUser _currentUser;
 
     public UserTokenAppServiceTests()
     {
         _userTokenAppService = GetRequiredService<IUserTokenAppService>();
-        Cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -55,7 +47,7 @@ public class UserTokenAppServiceTests : CAServerApplicationTestBase
             UserId = userId,
             IsDefault = true,
             IsDisplay = true,
-            Token = new Tokens.Dtos.Token
+            Token = new Token
             {
                 Id = Guid.NewGuid(),
                 Symbol = "AELF",
@@ -81,7 +73,7 @@ public class UserTokenAppServiceTests : CAServerApplicationTestBase
         {
             IsDefault = isDefault,
             IsDisplay = isDisplay,
-            Token = new Tokens.Dtos.Token
+            Token = new Token
             {
                 Id = Guid.NewGuid(),
                 Symbol = "AELF",
