@@ -7,7 +7,7 @@ using Volo.Abp.Auditing;
 namespace CAServer.Switch;
 
 [RemoteService(false), DisableAuditing]
-public class SwitchAppService : ISwitchAppService
+public class SwitchAppService : CAServerAppService, ISwitchAppService
 {
     private readonly SwitchOptions _options;
 

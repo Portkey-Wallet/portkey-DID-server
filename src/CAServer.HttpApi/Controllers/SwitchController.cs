@@ -11,7 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Switch")]
 [Route("api/app/switch")]
-public class SwitchController
+public class SwitchController : CAServerController
 {
     private readonly ISwitchAppService _switchAppService;
 
