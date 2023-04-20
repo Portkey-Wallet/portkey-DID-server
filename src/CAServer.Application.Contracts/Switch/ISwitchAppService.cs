@@ -4,5 +4,5 @@ namespace CAServer.Switch;
 
 public interface ISwitchAppService
 {
-    RampSwitchDto GetSwitchStatus();
+    SwitchDto GetSwitchStatus(string switchName);
 }

@@ -1,6 +1,6 @@
 namespace CAServer.Switch.Dtos;
 
-public class RampSwitchDto
+public class SwitchDto
 {
     public bool IsOpen { get; set; }
 }

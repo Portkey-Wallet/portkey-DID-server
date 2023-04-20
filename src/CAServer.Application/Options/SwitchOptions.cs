@@ -2,5 +2,5 @@ namespace CAServer.Options;
 
 public class SwitchOptions
 {
-    public bool RampSwitch { get; set; }
+    public bool Ramp { get; set; }
 }

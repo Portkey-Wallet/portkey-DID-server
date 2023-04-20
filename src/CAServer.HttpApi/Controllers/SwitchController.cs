@@ -1,5 +1,4 @@
-using System.Threading.Tasks;
-using CAServer.Notify;
+using System.ComponentModel.DataAnnotations;
 using CAServer.Switch;
 using CAServer.Switch.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +19,6 @@ public class SwitchController : CAServerController
         _switchAppService = switchAppService;
     }
 
-    [HttpGet("ramp")]
-    public RampSwitchDto GetSwitchStatus() => _switchAppService.GetSwitchStatus();
+    [HttpGet]
+    public SwitchDto GetSwitchStatus([Required] string switchName) => _switchAppService.GetSwitchStatus(switchName);
 }

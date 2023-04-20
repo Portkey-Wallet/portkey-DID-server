@@ -1,6 +1,9 @@
+using System;
+using System.Linq;
 using CAServer.Options;
 using CAServer.Switch.Dtos;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 
@@ -16,5 +19,17 @@ public class SwitchAppService : CAServerAppService, ISwitchAppService
         _options = options.Value;
     }
 
-    public RampSwitchDto GetSwitchStatus() => new RampSwitchDto { IsOpen = _options.RampSwitch };
+    public SwitchDto GetSwitchStatus(string switchName)
+    {
+        var propertyInfo = _options?.GetType().GetProperties().Where(t => t.Name.ToLower() == switchName.ToLower())?.FirstOrDefault();
+
+        if (propertyInfo == null)
+        {
+            throw new UserFriendlyException("Switch not exists");
+        }
+
+        var val = propertyInfo.GetValue(_options);
+
+        return new SwitchDto { IsOpen = Convert.ToBoolean(val) };
+    }
 }
