@@ -14,12 +14,12 @@ Before running Portkey DID Server, you need to prepare the following infrastruct
 * Redis
 * RabbitMQ
 
-Before running Portkey DID Server, you need to prepare the following infrastructure components, as they are essential for the project's operation:
+The following command will clone Portkey DID Server into a folder. Please open a terminal and enter the following command:
 ```Bash
 git clone https://github.com/Portkey-Wallet/portkey-DID-server
 ```
 
-The following command will clone Portkey DID Server into a folder. Please open a terminal and enter the following command:
+The next step is to build the project to ensure everything is working correctly. Once everything is built and configuration file is configured correctly, you can run as follows:
 
 ```Bash
 # enter the portkey-DID-server folder and build 
@@ -61,7 +61,7 @@ dotnet CAServer.ContractEventHandler.Core.dll
 
 After starting all the above services, Portkey DID Server is ready to provide external services.
 
-## Usage
+## Modules
 
 Portkey DID Server includes the following services:
 
