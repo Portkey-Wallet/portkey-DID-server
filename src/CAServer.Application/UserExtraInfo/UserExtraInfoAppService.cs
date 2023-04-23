@@ -101,27 +101,25 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
             await SetNameAsync(resultDto.Data);
             return ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoResultDto>(resultDto.Data);
         }
-        else
+
+        var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(id);
+        if (userInfo == null)
         {
-            var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(id);
-            if (userInfo == null)
-            {
-                throw new UserFriendlyException(resultDto.Message);
-            }
-
-            var userExtraInfo = new Verifier.Dtos.UserExtraInfo
-            {
-                Id = userInfo.UserId,
-                FirstName = userInfo.FirstName,
-                LastName = userInfo.LastName,
-                //Email = UserInfo.Email,
-                GuardianType = GuardianIdentifierType.Apple.ToString(),
-                AuthTime = DateTime.UtcNow
-            };
-
-            await AddUserInfoAsync(userExtraInfo);
-            return ObjectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoResultDto>(userExtraInfo);
+            throw new UserFriendlyException(resultDto.Message);
         }
+
+        var userExtraInfo = new Verifier.Dtos.UserExtraInfo
+        {
+            Id = userInfo.UserId,
+            FirstName = userInfo.FirstName,
+            LastName = userInfo.LastName,
+            //Email = UserInfo.Email,
+            GuardianType = GuardianIdentifierType.Apple.ToString(),
+            AuthTime = DateTime.UtcNow
+        };
+
+        await AddUserInfoAsync(userExtraInfo);
+        return ObjectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoResultDto>(userExtraInfo);
     }
 
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)
