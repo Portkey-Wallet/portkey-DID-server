@@ -254,6 +254,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         return guardianGrainResult;
     }
 
+    /// <summary>
+    /// </summary>
+    /// <param name="guardianIdentifier">guardianIdentifier</param>
+    /// <returns>
+    /// item1:identifierHash
+    /// item2:salt
+    /// item3:guardianGrainResult
+    /// </returns>
     private async Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier)
     {
         var guardianGrainResult = GetGuardian(guardianIdentifier);
