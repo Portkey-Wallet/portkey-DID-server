@@ -136,6 +136,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 throw new UserFriendlyException($"Validate VerifierGoogle Failed :{response.Message}");
             }
 
+            if (!hashInfo.Item3)
+            {
+                await AddGuardianAsync(userInfo.Id, hashInfo.Item2, hashInfo.Item1);
+            }
+
             await AddUserInfoAsync(
                 ObjectMapper.Map<GoogleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.GoogleUserExtraInfo));
 
@@ -175,6 +180,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             if (!response.Success)
             {
                 throw new UserFriendlyException($"Validate VerifierApple Failed :{response.Message}");
+            }
+
+            if (!hashInfo.Item3)
+            {
+                await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
             }
 
             await AddUserInfoAsync(
@@ -244,23 +254,22 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         return guardianGrainResult;
     }
 
-    private async Task<Tuple<string, string>> GetSaltAndHashAsync(string guardianIdentifier)
+    private async Task<Tuple<string, string, bool>> GetSaltAndHashAsync(string guardianIdentifier)
     {
         var guardianGrainResult = GetGuardian(guardianIdentifier);
 
         _logger.LogInformation("GetGuardian info, guardianIdentifier: {result}",
             JsonConvert.SerializeObject(guardianGrainResult));
-        
+
         if (guardianGrainResult.Success)
         {
-            return Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt);
+            return Tuple.Create(guardianGrainResult.Data.IdentifierHash, guardianGrainResult.Data.Salt, true);
         }
 
         var salt = GetSalt();
         var identifierHash = GetHash(guardianIdentifier, salt);
-        await AddGuardianAsync(guardianIdentifier, salt, identifierHash);
 
-        return Tuple.Create(identifierHash, salt);
+        return Tuple.Create(identifierHash, salt, false);
     }
 
     private GrainResultDto<GuardianGrainDto> GetGuardian(string guardianIdentifier)
