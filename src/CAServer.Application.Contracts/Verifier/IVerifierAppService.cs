@@ -12,4 +12,5 @@ public interface IVerifierAppService
     public Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto);
     public Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto);
 
+    Task<bool> VerifyGoogleRecaptchaTokenAsync(string recaptchaToken);
 }

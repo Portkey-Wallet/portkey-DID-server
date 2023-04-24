@@ -2,7 +2,6 @@
 using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
-using CAServer.Device;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Options;
@@ -40,6 +39,7 @@ public class CAServerApplicationModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         Configure<TokenListOptions>(configuration.GetSection("Tokens"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfo"));
+        Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();

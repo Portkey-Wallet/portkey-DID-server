@@ -13,9 +13,11 @@ using CAServer.Grains;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -37,6 +39,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IClusterClient _clusterClient;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly GoogleRecaptchaOptions _googleRecaptchaOption;
+
+
+   
 
     public VerifierAppService(IEnumerable<IAccountValidator> accountValidator, IObjectMapper objectMapper,
         ILogger<VerifierAppService> logger,
@@ -44,7 +50,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
         IHttpClientFactory httpClientFactory,
-        JwtSecurityTokenHandler jwtSecurityTokenHandler)
+        JwtSecurityTokenHandler jwtSecurityTokenHandler, IOptions<GoogleRecaptchaOptions> googleRecaptchaOption)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -54,6 +60,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _distributedEventBus = distributedEventBus;
         _httpClientFactory = httpClientFactory;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
+        _googleRecaptchaOption = googleRecaptchaOption.Value;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -202,6 +209,24 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             throw new UserFriendlyException(e.Message);
         }
+    }
+
+    public async Task<bool> VerifyGoogleRecaptchaTokenAsync(string recaptchaToken)
+    {
+        var content = new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("secret", _googleRecaptchaOption.Secret),
+            new KeyValuePair<string, string>("response", recaptchaToken)
+        });
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.PostAsync(_googleRecaptchaOption.VerifyUrl, content);
+        if (!response.IsSuccessStatusCode)
+        {
+            return false;
+        }
+        var responseContent = await response.Content.ReadAsStringAsync();
+        return responseContent.Contains("\"success\": true");
+    
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
