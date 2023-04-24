@@ -33,5 +33,6 @@ public class GraphQLOptions
 
 public class ContractSyncOptions
 {
-    public string Cron { get; set; }
+    public int Sync { get; set; }
+    public int AutoReceive { get; set; }
 }
