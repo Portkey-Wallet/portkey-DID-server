@@ -47,7 +47,7 @@ public class CAVerifierController : CAServerController
         if (string.IsNullOrWhiteSpace(recaptchatoken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");
-            return new VerifierServerResponse();
+            return null;
         }
 
         var googleRecaptchaTokenSuccess = false;
@@ -58,7 +58,7 @@ public class CAVerifierController : CAServerController
         catch (Exception e)
         {
             _logger.LogDebug("Google Recaptcha Token Verify Failed :{reason}", e.Message);
-            return new VerifierServerResponse();
+            return null;
         }
 
         if (googleRecaptchaTokenSuccess)
@@ -70,7 +70,7 @@ public class CAVerifierController : CAServerController
         }
 
         _logger.LogDebug("Google Recaptcha Token Verify Failed");
-        return new VerifierServerResponse();
+        return null;
     }
 
 
