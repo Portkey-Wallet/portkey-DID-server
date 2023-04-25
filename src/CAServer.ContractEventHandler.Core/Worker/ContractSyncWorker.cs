@@ -24,6 +24,6 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        await _contractAppService.QueryEventsAndSyncAsync();
+        await _contractAppService.QueryAndSyncAsync();
     }
 }

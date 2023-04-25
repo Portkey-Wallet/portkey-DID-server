@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
+using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -44,6 +47,14 @@ public interface IContractProvider
 
     Task<ChainStatusDto> GetChainStatusAsync(string chainId);
     Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false);
+    
+    
+    Task AddSyncRecordsAsync(string chainId, List<SyncRecord> records);
+    Task AddFailedRecordsAsync(string chainId, List<SyncRecord> records);
+    Task<List<SyncRecord>> GetSyncRecords(string chainId);
+    Task<List<SyncRecord>> GetFailedRecords(string chainId);
+    Task ClearRecordsAsync(string chainId);
+    Task ClearFailedRecordsAsync(string chainId);
 }
 
 public class ContractProvider : IContractProvider
@@ -60,6 +71,60 @@ public class ContractProvider : IContractProvider
         _chainOptions = chainOptions.Value;
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
+    }
+
+    public async Task AddSyncRecordsAsync(string chainId, List<SyncRecord> records)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId("SyncRecordGrain", chainId, "0"));
+            await grain.AddRecordsAsync(records);
+
+            _logger.LogInformation("Set SyncRecords to Chain: {id} Success", chainId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Set SyncRecords to Chain: {id} Failed, {records}", chainId, JsonConvert.SerializeObject(records));
+        }
+    }
+
+    public async Task AddFailedRecordsAsync(string chainId, List<SyncRecord> records)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId("SyncRecordGrain", chainId, "0"));
+            await grain.AddFailedRecordsAsync(records);
+
+            _logger.LogInformation("Set FailedRecords to Chain: {id} Success", chainId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Set FailedRecords to Chain: {id} Failed, {records}", chainId, JsonConvert.SerializeObject(records));
+        }
+    }
+
+    public async Task<List<SyncRecord>> GetSyncRecords(string chainId)
+    {
+        var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId("SyncRecordGrain", chainId, "0"));
+        return await grain.GetRecordsAsync();
+    }
+
+    public async Task<List<SyncRecord>> GetFailedRecords(string chainId)
+    {
+        var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId("SyncRecordGrain", chainId, "0"));
+        return await grain.GetFailedRecordsAsync();
+    }
+
+    public async Task ClearRecordsAsync(string chainId)
+    {
+        var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId("SyncRecordGrain", chainId, "0"));
+        await grain.ClearRecords();
+    }
+
+    public async Task ClearFailedRecordsAsync(string chainId)
+    {
+        var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId("SyncRecordGrain", chainId, "0"));
+        await grain.ClearFailedRecords();
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,
@@ -298,12 +363,6 @@ public class ContractProvider : IContractProvider
             if (transactionInfoDto.TransactionResultDto == null || transactionInfoDto.Transaction == null)
             {
                 return new SyncHolderInfoInput();
-            }
-
-            if (chainId != ContractAppServiceConstant.MainChainId)
-            {
-                await MainChainCheckSideChainBlockIndexAsync(chainId,
-                    transactionInfoDto.TransactionResultDto.BlockNumber);
             }
 
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());

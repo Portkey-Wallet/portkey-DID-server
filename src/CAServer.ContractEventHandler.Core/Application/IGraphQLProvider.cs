@@ -132,7 +132,9 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
                 BlockHeight = record.BlockHeight,
                 CaHash = record.CaHash,
                 ChangeType = record.ChangeType,
-                Value = record.LoginGuardian.IdentifierHash
+                NotLoginGuardian = record.ChangeType == QueryLoginGuardianType.LoginGuardianUnbound
+                    ? record.LoginGuardian.IdentifierHash
+                    : null
             });
         }
 
@@ -175,8 +177,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             {
                 BlockHeight = record.BlockHeight,
                 CaHash = record.CaHash,
-                ChangeType = record.ChangeType,
-                Value = record.Address
+                ChangeType = record.ChangeType
             });
         }
 

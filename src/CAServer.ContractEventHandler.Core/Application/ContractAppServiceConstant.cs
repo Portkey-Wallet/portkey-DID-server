@@ -18,6 +18,7 @@ public static class QueryType
 {
     public const string LoginGuardian = "LoginGuardianOn";
     public const string ManagerInfo = "ManagerInfoOn";
+    public const string QueryRecord = "QueryRecord";
 }
 
 public static class LoggerMsg
