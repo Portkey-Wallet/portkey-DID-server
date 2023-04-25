@@ -10,7 +10,7 @@ namespace CAServer.Middleware;
 
 public class GoogleRecaptchaMiddleWare
 {
-    private readonly RequestDelegate _requestDelegate;
+    private readonly RequestDelegate _next;
     private readonly ILogger<GoogleRecaptchaMiddleWare> _logger;
     private readonly IVerifierAppService _verifierAppService;
     private readonly GoogleRecaptchaOptions _googleRecaptchaOptions;
@@ -18,12 +18,12 @@ public class GoogleRecaptchaMiddleWare
 
 
     public GoogleRecaptchaMiddleWare(ILogger<GoogleRecaptchaMiddleWare> logger,
-        IVerifierAppService verifierAppService, RequestDelegate requestDelegate,
+        IVerifierAppService verifierAppService, RequestDelegate next,
         IOptions<GoogleRecaptchaOptions> googleRecaptchaOption)
     {
         _logger = logger;
         _verifierAppService = verifierAppService;
-        _requestDelegate = requestDelegate;
+        _next = next;
         _googleRecaptchaOptions = googleRecaptchaOption.Value;
     }
 
@@ -41,7 +41,9 @@ public class GoogleRecaptchaMiddleWare
             var recaptchaToken = context.Request.Headers[ReCaptchaToken];
             if (string.IsNullOrEmpty(recaptchaToken))
             {
-                throw new Exception("Google Recaptcha Token is Empty");
+                context.Response.StatusCode = 500; 
+                await context.Response.WriteAsync("Google Recaptcha Token is Empty");
+                return;
             }
 
             try
@@ -50,18 +52,22 @@ public class GoogleRecaptchaMiddleWare
                     await _verifierAppService.VerifyGoogleRecaptchaTokenAsync(recaptchaToken);
                 if (googleRecaptchaTokenResult)
                 {
-                    await _requestDelegate(context);
+                    _logger.LogDebug("Google Recaptcha Token Verify Success");
+                    await _next(context);
                 }
-
                 _logger.LogDebug("Google Recaptcha Token Verify Failed");
-                throw new Exception("Google Recaptcha Token Verify Failed");
+                context.Response.StatusCode = 500; 
+                await context.Response.WriteAsync("Google Recaptcha Token is Empty");
+                return;
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Verify Google Recaptcha Token Error");
-                throw;
+                _logger.LogDebug("Google Recaptcha Token Verify Failed");
+                context.Response.StatusCode = 500; 
+                await context.Response.WriteAsync("Google Recaptcha Token is Empty");
+                return;
             }
         }
-        await _requestDelegate(context);
+        await _next(context);
     }
 }
