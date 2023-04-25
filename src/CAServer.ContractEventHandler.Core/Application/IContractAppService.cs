@@ -330,6 +330,8 @@ public class ContractAppService : IContractAppService
             return;
         }
         
+        _logger.LogInformation("Found {count} records to sync on chain: {id}", records.Count, chainId);
+        
         if (chainId == ContractAppServiceConstant.MainChainId)
         {
             foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
@@ -348,7 +350,7 @@ public class ContractAppService : IContractAppService
                     {
                         _logger.LogError("{type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}",
                             record.ChangeType, chainId, record.CaHash, result.Error);
-
+                        records.Remove(record);
                         record.RetryTimes++;
                         failedRecords.Add(record);
                     }
@@ -387,15 +389,20 @@ public class ContractAppService : IContractAppService
                 {
                     _logger.LogError("{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}",
                         record.ChangeType, chainId, record.CaHash, result.Error);
-
+                    records.Remove(record);
+                    
                     record.RetryTimes++;
                     record.ValidateHeight = long.MaxValue;
                     failedRecords.Add(record);
                 }
-                    
+                else
+                {
+                    records.Remove(record);
+                }
+                
                 _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
                     record.ChangeType, chainId, record.CaHash);
-                records.Remove(record);
+                
                     
                 record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
             }
