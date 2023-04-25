@@ -18,10 +18,11 @@ public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
 {
     public override Task OnActivateAsync()
     {
+        ReadStateAsync();
+        
         State.FailedRecords ??= new List<SyncRecord>();
         State.Records ??= new List<SyncRecord>();
-        
-        ReadStateAsync();
+
         return base.OnActivateAsync();
     }
 
