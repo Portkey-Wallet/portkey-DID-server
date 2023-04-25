@@ -18,13 +18,20 @@ public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
 {
     public override Task OnActivateAsync()
     {
+        State.FailedRecords ??= new List<SyncRecord>();
+        State.Records ??= new List<SyncRecord>();
+        
         ReadStateAsync();
         return base.OnActivateAsync();
     }
 
     public async Task AddRecordsAsync(List<SyncRecord> records)
     {
-        State.Records.AddRange(records);
+        if (!records.IsNullOrEmpty())
+        {
+            State.Records.AddRange(records);
+        }
+        
         await WriteStateAsync();
     }
 
@@ -35,7 +42,11 @@ public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
 
     public async Task AddFailedRecordsAsync(List<SyncRecord> records)
     {
-        State.FailedRecords.AddRange(records);
+        if (!records.IsNullOrEmpty())
+        {
+            State.FailedRecords.AddRange(records);
+        }
+       
         await WriteStateAsync();
     }
 

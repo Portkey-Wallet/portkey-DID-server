@@ -363,7 +363,7 @@ public class ContractAppService : IContractAppService
         }
         else
         {
-            var indexHeight = await _contractProvider.GetIndexHeightFromMainChainAsync(_chainOptions.ChainInfos.First().Key, await _contractProvider.GetChainIdAsync(chainId));
+            var indexHeight = await _contractProvider.GetIndexHeightFromMainChainAsync(ContractAppServiceConstant.MainChainId, await _contractProvider.GetChainIdAsync(chainId));
 
             var record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
             
