@@ -275,5 +275,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ScanLoginDto, ScanLoginEto>().BeforeMap((src, dest) => { dest.Message = "Login Successful"; });
         
         CreateMap<CreateUserEto, CAHolderIndex>();
+        CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoResultDto>();
     }
 }

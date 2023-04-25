@@ -1,5 +1,6 @@
 using CAServer.Grains.State.Tokens;
 using CAServer.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 
@@ -9,11 +10,14 @@ public class TokenPriceGrain : Grain<CurrentTokenPriceState>, ITokenPriceGrain
 {
     private readonly TokenPriceExpirationTimeOptions _tokenPriceExpirationTimeOptions;
     private readonly ITokenPriceProvider _tokenPriceProvider;
+    private readonly ILogger<TokenPriceGrain> _logger;
 
     public TokenPriceGrain(ITokenPriceProvider tokenPriceProvider,
-        IOptionsSnapshot<TokenPriceExpirationTimeOptions> tokenPriceExpirationTimeOptions)
+        IOptionsSnapshot<TokenPriceExpirationTimeOptions> tokenPriceExpirationTimeOptions,
+        ILogger<TokenPriceGrain> logger)
     {
         _tokenPriceProvider = tokenPriceProvider;
+        _logger = logger;
         _tokenPriceExpirationTimeOptions = tokenPriceExpirationTimeOptions.Value;
     }
 
@@ -43,19 +47,29 @@ public class TokenPriceGrain : Grain<CurrentTokenPriceState>, ITokenPriceGrain
             return result;
         }
 
-        var price = await _tokenPriceProvider.GetPriceAsync(symbol);
-        State.Id = this.GetPrimaryKeyString();
-        State.Symbol = symbol;
-        State.PriceInUsd = price;
-        State.PriceUpdateTime = DateTime.UtcNow;
-        await WriteStateAsync();
+        decimal price = 0;
+        try
+        {
+            price = await _tokenPriceProvider.GetPriceAsync(symbol);
+            State.Id = this.GetPrimaryKeyString();
+            State.Symbol = symbol;
+            State.PriceInUsd = price;
+            State.PriceUpdateTime = DateTime.UtcNow;
+            await WriteStateAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Get symbol price error: {symbol}", symbol);
+        }
 
         result.Success = true;
         result.Data = new TokenPriceGrainDto
         {
-            Symbol = State.Symbol,
-            PriceInUsd = State.PriceInUsd
+            Symbol = symbol,
+            PriceInUsd = price
         };
+
+
         return result;
     }
 }

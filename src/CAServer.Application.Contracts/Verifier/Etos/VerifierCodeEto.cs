@@ -2,7 +2,7 @@ using System;
 using Volo.Abp.EventBus;
 namespace CAServer.Verifier.Etos;
 
-[EventName("AElf.VerifierCodeEto")]
+[EventName("VerifierCodeEto")]
 public  class VerifierCodeEto
 {
     public string Type { get; set; }
