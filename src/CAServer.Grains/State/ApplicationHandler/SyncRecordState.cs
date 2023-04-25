@@ -16,5 +16,12 @@ public class SyncRecord
     public long BlockHeight { get; set; }
     public long ValidateHeight { get; set; }
     public int RetryTimes { get; set; }
-    public TransactionInfoDto ValidateTransactionInfoDto { get; set; }
+    public TransactionInfo ValidateTransactionInfoDto { get; set; }
+}
+
+public class TransactionInfo
+{
+    public long BlockNumber { get; set; }
+    public string TransactionId { get; set; }
+    public byte[] Transaction { get; set; }
 }

@@ -3,7 +3,7 @@ using Orleans;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
 
-public interface ISyncRecordGrain : IGrainWithStringKey
+public interface  ISyncRecordGrain : IGrainWithStringKey
 {
     Task AddRecordsAsync(List<SyncRecord> records);
     Task<List<SyncRecord>> GetRecordsAsync();

@@ -6,6 +6,7 @@ using AElf.Types;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
+using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -224,7 +225,12 @@ public class ContractAppService : IContractAppService
         var transactionDto =
             await _contractProvider.ValidateTransactionAsync(chainId, result, null);
         var syncHolderInfoInput =
-            await _contractProvider.GetSyncHolderInfoInputAsync(chainId, transactionDto);
+            await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
+            {
+                TransactionId = transactionDto.TransactionResultDto.TransactionId,
+                BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
+                Transaction = transactionDto.Transaction.ToByteArray()
+            });
 
         var syncSucceed = true;
 
@@ -527,7 +533,12 @@ public class ContractAppService : IContractAppService
                 }
 
                 record.ValidateHeight = transactionDto.TransactionResultDto.BlockNumber;
-                record.ValidateTransactionInfoDto = transactionDto;
+                record.ValidateTransactionInfoDto = new TransactionInfo
+                {
+                    BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
+                    TransactionId = transactionDto.TransactionResultDto.TransactionId,
+                    Transaction = transactionDto.Transaction.ToByteArray()
+                };
                 validatedRecords.Add(record);
             }
 
