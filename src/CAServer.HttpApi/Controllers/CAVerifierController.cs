@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CAServer.Dtos;
+using CAServer.Switch;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -19,19 +20,30 @@ public class CAVerifierController : CAServerController
     private readonly IVerifierAppService _verifierAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CAVerifierController> _logger;
+    private readonly ISwitchAppService _switchAppService;
+    private const string GoogleRecaptcha = "GoogleRecaptcha";
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
-        ILogger<CAVerifierController> logger)
+        ILogger<CAVerifierController> logger, ISwitchAppService switchAppService)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
         _logger = logger;
+        _switchAppService = switchAppService;
     }
 
     [HttpPost("sendVerificationRequest")]
     public async Task<VerifierServerResponse> SendVerificationRequest([FromHeader] string recaptchatoken,
         VerifierServerInput verifierServerInput)
     {
+        var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
+        if (!switchStatus.IsOpen)
+        {
+            var sendVerificationRequestInput =
+                _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        }
+
         if (string.IsNullOrWhiteSpace(recaptchatoken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");

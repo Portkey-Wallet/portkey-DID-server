@@ -65,6 +65,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
         Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
+        Configure<SwitchOptions>(configuration.GetSection("Switch"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
