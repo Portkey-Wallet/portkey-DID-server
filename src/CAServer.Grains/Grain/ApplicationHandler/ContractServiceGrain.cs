@@ -45,6 +45,21 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
                     param);
+            
+            var refBlockNumber = transaction.RefBlockNumber;
+
+            refBlockNumber -= _grainOptions.SafeBlockHeight;
+        
+            if (refBlockNumber < 0)
+            {
+                refBlockNumber = 0;
+            }
+
+            var blockDto = await client.GetBlockByHeightAsync(refBlockNumber);
+
+            transaction.RefBlockNumber = refBlockNumber;
+            transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
+            
             var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
 
             var result = await client.SendTransactionAsync(new SendTransactionInput

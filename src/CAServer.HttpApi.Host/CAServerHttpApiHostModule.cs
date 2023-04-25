@@ -309,7 +309,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseAuthorization();
 
-        //if (env.IsDevelopment())
+        if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>

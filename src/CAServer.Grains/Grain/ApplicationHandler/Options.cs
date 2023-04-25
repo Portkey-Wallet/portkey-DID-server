@@ -10,4 +10,5 @@ public class GrainOptions
     public int Delay { get; set; }
     public int RetryDelay { get; set; }
     public int RetryTimes { get; set; }
+    public long SafeBlockHeight { get; set; }
 }
