@@ -38,7 +38,8 @@ public class GoogleRecaptchaMiddleWare
         var url = context.Request.Path.ToString();
         if (_googleRecaptchaOptions.RecaptchaUrls.Contains(url))
         {
-            var recaptchaToken = context.Request.Headers[ReCaptchaToken];
+            //var recaptchaToken = context.Request.Headers[ReCaptchaToken];
+            var recaptchaToken = "context.Request.Headers[ReCaptchaToken];";
             if (string.IsNullOrEmpty(recaptchaToken))
             {
                 context.Response.StatusCode = 500; 
@@ -62,7 +63,7 @@ public class GoogleRecaptchaMiddleWare
             }
             catch (Exception e)
             {
-                _logger.LogDebug("Google Recaptcha Token Verify Failed");
+                _logger.LogDebug("Google Recaptcha Token Verify Failed :{reason}", e.Message);
                 context.Response.StatusCode = 500; 
                 await context.Response.WriteAsync("Google Recaptcha Token is Empty");
                 return;
