@@ -38,7 +38,7 @@ public class GoogleRecaptchaMiddleWare
         var url = context.Request.Path.ToString();
         if (_googleRecaptchaOptions.RecaptchaUrls.Contains(url))
         {
-            var recaptchaToken = context.Request.Headers["reCaptchaToken"];
+            var recaptchaToken = context.Request.Headers[ReCaptchaToken];
             if (string.IsNullOrEmpty(recaptchaToken))
             {
                 throw new Exception("Google Recaptcha Token is Empty");
