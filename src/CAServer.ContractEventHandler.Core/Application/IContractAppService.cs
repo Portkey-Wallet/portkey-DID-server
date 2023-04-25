@@ -563,12 +563,8 @@ public class ContractAppService : IContractAppService
                 tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo,
                     indexHeight - _indexOptions.IndexSafe));
             }
-            
-            if (queryHeight == 0)
-            {
-                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord,
-                    indexHeight - _indexOptions.IndexSafe));
-            }
+
+            await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, loginGuardianHeight);
         }
 
         await tasks.WhenAll();
