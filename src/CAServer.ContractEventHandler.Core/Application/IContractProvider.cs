@@ -75,12 +75,17 @@ public class ContractProvider : IContractProvider
 
     public async Task AddSyncRecordsAsync(string chainId, List<SyncRecord> records)
     {
+        if (records.IsNullOrEmpty())
+        {
+            return;
+        }
+        
         try
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId("SyncRecordGrain", chainId, "0"));
             await grain.AddRecordsAsync(records);
 
-            _logger.LogInformation("Set SyncRecords to Chain: {id} Success: {records}", chainId, JsonConvert.SerializeObject(records));
+            _logger.LogInformation("Set SyncRecords to Chain: {id} Success", chainId);
         }
         catch (Exception e)
         {
@@ -90,12 +95,17 @@ public class ContractProvider : IContractProvider
 
     public async Task AddFailedRecordsAsync(string chainId, List<SyncRecord> records)
     {
+        if (records.IsNullOrEmpty())
+        {
+            return;
+        }
+        
         try
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId("SyncRecordGrain", chainId, "0"));
             await grain.AddFailedRecordsAsync(records);
 
-            _logger.LogInformation("Set FailedRecords to Chain: {id} Success: {records}", chainId, JsonConvert.SerializeObject(records));
+            _logger.LogInformation("Set FailedRecords to Chain: {id} Success", chainId);
         }
         catch (Exception e)
         {
