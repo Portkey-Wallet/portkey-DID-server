@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace CAServer.Options;
 
 public class GoogleRecaptchaOptions
@@ -8,6 +6,5 @@ public class GoogleRecaptchaOptions
 
     public string VerifyUrl { get; set; }
 
-    public List<string> RecaptchaUrls { get;set; }
 
 }

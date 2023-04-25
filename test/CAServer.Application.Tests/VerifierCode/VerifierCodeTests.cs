@@ -40,6 +40,7 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
         services.AddSingleton(_jwtSecurityTokenHandler);
         services.AddSingleton(GetJwtSecurityTokenHandlerMock());
         services.AddSingleton(GetHttpClientService());
+        services.AddSingleton(GetGoogleRecaptchaOptions());
     }
 
     [Fact]
@@ -171,4 +172,13 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
 
         await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
+
+    [Fact]
+    public async Task VerifierGoogleReCaptcha_test()
+    {
+        var token = "1234567890";
+        var result = await _verifierAppService.VerifyGoogleRecaptchaTokenAsync(token);
+        result.ShouldBeFalse();
+    }
+
 }
