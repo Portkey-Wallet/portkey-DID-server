@@ -302,7 +302,7 @@ scripts/patcher/*
 
 tools
 .dotnet
-!.idea/
+.idea/
 .idea/.idea.CAServer/.idea/contentModel.xml
 .idea/.idea.CAServer/.idea/encodings.xml
 .idea/.idea.CAServer/.idea/indexLayout.xml

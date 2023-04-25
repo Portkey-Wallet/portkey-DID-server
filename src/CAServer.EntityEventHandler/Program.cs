@@ -33,7 +33,7 @@ namespace CAServer.EntityEventHandler
 
             try
             {
-                Log.Information("Starting AElf.CA.EntityEventHandler.");
+                Log.Information("Starting CA.EntityEventHandler.");
                 await CreateHostBuilder(args).RunConsoleAsync();
                 return 0;
             }
