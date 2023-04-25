@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using CAServer.Grains;
 using CAServer.Hub;
-using CAServer.Middleware;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
@@ -290,7 +289,6 @@ public class CAServerHttpApiHostModule : AbpModule
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
-        app.UseMiddleware<GoogleRecaptchaMiddleWare>();
         var env = context.GetEnvironment();
         if (env.IsDevelopment())
         {

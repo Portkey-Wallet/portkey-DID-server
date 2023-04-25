@@ -1,8 +1,10 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -16,19 +18,47 @@ public class CAVerifierController : CAServerController
 {
     private readonly IVerifierAppService _verifierAppService;
     private readonly IObjectMapper _objectMapper;
+    private readonly ILogger<CAVerifierController> _logger;
 
-    public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper)
+    public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
+        ILogger<CAVerifierController> logger)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
+        _logger = logger;
     }
 
     [HttpPost("sendVerificationRequest")]
-    public async Task<VerifierServerResponse> SendVerificationRequest(VerifierServerInput verifierServerInput)
+    public async Task<VerifierServerResponse> SendVerificationRequest([FromHeader] string recaptchatoken,
+        VerifierServerInput verifierServerInput)
     {
-        var sendVerificationRequestInput =
-            _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        if (string.IsNullOrWhiteSpace(recaptchatoken))
+        {
+            _logger.LogDebug("Google Recaptcha Token is Empty");
+            return new VerifierServerResponse();
+        }
+
+        var googleRecaptchaTokenSuccess = false;
+        try
+        {
+            googleRecaptchaTokenSuccess = await _verifierAppService.VerifyGoogleRecaptchaTokenAsync(recaptchatoken);
+        }
+        catch (Exception e)
+        {
+            _logger.LogDebug("Google Recaptcha Token Verify Failed :{reason}", e.Message);
+            return new VerifierServerResponse();
+        }
+
+        if (googleRecaptchaTokenSuccess)
+        {
+            _logger.LogDebug("Google Recaptcha Token Verify Success");
+            var sendVerificationRequestInput =
+                _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        }
+
+        _logger.LogDebug("Google Recaptcha Token Verify Failed");
+        return new VerifierServerResponse();
     }
 
 
@@ -37,17 +67,16 @@ public class CAVerifierController : CAServerController
     {
         return await _verifierAppService.VerifyCodeAsync(requestDto);
     }
-    
+
     [HttpPost("verifyGoogleToken")]
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
     {
         return await _verifierAppService.VerifyGoogleTokenAsync(requestDto);
     }
-    
+
     [HttpPost("verifyAppleToken")]
     public async Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto)
     {
         return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
-    
 }
