@@ -22,41 +22,38 @@ git clone https://github.com/Portkey-Wallet/portkey-DID-server
 The next step is to build the project to ensure everything is working correctly. Once everything is built and configuration file is configured correctly, you can run as follows:
 
 ```Bash
-# enter the portkey-DID-server folder and build 
+# enter the portkey-DID-server folder
 cd portkey-DID-server
 
-# build
-dotnet build
+# publish
+dotnet publish src/CAServer.DbMigrator/CAServer.DbMigrator.csproj -o portkey/DbMigrator
+dotnet publish src/CAServer.AuthServer/CAServer.AuthServer.csproj -o portkey/AuthServer
+dotnet publish src/CAServer.Silo/CAServer.Silo.csproj -o portkey/Silo
+dotnet publish src/CAServer.HttpApi.Host/CAServer.HttpApi.Host.csproj -o portkey/HttpApi
+dotnet publish src/CAServer.EntityEventHandler/CAServer.EntityEventHandler.csproj -o portkey/EntityEventHandler
+dotnet publish src/CAServer.ContractEventHandler/CAServer.ContractEventHandler.csproj -o portkey/ContractEventHandler
 
-# enter CAServer.DbMigrator folder
-cd portkey-DID-server/src/CAServer.DbMigrator/bin/Debug/net7.0
+# enter portkey folder
+cd portkey
+# ensure that the configuration file is configured correctly
+
 # run DbMigrator service
-dotnet CAServer.DbMigrator.dll
+dotnet DbMigrator/CAServer.DbMigrator.dll
 
-# enter CAServer.AuthServer folder
-cd portkey-DID-server/src/CAServer.AuthServer/bin/Debug/net7.0
 # run AuthServer service
-dotnet CAServer.AuthServer.dll
+dotnet AuthServer/CAServer.AuthServer.dll
 
-# enter CAServer.Silo folder
-cd portkey-DID-server/src/CAServer.Silo/bin/Debug/net7.0
 # run Silo service
-dotnet CAServer.Silo.dll
+dotnet Silo/CAServer.Silo.dll
 
-# enter CAServer.HttpApi.Host folder
-cd portkey-DID-server/src/CAServer.HttpApi.Host/bin/Debug/net7.0
 # run HttpApi service
-dotnet CAServer.HttpApi.Host.dll
+dotnet HttpApi/CAServer.HttpApi.Host.dll
 
-# enter CAServer.EntityEventHandler folder
-cd portkey-DID-server/src/CAServer.EntityEventHandler/bin/Debug/net7.0
 # run EntityEventHandler service
-dotnet CAServer.EntityEventHandler.dll
+dotnet EntityEventHandler/CAServer.EntityEventHandler.dll
 
-# enter CAServer.ContractEventHandler folder
-cd portkey-DID-server/src/CAServer.ContractEventHandler/bin/Debug/net7.0
 # run ContractEventHandler service
-dotnet CAServer.ContractEventHandler.Core.dll
+dotnet ContractEventHandler/CAServer.ContractEventHandler.dll
 ```
 
 After starting all the above services, Portkey DID Server is ready to provide external services.
