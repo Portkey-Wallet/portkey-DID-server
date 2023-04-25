@@ -389,6 +389,7 @@ public class ContractAppService : IContractAppService
                         record.ChangeType, chainId, record.CaHash, result.Error);
 
                     record.RetryTimes++;
+                    record.ValidateHeight = long.MaxValue;
                     failedRecords.Add(record);
                 }
                     
@@ -401,6 +402,9 @@ public class ContractAppService : IContractAppService
         }
 
         await _contractProvider.AddFailedRecordsAsync(chainId, failedRecords);
+
+        await _contractProvider.ClearRecordsAsync(chainId);
+        await _contractProvider.AddSyncRecordsAsync(chainId, records);
     }
 
     private async Task QueryEventsAsync(string chainId)
@@ -450,7 +454,8 @@ public class ContractAppService : IContractAppService
                     BlockHeight = dto.BlockHeight,
                     CaHash = dto.CaHash,
                     ChangeType = dto.ChangeType,
-                    NotLoginGuardian = dto.NotLoginGuardian
+                    NotLoginGuardian = dto.NotLoginGuardian,
+                    ValidateHeight = long.MaxValue
                 });
             }
 
@@ -471,10 +476,10 @@ public class ContractAppService : IContractAppService
 
             List<SyncRecord> recordsToValidate = new List<SyncRecord>();
 
-            var storedFaileRecords = await _contractProvider.GetFailedRecords(chainId);
-            if (!storedFaileRecords.IsNullOrEmpty())
+            var storedFailRecords = await _contractProvider.GetFailedRecords(chainId);
+            if (!storedFailRecords.IsNullOrEmpty())
             {
-                recordsToValidate.AddRange(storedFaileRecords);
+                recordsToValidate.AddRange(storedFailRecords);
             }
             
             await _contractProvider.ClearFailedRecordsAsync(chainId);
@@ -554,6 +559,7 @@ public class ContractAppService : IContractAppService
         {
             var loginGuardianHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardian);
             var managerInfoHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.ManagerInfo);
+            var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
 
             var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
             if (loginGuardianHeight == 0)
@@ -565,6 +571,12 @@ public class ContractAppService : IContractAppService
             if (managerInfoHeight == 0)
             {
                 tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo,
+                    indexHeight - _indexOptions.IndexSafe));
+            }
+            
+            if (queryRecordHeight == 0)
+            {
+                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord,
                     indexHeight - _indexOptions.IndexSafe));
             }
 
@@ -581,6 +593,7 @@ public class ContractAppService : IContractAppService
         {
             tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardian, blockHeight));
             tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo, blockHeight));
+            tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, blockHeight));
         }
 
         await tasks.WhenAll();
