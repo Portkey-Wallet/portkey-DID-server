@@ -38,11 +38,10 @@ public class GoogleRecaptchaMiddleWare
         var url = context.Request.Path.ToString();
         if (_googleRecaptchaOptions.RecaptchaUrls.Contains(url))
         {
-            //var recaptchaToken = context.Request.Headers[ReCaptchaToken];
-            var recaptchaToken = "context.Request.Headers[ReCaptchaToken];";
+            var recaptchaToken = context.Request.Headers[ReCaptchaToken];
             if (string.IsNullOrEmpty(recaptchaToken))
             {
-                context.Response.StatusCode = 500; 
+                _logger.LogDebug("Google Recaptcha Token is Empty");
                 await context.Response.WriteAsync("Google Recaptcha Token is Empty");
                 return;
             }
@@ -57,14 +56,12 @@ public class GoogleRecaptchaMiddleWare
                     await _next(context);
                 }
                 _logger.LogDebug("Google Recaptcha Token Verify Failed");
-                context.Response.StatusCode = 500; 
                 await context.Response.WriteAsync("Google Recaptcha Token is Empty");
                 return;
             }
             catch (Exception e)
             {
                 _logger.LogDebug("Google Recaptcha Token Verify Failed :{reason}", e.Message);
-                context.Response.StatusCode = 500; 
                 await context.Response.WriteAsync("Google Recaptcha Token is Empty");
                 return;
             }
