@@ -218,13 +218,16 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             new KeyValuePair<string, string>("secret", _googleRecaptchaOption.Secret),
             new KeyValuePair<string, string>("response", recaptchaToken)
         });
+        _logger.LogDebug("VerifyGoogleRecaptchaToken content is {content}",content.ToString());
         var client = _httpClientFactory.CreateClient();
         var response = await client.PostAsync(_googleRecaptchaOption.VerifyUrl, content);
+        _logger.LogDebug("response is {response}",response.ToString());
         if (!response.IsSuccessStatusCode)
         {
             return false;
         }
         var responseContent = await response.Content.ReadAsStringAsync();
+        _logger.LogDebug(" VerifyGoogleRecaptchaToken responseContent is {responseContent}",responseContent);
         return responseContent.Contains("\"success\": true");
     
     }

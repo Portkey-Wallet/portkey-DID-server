@@ -14,6 +14,7 @@ public class GoogleRecaptchaMiddleWare
     private readonly ILogger<GoogleRecaptchaMiddleWare> _logger;
     private readonly IVerifierAppService _verifierAppService;
     private readonly GoogleRecaptchaOptions _googleRecaptchaOptions;
+    private const string ReCaptchaToken = "recaptchatoken";
 
 
     public GoogleRecaptchaMiddleWare(ILogger<GoogleRecaptchaMiddleWare> logger,
@@ -61,7 +62,6 @@ public class GoogleRecaptchaMiddleWare
                 throw;
             }
         }
-
         await _requestDelegate(context);
     }
 }
