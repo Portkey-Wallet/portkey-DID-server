@@ -324,6 +324,12 @@ public class ContractAppService : IContractAppService
         
         var records = await _contractProvider.GetSyncRecords(chainId);
         
+        if (records.IsNullOrEmpty())
+        {
+            _logger.LogInformation("Found no record to sync on chain: {id}", chainId);
+            return;
+        }
+        
         if (chainId == ContractAppServiceConstant.MainChainId)
         {
             foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
