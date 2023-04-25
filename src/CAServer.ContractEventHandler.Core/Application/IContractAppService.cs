@@ -470,8 +470,13 @@ public class ContractAppService : IContractAppService
             var failedRecords = new List<SyncRecord>();
 
             List<SyncRecord> recordsToValidate = new List<SyncRecord>();
+
+            var storedFaileRecords = await _contractProvider.GetFailedRecords(chainId);
+            if (!storedFaileRecords.IsNullOrEmpty())
+            {
+                recordsToValidate.AddRange(storedFaileRecords);
+            }
             
-            recordsToValidate.AddRange(await _contractProvider.GetFailedRecords(chainId));
             await _contractProvider.ClearFailedRecordsAsync(chainId);
             
             recordsToValidate.AddRange(records);
@@ -549,7 +554,6 @@ public class ContractAppService : IContractAppService
         {
             var loginGuardianHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardian);
             var managerInfoHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.ManagerInfo);
-            var queryHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
 
             var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
             if (loginGuardianHeight == 0)
