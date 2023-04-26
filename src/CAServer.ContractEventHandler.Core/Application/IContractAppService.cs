@@ -678,8 +678,9 @@ public class ContractAppService : IContractAppService
     public async Task InitializeIndexAsync()
     {
         var dict = _indexOptions.AutoSyncStartHeight;
-        foreach (var chainId in _chainOptions.ChainInfos.Keys)
+        foreach (var info in _chainOptions.ChainInfos)
         {
+            var chainId = info.Key;
             var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
             if (queryRecordHeight < dict[chainId])
             {
