@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
-using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
@@ -47,14 +45,6 @@ public interface IContractProvider
 
     Task<ChainStatusDto> GetChainStatusAsync(string chainId);
     Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false);
-    
-    
-    Task AddValidatedRecordsAsync(string chainId, List<SyncRecord> records);
-    Task AddToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records);
-    Task<List<SyncRecord>> GetValidatedRecords(string chainId);
-    Task<List<SyncRecord>> GetToBeValidatedRecords(string chainId);
-    Task ClearValidatedRecordsAsync(string chainId);
-    Task ClearToBeValidatedRecordsAsync(string chainId);
 }
 
 public class ContractProvider : IContractProvider
@@ -71,70 +61,6 @@ public class ContractProvider : IContractProvider
         _chainOptions = chainOptions.Value;
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
-    }
-
-    public async Task AddValidatedRecordsAsync(string chainId, List<SyncRecord> records)
-    {
-        if (records.IsNullOrEmpty())
-        {
-            return;
-        }
-        
-        try
-        {
-            var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, "0"));
-            await grain.AddValidatedRecordsAsync(records);
-
-            _logger.LogInformation("Set ValidatedRecords to Chain: {id} Success", chainId);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Set ValidatedRecords to Chain: {id} Failed, {records}", chainId, JsonConvert.SerializeObject(records));
-        }
-    }
-
-    public async Task AddToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records)
-    {
-        if (records.IsNullOrEmpty())
-        {
-            return;
-        }
-        
-        try
-        {
-            var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, "0"));
-            await grain.AddToBeValidatedRecordsAsync(records);
-
-            _logger.LogInformation("Set ToBeValidatedRecords to Chain: {id} Success", chainId);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Set ToBeValidatedRecords to Chain: {id} Failed, {records}", chainId, JsonConvert.SerializeObject(records));
-        }
-    }
-
-    public async Task<List<SyncRecord>> GetValidatedRecords(string chainId)
-    {
-        var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, "0"));
-        return await grain.GetValidatedRecordsAsync();
-    }
-
-    public async Task<List<SyncRecord>> GetToBeValidatedRecords(string chainId)
-    {
-        var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, "0"));
-        return await grain.GetToBeValidatedRecordsAsync();
-    }
-
-    public async Task ClearValidatedRecordsAsync(string chainId)
-    {
-        var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, "0"));
-        await grain.ClearValidatedRecords();
-    }
-
-    public async Task ClearToBeValidatedRecordsAsync(string chainId)
-    {
-        var grain = _clusterClient.GetGrain<ISyncRecordGrain>(GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, "0"));
-        await grain.ClearToBeValidatedRecords();
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,

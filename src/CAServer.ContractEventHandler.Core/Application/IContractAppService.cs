@@ -35,12 +35,13 @@ public class ContractAppService : IContractAppService
     private readonly IndexOptions _indexOptions;
     private readonly IGraphQLProvider _graphQLProvider;
     private readonly IContractProvider _contractProvider;
+    private readonly IRecordsBucketContainer _recordsBucketContainer;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptions<ChainOptions> chainOptions,
         IOptions<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider, IContractProvider contractProvider,
-        IObjectMapper objectMapper, ILogger<ContractAppService> logger)
+        IObjectMapper objectMapper, ILogger<ContractAppService> logger, IRecordsBucketContainer recordsBucketContainer)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -49,6 +50,7 @@ public class ContractAppService : IContractAppService
         _contractProvider = contractProvider;
         _objectMapper = objectMapper;
         _logger = logger;
+        _recordsBucketContainer = recordsBucketContainer;
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
@@ -335,7 +337,7 @@ public class ContractAppService : IContractAppService
         {
             var failedRecords = new List<SyncRecord>();
 
-            var records = await _contractProvider.GetValidatedRecords(chainId);
+            var records = await _recordsBucketContainer.GetValidatedRecords(chainId);
 
             if (records.IsNullOrEmpty())
             {
@@ -436,10 +438,10 @@ public class ContractAppService : IContractAppService
                 }
             }
 
-            await _contractProvider.AddToBeValidatedRecordsAsync(chainId, failedRecords);
+            await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, failedRecords);
 
-            await _contractProvider.ClearValidatedRecordsAsync(chainId);
-            await _contractProvider.AddValidatedRecordsAsync(chainId, records);
+            await _recordsBucketContainer.ClearValidatedRecordsAsync(chainId);
+            await _recordsBucketContainer.AddValidatedRecordsAsync(chainId, records);
 
             _logger.LogInformation(
                 "SyncQueryEvents on chain: {id} Ends, synced {num} events and failed {failedNum} events", chainId,
@@ -489,9 +491,11 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation(
                     "Found {num} events on chain: {id}", queryEvents.Count, chainId);
 
+                queryEvents = queryEvents.Where(e => e.ChangeType != QueryLoginGuardianType.LoginGuardianRemoved).ToList();
+
                 var list = OptimizeQueryEvents(queryEvents);
 
-                await _contractProvider.AddToBeValidatedRecordsAsync(chainId, list);
+                await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, list);
             }
 
             await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, nextIndexHeight);
@@ -511,7 +515,7 @@ public class ContractAppService : IContractAppService
             var validatedRecords = new List<SyncRecord>();
             var failedRecords = new List<SyncRecord>();
 
-            var storedToBeValidatedRecords = await _contractProvider.GetToBeValidatedRecords(chainId);
+            var storedToBeValidatedRecords = await _recordsBucketContainer.GetToBeValidatedRecords(chainId);
 
             if (storedToBeValidatedRecords.IsNullOrEmpty())
             {
@@ -570,10 +574,10 @@ public class ContractAppService : IContractAppService
                 }
             }
 
-            await _contractProvider.AddValidatedRecordsAsync(chainId, validatedRecords);
+            await _recordsBucketContainer.AddValidatedRecordsAsync(chainId, validatedRecords);
 
-            await _contractProvider.ClearToBeValidatedRecordsAsync(chainId);
-            await _contractProvider.AddToBeValidatedRecordsAsync(chainId, failedRecords);
+            await _recordsBucketContainer.ClearToBeValidatedRecordsAsync(chainId);
+            await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, failedRecords);
 
             _logger.LogInformation(
                 "ValidateQueryEvents on chain: {id} ends, validated {num} events and failed {failedNum} events",

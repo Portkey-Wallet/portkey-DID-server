@@ -10,7 +10,7 @@ public static class ContractAppServiceConstant
 
 public static class QueryLoginGuardianType
 {
-    public const string LoginGuardianAdded = "LoginGuardianAdded";
+    public const string LoginGuardianRemoved = "LoginGuardianRemoved";
     public const string LoginGuardianUnbound = "LoginGuardianUnbound";
 }
 
