@@ -24,8 +24,8 @@ public interface IContractAppService
     Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     Task QueryAndSyncAsync();
     Task InitializeIndexAsync();
-    Task InitializeQueryRecordIndexAsync();
-    Task InitializeIndexAsync(long blockHeight);
+    // Task InitializeQueryRecordIndexAsync();
+    // Task InitializeIndexAsync(long blockHeight);
 }
 
 public class ContractAppService : IContractAppService
@@ -623,37 +623,37 @@ public class ContractAppService : IContractAppService
         return records;
     }
 
-    public async Task InitializeIndexAsync()
-    {
-        var tasks = new List<Task>();
-        foreach (var chainId in _chainOptions.ChainInfos.Keys)
-        {
-            var loginGuardianHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardian);
-            var managerInfoHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.ManagerInfo);
-            var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
-
-            var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
-            if (loginGuardianHeight == 0)
-            {
-                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardian,
-                    indexHeight - _indexOptions.IndexSafe));
-            }
-
-            if (managerInfoHeight == 0)
-            {
-                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo,
-                    indexHeight - _indexOptions.IndexSafe));
-            }
-
-            if (queryRecordHeight < indexHeight)
-            {
-                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord,
-                    indexHeight - _indexOptions.IndexSafe));
-            }
-        }
-
-        await tasks.WhenAll();
-    }
+    // public async Task InitializeIndexAsync()
+    // {
+    //     var tasks = new List<Task>();
+    //     foreach (var chainId in _chainOptions.ChainInfos.Keys)
+    //     {
+    //         var loginGuardianHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardian);
+    //         var managerInfoHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.ManagerInfo);
+    //         var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
+    //
+    //         var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
+    //         if (loginGuardianHeight == 0)
+    //         {
+    //             tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardian,
+    //                 indexHeight - _indexOptions.IndexSafe));
+    //         }
+    //
+    //         if (managerInfoHeight == 0)
+    //         {
+    //             tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo,
+    //                 indexHeight - _indexOptions.IndexSafe));
+    //         }
+    //
+    //         if (queryRecordHeight < indexHeight)
+    //         {
+    //             tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord,
+    //                 indexHeight - _indexOptions.IndexSafe));
+    //         }
+    //     }
+    //
+    //     await tasks.WhenAll();
+    // }
 
     public async Task InitializeQueryRecordIndexAsync()
     {
@@ -675,16 +675,16 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    public async Task InitializeIndexAsync(long blockHeight)
+    public async Task InitializeIndexAsync()
     {
-        var tasks = new List<Task>();
+        var dict = _indexOptions.AutoSyncStartHeight;
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardian, blockHeight));
-            tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo, blockHeight));
-            tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, blockHeight));
+            var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
+            if (queryRecordHeight < dict[chainId])
+            {
+                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, dict[chainId]);
+            }
         }
-
-        await tasks.WhenAll();
     }
 }

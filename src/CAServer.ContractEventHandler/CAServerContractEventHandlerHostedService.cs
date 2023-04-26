@@ -24,7 +24,7 @@ public class CAServerContractEventHandlerHostedService : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         await _application.InitializeAsync(_serviceProvider);
-        await _contractAppService.InitializeQueryRecordIndexAsync();
+        await _contractAppService.InitializeIndexAsync();
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
