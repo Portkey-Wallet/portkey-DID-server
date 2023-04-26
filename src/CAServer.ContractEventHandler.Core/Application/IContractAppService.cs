@@ -308,7 +308,9 @@ public class ContractAppService : IContractAppService
     private async Task QueryEventsAndSyncAsync(string chainId)
     {
         await QueryEventsAsync(chainId);
-
+        
+        await ValidateQueryEventsAsync(chainId);
+        
         await SyncQueryEventsAsync(chainId);
     }
 
@@ -476,35 +478,36 @@ public class ContractAppService : IContractAppService
                 ? endBlockHeight + 1
                 : currentIndexHeight - _indexOptions.IndexSafe;
 
-            await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, nextIndexHeight);
-
             if (queryEvents.IsNullOrEmpty())
             {
                 _logger.LogInformation(
                     "Found no events on chain: {id}. Next index block height: {height}", chainId,
                     nextIndexHeight);
-                return;
             }
-
-            queryEvents = OptimizeQueryEvents(queryEvents);
-
-            _logger.LogInformation(
-                "Found {num} events to validate on chain: {id}", queryEvents.Count, chainId);
-
-            var list = new List<SyncRecord>();
-            foreach (var dto in queryEvents)
+            else
             {
-                list.Add(new SyncRecord
-                {
-                    BlockHeight = dto.BlockHeight,
-                    CaHash = dto.CaHash,
-                    ChangeType = dto.ChangeType,
-                    NotLoginGuardian = dto.NotLoginGuardian,
-                    ValidateHeight = long.MaxValue
-                });
-            }
+                queryEvents = OptimizeQueryEvents(queryEvents);
 
-            await ValidateQueryEventsAsync(chainId, list);
+                _logger.LogInformation(
+                    "Found {num} events on chain: {id}", queryEvents.Count, chainId);
+
+                var list = new List<SyncRecord>();
+                foreach (var dto in queryEvents)
+                {
+                    list.Add(new SyncRecord
+                    {
+                        BlockHeight = dto.BlockHeight,
+                        CaHash = dto.CaHash,
+                        ChangeType = dto.ChangeType,
+                        NotLoginGuardian = dto.NotLoginGuardian,
+                        ValidateHeight = long.MaxValue
+                    });
+                }
+
+                await _contractProvider.AddFailedRecordsAsync(chainId, list);
+            }
+            
+            await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, nextIndexHeight);
         }
         catch (Exception e)
         {
@@ -512,8 +515,10 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    private async Task ValidateQueryEventsAsync(string chainId, List<SyncRecord> records)
+    private async Task ValidateQueryEventsAsync(string chainId)
     {
+        _logger.LogInformation("ValidateQueryEvents on chain: {id} starts", chainId);
+        
         try
         {
             var validatedRecords = new List<SyncRecord>();
@@ -526,8 +531,6 @@ public class ContractAppService : IContractAppService
             {
                 recordsToValidate.AddRange(storedFailRecords);
             }
-
-            recordsToValidate.AddRange(records);
 
             foreach (var record in recordsToValidate)
             {
@@ -588,7 +591,7 @@ public class ContractAppService : IContractAppService
             await _contractProvider.AddFailedRecordsAsync(chainId, failedRecords);
 
             _logger.LogInformation(
-                "QueryEvents on chain: {id} ends, validated {num} events and failed {failedNum} events",
+                "ValidateQueryEvents on chain: {id} ends, validated {num} events and failed {failedNum} events",
                 chainId, validatedRecords.Count, failedRecords.Count);
         }
         catch (Exception e)
