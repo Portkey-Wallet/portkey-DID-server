@@ -24,6 +24,7 @@ public class IndexOptions
     public long IndexInterval { get; set; }
     public long IndexSafe { get; set; }
     public long IndexTimes { get; set; }
+    public int MaxRetryTimes { get; set; }
 }
 
 public class GraphQLOptions

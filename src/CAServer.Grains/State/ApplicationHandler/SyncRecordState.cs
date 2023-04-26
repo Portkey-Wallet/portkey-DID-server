@@ -1,5 +1,3 @@
-using CAServer.Grains.Grain.ApplicationHandler;
-
 namespace CAServer.Grains.State.ApplicationHandler;
 
 public class SyncRecordState
