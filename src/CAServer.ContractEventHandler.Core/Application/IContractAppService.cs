@@ -682,7 +682,7 @@ public class ContractAppService : IContractAppService
         {
             var chainId = info.Key;
             var result = dict.TryGetValue(chainId, out var height);
-            if (result)
+            if (!result)
             {
                 height = 0;
             }
