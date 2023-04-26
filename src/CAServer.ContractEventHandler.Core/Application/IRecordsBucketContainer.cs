@@ -46,11 +46,11 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         {
             var dict = GetSyncRecordBucketDictionary(records);
 
-            foreach (var bucket in dict.Keys)
+            foreach (var bucket in dict)
             {
                 var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
-                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket));
-                await grain.AddValidatedRecordsAsync(dict[bucket]);
+                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket.Key));
+                await grain.AddValidatedRecordsAsync(bucket.Value);
             }
 
             _logger.LogInformation("Set ValidatedRecords to Chain: {id} Success", chainId);
@@ -73,11 +73,11 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         {
             var dict = GetSyncRecordBucketDictionary(records);
 
-            foreach (var bucket in dict.Keys)
+            foreach (var bucket in dict)
             {
                 var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
-                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket));
-                await grain.AddToBeValidatedRecordsAsync(dict[bucket]);
+                    GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket.Key));
+                await grain.AddToBeValidatedRecordsAsync(bucket.Value);
             }
 
             _logger.LogInformation("Set ToBeValidatedRecords to Chain: {id} Success", chainId);
