@@ -40,7 +40,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
     private readonly ILogger<ContractProvider> _logger;
 
     public GraphQLProvider(ILogger<ContractProvider> logger, IClusterClient clusterClient,
-        IOptions<GraphQLOptions> graphQLOptions)
+        IOptionsSnapshot<GraphQLOptions> graphQLOptions)
     {
         _logger = logger;
         _clusterClient = clusterClient;

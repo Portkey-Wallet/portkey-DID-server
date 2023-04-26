@@ -54,8 +54,8 @@ public class ContractProvider : IContractProvider
     private readonly ChainOptions _chainOptions;
     private readonly IndexOptions _indexOptions;
 
-    public ContractProvider(ILogger<ContractProvider> logger, IOptions<ChainOptions> chainOptions,
-        IOptions<IndexOptions> indexOptions, IClusterClient clusterClient)
+    public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
+        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;

@@ -43,7 +43,7 @@ public class SyncRecordGrainTests : CAServerGrainTestBase
         list.First().ValidateTransactionInfoDto.TransactionId.ShouldBe("id");
         list.First().ValidateTransactionInfoDto.Transaction.ShouldBe(new byte[]{1, 2, 3});
 
-        await grain.ClearValidatedRecords();
+        await grain.SetValidatedRecords(new List<SyncRecord>());
         list = await grain.GetValidatedRecordsAsync();
         list.Count.ShouldBe(0);
     }
@@ -84,7 +84,7 @@ public class SyncRecordGrainTests : CAServerGrainTestBase
         list.First().ValidateTransactionInfoDto.TransactionId.ShouldBe("id");
         list.First().ValidateTransactionInfoDto.Transaction.ShouldBe(new byte[]{1, 2, 3});
 
-        await grain.ClearToBeValidatedRecords();
+        await grain.SetToBeValidatedRecords(new List<SyncRecord>());
         list = await grain.GetToBeValidatedRecordsAsync();
         list.Count.ShouldBe(0);
     }

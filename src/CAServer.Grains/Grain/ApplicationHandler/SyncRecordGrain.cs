@@ -10,8 +10,8 @@ public interface  ISyncRecordGrain : IGrainWithStringKey
 
     Task AddToBeValidatedRecordsAsync(List<SyncRecord> record);
     Task<List<SyncRecord>> GetToBeValidatedRecordsAsync();
-    Task ClearValidatedRecords();
-    Task ClearToBeValidatedRecords();
+    Task SetValidatedRecords(List<SyncRecord> record);
+    Task SetToBeValidatedRecords(List<SyncRecord> record);
 }
 
 public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
@@ -56,15 +56,15 @@ public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
         return Task.FromResult(State.ToBeValidatedRecords);
     }
 
-    public async Task ClearValidatedRecords()
+    public async Task SetValidatedRecords(List<SyncRecord> record)
     {
-        State.ValidatedRecords = new List<SyncRecord>();
+        State.ValidatedRecords = record;
         await WriteStateAsync();
     }
     
-    public async Task ClearToBeValidatedRecords()
+    public async Task SetToBeValidatedRecords(List<SyncRecord> record)
     {
-        State.ToBeValidatedRecords = new List<SyncRecord>();
+        State.ToBeValidatedRecords = record;
         await WriteStateAsync();
     }
 }

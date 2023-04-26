@@ -17,8 +17,8 @@ public interface IRecordsBucketContainer
     Task AddToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records);
     Task<List<SyncRecord>> GetValidatedRecords(string chainId);
     Task<List<SyncRecord>> GetToBeValidatedRecords(string chainId);
-    Task ClearValidatedRecordsAsync(string chainId);
-    Task ClearToBeValidatedRecordsAsync(string chainId);
+    Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> record);
+    Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> record);
 }
 
 public class RecordsBucketContainer : IRecordsBucketContainer
@@ -27,7 +27,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
     private readonly IClusterClient _clusterClient;
     private readonly IndexOptions _indexOptions;
 
-    public RecordsBucketContainer(ILogger<RecordsBucketContainer> logger, IOptions<IndexOptions> indexOptions,
+    public RecordsBucketContainer(ILogger<RecordsBucketContainer> logger, IOptionsSnapshot<IndexOptions> indexOptions,
         IClusterClient clusterClient)
     {
         _logger = logger;
@@ -50,7 +50,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             {
                 var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                     GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket));
-                await grain.AddValidatedRecordsAsync(records);
+                await grain.AddValidatedRecordsAsync(dict[bucket]);
             }
 
             _logger.LogInformation("Set ValidatedRecords to Chain: {id} Success", chainId);
@@ -77,7 +77,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             {
                 var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                     GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, bucket));
-                await grain.AddToBeValidatedRecordsAsync(records);
+                await grain.AddToBeValidatedRecordsAsync(dict[bucket]);
             }
 
             _logger.LogInformation("Set ToBeValidatedRecords to Chain: {id} Success", chainId);
@@ -93,7 +93,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
     {
         var list = new List<SyncRecord>();
 
-        for (int i = 0; i <= _indexOptions.MaxBucketSize; i++)
+        for (int i = 0; i <= _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
@@ -112,7 +112,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
     {
         var list = new List<SyncRecord>();
 
-        for (int i = 0; i <= _indexOptions.MaxBucketSize; i++)
+        for (int i = 0; i <= _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
@@ -127,23 +127,23 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         return list;
     }
 
-    public async Task ClearValidatedRecordsAsync(string chainId)
+    public async Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> record)
     {
-        for (int i = 0; i <= _indexOptions.MaxBucketSize; i++)
+        for (int i = 0; i <= _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
-            await grain.ClearValidatedRecords();
+            await grain.SetValidatedRecords(record);
         }
     }
 
-    public async Task ClearToBeValidatedRecordsAsync(string chainId)
+    public async Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> record)
     {
-        for (int i = 0; i <= _indexOptions.MaxBucketSize; i++)
+        for (int i = 0; i <= _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
-            await grain.ClearToBeValidatedRecords();
+            await grain.SetToBeValidatedRecords(record);
         }
     }
     
