@@ -37,13 +37,19 @@ public class CAVerifierController : CAServerController
         VerifierServerInput verifierServerInput)
     {
         var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
-        if (!switchStatus.IsOpen)
+        if (switchStatus.IsOpen)
         {
-            var sendVerificationRequestInput =
-                _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+            return await GoogleRecaptchaAndseSendVerificationRequestAsync(recaptchatoken, verifierServerInput);
         }
 
+        var sendVerificationRequestInput =
+            _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+    }
+
+    private async Task<VerifierServerResponse> GoogleRecaptchaAndseSendVerificationRequestAsync(string recaptchatoken,
+        VerifierServerInput verifierServerInput)
+    {
         if (string.IsNullOrWhiteSpace(recaptchatoken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");
