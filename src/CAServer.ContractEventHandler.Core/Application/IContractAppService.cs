@@ -681,7 +681,11 @@ public class ContractAppService : IContractAppService
         foreach (var info in _chainOptions.ChainInfos)
         {
             var chainId = info.Key;
-            dict.TryGetValue(chainId, out var height);
+            var result = dict.TryGetValue(chainId, out var height);
+            if (result)
+            {
+                height = 0;
+            }
             var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
             if (queryRecordHeight < height)
             
