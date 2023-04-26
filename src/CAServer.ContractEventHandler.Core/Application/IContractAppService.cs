@@ -675,9 +675,30 @@ public class ContractAppService : IContractAppService
         }
     }
 
+    // public async Task InitializeIndexAsync()
+    // {
+    //     var dict = _indexOptions.AutoSyncStartHeight;
+    //     foreach (var info in _chainOptions.ChainInfos)
+    //     {
+    //         var chainId = info.Key;
+    //         var result = dict.TryGetValue(chainId, out var height);
+    //         if (!result)
+    //         {
+    //             height = 0;
+    //         }
+    //         var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
+    //         if (queryRecordHeight < height)
+    //         
+    //         {
+    //             await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height);
+    //         }
+    //     }
+    // }
+    
     public async Task InitializeIndexAsync()
     {
         var dict = _indexOptions.AutoSyncStartHeight;
+
         foreach (var info in _chainOptions.ChainInfos)
         {
             var chainId = info.Key;
@@ -690,6 +711,7 @@ public class ContractAppService : IContractAppService
             if (queryRecordHeight < height)
             
             {
+                _logger.LogInformation("InitializeIndexAsync on chain {id} set last end height to {height}", chainId, height);
                 await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height);
             }
         }

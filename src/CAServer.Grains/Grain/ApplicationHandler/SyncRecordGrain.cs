@@ -16,14 +16,12 @@ public interface  ISyncRecordGrain : IGrainWithStringKey
 
 public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
 {
-    public override Task OnActivateAsync()
+    public override async Task OnActivateAsync()
     {
-        ReadStateAsync();
+        await ReadStateAsync();
         
         State.ToBeValidatedRecords ??= new List<SyncRecord>();
         State.ValidatedRecords ??= new List<SyncRecord>();
-
-        return base.OnActivateAsync();
     }
 
     public async Task AddValidatedRecordsAsync(List<SyncRecord> records)
