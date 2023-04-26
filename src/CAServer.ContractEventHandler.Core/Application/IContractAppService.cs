@@ -308,9 +308,9 @@ public class ContractAppService : IContractAppService
     private async Task QueryEventsAndSyncAsync(string chainId)
     {
         await QueryEventsAsync(chainId);
-        
+
         await ValidateQueryEventsAsync(chainId);
-        
+
         await SyncQueryEventsAsync(chainId);
     }
 
@@ -335,15 +335,15 @@ public class ContractAppService : IContractAppService
         {
             var failedRecords = new List<SyncRecord>();
 
-            var records = await _contractProvider.GetSyncRecords(chainId);
-
-            var recordsAmount = records.Count;
+            var records = await _contractProvider.GetValidatedRecords(chainId);
 
             if (records.IsNullOrEmpty())
             {
                 _logger.LogInformation("Found no record to sync on chain: {id}", chainId);
                 return;
             }
+
+            var recordsAmount = records.Count;
 
             _logger.LogInformation("Found {count} records to sync on chain: {id}", records.Count, chainId);
 
@@ -436,10 +436,10 @@ public class ContractAppService : IContractAppService
                 }
             }
 
-            await _contractProvider.AddFailedRecordsAsync(chainId, failedRecords);
+            await _contractProvider.AddToBeValidatedRecordsAsync(chainId, failedRecords);
 
-            await _contractProvider.ClearRecordsAsync(chainId);
-            await _contractProvider.AddSyncRecordsAsync(chainId, records);
+            await _contractProvider.ClearValidatedRecordsAsync(chainId);
+            await _contractProvider.AddValidatedRecordsAsync(chainId, records);
 
             _logger.LogInformation(
                 "SyncQueryEvents on chain: {id} Ends, synced {num} events and failed {failedNum} events", chainId,
@@ -486,27 +486,14 @@ public class ContractAppService : IContractAppService
             }
             else
             {
-                queryEvents = OptimizeQueryEvents(queryEvents);
-
                 _logger.LogInformation(
                     "Found {num} events on chain: {id}", queryEvents.Count, chainId);
 
-                var list = new List<SyncRecord>();
-                foreach (var dto in queryEvents)
-                {
-                    list.Add(new SyncRecord
-                    {
-                        BlockHeight = dto.BlockHeight,
-                        CaHash = dto.CaHash,
-                        ChangeType = dto.ChangeType,
-                        NotLoginGuardian = dto.NotLoginGuardian,
-                        ValidateHeight = long.MaxValue
-                    });
-                }
+                var list = OptimizeQueryEvents(queryEvents);
 
-                await _contractProvider.AddFailedRecordsAsync(chainId, list);
+                await _contractProvider.AddToBeValidatedRecordsAsync(chainId, list);
             }
-            
+
             await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, nextIndexHeight);
         }
         catch (Exception e)
@@ -518,21 +505,24 @@ public class ContractAppService : IContractAppService
     private async Task ValidateQueryEventsAsync(string chainId)
     {
         _logger.LogInformation("ValidateQueryEvents on chain: {id} starts", chainId);
-        
+
         try
         {
             var validatedRecords = new List<SyncRecord>();
             var failedRecords = new List<SyncRecord>();
 
-            List<SyncRecord> recordsToValidate = new List<SyncRecord>();
+            var storedToBeValidatedRecords = await _contractProvider.GetToBeValidatedRecords(chainId);
 
-            var storedFailRecords = await _contractProvider.GetFailedRecords(chainId);
-            if (!storedFailRecords.IsNullOrEmpty())
+            if (storedToBeValidatedRecords.IsNullOrEmpty())
             {
-                recordsToValidate.AddRange(storedFailRecords);
+                _logger.LogInformation("Found no events on chain: {id} to validate", chainId);
+                return;
             }
 
-            foreach (var record in recordsToValidate)
+            storedToBeValidatedRecords = OptimizeSyncRecords(storedToBeValidatedRecords
+                .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
+
+            foreach (var record in storedToBeValidatedRecords)
             {
                 _logger.LogInformation(
                     "Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height}",
@@ -565,11 +555,6 @@ public class ContractAppService : IContractAppService
                         chainId, record.CaHash);
                     record.RetryTimes++;
 
-                    if (record.RetryTimes > _indexOptions.MaxRetryTimes)
-                    {
-                        continue;
-                    }
-
                     failedRecords.Add(record);
                 }
                 else
@@ -585,10 +570,10 @@ public class ContractAppService : IContractAppService
                 }
             }
 
-            await _contractProvider.AddSyncRecordsAsync(chainId, validatedRecords);
+            await _contractProvider.AddValidatedRecordsAsync(chainId, validatedRecords);
 
-            await _contractProvider.ClearFailedRecordsAsync(chainId);
-            await _contractProvider.AddFailedRecordsAsync(chainId, failedRecords);
+            await _contractProvider.ClearToBeValidatedRecordsAsync(chainId);
+            await _contractProvider.AddToBeValidatedRecordsAsync(chainId, failedRecords);
 
             _logger.LogInformation(
                 "ValidateQueryEvents on chain: {id} ends, validated {num} events and failed {failedNum} events",
@@ -600,23 +585,40 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    private List<QueryEventDto> OptimizeQueryEvents(List<QueryEventDto> queryEvents)
+    private List<SyncRecord> OptimizeQueryEvents(List<QueryEventDto> queryEvents)
     {
-        var index = queryEvents.Count - 1;
+        var list = queryEvents.Select(dto => new SyncRecord
+            {
+                BlockHeight = dto.BlockHeight,
+                CaHash = dto.CaHash,
+                ChangeType = dto.ChangeType,
+                NotLoginGuardian = dto.NotLoginGuardian,
+                ValidateHeight = long.MaxValue
+            })
+            .ToList();
+
+        list = OptimizeSyncRecords(list);
+
+        return list;
+    }
+
+    private List<SyncRecord> OptimizeSyncRecords(List<SyncRecord> records)
+    {
+        var index = records.Count - 1;
         while (index > 0)
         {
-            var neededDeleteEvent = queryEvents.FirstOrDefault(e =>
+            var neededDeleteEvent = records.FirstOrDefault(e =>
                 e.ChangeType != QueryLoginGuardianType.LoginGuardianUnbound &&
-                e.BlockHeight < queryEvents[index].BlockHeight && e.CaHash == queryEvents[index].CaHash);
+                e.BlockHeight < records[index].BlockHeight && e.CaHash == records[index].CaHash);
             if (neededDeleteEvent != null)
             {
-                queryEvents.Remove(neededDeleteEvent);
+                records.Remove(neededDeleteEvent);
             }
 
             index--;
         }
 
-        return queryEvents;
+        return records;
     }
 
     public async Task InitializeIndexAsync()

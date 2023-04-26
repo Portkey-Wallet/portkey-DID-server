@@ -2,8 +2,8 @@ namespace CAServer.Grains.State.ApplicationHandler;
 
 public class SyncRecordState
 {
-    public List<SyncRecord> Records { get; set; }
-    public List<SyncRecord> FailedRecords { get; set; }
+    public List<SyncRecord> ValidatedRecords { get; set; }
+    public List<SyncRecord> ToBeValidatedRecords { get; set; }
 }
 
 public class SyncRecord

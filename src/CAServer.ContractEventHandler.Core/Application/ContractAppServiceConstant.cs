@@ -27,3 +27,8 @@ public static class LoggerMsg
     public const string IndexBlockRecordInformation = "Block is not recorded, waiting...";
     public const string NodeBlockHeightWarning = "Current node block height should be large than the event";
 }
+
+public static class GrainId
+{
+    public const string SyncRecord = "SyncRecordGrain";
+}

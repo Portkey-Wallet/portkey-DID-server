@@ -5,13 +5,13 @@ namespace CAServer.Grains.Grain.ApplicationHandler;
 
 public interface  ISyncRecordGrain : IGrainWithStringKey
 {
-    Task AddRecordsAsync(List<SyncRecord> records);
-    Task<List<SyncRecord>> GetRecordsAsync();
+    Task AddValidatedRecordsAsync(List<SyncRecord> records);
+    Task<List<SyncRecord>> GetValidatedRecordsAsync();
 
-    Task AddFailedRecordsAsync(List<SyncRecord> record);
-    Task<List<SyncRecord>> GetFailedRecordsAsync();
-    Task ClearRecords();
-    Task ClearFailedRecords();
+    Task AddToBeValidatedRecordsAsync(List<SyncRecord> record);
+    Task<List<SyncRecord>> GetToBeValidatedRecordsAsync();
+    Task ClearValidatedRecords();
+    Task ClearToBeValidatedRecords();
 }
 
 public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
@@ -20,51 +20,51 @@ public class SyncRecordGrain : Grain<SyncRecordState>, ISyncRecordGrain
     {
         ReadStateAsync();
         
-        State.FailedRecords ??= new List<SyncRecord>();
-        State.Records ??= new List<SyncRecord>();
+        State.ToBeValidatedRecords ??= new List<SyncRecord>();
+        State.ValidatedRecords ??= new List<SyncRecord>();
 
         return base.OnActivateAsync();
     }
 
-    public async Task AddRecordsAsync(List<SyncRecord> records)
+    public async Task AddValidatedRecordsAsync(List<SyncRecord> records)
     {
         if (!records.IsNullOrEmpty())
         {
-            State.Records.AddRange(records);
+            State.ValidatedRecords.AddRange(records);
         }
         
         await WriteStateAsync();
     }
 
-    public Task<List<SyncRecord>> GetRecordsAsync()
+    public Task<List<SyncRecord>> GetValidatedRecordsAsync()
     {
-        return Task.FromResult(State.Records);
+        return Task.FromResult(State.ValidatedRecords);
     }
 
-    public async Task AddFailedRecordsAsync(List<SyncRecord> records)
+    public async Task AddToBeValidatedRecordsAsync(List<SyncRecord> records)
     {
         if (!records.IsNullOrEmpty())
         {
-            State.FailedRecords.AddRange(records);
+            State.ToBeValidatedRecords.AddRange(records);
         }
        
         await WriteStateAsync();
     }
 
-    public Task<List<SyncRecord>> GetFailedRecordsAsync()
+    public Task<List<SyncRecord>> GetToBeValidatedRecordsAsync()
     {
-        return Task.FromResult(State.FailedRecords);
+        return Task.FromResult(State.ToBeValidatedRecords);
     }
 
-    public async Task ClearRecords()
+    public async Task ClearValidatedRecords()
     {
-        State.Records = new List<SyncRecord>();
+        State.ValidatedRecords = new List<SyncRecord>();
         await WriteStateAsync();
     }
     
-    public async Task ClearFailedRecords()
+    public async Task ClearToBeValidatedRecords()
     {
-        State.FailedRecords = new List<SyncRecord>();
+        State.ToBeValidatedRecords = new List<SyncRecord>();
         await WriteStateAsync();
     }
 }
