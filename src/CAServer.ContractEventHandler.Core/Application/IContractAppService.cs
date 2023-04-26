@@ -657,22 +657,16 @@ public class ContractAppService : IContractAppService
 
     public async Task InitializeQueryRecordIndexAsync()
     {
-        var tasks = new List<Task>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
-            var loginGuardianHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardian);
             var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
             var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
 
-            var height = Math.Min(indexHeight, loginGuardianHeight);
-
-            if (queryRecordHeight < height)
+            if (queryRecordHeight < indexHeight)
             {
-                tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height));
+                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, indexHeight - _indexOptions.IndexSafe);
             }
         }
-
-        await tasks.WhenAll();
     }
 
     public async Task InitializeIndexAsync(long blockHeight)
