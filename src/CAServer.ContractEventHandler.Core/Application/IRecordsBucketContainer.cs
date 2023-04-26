@@ -17,8 +17,8 @@ public interface IRecordsBucketContainer
     Task AddToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records);
     Task<List<SyncRecord>> GetValidatedRecords(string chainId);
     Task<List<SyncRecord>> GetToBeValidatedRecords(string chainId);
-    Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> record);
-    Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> record);
+    Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> records);
+    Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records);
 }
 
 public class RecordsBucketContainer : IRecordsBucketContainer
@@ -127,23 +127,23 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         return list;
     }
 
-    public async Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> record)
+    public async Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
         for (var i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
-            await grain.SetValidatedRecords(record);
+            await grain.SetValidatedRecords(records);
         }
     }
 
-    public async Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> record)
+    public async Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records)
     {
         for (var i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
-            await grain.SetToBeValidatedRecords(record);
+            await grain.SetToBeValidatedRecords(records);
         }
     }
     
