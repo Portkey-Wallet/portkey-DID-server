@@ -93,7 +93,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
     {
         var list = new List<SyncRecord>();
 
-        for (int i = 0; i <= _indexOptions.MaxBucket; i++)
+        for (var i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
@@ -112,7 +112,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
     {
         var list = new List<SyncRecord>();
 
-        for (int i = 0; i <= _indexOptions.MaxBucket; i++)
+        for (var i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
@@ -129,7 +129,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
 
     public async Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> record)
     {
-        for (int i = 0; i <= _indexOptions.MaxBucket; i++)
+        for (var i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
@@ -139,7 +139,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
 
     public async Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> record)
     {
-        for (int i = 0; i <= _indexOptions.MaxBucket; i++)
+        for (var i = 0; i < _indexOptions.MaxBucket; i++)
         {
             var grain = _clusterClient.GetGrain<ISyncRecordGrain>(
                 GrainIdHelper.GenerateGrainId(GrainId.SyncRecord, chainId, i.ToString()));
