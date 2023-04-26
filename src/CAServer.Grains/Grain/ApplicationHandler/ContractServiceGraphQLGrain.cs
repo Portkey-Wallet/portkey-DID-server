@@ -13,6 +13,10 @@ public class ContractServiceGraphQLGrain : Grain<GraphQlState>, IContractService
 
     public async Task SetStateAsync(long height)
     {
+        if (height < State.EndHeight)
+        {
+            return;
+        }
         State.EndHeight = height;
         await WriteStateAsync();
     }
