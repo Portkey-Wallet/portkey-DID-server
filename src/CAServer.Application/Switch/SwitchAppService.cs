@@ -20,7 +20,7 @@ public class SwitchAppService : CAServerAppService, ISwitchAppService
 
     public SwitchDto GetSwitchStatus(string switchName)
     {
-        var propertyInfo = _options?.GetType().GetProperties().Where(t => string.Equals(t.Name, switchName, StringComparison.CurrentCultureIgnoreCase))?.FirstOrDefault();
+        var propertyInfo = _options?.GetType().GetProperties().Where(t => t.Name.ToLower() == switchName.ToLower())?.FirstOrDefault();
 
         if (propertyInfo == null)
         {
