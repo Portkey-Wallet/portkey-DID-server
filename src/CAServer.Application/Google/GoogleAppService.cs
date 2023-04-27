@@ -37,7 +37,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     {
         var cacheItem =
             await _distributedCache.GetAsync(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
-        return cacheItem != null && cacheItem.SendVerifierCodeInterfaceRequestCount >
+        return cacheItem != null && cacheItem.SendVerifierCodeInterfaceRequestCount >=
             _sendVerifierCodeRequestLimitOptions.Limit;
     }
 
