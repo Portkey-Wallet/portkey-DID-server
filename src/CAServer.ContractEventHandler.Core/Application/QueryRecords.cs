@@ -12,7 +12,9 @@ public class ChangeRecordDto
     public string CaHash { get; set; }
     public string CaAddress { get; set; }
     public string ChangeType { get; set; }
+    public string Manager { get; set; }
     public long BlockHeight { get; set; }
+    public string BlockHash { get; set; }
 }
 
 public class LoginGuardianChangeRecordDto : ChangeRecordDto
