@@ -3,18 +3,14 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using CAServer.AppleVerify;
 using CAServer.Common;
 using CAServer.Dtos;
-using CAServer.Options;
-using CAServer.Settings;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 
@@ -158,15 +154,7 @@ public partial class VerifierCodeTests
         return currentPrincipal is ClaimsPrincipal claimsPrincipal ? claimsPrincipal : (currentPrincipal == null ? (ClaimsPrincipal)null : new ClaimsPrincipal(currentPrincipal));
     }
     
-    private IOptions<GoogleRecaptchaOptions> GetGoogleRecaptchaOptions()
-    {
-        return new OptionsWrapper<GoogleRecaptchaOptions>(
-            new GoogleRecaptchaOptions
-            {
-                Secret = "*****",
-                VerifyUrl= "https://www.google.com/recaptcha/api/siteverify"
-            });
-    }
+
     
     
         

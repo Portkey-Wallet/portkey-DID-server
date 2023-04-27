@@ -16,12 +16,14 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -39,10 +41,13 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IClusterClient _clusterClient;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
-    private readonly GoogleRecaptchaOptions _googleRecaptchaOption;
 
+    private readonly IDistributedCache<SendVerifierCodeInterfaceRequestCountCacheItem> _distributedCache;
+    private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
-   
+    private const string SendVerifierCodeInterfaceRequestCountCacheKey =
+        "SendVerifierCodeInterfaceRequestCountCacheKey";
+
 
     public VerifierAppService(IEnumerable<IAccountValidator> accountValidator, IObjectMapper objectMapper,
         ILogger<VerifierAppService> logger,
@@ -50,7 +55,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
         IHttpClientFactory httpClientFactory,
-        JwtSecurityTokenHandler jwtSecurityTokenHandler, IOptions<GoogleRecaptchaOptions> googleRecaptchaOption)
+        JwtSecurityTokenHandler jwtSecurityTokenHandler,
+        IDistributedCache<SendVerifierCodeInterfaceRequestCountCacheItem> distributedCache,
+        IOptions<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -60,7 +67,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _distributedEventBus = distributedEventBus;
         _httpClientFactory = httpClientFactory;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
-        _googleRecaptchaOption = googleRecaptchaOption.Value;
+        _distributedCache = distributedCache;
+        _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -221,25 +229,23 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    public async Task<bool> VerifyGoogleRecaptchaTokenAsync(string recaptchaToken)
+
+    public async Task<int> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {
-        var content = new FormUrlEncodedContent(new[]
-        {
-            new KeyValuePair<string, string>("secret", _googleRecaptchaOption.Secret),
-            new KeyValuePair<string, string>("response", recaptchaToken)
-        });
-        _logger.LogDebug("VerifyGoogleRecaptchaToken content is {content}",content.ToString());
-        var client = _httpClientFactory.CreateClient();
-        var response = await client.PostAsync(_googleRecaptchaOption.VerifyUrl, content);
-        _logger.LogDebug("response is {response}",response.ToString());
-        if (!response.IsSuccessStatusCode)
-        {
-            return false;
-        }
-        var responseContent = await response.Content.ReadAsStringAsync();
-        _logger.LogDebug(" VerifyGoogleRecaptchaToken responseContent is {responseContent}",responseContent);
-        return responseContent.Contains("\"success\": true");
-    
+        var countCacheItem = await _distributedCache.GetOrAddAsync(
+            SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress,
+            () => Task.FromResult(new SendVerifierCodeInterfaceRequestCountCacheItem()),
+            () => new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.Now.AddHours(_sendVerifierCodeRequestLimitOption.ExpireHours)
+            }
+        );
+        countCacheItem.SendVerifierCodeInterfaceRequestCount += 1;
+        await _distributedCache.SetAsync(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress,
+            countCacheItem);
+        _logger.LogDebug("Current userIpAddress {userIpAddress} SendVerifierCodeInterfaceRequestCount is {count}",
+            userIpAddress, countCacheItem.SendVerifierCodeInterfaceRequestCount);
+        return countCacheItem.SendVerifierCodeInterfaceRequestCount;
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
