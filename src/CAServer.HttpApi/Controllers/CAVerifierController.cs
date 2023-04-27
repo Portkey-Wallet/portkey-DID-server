@@ -43,6 +43,7 @@ public class CAVerifierController : CAServerController
         VerifierServerInput verifierServerInput)
     {
         var userIpAddress = UserIpAddress(HttpContext);
+        _logger.LogDebug("userIp is {userIp}", userIpAddress);
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
         var sendVerificationRequestInput =
@@ -89,7 +90,7 @@ public class CAVerifierController : CAServerController
     }
 
     [HttpPost("isGoogleRecaptchaOpen")]
-    public async Task<bool> VerifyHuaweiTokenAsync()
+    public async Task<bool> IsGoogleRecaptchaOpen()
     {
         var userIpAddress = UserIpAddress(HttpContext);
         return await _googleAppService.IsGoogleRecaptchaOpen(userIpAddress);
