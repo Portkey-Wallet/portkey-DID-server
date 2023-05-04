@@ -5,6 +5,7 @@ using CAServer.Options;
 using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
@@ -37,6 +38,12 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     {
         var cacheItem =
             await _distributedCache.GetAsync(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
+        if (cacheItem != null)
+        {
+            _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheItem),
+                _sendVerifierCodeRequestLimitOptions.Limit);
+        }
+
         return cacheItem != null && cacheItem.SendVerifierCodeInterfaceRequestCount >=
             _sendVerifierCodeRequestLimitOptions.Limit;
     }

@@ -49,6 +49,7 @@ public class CAVerifierController : CAServerController
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
         var googleRecaptchaOpen = await _googleAppService.IsGoogleRecaptchaOpen(userIpAddress);
+        
         if (!switchStatus.IsOpen || !googleRecaptchaOpen)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
