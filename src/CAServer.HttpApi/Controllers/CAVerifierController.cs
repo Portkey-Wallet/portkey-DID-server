@@ -26,6 +26,7 @@ public class CAVerifierController : CAServerController
     private readonly IGoogleAppService _googleAppService;
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string XForwardedFor = "X-Forwarded-For";
+    private const string Version = "v1.2.5";
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService)
@@ -39,8 +40,16 @@ public class CAVerifierController : CAServerController
 
     [HttpPost("sendVerificationRequest")]
     public async Task<VerifierServerResponse> SendVerificationRequest([FromHeader] string recaptchatoken,
+        [FromHeader] string version,
         VerifierServerInput verifierServerInput)
     {
+        var sendVerificationRequestInput =
+            _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+        if (string.IsNullOrWhiteSpace(version) && version == Version)
+        {
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        }
+
         var userIpAddress = UserIpAddress(HttpContext);
         if (string.IsNullOrWhiteSpace(userIpAddress))
         {
@@ -49,8 +58,7 @@ public class CAVerifierController : CAServerController
 
         _logger.LogDebug("userIp is {userIp}", userIpAddress);
         var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
-        var sendVerificationRequestInput =
-            _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+
         var googleRecaptchaOpen = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         if (!switchStatus.IsOpen || !googleRecaptchaOpen)
