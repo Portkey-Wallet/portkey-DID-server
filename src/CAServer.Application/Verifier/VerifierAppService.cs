@@ -8,14 +8,17 @@ using System.Threading.Tasks;
 using AElf;
 using CAServer.Guardian;
 using CAServer.AccountValidator;
+using CAServer.Cache;
 using CAServer.Dtos;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -37,6 +40,13 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IClusterClient _clusterClient;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly ICacheProvider _cacheProvider;
+
+    private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
+
+    private const string SendVerifierCodeInterfaceRequestCountCacheKey =
+        "SendVerifierCodeInterfaceRequestCountCacheKey";
+
 
     public VerifierAppService(IEnumerable<IAccountValidator> accountValidator, IObjectMapper objectMapper,
         ILogger<VerifierAppService> logger,
@@ -44,7 +54,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
         IHttpClientFactory httpClientFactory,
-        JwtSecurityTokenHandler jwtSecurityTokenHandler)
+        JwtSecurityTokenHandler jwtSecurityTokenHandler,
+        IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
+        ICacheProvider cacheProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -54,6 +66,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _distributedEventBus = distributedEventBus;
         _httpClientFactory = httpClientFactory;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
+        _cacheProvider = cacheProvider;
+        _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -212,6 +226,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             throw new UserFriendlyException(e.Message);
         }
+    }
+
+
+    public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
+    {
+        var expire = TimeSpan.FromHours(_sendVerifierCodeRequestLimitOption.ExpireHours);
+        return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
+            expire);
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)

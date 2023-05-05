@@ -40,6 +40,7 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
         services.AddSingleton(_jwtSecurityTokenHandler);
         services.AddSingleton(GetJwtSecurityTokenHandlerMock());
         services.AddSingleton(GetHttpClientService());
+        services.AddSingleton(GetMockCacheProvider());
     }
 
     [Fact]
@@ -171,4 +172,15 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
 
         await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
+
+    [Fact]
+    public async Task CountVerifyCodeInterfaceRequest_Tests()
+    {
+        var userIpAddress = "127.0.0.1";
+        var count = await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
+        count.ShouldBe(0);
+    }
+
+
+
 }
