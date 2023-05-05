@@ -4,7 +4,6 @@ namespace CAServer.Google;
 
 public interface IGoogleAppService
 {
-    public Task<bool> IsGoogleRecaptchaOpen(string userIpAddress);
-    Task<bool> GoogleRecaptchaTokenSuccessAsync(string recaptchatoken);
-    
+    Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress);
+    Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchatoken);
 }

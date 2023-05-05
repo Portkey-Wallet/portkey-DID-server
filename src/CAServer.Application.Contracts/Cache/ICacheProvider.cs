@@ -14,4 +14,5 @@ public interface ICacheProvider
     Task<RedisValue> Get(string key);
     Task Delete(string key);
     Task<Dictionary<string, RedisValue>> BatchGet(List<string> keys);
+    Task<long> Increase(string key, int increase,TimeSpan? expiry);
 }

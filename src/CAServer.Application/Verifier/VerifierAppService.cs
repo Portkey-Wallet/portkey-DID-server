@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using AElf;
 using CAServer.Guardian;
 using CAServer.AccountValidator;
+using CAServer.Cache;
 using CAServer.Dtos;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
@@ -16,14 +17,12 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
-using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -41,8 +40,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IClusterClient _clusterClient;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly ICacheProvider _cacheProvider;
 
-    private readonly IDistributedCache<SendVerifierCodeInterfaceRequestCountCacheItem> _distributedCache;
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
@@ -56,8 +55,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IClusterClient clusterClient,
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
-        IDistributedCache<SendVerifierCodeInterfaceRequestCountCacheItem> distributedCache,
-        IOptions<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption)
+        IOptions<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption, ICacheProvider cacheProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -67,7 +65,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _distributedEventBus = distributedEventBus;
         _httpClientFactory = httpClientFactory;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
-        _distributedCache = distributedCache;
+        _cacheProvider = cacheProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -230,22 +228,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     }
 
 
-    public async Task<int> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
+    public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {
-        var countCacheItem = await _distributedCache.GetOrAddAsync(
-            SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress,
-            () => Task.FromResult(new SendVerifierCodeInterfaceRequestCountCacheItem()),
-            () => new DistributedCacheEntryOptions
-            {
-                AbsoluteExpiration = DateTimeOffset.Now.AddHours(_sendVerifierCodeRequestLimitOption.ExpireHours)
-            }
-        );
-        countCacheItem.SendVerifierCodeInterfaceRequestCount += 1;
-        await _distributedCache.SetAsync(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress,
-            countCacheItem);
-        _logger.LogDebug("Current userIpAddress {userIpAddress} SendVerifierCodeInterfaceRequestCount is {count}",
-            userIpAddress, countCacheItem.SendVerifierCodeInterfaceRequestCount);
-        return countCacheItem.SendVerifierCodeInterfaceRequestCount;
+        var expiry = new TimeSpan(_sendVerifierCodeRequestLimitOption.ExpireHours, 0, 0);
+        return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,expiry);
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)

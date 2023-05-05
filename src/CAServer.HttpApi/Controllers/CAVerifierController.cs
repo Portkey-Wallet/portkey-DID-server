@@ -51,7 +51,7 @@ public class CAVerifierController : CAServerController
         var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        var googleRecaptchaOpen = await _googleAppService.IsGoogleRecaptchaOpen(userIpAddress);
+        var googleRecaptchaOpen = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         if (!switchStatus.IsOpen || !googleRecaptchaOpen)
         {
@@ -61,7 +61,7 @@ public class CAVerifierController : CAServerController
         var googleRecaptchaTokenSuccess = false;
         try
         {
-            googleRecaptchaTokenSuccess = await _googleAppService.GoogleRecaptchaTokenSuccessAsync(recaptchatoken);
+            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchatoken);
         }
         catch (Exception e)
         {
@@ -99,7 +99,7 @@ public class CAVerifierController : CAServerController
     public async Task<bool> IsGoogleRecaptchaOpen()
     {
         var userIpAddress = UserIpAddress(HttpContext);
-        return await _googleAppService.IsGoogleRecaptchaOpen(userIpAddress);
+        return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
     }
 
 

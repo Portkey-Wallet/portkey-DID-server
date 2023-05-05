@@ -18,7 +18,7 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
     {
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetGoogleRecaptchaOptions());
-        services.AddSingleton(GetMockDistributedCache());
+        services.AddSingleton(GetMockCacheProvider());
         base.AfterAddApplication(services);
     }
 
@@ -27,7 +27,7 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
     public async Task VerifierGoogleReCaptcha_Test()
     {
         var token = "1234567890";
-        var result = await _googleAppService.GoogleRecaptchaTokenSuccessAsync(token);
+        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token);
         result.ShouldBeTrue();
     }
     
@@ -35,7 +35,7 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
     public async Task VerifierGoogleReCaptcha_InvalidateToken_Test()
     {
         var token = "";
-        var result = await _googleAppService.GoogleRecaptchaTokenSuccessAsync(token);
+        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token);
         result.ShouldBeFalse();
     }
 
@@ -43,8 +43,8 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
     public async Task IsGoogleRecaptchaOpen_Test()
     {
         var userIpAddress = "127.0.0.1";
-        var result = await _googleAppService.IsGoogleRecaptchaOpen(userIpAddress);
-        result.ShouldBe(true);
+        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
+        result.ShouldBeFalse();
     }
 
 

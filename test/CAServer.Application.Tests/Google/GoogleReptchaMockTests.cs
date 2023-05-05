@@ -3,14 +3,11 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Cache;
+using CAServer.Hub;
 using CAServer.Options;
-using CAServer.Tokens;
-using CAServer.Verifier;
-using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Options;
 using Moq;
-using Newtonsoft.Json;
-using Volo.Abp.Caching;
 
 namespace CAServer.Google;
 
@@ -38,17 +35,13 @@ public partial class GoogleRecapthaTests
                 VerifyUrl = "https://www.google.com/recaptcha/api/siteverify"
             });
     }
-
-    private IDistributedCache<SendVerifierCodeInterfaceRequestCountCacheItem> GetMockDistributedCache()
+    
+    private ICacheProvider GetMockCacheProvider()
     {
-        var mockDistributedCache = new Mock<IDistributedCache<SendVerifierCodeInterfaceRequestCountCacheItem>>();
-        mockDistributedCache.Setup(o => o.GetAsync(It.IsAny<string>(), default, default, default))
-            .ReturnsAsync(new SendVerifierCodeInterfaceRequestCountCacheItem
-            {
-                SendVerifierCodeInterfaceRequestCount = 100
-            });
-        return mockDistributedCache.Object;
+        return new MockCacheProvider();
     }
+
+
 }
 
 public class DelegatingHandlerStub : DelegatingHandler

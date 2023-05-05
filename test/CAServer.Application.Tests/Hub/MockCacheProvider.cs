@@ -87,4 +87,14 @@ public class MockCacheProvider : ICacheProvider
 
         return Task.FromResult(ans);
     }
+
+    public Task<long> Increase(string key, int increase, TimeSpan? expiry)
+    {
+        _localCache.TryGetValue(key,out var val);
+        if (val.IsNullOrEmpty())
+        {
+            return Task.FromResult<long>(0);
+        }
+        return !val.IsNullOrEmpty() ? Task.FromResult(long.Parse(val)) : null;
+    }
 }

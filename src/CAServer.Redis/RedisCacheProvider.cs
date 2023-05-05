@@ -65,4 +65,13 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
 
         return realAns;
     }
+
+    public async Task<long> Increase(string key, int increase,TimeSpan? expiry)
+    {
+        var count =  await _database.StringIncrementAsync(key, increase);
+        _database.KeyExpire(key, expiry);
+        return count;
+
+
+    }
 }

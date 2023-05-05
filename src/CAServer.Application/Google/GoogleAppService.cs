@@ -1,32 +1,31 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CAServer.Cache;
 using CAServer.Options;
-using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Google;
 
 public class GoogleAppService : IGoogleAppService, ISingletonDependency
 {
-    private readonly IDistributedCache<SendVerifierCodeInterfaceRequestCountCacheItem> _distributedCache;
+    private readonly ICacheProvider _cacheProvider;
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOptions;
     private readonly ILogger<GoogleAppService> _logger;
     private readonly GoogleRecaptchaOptions _googleRecaptchaOption;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public GoogleAppService(IDistributedCache<SendVerifierCodeInterfaceRequestCountCacheItem> distributedCache,
+    public GoogleAppService(
         IOptions<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
         ILogger<GoogleAppService> logger, IOptions<GoogleRecaptchaOptions> googleRecaptchaOption,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory, ICacheProvider cacheProvider)
     {
-        _distributedCache = distributedCache;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _cacheProvider = cacheProvider;
         _googleRecaptchaOption = googleRecaptchaOption.Value;
         _sendVerifierCodeRequestLimitOptions = sendVerifierCodeRequestLimitOptions.Value;
     }
@@ -34,21 +33,27 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
 
-    public async Task<bool> IsGoogleRecaptchaOpen(string userIpAddress)
+    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress)
     {
-        var cacheItem =
-            await _distributedCache.GetAsync(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
-        if (cacheItem != null)
+        var cacheCount =
+            await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
+        if (cacheCount.IsNullOrEmpty)
         {
-            _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheItem),
-                _sendVerifierCodeRequestLimitOptions.Limit);
+            return false;
         }
+        _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheCount),
+            _sendVerifierCodeRequestLimitOptions.Limit);
+        var isInt = int.TryParse(cacheCount.ToString(), out var count);
+        if (!isInt)
+        {
+            return false;
+        }
+        count = int.Parse(cacheCount.ToString());
+        return count >= _sendVerifierCodeRequestLimitOptions.Limit;
 
-        return cacheItem != null && cacheItem.SendVerifierCodeInterfaceRequestCount >=
-            _sendVerifierCodeRequestLimitOptions.Limit;
     }
 
-    public async Task<bool> GoogleRecaptchaTokenSuccessAsync(string recaptchaToken)
+    public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken)
     {
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
