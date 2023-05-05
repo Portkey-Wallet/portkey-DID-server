@@ -19,7 +19,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private readonly IHttpClientFactory _httpClientFactory;
 
     public GoogleAppService(
-        IOptions<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
+        IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
         ILogger<GoogleAppService> logger, IOptions<GoogleRecaptchaOptions> googleRecaptchaOption,
         IHttpClientFactory httpClientFactory, ICacheProvider cacheProvider)
     {
@@ -43,14 +43,12 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         }
         _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheCount),
             _sendVerifierCodeRequestLimitOptions.Limit);
-        var isInt = int.TryParse(cacheCount.ToString(), out var count);
-        if (!isInt)
+        if (int.TryParse(cacheCount, out var count))
         {
-            return false;
+            return count >= _sendVerifierCodeRequestLimitOptions.Limit;
         }
-        count = int.Parse(cacheCount.ToString());
-        return count >= _sendVerifierCodeRequestLimitOptions.Limit;
 
+        return false;
     }
 
     public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken)
