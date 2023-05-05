@@ -45,7 +45,7 @@ public class CAVerifierController : CAServerController
     {
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        if (string.IsNullOrWhiteSpace(version) && version == Version)
+        if (string.IsNullOrWhiteSpace(version) || version != Version)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
