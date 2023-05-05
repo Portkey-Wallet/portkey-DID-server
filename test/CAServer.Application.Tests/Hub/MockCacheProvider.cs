@@ -17,7 +17,7 @@ public class MockCacheProvider : ICacheProvider
     {
     }
 
-    public Task HSetWithExpire(string key, string member, string value, TimeSpan? expiry)
+    public Task HSetWithExpire(string key, string member, string value, TimeSpan? expire)
     {
         if (!_localHashMapCache.TryGetValue(key, out var m))
         {
@@ -58,7 +58,7 @@ public class MockCacheProvider : ICacheProvider
         return Task.FromResult(ans);
     }
 
-    public Task Set(string key, string value, TimeSpan? expiry)
+    public Task Set(string key, string value, TimeSpan? expire)
     {
         _localCache[key] = value;
         return Task.CompletedTask;
@@ -88,7 +88,7 @@ public class MockCacheProvider : ICacheProvider
         return Task.FromResult(ans);
     }
 
-    public Task<long> Increase(string key, int increase, TimeSpan? expiry)
+    public Task<long> Increase(string key, int increase, TimeSpan? expire)
     {
         _localCache.TryGetValue(key,out var val);
         if (val.IsNullOrEmpty())

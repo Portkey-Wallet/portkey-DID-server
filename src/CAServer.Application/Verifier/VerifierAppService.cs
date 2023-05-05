@@ -55,7 +55,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IClusterClient clusterClient,
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
-        IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption, ICacheProvider cacheProvider)
+        IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
+        ICacheProvider cacheProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -230,8 +231,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {
-        var expiry = TimeSpan.FromHours(_sendVerifierCodeRequestLimitOption.ExpireHours);
-        return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,expiry);
+        var expire = TimeSpan.FromHours(_sendVerifierCodeRequestLimitOption.ExpireHours);
+        return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
+            expire);
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
