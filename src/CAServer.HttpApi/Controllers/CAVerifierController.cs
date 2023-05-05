@@ -8,7 +8,6 @@ using CAServer.Verifier.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -43,20 +42,25 @@ public class CAVerifierController : CAServerController
         VerifierServerInput verifierServerInput)
     {
         var userIpAddress = UserIpAddress(HttpContext);
+        if (string.IsNullOrWhiteSpace(userIpAddress))
+        {
+            return null;
+        }
+
         _logger.LogDebug("userIp is {userIp}", userIpAddress);
         var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
         var googleRecaptchaOpen = await _googleAppService.IsGoogleRecaptchaOpen(userIpAddress);
-        
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         if (!switchStatus.IsOpen || !googleRecaptchaOpen)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
+
         var googleRecaptchaTokenSuccess = false;
         try
-        { 
+        {
             googleRecaptchaTokenSuccess = await _googleAppService.GoogleRecaptchaTokenSuccessAsync(recaptchatoken);
         }
         catch (Exception e)
@@ -64,12 +68,13 @@ public class CAVerifierController : CAServerController
             _logger.LogError("GoogleRecaptchaTokenAsync error: {errorMessage}", e.Message);
             return null;
         }
+
         if (googleRecaptchaTokenSuccess)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
-        return null;
 
+        return null;
     }
 
     [HttpPost("verifyCode")]
