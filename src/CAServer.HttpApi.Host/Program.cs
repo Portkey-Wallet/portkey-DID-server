@@ -36,6 +36,7 @@ public class Program
         {
             Log.Information("Starting CAServer.HttpApi.Host.");
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("phone.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseSerilog();
