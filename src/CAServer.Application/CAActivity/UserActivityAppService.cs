@@ -211,7 +211,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     }
                 }
 
-                //if (_delegateJudgmentOptions.Addresses.Contains(dto.ToAddress) || _delegateJudgmentOptions.Addresses.Contains(dto.FromAddress))
+                if (ActivityConstants.ShowPriceTypes.Contains(dto.TransactionType))
                 {
                     dto.IsDelegated = true;
                 }
