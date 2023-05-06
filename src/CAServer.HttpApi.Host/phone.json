@@ -1,0 +1,39 @@
+{
+  "PhoneInfoOptions":{
+    "PhoneInfo": [
+      {
+        "Country": "China",
+        "Code": "86",
+        "Iso": "CN"
+      },{
+        "Country": "Denmark",
+        "Code": "45",
+        "Iso": "DK"
+      },{
+        "Country": "France",
+        "Code": "33",
+        "Iso": "FR"
+      },{
+        "Country": "Hong Kong",
+        "Code": "852",
+        "Iso": "HK"
+      },{
+        "Country": "Mexico",
+        "Code": "52",
+        "Iso": "MX"
+      },{
+        "Country": "United Kingdom",
+        "Code": "44",
+        "Iso": "GB"
+      },{
+        "Country": "United States",
+        "Code": "1",
+        "Iso": "US"
+      },{
+        "Country": "Singapore",
+        "Code": "65",
+        "Iso": "SG"
+      }
+    ]
+  }
+}

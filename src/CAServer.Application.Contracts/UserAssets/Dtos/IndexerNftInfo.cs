@@ -30,5 +30,6 @@ public class NftInfo
     public string CollectionName { get; set; }
     public string TokenName { get; set; }
     public long TotalSupply { get; set; }
+    public long Supply { get; set; }
     public string TokenContractAddress { get; set; }
 }
