@@ -48,9 +48,9 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
         for (int i = 0; i < _phoneInfoOptions.PhoneInfo.Count; i++)
         {
             var phoneInfoDict = new Dictionary<string, string>();
-            phoneInfoDict.Add("Country",_phoneInfoOptions.PhoneInfo[i].Country);
-            phoneInfoDict.Add("Code",_phoneInfoOptions.PhoneInfo[i].Code);
-            phoneInfoDict.Add("Iso",_phoneInfoOptions.PhoneInfo[i].Iso);
+            phoneInfoDict.Add("country",_phoneInfoOptions.PhoneInfo[i].Country);
+            phoneInfoDict.Add("code",_phoneInfoOptions.PhoneInfo[i].Code);
+            phoneInfoDict.Add("iso",_phoneInfoOptions.PhoneInfo[i].Iso);
             phoneInfo.Add(phoneInfoDict); 
         } 
         
