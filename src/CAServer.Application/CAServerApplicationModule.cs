@@ -68,6 +68,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
         Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions")); 
+        Configure<DelegateJudgmentOptions>(configuration.GetSection("DelegateJudgment")); 
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

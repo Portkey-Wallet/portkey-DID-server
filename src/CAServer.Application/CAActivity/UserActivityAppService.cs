@@ -32,16 +32,20 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IUserContactProvider _userContactProvider;
     private readonly ActivitiesIcon _activitiesIcon;
     private readonly IImageProcessProvider _imageProcessProvider;
+    private readonly DelegateJudgmentOptions _delegateJudgmentOptions;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
-        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider)
+        IOptions<ActivitiesIcon> activitiesIconOption,
+        IOptions<DelegateJudgmentOptions> delegateJudgmentOptions,
+        IImageProcessProvider imageProcessProvider)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
         _activityProvider = activityProvider;
         _userContactProvider = userContactProvider;
         _activitiesIcon = activitiesIconOption?.Value;
+        _delegateJudgmentOptions = delegateJudgmentOptions.Value;
         _imageProcessProvider = imageProcessProvider;
     }
 
@@ -205,6 +209,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     {
                         dto.IsReceived = chainId == dto.ToChainId;
                     }
+                }
+
+                //if (_delegateJudgmentOptions.Addresses.Contains(dto.ToAddress) || _delegateJudgmentOptions.Addresses.Contains(dto.FromAddress))
+                {
+                    dto.IsDelegated = true;
                 }
             }
 

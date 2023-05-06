@@ -109,6 +109,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var request =
                 _objectMapper.Map<VerificationSignatureRequestDto, VierifierCodeRequestInput>(signatureRequestDto);
 
+            request.GuardianIdentifier = request.GuardianIdentifier.ToLower();
             var guardianGrainResult = GetSaltAndHash(request);
 
             var response = await _verifierServerClient.VerifyCodeAsync(request);
@@ -119,7 +120,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             if (!guardianGrainResult.Success)
             {
-                await AddGuardianAsync(signatureRequestDto.GuardianIdentifier, request.Salt,
+                await AddGuardianAsync(request.GuardianIdentifier, request.Salt,
                     request.GuardianIdentifierHash);
             }
 

@@ -11,18 +11,20 @@ public static class ActivityConstants
 
     public static readonly HashSet<string> AllSupportTypes = new()
     {
-        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
+        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
+        "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken"
     };
-    
+
     public static readonly List<string> TransferTypes = new()
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken"
     };
-    
+
     public static readonly List<string> ContractTypes = new()
     {
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
     };
-    
+
     public static readonly string Zero = "0";
 }
