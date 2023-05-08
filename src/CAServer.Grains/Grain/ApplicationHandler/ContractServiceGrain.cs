@@ -46,10 +46,6 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
                     param);
-            
-            _logger.LogInformation("address: {address}, contractAddress: {contract}, methodName: {methodName}, param: {param}, transaction: {transaction}",
-                ownAddress, chainInfo.ContractAddress, methodName, JsonConvert.SerializeObject(param),
-                JsonConvert.SerializeObject(transaction));
 
             var refBlockNumber = transaction.RefBlockNumber;
 
