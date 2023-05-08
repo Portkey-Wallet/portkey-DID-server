@@ -39,9 +39,11 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         try
         {
             var chainInfo = _chainOptions.ChainInfos[chainId];
+            _logger.LogInformation("chainInfo: {info}", JsonConvert.SerializeObject(chainInfo));
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
+            _logger.LogInformation("address: {info}", JsonConvert.SerializeObject(ownAddress));
 
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
