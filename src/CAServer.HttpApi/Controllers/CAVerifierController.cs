@@ -26,7 +26,6 @@ public class CAVerifierController : CAServerController
     private readonly IGoogleAppService _googleAppService;
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string XForwardedFor = "X-Forwarded-For";
-    private const string Version = "v1.2.5";
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService)
@@ -45,11 +44,6 @@ public class CAVerifierController : CAServerController
     {
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        if (string.IsNullOrWhiteSpace(version) || version != Version)
-        {
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-        }
-
         var userIpAddress = UserIpAddress(HttpContext);
         if (string.IsNullOrWhiteSpace(userIpAddress))
         {
