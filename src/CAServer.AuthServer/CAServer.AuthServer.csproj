@@ -35,7 +35,7 @@
 
   <ItemGroup>
     <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
-    <PackageReference Include="AElf.Client" Version="1.2.3" />
+    <PackageReference Include="AElf.Client" Version="1.1.0" />
     <PackageReference Include="AElf.Core" Version="1.2.3" />
     <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
     <PackageReference Include="AElf.Kernel.Types" Version="1.2.3" />
