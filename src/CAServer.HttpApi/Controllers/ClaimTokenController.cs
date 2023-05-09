@@ -3,6 +3,7 @@ using CAServer.ClaimToken;
 using CAServer.ClaimToken.Dtos;
 using CAServer.Google;
 using Microsoft.AspNetCore.Mvc;
+using NUglify.Helpers;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
@@ -27,9 +28,9 @@ public class ClaimTokenController : CAServerController
     public async Task<ClaimTokenResponseDto> ClaimToken([FromHeader] string recaptchaToken,
         ClaimTokenRequestDto claimTokenRequestDto)
     {
-        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        if (recaptchaToken.IsNullOrWhiteSpace())
         {
-            throw new UserFriendlyException("");
+            throw new UserFriendlyException("Please try again");
         }
 
         var isGoogleRecaptchaTokenValid = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
@@ -37,7 +38,8 @@ public class ClaimTokenController : CAServerController
         {
             return await _claimTokenAppService.GetClaimTokenAsync(claimTokenRequestDto);
         }
+        // return await _claimTokenAppService.GetClaimTokenAsync(claimTokenRequestDto);
 
-        throw new UserFriendlyException("Validate Failed");
+        throw new UserFriendlyException("Please try again");
     }
 }
