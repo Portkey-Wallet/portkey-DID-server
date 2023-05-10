@@ -17,7 +17,7 @@ public class ClaimTokenAppService : IClaimTokenAppService, ISingletonDependency
     private readonly IContractProvider _contractProvider;
     private readonly ICacheProvider _cacheProvider;
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
-    private const string GetClaimTokenAddressCacheKey = "GetClaimTokenAddress :";
+    private const string GetClaimTokenAddressCacheKey = "CAServer:GetClaimTokenAddress:";
 
 
     public ClaimTokenAppService(
@@ -45,7 +45,7 @@ public class ClaimTokenAppService : IClaimTokenAppService, ISingletonDependency
         var address = _claimTokenWhiteListAddressesOptions.WhiteListAddresses.FirstOrDefault();
         if (address.IsNullOrWhiteSpace())
         {
-            throw new UserFriendlyException("No available address");
+            throw new UserFriendlyException("No available address.");
         }
 
         var chainId = _claimTokenInfoOption.ChainId;
