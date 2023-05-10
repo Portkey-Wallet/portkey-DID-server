@@ -206,6 +206,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                         dto.IsReceived = chainId == dto.ToChainId;
                     }
                 }
+                
+                if (!ActivityConstants.ShowPriceTypes.Contains(dto.TransactionType))
+                {
+                    dto.IsDelegated = true;
+                }
             }
 
             if (ht.TransactionFees != null)
