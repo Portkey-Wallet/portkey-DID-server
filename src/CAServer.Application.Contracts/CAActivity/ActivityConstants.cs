@@ -11,18 +11,28 @@ public static class ActivityConstants
 
     public static readonly HashSet<string> AllSupportTypes = new()
     {
-        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
+        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
+        "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approved"
     };
-    
+
     public static readonly List<string> TransferTypes = new()
     {
-        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken"
+        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "ClaimToken"
     };
-    
+
     public static readonly List<string> ContractTypes = new()
     {
-        "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
+        "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
+        "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Approved"
     };
-    
+
+    public static readonly List<string> ShowPriceTypes = new()
+    {
+        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "RemoveManagerInfo",
+        "AddManagerInfo", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approved"
+    };
+
     public static readonly string Zero = "0";
 }
