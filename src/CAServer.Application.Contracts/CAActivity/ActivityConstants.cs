@@ -13,7 +13,7 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approved"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approved", "Bingo", "Play"
     };
 
     public static readonly List<string> TransferTypes = new()
@@ -24,14 +24,14 @@ public static class ActivityConstants
     public static readonly List<string> ContractTypes = new()
     {
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
-        "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Approved"
+        "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Approved", "Bingo", "Play"
     };
 
     public static readonly List<string> ShowPriceTypes = new()
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "RemoveManagerInfo",
         "AddManagerInfo", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approved"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approved", "Bingo", "Play"
     };
 
     public static readonly string Zero = "0";
