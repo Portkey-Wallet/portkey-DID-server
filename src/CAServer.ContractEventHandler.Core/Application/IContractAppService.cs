@@ -271,6 +271,11 @@ public class ContractAppService : IContractAppService
                     Transaction = transactionDto.Transaction.ToByteArray()
                 });
             
+            if (syncHolderInfoInput.VerificationTransactionInfo == null)
+            {
+                return false;
+            }
+            
             var syncResult =
                 await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
                     syncHolderInfoInput);
