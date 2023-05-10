@@ -229,28 +229,31 @@ public class ContractAppService : IContractAppService
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var transactionDto =
             await _contractProvider.ValidateTransactionAsync(chainId, result, null);
-        var syncHolderInfoInput =
-            await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
-            {
-                TransactionId = transactionDto.TransactionResultDto.TransactionId,
-                BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
-                Transaction = transactionDto.Transaction.ToByteArray()
-            });
 
+        var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
+        SyncHolderInfoInput syncHolderInfoInput;
+        
         var syncSucceed = true;
-
-        if (syncHolderInfoInput.VerificationTransactionInfo == null)
-        {
-            return false;
-        }
 
         if (chainInfo.IsMainChain)
         {
             foreach (var sideChain in _chainOptions.ChainInfos.Values.Where(c =>
                          !c.IsMainChain && c.ChainId != optionChainId))
             {
-                await _contractProvider.SideChainCheckMainChainBlockIndexAsync(sideChain.ChainId,
-                    syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight);
+                await _contractProvider.SideChainCheckMainChainBlockIndexAsync(sideChain.ChainId, validateHeight);
+                
+                syncHolderInfoInput =
+                    await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
+                    {
+                        TransactionId = transactionDto.TransactionResultDto.TransactionId,
+                        BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
+                        Transaction = transactionDto.Transaction.ToByteArray()
+                    });
+
+                if (syncHolderInfoInput.VerificationTransactionInfo == null)
+                {
+                    return false;
+                }
 
                 var resultDto = await _contractProvider.SyncTransactionAsync(sideChain.ChainId, syncHolderInfoInput);
                 syncSucceed = syncSucceed && resultDto.Status == TransactionState.Mined;
@@ -258,6 +261,16 @@ public class ContractAppService : IContractAppService
         }
         else
         {
+            await _contractProvider.MainChainCheckSideChainBlockIndexAsync(chainId, validateHeight);
+            
+            syncHolderInfoInput =
+                await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
+                {
+                    TransactionId = transactionDto.TransactionResultDto.TransactionId,
+                    BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
+                    Transaction = transactionDto.Transaction.ToByteArray()
+                });
+            
             var syncResult =
                 await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
                     syncHolderInfoInput);
