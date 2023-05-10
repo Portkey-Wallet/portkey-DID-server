@@ -207,7 +207,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     }
                 }
                 
-                if (ActivityConstants.ShowPriceTypes.Contains(dto.TransactionType))
+                if (!ActivityConstants.ShowPriceTypes.Contains(dto.TransactionType))
                 {
                     dto.IsDelegated = true;
                 }
