@@ -93,8 +93,9 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
             }
 
             var indexedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(chainId);
-            var startHeight = latestProcessedHeight + 1;
-            var endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
+            var startHeight = latestProcessedHeight - _indexOptions.IndexBefore;
+            var endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, latestProcessedHeight + _indexOptions.IndexInterval);
+            
             _logger.LogDebug("startHeight is {startHeight},endHeight is {endHeight}", startHeight, endHeight);
             while (true)
             {
@@ -125,13 +126,13 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                 _logger.LogDebug($"Processed height: {chainId}, {endHeight}");
                 _logger.LogDebug("transfers count is {count} endHeight is {endHeight},indexedHeight is {indexedHeight}",
                     transfers.Count, endHeight, indexedHeight);
-                if (transfers.Count > MaxTransferQueryCount || endHeight == indexedHeight - _indexOptions.IndexSafe)
+                if (transfers.Count > MaxTransferQueryCount || endHeight == indexedHeight + _indexOptions.IndexAfter)
                 {
                     break;
                 }
 
-                startHeight = endHeight + 1;
-                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
+                startHeight = endHeight;
+                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight + _indexOptions.IndexAfter);
             }
         }
 
