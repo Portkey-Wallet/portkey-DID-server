@@ -108,7 +108,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                     TransferTransactionBlockHash = tx.BlockHash,
                     Status = CrossChainStatus.Indexing
                 }).ToList();
-                /*var transactionDic = await grain.GetTransactionDicAsync();
+                var transactionDic = await grain.GetTransactionDicAsync();
                 if (transactionDic != null)
                 {
                     queryTransfers = queryTransfers.Where(o => transactionDic.ContainsValue(o.TransferTransactionId))
@@ -116,7 +116,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                 }
 
                 var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
-                await grain.UpdateTransfersDicAsync(startHeight, dic);*/
+                await grain.UpdateTransfersDicAsync(startHeight, dic);
                 await grain.AddTransfersAsync(endHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
                 _logger.LogDebug($"Processed height: {chainId}, {endHeight}");
@@ -127,7 +127,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                 }
 
                 startHeight = endHeight + 1;
-                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight-_indexOptions.IndexSafe);
+                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
             }
         }
 
