@@ -108,15 +108,15 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                     TransferTransactionBlockHash = tx.BlockHash,
                     Status = CrossChainStatus.Indexing
                 }).ToList();
-                var transactionDic = await grain.GetTransactionDicAsync();
+                /*var transactionDic = await grain.GetTransactionDicAsync();
                 if (transactionDic != null)
                 {
                     queryTransfers = queryTransfers.Where(o => transactionDic.ContainsValue(o.TransferTransactionId))
                         .ToList();
-                }
+                }*/
 
-                var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
-                await grain.UpdateTransfersDicAsync(startHeight, dic);
+                /*var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
+                await grain.UpdateTransfersDicAsync(startHeight, dic);*/
                 await grain.AddTransfersAsync(endHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
                 _logger.LogDebug($"Processed height: {chainId}, {endHeight}");
