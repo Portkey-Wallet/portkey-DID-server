@@ -111,10 +111,12 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                 var transactionDic = await grain.GetTransactionDicAsync();
                 if (transactionDic != null)
                 {
-                    queryTransfers = queryTransfers.Where(o => transactionDic.ContainsValue(o.TransferTransactionId)).ToList();
+                    queryTransfers = queryTransfers.Where(o => transactionDic.ContainsValue(o.TransferTransactionId))
+                        .ToList();
                 }
-                var dic = queryTransfers.ToDictionary(o=>o.TransferTransactionHeight, o=>o.TransferTransactionId);
-                await grain.UpdateTransfersDicAsync(startHeight,dic);
+
+                var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
+                await grain.UpdateTransfersDicAsync(startHeight, dic);
                 await grain.AddTransfersAsync(endHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
                 _logger.LogDebug($"Processed height: {chainId}, {endHeight}");
@@ -370,8 +372,9 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         var client = new AElfClient(chainInfo.BaseUrl);
         return await client.GetMerklePathByTransactionIdAsync(txId);
     }
-    
-    private async Task<CrossChainMerkleProofContext> GetBoundParentChainHeightAndMerklePathByHeightAsync(string chainId, long height)
+
+    private async Task<CrossChainMerkleProofContext> GetBoundParentChainHeightAndMerklePathByHeightAsync(string chainId,
+        long height)
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
