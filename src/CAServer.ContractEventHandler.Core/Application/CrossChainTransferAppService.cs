@@ -86,15 +86,16 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         if (transfers.Count < MaxTransferQueryCount)
         {
             var latestProcessedHeight = (await grain.GetLastedProcessedHeightAsync()).Data;
+            _logger.LogDebug("latestProcessedHeight is {latestProcessedHeight}", latestProcessedHeight);
             if (latestProcessedHeight == 0)
             {
                 latestProcessedHeight = _crossChainOptions.AutoReceiveStartHeight[chainId] - 1;
             }
 
             var indexedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(chainId);
-            var startHeight = latestProcessedHeight + 1;
-            var endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
-
+            var startHeight = latestProcessedHeight + 1 - _indexOptions.IndexSafe;
+            var endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight);
+            _logger.LogDebug("startHeight is {startHeight},endHeight is {endHeight}", startHeight, endHeight);
             while (true)
             {
                 var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endHeight);
@@ -116,18 +117,21 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                 }
 
                 var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
+                _logger.LogDebug("CurrentList count is {listCount},dic count is {dicCount}", queryTransfers.Count,
+                    dic.Count);
                 await grain.UpdateTransfersDicAsync(startHeight, dic);
                 await grain.AddTransfersAsync(endHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
                 _logger.LogDebug($"Processed height: {chainId}, {endHeight}");
-
+                _logger.LogDebug("transfers count is {count} endHeight is {endHeight},indexedHeight is {indexedHeight}",
+                    transfers.Count, endHeight, indexedHeight);
                 if (transfers.Count > MaxTransferQueryCount || endHeight == indexedHeight - _indexOptions.IndexSafe)
                 {
                     break;
                 }
 
-                startHeight = endHeight + 1;
-                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
+                startHeight = endHeight + 1 - _indexOptions.IndexSafe;
+                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight);
             }
         }
 
