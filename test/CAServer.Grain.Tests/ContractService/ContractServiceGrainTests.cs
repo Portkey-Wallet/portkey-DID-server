@@ -3,6 +3,7 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,16 +95,11 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
     {
         var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
-        var input = await grain.GetSyncHolderInfoInputAsync("AELF", new TransactionInfoDto
+        var input = await grain.GetSyncHolderInfoInputAsync("AELF", new TransactionInfo
         {
-            Transaction = new Transaction
-            {
-                MethodName = "method"
-            },
-            TransactionResultDto = new TransactionResultDto
-            {
-                TransactionId = HashHelper.ComputeFrom("txId").ToHex()
-            }
+            TransactionId = HashHelper.ComputeFrom("txId").ToHex(),
+            Transaction = new byte[] {1, 2, 3},
+            BlockNumber = 1000
         });
 
         return input;

@@ -5,24 +5,18 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using AElf.Client.Proto;
 using AElf.Client.Service;
 using AElf.Contracts.MultiToken;
+using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.Grains.Grain.CrossChain;
 using CAServer.Grains.State.CrossChain;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
-using GraphQL;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
-using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
-using Address = AElf.Types.Address;
-using Hash = AElf.Types.Hash;
-using MerklePath = AElf.Types.MerklePath;
-using MerklePathNode = AElf.Types.MerklePathNode;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
@@ -313,7 +307,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         var parentHeight = txResult.BlockNumber;
 
         var paramsJson = JsonNode.Parse(txResult.Transaction.Params);
-        var param = new AElf.Contracts.MultiToken.CrossChainTransferInput
+        var param = new CrossChainTransferInput
         {
             To = Address.FromBase58(paramsJson["to"].ToString()),
             Amount = long.Parse(paramsJson["amount"].ToString()),
@@ -362,7 +356,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         {
             merklePath.MerklePathNodes.Add(new MerklePathNode()
             {
-                Hash = new Hash() { Value = AElf.Types.Hash.LoadFromHex(node.Hash).Value },
+                Hash = new Hash() { Value = Hash.LoadFromHex(node.Hash).Value },
                 IsLeftChildNode = node.IsLeftChildNode
             });
         }
@@ -376,9 +370,8 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         var client = new AElfClient(chainInfo.BaseUrl);
         return await client.GetMerklePathByTransactionIdAsync(txId);
     }
-
-    private async Task<AElf.Standards.ACS7.CrossChainMerkleProofContext>
-        GetBoundParentChainHeightAndMerklePathByHeightAsync(string chainId, long height)
+    
+    private async Task<CrossChainMerkleProofContext> GetBoundParentChainHeightAndMerklePathByHeightAsync(string chainId, long height)
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
@@ -397,8 +390,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
             RawTransaction = txWithSign.ToByteArray().ToHex()
         });
         var result =
-            AElf.Standards.ACS7.CrossChainMerkleProofContext.Parser.ParseFrom(
-                ByteArrayHelper.HexStringToByteArray(transactionResult));
+            CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionResult));
         return result;
     }
 

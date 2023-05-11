@@ -40,7 +40,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
     private readonly ILogger<ContractProvider> _logger;
 
     public GraphQLProvider(ILogger<ContractProvider> logger, IClusterClient clusterClient,
-        IOptions<GraphQLOptions> graphQLOptions)
+        IOptionsSnapshot<GraphQLOptions> graphQLOptions)
     {
         _logger = logger;
         _clusterClient = clusterClient;
@@ -109,7 +109,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             Query = @"
 			    query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!) {
                     loginGuardianChangeRecordInfo(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight}){
-                        id, caHash, caAddress, changeType, loginGuardian{identifierHash}, blockHeight}
+                        id, caHash, caAddress, changeType, manager, loginGuardian{identifierHash}, blockHeight, blockHash}
                     }",
             Variables = new
             {
@@ -129,10 +129,14 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         {
             result.Add(new QueryEventDto
             {
-                BlockHeight = record.BlockHeight,
                 CaHash = record.CaHash,
                 ChangeType = record.ChangeType,
-                Value = record.LoginGuardian.IdentifierHash
+                Manager = record.Manager,
+                BlockHeight = record.BlockHeight,
+                BlockHash = record.BlockHash,
+                NotLoginGuardian = record.ChangeType == QueryLoginGuardianType.LoginGuardianUnbound
+                    ? record.LoginGuardian.IdentifierHash
+                    : null
             });
         }
 
@@ -153,7 +157,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             Query = @"
 			    query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!) {
                     caHolderManagerChangeRecordInfo(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight}){
-                        caAddress, caHash, manager, changeType, blockHeight}
+                        caAddress, caHash, manager, changeType, blockHeight, blockHash}
                     }",
             Variables = new
             {
@@ -173,10 +177,11 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         {
             result.Add(new QueryEventDto
             {
-                BlockHeight = record.BlockHeight,
                 CaHash = record.CaHash,
                 ChangeType = record.ChangeType,
-                Value = record.Address
+                Manager = record.Manager,
+                BlockHeight = record.BlockHeight,
+                BlockHash = record.BlockHash
             });
         }
 
