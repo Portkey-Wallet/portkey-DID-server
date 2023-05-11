@@ -18,7 +18,7 @@ public class PhoneController
         _phoneAppService = phoneAppService;
     }
 
-    [HttpGet("phone_info")]
+    [HttpGet("info")]
     public  Task<PhoneInfoListDto> PhoneInfoAsyncs()
     {
         return _phoneAppService.GetPhoneInfo();
