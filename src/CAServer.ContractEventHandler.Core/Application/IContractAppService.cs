@@ -467,10 +467,10 @@ public class ContractAppService : IContractAppService
             var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
 
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
-            
+
             var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
             
-            if (lastEndHeight >= targetIndexHeight)
+            if (currentIndexHeight <= 0 || lastEndHeight >= targetIndexHeight)
             {
                 _logger.LogWarning(
                     "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index}",
