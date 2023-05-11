@@ -68,7 +68,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
         Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions")); 
-        Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions")); 
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         context.Services.AddHttpClient();
