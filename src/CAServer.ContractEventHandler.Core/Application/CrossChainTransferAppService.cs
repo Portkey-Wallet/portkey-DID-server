@@ -92,8 +92,8 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
             }
 
             var indexedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(chainId);
-            var startHeight = latestProcessedHeight + 1;
-            var endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight -_indexOptions.IndexSafe);
+            var startHeight = latestProcessedHeight + 1 - _indexOptions.IndexSafe;
+            var endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight);
 
             while (true)
             {
@@ -108,15 +108,15 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                     TransferTransactionBlockHash = tx.BlockHash,
                     Status = CrossChainStatus.Indexing
                 }).ToList();
-                /*var transactionDic = await grain.GetTransactionDicAsync();
+                var transactionDic = await grain.GetTransactionDicAsync();
                 if (transactionDic != null)
                 {
                     queryTransfers = queryTransfers.Where(o => transactionDic.ContainsValue(o.TransferTransactionId))
                         .ToList();
-                }*/
+                }
 
-                /*var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
-                await grain.UpdateTransfersDicAsync(startHeight, dic);*/
+                var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
+                await grain.UpdateTransfersDicAsync(startHeight, dic);
                 await grain.AddTransfersAsync(endHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
                 _logger.LogDebug($"Processed height: {chainId}, {endHeight}");
@@ -126,8 +126,8 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                     break;
                 }
 
-                startHeight = endHeight + 1;
-                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
+                startHeight = endHeight + 1 - _indexOptions.IndexSafe;
+                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight);
             }
         }
 

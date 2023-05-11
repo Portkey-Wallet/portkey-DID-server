@@ -56,17 +56,17 @@ public class CrossChainTransferGrain : Orleans.Grain<CrossChainTransferState>, I
         await WriteStateAsync();
     }
 
-    // public async Task<Dictionary<long, string>> GetTransactionDicAsync()
-    // {
-    //     return State.TransferTransactionDictionary;
-    // }
-    //
-    // public async Task UpdateTransfersDicAsync(long startHeight, Dictionary<long, string> dic)
-    // {
-    //     var keyValuePairs = State.TransferTransactionDictionary.Where(o=>o.Key >=startHeight).ToDictionary(o=>o.Key,o=>o.Value);
-    //     State.TransferTransactionDictionary = keyValuePairs;
-    //     await WriteStateAsync();
-    // }
+    public async Task<Dictionary<long, string>> GetTransactionDicAsync()
+    {
+        return State.TransferTransactionDictionary;
+    }
+    
+    public async Task UpdateTransfersDicAsync(long startHeight, Dictionary<long, string> dic)
+    {
+        var keyValuePairs = State.TransferTransactionDictionary.Where(o=>o.Key >=startHeight).ToDictionary(o=>o.Key,o=>o.Value);
+        State.TransferTransactionDictionary = keyValuePairs;
+        await WriteStateAsync();
+    }
 
     public override async Task OnActivateAsync()
     {
