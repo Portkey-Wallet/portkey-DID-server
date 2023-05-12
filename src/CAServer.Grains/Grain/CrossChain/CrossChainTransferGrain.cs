@@ -66,6 +66,10 @@ public class CrossChainTransferGrain : Orleans.Grain<CrossChainTransferState>, I
         if (State.TransferTransactionDictionary != null)
         {
             var keyValuePairs = State.TransferTransactionDictionary.Where(o=>o.Key >=startHeight).ToDictionary(o=>o.Key,o=>o.Value);
+            foreach (var transferInfo in dic)
+            {
+                keyValuePairs[transferInfo.Key] = transferInfo.Value;
+            }
             State.TransferTransactionDictionary = keyValuePairs;
         }
         State.TransferTransactionDictionary = dic;
