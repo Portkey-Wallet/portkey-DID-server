@@ -311,8 +311,7 @@ public class ContractProvider : IContractProvider
         catch (Exception e)
         {
             _logger.LogError(e, "GetSyncHolderInfoInput on chain: {id} error: {dto}", chainId,
-                JsonConvert.SerializeObject(transactionInfo ?? new TransactionInfo(),
-                    Formatting.Indented));
+                JsonConvert.SerializeObject(transactionInfo, Formatting.Indented));
             return new SyncHolderInfoInput();
         }
     }
