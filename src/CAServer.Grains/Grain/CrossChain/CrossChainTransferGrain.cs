@@ -58,6 +58,9 @@ public class CrossChainTransferGrain : Orleans.Grain<CrossChainTransferState>, I
 
     public async Task<Dictionary<long, string>> GetTransactionDicAsync()
     {
+        var data = await GetUnFinishedTransfersAsync();
+        var list = data.Data ??= new List<CrossChainTransferDto>();
+        State.TransferTransactionDictionary = list.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
         return State.TransferTransactionDictionary;
     }
     

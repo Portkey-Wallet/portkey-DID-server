@@ -86,24 +86,24 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         if (transfers.Count < MaxTransferQueryCount)
         {
             var lastEndHeight = (await grain.GetLastedProcessedHeightAsync()).Data;
-            
+
             if (lastEndHeight == 0)
             {
                 lastEndHeight = _crossChainOptions.AutoReceiveStartHeight[chainId] - 1;
             }
 
             var currentIndexHeight = await _graphQlProvider.GetIndexBlockHeightAsync(chainId);
-            
+
             var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
-            
+
             var startHeight = lastEndHeight - _indexOptions.IndexBefore;
-           
+
             var endIndexHeight = lastEndHeight + _indexOptions.IndexBefore;
-            
+
             endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
-            
+
             _logger.LogDebug("startHeight is {startHeight},endHeight is {endHeight}", startHeight, endIndexHeight);
-            
+
             while (endIndexHeight <= targetIndexHeight)
             {
                 var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endIndexHeight);
@@ -120,17 +120,17 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                 var transactionDic = await grain.GetTransactionDicAsync();
                 if (transactionDic != null)
                 {
-                    queryTransfers = queryTransfers.Where(o => transactionDic.ContainsValue(o.TransferTransactionId))
+                    queryTransfers = queryTransfers.Where(o => !transactionDic.ContainsValue(o.TransferTransactionId))
                         .ToList();
                 }
 
                 var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
-               
+
                 await grain.UpdateTransfersDicAsync(startHeight, dic);
                 await grain.AddTransfersAsync(endIndexHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
                 _logger.LogDebug($"Processed height: {chainId}, {endIndexHeight}");
-                
+
                 if (transfers.Count > MaxTransferQueryCount || endIndexHeight == targetIndexHeight)
                 {
                     break;
@@ -150,7 +150,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         foreach (var transfer in transfers)
         {
             try
-            { 
+            {
                 _logger.LogDebug($"Handle transfer tx: {transfer.FromChainId}, {transfer.TransferTransactionId}");
 
                 if (!await ValidateTransactionAsync(transfer))
