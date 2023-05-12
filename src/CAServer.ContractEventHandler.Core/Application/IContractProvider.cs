@@ -5,6 +5,7 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -34,7 +35,7 @@ public interface IContractProvider
     Task<TransactionInfoDto> ValidateTransactionAsync(string chainId,
         GetHolderInfoOutput result, RepeatedField<string> unsetLoginGuardians);
 
-    Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfoDto transactionInfoDto);
+    Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfo transactionInfo);
 
     Task<TransactionResultDto> SyncTransactionAsync(string chainId,
         SyncHolderInfoInput syncHolderInfoInput);
@@ -53,8 +54,8 @@ public class ContractProvider : IContractProvider
     private readonly ChainOptions _chainOptions;
     private readonly IndexOptions _indexOptions;
 
-    public ContractProvider(ILogger<ContractProvider> logger, IOptions<ChainOptions> chainOptions,
-        IOptions<IndexOptions> indexOptions, IClusterClient clusterClient)
+    public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
+        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
@@ -291,23 +292,17 @@ public class ContractProvider : IContractProvider
     }
 
     public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId,
-        TransactionInfoDto transactionInfoDto)
+        TransactionInfo transactionInfo)
     {
         try
         {
-            if (transactionInfoDto.TransactionResultDto == null || transactionInfoDto.Transaction == null)
+            if (transactionInfo == null)
             {
                 return new SyncHolderInfoInput();
             }
 
-            if (chainId != ContractAppServiceConstant.MainChainId)
-            {
-                await MainChainCheckSideChainBlockIndexAsync(chainId,
-                    transactionInfoDto.TransactionResultDto.BlockNumber);
-            }
-
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var syncHolderInfoInput = await grain.GetSyncHolderInfoInputAsync(chainId, transactionInfoDto);
+            var syncHolderInfoInput = await grain.GetSyncHolderInfoInputAsync(chainId, transactionInfo);
 
             _logger.LogInformation("GetSyncHolderInfoInput on chain {id} succeed", chainId);
 
@@ -316,7 +311,7 @@ public class ContractProvider : IContractProvider
         catch (Exception e)
         {
             _logger.LogError(e, "GetSyncHolderInfoInput on chain: {id} error: {dto}", chainId,
-                JsonConvert.SerializeObject(transactionInfoDto.TransactionResultDto ?? new TransactionResultDto(),
+                JsonConvert.SerializeObject(transactionInfo ?? new TransactionInfo(),
                     Formatting.Indented));
             return new SyncHolderInfoInput();
         }

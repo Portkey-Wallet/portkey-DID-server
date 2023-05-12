@@ -276,6 +276,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 var nftItem = ObjectMapper.Map<IndexerNftInfo, NftItem>(nftInfo);
 
                 nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
+                nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
+                nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
                 nftItem.ImageUrl =
                     _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height);
                 nftItem.ImageLargeUrl = _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl,

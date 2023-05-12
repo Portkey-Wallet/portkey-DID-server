@@ -14,6 +14,8 @@ public class NftItem
     public string TokenId { get; set; }
     public string Alias { get; set; }
     public string Balance { get; set; }
+    public long TotalSupply { get; set; }
+    public long CirculatingSupply { get; set; }
     public string ImageUrl { get; set; }
     public string TokenContractAddress { get; set; }
     public string ImageLargeUrl { get; set; }

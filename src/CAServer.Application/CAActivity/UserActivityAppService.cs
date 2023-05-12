@@ -250,11 +250,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     Alias = ht.NftInfo.TokenName
                 };
             }
-            //
-            // dto.PriceInUsd = CalculationHelper
-            //     .GetBalanceInUsd(Convert.ToDecimal(dto.PriceInUsd), Convert.ToInt32(dto.Decimals)).ToString();
 
             dto.ListIcon = GetIconByType(dto.TransactionType);
+            if (!ActivityConstants.ShowPriceTypes.Contains(dto.TransactionType))
+            {
+                dto.IsDelegated = true;
+            }
+            
             getActivitiesDto.Add(dto);
         }
 

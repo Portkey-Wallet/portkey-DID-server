@@ -23,7 +23,12 @@ public class IndexOptions
     public int IndexDelay { get; set; }
     public long IndexInterval { get; set; }
     public long IndexSafe { get; set; }
+    public long IndexBefore { get; set; }
+    public long IndexAfter { get; set; }
     public long IndexTimes { get; set; }
+    public int MaxRetryTimes { get; set; }
+    public int MaxBucket { get; set; }
+    public Dictionary<string, long> AutoSyncStartHeight { get; set; }
 }
 
 public class GraphQLOptions
@@ -33,5 +38,6 @@ public class GraphQLOptions
 
 public class ContractSyncOptions
 {
-    public string Cron { get; set; }
+    public int Sync { get; set; }
+    public int AutoReceive { get; set; }
 }

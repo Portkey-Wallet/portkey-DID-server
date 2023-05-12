@@ -67,6 +67,9 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
+        Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions")); 
+        Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
+        Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
