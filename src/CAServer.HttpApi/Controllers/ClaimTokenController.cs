@@ -38,7 +38,6 @@ public class ClaimTokenController : CAServerController
         {
             return await _claimTokenAppService.GetClaimTokenAsync(claimTokenRequestDto);
         }
-        // return await _claimTokenAppService.GetClaimTokenAsync(claimTokenRequestDto);
 
         throw new UserFriendlyException("Please try again");
     }

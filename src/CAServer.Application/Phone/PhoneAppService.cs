@@ -39,11 +39,6 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
 
     public async Task<PhoneInfoListDto> GetPhoneInfo()
     {
-        var phone = new PhoneInfoOptions
-        {
-            PhoneInfo = _phoneInfoOptions.PhoneInfo,
-        };
-        Console.Out.Write(phone);
         var phoneInfo = new List<Dictionary<string, string>>();
         for (int i = 0; i < _phoneInfoOptions.PhoneInfo.Count; i++)
         {
