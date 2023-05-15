@@ -15,6 +15,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Verifier.Etos;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -110,6 +111,24 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         }
 
         await AddUserInfoAsync(userInfo);
+    }
+
+    public Task<RedirectResult> ReceiveTestAsync(AppleAuthDto appleAuthDto)
+    {
+        if (appleAuthDto == null)
+        {
+            Logger.LogError($"ReceiveTest: appleAuthDto is null.");
+            throw new UserFriendlyException("appleAuthDto is null");
+        }
+        
+        if (string.IsNullOrEmpty(appleAuthDto.State))
+        {
+            Logger.LogError($"ReceiveTest: not from apple.{_httpContextAccessor.HttpContext.Request.Path}");
+            throw new UserFriendlyException("not from apple");
+        }
+        
+        Logger.LogInformation($"ReceiveTest:  {JsonConvert.SerializeObject(appleAuthDto)}");
+        return Task.FromResult(new RedirectResult($"{_appleAuthOptions.RedirectUrl}?id_token={appleAuthDto.Id_token}"));
     }
 
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)

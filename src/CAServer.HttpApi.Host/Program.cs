@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
+using CAServer.AppleAuth;
+using CAServer.AppleAuth.Dtos;
 using CAServer.Hubs;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,10 +30,10 @@ public class Program
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-            
+
 #if DEBUG
             .WriteTo.Async(c => c.Console())
-#endif          
+#endif
             .CreateLogger();
 
         try
@@ -43,6 +47,14 @@ public class Program
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
+
+            app.MapPost("/",
+                ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
+                {
+                    testService.ReceiveTestAsync(appleAuthDto);
+                }
+            );
+
             app.MapHub<CAHub>("ca");
             await app.InitializeApplicationAsync();
             await app.RunAsync();
