@@ -113,7 +113,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         await AddUserInfoAsync(userInfo);
     }
 
-    public Task<RedirectResult> ReceiveTestAsync(AppleAuthDto appleAuthDto)
+    public IActionResult ReceiveTestAsync(AppleAuthDto appleAuthDto)
     {
         if (appleAuthDto == null)
         {
@@ -128,7 +128,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         }
         
         Logger.LogInformation($"ReceiveTest:  {JsonConvert.SerializeObject(appleAuthDto)}");
-        return Task.FromResult(new RedirectResult($"{_appleAuthOptions.RedirectUrl}?id_token={appleAuthDto.Id_token}"));
+        return new RedirectResult($"{_appleAuthOptions.RedirectUrl}?id_token={appleAuthDto.Id_token}");
     }
 
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)

@@ -7,5 +7,5 @@ namespace CAServer.AppleAuth;
 public interface IAppleAuthAppService
 {
     Task ReceiveAsync(AppleAuthDto appleAuthDto);
-    Task<RedirectResult> ReceiveTestAsync(AppleAuthDto appleAuthDto);
+    IActionResult ReceiveTestAsync(AppleAuthDto appleAuthDto);
 }
