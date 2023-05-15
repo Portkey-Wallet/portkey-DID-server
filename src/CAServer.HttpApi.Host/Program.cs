@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.AppleAuth;
@@ -63,14 +64,19 @@ public class Program
 
                 Log.Information($"ip:{ip}");
 
-                if (!string.IsNullOrEmpty(ip) && ip.Contains("apple"))
+                if (context.Request.Method.ToUpper() == "POST" && context.Request.ContentType.Contains("form"))
                 {
-                    app.MapPost("/",
-                        ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
-                        {
-                            testService.ReceiveTestAsync(appleAuthDto);
-                        }
-                    );
+                    var from = context.Request.Form;
+                    foreach (var keyValuePair in from)
+                    {
+                        Log.Information($"key:{keyValuePair.Key}, value:{keyValuePair.Value}");
+                    }
+                    // app.MapPost("/",
+                    //     ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
+                    //     {
+                    //         testService.ReceiveTestAsync(appleAuthDto);
+                    //     }
+                    // );
                 }
 
                 await next(context);
