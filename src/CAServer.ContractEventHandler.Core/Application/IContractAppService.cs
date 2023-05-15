@@ -23,6 +23,7 @@ public interface IContractAppService
     Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
     Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     Task QueryAndSyncAsync();
+
     Task InitializeIndexAsync();
     // Task InitializeQueryRecordIndexAsync();
     // Task InitializeIndexAsync(long blockHeight);
@@ -231,7 +232,7 @@ public class ContractAppService : IContractAppService
 
         var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
         SyncHolderInfoInput syncHolderInfoInput;
-        
+
         var syncSucceed = true;
 
         if (chainInfo.IsMainChain)
@@ -240,7 +241,7 @@ public class ContractAppService : IContractAppService
                          !c.IsMainChain && c.ChainId != optionChainId))
             {
                 await _contractProvider.SideChainCheckMainChainBlockIndexAsync(sideChain.ChainId, validateHeight);
-                
+
                 syncHolderInfoInput =
                     await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
                     {
@@ -261,7 +262,7 @@ public class ContractAppService : IContractAppService
         else
         {
             await _contractProvider.MainChainCheckSideChainBlockIndexAsync(chainId, validateHeight);
-            
+
             syncHolderInfoInput =
                 await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
                 {
@@ -269,12 +270,12 @@ public class ContractAppService : IContractAppService
                     BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
                     Transaction = transactionDto.Transaction.ToByteArray()
                 });
-            
+
             if (syncHolderInfoInput.VerificationTransactionInfo == null)
             {
                 return false;
             }
-            
+
             var syncResult =
                 await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
                     syncHolderInfoInput);
@@ -424,7 +425,6 @@ public class ContractAppService : IContractAppService
                     while (indexMainChainBlock <= mainHeight && retryTimes < _indexOptions.IndexTimes)
                     {
                         await Task.Delay(1000);
-                        mainHeight = await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
                         indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
                         retryTimes++;
                     }
@@ -439,8 +439,9 @@ public class ContractAppService : IContractAppService
 
                     if (result.Status != TransactionState.Mined)
                     {
-                        _logger.LogError("{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, input:{input}",
-                            record.ChangeType, chainId, record.CaHash, result.Error, JsonConvert.SerializeObject(syncHolderInfoInput));
+                        _logger.LogError(
+                            "{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, validateHeight: {validateHeight}, GetSideChainHeight: {GetSideChainHeight}, mainHeight: {mainHeight}, GetParentChainHeight: {GetParentChainHeight}",
+                            record.ChangeType, chainId, record.CaHash, result.Error, record.ValidateHeight, indexHeight, mainHeight, indexMainChainBlock);
 
                         record.RetryTimes++;
                         record.ValidateHeight = long.MaxValue;
@@ -684,12 +685,13 @@ public class ContractAppService : IContractAppService
             {
                 return;
             }
-            
+
             var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
 
             if (queryRecordHeight < indexHeight)
             {
-                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, indexHeight - _indexOptions.IndexSafe);
+                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord,
+                    indexHeight - _indexOptions.IndexSafe);
             }
         }
     }
@@ -713,7 +715,7 @@ public class ContractAppService : IContractAppService
     //         }
     //     }
     // }
-    
+
     public async Task InitializeIndexAsync()
     {
         var dict = _indexOptions.AutoSyncStartHeight;
@@ -726,11 +728,13 @@ public class ContractAppService : IContractAppService
             {
                 height = 0;
             }
+
             var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
             if (queryRecordHeight < height)
-            
+
             {
-                _logger.LogInformation("InitializeIndexAsync on chain {id} set last end height to {height}", chainId, height);
+                _logger.LogInformation("InitializeIndexAsync on chain {id} set last end height to {height}", chainId,
+                    height);
                 await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height);
             }
         }
