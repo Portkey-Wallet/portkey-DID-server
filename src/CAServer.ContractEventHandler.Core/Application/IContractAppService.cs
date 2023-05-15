@@ -438,8 +438,8 @@ public class ContractAppService : IContractAppService
 
                     if (result.Status != TransactionState.Mined)
                     {
-                        _logger.LogError("{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}",
-                            record.ChangeType, chainId, record.CaHash, result.Error);
+                        _logger.LogError("{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, input:{input}",
+                            record.ChangeType, chainId, record.CaHash, result.Error, JsonConvert.SerializeObject(syncHolderInfoInput));
 
                         record.RetryTimes++;
                         record.ValidateHeight = long.MaxValue;
