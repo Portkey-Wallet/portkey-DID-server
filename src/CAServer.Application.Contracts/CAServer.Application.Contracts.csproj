@@ -15,6 +15,7 @@
     <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
     <PackageReference Include="AElf.Sdk.CSharp" Version="1.2.3" />
     <PackageReference Include="AutoMapper" Version="12.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.6.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -33,45 +34,7 @@
     <PackageReference Include="Volo.Abp.FeatureManagement.Application.Contracts" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.SettingManagement.Application.Contracts" Version="7.0.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Orleans_CodeGenInputs Remove="ApplicationHandler\IContractAppService.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\AccountCompletedMessageDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\AccountRequestResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\ActivityHeader.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\CAHolderAfterCreatedInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\CAHolderRequestBaseDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\ChainAddInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\ChainsResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\GeneralResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\GuardianDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\HubRequestContextDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\NickNameResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\QueryRecoveryResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RecoveryManagerAddressInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RecoveryRequestInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RecoveryStateDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RegisterRequestInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RegisterStateDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RegisterStatus.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\Validation\ValidManagerAddressAttribute.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\AccountRecoverCompletedEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\AccountRecoverCreateEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\AccountRegisterCompletedEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\AccountRegisterCreateEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\CAAccountEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\CAAccountRecoveryEto.cs" />
-    <Orleans_CodeGenInputs Remove="Service\HttpService.cs" />
-    <Orleans_CodeGenInputs Remove="Service\IVerifierServerClient.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Dtos\IndexerOrderInfo.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Dtos\OrderEnum.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Dtos\UserOrderRequestDto.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Dtos\UserOrderResponseDto.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Etos\OrderEto.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\IMerchant.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\IOrderStatus.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\MerchantType.cs" />
-  </ItemGroup>
+  
 
   <ItemGroup>
     <Compile Remove="CAActivity\Dtos\GetActivitiesRequest.cs" />
