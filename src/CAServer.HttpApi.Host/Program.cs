@@ -54,6 +54,22 @@ public class Program
             //         testService.ReceiveTestAsync(appleAuthDto);
             //     }
             // );
+            app.Use(async (context, next) =>
+            {
+                var path = context.Request.Host.Value;
+                if (path.Contains("apple"))
+                {
+                    app.MapPost("/",
+                        ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
+                        {
+                            testService.ReceiveTestAsync(appleAuthDto);
+                        }
+                    );
+                }
+
+                // Call the next delegate/middleware in the pipeline.
+                await next(context);
+            });
 
             app.MapHub<CAHub>("ca");
             await app.InitializeApplicationAsync();
