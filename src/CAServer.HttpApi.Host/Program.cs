@@ -57,6 +57,9 @@ public class Program
             app.Use(async (context, next) =>
             {
                 var path = context.Request.Host.Value;
+
+                Log.Information($"path:{path}");
+
                 if (path.Contains("apple"))
                 {
                     app.MapPost("/",
