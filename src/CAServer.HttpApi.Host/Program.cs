@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.AppleAuth;
 using CAServer.AppleAuth.Dtos;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
+using Volo.Abp;
 
 namespace CAServer;
 
@@ -48,19 +50,20 @@ public class Program
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
 
-            // app.MapPost("/",
-            //     ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
-            //     {
-            //         testService.ReceiveTestAsync(appleAuthDto);
-            //     }
-            // );
             app.Use(async (context, next) =>
             {
-                var path = context.Request.Host.Value;
+                if (context.Request.Headers?.ContainsKey("X-Forwarded-For") == false)
+                {
+                    Log.Information("Not set nginx header.");
+                    await next(context);
+                }
 
-                Log.Information($"path:{path}");
+                var ip = context.Request.Headers["X-Forwarded-For"].ToString().Split(',')
+                    .FirstOrDefault();
 
-                if (path.Contains("apple"))
+                Log.Information($"ip:{ip}");
+
+                if (!string.IsNullOrEmpty(ip) && ip.Contains("apple"))
                 {
                     app.MapPost("/",
                         ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
@@ -70,7 +73,6 @@ public class Program
                     );
                 }
 
-                // Call the next delegate/middleware in the pipeline.
                 await next(context);
             });
 
