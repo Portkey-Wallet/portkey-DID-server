@@ -52,7 +52,7 @@ public class CrossChainTransferGrain : Orleans.Grain<CrossChainTransferState>, I
             var record = _objectMapper.Map<CrossChainTransferDto, CrossChainTransfer>(transfer);
             State.CrossChainTransfers[record.Id] = record;
         }
-        
+
         await WriteStateAsync();
     }
 
@@ -60,19 +60,18 @@ public class CrossChainTransferGrain : Orleans.Grain<CrossChainTransferState>, I
     {
         return State.TransferTransactionDictionary ?? new Dictionary<long, string>();
     }
-    
-    public async Task UpdateTransfersDicAsync(long startHeight, Dictionary<long, string> dic)
+
+    public async Task UpdateTransfersDicAsync(long lastEndHeight, Dictionary<long, string> dic)
     {
-        if (State.TransferTransactionDictionary != null)
+        var transferInfoDic = State.TransferTransactionDictionary ?? new Dictionary<long, string>();
+        if (dic != null)
         {
-            var keyValuePairs = State.TransferTransactionDictionary.Where(o=>o.Key >=startHeight).ToDictionary(o=>o.Key,o=>o.Value);
-            foreach (var transferInfo in dic)
-            {
-                keyValuePairs[transferInfo.Key] = transferInfo.Value;
-            }
-            State.TransferTransactionDictionary = keyValuePairs;
+            transferInfoDic = transferInfoDic.Concat(dic).ToDictionary(o => o.Key, o => o.Value);
         }
-        State.TransferTransactionDictionary = dic;
+
+        var dictionary = transferInfoDic.Where(o => o.Key >= lastEndHeight)
+            .ToDictionary(o => o.Key, o => o.Value);
+        State.TransferTransactionDictionary = dictionary;
         await WriteStateAsync();
     }
 

@@ -9,5 +9,5 @@ public interface ICrossChainTransferGrain : IGrainWithStringKey
     Task AddTransfersAsync(long lastedHeight, List<CrossChainTransferDto> transfers);
     Task UpdateTransferAsync(CrossChainTransferDto transfer);
     Task<Dictionary<long,string>> GetTransactionDicAsync();
-    Task UpdateTransfersDicAsync(long startHeight, Dictionary<long, string> dic);
+    Task UpdateTransfersDicAsync(long lastEndHeight, Dictionary<long, string> dic);
 }

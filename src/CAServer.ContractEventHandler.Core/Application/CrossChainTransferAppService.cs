@@ -126,7 +126,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
                 var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
 
-                await grain.UpdateTransfersDicAsync(startHeight, dic);
+                await grain.UpdateTransfersDicAsync(lastEndHeight, dic);
                 await grain.AddTransfersAsync(endIndexHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
                 _logger.LogDebug($"Processed height: {chainId}, {endIndexHeight}");
