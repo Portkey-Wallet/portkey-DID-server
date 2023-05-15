@@ -411,7 +411,7 @@ public class ContractAppService : IContractAppService
 
                     while (indexMainChainBlock <= mainHeight && retryTimes < _indexOptions.IndexTimes)
                     {
-                        await Task.Delay(1000);
+                        await Task.Delay(_indexOptions.IndexDelay);
                         indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
                         retryTimes++;
                     }
