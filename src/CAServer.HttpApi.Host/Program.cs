@@ -48,12 +48,12 @@ public class Program
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
 
-            app.MapPost("/",
-                ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
-                {
-                    testService.ReceiveTestAsync(appleAuthDto);
-                }
-            );
+            // app.MapPost("/",
+            //     ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
+            //     {
+            //         testService.ReceiveTestAsync(appleAuthDto);
+            //     }
+            // );
 
             app.MapHub<CAHub>("ca");
             await app.InitializeApplicationAsync();
