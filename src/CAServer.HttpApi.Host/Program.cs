@@ -89,7 +89,7 @@ public class Program
                     //     }
                     // );
                 }
-                // await next(context);
+                await next(context);
             });
 
             app.MapHub<CAHub>("ca");
