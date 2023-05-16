@@ -120,15 +120,24 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
             Logger.LogError($"ReceiveTest: appleAuthDto is null.");
             throw new UserFriendlyException("appleAuthDto is null");
         }
-        
+
         if (string.IsNullOrEmpty(appleAuthDto.State))
         {
-            Logger.LogError($"ReceiveTest: not from apple.{_httpContextAccessor.HttpContext.Request.Path}");
+            Logger.LogError($"ReceiveTest: not from apple.");
             throw new UserFriendlyException("not from apple");
         }
-        
+
         Logger.LogInformation($"ReceiveTest:  {JsonConvert.SerializeObject(appleAuthDto)}");
-        return new RedirectResult($"{_appleAuthOptions.RedirectUrl}?id_token={appleAuthDto.Id_token}");
+        
+        var identityToken = appleAuthDto.Id_token;
+        if (string.IsNullOrEmpty(appleAuthDto.Id_token))
+        {
+            identityToken = GetTokenAsync(appleAuthDto.Code).Result;
+        }
+
+
+        appleAuthDto.Id_token = identityToken;
+        return new JsonResult(appleAuthDto);
     }
 
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)

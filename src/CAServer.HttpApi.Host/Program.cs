@@ -71,12 +71,12 @@ public class Program
                     {
                         Log.Information($"key:{keyValuePair.Key}, value:{keyValuePair.Value}");
                     }
-                    // app.MapPost("/",
-                    //     ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
-                    //     {
-                    //         testService.ReceiveTestAsync(appleAuthDto);
-                    //     }
-                    // );
+                    app.MapPost("/",
+                        ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
+                        {
+                            testService.ReceiveTestAsync(appleAuthDto);
+                        }
+                    );
                 }
 
                 await next(context);
