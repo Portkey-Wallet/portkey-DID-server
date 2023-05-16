@@ -71,12 +71,23 @@ public class Program
                     {
                         Log.Information($"key:{keyValuePair.Key}, value:{keyValuePair.Value}");
                     }
-                    app.MapPost("/",
-                        ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
-                        {
-                            testService.ReceiveTestAsync(appleAuthDto);
-                        }
-                    );
+
+                    var serv = context.RequestServices.GetRequiredService<IAppleAuthAppService>();
+                    var res = serv.ReceiveTestAsync(new AppleAuthDto()
+                    {
+                        Code = from["code"],
+                        State = from["state"],
+                        Id_token = from["id_token"]
+                    });
+                    
+                    context.Response.StatusCode = 200;
+                    await context.Response.WriteAsJsonAsync(res);
+                    // app.MapPost("/",
+                    //     ([FromForm] AppleAuthDto appleAuthDto, [FromServices] IAppleAuthAppService testService) =>
+                    //     {
+                    //         testService.ReceiveTestAsync(appleAuthDto);
+                    //     }
+                    // );
                 }
 
                 await next(context);
