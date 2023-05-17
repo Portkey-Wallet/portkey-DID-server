@@ -37,8 +37,8 @@ public partial class PhoneInfoServiceTests : CAServerApplicationTestBase
     public async void PhoneInfoSuccessTest()
     {
         var res = await _phoneAppService.GetPhoneInfoAsync();
-        res.Data[0]["Country"].ShouldBe("12345678901234567890123456789012");
-        res.Data[0]["Code"].ShouldBe("sssss");
-        res.Data[0]["Iso"].ShouldBe("123");
+        res.Data[0]["country"].ShouldBe("12345678901234567890123456789012");
+        res.Data[0]["code"].ShouldBe("sssss");
+        res.Data[0]["iso"].ShouldBe("123");
     }
 }                                                             
