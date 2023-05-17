@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace CAServer.ContractEventHandler.Core.Application;
@@ -15,10 +16,12 @@ public interface ISignatureProvider
 public class SignatureProvider : ISignatureProvider
 {
     private readonly SignatureOptions _signatureOptions;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public SignatureProvider(SignatureOptions signatureOptions)
+    public SignatureProvider(IOptions<SignatureOptions> signatureOptions, IHttpClientFactory httpClientFactory)
     {
-        _signatureOptions = signatureOptions;
+        _httpClientFactory = httpClientFactory;
+        _signatureOptions = signatureOptions.Value;
     }
 
     public async Task<string> SignTxMsg(string publicKey, string hexMsg)
@@ -28,8 +31,7 @@ public class SignatureProvider : ISignatureProvider
             PublicKey = publicKey,
             HexMsg = hexMsg,
         };
-        var httpClient = new HttpClient();
-        var httpResult = await httpClient.SendAsync(new HttpRequestMessage()
+        var httpResult = await _httpClientFactory.CreateClient().SendAsync(new HttpRequestMessage()
         {
             Method = HttpMethod.Post,
             RequestUri = new Uri(_signatureOptions.BaseUrl),
