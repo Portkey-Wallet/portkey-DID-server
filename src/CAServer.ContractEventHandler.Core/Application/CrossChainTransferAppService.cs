@@ -11,7 +11,6 @@ using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.Grains.Grain.CrossChain;
 using CAServer.Grains.State.CrossChain;
-using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -37,7 +36,6 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     private readonly IClusterClient _clusterClient;
     private readonly CrossChainOptions _crossChainOptions;
     private readonly ILogger<CrossChainTransferAppService> _logger;
-    private readonly IOptions<SignatureOptions> _signatureOptions;
     private readonly ISignatureProvider _signatureProvider;
 
 
@@ -47,8 +45,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     public CrossChainTransferAppService(IContractProvider contractProvider, IOptionsSnapshot<ChainOptions> chainOptions,
         ILogger<CrossChainTransferAppService> logger, IGraphQLProvider graphQlProvider,
         IClusterClient clusterClient, IOptions<IndexOptions> indexOptions,
-        IOptions<CrossChainOptions> crossChainOptions, IOptions<SignatureOptions> signatureOptions,
-        ISignatureProvider signatureProvider)
+        IOptions<CrossChainOptions> crossChainOptions, ISignatureProvider signatureProvider)
     {
         _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
@@ -57,7 +54,6 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         _clusterClient = clusterClient;
         _indexOptions = indexOptions.Value;
         _crossChainOptions = crossChainOptions.Value;
-        _signatureOptions = signatureOptions;
         _signatureProvider = signatureProvider;
     }
 
@@ -407,8 +403,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
             await client.GenerateTransactionAsync(client.GetAddressFromPubKey(chainInfo.PublicKey),
                 chainInfo.CrossChainContractAddress,
                 "GetBoundParentChainHeightAndMerklePathByHeight", param);
-        var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
-            transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
         var transactionResult = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSign
@@ -436,8 +431,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         var fromAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
         var transaction = await client.GenerateTransactionAsync(fromAddress, chainInfo.TokenContractAddress,
             "CrossChainReceiveToken", param);
-        var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
-            transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
         var result = await client.SendTransactionAsync(new SendTransactionInput
         {
             RawTransaction = txWithSign

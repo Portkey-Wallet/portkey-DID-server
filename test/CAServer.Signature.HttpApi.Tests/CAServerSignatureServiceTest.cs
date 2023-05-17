@@ -28,7 +28,7 @@ public class CAServerSignatureServiceTest : CAServerSignatureHttpApiTestBase
     [Fact]
     public async Task GetSignatureByPublicKeySucceedAsyncTest()
     {
-        var result = await _signatureController.SendSignatureAsync(new SendSignatureDto()
+        var result = await _signatureController.SendSignAsync(new SendSignatureDto()
         {
             HexMsg = TestHexMsgGenerator(),
             PublicKey = "test-key"
@@ -42,7 +42,7 @@ public class CAServerSignatureServiceTest : CAServerSignatureHttpApiTestBase
     {
         try
         {
-            var result = await _signatureController.SendSignatureAsync(new SendSignatureDto()
+            var result = await _signatureController.SendSignAsync(new SendSignatureDto()
             {
                 HexMsg = TestHexMsgGenerator("Public key not exist."),
                 PublicKey = "not-exist-key"

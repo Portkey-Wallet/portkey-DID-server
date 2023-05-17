@@ -4,7 +4,6 @@ using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.Grains.State.ApplicationHandler;
-using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -24,18 +23,15 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private readonly ChainOptions _chainOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractServiceGrain> _logger;
-    private readonly IOptions<SignatureOptions> _signatureOptions;
     private readonly ISignatureProvider _signatureProvider;
 
     public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions,
-        IObjectMapper objectMapper, ILogger<ContractServiceGrain> logger, IOptions<SignatureOptions> signatureOptions,
-        ISignatureProvider signatureProvider)
+        IObjectMapper objectMapper, ILogger<ContractServiceGrain> logger, ISignatureProvider signatureProvider)
     {
         _objectMapper = objectMapper;
         _logger = logger;
         _grainOptions = grainOptions.Value;
         _chainOptions = chainOptions.Value;
-        _signatureOptions = signatureOptions;
         _signatureProvider = signatureProvider;
     }
 
@@ -67,7 +63,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.RefBlockNumber = refBlockNumber;
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
-            var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress,
                 transaction.ToByteArray().ToHex());
 
             var result = await client.SendTransactionAsync(new SendTransactionInput()
@@ -198,7 +194,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 {
                     Value = syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight
                 });
-            var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress,
                 transaction.ToByteArray().ToHex());
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {

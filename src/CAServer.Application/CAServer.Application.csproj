@@ -12,7 +12,6 @@
     <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
     <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
     <ProjectReference Include="..\CAServer.HttpApi\CAServer.HttpApi.csproj" />
-    <ProjectReference Include="..\CAServer.Signature.HttpApi\CAServer.Signature.HttpApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>

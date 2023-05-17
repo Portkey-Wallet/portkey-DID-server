@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CAServer.Signature.Dtos;
 
-public class SignatureResponseDto
+public class SignResponseDto
 {
     public string Signature { get; set; }
 }

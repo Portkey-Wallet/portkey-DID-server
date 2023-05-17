@@ -67,7 +67,6 @@
     <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
-    <ProjectReference Include="..\CAServer.Signature.HttpApi\CAServer.Signature.HttpApi.csproj" />
   </ItemGroup>
 
 </Project>

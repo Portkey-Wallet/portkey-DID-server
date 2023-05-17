@@ -28,16 +28,15 @@ public class SignatureController : CAServerSignatureController
     }
 
     [HttpPost]
-    public async Task<SignatureResponseDto> SendSignatureAsync(
+    public async Task<SignResponseDto> SendSignAsync(
         SendSignatureDto input)
     {
         try
         {
-            var privateKey = GetPrivateKeyByPublishKey(input.PublicKey);
+            var privateKey = GetPrivateKeyByPublicKey(input.PublicKey);
             var msgHashBytes = ByteStringHelper.FromHexString(input.HexMsg);
-            var msgHashByteStr = msgHashBytes.ToString();
             var recoverableInfo = CryptoHelper.SignWithPrivateKey(privateKey, msgHashBytes.ToByteArray());
-            return new SignatureResponseDto
+            return new SignResponseDto
             {
                 Signature = recoverableInfo.ToHex(),
             };
@@ -49,14 +48,14 @@ public class SignatureController : CAServerSignatureController
         }
     }
 
-    private byte[] GetPrivateKeyByPublishKey(string publishKey)
+    private byte[] GetPrivateKeyByPublicKey(string publicKey)
     {
-        if (_signatureOptions.PrivateKeyDictionary.TryGetValue(publishKey, out string _))
+        if (_signatureOptions.PrivateKeyDictionary.TryGetValue(publicKey, out string _))
         {
-            return Encoding.UTF8.GetBytes(_signatureOptions.PrivateKeyDictionary[publishKey]);
+            return Encoding.UTF8.GetBytes(_signatureOptions.PrivateKeyDictionary[publicKey]);
         }
 
-        _logger.LogError("Publish key {publishKey} not exist!", publishKey);
+        _logger.LogError("Publish key {publishKey} not exist!", publicKey);
         throw new KeyNotFoundException("Publish key not exist!");
     }
 }

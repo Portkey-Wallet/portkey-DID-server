@@ -6,7 +6,6 @@ using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
-using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -55,18 +54,15 @@ public class ContractProvider : IContractProvider
     private readonly IClusterClient _clusterClient;
     private readonly ChainOptions _chainOptions;
     private readonly IndexOptions _indexOptions;
-    private readonly IOptions<SignatureOptions> _signatureOptions;
     private readonly ISignatureProvider _signatureProvider;
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
-        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient,
-        IOptions<SignatureOptions> signatureOptions, ISignatureProvider signatureProvider)
+        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
-        _signatureOptions = signatureOptions;
         _signatureProvider = signatureProvider;
     }
 
@@ -85,8 +81,7 @@ public class ContractProvider : IContractProvider
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, contractAddress,
                     methodName, param);
-            var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
-                transaction.ToByteArray().ToHex());
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
                 RawTransaction = txWithSign

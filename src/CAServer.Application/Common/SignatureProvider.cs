@@ -3,19 +3,26 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using CAServer.Signature.Dtos;
+using CAServer.Options;
 using Newtonsoft.Json;
 
-namespace CAServer.Signature;
+namespace CAServer.Common;
 
 public interface ISignatureProvider
 {
-    Task<string> SignTransaction(string uri, string publicKey, string hexMsg);
+    Task<string> SignTxMsg(string publicKey, string hexMsg);
 }
 
 public class SignatureProvider : ISignatureProvider
 {
-    public async Task<string> SignTransaction(string uri, string publicKey, string hexMsg)
+    private readonly SignatureOptions _signatureOptions;
+
+    public SignatureProvider(SignatureOptions signatureOptions)
+    {
+        _signatureOptions = signatureOptions;
+    }
+
+    public async Task<string> SignTxMsg(string publicKey, string hexMsg)
     {
         var signatureSend = new SendSignatureDto
         {
@@ -26,15 +33,26 @@ public class SignatureProvider : ISignatureProvider
         var httpResult = await httpClient.SendAsync(new HttpRequestMessage()
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri(uri),
+            RequestUri = new Uri(_signatureOptions.BaseUrl),
             Content = new StringContent(JsonConvert.SerializeObject(signatureSend), Encoding.UTF8, "application/json")
         });
         if (httpResult.StatusCode == HttpStatusCode.OK)
         {
-            return JsonConvert.DeserializeObject<SignatureResponseDto>(await httpResult.Content.ReadAsStringAsync())
+            return JsonConvert.DeserializeObject<SignResponseDto>(await httpResult.Content.ReadAsStringAsync())
                 .Signature;
         }
 
         return "";
     }
+}
+
+public class SendSignatureDto
+{
+    public string PublicKey { get; set; }
+    public string HexMsg { get; set; }
+}
+
+public class SignResponseDto
+{
+    public string Signature { get; set; }
 }

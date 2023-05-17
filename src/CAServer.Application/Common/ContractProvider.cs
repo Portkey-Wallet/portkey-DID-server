@@ -6,7 +6,6 @@ using AElf.Client.Service;
 using AElf.Types;
 using CAServer.ClaimToken.Dtos;
 using CAServer.Options;
-using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -38,18 +37,14 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ChainOptions _chainOptions;
     private readonly ILogger<ContractProvider> _logger;
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
-    private readonly IOptions<SignatureOptions> _signatureOptions;
     private readonly ISignatureProvider _signatureProvider;
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
-        IOptions<SignatureOptions> signatureOptions,
-        ISignatureProvider signatureProvider,
-        IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption)
+        ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
-        _signatureOptions = signatureOptions;
         _signatureProvider = signatureProvider;
     }
 
@@ -72,8 +67,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction, chainOption.PublicKey);
 
-        var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
-            transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
 
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
@@ -103,8 +97,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction, chainOption.PublicKey);
 
-        var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
-            transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
 
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
@@ -137,8 +130,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction,
             _claimTokenInfoOption.PublicKey);
 
-        var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
-            transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
 
         var result = await client.SendTransactionAsync(new SendTransactionInput()
         {
@@ -169,8 +161,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction,
             _claimTokenInfoOption.PublicKey);
 
-        var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
-            transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
 
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
@@ -191,8 +182,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             await client.GenerateTransactionAsync(ownAddress, contractAddress,
                 methodName, param);
 
-        var txWithSign = await _signatureProvider.SignTransaction(_signatureOptions.Value.BaseUrl, ownAddress,
-            transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
 
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
