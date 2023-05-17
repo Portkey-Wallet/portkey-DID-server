@@ -275,6 +275,9 @@ grpc_csharp_plugin
 
 launchSettings.json
 
+# dev settings
+*/**/appsettings.Development.json
+
 yarn.lock
 
 results/coverage.json
