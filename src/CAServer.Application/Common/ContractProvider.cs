@@ -65,7 +65,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var transaction = await client.GenerateTransactionAsync(ownAddress,
             chainOption.ContractAddress, methodName, param);
 
-        _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction, chainOption.PublicKey);
+        _logger.LogDebug("param is: {transaction}, publicKey is:{publicKey} ", transaction, chainOption.PublicKey);
 
         var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
 
@@ -95,7 +95,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var transaction = await client.GenerateTransactionAsync(ownAddress,
             chainOption.TokenContractAddress, methodName, param);
 
-        _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction, chainOption.PublicKey);
+        _logger.LogDebug("param is: {transaction}, publicKey is:{publicKey} ", transaction, chainOption.PublicKey);
 
         var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
 
@@ -127,7 +127,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var transaction = await client.GenerateTransactionAsync(ownAddress,
             chainOption.TokenContractAddress, methodName, param);
 
-        _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction,
+        _logger.LogDebug("param is: {transaction}, publicKey is:{publicKey} ", transaction,
             _claimTokenInfoOption.PublicKey);
 
         var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
@@ -158,12 +158,12 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var transaction = await client.GenerateTransactionAsync(ownAddress,
             _claimTokenInfoOption.ClaimTokenAddress, methodName, param);
 
-        _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction,
+        _logger.LogDebug("param is: {transaction}, publicKey is:{publicKey} ", transaction,
             _claimTokenInfoOption.PublicKey);
 
         var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
 
-        var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
+        await client.SendTransactionAsync(new SendTransactionInput()
         {
             RawTransaction = txWithSign
         });
