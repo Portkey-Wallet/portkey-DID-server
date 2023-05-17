@@ -46,16 +46,17 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 
         try
         {
-            var coinData =
-                await RequestAsync(async () =>
-                    await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] { coinId }, new[] { UsdSymbol }));
-
-            if (!coinData.TryGetValue(coinId, out var value))
-            {
-                return 0;
-            }
-
-            return value[UsdSymbol].Value;
+            // var coinData =
+            //     await RequestAsync(async () =>
+            //         await _coinGeckoClient.SimpleClient.GetSimplePrice(new[] { coinId }, new[] { UsdSymbol }));
+            //
+            // if (!coinData.TryGetValue(coinId, out var value))
+            // {
+            //     return 0;
+            // }
+            //
+            // return value[UsdSymbol].Value;
+            return 0;
         }
         catch (Exception ex)
         {
@@ -80,16 +81,17 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 
         try
         {
-            var coinData =
-                await RequestAsync(async () => await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
-                    dateTime, "false"));
-
-            if (coinData.MarketData == null)
-            {
-                return 0;
-            }
-
-            return (decimal)coinData.MarketData.CurrentPrice[UsdSymbol].Value;
+            // var coinData =
+            //     await RequestAsync(async () => await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
+            //         dateTime, "false"));
+            //
+            // if (coinData.MarketData == null)
+            // {
+            //     return 0;
+            // }
+            //
+            // return (decimal)coinData.MarketData.CurrentPrice[UsdSymbol].Value;
+            return 0;
         }
         catch (Exception ex)
         {
