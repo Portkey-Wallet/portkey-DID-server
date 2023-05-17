@@ -1,13 +1,9 @@
-using System;
 using System.Net;
-using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
-using CAServer.Options;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
-namespace CAServer;
+namespace CAServer.Signature;
 
 public interface ISignatureProvider
 {
@@ -48,13 +44,13 @@ public class SignatureProvider : ISignatureProvider
     }
 }
 
-public class SignResponseDto
-{
-    public string Signature { get; set; }
-}
-
 public class SendSignatureDto
 {
     public string PublicKey { get; set; }
     public string HexMsg { get; set; }
+}
+
+public class SignResponseDto
+{
+    public string Signature { get; set; }
 }

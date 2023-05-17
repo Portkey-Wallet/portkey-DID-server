@@ -11,13 +11,13 @@ using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.Grains.Grain.CrossChain;
 using CAServer.Grains.State.CrossChain;
+using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp.DependencyInjection;
-using SignatureOptions = CAServer.Grains.Grain.ApplicationHandler.SignatureOptions;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 

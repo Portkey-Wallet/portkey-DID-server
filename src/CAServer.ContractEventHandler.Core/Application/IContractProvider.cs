@@ -6,6 +6,7 @@ using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -16,7 +17,6 @@ using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
-using SignatureOptions = CAServer.Grains.Grain.ApplicationHandler.SignatureOptions;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 

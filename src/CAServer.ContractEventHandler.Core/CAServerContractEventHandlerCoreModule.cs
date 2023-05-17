@@ -4,6 +4,7 @@ using Volo.Abp;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
 using Volo.Abp.Threading;
+using SignatureOptions = CAServer.Signature.SignatureOptions;
 
 namespace CAServer.ContractEventHandler.Core;
 
@@ -20,6 +21,7 @@ public class CAServerContractEventHandlerCoreModule : AbpModule
 
         var configuration = context.Services.GetConfiguration();
         Configure<CrossChainOptions>(configuration.GetSection("CrossChain"));
+        Configure<SignatureOptions>(configuration.GetSection("SignatureServer"));
     }
 
     public override void OnPostApplicationInitialization(ApplicationInitializationContext context)

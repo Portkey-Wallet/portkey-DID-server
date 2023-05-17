@@ -1,4 +1,4 @@
-namespace CAServer.Options;
+namespace CAServer.Signature;
 
 public class SignatureOptions
 {

@@ -7,6 +7,7 @@ using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
+using CAServer.Signature;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -70,7 +71,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions")); 
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
-        Configure<SignatureOptions>(configuration.GetSection("Signature"));
+        Configure<SignatureOptions>(configuration.GetSection("SignatureServer"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

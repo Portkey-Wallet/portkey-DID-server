@@ -7,6 +7,7 @@ using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
+using CAServer.Signature;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -39,6 +40,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
 using Volo.Abp.VirtualFileSystem;
+using SignatureOptions = CAServer.Signature.SignatureOptions;
 
 namespace CAServer;
 
@@ -64,7 +66,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
-        
+
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -73,6 +75,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
         ConfigureHub(context, configuration);
+        ConfigureSignature(context, configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
@@ -256,6 +259,14 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<HubCacheOptions>(configuration.GetSection("Hub:Configuration"));
     }
 
+    private void ConfigureSignature(
+        ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddSingleton<ISignatureProvider>();
+        Configure<SignatureOptions>(configuration.GetSection("SignatureServer:Configuration"));
+    }
+
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
     {
@@ -322,7 +333,7 @@ public class CAServerHttpApiHostModule : AbpModule
                 // options.OAuthScopes("CAServer");
             });
         }
-        
+
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();

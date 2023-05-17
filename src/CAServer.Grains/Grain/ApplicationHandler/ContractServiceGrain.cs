@@ -4,6 +4,7 @@ using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;

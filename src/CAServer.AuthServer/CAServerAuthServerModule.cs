@@ -14,7 +14,6 @@ using CAServer.MongoDB;
 using CAServer.Localization;
 using CAServer.Model;
 using CAServer.MultiTenancy;
-using CAServer.Options;
 using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.Account;
@@ -96,7 +95,8 @@ public class CAServerAuthServerModule : AbpModule
         {
             options.TransactionBehavior = UnitOfWorkTransactionBehavior.Disabled;
         });
-
+        
+        context.Services.Configure<Signature.SignatureOptions>(configuration.GetSection("SignatureServer"));
         context.Services.Configure<GraphQLOption>(configuration.GetSection("GraphQL"));
         context.Services.Configure<ChainOptions>(configuration.GetSection("Chains"));
         context.Services.Configure<TimeRangeOption>(option =>
@@ -104,7 +104,6 @@ public class CAServerAuthServerModule : AbpModule
             option.TimeRange = Convert.ToInt32(configuration["TimeRange"]);
         });
         
-        Configure<SignatureOptions>(configuration.GetSection("Signature"));
         Configure<AbpOpenIddictExtensionGrantsOptions>(options =>
         {
             options.Grants.Add("signature", new SignatureGrantHandler());

@@ -12,6 +12,7 @@ using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
 using CAServer.Model;
+using CAServer.Signature;
 using Google.Protobuf;
 using GraphQL;
 using GraphQL.Client.Http;
@@ -31,7 +32,6 @@ using Volo.Abp.Identity;
 using Volo.Abp.OpenIddict;
 using Volo.Abp.OpenIddict.ExtensionGrantTypes;
 using IdentityUser = Volo.Abp.Identity.IdentityUser;
-using SignatureOptions = CAServer.Options.SignatureOptions;
 using SignInResult = Microsoft.AspNetCore.Mvc.SignInResult;
 
 namespace CAServer;
