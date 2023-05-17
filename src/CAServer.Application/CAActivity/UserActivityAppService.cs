@@ -60,7 +60,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, request.ChainId,
                 request.Symbol, filterTypes, request.SkipCount, request.MaxResultCount);
             return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
-                request.Height);
+                request.Height, needMap: true);
         }
         catch (Exception e)
         {
@@ -71,9 +71,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     private List<string> FilterTypes(IEnumerable<string> reqList)
     {
-        if (reqList == null)
+        if (reqList == null || reqList.Count() == 0)
         {
-            return ActivityConstants.DefaultTypes;
+            return ActivityConstants.TypeMap.Keys.ToList();
         }
 
         var ans = reqList.Where(e => ActivityConstants.AllSupportTypes.Contains(e)).ToList();
@@ -160,7 +160,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     }
 
     private async Task<GetActivitiesDto> IndexerTransaction2Dto(List<string> caAddresses,
-        IndexerTransactions indexerTransactions, [CanBeNull] string chainId, int weidth, int height)
+        IndexerTransactions indexerTransactions, [CanBeNull] string chainId, int weidth, int height,
+        bool needMap = false)
     {
         var result = new GetActivitiesDto
         {
@@ -256,7 +257,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 dto.IsDelegated = true;
             }
-            
+
+            if (needMap)
+            {
+                dto.TransactionName = dto.NftInfo == null && string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
+                                      ActivityConstants.ShowNftTypes.Contains(dto.TransactionType)
+                    ? ActivityConstants.TypeMap[dto.TransactionType] + " NFT"
+                    : ActivityConstants.TypeMap[dto.TransactionType];
+            }
+
             getActivitiesDto.Add(dto);
         }
 

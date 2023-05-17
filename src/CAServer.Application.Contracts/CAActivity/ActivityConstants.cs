@@ -4,6 +4,26 @@ namespace CAServer.CAActivity;
 
 public static class ActivityConstants
 {
+    public static readonly Dictionary<string, string> TypeMap = new()
+    {
+        { "Transfer", "Transfer" },
+        { "CrossChainTransfer", "CrossChain Transfer" },
+        { "SocialRecovery", "Social Recovery" },
+        { "RemoveManagerInfo", "Exit Wallet" },
+        { "AddManagerInfo", "Scan code login" },
+        { "CreateCAHolder", "Create CA address" },
+        { "AddGuardian", "Add guardian" },
+        { "RemoveGuardian", "Remove guardian" },
+        { "UpdateGuardian", "Edit guardian" },
+        { "SetGuardianForLogin", "Set login account" },
+        { "UnsetGuardianForLogin", "Unset login account" },
+        { "RemoveOtherManagerInfo", "Remove device" },
+        { "ClaimToken", "Transfer" },
+        { "Approve", "Approve" },
+        { "Bingo", "Bingo" },
+        { "Play", "Play" }
+    };
+
     public static readonly List<string> DefaultTypes = new()
     {
         "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
@@ -24,7 +44,8 @@ public static class ActivityConstants
     public static readonly List<string> ContractTypes = new()
     {
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
-        "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Approve", "Bingo", "Play"
+        "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Approve", "Bingo",
+        "Play"
     };
 
     public static readonly List<string> ShowPriceTypes = new()
@@ -34,5 +55,10 @@ public static class ActivityConstants
         "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play"
     };
 
+    public static readonly List<string> ShowNftTypes = new()
+    {
+        "Transfer", "CrossChainTransfer"
+    };
+    
     public static readonly string Zero = "0";
 }
