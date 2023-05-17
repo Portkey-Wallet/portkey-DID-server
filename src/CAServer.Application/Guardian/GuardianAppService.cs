@@ -34,15 +34,14 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IGuardianProvider _guardianProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IAppleUserProvider _appleUserProvider;
+    private readonly IContractProvider _contractProvider;
+
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository,
-        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
-        ILogger<GuardianAppService> logger,
-        IOptions<ChainOptions> chainOptions,
-        IGuardianProvider guardianProvider,
-        IClusterClient clusterClient,
-        IAppleUserProvider appleUserProvider)
+        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
+        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
+        IAppleUserProvider appleUserProvider, IContractProvider contractProvider)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -51,6 +50,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
         _appleUserProvider = appleUserProvider;
+        _contractProvider = contractProvider;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -121,7 +121,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             try
             {
                 //var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
-                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
+                var holderInfo =
+                    await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash,
+                        chainInfo.Value);
                 if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
             }
             catch (Exception e)
@@ -228,9 +230,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             param.CaHash = null;
         }
 
-        var output =
-            await ContractHelper.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param, false,
-                chainInfo);
+        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param,
+            false,
+            chainInfo);
 
         return output;
     }
@@ -269,7 +271,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,"in GetUserExtraInfoAsync");
+            _logger.LogError(ex, "in GetUserExtraInfoAsync");
         }
 
         return new List<UserExtraInfoIndex>();

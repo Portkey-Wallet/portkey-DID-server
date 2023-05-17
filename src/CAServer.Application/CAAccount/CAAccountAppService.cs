@@ -29,16 +29,19 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly ILogger<CAAccountAppService> _logger;
     private readonly IDeviceAppService _deviceAppService;
     private readonly ChainOptions _chainOptions;
+    private readonly IContractProvider _contractProvider;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
-        ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions)
+        ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
+        IContractProvider contractProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _logger = logger;
         _deviceAppService = deviceAppService;
         _chainOptions = chainOptions.Value;
+        _contractProvider = contractProvider;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -51,8 +54,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.VerifierId, input.ChainId,
             input.Manager);
-        
-        registerDto.ManagerInfo.ExtraData = await _deviceAppService.EncryptExtraDataAsync(registerDto.ManagerInfo.ExtraData, grainId);
+
+        registerDto.ManagerInfo.ExtraData =
+            await _deviceAppService.EncryptExtraDataAsync(registerDto.ManagerInfo.ExtraData, grainId);
 
         var grain = _clusterClient.GetGrain<IRegisterGrain>(grainId);
         var result = await grain.RequestAsync(ObjectMapper.Map<RegisterDto, RegisterGrainDto>(registerDto));
@@ -119,26 +123,27 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var caHash = await GetCAHashAsync(input.ChainId, guardianGrainDto.IdentifierHash);
-        
+
         if (caHash != null)
         {
-            result.Data.ManagerInfo.ExtraData = await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
-
+            result.Data.ManagerInfo.ExtraData =
+                await _deviceAppService.EncryptExtraDataAsync(result.Data.ManagerInfo.ExtraData, caHash);
         }
-        
+
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data));
 
         return new AccountResultDto(recoveryDto.Id.ToString());
     }
-    
+
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
-        var output = await ContractHelper.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, new GetHolderInfoInput
-        {
-            LoginGuardianIdentifierHash = Hash.LoadFromHex(loginGuardianIdentifierHash)
-        }, false, chainInfo);
+        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo,
+            new GetHolderInfoInput
+            {
+                LoginGuardianIdentifierHash = Hash.LoadFromHex(loginGuardianIdentifierHash)
+            }, false, chainInfo);
 
         return output?.CaHash?.ToHex();
     }

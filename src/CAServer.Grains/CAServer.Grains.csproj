@@ -29,6 +29,7 @@
     <ItemGroup>
         <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
         <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
+        <ProjectReference Include="..\CAServer.Signature.HttpApi\CAServer.Signature.HttpApi.csproj" />
     </ItemGroup>
 
     <ItemGroup>

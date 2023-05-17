@@ -12,3 +12,8 @@ public class GrainOptions
     public int RetryTimes { get; set; }
     public long SafeBlockHeight { get; set; }
 }
+
+public class SignatureOptions
+{
+    public string BaseUrl { get; set; }
+}

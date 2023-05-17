@@ -15,10 +15,13 @@ namespace CAServer.Guardian.Provider;
 public class GuardianProvider : IGuardianProvider, ITransientDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly IContractProvider _contractProvider;
 
-    public GuardianProvider(IGraphQLHelper graphQlHelper)
+
+    public GuardianProvider(IGraphQLHelper graphQlHelper, IContractProvider contractProvider)
     {
         _graphQlHelper = graphQlHelper;
+        _contractProvider = contractProvider;
     }
 
     public async Task<GuardiansDto> GetGuardiansAsync(string loginGuardianIdentifierHash, string caHash)
@@ -60,10 +63,8 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
             param.CaHash = null;
         }
 
-        var output =
-            await ContractHelper.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param, false,
-                chainInfo);
-
+        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param,
+            false, chainInfo);
         return output;
     }
 }
