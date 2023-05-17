@@ -6,6 +6,9 @@ namespace CAServer.Phone.Dtos;
 
 public class PhoneInfoListDto
 {
+
+    public Dictionary<string, string> LocateData { get; set; }
+
     public List<Dictionary<string, string>> Data { get; set; }
 }
 
