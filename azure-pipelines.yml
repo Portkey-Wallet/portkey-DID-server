@@ -31,8 +31,8 @@ jobs:
 #       - script: PowerShell.exe -file build.ps1 --target=Upload-Coverage-Azure
 #         displayName: 'Upload data to Codecov'
   # All tasks on Linux
-  - job: build_all_linux
-    displayName: Build all tasks (Linux)
+#  - job: build_all_linux
+#    displayName: Build all tasks (Linux)
 #    timeoutInMinutes: 120
 #    pool:
 #      vmImage: ubuntu-latest
