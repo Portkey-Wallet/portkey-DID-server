@@ -72,7 +72,7 @@ jobs:
         displayName: 'Install .NET Core SDK'
         inputs:
           version: 7.0.x
-      - script: cd scripts && bash elasticsearch-linux.sh
+      - script: cd scripts && bash elasticsearch-macOS.sh
         displayName: 'Start an elasticsearch'
       - script: bash build.sh --target=Test-with-Codecov
         displayName: 'Build and Test'
