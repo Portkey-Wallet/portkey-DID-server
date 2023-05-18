@@ -212,31 +212,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
     }
 
-    private async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(
-        string guardianIdentifierHash,
-        string caHash,
-        ChainInfo chainInfo)
-    {
-        var param = new GetHolderInfoInput();
-
-        if (!string.IsNullOrWhiteSpace(caHash))
-        {
-            param.CaHash = Hash.LoadFromHex(caHash);
-            param.LoginGuardianIdentifierHash = null;
-        }
-        else
-        {
-            param.LoginGuardianIdentifierHash = AElf.Types.Hash.LoadFromHex(guardianIdentifierHash);
-            param.CaHash = null;
-        }
-
-        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param,
-            false,
-            chainInfo);
-
-        return output;
-    }
-
     private async Task<Dictionary<string, string>> GetIdentifiersAsync(List<string> identifierHashList)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };

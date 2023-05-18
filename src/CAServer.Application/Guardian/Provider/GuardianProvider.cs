@@ -9,6 +9,7 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Portkey.Contracts.CA;
 using Volo.Abp.DependencyInjection;
+using MethodName = CAServer.Common.MethodName;
 
 namespace CAServer.Guardian.Provider;
 

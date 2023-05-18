@@ -17,6 +17,7 @@ using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
+using MethodName = CAServer.Common.MethodName;
 
 namespace CAServer.CAAccount;
 

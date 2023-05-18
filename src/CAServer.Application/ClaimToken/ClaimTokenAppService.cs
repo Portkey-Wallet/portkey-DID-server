@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Contracts.MultiToken;
 using CAServer.Cache;
+using AElf.Types;
 using CAServer.ClaimToken.Dtos;
 using CAServer.Common;
 using CAServer.Options;
@@ -49,7 +51,15 @@ public class ClaimTokenAppService : IClaimTokenAppService, ISingletonDependency
         }
 
         var chainId = _claimTokenInfoOption.ChainId;
-        var getBalanceOutput = await _contractProvider.GetBalanceAsync(chainId, address, claimTokenRequestDto.Symbol);
+
+        var param = new GetBalanceInput
+        {
+            Symbol = claimTokenRequestDto.Symbol,
+            Owner = Address.FromBase58(address)
+        };
+
+        var getBalanceOutput =
+            await _contractProvider.CallTransactionAsync<GetBalanceOutput>(MethodName.GetBalance, param, true, chainId);
         if (getBalanceOutput.Balance < _claimTokenInfoOption.ClaimTokenAmount)
         {
             await _contractProvider.ClaimTokenAsync(chainId, claimTokenRequestDto.Symbol);
