@@ -18,6 +18,12 @@ public partial class PhoneInfoServiceTests
         var phoneInfo = new List<PhoneInfoItem>();
         phoneInfo.Add(phoneInfoItem);
         phoneInfoOptions.PhoneInfo = phoneInfo;
+        phoneInfoOptions.Default = new PhoneInfoItem
+        {
+            Country = "Singapore",
+            Code = "65",
+            Iso = "SG"
+        };
         return new OptionsWrapper<PhoneInfoOptions>(
             phoneInfoOptions);
     }
