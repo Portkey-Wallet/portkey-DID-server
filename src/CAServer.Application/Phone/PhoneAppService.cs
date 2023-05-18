@@ -56,11 +56,11 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
             allPhoneCode.Add(_phoneInfoOptions.PhoneInfo[i].Code, _phoneInfoOptions.PhoneInfo[i].Iso);
         }
 
-        // default Singapore
+        // default value
         Dictionary<string, string> locate = new Dictionary<string, string>();
-        locate.Add("country", "Singapore");
-        locate.Add("code", "65");
-        locate.Add("iso", "SG");
+        locate.Add("country",_phoneInfoOptions.Default.Country);
+        locate.Add("code",_phoneInfoOptions.Default.Code);
+        locate.Add("iso",_phoneInfoOptions.Default.Iso);
         
         try
         {
@@ -76,7 +76,7 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
         }
         catch (Exception e)
         {
-            Logger.LogWarning("GetIpInfoAsync error {}", e.Message);
+            Logger.LogError(e, "GetIpInfoAsync error {}", e.Message);
         }
     
         var phoneInfoList = new PhoneInfoListDto
