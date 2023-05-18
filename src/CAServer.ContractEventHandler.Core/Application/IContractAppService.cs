@@ -691,7 +691,6 @@ public class ContractAppService : IContractAppService
         foreach (var info in _chainOptions.ChainInfos)
         {
             var chainId = info.Key;
-            await ClearGrainAsync(chainId);
             var result = dict.TryGetValue(chainId, out var height);
             if (!result)
             {
@@ -708,11 +707,5 @@ public class ContractAppService : IContractAppService
                 await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height);
             }
         }
-    }
-
-    private async Task ClearGrainAsync(string chainId)
-    {
-        await _recordsBucketContainer.SetValidatedRecordsAsync(chainId, new List<SyncRecord>());
-        await _recordsBucketContainer.SetToBeValidatedRecordsAsync(chainId, new List<SyncRecord>());
     }
 }
