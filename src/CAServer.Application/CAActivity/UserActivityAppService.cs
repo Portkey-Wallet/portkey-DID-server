@@ -46,15 +46,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     }
 
 
-    public async Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetActivitiesRequestDto request)
+    public async Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetTwoCaTransactionRequestDto request)
     {
-        var filterTypes = FilterTypes(request.TransactionTypes);
         var addresses = request.CaAddresses ?? new List<string>();
-        if (addresses.IsNullOrEmpty())
-        {
-            addresses.AddRange(request.CaAddressInfos.Select(address => address.CaAddress));
-        }
-
         try
         {
             if (addresses.Count != 2)
@@ -63,8 +57,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             }
 
             var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(addresses[0], addresses[1],
-                request.ChainId,
-                request.Symbol, filterTypes, request.SkipCount, request.MaxResultCount);
+                request.ChainId, request.Symbol, request.SkipCount, request.MaxResultCount);
 
             var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
             return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,

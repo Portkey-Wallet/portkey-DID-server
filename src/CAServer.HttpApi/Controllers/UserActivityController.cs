@@ -23,7 +23,7 @@ public class UserActivityController
     }
 
     [HttpPost("transactions")]
-    public async Task<GetActivitiesDto> GetTransactionsAsync(GetActivitiesRequestDto requestDto)
+    public async Task<GetActivitiesDto> GetTransactionsAsync(GetTwoCaTransactionRequestDto requestDto)
     {
         return await _userActivityAppService.GetTwoCaTransactionsAsync(requestDto);
     }

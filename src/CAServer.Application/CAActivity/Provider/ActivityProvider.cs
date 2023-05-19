@@ -31,8 +31,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
 
 
     public async Task<TransactionsDto> GetTwoCaTransactionsAsync(string caHolderAddr1, string caHolderAddr2,
-        string inputChainId,
-        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
+        string inputChainId, string symbolOpt, int inputSkipCount, int inputMaxResultCount)
     {
         return await _graphQlHelper.QueryAsync<TransactionsDto>(new GraphQLRequest
         {

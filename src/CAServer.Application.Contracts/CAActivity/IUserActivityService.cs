@@ -8,7 +8,7 @@ namespace CAServer.CAActivity;
 
 public interface IUserActivityAppService:IApplicationService
 {
-    Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetActivitiesRequestDto request);
+    Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetTwoCaTransactionRequestDto request);
     Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto request);
     Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request);
 }
