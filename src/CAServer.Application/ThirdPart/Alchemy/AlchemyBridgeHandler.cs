@@ -3,9 +3,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Hubs;
 using CAServer.Message.Etos;
+using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -19,22 +21,22 @@ public class AlchemyBridgeHandler : IDistributedEventHandler<GetAlchemyTargetAdd
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly ILogger<AlchemyBridgeHandler> _logger;
     private readonly IObjectMapper _objectMapper;
-    private readonly TimeSpan _delayTimeout = TimeSpan.FromSeconds(1);
-    private readonly TimeSpan _cancelTimeout = TimeSpan.FromMinutes(5);
+    private readonly ThirdPartOptions _thirdPartOptions;
 
 
     public AlchemyBridgeHandler(IHubProvider caHubProvider, IThirdPartOrderProvider thirdPartOrderProvider,
-        ILogger<AlchemyBridgeHandler> logger, IObjectMapper objectMapper)
+        ILogger<AlchemyBridgeHandler> logger, IObjectMapper objectMapper, IOptions<ThirdPartOptions> merchantOptions)
     {
         _logger = logger;
         _caHubProvider = caHubProvider;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
+        _thirdPartOptions = merchantOptions.Value;
     }
 
     public async Task HandleEventAsync(GetAlchemyTargetAddressEto eventData)
     {
-        CancellationTokenSource cts = new CancellationTokenSource(_cancelTimeout);
+        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.bridge.Timeout);
 
         while (!cts.IsCancellationRequested)
         {
@@ -76,7 +78,7 @@ public class AlchemyBridgeHandler : IDistributedEventHandler<GetAlchemyTargetAdd
 
             _logger.LogWarning("Get alchemy order {orderId} target address failed, wait for next time.",
                 eventData.OrderId);
-            await Task.Delay(_delayTimeout);
+            await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.bridge.Delay));
         }
 
         cts.Cancel();
