@@ -54,15 +54,16 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
             phoneInfoDict.Add("code", _phoneInfoOptions.PhoneInfo[i].Code);
             phoneInfoDict.Add("iso", _phoneInfoOptions.PhoneInfo[i].Iso);
             phoneInfo.Add(phoneInfoDict);
+
             allPhoneCode.Add(_phoneInfoOptions.PhoneInfo[i].Code, _phoneInfoOptions.PhoneInfo[i].Iso);
         }
 
         // default value
         Dictionary<string, string> locate = new Dictionary<string, string>();
+
         locate.Add("country", _phoneInfoOptions.Default.Country);
         locate.Add("code", _phoneInfoOptions.Default.Code);
         locate.Add("iso", _phoneInfoOptions.Default.Iso);
-
         try
         {
             // NOTE! The [code] and [iso] attributes are DIFFERENT in [IpInfoResultDto] and [PhoneInfoListDto].
@@ -79,7 +80,6 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
         {
             Logger.LogError(e, "GetIpInfoAsync error {}", e.Message);
         }
-
         var phoneInfoList = new PhoneInfoListDto
         {
             Data = phoneInfo,
@@ -88,4 +88,5 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
 
         return phoneInfoList;
     }
+
 }
