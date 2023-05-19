@@ -71,7 +71,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions")); 
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
-        Configure<SignatureOptions>(configuration.GetSection("SignatureServer"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

@@ -11,21 +11,16 @@ using Volo.Abp.Modularity;
 namespace CAServer.Signature.Test;
 
 [DependsOn(
+    typeof(CAServerSignatureHttpApiModule),
     typeof(CAServerSignatureHttpApiModule)
 )]
-// [DependsOn(
-//     typeof(CAServerApplicationModule),
-//     typeof(AbpEventBusModule),
-//     typeof(CAServerGrainTestModule),
-//     typeof(CAServerDomainTestModule)
-// )]
 public class CAServerSignatureHttpApiTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         // Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerSignatureHttpApiModule>(); });
         byte[] privateKeyBytes = Encoding.UTF8.GetBytes("test.1234567890.key");
-        context.Services.Configure<SignatureOptions>(option =>
+        context.Services.Configure<KeyPairInfoOptions>(option =>
         {
             option.PrivateKeyDictionary = new Dictionary<string, string>
             {

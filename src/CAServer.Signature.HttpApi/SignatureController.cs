@@ -17,14 +17,14 @@ namespace CAServer.Signature;
 public class SignatureController : CAServerSignatureController
 {
     private readonly ILogger<SignatureController> _logger;
-    private readonly SignatureOptions _signatureOptions;
+    private readonly KeyPairInfoOptions _keyPairInfoOptions;
 
 
     public SignatureController(ILogger<SignatureController> logger,
-        IOptions<SignatureOptions> signatureOptions)
+        IOptions<KeyPairInfoOptions> signatureOptions)
     {
         _logger = logger;
-        _signatureOptions = signatureOptions.Value;
+        _keyPairInfoOptions = signatureOptions.Value;
     }
 
     [HttpPost]
@@ -50,9 +50,9 @@ public class SignatureController : CAServerSignatureController
 
     private byte[] GetPrivateKeyByPublicKey(string publicKey)
     {
-        if (_signatureOptions.PrivateKeyDictionary.TryGetValue(publicKey, out string _))
+        if (_keyPairInfoOptions.PrivateKeyDictionary.TryGetValue(publicKey, out string _))
         {
-            return Encoding.UTF8.GetBytes(_signatureOptions.PrivateKeyDictionary[publicKey]);
+            return Encoding.UTF8.GetBytes(_keyPairInfoOptions.PrivateKeyDictionary[publicKey]);
         }
 
         _logger.LogError("Publish key {publishKey} not exist!", publicKey);

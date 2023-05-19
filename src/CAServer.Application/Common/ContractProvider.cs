@@ -14,7 +14,6 @@ using Microsoft.Extensions.Options;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.TokenClaim;
 using Volo.Abp.DependencyInjection;
-using GetBalanceInput = AElf.Contracts.MultiToken.GetBalanceInput;
 using TransferInput = AElf.Contracts.MultiToken.TransferInput;
 using ChainInfo = CAServer.Grains.Grain.ApplicationHandler.ChainInfo;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
@@ -40,7 +39,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ILogger<ContractProvider> _logger;
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
     private readonly ISignatureProvider _signatureProvider;
-    private const string CommonPrivateKeyForCallTx = "09da44778f8db2e602fb484334f37df19e221c84c4582ce5b7770ccfbc3ddbef";
+    // CommonPrivateKeyForCallTx: Just for query, no assets and no permissions
+    private const string CommonPrivateKeyForCallTx = "5ed86f0a0203a1b15410834a01fce0df0c2bd8b1b7f6ccc5f165cd97f8978517";
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption)

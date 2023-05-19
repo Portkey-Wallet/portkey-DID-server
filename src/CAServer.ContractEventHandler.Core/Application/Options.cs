@@ -41,8 +41,3 @@ public class ContractSyncOptions
     public int Sync { get; set; }
     public int AutoReceive { get; set; }
 }
-
-public class SignatureOptions
-{
-    public string BaseUrl { get; set; }
-}

@@ -88,15 +88,20 @@ public class SignatureServerHttpApiHostModule : AbpModule
 
         app.UseAbpRequestLocalization();
         app.UseAuthorization();
-        app.UseSwagger();
-        app.UseAbpSwaggerUI(options =>
-        {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Support APP API");
 
-            var configuration = context.GetConfiguration();
-            options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
-            options.OAuthScopes("SignatureServer");
-        });
+        if (env.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseAbpSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Support APP API");
+
+                // var configuration = context.GetConfiguration();
+                // options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
+                // options.OAuthScopes("SignatureServer");
+            });
+        }
+
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();

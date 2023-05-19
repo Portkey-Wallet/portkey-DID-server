@@ -14,6 +14,7 @@ using CAServer.MongoDB;
 using CAServer.Localization;
 using CAServer.Model;
 using CAServer.MultiTenancy;
+using CAServer.Signature;
 using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.Account;
@@ -51,7 +52,8 @@ namespace CAServer;
     typeof(CAServerDomainModule),
     typeof(CAServerApplicationContractsModule),
     typeof(AbpAspNetCoreSerilogModule),
-    typeof(AbpEventBusRabbitMqModule)
+    typeof(AbpEventBusRabbitMqModule),
+    typeof(CAServerSignatureModule)
 )]
 public class CAServerAuthServerModule : AbpModule
 {
@@ -90,20 +92,19 @@ public class CAServerAuthServerModule : AbpModule
     {
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         var configuration = context.Services.GetConfiguration();
-        
+
         Configure<AbpUnitOfWorkDefaultOptions>(options =>
         {
             options.TransactionBehavior = UnitOfWorkTransactionBehavior.Disabled;
         });
-        
-        context.Services.Configure<Signature.SignatureOptions>(configuration.GetSection("SignatureServer"));
+
         context.Services.Configure<GraphQLOption>(configuration.GetSection("GraphQL"));
         context.Services.Configure<ChainOptions>(configuration.GetSection("Chains"));
         context.Services.Configure<TimeRangeOption>(option =>
         {
             option.TimeRange = Convert.ToInt32(configuration["TimeRange"]);
         });
-        
+
         Configure<AbpOpenIddictExtensionGrantsOptions>(options =>
         {
             options.Grants.Add("signature", new SignatureGrantHandler());
@@ -149,7 +150,7 @@ public class CAServerAuthServerModule : AbpModule
 
         Configure<AbpAuditingOptions>(options =>
         {
-            options.IsEnabled = false; 
+            options.IsEnabled = false;
             //options.IsEnabledForGetRequests = true;
             //options.ApplicationName = "AuthServer";
         });

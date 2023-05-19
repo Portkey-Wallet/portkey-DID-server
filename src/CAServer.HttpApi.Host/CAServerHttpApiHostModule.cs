@@ -40,7 +40,6 @@ using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
 using Volo.Abp.VirtualFileSystem;
-using SignatureOptions = CAServer.Signature.SignatureOptions;
 
 namespace CAServer;
 
@@ -55,7 +54,8 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
-    typeof(AbpSwashbuckleModule)
+    typeof(AbpSwashbuckleModule),
+    typeof(CAServerSignatureModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
 {
@@ -75,7 +75,6 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
         ConfigureHub(context, configuration);
-        ConfigureSignature(context, configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
@@ -257,14 +256,6 @@ public class CAServerHttpApiHostModule : AbpModule
             .Connect(configuration["Redis:Configuration"]);
         context.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
         Configure<HubCacheOptions>(configuration.GetSection("Hub:Configuration"));
-    }
-
-    private void ConfigureSignature(
-        ServiceConfigurationContext context,
-        IConfiguration configuration)
-    {
-        context.Services.AddSingleton<ISignatureProvider>();
-        Configure<SignatureOptions>(configuration.GetSection("SignatureServer:Configuration"));
     }
 
     private void ConfigureGraphQl(ServiceConfigurationContext context,
