@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.CAActivity.Dtos;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -29,23 +30,22 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
     }
 
 
-    public async Task<IndexerTransactions> GetTwoCaTransactionsAsync(string caHolderAddr1, string caHolderAddr2, string inputChainId,
+    public async Task<TransactionsDto> GetTwoCaTransactionsAsync(string caHolderAddr1, string caHolderAddr2,
+        string inputChainId,
         string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
     {
-        return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
+        return await _graphQlHelper.QueryAsync<TransactionsDto>(new GraphQLRequest
         {
             Query = @"
-			    query (
-                    $chainId:String,$symbol:String,$caHolderAddr1:String,$caHolderAddr2:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!
-                ) {
-                    twoCaHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,fromAddress:$caHolderAddr1,toAddress:$caHolderAddr2,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+			    query ($chainId:String,$symbol:String,$fromAddress:String,$toAddress:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!){
+                    twoCaHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,fromAddress:$fromAddress,toAddress:$toAddress,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                     data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount}
                 }",
             Variables = new
             {
-                caHolderAddr1 = "o7ktM8LctbHnVBWB9gXFdEtP2TSmB8XzmveeSJ638Ba8MFUNB", caHolderAddr2 = "p2EQuhiCXEySfdqu7BDf3dBKnZEbpjUWydnGCPakReTwvJLWK", 
-                chainId = "", symbol = "",
-                skipCount = 0, maxResultCount = 10,
+                fromAddress = caHolderAddr1, toAddress = caHolderAddr2,
+                chainId = inputChainId, symbol = symbolOpt,
+                skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
                 startBlockHeight = 0, endBlockHeight = 0
             }
         });

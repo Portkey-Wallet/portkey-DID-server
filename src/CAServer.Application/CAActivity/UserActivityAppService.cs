@@ -49,7 +49,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     public async Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetActivitiesRequestDto request)
     {
         var filterTypes = FilterTypes(request.TransactionTypes);
-        var addresses = request.CaAddresses?? new List<string>();
+        var addresses = request.CaAddresses ?? new List<string>();
         if (addresses.IsNullOrEmpty())
         {
             addresses.AddRange(request.CaAddressInfos.Select(address => address.CaAddress));
@@ -61,8 +61,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 throw new UserFriendlyException("Requires at least two parameters");
             }
-            var transactions = await _activityProvider.GetTwoCaTransactionsAsync(addresses[0], addresses[1], request.ChainId,
+
+            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(addresses[0], addresses[1],
+                request.ChainId,
                 request.Symbol, filterTypes, request.SkipCount, request.MaxResultCount);
+
+            var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
             return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
                 request.Height, needMap: true);
         }

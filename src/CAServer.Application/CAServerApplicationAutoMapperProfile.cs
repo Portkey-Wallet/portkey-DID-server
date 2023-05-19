@@ -273,8 +273,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<NotifyGrainDto, NotifyEto>();
         CreateMap<NotifyGrainDto, PullNotifyResultDto>();
         CreateMap<ScanLoginDto, ScanLoginEto>().BeforeMap((src, dest) => { dest.Message = "Login Successful"; });
-        
+
         CreateMap<CreateUserEto, CAHolderIndex>();
         CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoResultDto>();
+        CreateMap<TransactionsDto, IndexerTransactions>()
+            .ForMember(t => t.CaHolderTransaction, m => m.MapFrom(f => f.TwoCaHolderTransaction));
     }
 }
