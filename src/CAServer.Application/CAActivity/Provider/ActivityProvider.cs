@@ -42,6 +42,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
                 }",
             Variables = new
             {
+                // The two address variables do not have any distinction between "from" and "to".
                 fromAddress = caHolderAddr1, toAddress = caHolderAddr2,
                 chainId = inputChainId, symbol = symbolOpt,
                 skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
