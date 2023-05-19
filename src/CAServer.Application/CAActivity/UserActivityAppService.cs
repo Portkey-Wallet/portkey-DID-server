@@ -45,6 +45,35 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _imageProcessProvider = imageProcessProvider;
     }
 
+
+    public async Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetTwoCaTransactionRequestDto request)
+    {
+        var addresses = request.CaAddresses ?? new List<string>();
+        try
+        {
+            if (addresses.Count != 2)
+            {
+                throw new UserFriendlyException("Requires at least two parameters");
+            }
+
+            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(addresses[0], addresses[1],
+                request.ChainId, request.Symbol, request.SkipCount, request.MaxResultCount);
+
+            var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
+            return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
+                request.Height, needMap: true);
+        }
+        catch (UserFriendlyException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetTwoCaTransactionsAsync error, addresses={addresses}", string.Join(",", addresses));
+            throw new UserFriendlyException("Internal service error, place try again later.");
+        }
+    }
+
     public async Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto request)
     {
         try
@@ -60,7 +89,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, request.ChainId,
                 request.Symbol, filterTypes, request.SkipCount, request.MaxResultCount);
             return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
-                request.Height);
+                request.Height, needMap: true);
         }
         catch (Exception e)
         {
@@ -71,9 +100,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     private List<string> FilterTypes(IEnumerable<string> reqList)
     {
-        if (reqList == null)
+        if (reqList == null || reqList.Count() == 0)
         {
-            return ActivityConstants.DefaultTypes;
+            return ActivityConstants.TypeMap.Keys.ToList();
         }
 
         var ans = reqList.Where(e => ActivityConstants.AllSupportTypes.Contains(e)).ToList();
@@ -160,7 +189,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     }
 
     private async Task<GetActivitiesDto> IndexerTransaction2Dto(List<string> caAddresses,
-        IndexerTransactions indexerTransactions, [CanBeNull] string chainId, int weidth, int height)
+        IndexerTransactions indexerTransactions, [CanBeNull] string chainId, int weidth, int height,
+        bool needMap = false)
     {
         var result = new GetActivitiesDto
         {
@@ -256,7 +286,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 dto.IsDelegated = true;
             }
-            
+
+            if (needMap)
+            {
+                dto.TransactionName = dto.NftInfo != null && string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
+                                      ActivityConstants.ShowNftTypes.Contains(dto.TransactionType)
+                    ? ActivityConstants.TypeMap[dto.TransactionType] + " NFT"
+                    : ActivityConstants.TypeMap[dto.TransactionType];
+            }
+
             getActivitiesDto.Add(dto);
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.CAActivity.Dtos;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -26,6 +27,28 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         _graphQlHelper = graphQlHelper;
         _caHolderIndexRepository = caHolderIndexRepository;
         _chainOptions = chainOptions.Value;
+    }
+
+
+    public async Task<TransactionsDto> GetTwoCaTransactionsAsync(string caHolderAddr1, string caHolderAddr2,
+        string inputChainId, string symbolOpt, int inputSkipCount, int inputMaxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<TransactionsDto>(new GraphQLRequest
+        {
+            Query = @"
+			    query ($chainId:String,$symbol:String,$fromAddress:String,$toAddress:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!){
+                    twoCaHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,fromAddress:$fromAddress,toAddress:$toAddress,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount}
+                }",
+            Variables = new
+            {
+                // The two address variables do not have any distinction between "from" and "to".
+                fromAddress = caHolderAddr1, toAddress = caHolderAddr2,
+                chainId = inputChainId, symbol = symbolOpt,
+                skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                startBlockHeight = 0, endBlockHeight = 0
+            }
+        });
     }
 
     public async Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> caAddressInfos, string inputChainId,
