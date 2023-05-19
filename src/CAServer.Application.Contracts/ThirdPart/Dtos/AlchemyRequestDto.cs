@@ -72,5 +72,12 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
                 $"Invalid order status :{Status}."
             );
         }
+
+        if (string.IsNullOrWhiteSpace(Signature))
+        {
+            yield return new ValidationResult(
+                $"Invalid order signature :{Signature}."
+            );
+        }
     }
 }

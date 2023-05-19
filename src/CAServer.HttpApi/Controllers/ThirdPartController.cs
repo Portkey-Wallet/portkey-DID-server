@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using CAServer.Message;
+using CAServer.Message.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -56,9 +58,11 @@ public class ThirdPartOrderController : CAServerController
 public class AlchemyController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
+    private readonly IMessageAppService _messageAppService;
 
-    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService)
+    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService, IMessageAppService messageAppService)
     {
+        _messageAppService = messageAppService;
         _alchemyServiceAppService = alchemyServiceAppService;
     }
 
@@ -92,5 +96,11 @@ public class AlchemyController : CAServerController
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+    }
+
+    [HttpPost("targetAddress")]
+    public async Task GetAlchemyTargetAddress(GetAlchemyTargetAddressDto request)
+    {
+        await _messageAppService.GetAlchemyTargetAddress(request);
     }
 }

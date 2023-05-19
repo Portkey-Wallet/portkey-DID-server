@@ -21,4 +21,9 @@ public class MessageAppService : CAServerAppService, IMessageAppService
     {
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ScanLoginDto, ScanLoginEto>(request));
     }
+
+    public async Task GetAlchemyTargetAddress(GetAlchemyTargetAddressDto request)
+    {
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<GetAlchemyTargetAddressDto, GetAlchemyTargetAddressEto>(request));
+    }
 }

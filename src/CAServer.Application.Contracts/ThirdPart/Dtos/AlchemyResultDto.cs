@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace CAServer.ThirdPart.Dtos;
@@ -76,4 +77,10 @@ public class AlchemyOrderQuoteDataDto
 public class AlchemySignatureResultDto : AlchemyBaseResponseDto
 {
     public string Signature { get; set; }
+}
+
+public class AlchemyTargetAddressDto
+{
+    public Guid OrderId { get; set; }
+    public string TargetAddress { get; set; }
 }

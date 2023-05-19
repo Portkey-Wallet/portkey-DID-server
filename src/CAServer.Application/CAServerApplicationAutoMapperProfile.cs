@@ -265,6 +265,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType));
+        CreateMap<OrderDto, AlchemyTargetAddressDto>()
+            .ForMember(t => t.OrderId, m => m.MapFrom(f => f.Id))
+            .ForMember(t => t.TargetAddress, m => m.MapFrom(f => f.Address));
+        CreateMap<GetAlchemyTargetAddressDto, GetAlchemyTargetAddressEto>();
 
         CreateMap<CreateNotifyDto, NotifyGrainDto>();
         CreateMap<UpdateNotifyDto, NotifyGrainDto>();
@@ -273,7 +277,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<NotifyGrainDto, NotifyEto>();
         CreateMap<NotifyGrainDto, PullNotifyResultDto>();
         CreateMap<ScanLoginDto, ScanLoginEto>().BeforeMap((src, dest) => { dest.Message = "Login Successful"; });
-        
+
         CreateMap<CreateUserEto, CAHolderIndex>();
         CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoResultDto>();
     }

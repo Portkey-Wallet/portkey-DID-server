@@ -1,11 +1,15 @@
 using System;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -19,12 +23,13 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
-
+    private readonly AlchemyOptions _alchemyOptions;
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
         ILogger<AlchemyOrderAppService> logger,
+        IOptions<ThirdPartOptions> merchantOptions,
         IObjectMapper objectMapper)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
@@ -32,10 +37,26 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _clusterClient = clusterClient;
         _objectMapper = objectMapper;
         _logger = logger;
+        _alchemyOptions = merchantOptions.Value.alchemy;
     }
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
+        //callback signature format(appId,appSecret,appId+orderNo+crypto+network+address)
+        var callbackSignature = $"{_alchemyOptions.AppId}{input.OrderNo}{input.Crypto}{input.Network}{input.Address}";
+        if (!CheckSignature(input.Signature, callbackSignature, out var expectedSignature))
+        {
+            _logger.LogWarning(
+                "This callback verification failed, order id :{OrderNo}, and the signature :{Signature}",
+                input.OrderNo, input.Signature);
+            _logger.LogDebug("{OrderNo}, expected signature:{expectedSignature}", input.OrderNo, expectedSignature);
+            return new BasicOrderResult()
+            {
+                Message =
+                    $"This callback verification failed, order id :{input.OrderNo}, and the signature is:{input.Signature}"
+            };
+        }
+
         Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
         var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
         if (esOrderData == null || input.MerchantOrderNo != esOrderData.Id.ToString())
@@ -54,13 +75,13 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         dataToBeUpdated.Id = grainId;
         dataToBeUpdated.UserId = esOrderData.UserId;
         dataToBeUpdated.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
-        _logger.LogDebug($"This alchemy order {grainId} will be updated.");
+        _logger.LogDebug("This alchemy order {grainId} will be updated.", grainId);
 
         var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
 
         if (!result.Success)
         {
-            _logger.LogError($"Update user order fail, third part order number: {input.MerchantOrderNo}");
+            _logger.LogError("Update user order fail, third part order number: {orderId}", input.MerchantOrderNo);
             return new BasicOrderResult() { Message = $"Update order failed,{result.Message}" };
         }
 
@@ -82,5 +103,20 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
 
         return orderGrainData;
+    }
+
+    private bool CheckSignature(string signature, string requestSignature, out string expectedSignature)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(_alchemyOptions.AppId + _alchemyOptions.AppSecret + requestSignature);
+        byte[] hashBytes = SHA1.Create().ComputeHash(bytes);
+
+        StringBuilder sb = new StringBuilder();
+        foreach (var t in hashBytes)
+        {
+            sb.Append(t.ToString("X2"));
+        }
+
+        expectedSignature = sb.ToString().ToLower();
+        return sb.ToString().ToLower() == signature;
     }
 }
