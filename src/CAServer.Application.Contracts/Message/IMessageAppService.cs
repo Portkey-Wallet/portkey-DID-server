@@ -6,5 +6,5 @@ namespace CAServer.Message;
 public interface IMessageAppService
 {
     Task ScanLoginSuccess(ScanLoginDto request);
-    Task GetAlchemyTargetAddress(GetAlchemyTargetAddressDto request);
+    Task AlchemyTargetAddress(AlchemyTargetAddressDto request);
 }

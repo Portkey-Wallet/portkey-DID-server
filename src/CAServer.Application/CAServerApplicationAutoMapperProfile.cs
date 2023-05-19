@@ -41,6 +41,7 @@ using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using MongoDB.Bson.Serialization.IdGenerators;
 using Portkey.Contracts.CA;
+using AlchemyTargetAddressDto = CAServer.Message.Dtos.AlchemyTargetAddressDto;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
 using GuardianType = CAServer.Account.GuardianType;
@@ -265,10 +266,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType));
-        CreateMap<OrderDto, AlchemyTargetAddressDto>()
+        CreateMap<OrderDto, ThirdPart.Dtos.AlchemyTargetAddressDto>()
             .ForMember(t => t.OrderId, m => m.MapFrom(f => f.Id))
             .ForMember(t => t.TargetAddress, m => m.MapFrom(f => f.Address));
-        CreateMap<GetAlchemyTargetAddressDto, GetAlchemyTargetAddressEto>();
+        CreateMap<AlchemyTargetAddressDto, AlchemyTargetAddressEto>();
 
         CreateMap<CreateNotifyDto, NotifyGrainDto>();
         CreateMap<UpdateNotifyDto, NotifyGrainDto>();

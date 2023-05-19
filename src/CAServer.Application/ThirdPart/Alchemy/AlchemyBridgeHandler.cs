@@ -15,7 +15,7 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Alchemy;
 
-public class AlchemyBridgeHandler : IDistributedEventHandler<GetAlchemyTargetAddressEto>, ITransientDependency
+public class AlchemyBridgeHandler : IDistributedEventHandler<AlchemyTargetAddressEto>, ITransientDependency
 {
     private readonly IHubProvider _caHubProvider;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
@@ -34,9 +34,9 @@ public class AlchemyBridgeHandler : IDistributedEventHandler<GetAlchemyTargetAdd
         _thirdPartOptions = merchantOptions.Value;
     }
 
-    public async Task HandleEventAsync(GetAlchemyTargetAddressEto eventData)
+    public async Task HandleEventAsync(AlchemyTargetAddressEto eventData)
     {
-        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.bridge.Timeout);
+        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.timer.Timeout);
 
         while (!cts.IsCancellationRequested)
         {
@@ -44,7 +44,7 @@ public class AlchemyBridgeHandler : IDistributedEventHandler<GetAlchemyTargetAdd
             {
                 Guid grainId = ThirdPartHelper.GetOrderId(eventData.OrderId);
                 var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-                if (esOrderData == null || eventData.OrderId != esOrderData.Id.ToString())
+                if (esOrderData == null)
                 {
                     _logger.LogError("This order {OrderId} not exists in the es.", eventData.OrderId);
                     break;
@@ -78,7 +78,7 @@ public class AlchemyBridgeHandler : IDistributedEventHandler<GetAlchemyTargetAdd
 
             _logger.LogWarning("Get alchemy order {orderId} target address failed, wait for next time.",
                 eventData.OrderId);
-            await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.bridge.Delay));
+            await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.Delay));
         }
 
         cts.Cancel();
