@@ -42,8 +42,8 @@ public class ThirdPartyAuthController : CAServerController
         return Redirect($"{_appleAuthOptions.BingoRedirectUrl}?id_token={appleAuthDto.Id_token}");
     }
 
-    [HttpPost("googleAuth/Receive")]
-    public async Task<IActionResult> GoogleReceiveAsync([FromRoute] GoogleAuthDto googleAuthDto)
+    [HttpGet("googleAuth/receive")]
+    public async Task<IActionResult> GoogleReceiveAsync([FromQuery] GoogleAuthDto googleAuthDto)
     {
         var result = await _googleAppService.ReceiveAsync(googleAuthDto);
         return Content(result);
