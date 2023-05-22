@@ -1,6 +1,6 @@
 namespace CAServer.Signature;
 
-public class SignatureOptions
+public class SignatureServerOptions
 {
     public string BaseUrl { get; set; }
 }

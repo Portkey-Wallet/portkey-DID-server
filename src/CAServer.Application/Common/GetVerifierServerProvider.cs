@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Settings;
 using CAServer.Verifier;
 using Google.Protobuf.WellKnownTypes;
@@ -72,8 +73,8 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
 
     private async Task<GuardianVerifierServerCacheItem> GetVerifierServerListAsync(string chainId)
     {
-        var result = await _contractProvider.CallTransactionAsync<GetVerifierServersOutput>(MethodName.GetHolderInfo,
-            new Empty(), false, chainId);
+        var result = await _contractProvider.CallTransactionAsync<GetVerifierServersOutput>(
+            AElfContractMethodName.GetVerifierServers, new Empty(), false, chainId);
 
         if (null == result)
         {

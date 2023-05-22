@@ -13,6 +13,6 @@ public class CAServerSignatureHttpApiModule : AbpModule
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerSignatureHttpApiModule>(); });
         var configuration = context.Services.GetConfiguration();
-        Configure<KeyPairInfoOptions>(configuration.GetSection("Signature"));
+        Configure<KeyPairInfoOptions>(configuration.GetSection("KeyPairInfo"));
     }
 }

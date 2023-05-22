@@ -54,8 +54,7 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
-    typeof(AbpSwashbuckleModule),
-    typeof(CAServerSignatureModule)
+    typeof(AbpSwashbuckleModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
 {

@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
@@ -9,7 +10,6 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Portkey.Contracts.CA;
 using Volo.Abp.DependencyInjection;
-using MethodName = CAServer.Common.MethodName;
 
 namespace CAServer.Guardian.Provider;
 
@@ -46,10 +46,8 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
         });
     }
 
-    public async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(
-        string guardianIdentifierHash,
-        string caHash,
-        ChainInfo chainInfo)
+    public async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(string guardianIdentifierHash, string caHash,
+        string chainId)
     {
         var param = new GetHolderInfoInput();
 
@@ -64,8 +62,8 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
             param.CaHash = null;
         }
 
-        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param,
-            false, chainInfo);
+        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(AElfContractMethodName.GetHolderInfo, param,
+            false, chainId);
         return output;
     }
 }

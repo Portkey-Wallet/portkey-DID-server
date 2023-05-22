@@ -12,13 +12,13 @@ public interface ISignatureProvider
 
 public class SignatureProvider : ISignatureProvider
 {
-    private readonly SignatureOptions _signatureOptions;
+    private readonly SignatureServerOptions _signatureServerOptions;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public SignatureProvider(IOptions<SignatureOptions> signatureOptions, IHttpClientFactory httpClientFactory)
+    public SignatureProvider(IOptions<SignatureServerOptions> signatureOptions, IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
-        _signatureOptions = signatureOptions.Value;
+        _signatureServerOptions = signatureOptions.Value;
     }
 
     public async Task<string> SignTxMsg(string publicKey, string hexMsg)
@@ -31,7 +31,7 @@ public class SignatureProvider : ISignatureProvider
         var httpResult = await _httpClientFactory.CreateClient().SendAsync(new HttpRequestMessage()
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri(_signatureOptions.BaseUrl),
+            RequestUri = new Uri(_signatureServerOptions.BaseUrl),
             Content = new StringContent(JsonConvert.SerializeObject(signatureSend), Encoding.UTF8, "application/json")
         });
         if (httpResult.StatusCode == HttpStatusCode.OK)

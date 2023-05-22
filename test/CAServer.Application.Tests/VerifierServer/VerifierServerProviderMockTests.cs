@@ -21,10 +21,8 @@ public partial class GetVerifierServerProviderTest
     private IContractProvider GetMockContractProvider()
     {
         var mockContractProvider = new Mock<IContractProvider>();
-            mockContractProvider.Setup(o => o.GetVerifierServersListAsync(It.IsAny<string>()))
-            .ReturnsAsync((string chainId) => chainId == DefaultChainId ? new GetVerifierServersOutput() : null);
+        // mockContractProvider.Setup(o => o.GetVerifierServersListAsync(It.IsAny<string>()))
+        // .ReturnsAsync((string chainId) => chainId == DefaultChainId ? new GetVerifierServersOutput() : null);
         return mockContractProvider.Object;
     }
-
-
 }

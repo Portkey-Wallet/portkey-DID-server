@@ -46,8 +46,7 @@ public class GuardianProviderTest : CAServerApplicationTestBase
     {
         try
         {
-            await _guardianProvider.GetHolderInfoFromContractAsync("test", string.Empty,
-                new Grains.Grain.ApplicationHandler.ChainInfo());
+            await _guardianProvider.GetHolderInfoFromContractAsync("test", string.Empty, "AELF");
         }
         catch (Exception e)
         {

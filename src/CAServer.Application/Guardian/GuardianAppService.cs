@@ -123,7 +123,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                 //var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
                 var holderInfo =
                     await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash,
-                        chainInfo.Value);
+                        chainInfo.Key);
                 if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
             }
             catch (Exception e)
@@ -188,9 +188,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         try
         {
-            var chainInfo = _chainOptions.ChainInfos[chainId];
-            //return await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
-            return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
+            return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
         }
         catch (Exception ex)
         {

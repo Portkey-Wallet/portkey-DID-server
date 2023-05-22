@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
 using CAServer.Etos;
@@ -17,7 +18,6 @@ using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
-using MethodName = CAServer.Common.MethodName;
 
 namespace CAServer.CAAccount;
 
@@ -139,12 +139,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
-        var chainInfo = _chainOptions.ChainInfos[chainId];
-        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo,
+        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(AElfContractMethodName.GetHolderInfo,
             new GetHolderInfoInput
             {
                 LoginGuardianIdentifierHash = Hash.LoadFromHex(loginGuardianIdentifierHash)
-            }, false, chainInfo);
+            }, false, chainId);
 
         return output?.CaHash?.ToHex();
     }

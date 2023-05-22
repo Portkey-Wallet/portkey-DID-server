@@ -30,7 +30,8 @@ namespace CAServer;
     typeof(AbpTenantManagementApplicationModule),
     typeof(AbpFeatureManagementApplicationModule),
     typeof(AbpSettingManagementApplicationModule),
-    typeof(CAServerGrainsModule)
+    typeof(CAServerGrainsModule),
+    typeof(CAServerSignatureModule)
 )]
 public class CAServerApplicationModule : AbpModule
 {
@@ -51,8 +52,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
-        
-        
+
+
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -68,7 +69,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
-        Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions")); 
+        Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions"));
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         context.Services.AddHttpClient();

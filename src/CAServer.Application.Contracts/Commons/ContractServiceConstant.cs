@@ -1,6 +1,6 @@
-namespace CAServer.Common;
+namespace CAServer.Commons;
 
-public static class MethodName
+public static class AElfContractMethodName
 {
     public const string GetHolderInfo = "GetHolderInfo";
     public const string GetVerifierServers = "GetVerifierServers";
