@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Cache;
+using CAServer.Google.Dtos;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,23 +11,27 @@ using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Google;
 
-public class GoogleAppService : IGoogleAppService, ISingletonDependency
+public class GoogleAppService : CAServerAppService, IGoogleAppService
 {
     private readonly ICacheProvider _cacheProvider;
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOptions;
+    private readonly GoogleAuthOptions _googleAuthOptions;
     private readonly ILogger<GoogleAppService> _logger;
     private readonly GoogleRecaptchaOptions _googleRecaptchaOption;
     private readonly IHttpClientFactory _httpClientFactory;
 
     public GoogleAppService(
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
-        ILogger<GoogleAppService> logger, IOptions<GoogleRecaptchaOptions> googleRecaptchaOption,
+        ILogger<GoogleAppService> logger,
+        IOptions<GoogleRecaptchaOptions> googleRecaptchaOption,
+        IOptions<GoogleAuthOptions> googleAuthOptions,
         IHttpClientFactory httpClientFactory, ICacheProvider cacheProvider)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _cacheProvider = cacheProvider;
         _googleRecaptchaOption = googleRecaptchaOption.Value;
+        _googleAuthOptions = googleAuthOptions.Value;
         _sendVerifierCodeRequestLimitOptions = sendVerifierCodeRequestLimitOptions.Value;
     }
 
@@ -41,6 +46,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         {
             return false;
         }
+
         _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheCount),
             _sendVerifierCodeRequestLimitOptions.Limit);
         if (int.TryParse(cacheCount, out var count))
@@ -76,5 +82,25 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         var responseContent = await response.Content.ReadAsStringAsync();
         _logger.LogDebug(" VerifyGoogleRecaptchaToken responseContent is {responseContent}", responseContent);
         return responseContent.Contains("\"success\": true");
+    }
+
+    public async Task<string> ReceiveAsync(GoogleAuthDto googleAuthDto)
+    {
+        Logger.LogInformation("Google auth code: {code}", JsonConvert.SerializeObject(googleAuthDto));
+        var content = new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("code", googleAuthDto.Code),
+            new KeyValuePair<string, string>("client_id", _googleAuthOptions.ClientId),
+            new KeyValuePair<string, string>("client_secret", _googleAuthOptions.ClientSecret),
+            new KeyValuePair<string, string>("redirect_uri", _googleAuthOptions.RedirectUri),
+            new KeyValuePair<string, string>("grant_type", "authorization_code")
+        });
+
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.PostAsync(_googleAuthOptions.AuthUrl, content);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        
+        _logger.LogDebug("Google auth responseContent is {responseContent}", responseContent);
+        return responseContent;
     }
 }
