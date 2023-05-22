@@ -59,9 +59,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 throw new UserFriendlyException("Parameters “CaAddressInfos” “TargetAddressInfos” must be non-empty");
             }
 
-            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(
-                request.CaAddressInfos[0].CaAddress, request.TargetAddressInfos[0].CaAddress,
-                request.CaAddressInfos[0].ChainId, request.TargetAddressInfos[0].ChainId,
+            var twoCaAddress = new List<CAAddressInfo>() { request.CaAddressInfos[0], request.TargetAddressInfos[0] };
+            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(twoCaAddress,
                 request.Symbol, request.SkipCount, request.MaxResultCount);
 
             var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
@@ -74,7 +73,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetTwoCaTransactionsAsync error, addresses={addresses}", string.Join(",", caAddresses));
+            _logger.LogError(e, "GetTwoCaTransactionsAsync error, addresses={addresses}",
+                string.Join(",", caAddresses));
             throw new UserFriendlyException("Internal service error, place try again later.");
         }
     }
