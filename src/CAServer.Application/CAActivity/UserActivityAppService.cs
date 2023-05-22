@@ -51,7 +51,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         // addresses of current user
         var caAddresses = request.CaAddressInfos.IsNullOrEmpty()
             ? new List<string>()
-            : request.TargetAddressInfos.Select(info => info.CaAddress).ToList();
+            : request.CaAddressInfos.Select(info => info.CaAddress).ToList();
         try
         {
             if (request.CaAddressInfos.IsNullOrEmpty() || request.TargetAddressInfos.IsNullOrEmpty())
