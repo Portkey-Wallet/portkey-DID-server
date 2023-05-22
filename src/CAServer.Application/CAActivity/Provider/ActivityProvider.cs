@@ -30,8 +30,8 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
     }
 
 
-    public async Task<TransactionsDto> GetTwoCaTransactionsAsync(string caHolderAddr1, string caHolderAddr2,
-        string inputChainId, string symbolOpt, int inputSkipCount, int inputMaxResultCount)
+    public async Task<TransactionsDto> GetTwoCaTransactionsAsync(string fromAddress, string toAddress,
+        string fromChainId, string toChainId, string symbolOpt, int inputSkipCount, int inputMaxResultCount)
     {
         return await _graphQlHelper.QueryAsync<TransactionsDto>(new GraphQLRequest
         {
@@ -42,9 +42,8 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
                 }",
             Variables = new
             {
-                // The two address variables do not have any distinction between "from" and "to".
-                fromAddress = caHolderAddr1, toAddress = caHolderAddr2,
-                chainId = inputChainId, symbol = symbolOpt,
+                fromAddress = fromAddress, toAddress = toAddress,
+                fromChainId = fromChainId, toChainId = toChainId, symbol = symbolOpt,
                 skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
                 startBlockHeight = 0, endBlockHeight = 0
             }

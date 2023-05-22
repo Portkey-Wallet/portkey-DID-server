@@ -48,19 +48,24 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     public async Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetTwoCaTransactionRequestDto request)
     {
-        var addresses = request.CaAddresses ?? new List<string>();
+        // addresses of current user
+        var caAddresses = request.CaAddressInfos.IsNullOrEmpty()
+            ? new List<string>()
+            : request.TargetAddressInfos.Select(info => info.CaAddress).ToList();
         try
         {
-            if (addresses.Count != 2)
+            if (request.CaAddressInfos.IsNullOrEmpty() || request.TargetAddressInfos.IsNullOrEmpty())
             {
-                throw new UserFriendlyException("Requires at least two parameters");
+                throw new UserFriendlyException("Parameters “CaAddressInfos” “TargetAddressInfos” must be non-empty");
             }
 
-            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(addresses[0], addresses[1],
-                request.ChainId, request.Symbol, request.SkipCount, request.MaxResultCount);
+            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(
+                request.CaAddressInfos[0].CaAddress, request.TargetAddressInfos[0].CaAddress,
+                request.CaAddressInfos[0].ChainId, request.TargetAddressInfos[0].ChainId,
+                request.Symbol, request.SkipCount, request.MaxResultCount);
 
             var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
-            return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
+            return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
                 request.Height, needMap: true);
         }
         catch (UserFriendlyException e)
@@ -69,7 +74,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetTwoCaTransactionsAsync error, addresses={addresses}", string.Join(",", addresses));
+            _logger.LogError(e, "GetTwoCaTransactionsAsync error, addresses={addresses}", string.Join(",", caAddresses));
             throw new UserFriendlyException("Internal service error, place try again later.");
         }
     }
