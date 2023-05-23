@@ -122,7 +122,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
-            var activitiesDto = await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0);
+            var activitiesDto = await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
