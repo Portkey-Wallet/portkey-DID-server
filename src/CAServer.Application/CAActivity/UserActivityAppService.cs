@@ -122,7 +122,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
-            var activitiesDto = await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
+            var activitiesDto =
+                await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
@@ -294,10 +295,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (needMap)
             {
+                var typeName = ActivityConstants.TypeMap.GetValueOrDefault(dto.TransactionType, dto.TransactionType);
                 dto.TransactionName = dto.NftInfo != null && string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
                                       ActivityConstants.ShowNftTypes.Contains(dto.TransactionType)
-                    ? ActivityConstants.TypeMap[dto.TransactionType] + " NFT"
-                    : ActivityConstants.TypeMap[dto.TransactionType];
+                    ? typeName + " NFT"
+                    : typeName;
             }
 
             getActivitiesDto.Add(dto);
