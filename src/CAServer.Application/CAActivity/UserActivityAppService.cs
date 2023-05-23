@@ -296,7 +296,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             if (needMap)
             {
                 var typeName = ActivityConstants.TypeMap.GetValueOrDefault(dto.TransactionType, dto.TransactionType);
-                dto.TransactionName = dto.NftInfo != null && string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
+                dto.TransactionName = dto.NftInfo != null && !string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
                                       ActivityConstants.ShowNftTypes.Contains(dto.TransactionType)
                     ? typeName + " NFT"
                     : typeName;
