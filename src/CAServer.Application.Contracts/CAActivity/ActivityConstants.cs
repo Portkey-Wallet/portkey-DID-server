@@ -60,5 +60,10 @@ public static class ActivityConstants
         "Transfer", "CrossChainTransfer"
     };
     
+    public static readonly List<string> RecentTypes = new()
+    {
+        "Transfer", "CrossChainTransfer"
+    };
+    
     public static readonly string Zero = "0";
 }

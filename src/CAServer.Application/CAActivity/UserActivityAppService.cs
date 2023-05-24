@@ -61,7 +61,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             var twoCaAddress = new List<CAAddressInfo>() { request.CaAddressInfos[0], request.TargetAddressInfos[0] };
             var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(twoCaAddress,
-                request.Symbol, request.SkipCount, request.MaxResultCount);
+                request.Symbol, ActivityConstants.RecentTypes, request.SkipCount, request.MaxResultCount);
 
             var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
             return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
