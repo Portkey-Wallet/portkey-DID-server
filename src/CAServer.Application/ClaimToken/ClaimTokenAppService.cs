@@ -1,15 +1,11 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.Contracts.MultiToken;
 using CAServer.Cache;
-using AElf.Types;
 using CAServer.ClaimToken.Dtos;
 using CAServer.Common;
-using CAServer.Commons;
 using CAServer.Options;
 using Microsoft.Extensions.Options;
-using Portkey.Contracts.TokenClaim;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
@@ -54,36 +50,15 @@ public class ClaimTokenAppService : IClaimTokenAppService, ISingletonDependency
 
         var chainId = _claimTokenInfoOption.ChainId;
 
-        var getBalanceParam = new GetBalanceInput
-        {
-            Symbol = claimTokenRequestDto.Symbol,
-            Owner = Address.FromBase58(address)
-        };
+        var getBalanceOutput = await _contractProvider.GetBalance(claimTokenRequestDto.Symbol, address, chainId);
 
-        var getBalanceOutput =
-            await _contractProvider.CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance,
-                getBalanceParam, true, chainId);
         if (getBalanceOutput.Balance < _claimTokenInfoOption.ClaimTokenAmount)
         {
-            var claimTokenParam = new ClaimTokenInput
-            {
-                Symbol = claimTokenRequestDto.Symbol,
-                Amount = _claimTokenInfoOption.ClaimTokenAmount
-            };
-            await _contractProvider.SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken,
-                claimTokenParam, chainId);
+            await _contractProvider.ClaimToken(claimTokenRequestDto.Symbol, chainId);
         }
 
-        var transferParam = new TransferInput
-        {
-            Symbol = claimTokenRequestDto.Symbol,
-            Amount = long.Parse(claimTokenRequestDto.Amount),
-            To = Address.FromBase58(claimTokenRequestDto.Address)
-        };
-
-        var result =
-            await _contractProvider.SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
-                chainId);
+        var result = await _contractProvider.Transfer(claimTokenRequestDto.Symbol, claimTokenRequestDto.Amount,
+            claimTokenRequestDto.Address, chainId);
 
         await _cacheProvider.Increase(GetClaimTokenAddressCacheKey + claimTokenRequestDto.Address, 1,
             TimeSpan.FromHours(_claimTokenInfoOption.ExpireTime));

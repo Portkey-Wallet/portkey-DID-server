@@ -73,8 +73,7 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
 
     private async Task<GuardianVerifierServerCacheItem> GetVerifierServerListAsync(string chainId)
     {
-        var result = await _contractProvider.CallTransactionAsync<GetVerifierServersOutput>(
-            AElfContractMethodName.GetVerifierServers, new Empty(), false, chainId);
+        var result = await _contractProvider.GetVerifierServers(chainId);
 
         if (null == result)
         {

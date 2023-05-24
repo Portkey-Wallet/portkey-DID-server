@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Signature;
 
@@ -10,7 +11,7 @@ public interface ISignatureProvider
     Task<string> SignTxMsg(string publicKey, string hexMsg);
 }
 
-public class SignatureProvider : ISignatureProvider
+public class SignatureProvider : ISignatureProvider, ISingletonDependency
 {
     private readonly SignatureServerOptions _signatureServerOptions;
     private readonly IHttpClientFactory _httpClientFactory;

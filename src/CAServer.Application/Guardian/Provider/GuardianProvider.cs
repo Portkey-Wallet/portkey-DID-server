@@ -49,21 +49,11 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
     public async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(string guardianIdentifierHash, string caHash,
         string chainId)
     {
-        var param = new GetHolderInfoInput();
-
         if (!string.IsNullOrWhiteSpace(caHash))
         {
-            param.CaHash = Hash.LoadFromHex(caHash);
-            param.LoginGuardianIdentifierHash = null;
-        }
-        else
-        {
-            param.LoginGuardianIdentifierHash = Hash.LoadFromHex(guardianIdentifierHash);
-            param.CaHash = null;
+            return await _contractProvider.GetHolderInfo(Hash.LoadFromHex(caHash), null, chainId);
         }
 
-        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(AElfContractMethodName.GetHolderInfo, param,
-            false, chainId);
-        return output;
+        return await _contractProvider.GetHolderInfo(null, Hash.LoadFromHex(guardianIdentifierHash), chainId);
     }
 }

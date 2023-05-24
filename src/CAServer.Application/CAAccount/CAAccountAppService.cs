@@ -139,11 +139,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
-        var output = await _contractProvider.CallTransactionAsync<GetHolderInfoOutput>(AElfContractMethodName.GetHolderInfo,
-            new GetHolderInfoInput
-            {
-                LoginGuardianIdentifierHash = Hash.LoadFromHex(loginGuardianIdentifierHash)
-            }, false, chainId);
+        var output =
+            await _contractProvider.GetHolderInfo(null, Hash.LoadFromHex(loginGuardianIdentifierHash), chainId);
 
         return output?.CaHash?.ToHex();
     }
