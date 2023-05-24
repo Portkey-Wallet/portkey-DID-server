@@ -140,7 +140,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
         var output =
-            await _contractProvider.GetHolderInfo(null, Hash.LoadFromHex(loginGuardianIdentifierHash), chainId);
+            await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash), chainId);
 
         return output?.CaHash?.ToHex();
     }

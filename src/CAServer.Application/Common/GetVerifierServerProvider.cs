@@ -73,7 +73,7 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
 
     private async Task<GuardianVerifierServerCacheItem> GetVerifierServerListAsync(string chainId)
     {
-        var result = await _contractProvider.GetVerifierServers(chainId);
+        var result = await _contractProvider.GetVerifierServersListAsync(chainId);
 
         if (null == result)
         {

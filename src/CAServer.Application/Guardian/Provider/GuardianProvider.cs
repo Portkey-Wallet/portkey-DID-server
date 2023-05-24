@@ -51,9 +51,9 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
     {
         if (!string.IsNullOrWhiteSpace(caHash))
         {
-            return await _contractProvider.GetHolderInfo(Hash.LoadFromHex(caHash), null, chainId);
+            return await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
         }
 
-        return await _contractProvider.GetHolderInfo(null, Hash.LoadFromHex(guardianIdentifierHash), chainId);
+        return await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(guardianIdentifierHash), chainId);
     }
 }

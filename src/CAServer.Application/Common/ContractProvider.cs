@@ -20,11 +20,11 @@ namespace CAServer.Common;
 
 public interface IContractProvider
 {
-    Task<GetHolderInfoOutput> GetHolderInfo(Hash caHash, Hash loginGuardianIdentifierHash, string chainId);
-    Task<GetVerifierServersOutput> GetVerifierServers(string chainId);
-    Task<GetBalanceOutput> GetBalance(string symbol, string address, string chainId);
-    Task ClaimToken(string symbol, string chainId);
-    Task<SendTransactionOutput> Transfer(string symbol, string amount, string address, string chainId);
+    public Task<GetHolderInfoOutput> GetHolderInfoAsync(Hash caHash, Hash loginGuardianIdentifierHash, string chainId);
+    public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
+    public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
+    public Task ClaimTokenAsync(string symbol, string chainId);
+    public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -35,8 +35,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ISignatureProvider _signatureProvider;
 
     // CommonPrivateKeyForCallTx: Just for query, no assets and no permissions
-    private const string CommonPrivateKeyForCallTx = "5ed86f0a0203a1b15410834a01fce0df0c2bd8b1b7f6ccc5f165cd97f8978517";
-
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption)
     {
@@ -58,7 +56,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
-        string addressFromPrivateKey = client.GetAddressFromPrivateKey(CommonPrivateKeyForCallTx);
+        string addressFromPrivateKey = client.GetAddressFromPrivateKey(AElfContractKeyConst.CommonPrivateKeyForCallTx);
         var contractAddress = isTokenContract ? chainInfo.TokenContractAddress : chainInfo.ContractAddress;
 
         var transaction =
@@ -66,7 +64,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         _logger.LogDebug("Call tx methodName is: {methodName} param is: {transaction}", methodName, transaction);
 
-        var txWithSign = client.SignTransaction(CommonPrivateKeyForCallTx, transaction);
+        var txWithSign = client.SignTransaction(AElfContractKeyConst.CommonPrivateKeyForCallTx, transaction);
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSign.ToByteArray().ToHex()
@@ -106,7 +104,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return result;
     }
 
-    public async Task<GetHolderInfoOutput> GetHolderInfo(Hash caHash, Hash loginGuardianIdentifierHash, string chainId)
+    public async Task<GetHolderInfoOutput> GetHolderInfoAsync(Hash caHash, Hash loginGuardianIdentifierHash,
+        string chainId)
     {
         var param = new GetHolderInfoInput();
         param.CaHash = caHash;
@@ -117,35 +116,35 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return output;
     }
 
-    public async Task<GetVerifierServersOutput> GetVerifierServers(string chainId)
+    public async Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId)
     {
         return await CallTransactionAsync<GetVerifierServersOutput>(AElfContractMethodName.GetVerifierServers,
             new Empty(), false, chainId);
     }
 
-    public async Task<GetBalanceOutput> GetBalance(string symbol, string address, string chainId)
+    public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)
     {
         var getBalanceParam = new GetBalanceInput
         {
             Symbol = symbol,
             Owner = Address.FromBase58(address)
         };
-        return await CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance,
-            getBalanceParam, true, chainId);
+        return await CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance, getBalanceParam, true,
+            chainId);
     }
 
-    public async Task ClaimToken(string symbol, string chainId)
+    public async Task ClaimTokenAsync(string symbol, string chainId)
     {
         var claimTokenParam = new ClaimTokenInput
         {
             Symbol = symbol,
             Amount = _claimTokenInfoOption.ClaimTokenAmount
         };
-        await SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken,
-            claimTokenParam, chainId);
+        await SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken, claimTokenParam, chainId);
     }
 
-    public async Task<SendTransactionOutput> Transfer(string symbol, string amount, string address, string chainId)
+    public async Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address,
+        string chainId)
     {
         var transferParam = new TransferInput
         {
@@ -154,7 +153,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             To = Address.FromBase58(address)
         };
 
-        return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
-            chainId);
+        return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam, chainId);
     }
 }

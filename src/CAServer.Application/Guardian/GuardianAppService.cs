@@ -34,14 +34,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IGuardianProvider _guardianProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IAppleUserProvider _appleUserProvider;
-    private readonly IContractProvider _contractProvider;
-
 
     public GuardianAppService(
-        INESTRepository<GuardianIndex, string> guardianRepository,
+        INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
-        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
-        IAppleUserProvider appleUserProvider, IContractProvider contractProvider)
+        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -50,7 +47,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
         _appleUserProvider = appleUserProvider;
-        _contractProvider = contractProvider;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -121,9 +117,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             try
             {
                 //var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
-                var holderInfo =
-                    await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash,
-                        chainInfo.Key);
+                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash,
+                    chainInfo.Key);
                 if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
             }
             catch (Exception e)
