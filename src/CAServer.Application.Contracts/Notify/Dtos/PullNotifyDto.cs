@@ -10,5 +10,4 @@ public class PullNotifyDto
     public string DeviceBrand { get; set; }
     public string OperatingSystemVersion { get; set; }
     [Required] public string AppId { get; set; }
-    public bool IsColdBoot { get; set; }
 }

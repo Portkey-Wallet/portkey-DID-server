@@ -7,6 +7,7 @@ namespace CAServer.Entities.Es;
 public class NotifyRulesIndex : CAServerEsEntity<Guid>, IIndexBuild
 {
     [Keyword] public override Guid Id { get; set; }
+    public int NotifyId { get; set; }
     [Keyword] public string AppId { get; set; }
     [Keyword] public string[] AppVersions { get; set; }
     [Keyword] public string[] DeviceTypes { get; set; }
