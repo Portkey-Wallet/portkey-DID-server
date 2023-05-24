@@ -62,7 +62,7 @@ public static class ActivityConstants
     
     public static readonly List<string> RecentTypes = new()
     {
-        "Transfer", "CrossChainTransfer"
+        "Transfer", "CrossChainTransfer", "ClaimToken"
     };
     
     public static readonly string Zero = "0";
