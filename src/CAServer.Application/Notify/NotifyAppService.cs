@@ -63,7 +63,7 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         var notifyRules = notifyRulesIndices.First();
         if (notifyRules.Countries is { Length: > 0 })
         {
-            notifyRules = notifyRulesIndices?.Where(t => t.Countries.Contains(ipInfo.Iso)).FirstOrDefault();
+            notifyRules = notifyRulesIndices?.Where(t => t.Countries.Contains(ipInfo.Code)).FirstOrDefault();
             if (notifyRules == null)
             {
                 return null;
