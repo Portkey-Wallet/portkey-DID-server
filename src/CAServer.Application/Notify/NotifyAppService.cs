@@ -71,7 +71,6 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         }
 
         var grain = _clusterClient.GetGrain<INotifyGrain>(notifyRules.Id);
-
         var resultDto = await grain.GetNotifyAsync();
         if (!resultDto.Success)
         {
@@ -134,7 +133,7 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         //get data from cms
         var condition =
             "/items/upgradePush?fields=*,countries.country_id.value,deviceBrands.deviceBrand_id.value,deviceTypes.deviceType_id.value,targetVersion.value," +
-            $"appVersions.appVersion_id.value,styleType.value,targetVersion.value&filter[targetVersion][value][_eq]={version}";
+            $"appVersions.appVersion_id.value,styleType.value,targetVersion.value&filter[targetVersion][value][_eq]={version}&filter[status][_eq]=published";
         
         Logger.LogDebug("before get data from cms.");
         var notifyDto = await GetDataAsync(condition);
