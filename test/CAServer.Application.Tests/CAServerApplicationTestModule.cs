@@ -25,7 +25,6 @@ public class CAServerApplicationTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        
         // load config from [appsettings.Development.json]
         var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
@@ -35,7 +34,7 @@ public class CAServerApplicationTestModule : AbpModule
             .AddEnvironmentVariables();
 
         var configuration = builder.Build();
-        
+
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
@@ -78,7 +77,7 @@ public class CAServerApplicationTestModule : AbpModule
         //     o.Language = "zh";
         //     o.AccessKey = "";
         // });
-        context.Services.Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
+        context.Services.Configure<IpServiceSettingOptions>(o => o.ExpirationDays = 1);
 
         // context.Services.AddTransient<IDistributedEventHandler<UserTokenEto>>(sp =>
         //     sp.GetService<UserTokenEntityHandler>());

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Notify;
 using CAServer.Notify.Dtos;
@@ -28,11 +29,25 @@ public class NotifyController
         return await _notifyAppService.CreateAsync(notifyDto);
     }
 
+    [HttpPost("createFromCms")]
+    [Authorize(Roles = "admin")]
+    public async Task<List<NotifyResultDto>> CreateFromCmsAsync([FromForm] string version)
+    {
+        return await _notifyAppService.CreateFromCmsAsync(version);
+    }
+
     [HttpPut("{id}")]
     [Authorize(Roles = "admin")]
     public async Task<NotifyResultDto> UpdateAsync(Guid id, UpdateNotifyDto notifyDto)
     {
         return await _notifyAppService.UpdateAsync(id, notifyDto);
+    }
+
+    [HttpPut("updateFromCms/{id}")]
+    [Authorize(Roles = "admin")]
+    public async Task<NotifyResultDto> UpdateFromCmsAsync(Guid id)
+    {
+        return await _notifyAppService.UpdateFromCmsAsync(id);
     }
 
     [HttpDelete("{id}")]
