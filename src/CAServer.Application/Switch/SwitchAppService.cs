@@ -3,7 +3,6 @@ using System.Linq;
 using CAServer.Options;
 using CAServer.Switch.Dtos;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 
@@ -14,7 +13,7 @@ public class SwitchAppService : CAServerAppService, ISwitchAppService
 {
     private readonly SwitchOptions _options;
 
-    public SwitchAppService(IOptions<SwitchOptions> options)
+    public SwitchAppService(IOptionsSnapshot<SwitchOptions> options)
     {
         _options = options.Value;
     }

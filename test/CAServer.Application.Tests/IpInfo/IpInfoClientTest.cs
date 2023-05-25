@@ -20,8 +20,9 @@ public class IpInfoClientTest : CAServerApplicationTestBase
     {
         try
         {
-            var ip = "127.0.0.1";
+            var ip = "20.246.106.227";
             var result = await _infoClient.GetIpInfoAsync(ip);
+            result.CountryCode.ShouldBe("US");
         }
         catch (Exception e)
         {

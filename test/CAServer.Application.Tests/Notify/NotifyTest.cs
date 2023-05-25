@@ -85,7 +85,7 @@ public class NotifyTest : CAServerApplicationTestBase
         var createDto = await _notifyAppService.CreateAsync(dto);
         await _notifyAppService.DeleteAsync(createDto.Id);
     }
-    
+
     [Fact]
     public async Task Pull_Test()
     {
@@ -101,7 +101,8 @@ public class NotifyTest : CAServerApplicationTestBase
             ReleaseTime = DateTime.UtcNow,
             DownloadUrl = "http://127.0.0.1",
             IsForceUpdate = true,
-            IsApproved = true
+            IsApproved = true,
+            NotifyId = 1
         };
 
         var createDto = await _notifyAppService.CreateAsync(dto);
@@ -113,7 +114,8 @@ public class NotifyTest : CAServerApplicationTestBase
             DeviceTypes = new[] { "Android" },
             SendTypes = new[] { NotifySendType.None },
             IsApproved = true,
-            Id = createDto.Id
+            Id = createDto.Id,
+            NotifyId = 1
         });
 
         var result = await _notifyAppService.PullNotifyAsync(new PullNotifyDto()
@@ -126,5 +128,4 @@ public class NotifyTest : CAServerApplicationTestBase
 
         result.Title.ShouldBe("Update Portkey");
     }
-    
 }

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using CAServer.AppleVerify;
+using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Dtos;
+using CAServer.Hub;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.IdentityModel.Tokens;
@@ -154,6 +155,16 @@ public partial class VerifierCodeTests
         IPrincipal currentPrincipal = Thread.CurrentPrincipal;
         return currentPrincipal is ClaimsPrincipal claimsPrincipal ? claimsPrincipal : (currentPrincipal == null ? (ClaimsPrincipal)null : new ClaimsPrincipal(currentPrincipal));
     }
+    
+    private ICacheProvider GetMockCacheProvider()
+    {
+        return new MockCacheProvider();
+    }
+
+
+
+    
+
     
     
         

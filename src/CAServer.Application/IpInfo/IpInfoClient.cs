@@ -25,7 +25,6 @@ public class IpInfoClient : IIpInfoClient
 
     public async Task<IpInfoDto> GetIpInfoAsync(string ip)
     {
-        _logger.LogError($"#### ip is {ip}");
         var requestUrl = $"{_ipServiceSetting.BaseUrl.TrimEnd('/')}/{ip}";
         requestUrl += $"?access_key={_ipServiceSetting.AccessKey}&language={_ipServiceSetting.Language}";
 
