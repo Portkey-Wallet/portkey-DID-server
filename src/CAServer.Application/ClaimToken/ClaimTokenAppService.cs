@@ -54,7 +54,8 @@ public class ClaimTokenAppService : IClaimTokenAppService, ISingletonDependency
 
         if (getBalanceOutput.Balance < _claimTokenInfoOption.ClaimTokenAmount)
         {
-            await _contractProvider.ClaimTokenAsync(claimTokenRequestDto.Symbol, chainId);
+            await _contractProvider.ClaimTokenAsync(claimTokenRequestDto.Symbol,
+                _claimTokenInfoOption.ClaimTokenAddress, chainId);
         }
 
         var result = await _contractProvider.SendTransferAsync(claimTokenRequestDto.Symbol, claimTokenRequestDto.Amount,

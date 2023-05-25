@@ -23,7 +23,7 @@ public interface IContractProvider
     public Task<GetHolderInfoOutput> GetHolderInfoAsync(Hash caHash, Hash loginGuardianIdentifierHash, string chainId);
     public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
-    public Task ClaimTokenAsync(string symbol, string chainId);
+    public Task ClaimTokenAsync(string symbol, string address, string chainId);
     public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
 }
 
@@ -124,7 +124,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
-    public async Task ClaimTokenAsync(string symbol, string chainId)
+    public async Task ClaimTokenAsync(string symbol, string address, string chainId)
     {
         var claimTokenParam = new ClaimTokenInput
         {
@@ -132,7 +132,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             Amount = _claimTokenInfoOption.ClaimTokenAmount
         };
         await SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken, claimTokenParam,
-            _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
+            _claimTokenInfoOption.PublicKey, address, chainId);
     }
 
     public async Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address,
