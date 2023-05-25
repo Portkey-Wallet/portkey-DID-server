@@ -40,18 +40,16 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
     public async Task<PullNotifyResultDto> PullNotifyAsync(PullNotifyDto input)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<NotifyRulesIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.DeviceTypes).Value(input.AppId)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceTypes).Terms(input.DeviceType.ToString())));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.AppVersions).Terms(input.AppVersion)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceBrands).Terms(input.DeviceBrand)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.OperatingSystemVersions).Terms(input.OperatingSystemVersion)));
 
         QueryContainer Filter(QueryContainerDescriptor<NotifyRulesIndex> f) => f.Bool(b => b.Must(mustQuery));
-
-        IPromise<IList<ISort>> Sort(SortDescriptor<NotifyRulesIndex> s) =>
-            s.Descending(a => a.AppId).Descending(t => t.NotifyId);
+        IPromise<IList<ISort>> Sort(SortDescriptor<NotifyRulesIndex> s) => s.Descending(t => t.NotifyId);
 
         var (totalCount, notifyRulesIndices) = await _notifyRulesRepository.GetSortListAsync(Filter, sortFunc: Sort);
-
         if (totalCount <= 0)
         {
             return null;
