@@ -58,8 +58,7 @@ public class CAVerifierController : CAServerController
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         if (!switchStatus.IsOpen || !googleRecaptchaOpen)
         {
-            return new VerifierServerResponse();
-            // return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
 
         var googleRecaptchaTokenSuccess = false;
