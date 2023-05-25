@@ -73,13 +73,13 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     }
 
     private async Task<SendTransactionOutput> SendTransactionAsync<T>(string methodName, IMessage param,
-        string publicKey, string contractAddress, string chainId)
+        string senderPubKey, string contractAddress, string chainId)
         where T : class, IMessage<T>, new()
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
-        var ownAddress = client.GetAddressFromPubKey(publicKey);
+        var ownAddress = client.GetAddressFromPubKey(senderPubKey);
 
         var transaction = await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName, param);
 
