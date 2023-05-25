@@ -14,5 +14,6 @@ public class NotifyRulesIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string[] DeviceBrands { get; set; }
     [Keyword] public string[] OperatingSystemVersions { get; set; }
     public NotifySendType[] SendTypes { get; set; }
+    [Keyword] public string[] Countries { get; set; }
     public bool IsApproved { get; set; }
 }

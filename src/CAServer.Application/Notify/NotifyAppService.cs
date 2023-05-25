@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.Notify;
+using CAServer.IpInfo;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Notify.Provider;
@@ -25,16 +26,19 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly INESTRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
     private readonly INotifyProvider _notifyProvider;
+    private readonly IIpInfoAppService _ipInfoAppService;
 
     public NotifyAppService(IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
         INESTRepository<NotifyRulesIndex, Guid> notifyRulesRepository,
-        INotifyProvider notifyProvider)
+        INotifyProvider notifyProvider,
+        IIpInfoAppService ipInfoAppService)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _notifyRulesRepository = notifyRulesRepository;
         _notifyProvider = notifyProvider;
+        _ipInfoAppService = ipInfoAppService;
     }
 
     public async Task<PullNotifyResultDto> PullNotifyAsync(PullNotifyDto input)
@@ -55,7 +59,17 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
             return null;
         }
 
+        var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
         var notifyRules = notifyRulesIndices.First();
+        if (notifyRules.Countries is { Length: > 0 })
+        {
+            notifyRules = notifyRulesIndices?.Where(t => t.Countries.Contains(ipInfo.Iso)).FirstOrDefault();
+            if (notifyRules == null)
+            {
+                return null;
+            }
+        }
+
         var grain = _clusterClient.GetGrain<INotifyGrain>(notifyRules.Id);
 
         var resultDto = await grain.GetNotifyAsync();
@@ -121,6 +135,8 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         var condition =
             "/items/upgradePush?fields=*,countries.country_id.value,deviceBrands.deviceBrand_id.value,deviceTypes.deviceType_id.value,targetVersion.value," +
             $"appVersions.appVersion_id.value,styleType.value,targetVersion.value&filter[targetVersion][value][_eq]={version}";
+        
+        Logger.LogDebug("before get data from cms.");
         var notifyDto = await GetDataAsync(condition);
 
         var result = new List<NotifyResultDto>();
