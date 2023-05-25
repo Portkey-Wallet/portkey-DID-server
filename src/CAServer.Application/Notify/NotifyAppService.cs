@@ -40,7 +40,7 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
     public async Task<PullNotifyResultDto> PullNotifyAsync(PullNotifyDto input)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<NotifyRulesIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.DeviceTypes).Value(input.AppId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.AppId).Value(input.AppId)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceTypes).Terms(input.DeviceType.ToString())));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.AppVersions).Terms(input.AppVersion)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceBrands).Terms(input.DeviceBrand)));
