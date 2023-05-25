@@ -45,19 +45,15 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     }
 
 
-    private async Task<T> CallTransactionAsync<T>(string methodName, IMessage param, bool isTokenContract,
+    private async Task<T> CallTransactionAsync<T>(string methodName, IMessage param, string contractAddress,
         string chainId) where T : class, IMessage<T>, new()
     {
-        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
-        {
-            return null;
-        }
+        var chainInfo = _chainOptions.ChainInfos[chainId];
 
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
         string addressFromPrivateKey = client.GetAddressFromPrivateKey(AElfContractKeyConst.CommonPrivateKeyForCallTx);
-        var contractAddress = isTokenContract ? chainInfo.TokenContractAddress : chainInfo.ContractAddress;
 
         var transaction =
             await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
@@ -76,20 +72,16 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return value;
     }
 
-    private async Task<SendTransactionOutput> SendTransactionAsync<T>(string methodName, IMessage param, string chainId)
+    private async Task<SendTransactionOutput> SendTransactionAsync<T>(string methodName, IMessage param,
+        string publicKey, string contractAddress, string chainId)
         where T : class, IMessage<T>, new()
     {
-        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainOption))
-        {
-            return null;
-        }
-
-        var client = new AElfClient(chainOption.BaseUrl);
+        var chainInfo = _chainOptions.ChainInfos[chainId];
+        var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
-        var ownAddress = client.GetAddressFromPubKey(_claimTokenInfoOption.PublicKey);
+        var ownAddress = client.GetAddressFromPubKey(publicKey);
 
-        var transaction = await client.GenerateTransactionAsync(ownAddress, chainOption.TokenContractAddress,
-            methodName, param);
+        var transaction = await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName, param);
 
         _logger.LogDebug("Send tx methodName is: {methodName} param is: {transaction}, publicKey is:{publicKey} ",
             methodName, transaction, _claimTokenInfoOption.PublicKey);
@@ -110,16 +102,15 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var param = new GetHolderInfoInput();
         param.CaHash = caHash;
         param.LoginGuardianIdentifierHash = loginGuardianIdentifierHash;
-        var output =
-            await CallTransactionAsync<GetHolderInfoOutput>(AElfContractMethodName.GetHolderInfo, param, false,
-                chainId);
+        var output = await CallTransactionAsync<GetHolderInfoOutput>(AElfContractMethodName.GetHolderInfo, param,
+            _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
         return output;
     }
 
     public async Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId)
     {
         return await CallTransactionAsync<GetVerifierServersOutput>(AElfContractMethodName.GetVerifierServers,
-            new Empty(), false, chainId);
+            new Empty(), _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
     }
 
     public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)
@@ -129,8 +120,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             Symbol = symbol,
             Owner = Address.FromBase58(address)
         };
-        return await CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance, getBalanceParam, true,
-            chainId);
+        return await CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance, getBalanceParam,
+            _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
     public async Task ClaimTokenAsync(string symbol, string chainId)
@@ -140,7 +131,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             Symbol = symbol,
             Amount = _claimTokenInfoOption.ClaimTokenAmount
         };
-        await SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken, claimTokenParam, chainId);
+        await SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken, claimTokenParam,
+            _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
     public async Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address,
@@ -153,6 +145,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             To = Address.FromBase58(address)
         };
 
-        return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam, chainId);
+        return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
+            _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 }
