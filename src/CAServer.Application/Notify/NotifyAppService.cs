@@ -120,7 +120,7 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         //get data from cms
         var condition =
             "/items/upgradePush?fields=*,countries.country_id.value,deviceBrands.deviceBrand_id.value,deviceTypes.deviceType_id.value,targetVersion.value," +
-            $"appVersions.appVersion_id.value,styleType.value,targetVersion.value&filter[targetVersion][_eq]={version}";
+            $"appVersions.appVersion_id.value,styleType.value,targetVersion.value&filter[targetVersion][value][_eq]={version}";
         var notifyDto = await GetDataAsync(condition);
 
         var result = new List<NotifyResultDto>();
