@@ -232,6 +232,13 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {
         var expire = TimeSpan.FromHours(_sendVerifierCodeRequestLimitOption.ExpireHours);
+        var countCacheItem = await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
+        if (countCacheItem.HasValue)
+        {
+            return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
+                null);
+        }
+
         return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
             expire);
     }
