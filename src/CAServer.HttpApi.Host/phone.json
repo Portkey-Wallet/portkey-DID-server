@@ -1,5 +1,10 @@
 {
   "PhoneInfoOptions":{
+    "Default" : {
+      "Country": "Singapore",
+      "Code": "65",
+      "Iso": "SG"
+    },
     "PhoneInfo": [
       {
         "Country": "China",
