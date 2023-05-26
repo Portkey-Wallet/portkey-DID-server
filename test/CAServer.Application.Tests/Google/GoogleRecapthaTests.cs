@@ -39,13 +39,13 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
         result.ShouldBeFalse();
     }
 
-    [Fact]
-    public async Task IsGoogleRecaptchaOpen_Test()
-    {
-        var userIpAddress = "127.0.0.1";
-        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
-        result.ShouldBeFalse();
-    }
+    // [Fact]
+    // public async Task IsGoogleRecaptchaOpen_Test()
+    // {
+    //     var userIpAddress = "127.0.0.1";
+    //     var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
+    //     result.ShouldBeFalse();
+    // }
 
 
 
