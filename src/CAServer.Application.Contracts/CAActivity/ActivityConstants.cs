@@ -19,6 +19,7 @@ public static class ActivityConstants
         { "UnsetGuardianForLogin", "Unset login account" },
         { "RemoveOtherManagerInfo", "Remove device" },
         { "ClaimToken", "Transfer" },
+        { "Register", "Register" },
         { "Approve", "Approve" },
         { "Bingo", "Bingo" },
         { "Play", "Play" }
@@ -33,7 +34,7 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play"
     };
 
     public static readonly List<string> TransferTypes = new()
@@ -44,7 +45,8 @@ public static class ActivityConstants
     public static readonly List<string> ContractTypes = new()
     {
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
-        "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Approve", "Bingo",
+        "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register",
+        "Approve", "Bingo",
         "Play"
     };
 
@@ -59,11 +61,11 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer"
     };
-    
+
     public static readonly List<string> RecentTypes = new()
     {
         "Transfer", "CrossChainTransfer", "ClaimToken"
     };
-    
+
     public static readonly string Zero = "0";
 }
