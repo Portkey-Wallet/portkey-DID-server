@@ -46,7 +46,4 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
     //     var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
     //     result.ShouldBeFalse();
     // }
-
-
-
 }
