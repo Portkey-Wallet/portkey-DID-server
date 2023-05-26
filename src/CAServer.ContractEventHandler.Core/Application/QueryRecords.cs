@@ -48,7 +48,7 @@ public class SyncState
 
 public class QueryEventDto : ChangeRecordDto
 {
-    public string Value { get; set; }
+    public string NotLoginGuardian { get; set; }
 }
 
 public enum BlockFilterType
