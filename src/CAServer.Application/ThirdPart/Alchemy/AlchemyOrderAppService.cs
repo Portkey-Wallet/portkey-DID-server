@@ -68,10 +68,10 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             return new BasicOrderResult() { Message = $"No order found for {grainId}" };
         }
 
-        // if (esOrderData.Status == input.Status)
-        // {
-        //     return new BasicOrderResult() { Message = $"Order status {input.Status} no need to update." };
-        // }
+        if (esOrderData.Status == input.Status)
+        {
+            return new BasicOrderResult() { Message = $"Order status {input.Status} no need to update." };
+        }
 
         var dataToBeUpdated = MergeEsAndInput2GrainModel(input, esOrderData);
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
