@@ -49,6 +49,13 @@ public class ThirdPartOrderController : CAServerController
     {
         return await _alchemyOrderService.UpdateAlchemyOrderAsync(input);
     }
+
+    [Authorize]
+    [HttpPost("TxHash")]
+    public async Task UpdateAlchemyTxHashAsync(UpdateAlchemyTxHashDto request)
+    {
+        await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
+    }
 }
 
 [RemoteService]

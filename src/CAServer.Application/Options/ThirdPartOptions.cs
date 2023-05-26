@@ -17,4 +17,9 @@ public class AlchemyOptions
     public string AppId { get; set; }
     public string AppSecret { get; set; }
     public string BaseUrl { get; set; }
+    public string UpdateSellOrderUri { get; set; }
+    public string FiatListUri { get; set; }
+    public string CryptoListUri { get; set; }
+    public string OrderQuoteUri { get; set; }
+    public string GetTokenUri { get; set; }
 }

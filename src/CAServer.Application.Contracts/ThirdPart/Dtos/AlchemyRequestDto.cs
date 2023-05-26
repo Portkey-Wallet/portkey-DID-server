@@ -81,3 +81,19 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
         }
     }
 }
+
+public class UpdateAlchemyTxHashDto
+{
+    [Required] public string OrderId { get; set; }
+    [Required] public string TxHash { get; set; }
+}
+
+public class UpdateAlchemySellOrderDto
+{
+    public string OrderNo { get; set; }
+    public string Address { get; set; }
+    public string Crypto { get; set; }
+    public string TxHash { get; set; }
+    public string CryptoAmount { get; set; }
+    public string Network { get; set; }
+}

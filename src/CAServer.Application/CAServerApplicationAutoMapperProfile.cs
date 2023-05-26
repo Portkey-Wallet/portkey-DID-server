@@ -258,6 +258,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Code, m => m.MapFrom(f => f.CountryCode))
             .ForPath(t => t.Iso, m => m.MapFrom(f => f.Location.CallingCode));
 
+        // third part order auto map
         CreateMap<CreateUserOrderDto, OrderGrainDto>();
         CreateMap<OrderGrainDto, OrderDto>();
         CreateMap<OrderDto, OrderGrainDto>();
@@ -265,11 +266,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderIndex, OrderDto>();
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
-            .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType));
+            .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
+            .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo));
         CreateMap<OrderDto, ThirdPart.Dtos.AlchemyTargetAddressDto>()
             .ForMember(t => t.OrderId, m => m.MapFrom(f => f.Id))
             .ForMember(t => t.TargetAddress, m => m.MapFrom(f => f.Address));
         CreateMap<AlchemyTargetAddressDto, AlchemyTargetAddressEto>();
+        CreateMap<OrderDto, UpdateAlchemySellOrderDto>()
+            .ForMember(t => t.OrderNo, m => m.MapFrom(f => f.ThirdPartOrderNo));
 
         CreateMap<CreateNotifyDto, NotifyGrainDto>();
         CreateMap<UpdateNotifyDto, NotifyGrainDto>();

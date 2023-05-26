@@ -10,7 +10,9 @@ using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
+using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -24,12 +26,14 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
+    private readonly IAlchemyProvider _alchemyProvider;
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
+        IAlchemyProvider alchemyProvider,
         IObjectMapper objectMapper)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
@@ -38,18 +42,18 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _objectMapper = objectMapper;
         _logger = logger;
         _alchemyOptions = merchantOptions.Value.alchemy;
+        _alchemyProvider = alchemyProvider;
     }
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
         //callback signature format(appId,appSecret,appId+orderNo+crypto+network+address)
         var callbackSignature = $"{_alchemyOptions.AppId}{input.OrderNo}{input.Crypto}{input.Network}{input.Address}";
-        if (!CheckSignature(input.Signature, callbackSignature, out var expectedSignature))
+        if (!CheckSignature(input.Signature, callbackSignature))
         {
             _logger.LogWarning(
                 "This callback verification failed, order id :{OrderNo}, and the signature :{Signature}",
                 input.OrderNo, input.Signature);
-            _logger.LogDebug("{OrderNo}, expected signature:{expectedSignature}", input.OrderNo, expectedSignature);
             return new BasicOrderResult()
             {
                 Message =
@@ -64,10 +68,10 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             return new BasicOrderResult() { Message = $"No order found for {grainId}" };
         }
 
-        if (esOrderData.Status == input.Status)
-        {
-            return new BasicOrderResult() { Message = $"Order status {input.Status} no need to update." };
-        }
+        // if (esOrderData.Status == input.Status)
+        // {
+        //     return new BasicOrderResult() { Message = $"Order status {input.Status} no need to update." };
+        // }
 
         var dataToBeUpdated = MergeEsAndInput2GrainModel(input, esOrderData);
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
@@ -89,6 +93,23 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         return new BasicOrderResult() { Success = true, Message = result.Message };
     }
 
+    public async Task UpdateAlchemyTxHashAsync(UpdateAlchemyTxHashDto input)
+    {
+        Guid grainId = ThirdPartHelper.GetOrderId(input.OrderId);
+        var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
+        if (orderData == null)
+        {
+            _logger.LogError("No order found for {grainId}", grainId);
+            throw new UserFriendlyException($"No order found for {grainId}");
+        }
+
+        var alchemySellOrderWaitUpdated = _objectMapper.Map<OrderDto, UpdateAlchemySellOrderDto>(orderData);
+        alchemySellOrderWaitUpdated.TxHash = input.TxHash;
+
+        await _alchemyProvider.HttpPost2Alchemy(_alchemyOptions.UpdateSellOrderUri,
+            JsonConvert.SerializeObject(alchemySellOrderWaitUpdated));
+    }
+
     private OrderGrainDto MergeEsAndInput2GrainModel(AlchemyOrderUpdateDto alchemyData, OrderDto esOrderData)
     {
         var orderGrainData = _objectMapper.Map<AlchemyOrderUpdateDto, OrderGrainDto>(alchemyData);
@@ -105,7 +126,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         return orderGrainData;
     }
 
-    private bool CheckSignature(string signature, string requestSignature, out string expectedSignature)
+    private bool CheckSignature(string signature, string requestSignature)
     {
         byte[] bytes = Encoding.UTF8.GetBytes(_alchemyOptions.AppId + _alchemyOptions.AppSecret + requestSignature);
         byte[] hashBytes = SHA1.Create().ComputeHash(bytes);
@@ -116,7 +137,8 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             sb.Append(t.ToString("X2"));
         }
 
-        expectedSignature = sb.ToString().ToLower();
-        return sb.ToString().ToLower() == signature;
+        var expectedSignature = sb.ToString().ToLower();
+        _logger.LogDebug("Expected signature:{expectedSignature}", expectedSignature);
+        return expectedSignature == signature;
     }
 }
