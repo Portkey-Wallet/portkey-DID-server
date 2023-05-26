@@ -5,6 +5,7 @@ using Xunit;
 
 namespace CAServer.Google;
 
+[Collection(CAServerTestConsts.CollectionDefinitionName)]
 public partial class GoogleRecapthaTests : CAServerApplicationTestBase
 {
     private readonly IGoogleAppService _googleAppService;
