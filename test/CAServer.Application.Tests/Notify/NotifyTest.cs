@@ -4,13 +4,14 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Notify.Dtos;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
 namespace CAServer.Notify;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public class NotifyTest : CAServerApplicationTestBase
+public partial class NotifyTest : CAServerApplicationTestBase
 {
     private readonly INotifyAppService _notifyAppService;
     private readonly INESTRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
@@ -19,6 +20,11 @@ public class NotifyTest : CAServerApplicationTestBase
     {
         _notifyAppService = GetRequiredService<INotifyAppService>();
         _notifyRulesRepository = GetRequiredService<INESTRepository<NotifyRulesIndex, Guid>>();
+    }
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetIpInfo());
     }
 
     [Fact]
