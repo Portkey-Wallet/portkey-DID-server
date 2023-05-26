@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Notify.Dtos;
 
@@ -10,4 +11,7 @@ public interface INotifyAppService
     Task<NotifyResultDto> CreateAsync(CreateNotifyDto notifyDto);
     Task<NotifyResultDto> UpdateAsync(Guid id, UpdateNotifyDto notifyDto);
     Task DeleteAsync(Guid id);
+
+    Task<List<NotifyResultDto>> CreateFromCmsAsync(string version);
+    Task<NotifyResultDto> UpdateFromCmsAsync(Guid id);
 }

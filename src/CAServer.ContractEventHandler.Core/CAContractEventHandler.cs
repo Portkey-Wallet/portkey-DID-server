@@ -25,7 +25,8 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
     {
         try
         {
-            await _contractAppService.CreateHolderInfoAsync(eventData);
+            // CreateHolderInfo can take a long time
+            _ = _contractAppService.CreateHolderInfoAsync(eventData);
         }
         catch (Exception e)
         {

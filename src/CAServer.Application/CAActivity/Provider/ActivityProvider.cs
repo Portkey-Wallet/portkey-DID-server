@@ -30,21 +30,20 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
     }
 
 
-    public async Task<TransactionsDto> GetTwoCaTransactionsAsync(string fromAddress, string toAddress,
-        string fromChainId, string toChainId, string symbolOpt, int inputSkipCount, int inputMaxResultCount)
+    public async Task<TransactionsDto> GetTwoCaTransactionsAsync(List<CAAddressInfo> twoCaAddresses, string symbolOpt,
+        List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
     {
         return await _graphQlHelper.QueryAsync<TransactionsDto>(new GraphQLRequest
         {
             Query = @"
-			    query ($chainId:String,$symbol:String,$fromAddress:String,$toAddress:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!){
-                    twoCaHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,fromAddress:$fromAddress,toAddress:$toAddress,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!){
+                    twoCaHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                     data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount}
                 }",
             Variables = new
             {
-                fromAddress = fromAddress, toAddress = toAddress,
-                fromChainId = fromChainId, toChainId = toChainId, symbol = symbolOpt,
-                skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                caAddressInfos = twoCaAddresses, symbol = symbolOpt,
+                methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
                 startBlockHeight = 0, endBlockHeight = 0
             }
         });

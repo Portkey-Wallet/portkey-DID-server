@@ -8,8 +8,8 @@ namespace CAServer.CAActivity.Provider;
 
 public interface IActivityProvider
 {
-    Task<TransactionsDto> GetTwoCaTransactionsAsync(string fromAddress, string toAddress,
-        string fromChainId, string toChainId, string symbolOpt, int inputSkipCount, int inputMaxResultCount);
+    Task<TransactionsDto> GetTwoCaTransactionsAsync(List<CAAddressInfo> twoCaAddresses, string symbolOpt,
+        List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount);
 
     Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> addressInfos, string inputChainId,
         string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount);

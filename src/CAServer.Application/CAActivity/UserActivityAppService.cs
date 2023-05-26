@@ -51,7 +51,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         // addresses of current user
         var caAddresses = request.CaAddressInfos.IsNullOrEmpty()
             ? new List<string>()
-            : request.TargetAddressInfos.Select(info => info.CaAddress).ToList();
+            : request.CaAddressInfos.Select(info => info.CaAddress).ToList();
         try
         {
             if (request.CaAddressInfos.IsNullOrEmpty() || request.TargetAddressInfos.IsNullOrEmpty())
@@ -59,10 +59,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 throw new UserFriendlyException("Parameters “CaAddressInfos” “TargetAddressInfos” must be non-empty");
             }
 
-            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(
-                request.CaAddressInfos[0].CaAddress, request.TargetAddressInfos[0].CaAddress,
-                request.CaAddressInfos[0].ChainId, request.TargetAddressInfos[0].ChainId,
-                request.Symbol, request.SkipCount, request.MaxResultCount);
+            var twoCaAddress = new List<CAAddressInfo>() { request.CaAddressInfos[0], request.TargetAddressInfos[0] };
+            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(twoCaAddress,
+                request.Symbol, ActivityConstants.RecentTypes, request.SkipCount, request.MaxResultCount);
 
             var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
             return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
@@ -74,7 +73,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetTwoCaTransactionsAsync error, addresses={addresses}", string.Join(",", caAddresses));
+            _logger.LogError(e, "GetTwoCaTransactionsAsync error, addresses={addresses}",
+                string.Join(",", caAddresses));
             throw new UserFriendlyException("Internal service error, place try again later.");
         }
     }
@@ -122,7 +122,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
-            var activitiesDto = await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0);
+            var activitiesDto =
+                await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
@@ -294,10 +295,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (needMap)
             {
-                dto.TransactionName = dto.NftInfo != null && string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
+                var typeName = ActivityConstants.TypeMap.GetValueOrDefault(dto.TransactionType, dto.TransactionType);
+                dto.TransactionName = dto.NftInfo != null && !string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
                                       ActivityConstants.ShowNftTypes.Contains(dto.TransactionType)
-                    ? ActivityConstants.TypeMap[dto.TransactionType] + " NFT"
-                    : ActivityConstants.TypeMap[dto.TransactionType];
+                    ? typeName + " NFT"
+                    : typeName;
             }
 
             getActivitiesDto.Add(dto);

@@ -4,13 +4,14 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Notify.Dtos;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
 namespace CAServer.Notify;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public class NotifyTest : CAServerApplicationTestBase
+public partial class NotifyTest : CAServerApplicationTestBase
 {
     private readonly INotifyAppService _notifyAppService;
     private readonly INESTRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
@@ -19,6 +20,11 @@ public class NotifyTest : CAServerApplicationTestBase
     {
         _notifyAppService = GetRequiredService<INotifyAppService>();
         _notifyRulesRepository = GetRequiredService<INESTRepository<NotifyRulesIndex, Guid>>();
+    }
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetIpInfo());
     }
 
     [Fact]
@@ -85,7 +91,7 @@ public class NotifyTest : CAServerApplicationTestBase
         var createDto = await _notifyAppService.CreateAsync(dto);
         await _notifyAppService.DeleteAsync(createDto.Id);
     }
-    
+
     [Fact]
     public async Task Pull_Test()
     {
@@ -101,7 +107,8 @@ public class NotifyTest : CAServerApplicationTestBase
             ReleaseTime = DateTime.UtcNow,
             DownloadUrl = "http://127.0.0.1",
             IsForceUpdate = true,
-            IsApproved = true
+            IsApproved = true,
+            NotifyId = 1
         };
 
         var createDto = await _notifyAppService.CreateAsync(dto);
@@ -113,7 +120,8 @@ public class NotifyTest : CAServerApplicationTestBase
             DeviceTypes = new[] { "Android" },
             SendTypes = new[] { NotifySendType.None },
             IsApproved = true,
-            Id = createDto.Id
+            Id = createDto.Id,
+            NotifyId = 1
         });
 
         var result = await _notifyAppService.PullNotifyAsync(new PullNotifyDto()
@@ -126,5 +134,4 @@ public class NotifyTest : CAServerApplicationTestBase
 
         result.Title.ShouldBe("Update Portkey");
     }
-    
 }
