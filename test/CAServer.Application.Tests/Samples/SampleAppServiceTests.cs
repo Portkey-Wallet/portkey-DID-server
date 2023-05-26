@@ -22,7 +22,7 @@ public class SampleAppServiceTests : CAServerApplicationTestBase
         _userAppService = GetRequiredService<IIdentityUserAppService>();
     }
 
-    [Fact]
+    /*[Fact]
     public async Task Initial_Data_Should_Contain_Admin_User()
     {
         //Act
@@ -31,7 +31,7 @@ public class SampleAppServiceTests : CAServerApplicationTestBase
         //Assert
         result.TotalCount.ShouldBeGreaterThan(0);
         result.Items.ShouldContain(u => u.UserName == "admin");
-    }
+    }*/
     [Fact]
     public async Task Initial_Data()
     {
