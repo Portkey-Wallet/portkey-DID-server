@@ -14,6 +14,7 @@ public class Program
 {
     public async static Task<int> Main(string[] args)
     {
+        System.Threading.ThreadPool.SetMinThreads(300, 300);
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
