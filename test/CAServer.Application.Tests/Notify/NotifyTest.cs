@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
@@ -21,10 +22,11 @@ public partial class NotifyTest : CAServerApplicationTestBase
         _notifyAppService = GetRequiredService<INotifyAppService>();
         _notifyRulesRepository = GetRequiredService<INESTRepository<NotifyRulesIndex, Guid>>();
     }
-    
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(GetIpInfo());
+        services.AddSingleton(GetNotifyProvider());
     }
 
     [Fact]
@@ -68,6 +70,24 @@ public partial class NotifyTest : CAServerApplicationTestBase
 
         updateResult.ShouldNotBeNull();
         updateResult.Title.ShouldBe(newTitle);
+    }
+
+    [Fact]
+    public async Task CreateFromCms_Test()
+    {
+        var result = await _notifyAppService.CreateFromCmsAsync("");
+        result.ShouldNotBeNull();
+        result.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task UpdateFromCms_Test()
+    {
+        var resultDto = await _notifyAppService.CreateFromCmsAsync("");
+        var notify = resultDto.First();
+
+        var result = await _notifyAppService.UpdateFromCmsAsync(notify.Id);
+        result.ShouldNotBeNull();
     }
 
     [Fact]
