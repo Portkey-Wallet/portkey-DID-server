@@ -82,6 +82,23 @@ public partial class GuardianTest : CAServerApplicationTestBase
             e.Message.ShouldBe($"{guardianIdentifier} not exist.");
         }
     }
+    
+    [Fact]
+    public async Task GetGuardianIdentifiers_Invalid_Params_Test()
+    {
+        try
+        {
+            await _guardianAppService.GetGuardianIdentifiersAsync(new GuardianIdentifierDto
+            {
+                GuardianIdentifier = "",
+                ChainId = "TEST"
+            });
+        }
+        catch (Exception e)
+        {
+            Assert.True(e is AbpValidationException);
+        }
+    }
 
     [Fact]
     public async Task GetRegisterInfo_Invalid_Params_Test()
@@ -130,6 +147,19 @@ public partial class GuardianTest : CAServerApplicationTestBase
         catch (Exception e)
         {
             e.Message.ShouldBe("Guardian not exist.");
+        }
+    }
+    
+    [Fact]
+    public async Task GetRegisterInfo_Params_Error_Test()
+    {
+        try
+        {
+            await _guardianAppService.GetRegisterInfoAsync(new RegisterInfoDto());
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldContain("valid");
         }
     }
 
