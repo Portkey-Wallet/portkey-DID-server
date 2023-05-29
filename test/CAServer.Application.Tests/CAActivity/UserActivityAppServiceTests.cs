@@ -24,17 +24,17 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
     {
         _userActivityAppService = GetRequiredService<IUserActivityAppService>();
     }
-    
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockTokenAppService());
         services.AddSingleton(GetUserContactProvider());
-        services.AddSingleton(GetActivitiesIcon()); 
+        services.AddSingleton(GetActivitiesIcon());
         services.AddSingleton(GetMockActivityProvider());
     }
-    
+
     private void Login(Guid userId)
     {
         _currentUser.Id.Returns(userId);
@@ -56,6 +56,51 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         result.TransactionType.ShouldBe("methodName");
         //result.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         result.TransactionFees.First().Decimals.ShouldBe("8");
+    }
+
+    [Fact]
+    public async Task GetTwoCaTransactionsTest()
+    {
+        Login(Guid.NewGuid());
+        var param = new GetTwoCaTransactionRequestDto
+        {
+            TargetAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    ChainId = "test",
+                    CaAddress = "CaAddress"
+                }
+            },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    ChainId = "test",
+                    CaAddress = "CaAddress"
+                }
+            }
+        };
+
+        var result = await _userActivityAppService.GetTwoCaTransactionsAsync(param);
+        result.ShouldNotBeNull();
+        result.TotalRecordCount.ShouldBe(1);
+    }
+    
+    [Fact]
+    public async Task GetTwoCaTransactions_Param_Empty_Test()
+    {
+        Login(Guid.NewGuid());
+        var param = new GetTwoCaTransactionRequestDto();
+
+        try
+        {
+            var result = await _userActivityAppService.GetTwoCaTransactionsAsync(param);
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldContain("must be non-empty");
+        }
     }
 
     [Fact]
