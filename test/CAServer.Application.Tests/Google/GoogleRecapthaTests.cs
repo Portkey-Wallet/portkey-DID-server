@@ -20,7 +20,6 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetGoogleRecaptchaOptions());
         services.AddSingleton(GetMockCacheProvider());
-        base.AfterAddApplication(services);
     }
 
 
@@ -47,7 +46,4 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
         var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
         result.ShouldBeFalse();
     }
-
-
-
 }

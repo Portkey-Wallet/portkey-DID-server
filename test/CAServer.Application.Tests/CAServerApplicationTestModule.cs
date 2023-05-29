@@ -1,10 +1,14 @@
+using System;
 using System.Collections.Generic;
+using System.Configuration;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
@@ -21,6 +25,16 @@ public class CAServerApplicationTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // load config from [appsettings.Development.json]
+        var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
+            .AddEnvironmentVariables();
+
+        var configuration = builder.Build();
+
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
@@ -56,13 +70,15 @@ public class CAServerApplicationTestModule : AbpModule
         tokenList.Add(token1);
         tokenList.Add(token2);
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
-        context.Services.Configure<IpServiceSettingOptions>(o =>
-        {
-            o.ExpirationDays = 1;
-            o.BaseUrl = "http://127.0.0.1:6889";
-            o.Language = "zh";
-            o.AccessKey = "";
-        });
+        // context.Services.Configure<IpServiceSettingOptions>(o =>
+        // {
+        //     o.ExpirationDays = 1;
+        //     o.BaseUrl = "http://127.0.0.1:6889";
+        //     o.Language = "zh";
+        //     o.AccessKey = "";
+        // });
+        context.Services.Configure<IpServiceSettingOptions>(o => o.ExpirationDays = 1);
+
         // context.Services.AddTransient<IDistributedEventHandler<UserTokenEto>>(sp =>
         //     sp.GetService<UserTokenEntityHandler>());
 
