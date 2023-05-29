@@ -1,19 +1,24 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Message.Dtos;
+using CAServer.Message.Etos;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.AspNetCore.SignalR;
+using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.Hubs;
 
 public class CAHub : AbpHub
 {
+    private readonly IDistributedEventBus _distributedEventBus;
     private readonly IHubService _hubService;
     private readonly ILogger<CAHub> _logger;
 
-    public CAHub(ILogger<CAHub> logger, IHubService hubService)
+    public CAHub(ILogger<CAHub> logger, IHubService hubService, IDistributedEventBus distributedEventBus)
     {
         _logger = logger;
         _hubService = hubService;
+        _distributedEventBus = distributedEventBus;
     }
 
 
@@ -37,6 +42,15 @@ public class CAHub : AbpHub
         }
 
         _hubService.Ack(clientId, requestId);
+    }
+
+    public async Task BindAlchemyOrder(AlchemyTargetAddressDto request)
+    {
+        await _distributedEventBus.PublishAsync(new AlchemyTargetAddressDto()
+        {
+            TargetClientId = request.TargetClientId,
+            OrderId = request.OrderId
+        });
     }
 
     public override Task OnDisconnectedAsync(Exception? exception)

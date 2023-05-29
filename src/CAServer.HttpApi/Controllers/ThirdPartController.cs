@@ -1,12 +1,10 @@
 using System.Threading.Tasks;
 using CAServer.Message;
-using CAServer.Message.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
-using AlchemyTargetAddressDto = CAServer.Message.Dtos.AlchemyTargetAddressDto;
 
 namespace CAServer.Controllers;
 
@@ -106,9 +104,4 @@ public class AlchemyController : CAServerController
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
     }
 
-    [HttpPost("targetAddress")]
-    public async Task AlchemyTargetAddress(AlchemyTargetAddressDto request)
-    {
-        await _messageAppService.AlchemyTargetAddress(request);
-    }
 }

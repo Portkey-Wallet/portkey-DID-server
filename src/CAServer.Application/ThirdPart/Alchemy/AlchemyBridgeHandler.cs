@@ -58,7 +58,8 @@ public class AlchemyBridgeHandler : IDistributedEventHandler<AlchemyTargetAddres
                             Body = JsonConvert.SerializeObject(
                                 _objectMapper.Map<OrderDto, AlchemyTargetAddressDto>(esOrderData))
                         },
-                        eventData.TargetClientId, "returnAlchemyTargetAddress");
+                        eventData.TargetClientId, "returnAlchemyTargetAddress"
+                    );
                     _logger.LogInformation("Get alchemy order {orderId} target address {address} success",
                         eventData.OrderId, esOrderData.Address);
                     break;
