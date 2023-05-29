@@ -44,9 +44,9 @@ public class CAHub : AbpHub
         _hubService.Ack(clientId, requestId);
     }
 
-    public async Task BindAlchemyOrder(AlchemyTargetAddressDto request)
+    public async Task RequestAchTxAddress(AlchemyTargetAddressDto request)
     {
-        await _distributedEventBus.PublishAsync(new AlchemyTargetAddressDto()
+        await _distributedEventBus.PublishAsync(new AlchemyTargetAddressEto()
         {
             TargetClientId = request.TargetClientId,
             OrderId = request.OrderId
