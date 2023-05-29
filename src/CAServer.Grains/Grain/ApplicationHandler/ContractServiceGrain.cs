@@ -3,6 +3,7 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
+using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -127,7 +128,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     }
 
     public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId,
-        TransactionInfoDto transactionInfoDto)
+        TransactionInfo transactionInfo)
     {
         try
         {
@@ -137,10 +138,10 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             var syncHolderInfoInput = new SyncHolderInfoInput();
 
-            var validateTokenHeight = transactionInfoDto.TransactionResultDto.BlockNumber;
+            var validateTokenHeight = transactionInfo.BlockNumber;
 
             var merklePathDto =
-                await client.GetMerklePathByTransactionIdAsync(transactionInfoDto.TransactionResultDto.TransactionId);
+                await client.GetMerklePathByTransactionIdAsync(transactionInfo.TransactionId);
             var merklePath = new MerklePath();
             foreach (var node in merklePathDto.MerklePathNodes)
             {
@@ -156,7 +157,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 FromChainId = ChainHelper.ConvertBase58ToChainId(chainId),
                 MerklePath = merklePath,
                 ParentChainHeight = validateTokenHeight,
-                TransactionBytes = transactionInfoDto.Transaction.ToByteString()
+                TransactionBytes = ByteString.CopyFrom(transactionInfo.Transaction)
             };
 
             syncHolderInfoInput.VerificationTransactionInfo = verificationTransactionInfo;

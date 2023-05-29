@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.CAActivity.Dtos;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -26,6 +27,26 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         _graphQlHelper = graphQlHelper;
         _caHolderIndexRepository = caHolderIndexRepository;
         _chainOptions = chainOptions.Value;
+    }
+
+
+    public async Task<TransactionsDto> GetTwoCaTransactionsAsync(List<CAAddressInfo> twoCaAddresses, string symbolOpt,
+        List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<TransactionsDto>(new GraphQLRequest
+        {
+            Query = @"
+			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!){
+                    twoCaHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount}
+                }",
+            Variables = new
+            {
+                caAddressInfos = twoCaAddresses, symbol = symbolOpt,
+                methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                startBlockHeight = 0, endBlockHeight = 0
+            }
+        });
     }
 
     public async Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> caAddressInfos, string inputChainId,

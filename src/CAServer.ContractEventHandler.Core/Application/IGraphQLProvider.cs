@@ -40,7 +40,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
     private readonly ILogger<ContractProvider> _logger;
 
     public GraphQLProvider(ILogger<ContractProvider> logger, IClusterClient clusterClient,
-        IOptions<GraphQLOptions> graphQLOptions)
+        IOptionsSnapshot<GraphQLOptions> graphQLOptions)
     {
         _logger = logger;
         _clusterClient = clusterClient;
@@ -132,7 +132,9 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
                 BlockHeight = record.BlockHeight,
                 CaHash = record.CaHash,
                 ChangeType = record.ChangeType,
-                Value = record.LoginGuardian.IdentifierHash
+                NotLoginGuardian = record.ChangeType == QueryLoginGuardianType.LoginGuardianUnbound
+                    ? record.LoginGuardian.IdentifierHash
+                    : null
             });
         }
 
@@ -175,8 +177,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             {
                 BlockHeight = record.BlockHeight,
                 CaHash = record.CaHash,
-                ChangeType = record.ChangeType,
-                Value = record.Address
+                ChangeType = record.ChangeType
             });
         }
 

@@ -11,4 +11,5 @@ public class NotifyBase
     public string DownloadUrl { get; set; }
     public DateTime ReleaseTime { get; set; }
     public bool IsForceUpdate { get; set; }
+    public StyleType StyleType { get; set; }
 }

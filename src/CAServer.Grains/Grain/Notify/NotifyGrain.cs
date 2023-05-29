@@ -63,6 +63,7 @@ public class NotifyGrain : Grain<NotifyState>, INotifyGrain
         notifyData.OperatingSystemVersions = rules.OperatingSystemVersions;
         notifyData.SendTypes = rules.SendTypes;
         notifyData.IsApproved = rules.IsApproved;
+        notifyData.Countries = rules.Countries;
 
         result.Success = true;
         result.Data = notifyData;
@@ -92,6 +93,7 @@ public class NotifyGrain : Grain<NotifyState>, INotifyGrain
         notifyData.OperatingSystemVersions = rules.OperatingSystemVersions;
         notifyData.SendTypes = rules.SendTypes;
         notifyData.IsApproved = rules.IsApproved;
+        notifyData.Countries = rules.Countries;
 
         result.Success = true;
         result.Data = notifyData;

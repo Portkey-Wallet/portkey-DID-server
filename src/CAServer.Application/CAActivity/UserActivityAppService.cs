@@ -45,6 +45,40 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _imageProcessProvider = imageProcessProvider;
     }
 
+
+    public async Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetTwoCaTransactionRequestDto request)
+    {
+        // addresses of current user
+        var caAddresses = request.CaAddressInfos.IsNullOrEmpty()
+            ? new List<string>()
+            : request.CaAddressInfos.Select(info => info.CaAddress).ToList();
+        try
+        {
+            if (request.CaAddressInfos.IsNullOrEmpty() || request.TargetAddressInfos.IsNullOrEmpty())
+            {
+                throw new UserFriendlyException("Parameters “CaAddressInfos” “TargetAddressInfos” must be non-empty");
+            }
+
+            var twoCaAddress = new List<CAAddressInfo>() { request.CaAddressInfos[0], request.TargetAddressInfos[0] };
+            var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(twoCaAddress,
+                request.Symbol, ActivityConstants.RecentTypes, request.SkipCount, request.MaxResultCount);
+
+            var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
+            return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
+                request.Height, needMap: true);
+        }
+        catch (UserFriendlyException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetTwoCaTransactionsAsync error, addresses={addresses}",
+                string.Join(",", caAddresses));
+            throw new UserFriendlyException("Internal service error, place try again later.");
+        }
+    }
+
     public async Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto request)
     {
         try
@@ -60,7 +94,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, request.ChainId,
                 request.Symbol, filterTypes, request.SkipCount, request.MaxResultCount);
             return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
-                request.Height);
+                request.Height, needMap: true);
         }
         catch (Exception e)
         {
@@ -71,9 +105,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     private List<string> FilterTypes(IEnumerable<string> reqList)
     {
-        if (reqList == null)
+        if (reqList == null || reqList.Count() == 0)
         {
-            return ActivityConstants.DefaultTypes;
+            return ActivityConstants.TypeMap.Keys.ToList();
         }
 
         var ans = reqList.Where(e => ActivityConstants.AllSupportTypes.Contains(e)).ToList();
@@ -88,7 +122,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
-            var activitiesDto = await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0);
+            var activitiesDto =
+                await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
@@ -160,7 +195,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     }
 
     private async Task<GetActivitiesDto> IndexerTransaction2Dto(List<string> caAddresses,
-        IndexerTransactions indexerTransactions, [CanBeNull] string chainId, int weidth, int height)
+        IndexerTransactions indexerTransactions, [CanBeNull] string chainId, int weidth, int height,
+        bool needMap = false)
     {
         var result = new GetActivitiesDto
         {
@@ -256,7 +292,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 dto.IsDelegated = true;
             }
-            
+
+            if (needMap)
+            {
+                var typeName = ActivityConstants.TypeMap.GetValueOrDefault(dto.TransactionType, dto.TransactionType);
+                dto.TransactionName = dto.NftInfo != null && !string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
+                                      ActivityConstants.ShowNftTypes.Contains(dto.TransactionType)
+                    ? typeName + " NFT"
+                    : typeName;
+            }
+
             getActivitiesDto.Add(dto);
         }
 
