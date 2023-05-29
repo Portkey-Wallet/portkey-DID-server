@@ -86,11 +86,11 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
         catch (Exception e)
         {
-            _logger.LogError("AES encrypting exception , error msg is {exception}",e);
+            _logger.LogError("AES encrypting exception , error msg is {errorMsg}", e.Message);
             return new AlchemySignatureResultDto()
             {
                 Success = "Fail",
-                ReturnMsg = $"Error AES encrypting, error msg is {e}"
+                ReturnMsg = $"Error AES encrypting, error msg is {e.Message}"
             };
         }
     }

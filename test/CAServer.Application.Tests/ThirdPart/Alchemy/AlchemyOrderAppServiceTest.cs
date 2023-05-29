@@ -21,6 +21,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        services.AddSingleton(getMockThirdPartOptions());
     }
 
     [Fact]
@@ -30,7 +31,8 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
         {
             MerchantOrderNo = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
             Status = "1",
-            Address = "Address"
+            Address = "Address",
+            Signature = "5f4e9f8c1f3a63c12032b9c6c59a019c259bd063"
         };
         var result = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
         result.Success.ShouldBe(true);
@@ -39,9 +41,52 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
         {
             MerchantOrderNo = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
             Status = "2",
-            Address = "Address"
+            Address = "Address",
+            Signature = "5f4e9f8c1f3a63c12032b9c6c59a019c259bd063"
         };
         var resultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(inputFail);
         resultFail.Success.ShouldBe(false);
+        
+        var signatureFail = new AlchemyOrderUpdateDto
+        {
+            MerchantOrderNo = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
+            Status = "2",
+            Address = "Address",
+            Signature = "1111111111111111111111111111111111"
+        };
+        var signResultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(signatureFail);
+        signResultFail.Success.ShouldBe(false);
+    }
+
+    [Fact]
+    public async Task UpdateAlchemyTxHashAsyncTest()
+    {
+        var input = new UpdateAlchemyTxHashDto()
+        {
+            OrderId = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
+            TxHash = "123"
+        };
+        try
+        {
+            await _alchemyOrderAppService.UpdateAlchemyTxHashAsync(input);
+        }
+        catch (Exception e)
+        {
+            e.ShouldBe(null);
+        }
+
+        var inputFail = new UpdateAlchemyTxHashDto()
+        {
+            OrderId = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
+            TxHash = "123"
+        };
+        try
+        {
+            await _alchemyOrderAppService.UpdateAlchemyTxHashAsync(inputFail);
+        }
+        catch (Exception e)
+        {
+            e.ShouldNotBe(null);
+        }
     }
 }

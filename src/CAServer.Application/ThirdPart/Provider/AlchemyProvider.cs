@@ -63,7 +63,7 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
     }
 
     // Set Alchemy request header with appId timestamp sign.
-    public void SetAlchemyRequestHeader(HttpClient client)
+    private void SetAlchemyRequestHeader(HttpClient client)
     {
         string timeStamp = TimeStampHelper.GetTimeStampInMilliseconds();
         var sign = GenerateAlchemyApiSign(timeStamp);
@@ -76,7 +76,7 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
     }
 
     // Generate Alchemy request sigh by "appId + appSecret + timestamp".
-    public string GenerateAlchemyApiSign(string timeStamp)
+    private string GenerateAlchemyApiSign(string timeStamp)
     {
         byte[] bytes = Encoding.UTF8.GetBytes(_alchemyOptions.AppId + _alchemyOptions.AppSecret + timeStamp);
         byte[] hashBytes = SHA1.Create().ComputeHash(bytes);
