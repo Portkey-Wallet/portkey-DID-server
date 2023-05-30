@@ -23,9 +23,6 @@ public class SampleAppService : CAServerAppService, ISampleAppService
     {
         var grain = _clusterClient.GetGrain<ISampleGrain>(0);
         string message = await grain.SayHello(from, to);
-
-        var me = await grain.GetLastMessage();
-        Console.WriteLine("### " + JsonConvert.SerializeObject(me));
         return message;
     }
 }
