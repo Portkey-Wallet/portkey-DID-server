@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Principal;
@@ -57,7 +58,39 @@ public partial class AppleAuthTest : CAServerApplicationTestBase
             e.ShouldNotBeNull();
         }
     }
-    //todo mock client and get token
+
+    [Fact]
+    public async Task Receive_Invalid_Params_Test()
+    {
+        try
+        {
+            var options = new AppleAuthOptions
+            {
+                Audiences = new List<string>(),
+                RedirectUrl = string.Empty,
+                BingoRedirectUrl = string.Empty,
+                UnifyRedirectUrl = string.Empty,
+                ExtensionConfig = new ExtensionConfig
+                {
+                    PrivateKey = string.Empty,
+                    TeamId = string.Empty,
+                    ClientId = string.Empty,
+                    KeyId = string.Empty
+                }
+            };
+            
+            await _appleAuthAppService.ReceiveAsync(new AppleAuthDto()
+            {
+                Code = string.Empty,
+                Id_token = string.Empty
+            });
+        }
+        catch (Exception e)
+        {
+            e.ShouldNotBeNull();
+            e.Message.ShouldContain("valid");
+        }
+    }
 
     private JwtSecurityTokenHandler GetJwtSecurityTokenHandlerMock()
     {

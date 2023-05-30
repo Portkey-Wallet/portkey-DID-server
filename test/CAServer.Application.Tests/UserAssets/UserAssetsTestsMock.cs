@@ -29,17 +29,22 @@ public partial class UserAssetsTests
                     new()
                     {
                         ChainId = "AELF"
+                    },
+                    new()
+                    {
+                        ChainId = "tDVV"
                     }
                 }
             });
 
         mockUserAssetsProvider.Setup(m =>
-                m.GetUserTokenInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                m.GetUserTokenInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(),
+                    It.IsAny<int>()))
             .ReturnsAsync(new IndexerTokenInfos
             {
                 CaHolderTokenBalanceInfo = new CaHolderTokenBalanceInfo
                 {
-                    totalRecordCount = 1,
+                    totalRecordCount = 2,
                     Data = new List<IndexerTokenInfo>
                     {
                         new()
@@ -56,31 +61,20 @@ public partial class UserAssetsTests
                                 TokenName = "Token",
                                 TotalSupply = 10000
                             }
-                        }
-                    }
-                }
-            });
-
-        mockUserAssetsProvider.Setup(m =>
-            m.GetUserNftCollectionInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
-            new IndexerNftCollectionInfos
-            {
-                CaHolderNFTCollectionBalanceInfo = new CaHolderNFTCollectionBalanceInfo
-                {
-                    TotalRecordCount = 1,
-                    Data = new List<IndexerNftCollectionInfo>
-                    {
+                        },
                         new()
                         {
                             CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
                             ChainId = "AELF",
+                            Balance = 1000,
                             TokenIds = new List<long> { 1 },
-                            NftCollectionInfo = new NftCollectionInfo
+                            TokenInfo = new TokenInfo
                             {
-                                Symbol = "TEST-0",
-                                TokenName = "TEST",
-                                TotalSupply = 1000,
-                                Decimals = 1
+                                Symbol = "CPU",
+                                Decimals = 8,
+                                TokenContractAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                                TokenName = "Token",
+                                TotalSupply = 10000
                             }
                         }
                     }
@@ -88,7 +82,35 @@ public partial class UserAssetsTests
             });
 
         mockUserAssetsProvider.Setup(m =>
-                m.GetUserNftInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                m.GetUserNftCollectionInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(
+                new IndexerNftCollectionInfos
+                {
+                    CaHolderNFTCollectionBalanceInfo = new CaHolderNFTCollectionBalanceInfo
+                    {
+                        TotalRecordCount = 1,
+                        Data = new List<IndexerNftCollectionInfo>
+                        {
+                            new()
+                            {
+                                CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                                ChainId = "AELF",
+                                TokenIds = new List<long> { 1 },
+                                NftCollectionInfo = new NftCollectionInfo
+                                {
+                                    Symbol = "TEST-0",
+                                    TokenName = "TEST",
+                                    TotalSupply = 1000,
+                                    Decimals = 1
+                                }
+                            }
+                        }
+                    }
+                });
+
+        mockUserAssetsProvider.Setup(m =>
+                m.GetUserNftInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(),
+                    It.IsAny<int>()))
             .ReturnsAsync(
                 new IndexerNftInfos
                 {
@@ -131,32 +153,50 @@ public partial class UserAssetsTests
                         Symbol = "ELF",
                         Decimals = 8
                     }
+                },
+                new()
+                {
+                    Id = Guid.Empty,
+                    UserId = Guid.Empty,
+                    IsDefault = true,
+                    IsDisplay = true,
+                    SortWeight = 100,
+                    Token = new Token
+                    {
+                        Id = Guid.Empty,
+                        Address = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                        ChainId = "tDVV",
+                        Symbol = "UF",
+                        Decimals = 8
+                    }
                 }
             });
 
         mockUserAssetsProvider.Setup(m =>
-            m.GetRecentTransactionUsersAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
-            new IndexerRecentTransactionUsers
-            {
-                CaHolderTransactionAddressInfo = new CaHolderTransactionAddressInfo
+                m.GetRecentTransactionUsersAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(
+                new IndexerRecentTransactionUsers
                 {
-                    TotalRecordCount = 1,
-                    Data = new List<CAHolderTransactionAddress>
+                    CaHolderTransactionAddressInfo = new CaHolderTransactionAddressInfo
                     {
-                        new()
+                        TotalRecordCount = 1,
+                        Data = new List<CAHolderTransactionAddress>
                         {
-                            Address = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
-                            AddressChainId = "AELF",
-                            CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
-                            ChainId = "AELF",
-                            TransactionTime = 1000
+                            new()
+                            {
+                                Address = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                                AddressChainId = "AELF",
+                                CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                                ChainId = "AELF",
+                                TransactionTime = 1000
+                            }
                         }
                     }
-                }
-            });
-        
+                });
+
         mockUserAssetsProvider.Setup(m =>
-            m.SearchUserAssetsAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            m.SearchUserAssetsAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(),
+                It.IsAny<int>())).ReturnsAsync(
             new IndexerSearchTokenNfts
             {
                 CaHolderSearchTokenNFT = new CaHolderSearchTokenNFT
@@ -164,7 +204,7 @@ public partial class UserAssetsTests
                     TotalRecordCount = 1,
                     Data = new List<IndexerSearchTokenNft>
                     {
-                        new ()
+                        new()
                         {
                             ChainId = "AELF",
                             CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
@@ -177,6 +217,10 @@ public partial class UserAssetsTests
                                 TokenContractAddress = "address",
                                 TokenName = "tokenName",
                                 TotalSupply = 1000
+                            },
+                            NftInfo = new NftInfo
+                            {
+                                Symbol = "ELF-NFT"
                             }
                         }
                     }
@@ -208,7 +252,7 @@ public partial class UserAssetsTests
                         }
                     }
                 });
-        
+
         mockTokenAppService.Setup(m => m.GetTokenPriceListAsync(It.IsAny<List<string>>()))
             .ReturnsAsync(
                 new ListResultDto<TokenPriceDataDto>

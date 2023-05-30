@@ -120,7 +120,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             try
             {
-                //var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
                 var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
                 if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
             }
@@ -208,31 +207,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException($"{guardianIdentifier ?? "identifier"} not exist.",
                 GuardianMessageCode.NotExist);
         }
-    }
-
-    private async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(
-        string guardianIdentifierHash,
-        string caHash,
-        ChainInfo chainInfo)
-    {
-        var param = new GetHolderInfoInput();
-
-        if (!string.IsNullOrWhiteSpace(caHash))
-        {
-            param.CaHash = Hash.LoadFromHex(caHash);
-            param.LoginGuardianIdentifierHash = null;
-        }
-        else
-        {
-            param.LoginGuardianIdentifierHash = AElf.Types.Hash.LoadFromHex(guardianIdentifierHash);
-            param.CaHash = null;
-        }
-
-        var output =
-            await ContractHelper.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param, false,
-                chainInfo);
-
-        return output;
     }
 
     private async Task<Dictionary<string, string>> GetIdentifiersAsync(List<string> identifierHashList)
