@@ -31,7 +31,7 @@ public class CAHub : AbpHub
 
         await _hubService.RegisterClient(clientId, Context.ConnectionId);
         _logger.LogInformation("clientId={ClientId} connect", clientId);
-        _hubService.SendAllUnreadRes(clientId);
+        await _hubService.SendAllUnreadRes(clientId);
     }
 
     public async Task Ack(string clientId, string requestId)
@@ -41,7 +41,7 @@ public class CAHub : AbpHub
             return;
         }
 
-        _hubService.Ack(clientId, requestId);
+        await _hubService.Ack(clientId, requestId);
     }
 
     public async Task RequestAchTxAddress(AlchemyTargetAddressDto request)
@@ -52,7 +52,7 @@ public class CAHub : AbpHub
     public override Task OnDisconnectedAsync(Exception? exception)
     {
         var clientId = _hubService.UnRegisterClient(Context.ConnectionId);
-        _logger.LogInformation($"clientId={clientId} disconnected!!!");
+        _logger.LogInformation("clientId={ClientId} disconnected!!!", clientId);
         return base.OnDisconnectedAsync(exception);
     }
 }
