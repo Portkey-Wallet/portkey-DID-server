@@ -1,7 +1,15 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
+using Volo.Abp.ObjectMapping;
 using CAServer.Hub;
+using CAServer.Options;
+using CAServer.ThirdPart;
+using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 
@@ -12,16 +20,26 @@ namespace CAServer.Hubs;
 public class HubService : CAServerAppService, IHubService
 {
     private readonly IHubProvider _hubProvider;
+    private readonly IHubProvider _caHubProvider;
     private readonly IHubCacheProvider _hubCacheProvider;
     private readonly IConnectionProvider _connectionProvider;
+    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly IObjectMapper _objectMapper;
     private readonly ILogger<HubService> _logger;
 
-    public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider,
-        IConnectionProvider connectionProvider, ILogger<HubService> logger)
+    public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IHubProvider caHubProvider,
+        IThirdPartOrderProvider thirdPartOrderProvider, IObjectMapper objectMapper,
+        IConnectionProvider connectionProvider, IOptions<ThirdPartOptions> merchantOptions,
+        ILogger<HubService> logger)
     {
         _hubProvider = hubProvider;
         _hubCacheProvider = hubCacheProvider;
+        _caHubProvider = caHubProvider;
+        _thirdPartOrderProvider = thirdPartOrderProvider;
+        _objectMapper = objectMapper;
         _connectionProvider = connectionProvider;
+        _thirdPartOptions = merchantOptions.Value;
         _logger = logger;
     }
 
@@ -61,9 +79,9 @@ public class HubService : CAServerAppService, IHubService
     public async Task SendAllUnreadRes(string clientId)
     {
         var unreadRes = await _hubCacheProvider.GetResponseByClientId(clientId);
-        if (unreadRes == null || unreadRes.Count == 0)
+        if (unreadRes.Count == 0)
         {
-            _logger.LogInformation("clientId={clientId}'s unread res is null", clientId);
+            _logger.LogInformation("clientId={ClientId}'s unread res is null", clientId);
             return;
         }
 
@@ -90,5 +108,55 @@ public class HubService : CAServerAppService, IHubService
     public async Task Ack(string clientId, string requestId)
     {
         await _hubCacheProvider.RemoveResponseByClientId(clientId, requestId);
+    }
+
+
+    public async Task RequestAchTxAddress(string targetClientId, string orderId)
+    {
+        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
+        while (!cts.IsCancellationRequested)
+        {
+            try
+            {
+                Guid grainId = ThirdPartHelper.GetOrderId(orderId);
+                var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
+                if (esOrderData == null)
+                {
+                    _logger.LogError("This order {OrderId} not exists in the es", orderId);
+                    break;
+                }
+                
+                if (string.IsNullOrWhiteSpace(esOrderData.Address))
+                {
+                    continue;
+                }
+
+                await _caHubProvider.ResponseAsync(
+                    new HubResponseBase<string>
+                    {
+                        Body = JsonConvert.SerializeObject(
+                            _objectMapper.Map<OrderDto, AlchemyTargetAddressDto>(esOrderData))
+                    },
+                    targetClientId, "returnAlchemyTargetAddress"
+                );
+                _logger.LogInformation("Get alchemy order {OrderId} target address {Address} success",
+                    orderId, esOrderData.Address);
+            }
+            catch (OperationCanceledException oce)
+            {
+                _logger.LogError(oce, "Timed out waiting for alchemy order {OrderId} update status", orderId);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "An exception occurred during the query alchemy order {OrderId} target address",
+                    orderId);
+                break;
+            }
+
+            _logger.LogWarning("Get alchemy order {OrderId} target address failed, wait for next time", orderId);
+            await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.Delay));
+        }
+
+        cts.Cancel();
     }
 }
