@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
-using CAServer.Sample;
 using CAServer.ThirdPart.Dtos;
 using CAServer.Verifier;
 using Shouldly;
@@ -94,19 +93,6 @@ public class ModelTest
                 CallingCode = string.Empty,
                 IsEu = false
             }
-        };
-
-        dto.ShouldNotBeNull();
-    }
-
-    [Fact]
-    public void TestDto()
-    {
-        var dto = new TestDto
-        {
-            From = string.Empty,
-            To = string.Empty,
-            Message = string.Empty
         };
 
         dto.ShouldNotBeNull();
