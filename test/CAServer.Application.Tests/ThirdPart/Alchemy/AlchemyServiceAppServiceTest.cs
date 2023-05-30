@@ -19,15 +19,33 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        services.AddSingleton(getMockThirdPartOptions());
+        // services.AddSingleton(getMockThirdPartOptions());
+    }
+
+    [Fact]
+    public async Task GetAlchemyOrderQuoteAsyncTest()
+    {
+        var input = new GetAlchemyOrderQuoteDto()
+        {
+            Crypto = "USDT",
+            Network = "ETH",
+            Fiat = "USD",
+            Country = "US",
+            Amount = "201",
+            Side = "SELL",
+            Type = "ONE"
+        };
+        var result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
+        result.Success.ShouldBe("Success");
     }
 
     /**
-     *    Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input);
-    Task<AlchemyFiatListDto> GetAlchemyFiatListAsync();
-    Task<AlchemyCryptoListDto> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input);
-    Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
-    Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input);
+     *
+        Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input);
+        Task<AlchemyFiatListDto> GetAlchemyFiatListAsync();
+        Task<AlchemyCryptoListDto> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input);
+        Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
+        Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input);
      */
     [Fact]
     public async Task GetAlchemyFreeLoginTokenAsyncTest()
