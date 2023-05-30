@@ -272,7 +272,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderDto, ThirdPart.Dtos.AlchemyTargetAddressDto>()
             .ForMember(t => t.OrderId, m => m.MapFrom(f => f.Id))
             .ForMember(t => t.TargetAddress, m => m.MapFrom(f => f.Address));
-        CreateMap<AlchemyTargetAddressDto, AlchemyTargetAddressEto>();
         CreateMap<OrderDto, UpdateAlchemySellOrderDto>()
             .ForMember(t => t.OrderNo, m => m.MapFrom(f => f.ThirdPartOrderNo));
 
