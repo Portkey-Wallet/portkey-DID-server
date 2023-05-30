@@ -127,7 +127,7 @@ public class HubService : CAServerAppService, IHubService
                 }
                 
                 // address not callback yet
-                if (!string.IsNullOrWhiteSpace(esOrderData.Address))
+                if (string.IsNullOrWhiteSpace(esOrderData.Address))
                 {
                     _logger.LogWarning("Get alchemy order {OrderId} target address failed, wait for next time", orderId);
                     await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.Delay));
