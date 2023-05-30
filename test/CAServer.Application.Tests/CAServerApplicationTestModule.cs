@@ -71,15 +71,15 @@ public class CAServerApplicationTestModule : AbpModule
         tokenList.Add(token2);
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
         context.Services.Configure<IpServiceSettingOptions>(o => o.ExpirationDays = 1);
+        context.Services.Configure<ThirdPartOptions>(o =>
+        {
+            o.timer = new ThirdPartTimerOptions()
+            {
+                TimeoutMillis = 5000,
+                DelaySeconds = 1,
+            };
+        });
         context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
-        // context.Services.Configure<ThirdPartOptions>(o =>
-        // {
-        //     o.timer = new ThirdPartTimerOptions()
-        //     {
-        //         TimeoutMillis = 5000,
-        //         DelaySeconds = 1,
-        //     };
-        // });
 
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
         {
