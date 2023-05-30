@@ -69,6 +69,7 @@ public class AlchemyOrderQuoteDataDto
     public string CryptoPrice { get; set; }
     public string CryptoQuantity { get; set; }
     public string Fiat { get; set; }
+    public string FiatQuantity { get; set; }
     public string RampFee { get; set; }
     public string NetworkFee { get; set; }
     public string PayWayCode { get; set; }
