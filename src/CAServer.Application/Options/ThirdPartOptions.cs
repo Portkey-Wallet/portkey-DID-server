@@ -9,7 +9,7 @@ public class ThirdPartOptions
 public class ThirdPartTimerOptions
 {
     public int Delay { get; set; } = 1;
-    public int Timeout { get; set; } = 5;
+    public int TimeoutMillis { get; set; } = 5000;
 }
 
 public class AlchemyOptions

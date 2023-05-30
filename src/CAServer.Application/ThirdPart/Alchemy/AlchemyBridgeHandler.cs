@@ -36,8 +36,8 @@ public class AlchemyBridgeHandler : IDistributedEventHandler<AlchemyTargetAddres
 
     public async Task HandleEventAsync(AlchemyTargetAddressEto eventData)
     {
-        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.timer.Timeout);
-
+        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
+        var counter = 0;
         while (!cts.IsCancellationRequested)
         {
             try
@@ -49,6 +49,25 @@ public class AlchemyBridgeHandler : IDistributedEventHandler<AlchemyTargetAddres
                     _logger.LogError("This order {OrderId} not exists in the es.", eventData.OrderId);
                     break;
                 }
+                
+                // TODO DELETE THIS
+                #region MOCK
+                counter++;
+                if (counter > 3)
+                {
+                    await _caHubProvider.ResponseAsync(
+                        new HubResponseBase<string>
+                        {
+                            Body = JsonConvert.SerializeObject(new AlchemyTargetAddressDto()
+                            {
+                                OrderId = new Guid("11111111-1111-1111-1111-111111111111"),
+                                TargetAddress = "aaabbbccccddd",
+                            })
+                        },
+                        eventData.TargetClientId, "onAchTxAddressReceived"
+                    );
+                }
+                #endregion
 
                 if (!string.IsNullOrWhiteSpace(esOrderData.Address))
                 {

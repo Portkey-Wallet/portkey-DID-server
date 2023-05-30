@@ -29,9 +29,9 @@ public class CAHub : AbpHub
             return;
         }
 
-        _hubService.RegisterClient(clientId, Context.ConnectionId);
-        _logger.LogInformation($"clientId={clientId} connect");
-        _hubService.SendAllUnreadRes(clientId);
+        // await _hubService.RegisterClient(clientId, Context.ConnectionId);
+        _logger.LogInformation("clientId={ClientId} connect", clientId);
+        await _hubService.SendAllUnreadRes(clientId);
     }
 
     public async Task Ack(string clientId, string requestId)
