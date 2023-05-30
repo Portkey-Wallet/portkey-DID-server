@@ -142,7 +142,7 @@ public class HubService : CAServerAppService, IHubService
                         Body = JsonConvert.SerializeObject(
                             _objectMapper.Map<OrderDto, AlchemyTargetAddressDto>(esOrderData))
                     },
-                    targetClientId, "returnAlchemyTargetAddress"
+                    targetClientId, "onAchTxAddressReceived"
                 );
                 _logger.LogInformation("Get alchemy order {OrderId} target address {Address} success",
                     orderId, esOrderData.Address);
