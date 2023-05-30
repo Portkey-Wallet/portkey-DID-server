@@ -126,11 +126,15 @@ public class HubService : CAServerAppService, IHubService
                     break;
                 }
                 
-                if (string.IsNullOrWhiteSpace(esOrderData.Address))
+                // address not callback yet
+                if (!string.IsNullOrWhiteSpace(esOrderData.Address))
                 {
+                    _logger.LogWarning("Get alchemy order {OrderId} target address failed, wait for next time", orderId);
+                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.Delay));
                     continue;
                 }
 
+                // push address to client via ws
                 await _caHubProvider.ResponseAsync(
                     new HubResponseBase<string>
                     {
@@ -141,6 +145,7 @@ public class HubService : CAServerAppService, IHubService
                 );
                 _logger.LogInformation("Get alchemy order {OrderId} target address {Address} success",
                     orderId, esOrderData.Address);
+                break;
             }
             catch (OperationCanceledException oce)
             {
@@ -152,9 +157,6 @@ public class HubService : CAServerAppService, IHubService
                     orderId);
                 break;
             }
-
-            _logger.LogWarning("Get alchemy order {OrderId} target address failed, wait for next time", orderId);
-            await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.Delay));
         }
 
         cts.Cancel();
