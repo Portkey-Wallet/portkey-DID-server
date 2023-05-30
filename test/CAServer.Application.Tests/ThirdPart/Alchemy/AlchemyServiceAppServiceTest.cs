@@ -19,7 +19,7 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        // services.AddSingleton(getMockThirdPartOptions());
+        services.AddSingleton(getMockThirdPartOptions());
     }
 
     [Fact]
