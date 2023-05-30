@@ -8,6 +8,7 @@ using CAServer.Entities.Es;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Guardian.Provider;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -82,7 +83,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
             e.Message.ShouldBe($"{guardianIdentifier} not exist.");
         }
     }
-    
+
     [Fact]
     public async Task GetGuardianIdentifiers_Invalid_Params_Test()
     {
@@ -138,6 +139,14 @@ public partial class GuardianTest : CAServerApplicationTestBase
     {
         try
         {
+            var info = new GuardianInfo { CaHolderInfo = new List<Provider.GuardianDto>() };
+            var guardianDto = new CAServer.Guardian.Provider.GuardianDto
+            {
+                OriginChainId = string.Empty,
+                GuardianList = new GuardianBaseListDto(),
+                ManagerInfos = new List<ManagerInfoDBase>()
+            };
+            
             await _guardianAppService.GetRegisterInfoAsync(new RegisterInfoDto()
             {
                 LoginGuardianIdentifier = _identifier,
@@ -149,7 +158,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
             e.Message.ShouldBe("Guardian not exist.");
         }
     }
-    
+
     [Fact]
     public async Task GetRegisterInfo_Params_Error_Test()
     {

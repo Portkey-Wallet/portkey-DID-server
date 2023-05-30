@@ -19,10 +19,6 @@ public class SampleAppService : CAServerAppService, ISampleAppService
         _clusterClient = clusterClient;
     }
 
-    public async Task<string> Hello(string from, string to)
-    {
-        var grain = _clusterClient.GetGrain<ISampleGrain>(0);
-        string message = await grain.SayHello(from, to);
-        return message;
-    }
+    public async Task<string> Hello(string from, string to) =>
+        await _clusterClient.GetGrain<ISampleGrain>(0).SayHello(from, to);
 }
