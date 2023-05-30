@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Hubs;
+using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Shouldly;
@@ -25,6 +28,7 @@ public class HubServiceTest : CAServerApplicationTestBase
         services.AddSingleton(GetHubProvider());
         // services.AddSingleton(GetConnectionProvider());
         services.AddSingleton(GetHubCacheProvider());
+        services.AddSingleton(GetThirdPartOrderProvider());
     }
 
     [Fact]
@@ -70,6 +74,13 @@ public class HubServiceTest : CAServerApplicationTestBase
         await _hubService.Ack("123", "456");
     }
 
+    [Fact]
+    public async void RequestAchTxAddress_Test()
+    {
+        await _hubService.RequestAchTxAddress("123", "00000000-0000-0000-0000-000000000001");
+        await _hubService.RequestAchTxAddress("123", "00000000-0000-0000-0000-000000000002");
+    }
+
     private IHubProvider GetHubProvider()
     {
         var provider = new Mock<IHubProvider>();
@@ -78,6 +89,28 @@ public class HubServiceTest : CAServerApplicationTestBase
         provider.Setup(m => m.ResponseAsync(It.IsAny<HubResponseBase<string>>(), It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
 
         return provider.Object;
+    }
+
+
+    private IThirdPartOrderProvider GetThirdPartOrderProvider()
+    {
+        var mockProvider = new Mock<IThirdPartOrderProvider>();
+
+        var noAddressData = new OrderDto
+        {
+            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+        };
+
+        var withAddressData = new OrderDto
+        {
+            Id = new Guid("00000000-0000-0000-0000-000000000002"),
+            Address = "123456"
+        };
+        
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000001"))).ReturnsAsync(noAddressData);
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000002"))).ReturnsAsync(withAddressData);
+
+        return mockProvider.Object;
     }
 
     private IConnectionProvider GetConnectionProvider()

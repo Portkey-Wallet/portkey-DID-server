@@ -8,7 +8,7 @@ public class ThirdPartOptions
 
 public class ThirdPartTimerOptions
 {
-    public int Delay { get; set; } = 1;
+    public int DelaySeconds { get; set; } = 1;
     public int TimeoutMillis { get; set; } = 5000;
 }
 

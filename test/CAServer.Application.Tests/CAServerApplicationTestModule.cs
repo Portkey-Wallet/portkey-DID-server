@@ -70,14 +70,15 @@ public class CAServerApplicationTestModule : AbpModule
         tokenList.Add(token1);
         tokenList.Add(token2);
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
-        // context.Services.Configure<IpServiceSettingOptions>(o =>
-        // {
-        //     o.ExpirationDays = 1;
-        //     o.BaseUrl = "http://127.0.0.1:6889";
-        //     o.Language = "zh";
-        //     o.AccessKey = "";
-        // });
         context.Services.Configure<IpServiceSettingOptions>(o => o.ExpirationDays = 1);
+        context.Services.Configure<ThirdPartOptions>(o =>
+        {
+            o.timer = new ThirdPartTimerOptions()
+            {
+                TimeoutMillis = 5000,
+                DelaySeconds = 1,
+            };
+        });
 
         // context.Services.AddTransient<IDistributedEventHandler<UserTokenEto>>(sp =>
         //     sp.GetService<UserTokenEntityHandler>());

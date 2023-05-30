@@ -131,7 +131,7 @@ public class HubService : CAServerAppService, IHubService
                 {
                     _logger.LogWarning("Get alchemy order {OrderId} target address failed, wait for next time",
                         orderId);
-                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.Delay));
+                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.DelaySeconds));
                     continue;
                 }
 
