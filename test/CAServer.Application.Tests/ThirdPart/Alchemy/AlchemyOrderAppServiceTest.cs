@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,10 +15,12 @@ namespace CAServer.ThirdPart.Alchemy;
 public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 {
     private readonly IAlchemyOrderAppService _alchemyOrderAppService;
+    private readonly IAlchemyServiceAppService _alchemyServiceAppService;
 
     public AlchemyOrderAppServiceTest()
     {
         _alchemyOrderAppService = GetRequiredService<IAlchemyOrderAppService>();
+        _alchemyServiceAppService = GetRequiredService<IAlchemyServiceAppService>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -89,4 +93,31 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             e.ShouldNotBe(null);
         }
     }
+    
+    [Fact]
+    public async Task UpdateAlchemySellAddressAsyncTest()
+    {
+        
+        var input = new AlchemyOrderUpdateDto()
+        {
+            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+            UserId = new Guid("00000000-0000-0000-0000-000000000001"),
+            MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
+            Address = "Address",
+            Status = "1",
+            Signature = "NOT_SET_YET",
+        };
+        AlchemySignatureResultDto signatureResultDto = await _alchemyServiceAppService.GetAlchemySignatureV2Async(input, new List<string>(){"signature"});
+        input.Signature = signatureResultDto.Signature;
+        
+        try
+        {
+            await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+        }
+        catch (Exception e)
+        {
+            e.ShouldBe(null);
+        }
+    }
+
 }

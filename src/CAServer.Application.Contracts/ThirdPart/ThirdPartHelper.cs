@@ -91,4 +91,15 @@ public static class AlchemyHelper
             throw e;
         }
     }
+    public static string ComputeHmacsha256(string message, string secretKey)
+    {
+        var encoding = new ASCIIEncoding();
+        byte[] keyByte = encoding.GetBytes(secretKey);
+        byte[] messageBytes = encoding.GetBytes(message);
+        using (var hmacsha256 = new HMACSHA256(keyByte))
+        {
+            byte[] hashmessage = hmacsha256.ComputeHash(messageBytes);
+            return BitConverter.ToString(hashmessage).Replace("-", "").ToLower();
+        }
+    }
 }

@@ -22,4 +22,5 @@ public class AlchemyOptions
     public string CryptoListUri { get; set; }
     public string OrderQuoteUri { get; set; }
     public string GetTokenUri { get; set; }
+    public bool SkipCheckSign { get; set; } = false;
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly ILogger<AlchemyOrderAppService> _logger;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
@@ -31,6 +33,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
+        IAlchemyServiceAppService alchemyServiceAppService,
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
         IAlchemyProvider alchemyProvider,
@@ -42,14 +45,19 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _objectMapper = objectMapper;
         _logger = logger;
         _alchemyOptions = merchantOptions.Value.alchemy;
+        _alchemyServiceAppService = alchemyServiceAppService;
         _alchemyProvider = alchemyProvider;
     }
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
-        //callback signature format(appId,appSecret,appId+orderNo+crypto+network+address)
-        var callbackSignature = $"{_alchemyOptions.AppId}{input.OrderNo}{input.Crypto}{input.Network}{input.Address}";
-        if (!CheckSignature(input.Signature, callbackSignature))
+        var inputSign = input.Signature;
+        
+        // calculate a new wanted sign
+        var wantedSignature = await _alchemyServiceAppService.GetAlchemySignatureV2Async(input, new List<string>(){"signature"});
+        
+        // compare two sign
+        if (!_alchemyOptions.SkipCheckSign && wantedSignature.Signature != inputSign)
         {
             _logger.LogWarning(
                 "This callback verification failed, order id :{OrderNo}, and the signature :{Signature}",
@@ -124,21 +132,5 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
 
         return orderGrainData;
-    }
-
-    private bool CheckSignature(string signature, string requestSignature)
-    {
-        byte[] bytes = Encoding.UTF8.GetBytes(_alchemyOptions.AppId + _alchemyOptions.AppSecret + requestSignature);
-        byte[] hashBytes = SHA1.Create().ComputeHash(bytes);
-
-        StringBuilder sb = new StringBuilder();
-        foreach (var t in hashBytes)
-        {
-            sb.Append(t.ToString("X2"));
-        }
-
-        var expectedSignature = sb.ToString().ToLower();
-        _logger.LogDebug("Expected signature:{expectedSignature}", expectedSignature);
-        return expectedSignature == signature;
     }
 }

@@ -28,28 +28,39 @@ public class GetAlchemyOrderQuoteDto
 public class GetAlchemySignatureDto
 {
     public string Address { get; set; }
-    public Dictionary<string, string> SignParams { get; set; }
+    public object SignParams { get; set; }
 }
 
 public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
 {
     [Required] public string MerchantOrderNo { get; set; }
+    public string Appid { get; set; }
     public string OrderNo { get; set; }
+    public string Email { get; set; }
+    
+    // card info
+    public string Name { get; set; }
+    public string Card { get; set; }
+    public string Account { get; set; }
+    
     public string PayType { get; set; }
     public string Amount { get; set; }
-    public string Address { get; set; }
     public string PayTime { get; set; }
-    public string Network { get; set; }
     public string TxHash { get; set; }
     public string Message { get; set; }
     public string Signature { get; set; }
     public string NetworkFee { get; set; }
     public string RampFee { get; set; }
     public string CompleteTime { get; set; }
-    public string CryptoAmount { get; set; }
     public string OrderAddress { get; set; }
     public string PaymentType { get; set; }
+    
+    //this param name is "CryptoacturalAmount" in [DOC](https://alchemycn.readme.io/docs/webhook%E6%8E%A8%E9%80%81) 
+    public string CryptoacturalAmount { get; set; }
     public string CryptoActualAmount { get; set; }
+    
+    public string FailReason { get; set; }
+    
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
@@ -85,6 +96,7 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
 
 public class UpdateAlchemyTxHashDto
 {
+    [Required] public string MerchantName { get; set; }
     [Required] public string OrderId { get; set; }
     [Required] public string TxHash { get; set; }
 }

@@ -1,10 +1,7 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute.ExceptionExtensions;
 using Shouldly;
 using Xunit;
 
@@ -88,27 +85,28 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
         result.Success.ShouldBe("Success");
         
         // v2 test
-        input = new GetAlchemySignatureDto
+        result = await _alchemyServiceAppService.GetAlchemySignatureV2Async(new Dictionary<string, string>()
         {
-            Address = "address",
-            SignParams = new Dictionary<string, string>()
-            {
-                ["b"]="bbb",
-                ["A"]="AAA",
-                ["C"]="CCC",
-                ["Z"]="ZZZ",
-                ["a"]="aaa",
-            }
-        };
-        result = await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+            ["b"]="bbb",
+            ["A"]="AAA",
+            ["C"]="CCC",
+            ["Z"]="ZZZ",
+            ["a"]="aaa",
+        }, null);
         result.Success.ShouldBe("Success");
-
-        // require params
-        result = await _alchemyServiceAppService.GetAlchemySignatureAsync(new GetAlchemySignatureDto
-        {
-        });
-        result.Success.ShouldBe("Fail");
         
+        // use object        
+        result = await _alchemyServiceAppService.GetAlchemySignatureV2Async( new AlchemyOrderUpdateDto
+            {
+                MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
+                Address = "00000000-0000-0000-0000-000000000000",
+                Status = "2",
+                Signature = "aaabbb"
+                
+            },
+            null
+        );
+        result.Success.ShouldBe("Success");
     }
-    
+
 }

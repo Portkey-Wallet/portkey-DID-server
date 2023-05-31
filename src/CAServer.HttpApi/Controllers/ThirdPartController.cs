@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Message;
 using CAServer.ThirdPart;
@@ -107,7 +108,7 @@ public class AlchemyController : CAServerController
     [HttpPost("signature")]
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureV2Async(GetAlchemySignatureDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+        return await _alchemyServiceAppService.GetAlchemySignatureV2Async(input.SignParams, new List<string>());
     }
 
 }
