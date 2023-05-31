@@ -60,7 +60,7 @@ public class ThirdPartOrderController : CAServerController
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/alchemy")]
-[Authorize]
+// [Authorize]
 public class AlchemyController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
@@ -100,6 +100,12 @@ public class AlchemyController : CAServerController
 
     [HttpGet("signature")]
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
+    {
+        return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+    }
+
+    [HttpPost("signature")]
+    public async Task<AlchemySignatureResultDto> GetAlchemySignatureV2Async(GetAlchemySignatureDto input)
     {
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
     }

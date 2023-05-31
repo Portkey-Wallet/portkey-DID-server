@@ -27,7 +27,8 @@ public class GetAlchemyOrderQuoteDto
 
 public class GetAlchemySignatureDto
 {
-    [Required] public string Address { get; set; }
+    public string Address { get; set; }
+    public Dictionary<string, string> SignParams { get; set; }
 }
 
 public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject

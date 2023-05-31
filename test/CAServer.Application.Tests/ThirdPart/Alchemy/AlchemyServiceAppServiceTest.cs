@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
@@ -82,5 +84,21 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
         };
         var result = await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
         result.Success.ShouldBe("Success");
+        
+        input = new GetAlchemySignatureDto
+        {
+            Address = "address",
+            SignParams = new Dictionary<string, string>()
+            {
+                ["b"]="bbb",
+                ["A"]="AAA",
+                ["C"]="CCC",
+                ["Z"]="ZZZ",
+                ["a"]="aaa",
+            }
+        };
+        result = await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+        result.Success.ShouldBe("Success");
     }
+    
 }

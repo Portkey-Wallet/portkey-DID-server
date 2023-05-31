@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -77,11 +78,24 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         try
         {
-            return new AlchemySignatureResultDto()
+            if (input.SignParams.IsNullOrEmpty())
             {
-                Signature = AlchemyHelper.AESEncrypt(
-                    $"address={input.Address}&appId={_alchemyOptions.AppId}",
-                    _alchemyOptions.AppSecret)
+                // old version, sign only by address & appId
+                return new AlchemySignatureResultDto()
+                {
+                    Signature = AlchemyHelper.AESEncrypt(
+                        $"address={input.Address}&appId={_alchemyOptions.AppId}",
+                        _alchemyOptions.AppSecret)
+                };
+            }
+
+            // doc: https://alchemypay.readme.io/docs/api-sign
+            var sortedParams = input.SignParams.OrderBy(d => d.Key, StringComparer.Ordinal);
+            var signSource = string.Join("&", sortedParams.Select(kv => $"{kv.Key}={kv.Value}"));
+            _logger.Debug("[ACH] address={address}, signSource = {signSource}", input.Address, signSource);
+            return new AlchemySignatureResultDto() 
+            {
+                Signature = AlchemyHelper.AESEncrypt(signSource, _alchemyOptions.AppSecret)
             };
         }
         catch (Exception e)
