@@ -139,8 +139,14 @@ public class HubService : CAServerAppService, IHubService
                 await _caHubProvider.ResponseAsync(
                     new HubResponseBase<string>
                     {
-                        Body = JsonConvert.SerializeObject(
-                            _objectMapper.Map<OrderDto, AlchemyTargetAddressDto>(esOrderData))
+                        Body = JsonConvert.SerializeObject(new AlchemyTargetAddressDto()
+                        {
+                            OrderId = esOrderData.Id,
+                            TargetAddress = esOrderData.Address,
+                            Network = esOrderData.Network,
+                            Crypto = esOrderData.Crypto,
+                            CryptoAmount = esOrderData.CryptoAmount,
+                        })
                     },
                     targetClientId, "onAchTxAddressReceived"
                 );
