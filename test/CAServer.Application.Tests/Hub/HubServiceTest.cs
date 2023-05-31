@@ -3,9 +3,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Hubs;
+using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
 using Shouldly;
 using Xunit;
@@ -29,6 +31,7 @@ public class HubServiceTest : CAServerApplicationTestBase
         // services.AddSingleton(GetConnectionProvider());
         services.AddSingleton(GetHubCacheProvider());
         services.AddSingleton(GetThirdPartOrderProvider());
+        services.AddSingleton(GetMockThirdPartOptions());
     }
 
     [Fact]
@@ -75,7 +78,7 @@ public class HubServiceTest : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async void RequestAchTxAddress_Test()
+    public async void RequestAchTxAddressTest()
     {
         await _hubService.RequestAchTxAddress("123", "00000000-0000-0000-0000-000000000001");
         await _hubService.RequestAchTxAddress("123", "00000000-0000-0000-0000-000000000002");
@@ -158,5 +161,26 @@ public class HubServiceTest : CAServerApplicationTestBase
                     })
                     : Task.FromResult(new List<HubResponseCacheEntity<object>> { }));
         return provider.Object;
+    }
+    
+    
+    private IOptions<ThirdPartOptions> GetMockThirdPartOptions()
+    {
+        var thirdPartOptions = new ThirdPartOptions()
+        {
+            alchemy = new AlchemyOptions()
+            {
+                AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
+                AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
+                BaseUrl = "http://localhost:9200/book/_search",
+                SkipCheckSign = true
+            },
+            timer =  new ThirdPartTimerOptions()
+            {
+                TimeoutMillis = 100,
+                DelaySeconds = 1,
+            }
+        };
+        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
     }
 }
