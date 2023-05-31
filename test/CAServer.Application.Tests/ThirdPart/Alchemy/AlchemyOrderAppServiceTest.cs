@@ -67,6 +67,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
     {
         var input = new UpdateAlchemyTxHashDto()
         {
+            MerchantName = "Alchemy",
             OrderId = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
             TxHash = "123"
         };
@@ -81,6 +82,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 
         var inputFail = new UpdateAlchemyTxHashDto()
         {
+            MerchantName = "Alchemy",
             OrderId = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
             TxHash = "123"
         };

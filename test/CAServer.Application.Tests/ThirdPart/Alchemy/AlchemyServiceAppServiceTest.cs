@@ -92,7 +92,7 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
             ["C"]="CCC",
             ["Z"]="ZZZ",
             ["a"]="aaa",
-        }, null);
+        }, new List<string>());
         result.Success.ShouldBe("Success");
         
         // use object        
@@ -104,9 +104,23 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
                 Signature = "aaabbb"
                 
             },
-            null
+            new List<string>()
         );
         result.Success.ShouldBe("Success");
+
+        // sign value
+        result = await _alchemyServiceAppService.GetAlchemySignatureV2Async(new Dictionary<string, string>()
+        {
+            ["orderId"] = "1400006666",
+            ["network"] = "TRX",
+            ["amount"] = "1234",
+            ["cryptoCurrency"] = "USDT",
+            ["fiat"] = "USD",
+            ["type"] = "ONE",
+            ["timestamp"] = "123",
+            ["appid"] = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa"
+        }, new List<string>());
+        result.Signature.ShouldBe("cc9b2e7df4f875f387d0532c7bd7fbf718355576fedaae70bda52f2f84e9732e");
     }
 
 }

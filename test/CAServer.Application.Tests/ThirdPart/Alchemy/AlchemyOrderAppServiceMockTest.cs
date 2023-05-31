@@ -13,7 +13,13 @@ public partial class AlchemyOrderAppServiceTest
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
                 AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
-                BaseUrl = "http://localhost:9200/book/_search"
+                BaseUrl = "http://localhost:9200/book/_search",
+                SkipCheckSign = true
+            },
+            timer =  new ThirdPartTimerOptions()
+            {
+                TimeoutMillis = 5000,
+                DelaySeconds = 1,
             }
         };
         return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
