@@ -269,9 +269,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
             .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo));
-        CreateMap<OrderDto, ThirdPart.Dtos.AlchemyTargetAddressDto>()
-            .ForMember(t => t.OrderId, m => m.MapFrom(f => f.Id))
-            .ForMember(t => t.TargetAddress, m => m.MapFrom(f => f.Address));
         CreateMap<OrderDto, UpdateAlchemySellOrderDto>()
             .ForMember(t => t.OrderNo, m => m.MapFrom(f => f.ThirdPartOrderNo));
 

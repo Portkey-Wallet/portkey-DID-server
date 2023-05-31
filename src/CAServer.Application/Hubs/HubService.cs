@@ -142,7 +142,8 @@ public class HubService : CAServerAppService, IHubService
                         Body = JsonConvert.SerializeObject(new AlchemyTargetAddressDto()
                         {
                             OrderId = esOrderData.Id,
-                            TargetAddress = esOrderData.Address,
+                            MerchantName = esOrderData.MerchantName,
+                            Address = esOrderData.Address,
                             Network = esOrderData.Network,
                             Crypto = esOrderData.Crypto,
                             CryptoAmount = esOrderData.CryptoAmount,
