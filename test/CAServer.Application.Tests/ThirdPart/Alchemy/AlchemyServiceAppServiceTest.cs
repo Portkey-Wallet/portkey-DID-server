@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute.ExceptionExtensions;
 using Shouldly;
 using Xunit;
 
@@ -78,6 +79,7 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetAlchemySignatureAsyncTest()
     {
+        // v1 test
         var input = new GetAlchemySignatureDto
         {
             Address = "address",
@@ -85,6 +87,7 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
         var result = await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
         result.Success.ShouldBe("Success");
         
+        // v2 test
         input = new GetAlchemySignatureDto
         {
             Address = "address",
@@ -99,6 +102,13 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
         };
         result = await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
         result.Success.ShouldBe("Success");
+
+        // require params
+        result = await _alchemyServiceAppService.GetAlchemySignatureAsync(new GetAlchemySignatureDto
+        {
+        });
+        result.Success.ShouldBe("Fail");
+        
     }
     
 }

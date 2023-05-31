@@ -80,6 +80,11 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         {
             if (input.SignParams.IsNullOrEmpty())
             {
+                if (input.Address.IsNullOrEmpty())
+                {
+                    throw new UserFriendlyException("require sign param");
+                }
+
                 // old version, sign only by address & appId
                 return new AlchemySignatureResultDto()
                 {

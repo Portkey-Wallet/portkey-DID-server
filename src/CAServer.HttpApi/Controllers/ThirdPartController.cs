@@ -60,7 +60,7 @@ public class ThirdPartOrderController : CAServerController
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/alchemy")]
-// [Authorize]
+[Authorize]
 public class AlchemyController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
