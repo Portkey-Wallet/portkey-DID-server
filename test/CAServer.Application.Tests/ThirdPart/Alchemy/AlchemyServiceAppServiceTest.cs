@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Volo.Abp.Validation;
 using Xunit;
 
 namespace CAServer.ThirdPart.Alchemy;
@@ -86,14 +88,30 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
    
         // use object        
         result = _alchemyServiceAppService.GetAlchemySignatureV2Async( new AlchemyOrderUpdateDto
+        {
+            MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
+            Address = "00000000-0000-0000-0000-000000000000",
+            Status = "2",
+            Signature = "aaabbb"
+                
+        });
+        result.Success.ShouldBe("Success");
+        
+        try
+        {
+            new AlchemyOrderUpdateDto
             {
                 MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
                 Address = "00000000-0000-0000-0000-000000000000",
-                Status = "2",
+                Status = "222",
                 Signature = "aaabbb"
-                
-            });
-        result.Success.ShouldBe("Success");
+
+            };
+        }
+        catch (Exception e)
+        {
+            e.GetType().ShouldBe(typeof(AbpValidationException));
+        }
 
         // sign value
         result = _alchemyServiceAppService.GetAlchemySignatureV2Async(new Dictionary<string, string>()

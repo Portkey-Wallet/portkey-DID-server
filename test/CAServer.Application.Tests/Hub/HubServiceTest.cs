@@ -9,6 +9,7 @@ using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using NSubstitute.ReturnsExtensions;
 using Shouldly;
 using Xunit;
 
@@ -80,8 +81,15 @@ public class HubServiceTest : CAServerApplicationTestBase
     [Fact]
     public async void RequestAchTxAddressTest()
     {
+        //  test after regist
+        await _hubService.RequestAchTxAddress("123", "00000000-0000-0000-0000-000000000001");
+        
+        // test after register client
+        await _hubService.RegisterClient("123", "conn-123123");
         await _hubService.RequestAchTxAddress("123", "00000000-0000-0000-0000-000000000001");
         await _hubService.RequestAchTxAddress("123", "00000000-0000-0000-0000-000000000002");
+        await _hubService.RequestAchTxAddress("123", "00000000-0000-0000-0000-000000000003");
+        
     }
 
     private IHubProvider GetHubProvider()
@@ -112,6 +120,8 @@ public class HubServiceTest : CAServerApplicationTestBase
         
         mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000001"))).ReturnsAsync(noAddressData);
         mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000002"))).ReturnsAsync(withAddressData);
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000003"))).ReturnsAsync((OrderDto)null);
+        
 
         return mockProvider.Object;
     }
