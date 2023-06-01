@@ -16,7 +16,7 @@ public partial class AlchemyOrderAppServiceTest
                 BaseUrl = "http://localhost:9200/book/_search",
                 // SkipCheckSign = true
             },
-            timer =  new ThirdPartTimerOptions()
+            timer = new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,

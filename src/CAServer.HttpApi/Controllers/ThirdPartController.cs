@@ -66,12 +66,13 @@ public class ThirdPartOrderController : CAServerController
 public class AlchemyController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
-    private readonly IMessageAppService _messageAppService;
+    private readonly AlchemyHelper _alchemyHelper;
 
-    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService, IMessageAppService messageAppService)
+    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService,
+        AlchemyHelper alchemyHelper)
     {
-        _messageAppService = messageAppService;
         _alchemyServiceAppService = alchemyServiceAppService;
+        _alchemyHelper = alchemyHelper;
     }
 
     [HttpPost("token")]
@@ -107,8 +108,8 @@ public class AlchemyController : CAServerController
     }
 
     [HttpPost("signature")]
-    public async Task<AlchemySignatureResultDto> GetAlchemySignatureV2Async(GetAlchemySignatureDto input)
+    public Task<AlchemySignatureResultDto> GetAlchemySignatureV2Async(GetAlchemySignatureV2Dto input)
     {
-        return await _alchemyServiceAppService.GetAlchemySignatureV2Async(input.SignParams, new List<string>());
+        return Task.FromResult(_alchemyServiceAppService.GetAlchemySignatureV2Async(input.SignParams));
     }
 }

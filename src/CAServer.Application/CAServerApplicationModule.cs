@@ -7,6 +7,7 @@ using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
+using CAServer.ThirdPart;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -76,5 +77,6 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        context.Services.AddSingleton<AlchemyHelper>();
     }
 }

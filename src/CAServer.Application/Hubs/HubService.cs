@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Volo.Abp.ObjectMapping;
 using CAServer.Hub;
 using CAServer.Options;
 using CAServer.ThirdPart;
@@ -10,8 +9,10 @@ using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Hubs;
 
@@ -118,6 +119,14 @@ public class HubService : CAServerAppService, IHubService
         {
             try
             {
+                // stop while disconnected
+                if (_connectionProvider.GetConnectionByClientId(targetClientId) == null)
+                {
+                    _logger.LogWarning("Get alchemy order {OrderId} target address STOP, connection disconnected",
+                        orderId);
+                    break;
+                }
+
                 Guid grainId = ThirdPartHelper.GetOrderId(orderId);
                 var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
                 if (esOrderData == null)
@@ -140,14 +149,19 @@ public class HubService : CAServerAppService, IHubService
                     new HubResponseBase<string>
                     {
                         Body = JsonConvert.SerializeObject(new AlchemyTargetAddressDto()
-                        {
-                            OrderId = esOrderData.Id,
-                            MerchantName = esOrderData.MerchantName,
-                            Address = esOrderData.Address,
-                            Network = esOrderData.Network,
-                            Crypto = esOrderData.Crypto,
-                            CryptoAmount = esOrderData.CryptoAmount,
-                        })
+                            {
+                                OrderId = esOrderData.Id,
+                                MerchantName = esOrderData.MerchantName,
+                                Address = esOrderData.Address,
+                                Network = esOrderData.Network,
+                                Crypto = esOrderData.Crypto,
+                                CryptoAmount = esOrderData.CryptoAmount,
+                            },
+                            Formatting.None,
+                            new JsonSerializerSettings
+                            {
+                                ContractResolver = new CamelCasePropertyNamesContractResolver()
+                            })
                     },
                     targetClientId, "onAchTxAddressReceived"
                 );

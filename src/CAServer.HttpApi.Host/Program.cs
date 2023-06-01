@@ -41,9 +41,7 @@ public class Program
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseSerilog();
-            builder.Services.AddSignalR().AddJsonProtocol(options => {
-                options.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            });
+            builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
             app.MapHub<CAHub>("ca");

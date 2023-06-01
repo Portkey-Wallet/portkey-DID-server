@@ -29,6 +29,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
+    private readonly AlchemyHelper _alchemyHelper;
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
@@ -37,7 +38,8 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
         IAlchemyProvider alchemyProvider,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper,
+        AlchemyHelper alchemyHelper)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -47,32 +49,34 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _alchemyOptions = merchantOptions.Value.alchemy;
         _alchemyServiceAppService = alchemyServiceAppService;
         _alchemyProvider = alchemyProvider;
+        _alchemyHelper = alchemyHelper;
     }
 
 
-    public async Task<T> VerifyAlchemySignature<T>(Dictionary<string, string> inputDict)
+    public Task<T> VerifyAlchemySignature<T>(Dictionary<string, string> inputDict)
     {
-        var inputSign = inputDict["signature"];
+        const string signatureKey = "signature";
 
         // calculate a new wanted sign
-        var wantedSignature =
-            await _alchemyServiceAppService.GetAlchemySignatureV2Async(inputDict, new List<string>() { "signature" });
+        var expectedSignature =
+            _alchemyHelper.GetAlchemySignatureAsync(inputDict, _alchemyOptions.AppSecret,
+                new List<string>() { signatureKey });
 
         // compare two sign
-        if (!_alchemyOptions.SkipCheckSign && wantedSignature.Signature != inputSign)
+        if (expectedSignature.Signature != inputDict.GetOrDefault(signatureKey))
         {
             _logger.LogWarning(
                 "ACH signature verification failed, order id :{OrderNo}, and the signature :{Signature}",
-                inputDict["orderNo"], inputDict["signature"]);
+                inputDict.GetOrDefault("merchantOrderNo"), inputDict.GetOrDefault(signatureKey));
             throw new UserFriendlyException(
-                $"This callback verification failed, order id :{inputDict["orderNo"]}, and the signature is:{inputDict["signature"]}");
+                $"ACH signature verification failed, order id :{inputDict.GetOrDefault("merchantOrderNo")}, and the signature is:{inputDict.GetOrDefault(signatureKey)}");
         }
 
-        return JsonSerializer.Deserialize<T>(
+        return Task.FromResult(JsonSerializer.Deserialize<T>(
             JsonSerializer.Serialize(inputDict), new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
-            });
+            }));
     }
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)

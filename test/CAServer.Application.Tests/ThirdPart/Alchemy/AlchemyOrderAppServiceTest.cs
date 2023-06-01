@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Volo.Abp;
 using Xunit;
 
 namespace CAServer.ThirdPart.Alchemy;
@@ -117,8 +118,21 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async Task convertTest()
+    public async Task VerifySignatureAndConvertToDto()
     {
+
+        // fail test
+        try
+        {
+            await _alchemyOrderAppService.VerifyAlchemySignature<AlchemyOrderUpdateDto>(
+                new Dictionary<string, string>());
+        }
+        catch (Exception e)
+        {
+            e.GetType().ShouldBe(typeof(UserFriendlyException));
+        }
+
+        // verify test
         var inputDict = new Dictionary<string, string>()
         {
             ["appid"] = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
