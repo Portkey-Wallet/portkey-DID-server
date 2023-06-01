@@ -44,14 +44,14 @@ public class HubService : CAServerAppService, IHubService
         _logger = logger;
     }
 
-    public async Task Ping(HubRequestContext context, string content)
+    public async Task PingAsync(HubRequestContext context, string content)
     {
-        const string PingMethodName = "Ping";
-        _hubProvider.ResponseAsync(new HubResponse<string>() { RequestId = context.RequestId, Body = content },
+        const string PingMethodName = "PingAsync";
+        await _hubProvider.ResponseAsync(new HubResponse<string>() { RequestId = context.RequestId, Body = content },
             context.ClientId, PingMethodName);
     }
 
-    public async Task<HubResponse<object>> GetResponse(HubRequestContext context)
+    public async Task<HubResponse<object>> GetResponseAsync(HubRequestContext context)
     {
         var cacheRes = await _hubCacheProvider.GetRequestById(context.RequestId);
         if (cacheRes == null)
@@ -59,7 +59,7 @@ public class HubService : CAServerAppService, IHubService
             return null;
         }
 
-        _hubCacheProvider.RemoveResponseByClientId(context.ClientId, context.RequestId);
+        await _hubCacheProvider.RemoveResponseByClientIdAsync(context.ClientId, context.RequestId);
         return new HubResponse<object>()
         {
             RequestId = cacheRes.Response.RequestId,
@@ -67,7 +67,7 @@ public class HubService : CAServerAppService, IHubService
         };
     }
 
-    public async Task RegisterClient(string clientId, string connectionId)
+    public async Task RegisterClientAsync(string clientId, string connectionId)
     {
         _connectionProvider.Add(clientId, connectionId);
     }
@@ -77,7 +77,7 @@ public class HubService : CAServerAppService, IHubService
         return _connectionProvider.Remove(connectionId);
     }
 
-    public async Task SendAllUnreadRes(string clientId)
+    public async Task SendAllUnreadResAsync(string clientId)
     {
         var unreadRes = await _hubCacheProvider.GetResponseByClientId(clientId);
         if (unreadRes.Count == 0)
@@ -106,13 +106,13 @@ public class HubService : CAServerAppService, IHubService
         }
     }
 
-    public async Task Ack(string clientId, string requestId)
+    public async Task AckAsync(string clientId, string requestId)
     {
-        await _hubCacheProvider.RemoveResponseByClientId(clientId, requestId);
+        await _hubCacheProvider.RemoveResponseByClientIdAsync(clientId, requestId);
     }
 
 
-    public async Task RequestAchTxAddress(string targetClientId, string orderId)
+    public async Task RequestAchTxAddressAsync(string targetClientId, string orderId)
     {
         CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
