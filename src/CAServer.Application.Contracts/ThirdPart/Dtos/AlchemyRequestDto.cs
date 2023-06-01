@@ -55,7 +55,6 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
     public string OrderAddress { get; set; }
     public string PaymentType { get; set; }
     
-    //this param name is "CryptoacturalAmount" in [DOC](https://alchemycn.readme.io/docs/webhook%E6%8E%A8%E9%80%81) 
     public string CryptoacturalAmount { get; set; }
     public string CryptoActualAmount { get; set; }
     
