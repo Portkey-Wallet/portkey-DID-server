@@ -39,7 +39,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
             await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
         if (cacheCount.IsNullOrEmpty)
         {
-            return false;
+            cacheCount = 0;
         }
         _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheCount),
             _sendVerifierCodeRequestLimitOptions.Limit);
