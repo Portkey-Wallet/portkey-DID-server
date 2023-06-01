@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Bson.Serialization.IdGenerators;
 using Shouldly;
 using Xunit;
-using Volo.Abp.Guids;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -50,7 +47,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
         };
         var resultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(inputFail);
         resultFail.Success.ShouldBe(false);
-        
+
         var signatureFail = new AlchemyOrderUpdateDto
         {
             MerchantOrderNo = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -95,11 +92,10 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             e.ShouldNotBe(null);
         }
     }
-    
+
     [Fact]
     public async Task UpdateAlchemySellAddressAsyncTest()
     {
-        
         var input = new AlchemyOrderUpdateDto()
         {
             Id = new Guid("00000000-0000-0000-0000-000000000001"),
@@ -109,9 +105,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             Status = "1",
             Signature = "NOT_SET_YET",
         };
-        AlchemySignatureResultDto signatureResultDto = await _alchemyServiceAppService.GetAlchemySignatureV2Async(input, new List<string>(){"signature"});
-        input.Signature = signatureResultDto.Signature;
-        
+
         try
         {
             await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
@@ -122,4 +116,25 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
         }
     }
 
+    [Fact]
+    public async Task convertTest()
+    {
+        var inputDict = new Dictionary<string, string>()
+        {
+            ["appid"] = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
+            ["id"] = "00000000-0000-0000-0000-000000000001",
+            ["userId"] = "00000000-0000-0000-0000-000000000001",
+            ["merchantOrderNo"] = "00000000-0000-0000-0000-000000000000",
+            ["orderNo"] = "00000000-0000-0000-0000-000000000000",
+            ["Address"] = "Address123123",
+            ["status"] = "1",
+            ["signature"] = "03c118dfb11a20060e41b2e11d09d15a88aea93a10463d06f0dd3b157e007f89",
+        };
+
+        var input = await _alchemyOrderAppService.VerifyAlchemySignature<AlchemyOrderUpdateDto>(inputDict);
+
+        input.Signature.ShouldBe("03c118dfb11a20060e41b2e11d09d15a88aea93a10463d06f0dd3b157e007f89");
+        input.Address.ShouldBe("Address123123");
+        input.Id.ShouldBe(new Guid("00000000-0000-0000-0000-000000000001"));
+    }
 }

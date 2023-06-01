@@ -104,7 +104,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
     // doc: https://alchemypay.readme.io/docs/api-sign
-    public async Task<AlchemySignatureResultDto> GetAlchemySignatureV2Async(object input, [CanBeNull] List<string> ignoreProperties)
+    public async Task<AlchemySignatureResultDto> GetAlchemySignatureV2Async(object input, List<string> ignoreProperties)
     {
         try
         {

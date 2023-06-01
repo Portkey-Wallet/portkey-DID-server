@@ -37,12 +37,12 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
     public string Appid { get; set; }
     public string OrderNo { get; set; }
     public string Email { get; set; }
-    
+
     // card info
     public string Name { get; set; }
     public string Card { get; set; }
     public string Account { get; set; }
-    
+
     public string PayType { get; set; }
     public string Amount { get; set; }
     public string PayTime { get; set; }
@@ -54,12 +54,13 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
     public string CompleteTime { get; set; }
     public string OrderAddress { get; set; }
     public string PaymentType { get; set; }
-    
+
+    // param name is "CryptoacturalAmount" in Alchemy doc
     public string CryptoacturalAmount { get; set; }
     public string CryptoActualAmount { get; set; }
-    
+
     public string FailReason { get; set; }
-    
+
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

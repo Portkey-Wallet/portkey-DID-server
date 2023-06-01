@@ -44,9 +44,10 @@ public class ThirdPartOrderController : CAServerController
 
     [HttpPost("order/alchemy")]
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
-        AlchemyOrderUpdateDto input)
+        Dictionary<string, string> input)
     {
-        return await _alchemyOrderService.UpdateAlchemyOrderAsync(input);
+        var inputDto = await _alchemyOrderService.VerifyAlchemySignature<AlchemyOrderUpdateDto>(input);
+        return await _alchemyOrderService.UpdateAlchemyOrderAsync(inputDto);
     }
 
     [Authorize]
@@ -110,5 +111,4 @@ public class AlchemyController : CAServerController
     {
         return await _alchemyServiceAppService.GetAlchemySignatureV2Async(input.SignParams, new List<string>());
     }
-
 }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Grains.Grain.ThirdPart;
@@ -16,6 +15,7 @@ using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -49,26 +49,34 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _alchemyProvider = alchemyProvider;
     }
 
-    public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
+
+    public async Task<T> VerifyAlchemySignature<T>(Dictionary<string, string> inputDict)
     {
-        var inputSign = input.Signature;
-        
+        var inputSign = inputDict["signature"];
+
         // calculate a new wanted sign
-        var wantedSignature = await _alchemyServiceAppService.GetAlchemySignatureV2Async(input, new List<string>(){"signature"});
-        
+        var wantedSignature =
+            await _alchemyServiceAppService.GetAlchemySignatureV2Async(inputDict, new List<string>() { "signature" });
+
         // compare two sign
         if (!_alchemyOptions.SkipCheckSign && wantedSignature.Signature != inputSign)
         {
             _logger.LogWarning(
-                "This callback verification failed, order id :{OrderNo}, and the signature :{Signature}",
-                input.OrderNo, input.Signature);
-            return new BasicOrderResult()
-            {
-                Message =
-                    $"This callback verification failed, order id :{input.OrderNo}, and the signature is:{input.Signature}"
-            };
+                "ACH signature verification failed, order id :{OrderNo}, and the signature :{Signature}",
+                inputDict["orderNo"], inputDict["signature"]);
+            throw new UserFriendlyException(
+                $"This callback verification failed, order id :{inputDict["orderNo"]}, and the signature is:{inputDict["signature"]}");
         }
 
+        return JsonSerializer.Deserialize<T>(
+            JsonSerializer.Serialize(inputDict), new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+            });
+    }
+
+    public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
+    {
         Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
         var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
         if (esOrderData == null || input.MerchantOrderNo != esOrderData.Id.ToString())

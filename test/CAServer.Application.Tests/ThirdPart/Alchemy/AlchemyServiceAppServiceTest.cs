@@ -83,26 +83,14 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
         };
         var result = await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
         result.Success.ShouldBe("Success");
-        
-        // v2 test
-        result = await _alchemyServiceAppService.GetAlchemySignatureV2Async(new Dictionary<string, string>()
-        {
-            ["b"]="bbb",
-            ["A"]="AAA",
-            ["C"]="CCC",
-            ["Z"]="ZZZ",
-            ["a"]="aaa",
-        }, new List<string>());
-        result.Success.ShouldBe("Success");
-        
+
         // use object        
-        result = await _alchemyServiceAppService.GetAlchemySignatureV2Async( new AlchemyOrderUpdateDto
+        result = await _alchemyServiceAppService.GetAlchemySignatureV2Async(new AlchemyOrderUpdateDto
             {
                 MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
                 Address = "00000000-0000-0000-0000-000000000000",
                 Status = "2",
                 Signature = "aaabbb"
-                
             },
             new List<string>()
         );
@@ -122,5 +110,4 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
         }, new List<string>());
         result.Signature.ShouldBe("cc9b2e7df4f875f387d0532c7bd7fbf718355576fedaae70bda52f2f84e9732e");
     }
-
 }
