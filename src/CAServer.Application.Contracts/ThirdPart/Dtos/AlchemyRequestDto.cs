@@ -32,7 +32,7 @@ public class GetAlchemySignatureDto
 
 public class GetAlchemySignatureV2Dto
 {
-    [Required] public object SignParams { get; set; }
+    [Required] public Dictionary<string, string> SignParams { get; set; }
 }
 
 public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
