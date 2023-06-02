@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Hub;
@@ -144,24 +145,26 @@ public class HubService : CAServerAppService, IHubService
                     continue;
                 }
 
+                
                 // push address to client via ws
-                await _caHubProvider.ResponseAsync(
-                    new HubResponseBase<string>
+                var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(new AlchemyTargetAddressDto()
                     {
-                        Body = JsonConvert.SerializeObject(new AlchemyTargetAddressDto()
-                            {
-                                OrderId = esOrderData.Id,
-                                MerchantName = esOrderData.MerchantName,
-                                Address = esOrderData.Address,
-                                Network = esOrderData.Network,
-                                Crypto = esOrderData.Crypto,
-                                CryptoAmount = esOrderData.CryptoAmount,
-                            },
-                            Formatting.None,
-                            new JsonSerializerSettings
-                            {
-                                ContractResolver = new CamelCasePropertyNamesContractResolver()
-                            })
+                        OrderId = esOrderData.Id,
+                        MerchantName = esOrderData.MerchantName,
+                        Address = esOrderData.Address,
+                        Network = esOrderData.Network,
+                        Crypto = esOrderData.Crypto,
+                        CryptoAmount = esOrderData.CryptoAmount
+                    },
+                    Formatting.None,
+                    new JsonSerializerSettings
+                    {
+                        ContractResolver = new CamelCasePropertyNamesContractResolver()
+                    }));
+                await _caHubProvider.ResponseAsync(
+                    new HubResponseBase<Dictionary<string, string>>
+                    {
+                        Body = bodyDict
                     },
                     targetClientId, "onAchTxAddressReceived"
                 );
