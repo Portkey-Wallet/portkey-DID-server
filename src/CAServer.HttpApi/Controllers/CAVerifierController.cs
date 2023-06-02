@@ -77,10 +77,10 @@ public class CAVerifierController : CAServerController
         {
             return null;
         }
-        return await GoogleRecaptchaAndSendVeriferCodeAsync(recaptchaToken, sendVerificationRequestInput);
+        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput);
     }
 
-    private async Task<VerifierServerResponse> GoogleRecaptchaAndSendVeriferCodeAsync(string recaptchaToken,
+    private async Task<VerifierServerResponse> GoogleRecaptchaAndSendVerifyCodeAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput)
     {
         var userIpAddress = UserIpAddress(HttpContext);
@@ -128,7 +128,7 @@ public class CAVerifierController : CAServerController
             return null;
         }
         
-        return await GoogleRecaptchaAndSendVeriferCodeAsync(recaptchaToken, sendVerificationRequestInput);
+        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput);
     }
 
     private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(string recaptchaToken,
