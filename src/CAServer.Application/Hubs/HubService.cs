@@ -145,9 +145,10 @@ public class HubService : CAServerAppService, IHubService
                     continue;
                 }
 
-                
+
                 // push address to client via ws
-                var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(new AlchemyTargetAddressDto()
+                var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(
+                    new AlchemyTargetAddressDto()
                     {
                         OrderId = esOrderData.Id,
                         MerchantName = esOrderData.MerchantName,

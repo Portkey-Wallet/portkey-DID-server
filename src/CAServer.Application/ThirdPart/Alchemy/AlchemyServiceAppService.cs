@@ -72,12 +72,12 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
 
-    
     public AlchemySignatureResultDto GetAlchemySignatureV2Async(object input)
     {
-        return _alchemyHelper.GetAlchemySignatureAsync(input, _alchemyOptions.AppSecret, new List<string>(){"signature"});
+        return _alchemyHelper.GetAlchemySignatureAsync(input, _alchemyOptions.AppSecret,
+            new List<string>() { "signature" });
     }
-    
+
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         try
@@ -99,5 +99,4 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             };
         }
     }
-    
 }
