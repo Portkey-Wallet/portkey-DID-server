@@ -1,9 +1,15 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Hubs;
+using CAServer.Options;
+using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
+using NSubstitute.ReturnsExtensions;
 using Shouldly;
 using Xunit;
 
@@ -25,20 +31,22 @@ public class HubServiceTest : CAServerApplicationTestBase
         services.AddSingleton(GetHubProvider());
         // services.AddSingleton(GetConnectionProvider());
         services.AddSingleton(GetHubCacheProvider());
+        services.AddSingleton(GetThirdPartOrderProvider());
+        services.AddSingleton(GetMockThirdPartOptions());
     }
 
     [Fact]
     public async void PingTest()
     {
-        await _hubService.Ping(new HubRequestContext { RequestId = "1", ClientId = "3433" }, "content");
+        await _hubService.PingAsync(new HubRequestContext { RequestId = "1", ClientId = "3433" }, "content");
     }
 
     [Fact]
     public async void GetResponseTest()
     {
-        var res = await _hubService.GetResponse(new HubRequestContext { RequestId = "456", ClientId = "12121" });
+        var res = await _hubService.GetResponseAsync(new HubRequestContext { RequestId = "456", ClientId = "12121" });
         Assert.True(res == null);
-        res = await _hubService.GetResponse(new HubRequestContext { RequestId = "123" });
+        res = await _hubService.GetResponseAsync(new HubRequestContext { RequestId = "123" });
         res.RequestId.ShouldBe("123");
         res.Body.ShouldBe("456");
     }
@@ -50,7 +58,7 @@ public class HubServiceTest : CAServerApplicationTestBase
         var connectionId = "XXX";
         var res = _hubService.UnRegisterClient(connectionId);
         Assert.True(res == null);
-        await _hubService.RegisterClient(clientId, connectionId);
+        await _hubService.RegisterClientAsync(clientId, connectionId);
         res = _hubService.UnRegisterClient(connectionId);
         res.ShouldBe(clientId);
     }
@@ -60,14 +68,28 @@ public class HubServiceTest : CAServerApplicationTestBase
     {
         var clientId = "123";
         var clientId2 = "456";
-        await _hubService.SendAllUnreadRes(clientId);
-        await _hubService.SendAllUnreadRes(clientId2);
+        await _hubService.SendAllUnreadResAsync(clientId);
+        await _hubService.SendAllUnreadResAsync(clientId2);
     }
 
     [Fact]
     public async void Ack()
     {
-        await _hubService.Ack("123", "456");
+        await _hubService.AckAsync("123", "456");
+    }
+
+    [Fact]
+    public async void RequestAchTxAddressTest()
+    {
+        //  test after regist
+        await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000001");
+        
+        // test after register client
+        await _hubService.RegisterClientAsync("123", "conn-123123");
+        await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000001");
+        await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000002");
+        await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000003");
+        
     }
 
     private IHubProvider GetHubProvider()
@@ -78,6 +100,30 @@ public class HubServiceTest : CAServerApplicationTestBase
         provider.Setup(m => m.ResponseAsync(It.IsAny<HubResponseBase<string>>(), It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
 
         return provider.Object;
+    }
+
+
+    private IThirdPartOrderProvider GetThirdPartOrderProvider()
+    {
+        var mockProvider = new Mock<IThirdPartOrderProvider>();
+
+        var noAddressData = new OrderDto
+        {
+            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+        };
+
+        var withAddressData = new OrderDto
+        {
+            Id = new Guid("00000000-0000-0000-0000-000000000002"),
+            Address = "123456"
+        };
+        
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000001"))).ReturnsAsync(noAddressData);
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000002"))).ReturnsAsync(withAddressData);
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000003"))).ReturnsAsync((OrderDto)null);
+        
+
+        return mockProvider.Object;
     }
 
     private IConnectionProvider GetConnectionProvider()
@@ -125,5 +171,26 @@ public class HubServiceTest : CAServerApplicationTestBase
                     })
                     : Task.FromResult(new List<HubResponseCacheEntity<object>> { }));
         return provider.Object;
+    }
+    
+    
+    private IOptions<ThirdPartOptions> GetMockThirdPartOptions()
+    {
+        var thirdPartOptions = new ThirdPartOptions()
+        {
+            alchemy = new AlchemyOptions()
+            {
+                AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
+                AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
+                BaseUrl = "http://localhost:9200/book/_search",
+                SkipCheckSign = true
+            },
+            timer =  new ThirdPartTimerOptions()
+            {
+                TimeoutMillis = 100,
+                DelaySeconds = 1,
+            }
+        };
+        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
     }
 }

@@ -14,7 +14,7 @@ public interface IHubCacheProvider
     Task<List<HubResponseCacheEntity<object>>> GetResponseByClientId(string clientId);
     Task<HubResponseCacheEntity<object>> GetRequestById(string requestId);
 
-    Task RemoveResponseByClientId(string clientId, string requestId);
+    Task RemoveResponseByClientIdAsync(string clientId, string requestId);
 }
 
 public class HubCacheProvider : IHubCacheProvider, ISingletonDependency
@@ -82,12 +82,12 @@ public class HubCacheProvider : IHubCacheProvider, ISingletonDependency
         return jsonStr == null ? null : Deserialize<HubResponseCacheEntity<object>>(jsonStr);
     }
 
-    public async Task RemoveResponseByClientId(string clientId, string requestId)
+    public async Task RemoveResponseByClientIdAsync(string clientId, string requestId)
     {
         var requestCacheKey = MakeResponseCacheKey(requestId);
         var clientCacheKey = MakeClientCacheKey(clientId);
-        _cacheProvider.HashDelete(clientCacheKey, requestId);
-        _cacheProvider.Delete(requestCacheKey);
+        await _cacheProvider.HashDelete(clientCacheKey, requestId);
+        await _cacheProvider.Delete(requestCacheKey);
     }
 
     private string MakeResponseCacheKey(string requestId)

@@ -29,9 +29,9 @@ public class CAHub : AbpHub
             return;
         }
 
-        _hubService.RegisterClient(clientId, Context.ConnectionId);
-        _logger.LogInformation($"clientId={clientId} connect");
-        _hubService.SendAllUnreadRes(clientId);
+        await _hubService.RegisterClientAsync(clientId, Context.ConnectionId);
+        _logger.LogInformation("clientId={ClientId} connect", clientId);
+        await _hubService.SendAllUnreadResAsync(clientId);
     }
 
     public async Task Ack(string clientId, string requestId)
@@ -41,22 +41,18 @@ public class CAHub : AbpHub
             return;
         }
 
-        _hubService.Ack(clientId, requestId);
+        await _hubService.AckAsync(clientId, requestId);
     }
 
     public async Task RequestAchTxAddress(AlchemyTargetAddressDto request)
     {
-        await _distributedEventBus.PublishAsync(new AlchemyTargetAddressEto()
-        {
-            TargetClientId = request.TargetClientId,
-            OrderId = request.OrderId
-        });
+        await _hubService.RequestAchTxAddressAsync(request.TargetClientId, request.OrderId);
     }
 
     public override Task OnDisconnectedAsync(Exception? exception)
     {
         var clientId = _hubService.UnRegisterClient(Context.ConnectionId);
-        _logger.LogInformation($"clientId={clientId} disconnected!!!");
+        _logger.LogInformation("clientId={ClientId} disconnected!!!", clientId);
         return base.OnDisconnectedAsync(exception);
     }
 }

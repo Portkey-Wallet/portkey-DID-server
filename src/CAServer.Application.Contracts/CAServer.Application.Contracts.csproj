@@ -34,4 +34,10 @@
     <PackageReference Include="Volo.Abp.SettingManagement.Application.Contracts" Version="7.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="CAServer.Application">
+      <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Application.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

@@ -5,12 +5,14 @@ namespace CAServer.Hubs;
 
 public interface IHubService : IApplicationService
 {
-    Task Ping(HubRequestContext context, string content);
-    Task<HubResponse<object>> GetResponse(HubRequestContext context);
+    Task PingAsync(HubRequestContext context, string content);
+    Task<HubResponse<object>> GetResponseAsync(HubRequestContext context);
 
-    Task RegisterClient(string clientId, string connectionId);
+    Task RegisterClientAsync(string clientId, string connectionId);
     string UnRegisterClient(string connectionId);
 
-    Task SendAllUnreadRes(string clientId);
-    Task Ack(string clientId, string requestId);
+    Task SendAllUnreadResAsync(string clientId);
+    Task AckAsync(string clientId, string requestId);
+
+    Task RequestAchTxAddressAsync(string targetClientId, string orderId);
 }

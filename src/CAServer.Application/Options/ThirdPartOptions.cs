@@ -8,8 +8,8 @@ public class ThirdPartOptions
 
 public class ThirdPartTimerOptions
 {
-    public int Delay { get; set; } = 1;
-    public int Timeout { get; set; } = 5;
+    public int DelaySeconds { get; set; } = 1;
+    public int TimeoutMillis { get; set; } = 5000;
 }
 
 public class AlchemyOptions
@@ -22,4 +22,5 @@ public class AlchemyOptions
     public string CryptoListUri { get; set; }
     public string OrderQuoteUri { get; set; }
     public string GetTokenUri { get; set; }
+    public bool SkipCheckSign { get; set; } = false;
 }

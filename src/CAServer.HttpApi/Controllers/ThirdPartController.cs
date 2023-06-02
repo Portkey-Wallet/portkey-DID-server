@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Message;
 using CAServer.ThirdPart;
@@ -43,9 +44,10 @@ public class ThirdPartOrderController : CAServerController
 
     [HttpPost("order/alchemy")]
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
-        AlchemyOrderUpdateDto input)
+        Dictionary<string, string> input)
     {
-        return await _alchemyOrderService.UpdateAlchemyOrderAsync(input);
+        var inputDto = await _alchemyOrderService.VerifyAlchemySignature<AlchemyOrderUpdateDto>(input);
+        return await _alchemyOrderService.UpdateAlchemyOrderAsync(inputDto);
     }
 
     [Authorize]
@@ -64,12 +66,13 @@ public class ThirdPartOrderController : CAServerController
 public class AlchemyController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
-    private readonly IMessageAppService _messageAppService;
+    private readonly AlchemyHelper _alchemyHelper;
 
-    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService, IMessageAppService messageAppService)
+    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService,
+        AlchemyHelper alchemyHelper)
     {
-        _messageAppService = messageAppService;
         _alchemyServiceAppService = alchemyServiceAppService;
+        _alchemyHelper = alchemyHelper;
     }
 
     [HttpPost("token")]
@@ -104,4 +107,9 @@ public class AlchemyController : CAServerController
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
     }
 
+    [HttpPost("signature")]
+    public Task<AlchemySignatureResultDto> GetAlchemySignatureV2Async(GetAlchemySignatureV2Dto input)
+    {
+        return Task.FromResult(_alchemyServiceAppService.GetAlchemySignatureV2Async(input.SignParams));
+    }
 }

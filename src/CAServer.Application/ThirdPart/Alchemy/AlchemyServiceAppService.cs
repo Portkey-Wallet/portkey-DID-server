@@ -1,21 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
-using CAServer.Common;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Orleans.Runtime;
+using Newtonsoft.Json.Serialization;
 using Volo.Abp;
 using Volo.Abp.Auditing;
-using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -25,17 +20,20 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     private readonly ILogger<AlchemyServiceAppService> _logger;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
+    private readonly AlchemyHelper _alchemyHelper;
 
     private readonly JsonSerializerSettings _setting = new()
     {
-        ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver()
+        ContractResolver = new CamelCasePropertyNamesContractResolver()
     };
 
     public AlchemyServiceAppService(IOptions<ThirdPartOptions> merchantOptions, IAlchemyProvider alchemyProvider,
+        AlchemyHelper alchemyHelper,
         ILogger<AlchemyServiceAppService> logger)
     {
         _alchemyOptions = merchantOptions.Value.alchemy;
         _alchemyProvider = alchemyProvider;
+        _alchemyHelper = alchemyHelper;
         _logger = logger;
     }
 
@@ -73,20 +71,27 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             JsonConvert.SerializeObject(input, Formatting.None, _setting)));
     }
 
+
+    
+    public AlchemySignatureResultDto GetAlchemySignatureV2Async(object input)
+    {
+        return _alchemyHelper.GetAlchemySignatureAsync(input, _alchemyOptions.AppSecret, new List<string>(){"signature"});
+    }
+    
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         try
         {
             return new AlchemySignatureResultDto()
             {
-                Signature = AlchemyHelper.AESEncrypt(
+                Signature = AlchemyHelper.AesEncrypt(
                     $"address={input.Address}&appId={_alchemyOptions.AppId}",
                     _alchemyOptions.AppSecret)
             };
         }
         catch (Exception e)
         {
-            _logger.LogError("AES encrypting exception , error msg is {errorMsg}", e.Message);
+            _logger.LogError(e, "AES encrypting exception");
             return new AlchemySignatureResultDto()
             {
                 Success = "Fail",
@@ -94,4 +99,5 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             };
         }
     }
+    
 }

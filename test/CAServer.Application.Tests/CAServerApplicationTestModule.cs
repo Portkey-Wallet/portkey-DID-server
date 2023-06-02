@@ -70,18 +70,8 @@ public class CAServerApplicationTestModule : AbpModule
         tokenList.Add(token1);
         tokenList.Add(token2);
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
-        // context.Services.Configure<IpServiceSettingOptions>(o =>
-        // {
-        //     o.ExpirationDays = 1;
-        //     o.BaseUrl = "http://127.0.0.1:6889";
-        //     o.Language = "zh";
-        //     o.AccessKey = "";
-        // });
         context.Services.Configure<IpServiceSettingOptions>(o => o.ExpirationDays = 1);
-
-        // context.Services.AddTransient<IDistributedEventHandler<UserTokenEto>>(sp =>
-        //     sp.GetService<UserTokenEntityHandler>());
-
+        context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
         {
             option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>

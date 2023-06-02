@@ -1,6 +1,6 @@
 using System;
-using System.Security.Cryptography;
-using System.Text;
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Grains.Grain.ThirdPart;
@@ -15,6 +15,7 @@ using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -24,17 +25,21 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly ILogger<AlchemyOrderAppService> _logger;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
+    private readonly AlchemyHelper _alchemyHelper;
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
+        IAlchemyServiceAppService alchemyServiceAppService,
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
         IAlchemyProvider alchemyProvider,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper,
+        AlchemyHelper alchemyHelper)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -42,25 +47,40 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _objectMapper = objectMapper;
         _logger = logger;
         _alchemyOptions = merchantOptions.Value.alchemy;
+        _alchemyServiceAppService = alchemyServiceAppService;
         _alchemyProvider = alchemyProvider;
+        _alchemyHelper = alchemyHelper;
+    }
+
+
+    public Task<T> VerifyAlchemySignature<T>(Dictionary<string, string> inputDict)
+    {
+        const string signatureKey = "signature";
+
+        // calculate a new wanted sign
+        var expectedSignature =
+            _alchemyHelper.GetAlchemySignatureAsync(inputDict, _alchemyOptions.AppSecret,
+                new List<string>() { signatureKey });
+
+        // compare two sign
+        if (expectedSignature.Signature != inputDict.GetOrDefault(signatureKey))
+        {
+            _logger.LogWarning(
+                "ACH signature verification failed, order id :{OrderNo}, and the signature :{Signature}",
+                inputDict.GetOrDefault("merchantOrderNo"), inputDict.GetOrDefault(signatureKey));
+            throw new UserFriendlyException(
+                $"ACH signature verification failed, order id :{inputDict.GetOrDefault("merchantOrderNo")}, and the signature is:{inputDict.GetOrDefault(signatureKey)}");
+        }
+
+        return Task.FromResult(JsonSerializer.Deserialize<T>(
+            JsonSerializer.Serialize(inputDict), new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+            }));
     }
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
-        //callback signature format(appId,appSecret,appId+orderNo+crypto+network+address)
-        var callbackSignature = $"{_alchemyOptions.AppId}{input.OrderNo}{input.Crypto}{input.Network}{input.Address}";
-        if (!CheckSignature(input.Signature, callbackSignature))
-        {
-            _logger.LogWarning(
-                "This callback verification failed, order id :{OrderNo}, and the signature :{Signature}",
-                input.OrderNo, input.Signature);
-            return new BasicOrderResult()
-            {
-                Message =
-                    $"This callback verification failed, order id :{input.OrderNo}, and the signature is:{input.Signature}"
-            };
-        }
-
         Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
         var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
         if (esOrderData == null || input.MerchantOrderNo != esOrderData.Id.ToString())
@@ -124,21 +144,5 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
 
         return orderGrainData;
-    }
-
-    private bool CheckSignature(string signature, string requestSignature)
-    {
-        byte[] bytes = Encoding.UTF8.GetBytes(_alchemyOptions.AppId + _alchemyOptions.AppSecret + requestSignature);
-        byte[] hashBytes = SHA1.Create().ComputeHash(bytes);
-
-        StringBuilder sb = new StringBuilder();
-        foreach (var t in hashBytes)
-        {
-            sb.Append(t.ToString("X2"));
-        }
-
-        var expectedSignature = sb.ToString().ToLower();
-        _logger.LogDebug("Expected signature:{expectedSignature}", expectedSignature);
-        return expectedSignature == signature;
     }
 }
