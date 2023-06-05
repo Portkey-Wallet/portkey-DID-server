@@ -37,13 +37,13 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        ContractOptions contractOptions)
+        IOptionsSnapshot<ContractOptions> contractOptions)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
-        _contractOptions = contractOptions;
+        _contractOptions = contractOptions.Value;
     }
 
 

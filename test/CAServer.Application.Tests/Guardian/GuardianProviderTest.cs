@@ -24,8 +24,10 @@ public class GuardianProviderTest : CAServerApplicationTestBase
     {
         var graphQlHelper = Substitute.For<IGraphQLHelper>();
         var graphQlClient = Substitute.For<IGraphQLClient>();
+        // var contractProvider = Substitute.For<IContractProvider>();
         services.AddSingleton(graphQlClient);
         services.AddSingleton(graphQlHelper);
+        // services.AddSingleton(contractProvider);
     }
 
     [Fact]
