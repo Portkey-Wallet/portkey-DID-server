@@ -45,7 +45,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     public CrossChainTransferAppService(IContractProvider contractProvider, IOptionsSnapshot<ChainOptions> chainOptions,
         ILogger<CrossChainTransferAppService> logger, IGraphQLProvider graphQlProvider,
         IClusterClient clusterClient, IOptions<IndexOptions> indexOptions,
-        IOptions<CrossChainOptions> crossChainOptions, ISignatureProvider signatureProvider)
+        CrossChainOptions crossChainOptions, ISignatureProvider signatureProvider)
     {
         _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
@@ -53,7 +53,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         _graphQlProvider = graphQlProvider;
         _clusterClient = clusterClient;
         _indexOptions = indexOptions.Value;
-        _crossChainOptions = crossChainOptions.Value;
+        _crossChainOptions = crossChainOptions;
         _signatureProvider = signatureProvider;
     }
 
@@ -81,7 +81,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         }
     }
 
-   private async Task<List<CrossChainTransferDto>> GetToReceiveTransactionsAsync(string chainId)
+    private async Task<List<CrossChainTransferDto>> GetToReceiveTransactionsAsync(string chainId)
     {
         var grain = _clusterClient.GetGrain<ICrossChainTransferGrain>(chainId);
         var transfers = (await grain.GetUnFinishedTransfersAsync()).Data;

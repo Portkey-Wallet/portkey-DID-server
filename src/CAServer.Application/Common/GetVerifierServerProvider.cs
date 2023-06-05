@@ -33,10 +33,10 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
 
     public GetVerifierServerProvider(
         IDistributedCache<GuardianVerifierServerCacheItem> distributedCache,
-        IOptions<AdaptableVariableOptions> adaptableVariableOptions, ILogger<GetVerifierServerProvider> logger,
+        AdaptableVariableOptions adaptableVariableOptions, ILogger<GetVerifierServerProvider> logger,
         IContractProvider contractProvider)
     {
-        _adaptableVariableOptions = adaptableVariableOptions.Value;
+        _adaptableVariableOptions = adaptableVariableOptions;
         _distributedCache = distributedCache;
         _logger = logger;
         _contractProvider = contractProvider;

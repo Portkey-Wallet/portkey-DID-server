@@ -33,34 +33,39 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ILogger<ContractProvider> _logger;
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
     private readonly ISignatureProvider _signatureProvider;
+    private readonly ContractOptions _contractOptions;
 
-    // CommonPrivateKeyForCallTx: Just for query, no assets and no permissions
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
-        ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption)
+        ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
+        ContractOptions contractOptions)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
+        _contractOptions = contractOptions;
     }
 
 
     private async Task<T> CallTransactionAsync<T>(string methodName, IMessage param, string contractAddress,
         string chainId) where T : class, IMessage<T>, new()
     {
-        var chainInfo = _chainOptions.ChainInfos[chainId];
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+        {
+            return null;
+        }
 
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
 
-        string addressFromPrivateKey = client.GetAddressFromPrivateKey(AElfContractKeyConst.CommonPrivateKeyForCallTx);
+        string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
 
         var transaction =
             await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
 
         _logger.LogDebug("Call tx methodName is: {methodName} param is: {transaction}", methodName, transaction);
 
-        var txWithSign = client.SignTransaction(AElfContractKeyConst.CommonPrivateKeyForCallTx, transaction);
+        var txWithSign = client.SignTransaction(_contractOptions.CommonPrivateKeyForCallTx, transaction);
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSign.ToByteArray().ToHex()
@@ -76,7 +81,11 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         string senderPubKey, string contractAddress, string chainId)
         where T : class, IMessage<T>, new()
     {
-        var chainInfo = _chainOptions.ChainInfos[chainId];
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+        {
+            return null;
+        }
+
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
         var ownAddress = client.GetAddressFromPubKey(senderPubKey);
