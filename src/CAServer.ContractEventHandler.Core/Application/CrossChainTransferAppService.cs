@@ -81,7 +81,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         }
     }
 
-    private async Task<List<CrossChainTransferDto>> GetToReceiveTransactionsAsync(string chainId)
+   private async Task<List<CrossChainTransferDto>> GetToReceiveTransactionsAsync(string chainId)
     {
         var grain = _clusterClient.GetGrain<ICrossChainTransferGrain>(chainId);
         var transfers = (await grain.GetUnFinishedTransfersAsync()).Data;
@@ -89,28 +89,19 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
         if (transfers.Count < MaxTransferQueryCount)
         {
-            var lastEndHeight = (await grain.GetLastedProcessedHeightAsync()).Data;
-
-            if (lastEndHeight == 0)
+            var latestProcessedHeight = (await grain.GetLastedProcessedHeightAsync()).Data;
+            if (latestProcessedHeight == 0)
             {
-                lastEndHeight = _crossChainOptions.AutoReceiveStartHeight[chainId] - 1;
+                latestProcessedHeight = _crossChainOptions.AutoReceiveStartHeight[chainId] - 1;
             }
 
-            var currentIndexHeight = await _graphQlProvider.GetIndexBlockHeightAsync(chainId);
+            var indexedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(chainId);
+            var startHeight = latestProcessedHeight + 1;
+            var endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
 
-            var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
-
-            var startHeight = lastEndHeight - _indexOptions.IndexBefore;
-
-            var endIndexHeight = lastEndHeight + _indexOptions.IndexBefore;
-
-            endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
-
-            _logger.LogDebug("startHeight is {startHeight},endHeight is {endHeight}", startHeight, endIndexHeight);
-
-            while (endIndexHeight <= targetIndexHeight)
+            while (true)
             {
-                var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endIndexHeight);
+                var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endHeight);
                 var queryTransfers = list.CaHolderTransactionInfo.Data.Select(tx => new CrossChainTransferDto
                 {
                     Id = tx.TransactionId,
@@ -121,33 +112,24 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                     TransferTransactionBlockHash = tx.BlockHash,
                     Status = CrossChainStatus.Indexing
                 }).ToList();
-                var transactionDic = await grain.GetTransactionDicAsync();
-                if (transactionDic != null)
-                {
-                    queryTransfers = queryTransfers.Where(o => !transactionDic.ContainsValue(o.TransferTransactionId))
-                        .ToList();
-                }
 
-                var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
-
-                await grain.UpdateTransfersDicAsync(startHeight, dic);
-                await grain.AddTransfersAsync(endIndexHeight, queryTransfers);
+                await grain.AddTransfersAsync(endHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
-                _logger.LogDebug($"Processed height: {chainId}, {endIndexHeight}");
+                _logger.LogDebug($"Processed height: {chainId}, {endHeight}");
 
-                if (transfers.Count > MaxTransferQueryCount || endIndexHeight == targetIndexHeight)
+                if (transfers.Count > MaxTransferQueryCount || endHeight == indexedHeight - _indexOptions.IndexSafe)
                 {
                     break;
                 }
 
-                startHeight = endIndexHeight;
-                endIndexHeight += _indexOptions.IndexInterval;
-                endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
+                startHeight = endHeight + 1;
+                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
             }
         }
 
         return transfers;
     }
+
 
     private async Task HandleTransferTransactionsAsync(List<CrossChainTransferDto> transfers)
     {

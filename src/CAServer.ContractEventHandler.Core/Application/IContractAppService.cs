@@ -232,7 +232,7 @@ public class ContractAppService : IContractAppService
 
         var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
         SyncHolderInfoInput syncHolderInfoInput;
-        
+
         var syncSucceed = true;
 
         if (chainInfo.IsMainChain)
@@ -241,7 +241,7 @@ public class ContractAppService : IContractAppService
                          !c.IsMainChain && c.ChainId != optionChainId))
             {
                 await _contractProvider.SideChainCheckMainChainBlockIndexAsync(sideChain.ChainId, validateHeight);
-                
+
                 syncHolderInfoInput =
                     await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
                     {
@@ -262,7 +262,7 @@ public class ContractAppService : IContractAppService
         else
         {
             await _contractProvider.MainChainCheckSideChainBlockIndexAsync(chainId, validateHeight);
-            
+
             syncHolderInfoInput =
                 await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
                 {
@@ -270,12 +270,12 @@ public class ContractAppService : IContractAppService
                     BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
                     Transaction = transactionDto.Transaction.ToByteArray()
                 });
-            
+
             if (syncHolderInfoInput.VerificationTransactionInfo == null)
             {
                 return false;
             }
-            
+
             var syncResult =
                 await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
                     syncHolderInfoInput);
@@ -334,6 +334,19 @@ public class ContractAppService : IContractAppService
         await ValidateQueryEventsAsync(chainId);
 
         await SyncQueryEventsAsync(chainId);
+    }
+
+    private long GetEndBlockHeight(long lastEndHeight, long interval, long currentIndexHeight)
+    {
+        if (lastEndHeight + 1 >= currentIndexHeight - _indexOptions.IndexSafe)
+        {
+            return ContractAppServiceConstant.LongError;
+        }
+
+        var nextQueryHeight = lastEndHeight + 1 + interval;
+        var currentSafeIndexHeight = currentIndexHeight - _indexOptions.IndexSafe;
+
+        return nextQueryHeight < currentSafeIndexHeight ? nextQueryHeight : currentSafeIndexHeight;
     }
 
     private async Task SyncQueryEventsAsync(string chainId)
@@ -465,12 +478,10 @@ public class ContractAppService : IContractAppService
         try
         {
             var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
-
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
+            var endBlockHeight = GetEndBlockHeight(lastEndHeight, _indexOptions.IndexInterval, currentIndexHeight);
 
-            var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
-            
-            if (currentIndexHeight <= 0 || lastEndHeight >= targetIndexHeight)
+            if (endBlockHeight == ContractAppServiceConstant.LongError)
             {
                 _logger.LogWarning(
                     "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index}",
@@ -478,56 +489,35 @@ public class ContractAppService : IContractAppService
                 return;
             }
 
-            var startIndexHeight = lastEndHeight - _indexOptions.IndexBefore;
-            var endIndexHeight = lastEndHeight + _indexOptions.IndexInterval;
-            endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
+            var queryEvents = await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
+                chainId, lastEndHeight + 1, endBlockHeight);
+            queryEvents.AddRange(await _graphQLProvider.GetManagerTransactionInfosAsync(
+                chainId, lastEndHeight + 1, endBlockHeight));
 
-            List<QueryEventDto> queryEvents = new List<QueryEventDto>();
-
-            while (endIndexHeight <= targetIndexHeight)
-            {
-                _logger.LogInformation("Query on chain: {id}, from {start} to {end}", chainId, startIndexHeight,
-                    endIndexHeight);
-                
-                queryEvents.AddRange(await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
-                    chainId, startIndexHeight, endIndexHeight));
-                queryEvents.AddRange(await _graphQLProvider.GetManagerTransactionInfosAsync(
-                    chainId, startIndexHeight, endIndexHeight));
-
-                if (endIndexHeight == targetIndexHeight)
-                {
-                    break;
-                }
-
-                startIndexHeight = endIndexHeight;
-
-                endIndexHeight += _indexOptions.IndexInterval;
-                endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
-            }
+            var nextIndexHeight = endBlockHeight < currentIndexHeight
+                ? endBlockHeight + 1
+                : currentIndexHeight - _indexOptions.IndexSafe;
 
             if (queryEvents.IsNullOrEmpty())
             {
                 _logger.LogInformation(
                     "Found no events on chain: {id}. Next index block height: {height}", chainId,
-                    currentIndexHeight);
+                    nextIndexHeight);
             }
             else
             {
                 _logger.LogInformation(
-                    "Found {num} events on chain: {id}. Next index block height: {height}", queryEvents.Count, chainId,
-                    currentIndexHeight);
+                    "Found {num} events on chain: {id}", queryEvents.Count, chainId);
 
                 queryEvents = queryEvents.Where(e => e.ChangeType != QueryLoginGuardianType.LoginGuardianRemoved)
                     .ToList();
 
                 var list = OptimizeQueryEvents(queryEvents);
 
-                list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecords(chainId), list);
-
                 await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, list);
             }
 
-            await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, currentIndexHeight);
+            await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, nextIndexHeight);
         }
         catch (Exception e)
         {

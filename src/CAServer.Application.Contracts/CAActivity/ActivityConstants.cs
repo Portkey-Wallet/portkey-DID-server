@@ -34,9 +34,6 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play"
-        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
-        "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
         "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play"
     };
 
@@ -47,15 +44,6 @@ public static class ActivityConstants
 
     public static readonly List<string> ContractTypes = new()
     {
-        "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
-        "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Approve", "Bingo", "Play"
-    };
-
-    public static readonly List<string> ShowPriceTypes = new()
-    {
-        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "RemoveManagerInfo",
-        "AddManagerInfo", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play"
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
         "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register",
         "Approve", "Bingo",

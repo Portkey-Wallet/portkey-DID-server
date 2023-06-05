@@ -112,12 +112,13 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<string> GetOriginChainIdAsync(string guardianIdentifierHash, string caHash)
     {
-        foreach (var chainInfo in _chainOptions.ChainInfos)
+        foreach (var (chainId, chainInfo) in _chainOptions.ChainInfos)
         {
             try
             {
-                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
-                if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
+                var holderInfo =
+                    await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainId;
             }
             catch (Exception e)
             {
