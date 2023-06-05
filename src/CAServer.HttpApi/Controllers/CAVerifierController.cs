@@ -52,8 +52,7 @@ public class CAVerifierController : CAServerController
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
         if (string.IsNullOrWhiteSpace(version) || version != CurrentVersion)
         {
-            return await RegisterSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput);
+            return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchatoken, sendVerificationRequestInput);
         }
 
         var type = verifierServerInput.OperationType;
