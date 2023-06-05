@@ -8,14 +8,16 @@ namespace CAServer.VerifierServer;
 
 public partial class GetVerifierServerProviderTest
 {
-    private IOptions<AdaptableVariableOptions> GetAdaptableVariableOptions()
+    private IOptionsSnapshot<AdaptableVariableOptions> GetAdaptableVariableOptions()
     {
-        return new OptionsWrapper<AdaptableVariableOptions>(
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AdaptableVariableOptions>>();
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
             new AdaptableVariableOptions
             {
                 HttpConnectTimeOut = 5,
                 VerifierServerExpireTime = 1000
             });
+        return mockOptionsSnapshot.Object;
     }
 
     private IContractProvider GetMockContractProvider()
