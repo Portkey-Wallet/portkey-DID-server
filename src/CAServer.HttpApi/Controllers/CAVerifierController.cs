@@ -29,6 +29,7 @@ public class CAVerifierController : CAServerController
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
+    private const string CurrentVersion = "v1.2.9";
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
@@ -49,11 +50,10 @@ public class CAVerifierController : CAServerController
     {
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-
-        var userIpAddress = UserIpAddress(HttpContext);
-        if (string.IsNullOrWhiteSpace(userIpAddress))
+        if (!string.IsNullOrWhiteSpace(version) || version == CurrentVersion)
         {
-            return null;
+            return await RegisterSendVerificationRequestAsync(recaptchatoken,
+                sendVerificationRequestInput);
         }
 
         var type = verifierServerInput.OperationType;
@@ -99,6 +99,11 @@ public class CAVerifierController : CAServerController
         }
 
         var googleRecaptchaTokenSuccess = false;
+        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        {
+            return null;
+        }
+
         try
         {
             googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
@@ -134,6 +139,11 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput)
     {
+        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        {
+            return null;
+        }
+
         var googleRecaptchaTokenSuccess = false;
         try
         {
