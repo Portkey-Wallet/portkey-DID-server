@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AElf.Contracts.MultiToken;
 using AElf.Types;
 using CAServer.ClaimToken.Dtos;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Shouldly;
 using Xunit;
 
@@ -54,7 +55,8 @@ public class ContractProviderTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetBalanceAsync_ChainId_NotFount_Test()
     {
-        var result = await _contractProvider.GetBalanceAsync("TEST1", "address", "CPU");
+        var result = await _contractProvider.GetBalanceAsync("TEST1",
+            Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(), "CPU");
         result.ShouldBeNull();
     }
 
