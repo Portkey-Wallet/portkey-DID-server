@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Phone;
 using CAServer.Phone.Dtos;
@@ -19,8 +18,8 @@ public class PhoneController
     }
 
     [HttpGet("info")]
-    public  Task<PhoneInfoListDto> PhoneInfoAsyncs()
+    public Task<PhoneInfoListDto> PhoneInfoAsync()
     {
-        return _phoneAppService.GetPhoneInfo();
+        return _phoneAppService.GetPhoneInfoAsync();
     }
 }

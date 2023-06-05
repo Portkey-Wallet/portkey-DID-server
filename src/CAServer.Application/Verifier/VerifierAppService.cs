@@ -25,6 +25,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using Volo.Abp.Users;
 
 namespace CAServer.Verifier;
 
@@ -232,8 +233,29 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {
         var expire = TimeSpan.FromHours(_sendVerifierCodeRequestLimitOption.ExpireHours);
+        var countCacheItem = await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
+        if (countCacheItem.HasValue)
+        {
+            return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
+                null);
+        }
+
         return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
             expire);
+    }
+
+    public async Task<bool> GuardianExistsAsync(string guardianIdentifier)
+    {
+        try
+        {
+            var resultDto = GetGuardian(guardianIdentifier);
+            return resultDto.Success;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "{Message}", e.Message);
+            throw new UserFriendlyException(e.Message);
+        }
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)

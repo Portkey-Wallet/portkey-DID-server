@@ -8,8 +8,6 @@ public interface IGuardianProvider
 {
     Task<GuardiansDto> GetGuardiansAsync(string loginGuardianIdentifierHash, string caHash);
 
-    Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(
-        string guardianIdentifierHash,
-        string caHash,
-        ChainInfo chainInfo);
+    Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(string guardianIdentifierHash, string caHash,
+        string chainId);
 }

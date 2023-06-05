@@ -3,6 +3,7 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using CAServer.Signature;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -57,12 +58,12 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
     }
-    
+
     private void ConfigureCache(IConfiguration configuration)
     {
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
     }
-    
+
     private void ConfigureDataProtection(
         ServiceConfigurationContext context,
         IConfiguration configuration,
@@ -111,8 +112,7 @@ public class CAServerContractEventHandlerModule : AbpModule
                 .Build();
         });
     }
-    
-   
+
 
     private static void StartOrleans(IServiceProvider serviceProvider)
     {

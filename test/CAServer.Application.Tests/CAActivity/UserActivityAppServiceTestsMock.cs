@@ -96,6 +96,16 @@ public partial class UserActivityAppServiceTests
             }
         });
 
+        mockActivityProvider.Setup(m => m.GetTwoCaTransactionsAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(),
+            It.IsAny<List<string>>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new TransactionsDto()
+        {
+            TwoCaHolderTransaction = new CaHolderTransaction()
+            {
+                Data = new List<IndexerTransaction>(),
+                TotalRecordCount = 1
+            }
+        });
+
         return mockActivityProvider.Object;
     }
 

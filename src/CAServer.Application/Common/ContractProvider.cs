@@ -1,11 +1,12 @@
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using AElf.Client.MultiToken;
+using AElf.Contracts.MultiToken;
 using AElf.Client.Service;
 using AElf.Types;
-using CAServer.ClaimToken.Dtos;
+using CAServer.Commons;
 using CAServer.Options;
+using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -13,17 +14,17 @@ using Microsoft.Extensions.Options;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.TokenClaim;
 using Volo.Abp.DependencyInjection;
-using GetBalanceInput = AElf.Contracts.MultiToken.GetBalanceInput;
-using TransferInput = AElf.Contracts.MultiToken.TransferInput;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer.Common;
 
 public interface IContractProvider
 {
+    public Task<GetHolderInfoOutput> GetHolderInfoAsync(Hash caHash, Hash loginGuardianIdentifierHash, string chainId);
     public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
-    public Task<GetBalanceOutput> GetBalanceAsync(string chainId, string address, string symbol);
-    public Task<SendTransactionOutput> TransferAsync(string chainId, ClaimTokenRequestDto claimTokenRequestDto);
-    public Task ClaimTokenAsync(string chainId,string symbol);
+    public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
+    public Task ClaimTokenAsync(string symbol, string address, string chainId);
+    public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -31,126 +32,140 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ChainOptions _chainOptions;
     private readonly ILogger<ContractProvider> _logger;
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
+    private readonly ISignatureProvider _signatureProvider;
+    private readonly ContractOptions _contractOptions;
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
-        IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption)
+        ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
+        IOptionsSnapshot<ContractOptions> contractOptions)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
+        _signatureProvider = signatureProvider;
+        _contractOptions = contractOptions.Value;
     }
 
 
-    public async Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId)
+    private async Task<T> CallTransactionAsync<T>(string methodName, IMessage param, string contractAddress,
+        string chainId) where T : class, IMessage<T>, new()
     {
-        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainOption))
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
         {
             return null;
         }
 
-        var client = new AElfClient(chainOption.BaseUrl);
+        var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
-        var ownAddress = client.GetAddressFromPrivateKey(chainOption.PrivateKey);
-        const string methodName = "GetVerifierServers";
 
-        var param = new Empty();
-        var transaction = await client.GenerateTransactionAsync(ownAddress,
-            chainOption.ContractAddress, methodName, param);
+        string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
 
-        _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction, chainOption.PrivateKey);
+        var transaction =
+            await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
 
-        var txWithSign = client.SignTransaction(chainOption.PrivateKey, transaction);
+        _logger.LogDebug("Call tx methodName is: {methodName} param is: {transaction}", methodName, transaction);
+
+        var txWithSign = client.SignTransaction(_contractOptions.CommonPrivateKeyForCallTx, transaction);
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSign.ToByteArray().ToHex()
         });
-        return GetVerifierServersOutput.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+
+        var value = new T();
+        value.MergeFrom(ByteArrayHelper.HexStringToByteArray(result));
+
+        return value;
     }
 
-    public async Task<GetBalanceOutput> GetBalanceAsync(string chainId, string address, string symbol)
+    private async Task<SendTransactionOutput> SendTransactionAsync<T>(string methodName, IMessage param,
+        string senderPubKey, string contractAddress, string chainId)
+        where T : class, IMessage<T>, new()
     {
-        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainOption))
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
         {
             return null;
         }
 
-        var client = new AElfClient(chainOption.BaseUrl);
+        var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
-        var ownAddress = client.GetAddressFromPrivateKey(chainOption.PrivateKey);
-        const string methodName = "GetBalance";
-        var param = new GetBalanceInput
+        var ownAddress = client.GetAddressFromPubKey(senderPubKey);
+
+        var transaction = await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName, param);
+
+        _logger.LogDebug("Send tx methodName is: {methodName} param is: {transaction}, publicKey is:{publicKey} ",
+            methodName, transaction, _claimTokenInfoOption.PublicKey);
+
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
+
+        var result = await client.SendTransactionAsync(new SendTransactionInput()
+        {
+            RawTransaction = txWithSign
+        });
+
+        return result;
+    }
+
+    public async Task<GetHolderInfoOutput> GetHolderInfoAsync(Hash caHash, Hash loginGuardianIdentifierHash,
+        string chainId)
+    {
+        var param = new GetHolderInfoInput();
+        param.CaHash = caHash;
+        param.LoginGuardianIdentifierHash = loginGuardianIdentifierHash;
+        var output = await CallTransactionAsync<GetHolderInfoOutput>(AElfContractMethodName.GetHolderInfo, param,
+            _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
+        return output;
+    }
+
+    public async Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId)
+    {
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
+        {
+            return null;
+        }
+        
+        return await CallTransactionAsync<GetVerifierServersOutput>(AElfContractMethodName.GetVerifierServers,
+            new Empty(), _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
+    }
+
+    public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)
+    {
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
+        {
+            return null;
+        }
+
+        var getBalanceParam = new GetBalanceInput
         {
             Symbol = symbol,
             Owner = Address.FromBase58(address)
         };
-        var transaction = await client.GenerateTransactionAsync(ownAddress,
-            chainOption.TokenContractAddress, methodName, param);
 
-        _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction, chainOption.PrivateKey);
-
-        var txWithSign = client.SignTransaction(chainOption.PrivateKey, transaction);
-        var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
-        {
-            RawTransaction = txWithSign.ToByteArray().ToHex()
-        });
-        return GetBalanceOutput.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
+        return await CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance, getBalanceParam,
+            _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
-
-    public async Task<SendTransactionOutput> TransferAsync(string chainId, ClaimTokenRequestDto claimTokenRequestDto)
+    public async Task ClaimTokenAsync(string symbol, string address, string chainId)
     {
-        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainOption))
-        {
-            return new SendTransactionOutput();
-        }
-
-        var client = new AElfClient(chainOption.BaseUrl);
-        await client.IsConnectedAsync();
-        var ownAddress = client.GetAddressFromPrivateKey(_claimTokenInfoOption.PrivateKey);
-        const string methodName = "Transfer";
-        var param = new TransferInput
-        {
-            Symbol = claimTokenRequestDto.Symbol,
-            Amount = long.Parse(claimTokenRequestDto.Amount),
-            To = Address.FromBase58(claimTokenRequestDto.Address)
-        };
-        var transaction = await client.GenerateTransactionAsync(ownAddress,
-            chainOption.TokenContractAddress, methodName, param);
-
-        _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction, _claimTokenInfoOption.PrivateKey);
-
-        var txWithSign = client.SignTransaction(_claimTokenInfoOption.PrivateKey, transaction);
-        var result = await client.SendTransactionAsync(new SendTransactionInput()
-        {
-            RawTransaction = txWithSign.ToByteArray().ToHex()
-        });
-        return result;
-    }
-
-    public async Task ClaimTokenAsync(string chainId,string symbol)
-    {
-        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainOption))
-        {
-            return ;
-        }
-        var client = new AElfClient(chainOption.BaseUrl);
-        await client.IsConnectedAsync();
-        var ownAddress = client.GetAddressFromPrivateKey(_claimTokenInfoOption.PrivateKey);
-        const string methodName = "ClaimToken";
-        var param = new ClaimTokenInput
+        var claimTokenParam = new ClaimTokenInput
         {
             Symbol = symbol,
             Amount = _claimTokenInfoOption.ClaimTokenAmount
         };
-        var transaction = await client.GenerateTransactionAsync(ownAddress,
-            _claimTokenInfoOption.ClaimTokenAddress, methodName, param);
+        await SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken, claimTokenParam,
+            _claimTokenInfoOption.PublicKey, address, chainId);
+    }
 
-        _logger.LogDebug("param is: {transaction}, privateKey is:{privateKey} ", transaction, _claimTokenInfoOption.PrivateKey);
-
-        var txWithSign = client.SignTransaction(_claimTokenInfoOption.PrivateKey, transaction);
-        await client.SendTransactionAsync(new SendTransactionInput()
+    public async Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address,
+        string chainId)
+    {
+        var transferParam = new TransferInput
         {
-            RawTransaction = txWithSign.ToByteArray().ToHex()
-        });
+            Symbol = symbol,
+            Amount = long.Parse(amount),
+            To = Address.FromBase58(address)
+        };
+
+        return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
+            _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 }

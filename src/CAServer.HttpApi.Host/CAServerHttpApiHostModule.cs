@@ -7,6 +7,7 @@ using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
+using CAServer.Signature;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -310,7 +311,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseAuthorization();
 
-        if (env.IsDevelopment())
+        //if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>
@@ -322,7 +323,7 @@ public class CAServerHttpApiHostModule : AbpModule
                 // options.OAuthScopes("CAServer");
             });
         }
-        
+
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();

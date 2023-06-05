@@ -11,6 +11,7 @@ using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.Grains.Grain.CrossChain;
 using CAServer.Grains.State.CrossChain;
+using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -35,6 +36,8 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     private readonly IClusterClient _clusterClient;
     private readonly CrossChainOptions _crossChainOptions;
     private readonly ILogger<CrossChainTransferAppService> _logger;
+    private readonly ISignatureProvider _signatureProvider;
+
 
     private const int MaxTransferQueryCount = 100;
     private const int MaxRetryTimes = 5;
@@ -42,7 +45,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     public CrossChainTransferAppService(IContractProvider contractProvider, IOptionsSnapshot<ChainOptions> chainOptions,
         ILogger<CrossChainTransferAppService> logger, IGraphQLProvider graphQlProvider,
         IClusterClient clusterClient, IOptions<IndexOptions> indexOptions,
-        IOptions<CrossChainOptions> crossChainOptions)
+        IOptionsSnapshot<CrossChainOptions> crossChainOptions, ISignatureProvider signatureProvider)
     {
         _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
@@ -51,6 +54,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         _clusterClient = clusterClient;
         _indexOptions = indexOptions.Value;
         _crossChainOptions = crossChainOptions.Value;
+        _signatureProvider = signatureProvider;
     }
 
     public async Task AutoReceiveAsync()
@@ -85,28 +89,19 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
         if (transfers.Count < MaxTransferQueryCount)
         {
-            var lastEndHeight = (await grain.GetLastedProcessedHeightAsync()).Data;
-
-            if (lastEndHeight == 0)
+            var latestProcessedHeight = (await grain.GetLastedProcessedHeightAsync()).Data;
+            if (latestProcessedHeight == 0)
             {
-                lastEndHeight = _crossChainOptions.AutoReceiveStartHeight[chainId] - 1;
+                latestProcessedHeight = _crossChainOptions.AutoReceiveStartHeight[chainId] - 1;
             }
 
-            var currentIndexHeight = await _graphQlProvider.GetIndexBlockHeightAsync(chainId);
+            var indexedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(chainId);
+            var startHeight = latestProcessedHeight + 1;
+            var endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
 
-            var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
-
-            var startHeight = lastEndHeight - _indexOptions.IndexBefore;
-
-            var endIndexHeight = lastEndHeight + _indexOptions.IndexBefore;
-
-            endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
-
-            _logger.LogDebug("startHeight is {startHeight},endHeight is {endHeight}", startHeight, endIndexHeight);
-
-            while (endIndexHeight <= targetIndexHeight)
+            while (true)
             {
-                var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endIndexHeight);
+                var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endHeight);
                 var queryTransfers = list.CaHolderTransactionInfo.Data.Select(tx => new CrossChainTransferDto
                 {
                     Id = tx.TransactionId,
@@ -117,33 +112,24 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                     TransferTransactionBlockHash = tx.BlockHash,
                     Status = CrossChainStatus.Indexing
                 }).ToList();
-                var transactionDic = await grain.GetTransactionDicAsync();
-                if (transactionDic != null)
-                {
-                    queryTransfers = queryTransfers.Where(o => !transactionDic.ContainsValue(o.TransferTransactionId))
-                        .ToList();
-                }
 
-                var dic = queryTransfers.ToDictionary(o => o.TransferTransactionHeight, o => o.TransferTransactionId);
-
-                await grain.UpdateTransfersDicAsync(startHeight, dic);
-                await grain.AddTransfersAsync(endIndexHeight, queryTransfers);
+                await grain.AddTransfersAsync(endHeight, queryTransfers);
                 transfers.AddRange(queryTransfers);
-                _logger.LogDebug($"Processed height: {chainId}, {endIndexHeight}");
+                _logger.LogDebug($"Processed height: {chainId}, {endHeight}");
 
-                if (transfers.Count > MaxTransferQueryCount || endIndexHeight == targetIndexHeight)
+                if (transfers.Count > MaxTransferQueryCount || endHeight == indexedHeight - _indexOptions.IndexSafe)
                 {
                     break;
                 }
 
-                startHeight = endIndexHeight;
-                endIndexHeight += _indexOptions.IndexInterval;
-                endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
+                startHeight = endHeight + 1;
+                endHeight = Math.Min(startHeight + MaxTransferQueryCount - 1, indexedHeight - _indexOptions.IndexSafe);
             }
         }
 
         return transfers;
     }
+
 
     private async Task HandleTransferTransactionsAsync(List<CrossChainTransferDto> transfers)
     {
@@ -389,19 +375,20 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
+        var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
 
         var param = new Int64Value
         {
             Value = height
         };
         var transaction =
-            await client.GenerateTransactionAsync(client.GetAddressFromPrivateKey(chainInfo.PrivateKey),
+            await client.GenerateTransactionAsync(client.GetAddressFromPubKey(chainInfo.PublicKey),
                 chainInfo.CrossChainContractAddress,
                 "GetBoundParentChainHeightAndMerklePathByHeight", param);
-        var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
         var transactionResult = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
-            RawTransaction = txWithSign.ToByteArray().ToHex()
+            RawTransaction = txWithSign
         });
         var result =
             CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionResult));
@@ -414,6 +401,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
+        var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
 
         var param = new CrossChainReceiveTokenInput
         {
@@ -422,14 +410,13 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
             ParentChainHeight = parentChainHeight,
             TransferTransactionBytes = ByteString.CopyFrom(ByteArrayHelper.HexStringToByteArray(transferTransaction)),
         };
-        var fromAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
+        var fromAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
         var transaction = await client.GenerateTransactionAsync(fromAddress, chainInfo.TokenContractAddress,
             "CrossChainReceiveToken", param);
-        var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
-
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
         var result = await client.SendTransactionAsync(new SendTransactionInput
         {
-            RawTransaction = txWithSign.ToByteArray().ToHex()
+            RawTransaction = txWithSign
         });
 
         return result.TransactionId;

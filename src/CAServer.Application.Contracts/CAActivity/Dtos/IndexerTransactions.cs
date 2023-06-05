@@ -8,6 +8,11 @@ public class IndexerTransactions
     public CaHolderTransaction CaHolderTransaction { get; set; }
 }
 
+public class TransactionsDto
+{
+    public CaHolderTransaction TwoCaHolderTransaction { get; set; }
+}
+
 public class CaHolderTransaction
 {
     public List<IndexerTransaction> Data { get; set; }

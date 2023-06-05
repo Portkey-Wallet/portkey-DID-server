@@ -5,6 +5,9 @@ namespace CAServer.Options;
 
 public class PhoneInfoOptions
 {
+    
+    public PhoneInfoItem Default { get; set; }
+
     public List<PhoneInfoItem> PhoneInfo { get; set; }
 }
 
