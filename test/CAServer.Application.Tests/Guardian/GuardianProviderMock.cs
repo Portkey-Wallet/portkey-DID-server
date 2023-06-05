@@ -31,8 +31,8 @@ public partial class GuardianTest
                 // }
             });
 
-        provider.Setup(t => t.GetHolderInfoFromContractAsync(It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<Grains.Grain.ApplicationHandler.ChainInfo>())).ReturnsAsync(new GetHolderInfoOutput()
+        provider.Setup(t => t.GetHolderInfoFromContractAsync(It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(new GetHolderInfoOutput()
         {
             GuardianList = new GuardianList()
             {

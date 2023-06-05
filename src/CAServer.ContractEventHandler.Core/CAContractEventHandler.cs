@@ -39,7 +39,8 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
     {
         try
         {
-            await _contractAppService.SocialRecoveryAsync(eventData);
+            // SocialRecovery can take a long time
+            _ = _contractAppService.SocialRecoveryAsync(eventData);
         }
         catch (Exception e)
         {

@@ -24,7 +24,6 @@ public partial class VerifierServerClientTests
     }
 
 
-
     private IHttpClientFactory GetMockHttpClientFactory()
     {
         var clientHandlerStub = new DelegatingHandlerStub();
@@ -37,14 +36,16 @@ public partial class VerifierServerClientTests
         return factory;
     }
 
-    private IOptions<AdaptableVariableOptions> GetAdaptableVariableOptions()
+    private IOptionsSnapshot<AdaptableVariableOptions> GetAdaptableVariableOptions()
     {
-        return new OptionsWrapper<AdaptableVariableOptions>(
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AdaptableVariableOptions>>();
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
             new AdaptableVariableOptions
             {
                 HttpConnectTimeOut = 5,
                 VerifierServerExpireTime = 1000
             });
+        return mockOptionsSnapshot.Object;
     }
 }
 
@@ -54,14 +55,18 @@ public class DelegatingHandlerStub : DelegatingHandler
 
     public DelegatingHandlerStub()
     {
-        _handlerFunc = (request, cancellationToken) => Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.OK,Content = new StringContent(JsonConvert.SerializeObject(new GoogleUserInfoDto
+        _handlerFunc = (request, cancellationToken) => Task.FromResult(new HttpResponseMessage
         {
-            Id="123456789",
-            Email="MockEmail",
-            Picture="MockPicture",
-            VerifiedEmail=true,
-            FullName= "MockGivenName"
-        }))});
+            StatusCode = HttpStatusCode.OK, Content = new StringContent(JsonConvert.SerializeObject(
+                new GoogleUserInfoDto
+                {
+                    Id = "123456789",
+                    Email = "MockEmail",
+                    Picture = "MockPicture",
+                    VerifiedEmail = true,
+                    FullName = "MockGivenName"
+                }))
+        });
     }
 
     public DelegatingHandlerStub(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handlerFunc)
@@ -69,7 +74,8 @@ public class DelegatingHandlerStub : DelegatingHandler
         _handlerFunc = handlerFunc;
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        CancellationToken cancellationToken)
     {
         return _handlerFunc(request, cancellationToken);
     }

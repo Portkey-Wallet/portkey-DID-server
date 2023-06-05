@@ -6,6 +6,7 @@ using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -53,14 +54,16 @@ public class ContractProvider : IContractProvider
     private readonly IClusterClient _clusterClient;
     private readonly ChainOptions _chainOptions;
     private readonly IndexOptions _indexOptions;
+    private readonly ISignatureProvider _signatureProvider;
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
-        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient)
+        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
+        _signatureProvider = signatureProvider;
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,
@@ -72,17 +75,16 @@ public class ContractProvider : IContractProvider
 
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
-            var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
+            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
             var contractAddress = isCrossChain ? chainInfo.CrossChainContractAddress : chainInfo.ContractAddress;
 
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, contractAddress,
                     methodName, param);
-            var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
-
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
-                RawTransaction = txWithSign.ToByteArray().ToHex()
+                RawTransaction = txWithSign
             });
 
             var value = new T();

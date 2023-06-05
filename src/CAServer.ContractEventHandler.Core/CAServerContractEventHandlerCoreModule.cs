@@ -1,4 +1,5 @@
 using CAServer.ContractEventHandler.Core.Application;
+using CAServer.Signature;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp;
 using Volo.Abp.AutoMapper;
@@ -7,7 +8,7 @@ using Volo.Abp.Threading;
 
 namespace CAServer.ContractEventHandler.Core;
 
-[DependsOn(typeof(AbpAutoMapperModule))]
+[DependsOn(typeof(AbpAutoMapperModule), typeof(CAServerSignatureModule))]
 public class CAServerContractEventHandlerCoreModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)

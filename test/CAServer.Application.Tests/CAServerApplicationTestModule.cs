@@ -106,7 +106,7 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.Configure<ClaimTokenInfoOptions>(option =>
         {
             option.ChainId = "TEST";
-            option.PrivateKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91";
+            option.PublicKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91";
         });
         base.ConfigureServices(context);
     }

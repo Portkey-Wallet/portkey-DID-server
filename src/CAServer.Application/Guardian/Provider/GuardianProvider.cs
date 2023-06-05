@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
@@ -15,10 +16,13 @@ namespace CAServer.Guardian.Provider;
 public class GuardianProvider : IGuardianProvider, ITransientDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly IContractProvider _contractProvider;
 
-    public GuardianProvider(IGraphQLHelper graphQlHelper)
+
+    public GuardianProvider(IGraphQLHelper graphQlHelper, IContractProvider contractProvider)
     {
         _graphQlHelper = graphQlHelper;
+        _contractProvider = contractProvider;
     }
 
     public async Task<GuardiansDto> GetGuardiansAsync(string loginGuardianIdentifierHash, string caHash)
@@ -42,28 +46,14 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
         });
     }
 
-    public async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(
-        string guardianIdentifierHash,
-        string caHash,
-        ChainInfo chainInfo)
+    public async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(string guardianIdentifierHash, string caHash,
+        string chainId)
     {
-        var param = new GetHolderInfoInput();
-
         if (!string.IsNullOrWhiteSpace(caHash))
         {
-            param.CaHash = Hash.LoadFromHex(caHash);
-            param.LoginGuardianIdentifierHash = null;
-        }
-        else
-        {
-            param.LoginGuardianIdentifierHash = Hash.LoadFromHex(guardianIdentifierHash);
-            param.CaHash = null;
+            return await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
         }
 
-        var output =
-            await ContractHelper.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param, false,
-                chainInfo);
-
-        return output;
+        return await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(guardianIdentifierHash), chainId);
     }
 }

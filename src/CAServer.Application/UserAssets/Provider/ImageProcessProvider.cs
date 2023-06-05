@@ -32,7 +32,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
     private HttpClient? Client { get; set; }
 
     public ImageProcessProvider(ILogger<ImageProcessProvider> logger,
-        IOptions<AdaptableVariableOptions> adaptableVariableOptions, IHttpClientFactory httpClientFactory)
+        IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions, IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
@@ -76,7 +76,8 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
     {
         if (replaceDomain)
         {
-            string[] urlSplit = imageUrl.Split(new string[] { UserAssetsServiceConstant.AwsDomain }, StringSplitOptions.RemoveEmptyEntries);
+            string[] urlSplit = imageUrl.Split(new string[] { UserAssetsServiceConstant.AwsDomain },
+                StringSplitOptions.RemoveEmptyEntries);
             imageUrl = UserAssetsServiceConstant.NewAwsDomain + urlSplit[1];
         }
 

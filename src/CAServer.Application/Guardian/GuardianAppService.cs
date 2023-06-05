@@ -36,13 +36,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IAppleUserProvider _appleUserProvider;
 
     public GuardianAppService(
-        INESTRepository<GuardianIndex, string> guardianRepository,
-        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
-        ILogger<GuardianAppService> logger,
-        IOptions<ChainOptions> chainOptions,
-        IGuardianProvider guardianProvider,
-        IClusterClient clusterClient,
-        IAppleUserProvider appleUserProvider)
+        INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
+        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
+        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -116,12 +112,13 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<string> GetOriginChainIdAsync(string guardianIdentifierHash, string caHash)
     {
-        foreach (var chainInfo in _chainOptions.ChainInfos)
+        foreach (var (chainId, chainInfo) in _chainOptions.ChainInfos)
         {
             try
             {
-                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
-                if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
+                var holderInfo =
+                    await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainId;
             }
             catch (Exception e)
             {
@@ -185,9 +182,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         try
         {
-            var chainInfo = _chainOptions.ChainInfos[chainId];
-            //return await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
-            return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
+            return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
         }
         catch (Exception ex)
         {
@@ -243,7 +238,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,"in GetUserExtraInfoAsync");
+            _logger.LogError(ex, "in GetUserExtraInfoAsync");
         }
 
         return new List<UserExtraInfoIndex>();
