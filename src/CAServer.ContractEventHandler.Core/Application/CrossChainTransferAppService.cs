@@ -45,7 +45,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     public CrossChainTransferAppService(IContractProvider contractProvider, IOptionsSnapshot<ChainOptions> chainOptions,
         ILogger<CrossChainTransferAppService> logger, IGraphQLProvider graphQlProvider,
         IClusterClient clusterClient, IOptions<IndexOptions> indexOptions,
-        CrossChainOptions crossChainOptions, ISignatureProvider signatureProvider)
+        IOptionsSnapshot<CrossChainOptions> crossChainOptions, ISignatureProvider signatureProvider)
     {
         _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
@@ -53,7 +53,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         _graphQlProvider = graphQlProvider;
         _clusterClient = clusterClient;
         _indexOptions = indexOptions.Value;
-        _crossChainOptions = crossChainOptions;
+        _crossChainOptions = crossChainOptions.Value;
         _signatureProvider = signatureProvider;
     }
 

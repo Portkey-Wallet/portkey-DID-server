@@ -16,7 +16,7 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
     private readonly SignatureServerOptions _signatureServerOptions;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public SignatureProvider(IOptions<SignatureServerOptions> signatureOptions, IHttpClientFactory httpClientFactory)
+    public SignatureProvider(IOptionsSnapshot<SignatureServerOptions> signatureOptions, IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
         _signatureServerOptions = signatureOptions.Value;

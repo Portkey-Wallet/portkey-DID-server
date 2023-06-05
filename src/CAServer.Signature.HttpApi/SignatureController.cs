@@ -21,7 +21,7 @@ public class SignatureController : CAServerSignatureController
 
 
     public SignatureController(ILogger<SignatureController> logger,
-        IOptions<KeyPairInfoOptions> signatureOptions)
+        IOptionsSnapshot<KeyPairInfoOptions> signatureOptions)
     {
         _logger = logger;
         _keyPairInfoOptions = signatureOptions.Value;
