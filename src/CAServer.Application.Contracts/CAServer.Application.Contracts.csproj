@@ -34,4 +34,9 @@
     <PackageReference Include="Volo.Abp.SettingManagement.Application.Contracts" Version="7.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Orleans_CodeGenInputs Remove="Sample\ISampleAppService.cs" />
+    <Orleans_CodeGenInputs Remove="Sample\TestDto.cs" />
+  </ItemGroup>
+
 </Project>

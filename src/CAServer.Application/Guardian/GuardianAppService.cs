@@ -116,9 +116,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             try
             {
-                //var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
-                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash,
-                    chainInfo.Key);
+                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
                 if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
             }
             catch (Exception e)

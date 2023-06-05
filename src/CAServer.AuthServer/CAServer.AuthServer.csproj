@@ -22,6 +22,7 @@
     <None Remove="GraphQL.Client" />
     <None Remove="GraphQL.Client.Serializer.Newtonsoft" />
     <None Remove="System.IdentityModel.Tokens.Jwt" />
+    <None Include="appsettings.Development.json" />
   </ItemGroup>
 
   <ItemGroup>

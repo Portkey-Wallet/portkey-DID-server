@@ -29,6 +29,13 @@ public class IndexOptions
     public int MaxRetryTimes { get; set; }
     public int MaxBucket { get; set; }
     public Dictionary<string, long> AutoSyncStartHeight { get; set; }
+    public int MaxRetryTimes { get; set; }
+    public int MaxBucket { get; set; }
+    public Dictionary<string, long> AutoSyncStartHeight { get; set; } = new()
+    {
+        { "AELF", 146928049 },
+        { "tDVV", 139522008 }
+    };
 }
 
 public class GraphQLOptions

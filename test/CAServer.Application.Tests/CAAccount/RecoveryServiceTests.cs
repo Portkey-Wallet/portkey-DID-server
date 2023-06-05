@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
@@ -44,7 +45,7 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
             var grain = _cluster.Client.GetGrain<IGuardianGrain>("Guardian-" + identifier);
             await grain.AddGuardianAsync(identifier, salt, identifierHash);
-            
+
             var list = new List<RecoveryGuardian>();
             list.Add(new RecoveryGuardian
             {
@@ -73,9 +74,8 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
         {
             Assert.True(e != null);
         }
-
     }
-    
+
     [Fact]
     public async Task RecoverRequestAsync_LoginGuardianIdentifier_Is_NullOrEmpty_Test()
     {
@@ -85,6 +85,41 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             list.Add(new RecoveryGuardian
             {
                 Type = GuardianIdentifierType.Email,
+                Identifier = "",
+                VerifierId = DefaultVerifierId,
+                VerificationDoc = DefaultVerificationDoc,
+                Signature = DefaultVerifierSignature
+            });
+
+            await _caAccountAppService.RecoverRequestAsync(new RecoveryRequestDto
+            {
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
+                ChainId = DefaultChainId,
+                GuardiansApproved = list,
+                Context = new HubRequestContextDto
+                {
+                    ClientId = DefaultClientId,
+                    RequestId = DefaultRequestId
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Assert.True(ex is AbpValidationException);
+        }
+    }
+    
+    [Fact]
+    public async Task RecoverRequestAsync_Type_Is_Invalid_Test()
+    {
+        try
+        {
+            var list = new List<RecoveryGuardian>();
+            list.Add(new RecoveryGuardian
+            {
+                Type = (GuardianIdentifierType)10,
                 Identifier = DefaultEmailAddress,
                 VerifierId = DefaultVerifierId,
                 VerificationDoc = DefaultVerificationDoc,
@@ -110,5 +145,28 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             Assert.True(ex is AbpValidationException);
         }
     }
-    
+
+    [Fact]
+    public async Task RecoverRequestAsync_Dto_Test()
+    {
+        var guardian = new GuardianAccountInfoDto
+        {
+            Type = GuardianType.GUARDIAN_TYPE_OF_APPLE,
+            Value = string.Empty,
+            VerificationInfo = new VerificationInfoDto
+            {
+                Id = string.Empty,
+                Signature = string.Empty,
+                VerificationDoc = string.Empty
+            }
+        };
+
+        var message = new RecoveryCompletedMessageDto
+        {
+            RecoveryStatus = "PASS",
+            RecoveryMessage = string.Empty
+        };
+        
+        
+    }
 }

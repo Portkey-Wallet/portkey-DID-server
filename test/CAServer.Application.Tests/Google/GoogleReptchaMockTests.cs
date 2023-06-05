@@ -11,7 +11,7 @@ using Moq;
 
 namespace CAServer.Google;
 
-public partial class GoogleRecapthaTests
+public partial class GoogleRecaptchaTests
 {
     private IHttpClientFactory GetMockHttpClientFactory()
     {

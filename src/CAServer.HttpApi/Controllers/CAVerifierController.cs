@@ -5,11 +5,13 @@ using CAServer.Google;
 using CAServer.Switch;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
+using Volo.Abp.Users;
 
 namespace CAServer.Controllers;
 
@@ -26,15 +28,18 @@ public class CAVerifierController : CAServerController
     private readonly IGoogleAppService _googleAppService;
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string XForwardedFor = "X-Forwarded-For";
+    private readonly ICurrentUser _currentUser;
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
-        ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService)
+        ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
+        ICurrentUser currentUser)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
         _logger = logger;
         _switchAppService = switchAppService;
         _googleAppService = googleAppService;
+        _currentUser = currentUser;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -51,9 +56,41 @@ public class CAVerifierController : CAServerController
             return null;
         }
 
+        var type = verifierServerInput.OperationType;
+        return type switch
+        {
+            OperationType.Register => await RegisterSendVerificationRequestAsync(recaptchatoken,
+                sendVerificationRequestInput),
+            OperationType.Recovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
+                sendVerificationRequestInput),
+            OperationType.GuardianOperations => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
+                sendVerificationRequestInput),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+
+    private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
+        SendVerificationRequestInput sendVerificationRequestInput)
+    {
+        var isAuthenticated = _currentUser.IsAuthenticated;
+        if (!isAuthenticated)
+        {
+            return null;
+        }
+        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput);
+    }
+
+    private async Task<VerifierServerResponse> GoogleRecaptchaAndSendVerifyCodeAsync(string recaptchaToken,
+        SendVerificationRequestInput sendVerificationRequestInput)
+    {
+        var userIpAddress = UserIpAddress(HttpContext);
+        if (string.IsNullOrWhiteSpace(userIpAddress))
+        {
+            return null;
+        }
+
         _logger.LogDebug("userIp is {userIp}", userIpAddress);
         var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
-
         var googleRecaptchaOpen = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         if (!switchStatus.IsOpen || !googleRecaptchaOpen)
@@ -64,7 +101,43 @@ public class CAVerifierController : CAServerController
         var googleRecaptchaTokenSuccess = false;
         try
         {
-            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchatoken);
+            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("GoogleRecaptchaTokenAsync error: {errorMessage}", e.Message);
+            return null;
+        }
+
+        if (googleRecaptchaTokenSuccess)
+        {
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        }
+
+        return null;
+    }
+
+    private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
+        SendVerificationRequestInput sendVerificationRequestInput)
+    {
+        //check guardian isExists;
+        var guardianExists =
+            await _verifierAppService.GuardianExistsAsync(sendVerificationRequestInput.GuardianIdentifier);
+        if (!guardianExists)
+        {
+            return null;
+        }
+        
+        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput);
+    }
+
+    private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(string recaptchaToken,
+        SendVerificationRequestInput sendVerificationRequestInput)
+    {
+        var googleRecaptchaTokenSuccess = false;
+        try
+        {
+            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
         }
         catch (Exception e)
         {

@@ -28,6 +28,7 @@ public partial class IpInfoServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task TestGetIpInfo()
     {
+        var ipInfoDto = new IpInfoDto();
         var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
         ipInfo.ShouldNotBeNull();
         ipInfo.Country.ShouldBe("Singapore");

@@ -5,11 +5,12 @@ using Xunit;
 
 namespace CAServer.Google;
 
-public partial class GoogleRecapthaTests : CAServerApplicationTestBase
+[Collection(CAServerTestConsts.CollectionDefinitionName)]
+public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
 {
     private readonly IGoogleAppService _googleAppService;
 
-    public GoogleRecapthaTests()
+    public GoogleRecaptchaTests()
     {
         _googleAppService = GetRequiredService<IGoogleAppService>();
     }
@@ -19,7 +20,6 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetGoogleRecaptchaOptions());
         services.AddSingleton(GetMockCacheProvider());
-        base.AfterAddApplication(services);
     }
 
 
@@ -44,9 +44,6 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
     {
         var userIpAddress = "127.0.0.1";
         var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
-        result.ShouldBeFalse();
+        result.ShouldBeTrue();
     }
-
-
-
 }

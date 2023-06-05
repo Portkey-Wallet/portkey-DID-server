@@ -65,7 +65,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
-
+        
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -311,7 +311,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseAuthorization();
 
-        if (env.IsDevelopment())
+        //if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>

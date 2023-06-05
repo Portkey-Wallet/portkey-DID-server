@@ -17,5 +17,6 @@ public class NotifyBaseDto
     public string[] OperatingSystemVersions { get; set; }
     public NotifySendType[] SendTypes { get; set; }
     [Required] public bool IsForceUpdate { get; set; }
+    public int NotifyId { get; set; }
     public bool IsApproved { get; set; }
 }

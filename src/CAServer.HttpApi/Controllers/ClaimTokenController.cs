@@ -11,7 +11,7 @@ namespace CAServer.Controllers;
 [RemoteService]
 [Area("app")]
 [ControllerName("ClaimToken")]
-[Route("api/app/claimToken")]
+[Route("api/app/claim_token")]
 public class ClaimTokenController : CAServerController
 {
     private readonly IClaimTokenAppService _claimTokenAppService;
