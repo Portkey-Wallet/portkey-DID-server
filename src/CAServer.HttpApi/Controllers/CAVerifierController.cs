@@ -50,7 +50,7 @@ public class CAVerifierController : CAServerController
     {
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        if (!string.IsNullOrWhiteSpace(version) || version == CurrentVersion)
+        if (string.IsNullOrWhiteSpace(version) || version != CurrentVersion)
         {
             return await RegisterSendVerificationRequestAsync(recaptchatoken,
                 sendVerificationRequestInput);
