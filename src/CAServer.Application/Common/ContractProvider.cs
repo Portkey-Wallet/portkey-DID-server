@@ -37,13 +37,13 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        ContractOptions contractOptions)
+        IOptionsSnapshot<ContractOptions> contractOptions)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
-        _contractOptions = contractOptions;
+        _contractOptions = contractOptions.Value;
     }
 
 
@@ -118,17 +118,28 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
     public async Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId)
     {
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
+        {
+            return null;
+        }
+        
         return await CallTransactionAsync<GetVerifierServersOutput>(AElfContractMethodName.GetVerifierServers,
             new Empty(), _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
     }
 
     public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)
     {
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
+        {
+            return null;
+        }
+
         var getBalanceParam = new GetBalanceInput
         {
             Symbol = symbol,
             Owner = Address.FromBase58(address)
         };
+
         return await CallTransactionAsync<GetBalanceOutput>(AElfContractMethodName.GetBalance, getBalanceParam,
             _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
