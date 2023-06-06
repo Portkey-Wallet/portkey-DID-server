@@ -24,8 +24,10 @@ public class GuardianProviderTest : CAServerApplicationTestBase
     {
         var graphQlHelper = Substitute.For<IGraphQLHelper>();
         var graphQlClient = Substitute.For<IGraphQLClient>();
+        // var contractProvider = Substitute.For<IContractProvider>();
         services.AddSingleton(graphQlClient);
         services.AddSingleton(graphQlHelper);
+        // services.AddSingleton(contractProvider);
     }
 
     [Fact]
@@ -46,22 +48,7 @@ public class GuardianProviderTest : CAServerApplicationTestBase
     {
         try
         {
-            await _guardianProvider.GetHolderInfoFromContractAsync("test", "f2393d8b29f3e19c46f3ad3b3e851689c7b6724f11e0851b7b287fbae6e7a4e7",
-                new Grains.Grain.ApplicationHandler.ChainInfo());
-        }
-        catch (Exception e)
-        {
-            e.ShouldNotBeNull();
-        }
-    }
-    
-    [Fact]
-    public async Task GetHolderInfoFromContract_Param_Test()
-    {
-        try
-        {
-            await _guardianProvider.GetHolderInfoFromContractAsync("test", string.Empty,
-                new Grains.Grain.ApplicationHandler.ChainInfo());
+            await _guardianProvider.GetHolderInfoFromContractAsync("test", string.Empty, "AELF");
         }
         catch (Exception e)
         {

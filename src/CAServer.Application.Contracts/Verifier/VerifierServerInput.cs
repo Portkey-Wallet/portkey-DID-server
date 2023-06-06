@@ -7,6 +7,9 @@ namespace CAServer.Verifier;
 public class VerifierServerInput : VerifierServerBase , IValidatableObject
 {
     [Required] public string ChainId { get; set; }
+    
+    [Required] public OperationType OperationType { get; set; }
+    
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (Type == "Email"&& !VerifyHelper.VerifyEmail(GuardianIdentifier))

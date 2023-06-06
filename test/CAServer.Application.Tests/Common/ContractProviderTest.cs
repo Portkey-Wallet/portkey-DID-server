@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AElf.Contracts.MultiToken;
 using AElf.Types;
 using CAServer.ClaimToken.Dtos;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Shouldly;
 using Xunit;
 
@@ -54,31 +55,9 @@ public class ContractProviderTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetBalanceAsync_ChainId_NotFount_Test()
     {
-        var result = await _contractProvider.GetBalanceAsync("TEST1", "address", "CPU");
+        var result = await _contractProvider.GetBalanceAsync("TEST1",
+            Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(), "CPU");
         result.ShouldBeNull();
-    }
-
-    [Fact]
-    public async Task TransferAsyncTest()
-    {
-        try
-        {
-            var outPutNull = await _contractProvider.TransferAsync("TEST", new ClaimTokenRequestDto()
-            {
-                Amount = "100"
-            });
-        }
-        catch (Exception e)
-        {
-            e.ShouldNotBeNull();
-        }
-    }
-
-    [Fact]
-    public async Task TransferAsync_ChainId_NotFount_Test()
-    {
-        var result = await _contractProvider.TransferAsync("TEST1", new ClaimTokenRequestDto());
-        result.TransactionId.ShouldBeNull();
     }
 
     [Fact]
@@ -86,7 +65,7 @@ public class ContractProviderTest : CAServerApplicationTestBase
     {
         try
         {
-            await _contractProvider.ClaimTokenAsync("TEST", "CPU");
+            await _contractProvider.ClaimTokenAsync("TEST", "CPU", "AELF");
         }
         catch (Exception e)
         {
@@ -97,21 +76,6 @@ public class ContractProviderTest : CAServerApplicationTestBase
     [Fact]
     public async Task ClaimTokenAsync_ChainId_NotFount_Test()
     {
-        await _contractProvider.ClaimTokenAsync("TEST1", "CPU");
-    }
-
-    [Fact]
-    private async Task ContractHelperTest()
-    {
-        try
-        {
-            var result = await ContractHelper.CallTransactionAsync<Transaction>("test", new TransferInput(), false,
-                new Grains.Grain.ApplicationHandler.ChainInfo()
-                    { ChainId = "TEST", PrivateKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91" });
-        }
-        catch (Exception e)
-        {
-            e.ShouldNotBeNull();
-        }
+        await _contractProvider.ClaimTokenAsync("TEST1", "CPU", "AELF");
     }
 }

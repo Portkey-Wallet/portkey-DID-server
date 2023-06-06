@@ -439,9 +439,8 @@ public class ContractAppService : IContractAppService
 
                     if (result.Status != TransactionState.Mined)
                     {
-                        _logger.LogError(
-                            "{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, validateHeight: {validateHeight}, GetSideChainHeight: {GetSideChainHeight}, mainHeight: {mainHeight}, GetParentChainHeight: {GetParentChainHeight}",
-                            record.ChangeType, chainId, record.CaHash, result.Error, record.ValidateHeight, indexHeight, mainHeight, indexMainChainBlock);
+                        _logger.LogError("{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}",
+                            record.ChangeType, chainId, record.CaHash, result.Error);
 
                         record.RetryTimes++;
                         record.ValidateHeight = long.MaxValue;
@@ -612,6 +611,8 @@ public class ContractAppService : IContractAppService
         var list = queryEvents.Select(dto => new SyncRecord
             {
                 BlockHeight = dto.BlockHeight,
+                BlockHash = dto.BlockHash,
+                Manager = dto.Manager,
                 CaHash = dto.CaHash,
                 ChangeType = dto.ChangeType,
                 NotLoginGuardian = dto.NotLoginGuardian,
@@ -643,78 +644,34 @@ public class ContractAppService : IContractAppService
         return records;
     }
 
-    // public async Task InitializeIndexAsync()
-    // {
-    //     var tasks = new List<Task>();
-    //     foreach (var chainId in _chainOptions.ChainInfos.Keys)
-    //     {
-    //         var loginGuardianHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.LoginGuardian);
-    //         var managerInfoHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.ManagerInfo);
-    //         var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
-    //
-    //         var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
-    //         if (loginGuardianHeight == 0)
-    //         {
-    //             tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.LoginGuardian,
-    //                 indexHeight - _indexOptions.IndexSafe));
-    //         }
-    //
-    //         if (managerInfoHeight == 0)
-    //         {
-    //             tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.ManagerInfo,
-    //                 indexHeight - _indexOptions.IndexSafe));
-    //         }
-    //
-    //         if (queryRecordHeight < indexHeight)
-    //         {
-    //             tasks.Add(_graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord,
-    //                 indexHeight - _indexOptions.IndexSafe));
-    //         }
-    //     }
-    //
-    //     await tasks.WhenAll();
-    // }
-
-    public async Task InitializeQueryRecordIndexAsync()
+    private List<SyncRecord> RemoveDuplicateQueryEvents(List<SyncRecord> previousList, List<SyncRecord> newList)
     {
-        foreach (var chainId in _chainOptions.ChainInfos.Keys)
+        if (newList.IsNullOrEmpty())
         {
-            var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
-
-            if (queryRecordHeight > 0)
-            {
-                return;
-            }
-
-            var indexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
-
-            if (queryRecordHeight < indexHeight)
-            {
-                await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord,
-                    indexHeight - _indexOptions.IndexSafe);
-            }
+            return new List<SyncRecord>();
         }
-    }
 
-    // public async Task InitializeIndexAsync()
-    // {
-    //     var dict = _indexOptions.AutoSyncStartHeight;
-    //     foreach (var info in _chainOptions.ChainInfos)
-    //     {
-    //         var chainId = info.Key;
-    //         var result = dict.TryGetValue(chainId, out var height);
-    //         if (!result)
-    //         {
-    //             height = 0;
-    //         }
-    //         var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
-    //         if (queryRecordHeight < height)
-    //         
-    //         {
-    //             await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height);
-    //         }
-    //     }
-    // }
+        if (previousList.IsNullOrEmpty())
+        {
+            return newList;
+        }
+
+        var list = new List<SyncRecord>();
+
+        foreach (var record in newList)
+        {
+            if (previousList.Any(r =>
+                    r.BlockHash == record.BlockHash && r.Manager == record.Manager &&
+                    r.ChangeType == record.ChangeType))
+            {
+                continue;
+            }
+
+            list.Add(record);
+        }
+
+        return list;
+    }
 
     public async Task InitializeIndexAsync()
     {
@@ -730,6 +687,7 @@ public class ContractAppService : IContractAppService
             }
 
             var queryRecordHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
+
             if (queryRecordHeight < height)
 
             {

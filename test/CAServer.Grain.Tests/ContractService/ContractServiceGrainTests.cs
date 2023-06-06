@@ -14,7 +14,7 @@ using Xunit;
 
 namespace CAServer.Grain.Tests.ContractService;
 
-public class ContractServiceGrainTests : CAServerGrainTestBase
+public  class ContractServiceGrainTests : CAServerGrainTestBase
 {
     [Fact]
     public async Task CreateHolderInfoAsyncTests()
@@ -89,7 +89,7 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
 
         await grain.ValidateTransactionAsync("AELF", output, unsetList);
     }
-    
+
     [Fact]
     public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsyncTests()
     {
@@ -98,18 +98,18 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         var input = await grain.GetSyncHolderInfoInputAsync("AELF", new TransactionInfo
         {
             TransactionId = HashHelper.ComputeFrom("txId").ToHex(),
-            Transaction = new byte[] {1, 2, 3},
+            Transaction = new byte[] { 1, 2, 3 },
             BlockNumber = 1000
         });
 
         return input;
     }
-    
+
     [Fact]
     public async Task SyncTransactionAsyncTests()
     {
         var input = await GetSyncHolderInfoInputAsyncTests();
-        
+
         var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         await grain.SyncTransactionAsync("AELF", input);
