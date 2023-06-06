@@ -252,7 +252,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError("GetGuardian failed : {Message}", e.Message);
+            _logger.LogError(e,"GetGuardian failed");
             throw new UserFriendlyException(e.Message);
         }
     }
