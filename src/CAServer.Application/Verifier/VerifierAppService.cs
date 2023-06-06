@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
-using CAServer.Guardian;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Dtos;
@@ -14,6 +13,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Guardian;
 using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
@@ -25,7 +25,6 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
-using Volo.Abp.Users;
 
 namespace CAServer.Verifier;
 
@@ -253,7 +252,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError("GetGuardian failed : {Message}", e.Message);
             throw new UserFriendlyException(e.Message);
         }
     }

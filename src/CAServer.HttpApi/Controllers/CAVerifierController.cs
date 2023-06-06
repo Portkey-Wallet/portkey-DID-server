@@ -5,7 +5,6 @@ using CAServer.Google;
 using CAServer.Switch;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -71,12 +70,9 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput)
     {
-        var isAuthenticated = _currentUser.IsAuthenticated;
-        if (!isAuthenticated)
-        {
-            return null;
-        }
-        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput);
+        return _currentUser.IsAuthenticated
+            ? await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput)
+            : null;
     }
 
     private async Task<VerifierServerResponse> GoogleRecaptchaAndSendVerifyCodeAsync(string recaptchaToken,
@@ -131,7 +127,7 @@ public class CAVerifierController : CAServerController
         {
             return null;
         }
-        
+
         return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput);
     }
 
