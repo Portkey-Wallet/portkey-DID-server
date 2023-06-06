@@ -11,7 +11,7 @@ using Volo.Abp.DependencyInjection;
 
 namespace CAServer.CoinGeckoApi;
 
-public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
+public class TokenPriceProvider : ITokenPriceProvider, ISingletonDependency, ITransientDependency
 {
     private readonly ICoinGeckoClient _coinGeckoClient;
     private readonly IRequestLimitProvider _requestLimitProvider;

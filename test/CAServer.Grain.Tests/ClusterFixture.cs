@@ -57,11 +57,18 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         {
             hostBuilder.ConfigureServices(services =>
                 {
+
+                    var mockTokenProvider = new Mock<ITokenPriceProvider>();
+                    mockTokenProvider.Setup(o => o.GetPriceAsync(It.IsAny<string>()))
+                        .ReturnsAsync(123);
+                    mockTokenProvider.Setup(o => o.GetHistoryPriceAsync(It.IsAny<string>(),It.IsAny<string>()))
+                        .ReturnsAsync(123);
+                    services.AddSingleton<ITokenPriceProvider>(mockTokenProvider.Object);
+                    
                     var mockSignatureProvider = new Mock<ISignatureProvider>();
                     mockSignatureProvider.Setup(o => o.SignTxMsg(It.IsAny<string>(), It.IsAny<string>()))
                         .ReturnsAsync("123");
                     services.AddSingleton<ISignatureProvider>(mockSignatureProvider.Object);
-                    services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
                     services.AddSingleton<IRequestLimitProvider, RequestLimitProvider>();
                     services.Configure<ChainOptions>(o =>
                     {
