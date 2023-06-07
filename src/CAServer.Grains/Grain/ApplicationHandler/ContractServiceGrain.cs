@@ -207,10 +207,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
-                {
-                    RawTransaction = transaction.ToByteArray().ToHex()
-                }
-            );
+            {
+                RawTransaction = transaction.ToByteArray().ToHex()
+            });
 
             var context = CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
 
