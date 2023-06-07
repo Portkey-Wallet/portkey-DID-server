@@ -51,7 +51,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
-            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
+            _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
 
             var transaction =
