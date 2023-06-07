@@ -385,7 +385,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
             await client.GenerateTransactionAsync(client.GetAddressFromPubKey(chainInfo.PublicKey),
                 chainInfo.CrossChainContractAddress,
                 "GetBoundParentChainHeightAndMerklePathByHeight", param);
-        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
 
         transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
@@ -417,7 +417,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         var fromAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
         var transaction = await client.GenerateTransactionAsync(fromAddress, chainInfo.TokenContractAddress,
             "CrossChainReceiveToken", param);
-        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
         transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
         var result = await client.SendTransactionAsync(new SendTransactionInput

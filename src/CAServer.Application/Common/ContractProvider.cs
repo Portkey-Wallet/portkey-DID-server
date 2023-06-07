@@ -95,7 +95,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         _logger.LogDebug("Send tx methodName is: {methodName} param is: {transaction}, publicKey is:{publicKey} ",
             methodName, transaction, _claimTokenInfoOption.PublicKey);
 
-        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
 
         transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
