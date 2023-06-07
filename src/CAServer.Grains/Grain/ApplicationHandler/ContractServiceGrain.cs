@@ -76,10 +76,11 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress,
                 transaction.GetHash().ToHex());
             _logger.LogInformation("signature provider sign result: {txWithSign}", txWithSign);
+            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var result = await client.SendTransactionAsync(new SendTransactionInput()
             {
-                RawTransaction = txWithSign
+                RawTransaction = transaction.ToByteArray().ToHex()
             });
 
             await Task.Delay(_grainOptions.Delay);
