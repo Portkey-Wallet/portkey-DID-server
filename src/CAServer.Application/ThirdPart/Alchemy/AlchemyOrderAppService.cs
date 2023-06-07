@@ -125,6 +125,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
         var alchemySellOrderWaitUpdated = _objectMapper.Map<OrderDto, UpdateAlchemySellOrderDto>(orderData);
         alchemySellOrderWaitUpdated.TxHash = input.TxHash;
+        alchemySellOrderWaitUpdated.AppId = _alchemyOptions.AppId;
 
         await _alchemyProvider.HttpPost2Alchemy(_alchemyOptions.UpdateSellOrderUri,
             JsonConvert.SerializeObject(alchemySellOrderWaitUpdated));
