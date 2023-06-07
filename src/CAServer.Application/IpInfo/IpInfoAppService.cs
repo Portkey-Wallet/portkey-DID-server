@@ -38,9 +38,10 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
 
     public async Task<IpInfoResultDto> GetIpInfoAsync()
     {
+        var ip = string.Empty;
         try
         {
-            var ip = GetIp();
+            ip = GetIp();
             var ipInfoResult = await _distributedCache.GetAsync(_prefix + ip);
 
             if (ipInfoResult != null) return ipInfoResult;
@@ -58,7 +59,7 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "Get ipInfo fail.");
+            Logger.LogError(e, "Get ipInfo fail, ip:{ip}", ip);
             return ObjectMapper.Map<DefaultIpInfoOptions, IpInfoResultDto>(_defaultIpInfoOptions);
         }
     }

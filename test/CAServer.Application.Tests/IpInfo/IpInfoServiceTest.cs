@@ -17,7 +17,6 @@ public partial class IpInfoServiceTest : CAServerApplicationTestBase
         _ipInfoAppService = GetService<IIpInfoAppService>();
         _httpContextAccessor = GetService<IHttpContextAccessor>();
         _httpContextAccessor.HttpContext = new DefaultHttpContext();
-        _httpContextAccessor.HttpContext.Request.Headers.Add("X-Forwarded-For", "43.33.44.43");
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -28,13 +27,22 @@ public partial class IpInfoServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task TestGetIpInfo()
     {
+        _httpContextAccessor.HttpContext.Request.Headers.Add("X-Forwarded-For", "43.33.44.43");
         var ipInfoDto = new IpInfoDto();
         var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
         ipInfo.ShouldNotBeNull();
-        ipInfo.Country.ShouldBe("Singapore");
+        ipInfo.Country.ShouldBe("United States");
 
         var ipInfoFromCache = await _ipInfoAppService.GetIpInfoAsync();
         ipInfoFromCache.ShouldNotBeNull();
+        ipInfo.Country.ShouldBe("United States");
+    }
+    
+    [Fact]
+    public async Task Test_GetIpInfo_Error()
+    {
+        var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
+        ipInfo.ShouldNotBeNull();
         ipInfo.Country.ShouldBe("Singapore");
     }
 }
