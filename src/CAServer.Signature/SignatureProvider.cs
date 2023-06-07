@@ -46,8 +46,7 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
                 .Signature;
         }
 
-        _logger.LogError("Will return empty because sign failed , PublicKey: {PublicKey}, HexMsg: {HexMsg}", publicKey,
-            hexMsg);
+        _logger.LogError("Will return empty because sign failed.");
         return "";
     }
 }
