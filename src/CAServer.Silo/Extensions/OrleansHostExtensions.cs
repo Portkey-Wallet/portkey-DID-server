@@ -72,7 +72,11 @@ public static class OrleansHostExtensions
                 })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); })
-                .Configure<SiloMessagingOptions>(opt => { opt.ResponseTimeout = TimeSpan.FromSeconds(configSection.GetValue<int>("ResponseTimeout")); });
+                .Configure<SiloMessagingOptions>(opt =>
+                {
+                    opt.ResponseTimeout = TimeSpan.FromSeconds(configSection.GetValue<int>("ResponseTimeout"));
+                    opt.SystemResponseTimeout = TimeSpan.FromSeconds(configSection.GetValue<int>("ResponseTimeout"));
+                });
         });
     }
 }
