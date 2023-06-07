@@ -36,7 +36,7 @@ public class SignatureController : CAServerSignatureController
             _logger.LogDebug("input PublicKey: {PublicKey}, HexMsg: {HexMsg}", input.PublicKey, input.HexMsg);
             var privateKey = GetPrivateKeyByPublicKey(input.PublicKey);
             var msgHashBytes = ByteStringHelper.FromHexString(input.HexMsg);
-            var recoverableInfo = CryptoHelper.SignWithPrivateKey(privateKey, msgHashBytes.ToByteArray());
+            var recoverableInfo = CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey), msgHashBytes.ToByteArray());
             _logger.LogDebug("Signature result :{signatureResult}", recoverableInfo.ToHex());
 
             return new SignResponseDto
@@ -51,11 +51,11 @@ public class SignatureController : CAServerSignatureController
         }
     }
 
-    private byte[] GetPrivateKeyByPublicKey(string publicKey)
+    private string GetPrivateKeyByPublicKey(string publicKey)
     {
         if (_keyPairInfoOptions.PrivateKeyDictionary.TryGetValue(publicKey, out string _))
         {
-            return Encoding.UTF8.GetBytes(_keyPairInfoOptions.PrivateKeyDictionary[publicKey]);
+            return _keyPairInfoOptions.PrivateKeyDictionary[publicKey];
         }
 
         _logger.LogError("Publish key {publishKey} not exist!", publicKey);
