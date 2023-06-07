@@ -27,9 +27,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private readonly ISignatureProvider _signatureProvider;
 
     public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions,
-        IObjectMapper objectMapper, 
+        IObjectMapper objectMapper,
         ISignatureProvider signatureProvider,
-            ILogger<ContractServiceGrain> logger)
+        ILogger<ContractServiceGrain> logger)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -66,8 +66,10 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.RefBlockNumber = refBlockNumber;
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
+            var txSigned = client.SignTransaction(ownAddress, transaction);
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress,
                 transaction.ToByteArray().ToHex());
+            _logger.LogDebug("expected txSigned {txSigned}, signature provider sign result:", txSigned);
 
             var result = await client.SendTransactionAsync(new SendTransactionInput()
             {

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -15,12 +16,15 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
 {
     private readonly SignatureServerOptions _signatureServerOptions;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<SignatureProvider> _logger;
+
 
     public SignatureProvider(IOptionsSnapshot<SignatureServerOptions> signatureOptions,
-        IHttpClientFactory httpClientFactory)
+        ILogger<SignatureProvider> logger, IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
         _signatureServerOptions = signatureOptions.Value;
+        _logger = logger;
     }
 
     public async Task<string> SignTxMsg(string publicKey, string hexMsg)
@@ -42,6 +46,8 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
                 .Signature;
         }
 
+        _logger.LogError("Will return empty because sign failed , PublicKey: {PublicKey}, HexMsg: {HexMsg}", publicKey,
+            hexMsg);
         return "";
     }
 }

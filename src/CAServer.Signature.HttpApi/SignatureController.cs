@@ -33,9 +33,12 @@ public class SignatureController : CAServerSignatureController
     {
         try
         {
+            _logger.LogDebug("input PublicKey: {PublicKey}, HexMsg: {HexMsg}", input.PublicKey, input.HexMsg);
             var privateKey = GetPrivateKeyByPublicKey(input.PublicKey);
             var msgHashBytes = ByteStringHelper.FromHexString(input.HexMsg);
             var recoverableInfo = CryptoHelper.SignWithPrivateKey(privateKey, msgHashBytes.ToByteArray());
+            _logger.LogDebug("Signature result :{signatureResult}", recoverableInfo.ToHex());
+
             return new SignResponseDto
             {
                 Signature = recoverableInfo.ToHex(),
