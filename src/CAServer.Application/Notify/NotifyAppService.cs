@@ -59,10 +59,10 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
             return null;
         }
 
-        var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
         var notifyRules = notifyRulesIndices.First();
         if (notifyRules.Countries is { Length: > 0 })
         {
+            var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
             notifyRules = notifyRulesIndices?.Where(t => t.Countries.Contains(ipInfo.Code)).FirstOrDefault();
             if (notifyRules == null)
             {

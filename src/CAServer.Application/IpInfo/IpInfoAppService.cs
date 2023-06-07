@@ -38,25 +38,29 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
 
     public async Task<IpInfoResultDto> GetIpInfoAsync()
     {
-        var ip = GetIp();
-        var ipInfoResult = await _distributedCache.GetAsync(_prefix + ip);
-
-        if (ipInfoResult != null) return ipInfoResult;
-
-        var ipInfoDto = await _ipInfoClient.GetIpInfoAsync(ip);
-        var ipInfo = ObjectMapper.Map<IpInfoDto, IpInfoResultDto>(ipInfoDto);
-
-        if (string.IsNullOrEmpty(ipInfo.Country))
+        try
         {
+            var ip = GetIp();
+            var ipInfoResult = await _distributedCache.GetAsync(_prefix + ip);
+
+            if (ipInfoResult != null) return ipInfoResult;
+
+            var ipInfoDto = await _ipInfoClient.GetIpInfoAsync(ip);
+            var ipInfo = ObjectMapper.Map<IpInfoDto, IpInfoResultDto>(ipInfoDto);
+
+            if (string.IsNullOrEmpty(ipInfo.Country))
+            {
+                return ObjectMapper.Map<DefaultIpInfoOptions, IpInfoResultDto>(_defaultIpInfoOptions);
+            }
+
+            await _distributedCache.SetAsync(_prefix + ip, ipInfo);
+            return ipInfo;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Get ipInfo fail.");
             return ObjectMapper.Map<DefaultIpInfoOptions, IpInfoResultDto>(_defaultIpInfoOptions);
         }
-
-        await _distributedCache.SetAsync(_prefix + ip, ipInfo, new DistributedCacheEntryOptions()
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_ipServiceSettingOptions.ExpirationDays)
-        });
-
-        return ipInfo;
     }
 
     private string GetIp()
