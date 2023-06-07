@@ -25,16 +25,15 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly ILogger<AlchemyOrderAppService> _logger;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IDistributedEventBus _distributedEventBus;
-    private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
     private readonly AlchemyHelper _alchemyHelper;
+    const string SignatureKey = "signature";
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
-        IAlchemyServiceAppService alchemyServiceAppService,
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
         IAlchemyProvider alchemyProvider,
@@ -47,7 +46,6 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _objectMapper = objectMapper;
         _logger = logger;
         _alchemyOptions = merchantOptions.Value.alchemy;
-        _alchemyServiceAppService = alchemyServiceAppService;
         _alchemyProvider = alchemyProvider;
         _alchemyHelper = alchemyHelper;
     }
@@ -55,21 +53,19 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
     public Task<T> VerifyAlchemySignature<T>(Dictionary<string, string> inputDict)
     {
-        const string signatureKey = "signature";
-
         // calculate a new wanted sign
         var expectedSignature =
             _alchemyHelper.GetAlchemySignatureAsync(inputDict, _alchemyOptions.AppSecret,
-                new List<string>() { signatureKey });
+                new List<string>() { SignatureKey });
 
         // compare two sign
-        if (expectedSignature.Signature != inputDict.GetOrDefault(signatureKey))
+        if (expectedSignature.Signature != inputDict.GetOrDefault(SignatureKey))
         {
             _logger.LogWarning(
                 "ACH signature verification failed, order id :{OrderNo}, and the signature :{Signature}",
-                inputDict.GetOrDefault("merchantOrderNo"), inputDict.GetOrDefault(signatureKey));
+                inputDict.GetOrDefault("merchantOrderNo"), inputDict.GetOrDefault(SignatureKey));
             throw new UserFriendlyException(
-                $"ACH signature verification failed, order id :{inputDict.GetOrDefault("merchantOrderNo")}, and the signature is:{inputDict.GetOrDefault(signatureKey)}");
+                $"ACH signature verification failed, order id :{inputDict.GetOrDefault("merchantOrderNo")}, and the signature is:{inputDict.GetOrDefault(SignatureKey)}");
         }
 
         return Task.FromResult(JsonSerializer.Deserialize<T>(
@@ -126,6 +122,9 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         var alchemySellOrderWaitUpdated = _objectMapper.Map<OrderDto, UpdateAlchemySellOrderDto>(orderData);
         alchemySellOrderWaitUpdated.TxHash = input.TxHash;
         alchemySellOrderWaitUpdated.AppId = _alchemyOptions.AppId;
+
+        alchemySellOrderWaitUpdated.Signature = _alchemyHelper.GetAlchemySignatureAsync(alchemySellOrderWaitUpdated,
+            _alchemyOptions.AppSecret, new List<string>() { SignatureKey }).Signature;
 
         await _alchemyProvider.HttpPost2Alchemy(_alchemyOptions.UpdateSellOrderUri,
             JsonConvert.SerializeObject(alchemySellOrderWaitUpdated));
