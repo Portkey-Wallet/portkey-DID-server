@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
 using CAServer.Signature.Dtos;
+using Google.Protobuf;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -33,12 +33,15 @@ public class SignatureController : CAServerSignatureController
     {
         try
         {
+            _logger.LogDebug("input PublicKey: {PublicKey}, HexMsg: {HexMsg}", input.PublicKey, input.HexMsg);
             var privateKey = GetPrivateKeyByPublicKey(input.PublicKey);
-            var msgHashBytes = ByteStringHelper.FromHexString(input.HexMsg);
-            var recoverableInfo = CryptoHelper.SignWithPrivateKey(privateKey, msgHashBytes.ToByteArray());
+            var recoverableInfo = CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey),
+                ByteArrayHelper.HexStringToByteArray(input.HexMsg));
+            _logger.LogDebug("Signature result :{signatureResult}", recoverableInfo.ToHex());
+
             return new SignResponseDto
             {
-                Signature = recoverableInfo.ToHex(),
+                Signature = ByteString.CopyFrom(recoverableInfo).ToHex(),
             };
         }
         catch (Exception e)
@@ -48,11 +51,11 @@ public class SignatureController : CAServerSignatureController
         }
     }
 
-    private byte[] GetPrivateKeyByPublicKey(string publicKey)
+    private string GetPrivateKeyByPublicKey(string publicKey)
     {
         if (_keyPairInfoOptions.PrivateKeyDictionary.TryGetValue(publicKey, out string _))
         {
-            return Encoding.UTF8.GetBytes(_keyPairInfoOptions.PrivateKeyDictionary[publicKey]);
+            return _keyPairInfoOptions.PrivateKeyDictionary[publicKey];
         }
 
         _logger.LogError("Publish key {publishKey} not exist!", publicKey);

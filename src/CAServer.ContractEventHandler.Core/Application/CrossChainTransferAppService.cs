@@ -386,10 +386,14 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
                 chainInfo.CrossChainContractAddress,
                 "GetBoundParentChainHeightAndMerklePathByHeight", param);
         var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
+
+        transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+
         var transactionResult = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
-            RawTransaction = txWithSign
+            RawTransaction = transaction.ToByteArray().ToHex()
         });
+
         var result =
             CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionResult));
         return result;
@@ -414,9 +418,11 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         var transaction = await client.GenerateTransactionAsync(fromAddress, chainInfo.TokenContractAddress,
             "CrossChainReceiveToken", param);
         var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
+        transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+
         var result = await client.SendTransactionAsync(new SendTransactionInput
         {
-            RawTransaction = txWithSign
+            RawTransaction = transaction.ToByteArray().ToHex()
         });
 
         return result.TransactionId;

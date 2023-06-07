@@ -27,9 +27,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private readonly ISignatureProvider _signatureProvider;
 
     public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions,
-        IObjectMapper objectMapper, 
-        ISignatureProvider signatureProvider,
-            ILogger<ContractServiceGrain> logger)
+        IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractServiceGrain> logger)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -43,10 +41,16 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
-            var chainInfo = _chainOptions.ChainInfos[chainId];
+            if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+            {
+                return null;
+            }
+
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
+                ownAddress, chainInfo.ContractAddress);
 
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
@@ -66,12 +70,13 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.RefBlockNumber = refBlockNumber;
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
-            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress,
-                transaction.ToByteArray().ToHex());
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
+            _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
+            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
-            var result = await client.SendTransactionAsync(new SendTransactionInput()
+            var result = await client.SendTransactionAsync(new SendTransactionInput
             {
-                RawTransaction = txWithSign
+                RawTransaction = transaction.ToByteArray().ToHex()
             });
 
             await Task.Delay(_grainOptions.Delay);
@@ -199,9 +204,11 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 });
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress,
                 transaction.ToByteArray().ToHex());
+            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
-                RawTransaction = txWithSign
+                RawTransaction = transaction.ToByteArray().ToHex()
             });
 
             var context = CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
