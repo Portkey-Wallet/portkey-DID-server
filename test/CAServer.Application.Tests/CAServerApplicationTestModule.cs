@@ -108,6 +108,12 @@ public class CAServerApplicationTestModule : AbpModule
             option.ChainId = "TEST";
             option.PublicKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91";
         });
+        context.Services.Configure<DefaultIpInfoOptions>(options =>
+        {
+            options.Country = "Singapore";
+            options.Code = "SG";
+            options.Iso = "65";
+        });
         base.ConfigureServices(context);
     }
 }
