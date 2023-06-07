@@ -99,7 +99,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
-        var result = await client.SendTransactionAsync(new SendTransactionInput()
+        var result = await client.SendTransactionAsync(new SendTransactionInput
         {
             RawTransaction = transaction.ToByteArray().ToHex()
         });

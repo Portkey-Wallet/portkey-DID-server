@@ -420,7 +420,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
         transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
-        var result = await client.SendTransactionAsync(new SendTransactionInput()
+        var result = await client.SendTransactionAsync(new SendTransactionInput
         {
             RawTransaction = transaction.ToByteArray().ToHex()
         });
