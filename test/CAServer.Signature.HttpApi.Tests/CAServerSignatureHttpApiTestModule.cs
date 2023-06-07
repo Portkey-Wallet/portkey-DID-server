@@ -4,6 +4,8 @@ using System.Linq.Dynamic.Core.Tokenizer;
 using System.Security.Cryptography;
 using System.Text;
 using AElf;
+using AElf.Cryptography;
+using AElf.Cryptography.ECDSA;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.Modularity;
@@ -18,8 +20,10 @@ public class CAServerSignatureHttpApiTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        // Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerSignatureHttpApiModule>(); });
-        byte[] privateKeyBytes = Encoding.UTF8.GetBytes("test.1234567890.key");
+        ECKeyPair keyPair = CryptoHelper.GenerateKeyPair();
+        string hex1 = keyPair.PrivateKey.ToHex();
+        string hex2 = keyPair.PublicKey.ToHex();
+        byte[] privateKeyBytes = ByteArrayHelper.HexStringToByteArray(hex1);
         context.Services.Configure<KeyPairInfoOptions>(option =>
         {
             option.PrivateKeyDictionary = new Dictionary<string, string>
