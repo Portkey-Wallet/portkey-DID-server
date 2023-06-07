@@ -43,10 +43,16 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
-            var chainInfo = _chainOptions.ChainInfos[chainId];
+            if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+            {
+                return null;
+            }
+
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
+                ownAddress, chainInfo.ContractAddress);
 
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
@@ -69,7 +75,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var txSigned = client.SignTransaction(ownAddress, transaction);
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress,
                 transaction.ToByteArray().ToHex());
-            _logger.LogDebug("expected txSigned {txSigned}, signature provider sign result:", txSigned);
+            _logger.LogDebug("expected txSigned {txSigned}, signature provider sign result: {txWithSign}", txSigned,
+                txWithSign);
 
             var result = await client.SendTransactionAsync(new SendTransactionInput()
             {
