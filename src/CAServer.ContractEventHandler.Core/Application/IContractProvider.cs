@@ -82,9 +82,11 @@ public class ContractProvider : IContractProvider
                 await client.GenerateTransactionAsync(ownAddress, contractAddress,
                     methodName, param);
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.ToByteArray().ToHex());
+            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
-                RawTransaction = txWithSign
+                RawTransaction = transaction.ToByteArray().ToHex()
             });
 
             var value = new T();
