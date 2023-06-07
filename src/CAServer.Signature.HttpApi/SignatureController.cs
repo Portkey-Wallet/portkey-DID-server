@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
 using CAServer.Signature.Dtos;
+using Google.Protobuf;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,13 +36,13 @@ public class SignatureController : CAServerSignatureController
         {
             _logger.LogDebug("input PublicKey: {PublicKey}, HexMsg: {HexMsg}", input.PublicKey, input.HexMsg);
             var privateKey = GetPrivateKeyByPublicKey(input.PublicKey);
-            var msgHashBytes = ByteStringHelper.FromHexString(input.HexMsg);
-            var recoverableInfo = CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey), msgHashBytes.ToByteArray());
+            var recoverableInfo = CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey),
+                ByteArrayHelper.HexStringToByteArray(input.HexMsg));
             _logger.LogDebug("Signature result :{signatureResult}", recoverableInfo.ToHex());
 
             return new SignResponseDto
             {
-                Signature = recoverableInfo.ToHex(),
+                Signature = ByteString.CopyFrom(recoverableInfo).ToHex(),
             };
         }
         catch (Exception e)
