@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using CAServer.Common;
@@ -8,6 +10,7 @@ using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
+using Castle.Components.DictionaryAdapter.Xml;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -119,15 +122,15 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             throw new UserFriendlyException($"No order found for {grainId}");
         }
 
-        var alchemySellOrderWaitUpdated = _objectMapper.Map<OrderDto, UpdateAlchemySellOrderDto>(orderData);
-        alchemySellOrderWaitUpdated.TxHash = input.TxHash;
-        alchemySellOrderWaitUpdated.AppId = _alchemyOptions.AppId;
+        var achOrderWaitUpdated = _objectMapper.Map<OrderDto, UpdateAlchemySellOrderDto>(orderData);
+        achOrderWaitUpdated.TxHash = input.TxHash;
+        achOrderWaitUpdated.AppId = _alchemyOptions.AppId;
 
-        alchemySellOrderWaitUpdated.Signature = _alchemyHelper.GetAlchemySignatureAsync(alchemySellOrderWaitUpdated,
-            _alchemyOptions.AppSecret, new List<string>() { SignatureKey }).Signature;
+        achOrderWaitUpdated.Signature = GetUpdateAlchemyTxHashSignature(achOrderWaitUpdated.OrderNo,
+            achOrderWaitUpdated.Crypto, achOrderWaitUpdated.Network, achOrderWaitUpdated.Address);
 
         await _alchemyProvider.HttpPost2Alchemy(_alchemyOptions.UpdateSellOrderUri,
-            JsonConvert.SerializeObject(alchemySellOrderWaitUpdated));
+            JsonConvert.SerializeObject(achOrderWaitUpdated));
     }
 
     private OrderGrainDto MergeEsAndInput2GrainModel(AlchemyOrderUpdateDto alchemyData, OrderDto esOrderData)
@@ -144,5 +147,31 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
 
         return orderGrainData;
+    }
+
+    private string GetUpdateAlchemyTxHashSignature(string orderNo, string crypto, string network, string address)
+    {
+        try
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(_alchemyOptions.AppId + _alchemyOptions.AppSecret + orderNo + crypto +
+                                                  network + address);
+            byte[] hashBytes = SHA1.Create().ComputeHash(bytes);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (var t in hashBytes)
+            {
+                sb.Append(t.ToString("X2"));
+            }
+
+            _logger.LogDebug("Generate Alchemy sell order signature successfully. Signature: {signature}",
+                sb.ToString().ToLower());
+            return sb.ToString().ToLower();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Generator alchemy update txHash signature failed, OrderNo: {orderNo},err: {Exception}",
+                orderNo, e);
+            return "";
+        }
     }
 }
