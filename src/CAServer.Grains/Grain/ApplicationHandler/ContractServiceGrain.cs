@@ -10,6 +10,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Orleans;
 using Orleans.Concurrency;
 using Portkey.Contracts.CA;
 using Volo.Abp.ObjectMapping;
@@ -42,7 +43,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
-            
+
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
                     param);
@@ -50,7 +51,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var refBlockNumber = transaction.RefBlockNumber;
 
             refBlockNumber -= _grainOptions.SafeBlockHeight;
-        
+
             if (refBlockNumber < 0)
             {
                 refBlockNumber = 0;
@@ -60,7 +61,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             transaction.RefBlockNumber = refBlockNumber;
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
-            
+
             var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
 
             var result = await client.SendTransactionAsync(new SendTransactionInput
@@ -78,11 +79,12 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 times++;
                 await Task.Delay(_grainOptions.RetryDelay);
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-                
-                
+
+
                 if (transactionResult.Status != TransactionState.Pending)
                 {
-                    _logger.LogError($"#### status: {transactionResult.Status}, times: {times}");
+                    _logger.LogError(
+                        $"#### status: {transactionResult.Status}, times: {times}, threadId: {Thread.CurrentThread.ManagedThreadId.ToString()}, grainId:{this.GetPrimaryKey().ToString()}");
                 }
             }
 
@@ -104,9 +106,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
 
         var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
-        
+
         DeactivateOnIdle();
-        
+
         return result.TransactionResultDto;
     }
 
@@ -115,9 +117,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         var param = _objectMapper.Map<SocialRecoveryDto, SocialRecoveryInput>(socialRecoveryDto);
 
         var result = await SendTransactionToChainAsync(socialRecoveryDto.ChainId, param, MethodName.SocialRecovery);
-        
+
         DeactivateOnIdle();
-        
+
         return result.TransactionResultDto;
     }
 
@@ -135,7 +137,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
 
         var result = await SendTransactionToChainAsync(chainId, param, MethodName.Validate);
-        
+
         DeactivateOnIdle();
 
         return result;
@@ -180,7 +182,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             {
                 syncHolderInfoInput = await UpdateMerkleTreeAsync(chainId, client, syncHolderInfoInput);
             }
-            
+
             DeactivateOnIdle();
 
             return syncHolderInfoInput;
@@ -188,9 +190,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         catch (Exception e)
         {
             _logger.LogError(e, "GetSyncHolderInfoInput error: ");
-            
+
             DeactivateOnIdle();
-            
+
             return new SyncHolderInfoInput();
         }
     }
@@ -237,7 +239,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)
     {
         var result = await SendTransactionToChainAsync(chainId, input, MethodName.SyncHolderInfo);
-        
+
         DeactivateOnIdle();
 
         return result.TransactionResultDto;

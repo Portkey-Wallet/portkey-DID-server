@@ -109,7 +109,8 @@ public class ContractAppService : IContractAppService
         if (resultCreateCaHolder.Status != TransactionState.Mined)
         {
             registerResult.RegisterMessage = "Transaction status: " + resultCreateCaHolder.Status + ". Error: " +
-                                             resultCreateCaHolder.Error;
+                                             resultCreateCaHolder.Error + ", tranId:" +
+                                             resultCreateCaHolder.TransactionId;
             registerResult.RegisterSuccess = false;
 
             _logger.LogInformation("Register state pushed: " + "\n{result}",
@@ -232,7 +233,7 @@ public class ContractAppService : IContractAppService
 
         var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
         SyncHolderInfoInput syncHolderInfoInput;
-        
+
         var syncSucceed = true;
 
         if (chainInfo.IsMainChain)
@@ -241,7 +242,7 @@ public class ContractAppService : IContractAppService
                          !c.IsMainChain && c.ChainId != optionChainId))
             {
                 await _contractProvider.SideChainCheckMainChainBlockIndexAsync(sideChain.ChainId, validateHeight);
-                
+
                 syncHolderInfoInput =
                     await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
                     {
@@ -262,7 +263,7 @@ public class ContractAppService : IContractAppService
         else
         {
             await _contractProvider.MainChainCheckSideChainBlockIndexAsync(chainId, validateHeight);
-            
+
             syncHolderInfoInput =
                 await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
                 {
@@ -270,12 +271,12 @@ public class ContractAppService : IContractAppService
                     BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
                     Transaction = transactionDto.Transaction.ToByteArray()
                 });
-            
+
             if (syncHolderInfoInput.VerificationTransactionInfo == null)
             {
                 return false;
             }
-            
+
             var syncResult =
                 await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
                     syncHolderInfoInput);
@@ -469,7 +470,7 @@ public class ContractAppService : IContractAppService
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
 
             var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
-            
+
             if (currentIndexHeight <= 0 || lastEndHeight >= targetIndexHeight)
             {
                 _logger.LogWarning(
@@ -488,7 +489,7 @@ public class ContractAppService : IContractAppService
             {
                 _logger.LogInformation("Query on chain: {id}, from {start} to {end}", chainId, startIndexHeight,
                     endIndexHeight);
-                
+
                 queryEvents.AddRange(await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
                     chainId, startIndexHeight, endIndexHeight));
                 queryEvents.AddRange(await _graphQLProvider.GetManagerTransactionInfosAsync(
@@ -685,7 +686,6 @@ public class ContractAppService : IContractAppService
 
     public async Task InitializeIndexAsync()
     {
-
         var dict = _indexOptions.AutoSyncStartHeight;
 
         foreach (var info in _chainOptions.ChainInfos)
