@@ -109,7 +109,7 @@ public class CAServerContractEventHandlerModule : AbpModule
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
                 .Configure<ClientMessagingOptions>(opt =>
                 {
-                    opt.ResponseTimeout = TimeSpan.FromSeconds(configuration.GetValue<int>("ResponseTimeout"));
+                    opt.ResponseTimeout = TimeSpan.FromSeconds(Convert.ToInt32(configuration["Orleans:ResponseTimeout"]));
                 })
                 .Build();
         });

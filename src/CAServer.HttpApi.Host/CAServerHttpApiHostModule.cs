@@ -189,10 +189,6 @@ public class CAServerHttpApiHostModule : AbpModule
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .Configure<ClientMessagingOptions>(opt =>
-                {
-                    opt.ResponseTimeout = TimeSpan.FromSeconds(configuration.GetValue<int>("ResponseTimeout"));
-                })
                 .Build();
         });
     }
