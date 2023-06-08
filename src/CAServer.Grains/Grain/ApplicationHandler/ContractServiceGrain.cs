@@ -17,7 +17,7 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
 
-[StatelessWorker]
+[StatelessWorker(maxLocalWorkers: 100)]
 public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 {
     private readonly GrainOptions _grainOptions;
