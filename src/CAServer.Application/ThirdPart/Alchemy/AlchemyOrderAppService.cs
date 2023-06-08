@@ -80,6 +80,12 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
+        if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
+        {
+            _logger.LogWarning("Alchemy signature check failed, OrderNo: {orderNo} will not update.", input.OrderNo);
+            return new BasicOrderResult();
+        }
+
         Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
         var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
         if (esOrderData == null || input.MerchantOrderNo != esOrderData.Id.ToString())
@@ -112,7 +118,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         return new BasicOrderResult() { Success = true, Message = result.Message };
     }
 
-    public async Task UpdateAlchemyTxHashAsync(UpdateAlchemyTxHashDto input)
+    public async Task UpdateAlchemyTxHashAsync(SendAlchemyTxHashDto input)
     {
         Guid grainId = ThirdPartHelper.GetOrderId(input.OrderId);
         var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
@@ -122,15 +128,15 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             throw new UserFriendlyException($"No order found for {grainId}");
         }
 
-        var achOrderWaitUpdated = _objectMapper.Map<OrderDto, UpdateAlchemySellOrderDto>(orderData);
-        achOrderWaitUpdated.TxHash = input.TxHash;
-        achOrderWaitUpdated.AppId = _alchemyOptions.AppId;
+        var orderPendingUpdate = _objectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
+        orderPendingUpdate.TxHash = input.TxHash;
+        orderPendingUpdate.AppId = _alchemyOptions.AppId;
 
-        achOrderWaitUpdated.Signature = GetUpdateAlchemyTxHashSignature(achOrderWaitUpdated.OrderNo,
-            achOrderWaitUpdated.Crypto, achOrderWaitUpdated.Network, achOrderWaitUpdated.Address);
+        orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
+            orderPendingUpdate.Network, orderPendingUpdate.Address);
 
         await _alchemyProvider.HttpPost2Alchemy(_alchemyOptions.UpdateSellOrderUri,
-            JsonConvert.SerializeObject(achOrderWaitUpdated));
+            JsonConvert.SerializeObject(orderPendingUpdate));
     }
 
     private OrderGrainDto MergeEsAndInput2GrainModel(AlchemyOrderUpdateDto alchemyData, OrderDto esOrderData)
@@ -149,7 +155,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         return orderGrainData;
     }
 
-    private string GetUpdateAlchemyTxHashSignature(string orderNo, string crypto, string network, string address)
+    private string GetAlchemySignature(string orderNo, string crypto, string network, string address)
     {
         try
         {

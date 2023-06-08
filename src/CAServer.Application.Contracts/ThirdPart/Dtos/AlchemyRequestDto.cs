@@ -53,11 +53,11 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (string.IsNullOrWhiteSpace(Status) || string.IsNullOrWhiteSpace(Address))
+        if (string.IsNullOrWhiteSpace(Status) || string.IsNullOrWhiteSpace(Address) ||
+            string.IsNullOrWhiteSpace(Signature) || string.IsNullOrWhiteSpace(OrderNo) ||
+            string.IsNullOrWhiteSpace(Crypto))
         {
-            yield return new ValidationResult(
-                $"Invalid input, status :{Status} Address :{Address}"
-            );
+            yield return new ValidationResult("Invalid input");
         }
 
         if (!ThirdPartHelper.ValidateMerchantOrderNo(MerchantOrderNo))
@@ -76,14 +76,14 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
     }
 }
 
-public class UpdateAlchemyTxHashDto
+public class SendAlchemyTxHashDto
 {
     [Required] public string MerchantName { get; set; }
     [Required] public string OrderId { get; set; }
     [Required] public string TxHash { get; set; }
 }
 
-public class UpdateAlchemySellOrderDto
+public class WaitToSendOrderInfoDto
 {
     public string OrderNo { get; set; }
     public string Crypto { get; set; }

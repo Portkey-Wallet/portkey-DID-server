@@ -42,14 +42,6 @@ public class ThirdPartOrderController : CAServerController
         return await _thirdPartOrdersAppService.CreateThirdPartOrderAsync(input);
     }
 
-    // [HttpPost("order/alchemy")]
-    // public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
-    //     Dictionary<string, string> input)
-    // {
-    //     var inputDto = await _alchemyOrderService.VerifyAlchemySignature<AlchemyOrderUpdateDto>(input);
-    //     return await _alchemyOrderService.UpdateAlchemyOrderAsync(inputDto);
-    // }
-
     [HttpPost("order/alchemy")]
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
         AlchemyOrderUpdateDto input)
@@ -58,8 +50,8 @@ public class ThirdPartOrderController : CAServerController
     }
 
     [Authorize]
-    [HttpPost("txHash")]
-    public async Task UpdateAlchemyTxHashAsync(UpdateAlchemyTxHashDto request)
+    [HttpPost("alchemy/txHash")]
+    public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
     {
         await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
     }

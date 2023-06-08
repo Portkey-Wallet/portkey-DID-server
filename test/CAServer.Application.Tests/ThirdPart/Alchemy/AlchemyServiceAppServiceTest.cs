@@ -92,8 +92,9 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
             MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
             Address = "00000000-0000-0000-0000-000000000000",
             Status = "2",
-            Signature = "aaabbb"
-                
+            Signature = "aaabbb",
+            Crypto = "Crypto",
+            OrderNo = "OrderNo",
         });
         result.Success.ShouldBe("Success");
         

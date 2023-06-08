@@ -34,7 +34,9 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             MerchantOrderNo = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
             Status = "1",
             Address = "Address",
-            Signature = "5f4e9f8c1f3a63c12032b9c6c59a019c259bd063"
+            Crypto = "Crypto",
+            OrderNo = "OrderNo",
+            Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
         var result = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
         result.Success.ShouldBe(true);
@@ -44,6 +46,8 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             MerchantOrderNo = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
             Status = "2",
             Address = "Address",
+            Crypto = "Crypto",
+            OrderNo = "OrderNo",
             Signature = "5f4e9f8c1f3a63c12032b9c6c59a019c259bd063"
         };
         var resultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(inputFail);
@@ -54,6 +58,8 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             MerchantOrderNo = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
             Status = "2",
             Address = "Address",
+            Crypto = "Crypto",
+            OrderNo = "OrderNo",
             Signature = "1111111111111111111111111111111111"
         };
         var signResultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(signatureFail);
@@ -63,7 +69,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task UpdateAlchemyTxHashAsyncTest()
     {
-        var input = new UpdateAlchemyTxHashDto()
+        var input = new SendAlchemyTxHashDto()
         {
             MerchantName = "Alchemy",
             OrderId = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -78,7 +84,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             e.ShouldBe(null);
         }
 
-        var inputFail = new UpdateAlchemyTxHashDto()
+        var inputFail = new SendAlchemyTxHashDto()
         {
             MerchantName = "Alchemy",
             OrderId = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -102,19 +108,15 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             Id = new Guid("00000000-0000-0000-0000-000000000001"),
             UserId = new Guid("00000000-0000-0000-0000-000000000001"),
             MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
-            Address = "Address",
             Status = "1",
-            Signature = "NOT_SET_YET",
+            Address = "Address",
+            Crypto = "Crypto",
+            OrderNo = "OrderNo",
+            Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
 
-        try
-        {
-            await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
-        }
-        catch (Exception e)
-        {
-            e.ShouldBe(null);
-        }
+        var signResultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+        signResultFail.Success.ShouldBe(true);
     }
 
     [Fact]
