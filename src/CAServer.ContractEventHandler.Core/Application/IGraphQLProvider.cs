@@ -109,7 +109,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             Query = @"
 			    query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!) {
                     loginGuardianChangeRecordInfo(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight}){
-                        id, caHash, caAddress, changeType, loginGuardian{identifierHash}, blockHeight}
+                        id, caHash, caAddress, changeType, loginGuardian{identifierHash}, blockHeight, manager, blockHash}
                     }",
             Variables = new
             {
@@ -155,7 +155,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             Query = @"
 			    query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!) {
                     caHolderManagerChangeRecordInfo(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight}){
-                        caAddress, caHash, manager, changeType, blockHeight}
+                        caAddress, caHash, manager, changeType, blockHeight, blockHash}
                     }",
             Variables = new
             {
