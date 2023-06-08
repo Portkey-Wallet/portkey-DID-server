@@ -78,6 +78,12 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 times++;
                 await Task.Delay(_grainOptions.RetryDelay);
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+                
+                
+                if (transactionResult.Status != TransactionState.Pending)
+                {
+                    _logger.LogError($"#### status: {transactionResult.Status}, times: {times}");
+                }
             }
 
             return new TransactionInfoDto
