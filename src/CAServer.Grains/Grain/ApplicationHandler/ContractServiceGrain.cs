@@ -84,7 +84,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 if (transactionResult.Status != TransactionState.Pending)
                 {
                     _logger.LogError(
-                        $"#### status: {transactionResult.Status}, times: {times}, transId: {transactionResult.TransactionId}");
+                        $"#### status: {transactionResult.Status}, times: {times},thId:{Thread.CurrentThread.ManagedThreadId.ToString()}, transId: {transactionResult.TransactionId}");
                 }
             }
 
