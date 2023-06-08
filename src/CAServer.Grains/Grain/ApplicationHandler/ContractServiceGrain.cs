@@ -33,8 +33,67 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         _grainOptions = grainOptions.Value;
         _chainOptions = chainOptions.Value;
     }
-
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
+        string methodName)
+    {
+        try
+        {
+            var chainInfo = _chainOptions.ChainInfos[chainId];
+            var client = new AElfClient(chainInfo.BaseUrl);
+            await client.IsConnectedAsync();
+            var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
+
+            var transaction =
+                await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
+                    param);
+
+            var refBlockNumber = transaction.RefBlockNumber;
+
+            refBlockNumber -= _grainOptions.SafeBlockHeight;
+
+            if (refBlockNumber < 0)
+            {
+                refBlockNumber = 0;
+            }
+
+            var blockDto = await client.GetBlockByHeightAsync(refBlockNumber);
+
+            transaction.RefBlockNumber = refBlockNumber;
+            transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
+
+            var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
+
+            var result = await client.SendTransactionAsync(new SendTransactionInput
+            {
+                RawTransaction = txWithSign.ToByteArray().ToHex()
+            });
+
+            await Task.Delay(_grainOptions.Delay);
+
+            var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+
+            var times = 0;
+            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+            {
+                times++;
+                await Task.Delay(_grainOptions.RetryDelay);
+                transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+
+            }
+
+            return new TransactionInfoDto
+            {
+                Transaction = transaction,
+                TransactionResultDto = transactionResult
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, methodName + " error: {param}", param);
+            return new TransactionInfoDto();
+        }
+    }
+    private async Task<TransactionInfoDto> SendTransactionToChainAsync2(string chainId, IMessage param,
         string methodName)
     {
         try
@@ -105,7 +164,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
 
-        var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
+        var result = await SendTransactionToChainAsync2(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
 
         DeactivateOnIdle();
 
