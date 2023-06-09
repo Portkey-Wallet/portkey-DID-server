@@ -336,19 +336,6 @@ public class ContractAppService : IContractAppService
         await SyncQueryEventsAsync(chainId);
     }
 
-    private long GetEndBlockHeight(long lastEndHeight, long interval, long currentIndexHeight)
-    {
-        if (lastEndHeight + 1 >= currentIndexHeight - _indexOptions.IndexSafe)
-        {
-            return ContractAppServiceConstant.LongError;
-        }
-
-        var nextQueryHeight = lastEndHeight + 1 + interval;
-        var currentSafeIndexHeight = currentIndexHeight - _indexOptions.IndexSafe;
-
-        return nextQueryHeight < currentSafeIndexHeight ? nextQueryHeight : currentSafeIndexHeight;
-    }
-
     private async Task SyncQueryEventsAsync(string chainId)
     {
         _logger.LogInformation("SyncQueryEvents on chain: {id} starts", chainId);
