@@ -8,7 +8,6 @@ using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
-using CAServer.ThirdPart;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -53,8 +52,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
-        
-        
+
+
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -70,7 +69,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
-        Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions")); 
+        Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions"));
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
@@ -80,6 +79,5 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-        context.Services.AddSingleton<AlchemyHelper>();
     }
 }
