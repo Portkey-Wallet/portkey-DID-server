@@ -478,10 +478,12 @@ public class ContractAppService : IContractAppService
         try
         {
             var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
-            var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
-            var endBlockHeight = GetEndBlockHeight(lastEndHeight, _indexOptions.IndexInterval, currentIndexHeight);
 
-            if (endBlockHeight == ContractAppServiceConstant.LongError)
+            var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
+
+            var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
+            
+            if (currentIndexHeight <= 0 || lastEndHeight >= targetIndexHeight)
             {
                 _logger.LogWarning(
                     "QueryEventsAsync on chain: {id}. Index Height is not enough. Skipped querying this time. \nLastEndHeight: {last}, CurrentIndexHeight: {index}",
@@ -489,35 +491,56 @@ public class ContractAppService : IContractAppService
                 return;
             }
 
-            var queryEvents = await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
-                chainId, lastEndHeight + 1, endBlockHeight);
-            queryEvents.AddRange(await _graphQLProvider.GetManagerTransactionInfosAsync(
-                chainId, lastEndHeight + 1, endBlockHeight));
+            var startIndexHeight = lastEndHeight - _indexOptions.IndexBefore;
+            var endIndexHeight = lastEndHeight + _indexOptions.IndexInterval;
+            endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
 
-            var nextIndexHeight = endBlockHeight < currentIndexHeight
-                ? endBlockHeight + 1
-                : currentIndexHeight - _indexOptions.IndexSafe;
+            List<QueryEventDto> queryEvents = new List<QueryEventDto>();
+
+            while (endIndexHeight <= targetIndexHeight)
+            {
+                _logger.LogInformation("Query on chain: {id}, from {start} to {end}", chainId, startIndexHeight,
+                    endIndexHeight);
+                
+                queryEvents.AddRange(await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
+                    chainId, startIndexHeight, endIndexHeight));
+                queryEvents.AddRange(await _graphQLProvider.GetManagerTransactionInfosAsync(
+                    chainId, startIndexHeight, endIndexHeight));
+
+                if (endIndexHeight == targetIndexHeight)
+                {
+                    break;
+                }
+
+                startIndexHeight = endIndexHeight;
+
+                endIndexHeight += _indexOptions.IndexInterval;
+                endIndexHeight = endIndexHeight < targetIndexHeight ? endIndexHeight : targetIndexHeight;
+            }
 
             if (queryEvents.IsNullOrEmpty())
             {
                 _logger.LogInformation(
                     "Found no events on chain: {id}. Next index block height: {height}", chainId,
-                    nextIndexHeight);
+                    currentIndexHeight);
             }
             else
             {
                 _logger.LogInformation(
-                    "Found {num} events on chain: {id}", queryEvents.Count, chainId);
+                    "Found {num} events on chain: {id}. Next index block height: {height}", queryEvents.Count, chainId,
+                    currentIndexHeight);
 
                 queryEvents = queryEvents.Where(e => e.ChangeType != QueryLoginGuardianType.LoginGuardianRemoved)
                     .ToList();
 
                 var list = OptimizeQueryEvents(queryEvents);
 
+                list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecords(chainId), list);
+
                 await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, list);
             }
 
-            await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, nextIndexHeight);
+            await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, currentIndexHeight);
         }
         catch (Exception e)
         {
@@ -675,6 +698,7 @@ public class ContractAppService : IContractAppService
 
     public async Task InitializeIndexAsync()
     {
+
         var dict = _indexOptions.AutoSyncStartHeight;
 
         foreach (var info in _chainOptions.ChainInfos)

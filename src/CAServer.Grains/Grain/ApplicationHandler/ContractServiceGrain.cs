@@ -109,6 +109,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
 
         var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
+        
+        DeactivateOnIdle();
+        
         return result.TransactionResultDto;
     }
 
@@ -117,6 +120,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         var param = _objectMapper.Map<SocialRecoveryDto, SocialRecoveryInput>(socialRecoveryDto);
 
         var result = await SendTransactionToChainAsync(socialRecoveryDto.ChainId, param, MethodName.SocialRecovery);
+        
+        DeactivateOnIdle();
+        
         return result.TransactionResultDto;
     }
 
@@ -134,6 +140,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
 
         var result = await SendTransactionToChainAsync(chainId, param, MethodName.Validate);
+        
+        DeactivateOnIdle();
 
         return result;
     }
@@ -177,12 +185,17 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             {
                 syncHolderInfoInput = await UpdateMerkleTreeAsync(chainId, client, syncHolderInfoInput);
             }
+            
+            DeactivateOnIdle();
 
             return syncHolderInfoInput;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "GetSyncHolderInfoInput error: ");
+            
+            DeactivateOnIdle();
+            
             return new SyncHolderInfoInput();
         }
     }
@@ -230,6 +243,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)
     {
         var result = await SendTransactionToChainAsync(chainId, input, MethodName.SyncHolderInfo);
+        
+        DeactivateOnIdle();
 
         return result.TransactionResultDto;
     }
