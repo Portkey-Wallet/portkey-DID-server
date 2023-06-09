@@ -57,7 +57,7 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
         HttpResponseMessage respMsg = await client.PostAsync(_alchemyOptions.BaseUrl + path, str2Json);
         var respStr = await respMsg.Content.ReadAsStringAsync();
 
-        _logger.Debug("[ACH][post]request url: \n{url}", _alchemyOptions.BaseUrl + path + str2Json);
+        _logger.Debug("[ACH][post]request url: \n{url}", _alchemyOptions.BaseUrl + path);
 
         return respStr;
     }
