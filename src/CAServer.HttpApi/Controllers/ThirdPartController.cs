@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using CAServer.Message;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -65,13 +63,10 @@ public class ThirdPartOrderController : CAServerController
 public class AlchemyController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
-    private readonly AlchemyHelper _alchemyHelper;
 
-    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService,
-        AlchemyHelper alchemyHelper)
+    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService)
     {
         _alchemyServiceAppService = alchemyServiceAppService;
-        _alchemyHelper = alchemyHelper;
     }
 
     [HttpPost("token")]
@@ -104,11 +99,5 @@ public class AlchemyController : CAServerController
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
-    }
-
-    [HttpPost("signature")]
-    public Task<AlchemySignatureResultDto> GetAlchemySignatureV2Async(GetAlchemySignatureV2Dto input)
-    {
-        return Task.FromResult(_alchemyServiceAppService.GetAlchemySignatureV2Async(input.SignParams));
     }
 }

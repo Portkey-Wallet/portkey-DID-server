@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Options;
@@ -20,7 +19,6 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     private readonly ILogger<AlchemyServiceAppService> _logger;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
-    private readonly AlchemyHelper _alchemyHelper;
 
     private readonly JsonSerializerSettings _setting = new()
     {
@@ -28,12 +26,10 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     };
 
     public AlchemyServiceAppService(IOptions<ThirdPartOptions> merchantOptions, IAlchemyProvider alchemyProvider,
-        AlchemyHelper alchemyHelper,
         ILogger<AlchemyServiceAppService> logger)
     {
         _alchemyOptions = merchantOptions.Value.alchemy;
         _alchemyProvider = alchemyProvider;
-        _alchemyHelper = alchemyHelper;
         _logger = logger;
     }
 
@@ -72,11 +68,11 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
 
-    public AlchemySignatureResultDto GetAlchemySignatureV2Async(object input)
-    {
-        return _alchemyHelper.GetAlchemySignatureAsync(input, _alchemyOptions.AppSecret,
-            new List<string>() { "signature" });
-    }
+    // public AlchemySignatureResultDto GetAlchemySignatureV2Async(object input)
+    // {
+    //     return _alchemyHelper.GetAlchemySignatureAsync(input, _alchemyOptions.AppSecret,
+    //         new List<string>() { "signature" });
+    // }
 
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {

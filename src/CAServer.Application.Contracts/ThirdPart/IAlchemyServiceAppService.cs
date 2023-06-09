@@ -1,7 +1,5 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
-using JetBrains.Annotations;
 
 namespace CAServer.ThirdPart;
 
@@ -12,5 +10,4 @@ public interface IAlchemyServiceAppService
     Task<AlchemyCryptoListDto> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input);
     Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
     Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input);
-    AlchemySignatureResultDto GetAlchemySignatureV2Async(object input);
 }

@@ -53,31 +53,6 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _alchemyHelper = alchemyHelper;
     }
 
-
-    public Task<T> VerifyAlchemySignature<T>(Dictionary<string, string> inputDict)
-    {
-        // calculate a new wanted sign
-        var expectedSignature =
-            _alchemyHelper.GetAlchemySignatureAsync(inputDict, _alchemyOptions.AppSecret,
-                new List<string>() { SignatureKey });
-
-        // compare two sign
-        if (expectedSignature.Signature != inputDict.GetOrDefault(SignatureKey))
-        {
-            _logger.LogWarning(
-                "ACH signature verification failed, order id :{OrderNo}, and the signature :{Signature}",
-                inputDict.GetOrDefault("merchantOrderNo"), inputDict.GetOrDefault(SignatureKey));
-            throw new UserFriendlyException(
-                $"ACH signature verification failed, order id :{inputDict.GetOrDefault("merchantOrderNo")}, and the signature is:{inputDict.GetOrDefault(SignatureKey)}");
-        }
-
-        return Task.FromResult(JsonSerializer.Deserialize<T>(
-            JsonSerializer.Serialize(inputDict), new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-            }));
-    }
-
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
         if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
