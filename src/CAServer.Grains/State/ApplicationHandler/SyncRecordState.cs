@@ -9,9 +9,11 @@ public class SyncRecordState
 public class SyncRecord
 {
     public string CaHash { get; set; }
+    public string Manager { get; set; }
     public string NotLoginGuardian { get; set; }
     public string ChangeType { get; set; }
     public long BlockHeight { get; set; }
+    public string BlockHash { get; set; }
     public long ValidateHeight { get; set; }
     public int RetryTimes { get; set; }
     public TransactionInfo ValidateTransactionInfoDto { get; set; }

@@ -7,6 +7,7 @@ using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
+using CAServer.Signature;
 using CAServer.ThirdPart;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +31,8 @@ namespace CAServer;
     typeof(AbpTenantManagementApplicationModule),
     typeof(AbpFeatureManagementApplicationModule),
     typeof(AbpSettingManagementApplicationModule),
-    typeof(CAServerGrainsModule)
+    typeof(CAServerGrainsModule),
+    typeof(CAServerSignatureModule)
 )]
 public class CAServerApplicationModule : AbpModule
 {
@@ -72,6 +74,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
+        Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

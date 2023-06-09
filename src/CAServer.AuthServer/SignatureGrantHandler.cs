@@ -12,6 +12,7 @@ using CAServer.Contract;
 using CAServer.Dto;
 using CAServer.Etos;
 using CAServer.Model;
+using CAServer.Signature;
 using Google.Protobuf;
 using GraphQL;
 using GraphQL.Client.Http;
@@ -41,6 +42,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
     private ILogger<SignatureGrantHandler> _logger;
     private IAbpDistributedLock _distributedLock;
     private readonly string _lockKeyPrefix = "CAServer:Auth:SignatureGrantHandler:";
+    private ISignatureProvider _signatureProvider;
 
     public async Task<IActionResult> HandleAsync(ExtensionGrantContext context)
     {
@@ -82,6 +84,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         //Find manager by caHash
         var graphqlConfig = context.HttpContext.RequestServices.GetRequiredService<IOptions<GraphQLOption>>().Value;
         var chainOptions = context.HttpContext.RequestServices.GetRequiredService<IOptions<ChainOptions>>().Value;
+        _signatureProvider = context.HttpContext.RequestServices.GetRequiredService<ISignatureProvider>();
 
         var managerCheck = await CheckAddressAsync(chainId, graphqlConfig.Url, caHash, address, chainOptions);
         if (!managerCheck.HasValue || !managerCheck.Value)
@@ -259,7 +262,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
 
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
-            var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
+            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
             var contractAddress = isCrossChain
                 ? (await client.GetContractAddressByNameAsync(HashHelper.ComputeFrom(ContractName.CrossChain)))
                 .ToBase58()
@@ -268,11 +271,12 @@ public class SignatureGrantHandler : ITokenExtensionGrant
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, contractAddress,
                     methodName, param);
-            var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
+            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
-                RawTransaction = txWithSign.ToByteArray().ToHex()
+                RawTransaction = transaction.ToByteArray().ToHex()
             });
 
             var value = new T();

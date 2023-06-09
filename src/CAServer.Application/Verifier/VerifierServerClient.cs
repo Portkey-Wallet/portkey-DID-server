@@ -23,7 +23,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public VerifierServerClient(IOptions<AdaptableVariableOptions> adaptableVariableOptions,
+    public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
         IHttpClientFactory httpClientFactory)

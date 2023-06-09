@@ -54,15 +54,16 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         IPromise<IList<ISort>> Sort(SortDescriptor<NotifyRulesIndex> s) => s.Descending(t => t.NotifyId);
 
         var (totalCount, notifyRulesIndices) = await _notifyRulesRepository.GetSortListAsync(Filter, sortFunc: Sort);
+
         if (totalCount <= 0)
         {
             return null;
         }
 
-        var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
         var notifyRules = notifyRulesIndices.First();
         if (notifyRules.Countries is { Length: > 0 })
         {
+            var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
             notifyRules = notifyRulesIndices?.Where(t => t.Countries.Contains(ipInfo.Code)).FirstOrDefault();
             if (notifyRules == null)
             {

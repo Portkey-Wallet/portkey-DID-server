@@ -4,6 +4,8 @@ public class CrossChainTransferState
 {
     public Dictionary<string, CrossChainTransfer> CrossChainTransfers { get; set; } = new();
     public long LastedProcessedHeight { get; set; }
+
+    public Dictionary<long, string> TransferTransactionDictionary { get; set; } = new();
 }
 
 public class CrossChainTransfer

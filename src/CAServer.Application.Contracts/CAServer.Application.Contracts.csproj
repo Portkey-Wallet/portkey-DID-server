@@ -40,4 +40,20 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Orleans_CodeGenInputs Remove="Sample\ISampleAppService.cs" />
+    <Orleans_CodeGenInputs Remove="Sample\TestDto.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+<<<<<<< HEAD
+    <Reference Include="CAServer.Application">
+      <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Application.dll</HintPath>
+    </Reference>
+=======
+    <Orleans_CodeGenInputs Remove="Sample\ISampleAppService.cs" />
+    <Orleans_CodeGenInputs Remove="Sample\TestDto.cs" />
+>>>>>>> origin/feature/1.3.0
+  </ItemGroup>
+
 </Project>

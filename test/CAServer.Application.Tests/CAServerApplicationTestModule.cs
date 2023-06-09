@@ -77,6 +77,33 @@ public class CAServerApplicationTestModule : AbpModule
             option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
                 { { "TEST", new CAServer.Grains.Grain.ApplicationHandler.ChainInfo() } };
         });
+
+        context.Services.Configure<CAServer.Options.ChainOptions>(option =>
+        {
+            option.ChainInfos = new Dictionary<string, CAServer.Options.ChainInfo>
+            {
+                {
+                    "TEST", new CAServer.Options.ChainInfo()
+                    {
+                        BaseUrl = "http://127.0.0.1:6889",
+                        ChainId = "TEST",
+                        PrivateKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91"
+                    }
+                }
+            };
+        });
+
+        context.Services.Configure<ClaimTokenInfoOptions>(option =>
+        {
+            option.ChainId = "TEST";
+            option.PublicKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91";
+        });
+        context.Services.Configure<DefaultIpInfoOptions>(options =>
+        {
+            options.Country = "Singapore";
+            options.Code = "SG";
+            options.Iso = "65";
+        });
         base.ConfigureServices(context);
     }
 }
