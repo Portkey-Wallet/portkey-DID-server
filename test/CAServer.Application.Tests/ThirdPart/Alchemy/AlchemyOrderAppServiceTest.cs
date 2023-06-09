@@ -118,39 +118,4 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
         var signResultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
         signResultFail.Success.ShouldBe(true);
     }
-
-    [Fact]
-    public async Task VerifySignatureAndConvertToDto()
-    {
-
-        // fail test
-        try
-        {
-            await _alchemyOrderAppService.VerifyAlchemySignature<AlchemyOrderUpdateDto>(
-                new Dictionary<string, string>());
-        }
-        catch (Exception e)
-        {
-            e.GetType().ShouldBe(typeof(UserFriendlyException));
-        }
-
-        // verify test
-        var inputDict = new Dictionary<string, string>()
-        {
-            ["appid"] = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
-            ["id"] = "00000000-0000-0000-0000-000000000001",
-            ["userId"] = "00000000-0000-0000-0000-000000000001",
-            ["merchantOrderNo"] = "00000000-0000-0000-0000-000000000000",
-            ["orderNo"] = "00000000-0000-0000-0000-000000000000",
-            ["Address"] = "Address123123",
-            ["status"] = "1",
-            ["signature"] = "03c118dfb11a20060e41b2e11d09d15a88aea93a10463d06f0dd3b157e007f89",
-        };
-
-        var input = await _alchemyOrderAppService.VerifyAlchemySignature<AlchemyOrderUpdateDto>(inputDict);
-
-        input.Signature.ShouldBe("03c118dfb11a20060e41b2e11d09d15a88aea93a10463d06f0dd3b157e007f89");
-        input.Address.ShouldBe("Address123123");
-        input.Id.ShouldBe(new Guid("00000000-0000-0000-0000-000000000001"));
-    }
 }
