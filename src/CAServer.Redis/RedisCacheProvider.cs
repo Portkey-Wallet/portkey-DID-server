@@ -21,7 +21,7 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
         _database.KeyExpire(key, expire);
     }
 
-    public async Task<bool> HashDelete(string key, string member)
+    public async Task<bool> HashDeleteAsync(string key, string member)
     {
         return _database.HashDelete(key, member);
     }

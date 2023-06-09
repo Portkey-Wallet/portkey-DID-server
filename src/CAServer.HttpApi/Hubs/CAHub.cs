@@ -29,9 +29,9 @@ public class CAHub : AbpHub
             return;
         }
 
-        await _hubService.RegisterClientAsync(clientId, Context.ConnectionId);
+        await _hubService.RegisterClient(clientId, Context.ConnectionId);
         _logger.LogInformation("clientId={ClientId} connect", clientId);
-        await _hubService.SendAllUnreadResAsync(clientId);
+        await _hubService.SendAllUnreadRes(clientId);
     }
 
     public async Task Ack(string clientId, string requestId)
@@ -41,7 +41,7 @@ public class CAHub : AbpHub
             return;
         }
 
-        await _hubService.AckAsync(clientId, requestId);
+        await _hubService.Ack(clientId, requestId);
     }
 
     public async Task RequestAchTxAddress(AlchemyTargetAddressDto request)

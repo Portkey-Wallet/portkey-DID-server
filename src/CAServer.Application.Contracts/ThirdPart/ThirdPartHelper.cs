@@ -35,15 +35,8 @@ public static class ThirdPartHelper
     }
 }
 
-public class AlchemyHelper
+public static class AlchemyHelper
 {
-    private readonly ILogger<AlchemyHelper> _logger;
-    
-    public AlchemyHelper(ILogger<AlchemyHelper> logger)
-    {
-        _logger = logger;
-    }
-
     private static Dictionary<string, OrderStatusType> _orderStatusDict = new()
     {
         { "FINISHED", OrderStatusType.Finish },
@@ -72,77 +65,6 @@ public class AlchemyHelper
 
         return "Unknown";
     }
-    
-    // doc: https://alchemypay.readme.io/docs/api-sign
-    public AlchemySignatureResultDto GetAlchemySignatureAsync(object input, string appSecret, List<string> ignoreProperties)
-    {
-        try
-        {
-            var signParamDictionary = ConvertObjectToDictionary(input);
-            
-            // ignore some key such as "signature" properties
-            foreach (var key in ignoreProperties?? new List<string>())
-            {
-                signParamDictionary.Remove(key);
-            }
-            
-            var sortedParams = signParamDictionary.OrderBy(d => d.Key, StringComparer.Ordinal);
-            var signSource = string.Join("&", sortedParams.Select(kv => $"{kv.Key}={kv.Value}"));
-            _logger.Debug("[ACH] signSource = {signSource}", signSource);
-            return new AlchemySignatureResultDto()
-            {
-                Signature = ComputeHmacSha256(signSource, appSecret)
-            };
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "AES encrypting exception");
-            return new AlchemySignatureResultDto()
-            {
-                Success = "Fail",
-                ReturnMsg = $"Error AES encrypting, error msg is {e.Message}"
-            };
-        }
-    }
-
-    private static Dictionary<string, string> ConvertObjectToDictionary(object obj)
-    {
-        var dict = new Dictionary<string, string>();
-        if (obj == null) return dict;
-        
-        var emptyGuid = new Guid();
-
-        // If the object is a dictionary, handle it separately
-        if (obj is IDictionary dictionary)
-        {
-            foreach (DictionaryEntry entry in dictionary)
-            {
-                dict.Add(entry.Key.ToString() ?? string.Empty, entry.Value?.ToString());
-            }
-
-            return dict;
-        }
-
-        // If not, process each property
-        foreach (var property in obj.GetType().GetProperties())
-        {
-            // Skip indexed properties
-            if (property.GetIndexParameters().Length != 0) continue;
-            if (property.PropertyType != typeof(string) && !property.PropertyType.IsValueType) continue;
-
-            var value = property.GetValue(obj);
-
-            // Skip null value or empty Guid value
-            if (value == null || property.PropertyType == typeof(Guid) && value.Equals(emptyGuid)) continue;
-
-            // convert first char to lower case 
-            dict.Add(property.Name.Substring(0, 1).ToLowerInvariant() + property.Name.Substring(1),
-                value.ToString());
-        }
-
-        return dict;
-    }
-    
     public static string AesEncrypt(string plainText, string secretKeyData)
     {
         try

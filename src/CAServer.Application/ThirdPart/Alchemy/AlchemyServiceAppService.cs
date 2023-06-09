@@ -36,9 +36,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     // get Alchemy login free token
     public async Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input)
     {
-        return JsonConvert.DeserializeObject<AlchemyTokenDto>(await _alchemyProvider.HttpPost2Alchemy(
-            _alchemyOptions.GetTokenUri,
-            JsonConvert.SerializeObject(input, Formatting.None, _setting)));
+        return JsonConvert.DeserializeObject<AlchemyTokenDto>(await _alchemyProvider.HttpPost2AlchemyAsync(
+            _alchemyOptions.GetTokenUri, JsonConvert.SerializeObject(input, Formatting.None, _setting)));
     }
 
     // get Alchemy fiat list
@@ -62,17 +61,9 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     // post Alchemy cryptoList
     public async Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
     {
-        return JsonConvert.DeserializeObject<AlchemyOrderQuoteResultDto>(await _alchemyProvider.HttpPost2Alchemy(
-            _alchemyOptions.OrderQuoteUri,
-            JsonConvert.SerializeObject(input, Formatting.None, _setting)));
+        return JsonConvert.DeserializeObject<AlchemyOrderQuoteResultDto>(await _alchemyProvider.HttpPost2AlchemyAsync(
+            _alchemyOptions.OrderQuoteUri, JsonConvert.SerializeObject(input, Formatting.None, _setting)));
     }
-
-
-    // public AlchemySignatureResultDto GetAlchemySignatureV2Async(object input)
-    // {
-    //     return _alchemyHelper.GetAlchemySignatureAsync(input, _alchemyOptions.AppSecret,
-    //         new List<string>() { "signature" });
-    // }
 
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
@@ -80,8 +71,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         {
             return new AlchemySignatureResultDto()
             {
-                Signature = AlchemyHelper.AesEncrypt(
-                    $"address={input.Address}&appId={_alchemyOptions.AppId}",
+                Signature = AlchemyHelper.AesEncrypt($"address={input.Address}&appId={_alchemyOptions.AppId}",
                     _alchemyOptions.AppSecret)
             };
         }

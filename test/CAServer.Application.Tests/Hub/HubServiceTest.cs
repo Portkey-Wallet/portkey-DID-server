@@ -38,15 +38,15 @@ public class HubServiceTest : CAServerApplicationTestBase
     [Fact]
     public async void PingTest()
     {
-        await _hubService.PingAsync(new HubRequestContext { RequestId = "1", ClientId = "3433" }, "content");
+        await _hubService.Ping(new HubRequestContext { RequestId = "1", ClientId = "3433" }, "content");
     }
 
     [Fact]
     public async void GetResponseTest()
     {
-        var res = await _hubService.GetResponseAsync(new HubRequestContext { RequestId = "456", ClientId = "12121" });
+        var res = await _hubService.GetResponse(new HubRequestContext { RequestId = "456", ClientId = "12121" });
         Assert.True(res == null);
-        res = await _hubService.GetResponseAsync(new HubRequestContext { RequestId = "123" });
+        res = await _hubService.GetResponse(new HubRequestContext { RequestId = "123" });
         res.RequestId.ShouldBe("123");
         res.Body.ShouldBe("456");
     }
@@ -58,7 +58,7 @@ public class HubServiceTest : CAServerApplicationTestBase
         var connectionId = "XXX";
         var res = _hubService.UnRegisterClient(connectionId);
         Assert.True(res == null);
-        await _hubService.RegisterClientAsync(clientId, connectionId);
+        await _hubService.RegisterClient(clientId, connectionId);
         res = _hubService.UnRegisterClient(connectionId);
         res.ShouldBe(clientId);
     }
@@ -68,14 +68,14 @@ public class HubServiceTest : CAServerApplicationTestBase
     {
         var clientId = "123";
         var clientId2 = "456";
-        await _hubService.SendAllUnreadResAsync(clientId);
-        await _hubService.SendAllUnreadResAsync(clientId2);
+        await _hubService.SendAllUnreadRes(clientId);
+        await _hubService.SendAllUnreadRes(clientId2);
     }
 
     [Fact]
     public async void Ack()
     {
-        await _hubService.AckAsync("123", "456");
+        await _hubService.Ack("123", "456");
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class HubServiceTest : CAServerApplicationTestBase
         await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000001");
         
         // test after register client
-        await _hubService.RegisterClientAsync("123", "conn-123123");
+        await _hubService.RegisterClient("123", "conn-123123");
         await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000001");
         await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000002");
         await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000003");

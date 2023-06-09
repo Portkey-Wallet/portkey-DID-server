@@ -15,7 +15,7 @@ namespace CAServer.ThirdPart.Provider;
 public interface IAlchemyProvider
 {
     Task<string> HttpGetFromAlchemy(string path);
-    Task<string> HttpPost2Alchemy(string path, string inputStr);
+    Task<string> HttpPost2AlchemyAsync(string path, string inputStr);
 }
 
 public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
@@ -46,7 +46,7 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
         return respStr;
     }
 
-    public async Task<string> HttpPost2Alchemy(string path, string inputStr)
+    public async Task<string> HttpPost2AlchemyAsync(string path, string inputStr)
     {
         _logger.LogInformation("[ACH]send request body : \n{requestBody}", inputStr);
 

@@ -8,7 +8,7 @@ namespace CAServer.Cache;
 public interface ICacheProvider
 {
     Task HSetWithExpire(string key, string member, string value, TimeSpan? expire);
-    Task<bool> HashDelete(string key, string member);
+    Task<bool> HashDeleteAsync(string key, string member);
     Task<HashEntry[]> HGetAll(string key);
     Task Set(string key, string value, TimeSpan? expire);
     Task<RedisValue> Get(string key);

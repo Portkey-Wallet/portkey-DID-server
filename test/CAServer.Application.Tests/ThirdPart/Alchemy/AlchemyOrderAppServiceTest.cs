@@ -13,12 +13,10 @@ namespace CAServer.ThirdPart.Alchemy;
 public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 {
     private readonly IAlchemyOrderAppService _alchemyOrderAppService;
-    private readonly IAlchemyServiceAppService _alchemyServiceAppService;
 
     public AlchemyOrderAppServiceTest()
     {
         _alchemyOrderAppService = GetRequiredService<IAlchemyOrderAppService>();
-        _alchemyServiceAppService = GetRequiredService<IAlchemyServiceAppService>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)

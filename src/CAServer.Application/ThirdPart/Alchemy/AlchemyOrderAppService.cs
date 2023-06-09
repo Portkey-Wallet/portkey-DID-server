@@ -31,7 +31,6 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
-    private readonly AlchemyHelper _alchemyHelper;
     const string SignatureKey = "signature";
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
@@ -40,8 +39,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
         IAlchemyProvider alchemyProvider,
-        IObjectMapper objectMapper,
-        AlchemyHelper alchemyHelper)
+        IObjectMapper objectMapper)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -50,7 +48,6 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _logger = logger;
         _alchemyOptions = merchantOptions.Value.alchemy;
         _alchemyProvider = alchemyProvider;
-        _alchemyHelper = alchemyHelper;
     }
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
@@ -110,7 +107,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
             orderPendingUpdate.Network, orderPendingUpdate.Address);
 
-        await _alchemyProvider.HttpPost2Alchemy(_alchemyOptions.UpdateSellOrderUri,
+        await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.UpdateSellOrderUri,
             JsonConvert.SerializeObject(orderPendingUpdate));
     }
 
@@ -150,8 +147,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
         catch (Exception e)
         {
-            _logger.LogError("Generator alchemy update txHash signature failed, OrderNo: {orderNo},err: {Exception}",
-                orderNo, e);
+            _logger.LogError(e, "Generator alchemy update txHash signature failed, OrderNo: {orderNo}.", orderNo);
             return "";
         }
     }
