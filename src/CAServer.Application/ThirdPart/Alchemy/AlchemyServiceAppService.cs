@@ -36,33 +36,66 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     // get Alchemy login free token
     public async Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input)
     {
-        return JsonConvert.DeserializeObject<AlchemyTokenDto>(await _alchemyProvider.HttpPost2AlchemyAsync(
-            _alchemyOptions.GetTokenUri, JsonConvert.SerializeObject(input, Formatting.None, _setting)));
+        try
+        {
+            return JsonConvert.DeserializeObject<AlchemyTokenDto>(await _alchemyProvider.HttpPost2AlchemyAsync(
+                _alchemyOptions.GetTokenUri, JsonConvert.SerializeObject(input, Formatting.None, _setting)));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error deserializing free login");
+            throw new UserFriendlyException(e.Message);
+        }
     }
 
     // get Alchemy fiat list
     public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync()
     {
-        return JsonConvert.DeserializeObject<AlchemyFiatListDto>(
-            await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.FiatListUri));
+        try
+        {
+            return JsonConvert.DeserializeObject<AlchemyFiatListDto>(
+                await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.FiatListUri));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error deserializing fiat list.");
+            throw new UserFriendlyException(e.Message);
+        }
     }
 
     // get Alchemy cryptoList 
     public async Task<AlchemyCryptoListDto> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input)
     {
-        string queryString = string.Join("&",
-            input.GetType().GetProperties()
-                .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(input)}"));
+        try
+        {
+            string queryString = string.Join("&",
+                input.GetType().GetProperties()
+                    .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(input)}"));
 
-        return JsonConvert.DeserializeObject<AlchemyCryptoListDto>(
-            await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.CryptoListUri + "?" + queryString));
+            return JsonConvert.DeserializeObject<AlchemyCryptoListDto>(
+                await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.CryptoListUri + "?" + queryString));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error deserializing crypto list.");
+            throw new UserFriendlyException(e.Message);
+        }
     }
 
     // post Alchemy cryptoList
     public async Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
     {
-        return JsonConvert.DeserializeObject<AlchemyOrderQuoteResultDto>(await _alchemyProvider.HttpPost2AlchemyAsync(
-            _alchemyOptions.OrderQuoteUri, JsonConvert.SerializeObject(input, Formatting.None, _setting)));
+        try
+        {
+            return JsonConvert.DeserializeObject<AlchemyOrderQuoteResultDto>(
+                await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.OrderQuoteUri,
+                    JsonConvert.SerializeObject(input, Formatting.None, _setting)));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error deserializing order quote.");
+            throw new UserFriendlyException(e.Message);
+        }
     }
 
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)

@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Grains.Grain.ThirdPart;
@@ -10,7 +8,6 @@ using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
-using Castle.Components.DictionaryAdapter.Xml;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -18,7 +15,6 @@ using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -31,7 +27,6 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
-    const string SignatureKey = "signature";
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
