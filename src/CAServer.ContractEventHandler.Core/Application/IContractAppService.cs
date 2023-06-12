@@ -713,6 +713,7 @@ public class ContractAppService : IContractAppService
 
     public async Task Clear()
     {
+        _logger.LogInformation("Clear process starts");
         await _recordsBucketContainer.SetValidatedRecordsAsync("AELF", new List<SyncRecord>());
         await _recordsBucketContainer.SetToBeValidatedRecordsAsync("AELF", new List<SyncRecord>());
         await _recordsBucketContainer.SetValidatedRecordsAsync("tDVV", new List<SyncRecord>());
