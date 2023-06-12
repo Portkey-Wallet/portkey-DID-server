@@ -1,8 +1,11 @@
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+
 namespace CAServer.Response;
 
-public class ResponseDto
+public class ResponseDto : ActionResult
 {
-    public string Code { get; set; }
+    public string Code { get; set; } = "20000";
     public object Data { get; set; }
     public string Message { get; set; } = string.Empty;
 }
