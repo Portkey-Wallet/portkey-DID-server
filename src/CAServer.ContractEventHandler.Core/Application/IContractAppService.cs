@@ -25,6 +25,8 @@ public interface IContractAppService
     Task QueryAndSyncAsync();
 
     Task InitializeIndexAsync();
+
+    Task Clear();
     // Task InitializeQueryRecordIndexAsync();
     // Task InitializeIndexAsync(long blockHeight);
 }
@@ -707,5 +709,15 @@ public class ContractAppService : IContractAppService
                 await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height);
             }
         }
+    }
+
+    public Task Clear()
+    {
+        _recordsBucketContainer.SetValidatedRecordsAsync("AELF", new List<SyncRecord>());
+        _recordsBucketContainer.SetToBeValidatedRecordsAsync("AELF", new List<SyncRecord>());
+        _recordsBucketContainer.SetValidatedRecordsAsync("tDVV", new List<SyncRecord>());
+        _recordsBucketContainer.SetToBeValidatedRecordsAsync("tDVV", new List<SyncRecord>());
+
+        return Task.CompletedTask;
     }
 }
