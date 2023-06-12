@@ -718,5 +718,11 @@ public class ContractAppService : IContractAppService
         await _recordsBucketContainer.SetToBeValidatedRecordsAsync("AELF", new List<SyncRecord>());
         await _recordsBucketContainer.SetValidatedRecordsAsync("tDVV", new List<SyncRecord>());
         await _recordsBucketContainer.SetToBeValidatedRecordsAsync("tDVV", new List<SyncRecord>());
+
+        var mainValidatedRecords = _recordsBucketContainer.GetValidatedRecords("AELF").Result.Count;
+        var mainToBeValidatedRecords = _recordsBucketContainer.GetToBeValidatedRecords("AELF").Result.Count;
+        var sideValidatedRecords = _recordsBucketContainer.GetValidatedRecords("tDVV").Result.Count;
+        var sideToBeValidatedRecords = _recordsBucketContainer.GetToBeValidatedRecords("tDVV").Result.Count;
+        _logger.LogInformation("{a}, {b}, {c}, {d}", mainValidatedRecords, mainToBeValidatedRecords, sideValidatedRecords, sideToBeValidatedRecords);
     }
 }
