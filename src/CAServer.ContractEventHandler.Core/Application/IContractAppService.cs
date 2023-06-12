@@ -711,13 +711,11 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    public Task Clear()
+    public async Task Clear()
     {
-        _recordsBucketContainer.SetValidatedRecordsAsync("AELF", new List<SyncRecord>());
-        _recordsBucketContainer.SetToBeValidatedRecordsAsync("AELF", new List<SyncRecord>());
-        _recordsBucketContainer.SetValidatedRecordsAsync("tDVV", new List<SyncRecord>());
-        _recordsBucketContainer.SetToBeValidatedRecordsAsync("tDVV", new List<SyncRecord>());
-
-        return Task.CompletedTask;
+        await _recordsBucketContainer.SetValidatedRecordsAsync("AELF", new List<SyncRecord>());
+        await _recordsBucketContainer.SetToBeValidatedRecordsAsync("AELF", new List<SyncRecord>());
+        await _recordsBucketContainer.SetValidatedRecordsAsync("tDVV", new List<SyncRecord>());
+        await _recordsBucketContainer.SetToBeValidatedRecordsAsync("tDVV", new List<SyncRecord>());
     }
 }
