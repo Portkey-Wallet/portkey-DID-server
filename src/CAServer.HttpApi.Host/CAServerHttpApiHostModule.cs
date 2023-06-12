@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using CAServer.Filters;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.MongoDB;
@@ -17,6 +18,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -77,6 +79,11 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        
+        context.Services.AddMvc(options =>
+        {
+            options.Filters.Add((typeof(CaAsyncResultFilter)));
+        });
     }
 
     private void ConfigureCache(IConfiguration configuration)

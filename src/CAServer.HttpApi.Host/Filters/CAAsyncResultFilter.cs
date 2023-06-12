@@ -11,11 +11,14 @@ public class CaAsyncResultFilter : IAsyncResultFilter
     {
         if (context.Result is not ResponseDto)
         {
-            var result = context.Result;
-            context.Result = new ResponseDto()
+            if (context.Result is ObjectResult)
             {
-                Data = context.Result
-            };
+                var objectResult = context.Result as ObjectResult;
+                context.Result = new ObjectResult(new ResponseDto
+                {
+                    Data = objectResult.Value
+                });
+            }
         }
 
         await next();
