@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace CAServer.ThirdPart.Dtos;
@@ -68,6 +69,7 @@ public class AlchemyOrderQuoteDataDto
     public string CryptoPrice { get; set; }
     public string CryptoQuantity { get; set; }
     public string Fiat { get; set; }
+    public string FiatQuantity { get; set; }
     public string RampFee { get; set; }
     public string NetworkFee { get; set; }
     public string PayWayCode { get; set; }
@@ -76,4 +78,14 @@ public class AlchemyOrderQuoteDataDto
 public class AlchemySignatureResultDto : AlchemyBaseResponseDto
 {
     public string Signature { get; set; }
+}
+
+public class AlchemyTargetAddressDto
+{
+    public Guid OrderId { get; set; }
+    public string MerchantName { get; set; }
+    public string Address { get; set; }
+    public string Network { get; set; }
+    public string Crypto { get; set; }
+    public string CryptoAmount { get; set; }
 }

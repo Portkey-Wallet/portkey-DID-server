@@ -41,6 +41,7 @@ using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using MongoDB.Bson.Serialization.IdGenerators;
 using Portkey.Contracts.CA;
+using AlchemyTargetAddressDto = CAServer.Message.Dtos.AlchemyTargetAddressDto;
 using Volo.Abp.AutoMapper;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
@@ -258,6 +259,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Code, m => m.MapFrom(f => f.CountryCode))
             .ForPath(t => t.Iso, m => m.MapFrom(f => f.Location.CallingCode));
 
+        // third part order auto map
         CreateMap<CreateUserOrderDto, OrderGrainDto>();
         CreateMap<OrderGrainDto, OrderDto>();
         CreateMap<OrderDto, OrderGrainDto>();
@@ -265,7 +267,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderIndex, OrderDto>();
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
-            .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType));
+            .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
+            .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo));
+        CreateMap<OrderDto, WaitToSendOrderInfoDto>()
+            .ForMember(t => t.OrderNo, m => m.MapFrom(f => f.ThirdPartOrderNo));
 
         CreateMap<CreateNotifyDto, NotifyGrainDto>();
         CreateMap<UpdateNotifyDto, NotifyGrainDto>();

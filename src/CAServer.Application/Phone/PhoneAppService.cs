@@ -1,24 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CAServer.Common;
-using CAServer.Phone.Dtos;
-using CAServer.Grains;
-using CAServer.Grains.Grain.Contacts;
-using CAServer.Grains.Grain.Device;
 using CAServer.IpInfo;
 using CAServer.Options;
-using Microsoft.AspNetCore.Routing.Matching;
+using CAServer.Phone.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Orleans;
-using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Auditing;
-using Volo.Abp.Users;
 
 namespace CAServer.Phone;
 
@@ -46,7 +36,7 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
     public async Task<PhoneInfoListDto> GetPhoneInfoAsync()
     {
         var phoneInfo = new List<Dictionary<string, string>>();
-        var allPhoneCode = new Dictionary<string, string>();
+        var allPhoneCode = new Dictionary<string, Dictionary<string, string>>();
         for (int i = 0; i < _phoneInfoOptions.PhoneInfo.Count; i++)
         {
             var phoneInfoDict = new Dictionary<string, string>();
@@ -55,7 +45,7 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
             phoneInfoDict.Add("iso", _phoneInfoOptions.PhoneInfo[i].Iso);
             phoneInfo.Add(phoneInfoDict);
 
-            allPhoneCode.Add(_phoneInfoOptions.PhoneInfo[i].Code, _phoneInfoOptions.PhoneInfo[i].Iso);
+            allPhoneCode.Add(_phoneInfoOptions.PhoneInfo[i].Code, phoneInfoDict);
         }
 
         // default value
@@ -70,16 +60,14 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
             IpInfoResultDto ipLocate = await _ipInfoAppService.GetIpInfoAsync();
             if (ipLocate != null && allPhoneCode.ContainsKey(ipLocate.Iso))
             {
-                locate = new Dictionary<string, string>();
-                locate.Add("country", ipLocate.Country);
-                locate.Add("code", ipLocate.Iso);
-                locate.Add("iso", ipLocate.Code);
+                locate = allPhoneCode.GetValueOrDefault(ipLocate.Iso, locate);
             }
         }
         catch (Exception e)
         {
             Logger.LogError(e, "GetIpInfoAsync error {}", e.Message);
         }
+
         var phoneInfoList = new PhoneInfoListDto
         {
             Data = phoneInfo,
@@ -88,5 +76,4 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
 
         return phoneInfoList;
     }
-
 }

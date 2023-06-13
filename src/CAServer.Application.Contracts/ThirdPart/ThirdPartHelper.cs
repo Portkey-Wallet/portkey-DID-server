@@ -1,8 +1,13 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using CAServer.ThirdPart.Dtos;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Orleans.Runtime;
 
 namespace CAServer.ThirdPart;
 
@@ -57,13 +62,10 @@ public static class AlchemyHelper
         {
             return _orderStatusDict[status].ToString();
         }
-        else
-        {
-            return "Unknown";
-        }
-    }
 
-    public static string AESEncrypt(string plainText, string secretKeyData)
+        return "Unknown";
+    }
+    public static string AesEncrypt(string plainText, string secretKeyData)
     {
         try
         {
@@ -90,5 +92,15 @@ public static class AlchemyHelper
         {
             throw e;
         }
+    }
+
+    private static string ComputeHmacSha256(string message, string secretKey)
+    {
+        var encoding = new ASCIIEncoding();
+        var keyByte = encoding.GetBytes(secretKey);
+        var messageBytes = encoding.GetBytes(message);
+        using var hmacSha256 = new HMACSHA256(keyByte);
+        var hashMessage = hmacSha256.ComputeHash(messageBytes);
+        return BitConverter.ToString(hashMessage).Replace("-", "").ToLower();
     }
 }

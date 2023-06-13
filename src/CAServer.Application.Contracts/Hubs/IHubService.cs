@@ -13,4 +13,6 @@ public interface IHubService : IApplicationService
 
     Task SendAllUnreadRes(string clientId);
     Task Ack(string clientId, string requestId);
+
+    Task RequestAchTxAddressAsync(string targetClientId, string orderId);
 }

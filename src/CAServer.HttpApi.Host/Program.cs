@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CAServer.Hubs;
 using Microsoft.AspNetCore.Builder;

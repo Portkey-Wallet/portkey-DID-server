@@ -21,4 +21,5 @@ public class MessageAppService : CAServerAppService, IMessageAppService
     {
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ScanLoginDto, ScanLoginEto>(request));
     }
+
 }
