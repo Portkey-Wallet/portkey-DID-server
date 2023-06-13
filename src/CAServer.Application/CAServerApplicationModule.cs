@@ -74,6 +74,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
         Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
+        Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
