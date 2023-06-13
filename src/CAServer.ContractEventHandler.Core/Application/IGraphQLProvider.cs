@@ -77,7 +77,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         catch (Exception e)
         {
             _logger.LogError(e, "GetIndexBlockHeight on chain {id} error", chainId);
-            return ContractAppServiceConstant.LongError;
+            return ContractAppServiceConstant.LongEmpty;
         }
     }
 
