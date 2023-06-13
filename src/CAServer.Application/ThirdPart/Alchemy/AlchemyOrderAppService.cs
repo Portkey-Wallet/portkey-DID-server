@@ -47,63 +47,79 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
-        if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
+        try
         {
-            _logger.LogWarning("Alchemy signature check failed, OrderNo: {orderNo} will not update.", input.OrderNo);
-            return new BasicOrderResult();
-        }
+            if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
+            {
+                _logger.LogWarning("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
+                    input.OrderNo);
+                return new BasicOrderResult();
+            }
 
-        Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
-        var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-        if (esOrderData == null || input.MerchantOrderNo != esOrderData.Id.ToString())
+            Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
+            var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
+            if (esOrderData == null || input.MerchantOrderNo != esOrderData.Id.ToString())
+            {
+                return new BasicOrderResult() { Message = $"No order found for {grainId}" };
+            }
+
+            if (esOrderData.Status == input.Status)
+            {
+                return new BasicOrderResult() { Message = $"Order status {input.Status} no need to update." };
+            }
+
+            var dataToBeUpdated = MergeEsAndInput2GrainModel(input, esOrderData);
+            var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
+            dataToBeUpdated.Status = AlchemyHelper.GetOrderStatus(input.Status);
+            dataToBeUpdated.Id = grainId;
+            dataToBeUpdated.UserId = esOrderData.UserId;
+            dataToBeUpdated.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
+            _logger.LogDebug("This alchemy order {grainId} will be updated.", grainId);
+
+            var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
+
+            if (!result.Success)
+            {
+                _logger.LogError("Update user order fail, third part order number: {orderId}", input.MerchantOrderNo);
+                return new BasicOrderResult() { Message = $"Update order failed,{result.Message}" };
+            }
+
+            await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
+            return new BasicOrderResult() { Success = true, Message = result.Message };
+        }
+        catch (Exception e)
         {
-            return new BasicOrderResult() { Message = $"No order found for {grainId}" };
+            _logger.LogError(e, "Occurred error during update alchemy order.");
+            throw new UserFriendlyException("Occurred error during update alchemy order.");
         }
-
-        if (esOrderData.Status == input.Status)
-        {
-            return new BasicOrderResult() { Message = $"Order status {input.Status} no need to update." };
-        }
-
-        var dataToBeUpdated = MergeEsAndInput2GrainModel(input, esOrderData);
-        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
-        dataToBeUpdated.Status = AlchemyHelper.GetOrderStatus(input.Status);
-        dataToBeUpdated.Id = grainId;
-        dataToBeUpdated.UserId = esOrderData.UserId;
-        dataToBeUpdated.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
-        _logger.LogDebug("This alchemy order {grainId} will be updated.", grainId);
-
-        var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
-
-        if (!result.Success)
-        {
-            _logger.LogError("Update user order fail, third part order number: {orderId}", input.MerchantOrderNo);
-            return new BasicOrderResult() { Message = $"Update order failed,{result.Message}" };
-        }
-
-        await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
-        return new BasicOrderResult() { Success = true, Message = result.Message };
     }
 
     public async Task UpdateAlchemyTxHashAsync(SendAlchemyTxHashDto input)
     {
-        Guid grainId = ThirdPartHelper.GetOrderId(input.OrderId);
-        var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-        if (orderData == null)
+        try
         {
-            _logger.LogError("No order found for {grainId}", grainId);
-            throw new UserFriendlyException($"No order found for {grainId}");
+            Guid grainId = ThirdPartHelper.GetOrderId(input.OrderId);
+            var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
+            if (orderData == null)
+            {
+                _logger.LogError("No order found for {grainId}", grainId);
+                throw new UserFriendlyException($"No order found for {grainId}");
+            }
+
+            var orderPendingUpdate = _objectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
+            orderPendingUpdate.TxHash = input.TxHash;
+            orderPendingUpdate.AppId = _alchemyOptions.AppId;
+
+            orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
+                orderPendingUpdate.Network, orderPendingUpdate.Address);
+
+            await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.UpdateSellOrderUri,
+                JsonConvert.SerializeObject(orderPendingUpdate));
         }
-
-        var orderPendingUpdate = _objectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
-        orderPendingUpdate.TxHash = input.TxHash;
-        orderPendingUpdate.AppId = _alchemyOptions.AppId;
-
-        orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
-            orderPendingUpdate.Network, orderPendingUpdate.Address);
-
-        await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.UpdateSellOrderUri,
-            JsonConvert.SerializeObject(orderPendingUpdate));
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Occurred error during update alchemy order transaction hash.");
+        }
     }
 
     private OrderGrainDto MergeEsAndInput2GrainModel(AlchemyOrderUpdateDto alchemyData, OrderDto esOrderData)
