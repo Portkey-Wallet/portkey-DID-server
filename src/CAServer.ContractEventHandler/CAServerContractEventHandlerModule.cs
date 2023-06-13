@@ -56,6 +56,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.Services.AddSingleton<IContractProvider, ContractProvider>();
         context.Services.AddSingleton<IGraphQLProvider, GraphQLProvider>();
         context.Services.AddSingleton<IRecordsBucketContainer, RecordsBucketContainer>();
+        context.Services.AddHttpClient();
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
     }
