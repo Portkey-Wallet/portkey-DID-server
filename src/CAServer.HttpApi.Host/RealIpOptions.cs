@@ -1,4 +1,4 @@
-namespace CAVerifierServer;
+namespace CAServer;
 
 public class RealIpOptions
 {

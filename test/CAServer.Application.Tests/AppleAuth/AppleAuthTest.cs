@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
+using AElf;
 using CAServer.AppleAuth.Dtos;
 using CAServer.AppleAuth.Provider;
 using Microsoft.Extensions.DependencyInjection;

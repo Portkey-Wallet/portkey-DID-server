@@ -1,4 +1,4 @@
-namespace CAVerifierServer.IpWhiteList;
+namespace CAServer.IpWhiteList.Dtos;
 
 public class CheckUserIpInWhiteListRequestDto
 {
