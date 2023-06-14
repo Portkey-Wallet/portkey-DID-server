@@ -29,7 +29,7 @@ public class CAVerifierController : CAServerController
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
-    private const string CurrentVersion = "v1.2.9";
+    private const string CurrentVersion = "v1.3.0";
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
