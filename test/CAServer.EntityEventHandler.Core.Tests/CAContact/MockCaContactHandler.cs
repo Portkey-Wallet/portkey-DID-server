@@ -1,4 +1,5 @@
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using Volo.Abp.ObjectMapping;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -8,11 +9,11 @@ using Volo.Abp.EventBus.Distributed;
 namespace CAServer.EntityEventHandler.Tests.CAContact;
 public class MockCaContactHandler:IDistributedEventHandler<ContactCreateEto>,ITransientDependency
 {
-    private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
+    private readonly ILinqRepository<ContactIndex, Guid> _contactRepository;
 
     private readonly IObjectMapper _objectMapper;
 
-    public MockCaContactHandler(INESTRepository<ContactIndex, Guid> contactRepository,
+    public MockCaContactHandler(ILinqRepository<ContactIndex, Guid> contactRepository,
         IObjectMapper objectMapper)
     {
         _contactRepository = contactRepository;

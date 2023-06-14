@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.UserAssets.Dtos;
@@ -15,10 +17,10 @@ namespace CAServer.UserAssets.Provider;
 public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
-    private readonly INESTRepository<UserTokenIndex, Guid> _userTokenIndexRepository;
+    private readonly ILinqRepository<UserTokenIndex, Guid> _userTokenIndexRepository;
 
     public UserAssetsProvider(IGraphQLHelper graphQlHelper,
-        INESTRepository<UserTokenIndex, Guid> userTokenIndexRepository)
+        ILinqRepository<UserTokenIndex, Guid> userTokenIndexRepository)
     {
         _graphQlHelper = graphQlHelper;
         _userTokenIndexRepository = userTokenIndexRepository;
@@ -130,17 +132,11 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 
     public async Task<List<UserTokenIndex>> GetUserDefaultTokenSymbolAsync(Guid userId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<UserTokenIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDefault).Value(true)));
-        QueryContainer Filter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
+        Expression<Func<UserTokenIndex, bool>> expression = p =>
+            p.UserId == userId && p.IsDefault == true;
+        var userTokenIndices = _userTokenIndexRepository.WhereClause(expression).OrderDesc(p => p.SortWeight).OrderASC(p=>p.Token.Symbol).OrderASC(p=>p.Token.ChainId).Skip(0).Take(1000).ToList();
 
-        IPromise<IList<ISort>> Sort(SortDescriptor<UserTokenIndex> s) => s.Descending(a => a.SortWeight)
-            .Ascending(a => a.Token.Symbol).Ascending(a => a.Token.ChainId);
-
-        var (totalCount, userTokenIndices) = await _userTokenIndexRepository.GetSortListAsync(Filter, sortFunc: Sort);
-
-        if (totalCount <= 0 || userTokenIndices.IsNullOrEmpty())
+        if (userTokenIndices.Count <= 0 || userTokenIndices.IsNullOrEmpty())
         {
             return new List<UserTokenIndex>();
         }
@@ -150,18 +146,10 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 
     public async Task<List<UserTokenIndex>> GetUserIsDisplayTokenSymbolAsync(Guid userId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<UserTokenIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDefault).Value(false)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDisplay).Value(true)));
-        QueryContainer Filter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
-
-        IPromise<IList<ISort>> Sort(SortDescriptor<UserTokenIndex> s) => s.Descending(a => a.SortWeight)
-            .Ascending(a => a.Token.Symbol).Ascending(a => a.Token.ChainId);
-
-        var (totalCount, userTokenIndices) = await _userTokenIndexRepository.GetSortListAsync(Filter, sortFunc: Sort);
-
-        if (totalCount <= 0 || userTokenIndices.IsNullOrEmpty())
+        Expression<Func<UserTokenIndex, bool>> expression = p =>
+            p.UserId == userId && p.IsDefault == false && p.IsDisplay == true;
+        var userTokenIndices = _userTokenIndexRepository.WhereClause(expression).OrderDesc(p => p.SortWeight).OrderASC(p=>p.Token.Symbol).OrderASC(p=>p.Token.ChainId).Skip(0).Take(1000).ToList();
+        if (userTokenIndices.Count <= 0 || userTokenIndices.IsNullOrEmpty())
         {
             return new List<UserTokenIndex>();
         }
@@ -171,14 +159,11 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 
     public async Task<List<(string, string)>> GetUserNotDisplayTokenAsync(Guid userId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<UserTokenIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDisplay).Value(false)));
-        QueryContainer Filter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
-
-        var (totalCount, userTokenIndices) = await _userTokenIndexRepository.GetListAsync(Filter);
-
-        if (totalCount <= 0 || userTokenIndices.IsNullOrEmpty())
+        Expression<Func<UserTokenIndex, bool>> expression = p =>
+            p.UserId == userId && p.IsDisplay == true;
+        var userTokenIndices = _userTokenIndexRepository.WhereClause(expression).OrderDesc(p => p.SortWeight).OrderASC(p=>p.Token.Symbol).OrderASC(p=>p.Token.ChainId).Skip(0).Take(1000).ToList();
+        
+        if (userTokenIndices.Count <= 0 || userTokenIndices.IsNullOrEmpty())
         {
             return new List<(string, string)>();
         }

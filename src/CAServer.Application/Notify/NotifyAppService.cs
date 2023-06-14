@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.Notify;
 using CAServer.IpInfo;
@@ -24,13 +26,13 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
 {
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
-    private readonly INESTRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
+    private readonly ILinqRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
     private readonly INotifyProvider _notifyProvider;
     private readonly IIpInfoAppService _ipInfoAppService;
 
     public NotifyAppService(IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
-        INESTRepository<NotifyRulesIndex, Guid> notifyRulesRepository,
+        ILinqRepository<NotifyRulesIndex, Guid> notifyRulesRepository,
         INotifyProvider notifyProvider,
         IIpInfoAppService ipInfoAppService)
     {
@@ -43,18 +45,12 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
 
     public async Task<PullNotifyResultDto> PullNotifyAsync(PullNotifyDto input)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<NotifyRulesIndex>, QueryContainer>>();
-        //mustQuery.Add(q => q.Term(i => i.Field(f => f.AppId).Value(input.AppId)));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceTypes).Terms(input.DeviceType.ToString())));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.AppVersions).Terms(input.AppVersion)));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceBrands).Terms(input.DeviceBrand)));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.OperatingSystemVersions).Terms(input.OperatingSystemVersion)));
+        Expression<Func<NotifyRulesIndex, bool>> expression = p =>
+            p.AppId == input.AppId && p.DeviceTypes.Contains(input.DeviceType.ToString()) &&
+            p.AppVersions.Contains(input.AppVersion) && p.DeviceBrands.Contains(input.DeviceBrand) && p.OperatingSystemVersions.Contains(input.OperatingSystemVersion);
+        var notifyRulesIndices = _notifyRulesRepository.WhereClause(expression).OrderDesc(p => p.NotifyId).Skip(0).Take(1000).ToList();
 
-        QueryContainer Filter(QueryContainerDescriptor<NotifyRulesIndex> f) => f.Bool(b => b.Must(mustQuery));
-        IPromise<IList<ISort>> Sort(SortDescriptor<NotifyRulesIndex> s) => s.Descending(t => t.NotifyId);
-
-        var (totalCount, notifyRulesIndices) = await _notifyRulesRepository.GetSortListAsync(Filter, sortFunc: Sort);
-        if (totalCount <= 0)
+        if (notifyRulesIndices.Count <= 0)
         {
             return null;
         }

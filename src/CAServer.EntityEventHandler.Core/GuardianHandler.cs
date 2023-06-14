@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.Guardian;
 using Microsoft.Extensions.Logging;
@@ -13,12 +14,12 @@ namespace CAServer.EntityEventHandler.Core;
 
 public class GuardianHandler : IDistributedEventHandler<GuardianEto>, ITransientDependency
 {
-    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
+    private readonly ILinqRepository<GuardianIndex, string> _guardianRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CaAccountHandler> _logger;
 
     public GuardianHandler(
-        INESTRepository<GuardianIndex, string> guardianRepository,
+        ILinqRepository<GuardianIndex, string> guardianRepository,
         IObjectMapper objectMapper,
         ILogger<CaAccountHandler> logger)
     {

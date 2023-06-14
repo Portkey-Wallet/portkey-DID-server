@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.ThirdPart.Dtos;
 using Nest;
@@ -13,10 +15,10 @@ namespace CAServer.ThirdPart.Provider;
 
 public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDependency
 {
-    private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
+    private readonly ILinqRepository<OrderIndex, Guid> _orderRepository;
     private readonly IObjectMapper _objectMapper;
 
-    public ThirdPartOrderProvider(INESTRepository<OrderIndex, Guid> orderRepository,
+    public ThirdPartOrderProvider(ILinqRepository<OrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper)
     {
         _orderRepository = orderRepository;
@@ -25,14 +27,10 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public async Task<OrderDto> GetThirdPartOrderAsync(string orderId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(orderId)));
+        Expression<Func<OrderIndex, bool>> expression = f=> f.Id ==Guid.Parse(orderId) ;
 
-        QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) =>
-            f.Bool(b => b.Must(mustQuery));
-
-        var (totalCount, userOrders) = await _orderRepository.GetListAsync(Filter);
-        if (totalCount < 1)
+        var userOrders = _orderRepository.WhereClause(expression).ToList();
+        if (userOrders.Count < 1)
         {
             return new OrderDto();
         }
@@ -42,18 +40,12 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public async Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, int skipCount, int maxResultCount)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userId)));
+        Expression<Func<OrderIndex, bool>> expression = f=> f.UserId == userId ;
 
-        QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) =>
-            f.Bool(b => b.Must(mustQuery));
+        var userOrders =
+            _orderRepository.WhereClause(expression).OrderDesc(f => f.LastModifyTime).ToList();
 
-        IPromise<IList<ISort>> Sort(SortDescriptor<OrderIndex> s) => s.Descending(a => a.LastModifyTime);
-
-        var (totalCount, userOrders) =
-            await _orderRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: maxResultCount, skip: skipCount);
-
-        if (totalCount < 1)
+        if (userOrders.Count() < 1)
         {
             return new List<OrderDto>();
         }

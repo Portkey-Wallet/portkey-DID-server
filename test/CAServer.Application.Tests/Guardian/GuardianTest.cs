@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Grain.Tests;
@@ -23,7 +24,7 @@ namespace CAServer.Guardian;
 public partial class GuardianTest : CAServerApplicationTestBase
 {
     private readonly IGuardianAppService _guardianAppService;
-    private readonly INESTRepository<GuardianIndex, string> _guardiansRepository;
+    private readonly ILinqRepository<GuardianIndex, string> _guardiansRepository;
     private readonly TestCluster _cluster;
 
     private readonly string _identifierHash = "03785a7eb80598f50d179e68da793e72152c94114f196486f1ff34ee6b294fd0";
@@ -33,7 +34,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
     public GuardianTest()
     {
         _guardianAppService = GetRequiredService<IGuardianAppService>();
-        _guardiansRepository = GetRequiredService<INESTRepository<GuardianIndex, string>>();
+        _guardiansRepository = GetRequiredService<ILinqRepository<GuardianIndex, string>>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using AElf.LinqToElasticSearch;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
@@ -19,7 +20,8 @@ namespace CAServer;
     typeof(CAServerApplicationModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),
-    typeof(CAServerDomainTestModule)
+    typeof(CAServerDomainTestModule),
+    typeof(BaseStorageMapperModule)
 )]
 public class CAServerApplicationTestModule : AbpModule
 {

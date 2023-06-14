@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.CAActivity.Dtos;
 using CAServer.Common;
 using CAServer.Entities.Es;
@@ -17,11 +20,11 @@ namespace CAServer.CAActivity.Provider;
 public class ActivityProvider : IActivityProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
-    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
+    private readonly ILinqRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
     private readonly ChainOptions _chainOptions;
 
 
-    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
+    public ActivityProvider(IGraphQLHelper graphQlHelper, ILinqRepository<CAHolderIndex, Guid> caHolderIndexRepository,
         IOptions<ChainOptions> chainOptions)
     {
         _graphQlHelper = graphQlHelper;
@@ -89,12 +92,11 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
 
     public async Task<string> GetCaHolderNickName(Guid userId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        Expression<Func<CAHolderIndex, bool>> expression = p =>
+            p.UserId == userId;
+        var caHolder = _caHolderIndexRepository.WhereClause(expression).Skip(0).Take(1000).ToList();
 
-        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
-        return caHolder?.NickName;
+        return caHolder?.FirstOrDefault()?.NickName;
     }
 
     public async Task<IndexerSymbols> GetTokenDecimalsAsync(string symbol)

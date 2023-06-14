@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos.Chain;
 using Microsoft.Extensions.Logging;
@@ -16,11 +17,11 @@ public class ChainHandler : IDistributedEventHandler<ChainCreateEto>,
     IDistributedEventHandler<ChainDeleteEto>,
     ITransientDependency
 {
-    private readonly INESTRepository<ChainsInfoIndex, string> _chainsInfoRepository;
+    private readonly ILinqRepository<ChainsInfoIndex, string> _chainsInfoRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ChainHandler> _logger;
 
-    public ChainHandler(INESTRepository<ChainsInfoIndex, string> chainsInfoRepository,
+    public ChainHandler(ILinqRepository<ChainsInfoIndex, string> chainsInfoRepository,
         IObjectMapper objectMapper,
         ILogger<ChainHandler> logger)
     {

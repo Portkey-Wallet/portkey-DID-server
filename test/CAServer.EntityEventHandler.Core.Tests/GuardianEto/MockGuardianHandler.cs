@@ -1,4 +1,5 @@
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using Volo.Abp.ObjectMapping;
 using CAServer.Entities.Es;
 using CAServer.Guardian;
@@ -8,11 +9,11 @@ using Volo.Abp.EventBus.Distributed;
 namespace CAServer.EntityEventHandler.Tests.Notify;
 public class MockGuardianHandler:IDistributedEventHandler<GuardianEto>,ITransientDependency
 {
-    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
+    private readonly ILinqRepository<GuardianIndex, string> _guardianRepository;
 
     private readonly IObjectMapper _objectMapper;
 
-    public MockGuardianHandler(INESTRepository<GuardianIndex, string> guardianRepository,
+    public MockGuardianHandler(ILinqRepository<GuardianIndex, string> guardianRepository,
         IObjectMapper objectMapper)
     {
         _guardianRepository = guardianRepository;

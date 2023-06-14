@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Notify.Dtos;
@@ -15,12 +16,12 @@ namespace CAServer.Notify;
 public partial class NotifyTest : CAServerApplicationTestBase
 {
     private readonly INotifyAppService _notifyAppService;
-    private readonly INESTRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
+    private readonly ILinqRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
 
     public NotifyTest()
     {
         _notifyAppService = GetRequiredService<INotifyAppService>();
-        _notifyRulesRepository = GetRequiredService<INESTRepository<NotifyRulesIndex, Guid>>();
+        _notifyRulesRepository = GetRequiredService<ILinqRepository<NotifyRulesIndex, Guid>>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.ContractEventHandler;
@@ -26,15 +27,15 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     IDistributedEventHandler<SocialRecoveryEto>,
     ITransientDependency
 {
-    private readonly INESTRepository<AccountRegisterIndex, Guid> _registerRepository;
-    private readonly INESTRepository<AccountRecoverIndex, Guid> _recoverRepository;
+    private readonly ILinqRepository<AccountRegisterIndex, Guid> _registerRepository;
+    private readonly ILinqRepository<AccountRecoverIndex, Guid> _recoverRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CaAccountHandler> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
 
-    public CaAccountHandler(INESTRepository<AccountRegisterIndex, Guid> registerRepository,
-        INESTRepository<AccountRecoverIndex, Guid> recoverRepository,
+    public CaAccountHandler(ILinqRepository<AccountRegisterIndex, Guid> registerRepository,
+        ILinqRepository<AccountRecoverIndex, Guid> recoverRepository,
         IObjectMapper objectMapper,
         ILogger<CaAccountHandler> logger,
         IDistributedEventBus distributedEventBus,

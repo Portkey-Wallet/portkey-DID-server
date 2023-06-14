@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
@@ -13,12 +14,12 @@ namespace CAServer.EntityEventHandler.Core;
 
 public class UserExtraInfoHandler : IDistributedEventHandler<UserExtraInfoEto>, ITransientDependency
 {
-    private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
+    private readonly ILinqRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CaAccountHandler> _logger;
 
     public UserExtraInfoHandler(
-        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
+        ILinqRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
         IObjectMapper objectMapper,
         ILogger<CaAccountHandler> logger)
     {

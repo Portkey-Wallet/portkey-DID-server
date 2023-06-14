@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using AElf.Types;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
@@ -27,8 +29,8 @@ namespace CAServer.Guardian;
 [DisableAuditing]
 public class GuardianAppService : CAServerAppService, IGuardianAppService
 {
-    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
-    private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
+    private readonly ILinqRepository<GuardianIndex, string> _guardianRepository;
+    private readonly ILinqRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly ILogger<GuardianAppService> _logger;
     private readonly ChainOptions _chainOptions;
     private readonly IGuardianProvider _guardianProvider;
@@ -36,8 +38,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IAppleUserProvider _appleUserProvider;
 
     public GuardianAppService(
-        INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
-        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
+        ILinqRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
+        ILinqRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient)
     {
         _guardianRepository = guardianRepository;
@@ -166,15 +168,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<string> GetHashFromIdentifierAsync(string guardianIdentifier)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
-
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(guardianIdentifier)));
-
-        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
-            f.Bool(b => b.Must(mustQuery));
-
-        var guardianGrainDto = await _guardianRepository.GetAsync(Filter);
-        return guardianGrainDto?.IdentifierHash;
+        Expression<Func<GuardianIndex, bool>> expression = f => f.Identifier == guardianIdentifier;
+        var guardianGrainDto = _guardianRepository.WhereClause(expression).Skip(0).Take(1000).ToList();
+        return guardianGrainDto?.FirstOrDefault()?.IdentifierHash;
     }
 
     private async Task<GetHolderInfoOutput> GetHolderInfosAsync(string guardianIdentifierHash, string chainId,
@@ -206,15 +202,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<Dictionary<string, string>> GetIdentifiersAsync(List<string> identifierHashList)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList)));
-
-        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
-            f.Bool(b => b.Must(mustQuery));
-
-        var guardians = await _guardianRepository.GetListAsync(Filter);
-
-        return guardians.Item2?.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
+        Expression<Func<GuardianIndex, bool>> expression = f => identifierHashList.Contains(f.IdentifierHash);
+        var guardians = _guardianRepository.WhereClause(expression).Skip(0).Take(1000).ToList();
+        return guardians?.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
     }
 
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
@@ -225,16 +215,15 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             {
                 return new List<UserExtraInfoIndex>();
             }
+            
+            Expression<Func<UserExtraInfoIndex, bool>> expression = null;
+            foreach (var identifier in identifiers)
+            {
+                expression = expression is null ? (p => p.Id == identifier) : expression.Or(p => p.Id == identifier);
+            }
+            var userExtraInfos = _userExtraInfoRepository.WhereClause(expression).ToList();
 
-            var mustQuery = new List<Func<QueryContainerDescriptor<UserExtraInfoIndex>, QueryContainer>>() { };
-            mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(identifiers)));
-
-            QueryContainer Filter(QueryContainerDescriptor<UserExtraInfoIndex> f) =>
-                f.Bool(b => b.Must(mustQuery));
-
-            var userExtraInfos = await _userExtraInfoRepository.GetListAsync(Filter);
-
-            return userExtraInfos.Item2;
+            return userExtraInfos;
         }
         catch (Exception ex)
         {

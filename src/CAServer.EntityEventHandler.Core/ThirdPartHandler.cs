@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.ThirdPart.Etos;
 using Microsoft.Extensions.Logging;
@@ -12,12 +13,12 @@ namespace CAServer.EntityEventHandler.Core;
 
 public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
 {
-    private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
+    private readonly ILinqRepository<OrderIndex, Guid> _orderRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ThirdPartHandler> _logger;
 
     public ThirdPartHandler(
-        INESTRepository<OrderIndex, Guid> orderRepository,
+        ILinqRepository<OrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         ILogger<ThirdPartHandler> logger)
     {

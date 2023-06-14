@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
+using Google.Protobuf.WellKnownTypes;
 using JetBrains.Annotations;
 using Nest;
 using Volo.Abp.DependencyInjection;
@@ -21,9 +24,9 @@ public interface IUserContactProvider
 
 public class UserContactProvider : IUserContactProvider, ISingletonDependency
 {
-    private readonly INESTRepository<ContactIndex, Guid> _contactIndexRepository;
+    private readonly ILinqRepository<ContactIndex, Guid> _contactIndexRepository;
 
-    public UserContactProvider(INESTRepository<ContactIndex, Guid> contactIndexRepository)
+    public UserContactProvider(ILinqRepository<ContactIndex, Guid> contactIndexRepository)
     {
         _contactIndexRepository = contactIndexRepository;
     }
@@ -32,25 +35,28 @@ public class UserContactProvider : IUserContactProvider, ISingletonDependency
         Guid userId,
         string chainId = null)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(usersAddresses)));
+        Expression<Func<ContactIndex, bool>> mustQuery = p => p.UserId == userId && p.IsDeleted == false;
         if (chainId != null)
         {
-            mustQuery.Add(q => q.Terms(t => t.Field("addresses.chainId").Terms(chainId)));
+            mustQuery =  mustQuery.And(p=>p.Addresses.Any(i=>i.ChainId == chainId));
         }
-
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
-
-        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var contactList = await _contactIndexRepository.GetListAsync(Filter);
+        
+        Expression<Func<ContactIndex, bool>> shouldQuery = null;
+        foreach (var usersAddress in usersAddresses) {
+            shouldQuery = shouldQuery is null ? (p => p.Addresses.Any(i => i.Address == usersAddress)) :shouldQuery.Or(p => p.Addresses.Any(i => i.Address == usersAddress));
+        }
+        
+        mustQuery = mustQuery.And(shouldQuery);
+        
+        var contactList = _contactIndexRepository.WhereClause(mustQuery).Skip(0).Take(1000).ToList();
+        
         var ans = new List<Tuple<ContactAddress, string>>();
-        if (contactList?.Item2 == null)
+        if (contactList.Count <= 0)
         {
             return ans;
         }
 
-        foreach (var contact in contactList.Item2)
+        foreach (var contact in contactList)
         {
             if (contact?.Addresses == null)
             {
@@ -68,13 +74,8 @@ public class UserContactProvider : IUserContactProvider, ISingletonDependency
     
     public async Task<List<ContactAddress>> GetContactByUserNameAsync(string name, Guid userId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.Name).Value(name)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
-
-        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var contact = await _contactIndexRepository.GetAsync(Filter);
-        return contact?.Addresses;
+        Expression<Func<ContactIndex, bool>> expression = p => p.UserId == userId && p.Name == name && !p.IsDeleted;
+        var contact = _contactIndexRepository.WhereClause(expression).Skip(0).Take(1000).ToList();
+        return contact?.FirstOrDefault()?.Addresses;
     }
 }

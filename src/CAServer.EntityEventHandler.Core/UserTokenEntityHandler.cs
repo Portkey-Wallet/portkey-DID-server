@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.Tokens.Etos;
 using Microsoft.Extensions.Logging;
@@ -12,10 +13,10 @@ namespace CAServer.EntityEventHandler.Core;
 public class UserTokenEntityHandler : EntityHandlerBase,
     IDistributedEventHandler<UserTokenEto>
 {
-    private readonly INESTRepository<UserTokenIndex,Guid> _userTokenIndexRepository;
+    private readonly ILinqRepository<UserTokenIndex,Guid> _userTokenIndexRepository;
     private readonly ILogger<UserTokenEntityHandler> _logger;
 
-    public UserTokenEntityHandler(INESTRepository<UserTokenIndex, Guid> userTokenIndexRepository, ILogger<UserTokenEntityHandler> logger)
+    public UserTokenEntityHandler(ILinqRepository<UserTokenIndex, Guid> userTokenIndexRepository, ILogger<UserTokenEntityHandler> logger)
     {
         _userTokenIndexRepository = userTokenIndexRepository;
         _logger = logger;

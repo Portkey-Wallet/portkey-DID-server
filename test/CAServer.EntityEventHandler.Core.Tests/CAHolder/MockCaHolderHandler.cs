@@ -1,4 +1,5 @@
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using Volo.Abp.ObjectMapping;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -8,11 +9,11 @@ using Volo.Abp.EventBus.Distributed;
 namespace CAServer.EntityEventHandler.Tests.CAHolder;
 public class MockCaHolderHandler:IDistributedEventHandler<CreateUserEto>,ITransientDependency
 {
-    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
+    private readonly ILinqRepository<CAHolderIndex, Guid> _caHolderRepository;
 
     private readonly IObjectMapper _objectMapper;
 
-    public MockCaHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
+    public MockCaHolderHandler(ILinqRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper)
     {
         _caHolderRepository = caHolderRepository;

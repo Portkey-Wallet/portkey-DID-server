@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
@@ -19,13 +20,13 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     IDistributedEventHandler<UpdateCAHolderEto>
     , ITransientDependency
 {
-    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
+    private readonly ILinqRepository<CAHolderIndex, Guid> _caHolderRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CAHolderHandler> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IUserTokenAppService _userTokenAppService;
 
-    public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
+    public CAHolderHandler(ILinqRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
         ILogger<CAHolderHandler> logger,
         IClusterClient clusterClient,

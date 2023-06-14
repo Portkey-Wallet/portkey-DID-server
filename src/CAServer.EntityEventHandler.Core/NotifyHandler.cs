@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Notify.Etos;
 using CAServer.Entities.Es;
 using Microsoft.Extensions.Logging;
@@ -14,11 +15,11 @@ namespace CAServer.EntityEventHandler.Core;
 public class NotifyHandler : IDistributedEventHandler<NotifyEto>,
     IDistributedEventHandler<DeleteNotifyEto>, ITransientDependency
 {
-    private readonly INESTRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
+    private readonly ILinqRepository<NotifyRulesIndex, Guid> _notifyRulesRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<NotifyHandler> _logger;
 
-    public NotifyHandler(INESTRepository<NotifyRulesIndex, Guid> notifyRulesRepository,
+    public NotifyHandler(ILinqRepository<NotifyRulesIndex, Guid> notifyRulesRepository,
         IObjectMapper objectMapper,
         ILogger<NotifyHandler> logger)
     {

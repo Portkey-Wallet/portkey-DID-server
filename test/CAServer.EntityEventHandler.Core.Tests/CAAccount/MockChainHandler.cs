@@ -1,4 +1,5 @@
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using Volo.Abp.ObjectMapping;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -8,11 +9,11 @@ using Volo.Abp.EventBus.Distributed;
 namespace CAServer.EntityEventHandler.Tests.CAAccount;
 public class MockCaAccountHandler:IDistributedEventHandler<AccountRegisterCreateEto>,ITransientDependency
 {
-    private readonly INESTRepository<AccountRegisterIndex, Guid> _chainRepository;
+    private readonly ILinqRepository<AccountRegisterIndex, Guid> _chainRepository;
 
     private readonly IObjectMapper _objectMapper;
 
-    public MockCaAccountHandler(INESTRepository<AccountRegisterIndex, Guid> chainRepository,
+    public MockCaAccountHandler(ILinqRepository<AccountRegisterIndex, Guid> chainRepository,
         IObjectMapper objectMapper)
     {
         _chainRepository = chainRepository;

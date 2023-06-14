@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.LinqToElasticSearch.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using Microsoft.Extensions.Logging;
@@ -15,11 +16,11 @@ public class CAContactHandler : IDistributedEventHandler<ContactCreateEto>,
     IDistributedEventHandler<ContactUpdateEto>,
     ITransientDependency
 {
-    private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
+    private readonly ILinqRepository<ContactIndex, Guid> _contactRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CAContactHandler> _logger;
 
-    public CAContactHandler(INESTRepository<ContactIndex, Guid> contactRepository,
+    public CAContactHandler(ILinqRepository<ContactIndex, Guid> contactRepository,
         IObjectMapper objectMapper,
         ILogger<CAContactHandler> logger)
     {
