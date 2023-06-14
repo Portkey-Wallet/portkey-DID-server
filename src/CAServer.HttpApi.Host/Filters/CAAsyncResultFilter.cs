@@ -9,16 +9,20 @@ public class CaAsyncResultFilter : IAsyncResultFilter
 {
     public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
     {
-        if (context.Result is not ResponseDto)
+        if (context.Result is ObjectResult objectResult)
         {
-            if (context.Result is ObjectResult)
+            if (objectResult?.Value is not ResponseDto)
             {
-                var objectResult = context.Result as ObjectResult;
-                context.Result = new ObjectResult(new ResponseDto
-                {
-                    Data = objectResult.Value
-                });
+                context.Result = new ObjectResult(new ResponseDto().ObjectResult(objectResult?.Value));
             }
+        }
+        else if (context.Result is EmptyResult)
+        {
+            context.Result = new ObjectResult(new ResponseDto().EmptyResult());
+        }
+        else if (context.Result is NoContentResult)
+        {
+            context.Result = new ObjectResult(new ResponseDto().NoContent());
         }
 
         await next();

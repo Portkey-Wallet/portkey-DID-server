@@ -37,7 +37,6 @@
     <Content Remove="Logs\**" />
     <EmbeddedResource Remove="Logs\**" />
     <None Remove="Logs\**" />
-    <None Include="appsettings.Development.json" />
   </ItemGroup>
 
 </Project>

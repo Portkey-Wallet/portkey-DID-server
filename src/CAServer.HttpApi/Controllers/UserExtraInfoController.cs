@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using CAServer.Response;
 using CAServer.UserExtraInfo;
 using CAServer.UserExtraInfo.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("UserExtraInfo")]
 [Route("api/app/userExtraInfo")]
-public class CAUserInfoController: CAServerController
+public class CAUserInfoController : CAServerController
 {
     private readonly IUserExtraInfoAppService _userExtraInfoAppService;
 
@@ -20,15 +21,25 @@ public class CAUserInfoController: CAServerController
     }
 
     [HttpPost("appleUserExtraInfo")]
-    public async Task<AddAppleUserExtraInfoResultDto> AddAppleUserExtraInfoAsync(AddAppleUserExtraInfoDto extraInfoDto)
+    public IActionResult AddAppleUserExtraInfoAsync(AddAppleUserExtraInfoDto extraInfoDto)
     {
-        return await _userExtraInfoAppService.AddAppleUserExtraInfoAsync(extraInfoDto);
+        return Ok(new ResponseDto()
+        {
+            Data = new AppleUserInfoDto()
+            {
+                Name = new AppleUserName()
+                {
+                    FirstName = "aaaa",
+                    LastName = "bbb"
+                }
+            }
+        });
+        //return await _userExtraInfoAppService.AddAppleUserExtraInfoAsync(extraInfoDto);
     }
-    
+
     [HttpGet("{id}")]
     public async Task<UserExtraInfoResultDto> GetUserExtraInfoAsync(string id)
     {
         return await _userExtraInfoAppService.GetUserExtraInfoAsync(id);
     }
-    
 }
