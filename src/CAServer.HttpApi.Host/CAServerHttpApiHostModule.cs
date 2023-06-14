@@ -8,6 +8,7 @@ using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
 using CAServer.Signature;
+using CAVerifierServer;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -64,8 +65,9 @@ public class CAServerHttpApiHostModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
-        
+        Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -310,7 +312,10 @@ public class CAServerHttpApiHostModule : AbpModule
         }
 
         app.UseAuthorization();
-
+        if (!env.IsDevelopment())
+        {
+            app.UseMiddleware<RealIpMiddleware>();
+        }
         //if (env.IsDevelopment())
         {
             app.UseSwagger();

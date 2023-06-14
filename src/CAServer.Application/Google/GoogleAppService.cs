@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Cache;
 using CAServer.Options;
+using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -33,7 +34,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
 
-    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress)
+    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress,OperationType type)
     {
         var cacheCount =
             await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
@@ -45,9 +46,14 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
             _sendVerifierCodeRequestLimitOptions.Limit);
         if (int.TryParse(cacheCount, out var count))
         {
-            return count >= _sendVerifierCodeRequestLimitOptions.Limit;
+            return type switch
+            {
+                OperationType.Register => count >= _sendVerifierCodeRequestLimitOptions.RegisterLimit,
+                OperationType.Recovery => count >= _sendVerifierCodeRequestLimitOptions.Limit,
+                OperationType.GuardianOperations => count >= _sendVerifierCodeRequestLimitOptions.Limit,
+                _ => false
+            };
         }
-
         return false;
     }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAVerifierServer.IpWhiteList;
 
 namespace CAServer.IpWhiteList;
 
@@ -7,9 +8,9 @@ public interface IIpWhiteListAppService
 {
     Task<List<string>> GetIpWhiteListAsync();
     
-    Task<bool> IsInWhiteListAsync();
+    Task<bool> IsInWhiteListAsync(string userIpAddress);
     
-    Task AddIpWhiteListAsync();
+    Task AddIpWhiteListAsync(AddUserIpToWhiteListRequestDto requestDto);
     
     Task RemoveIpWhiteListAsync();
     
