@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using CAServer.Verifier;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
@@ -43,7 +44,7 @@ public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
     public async Task IsGoogleRecaptchaOpen_Test()
     {
         var userIpAddress = "127.0.0.1";
-        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
+        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,OperationType.GuardianOperations);
         result.ShouldBeTrue();
     }
 }
