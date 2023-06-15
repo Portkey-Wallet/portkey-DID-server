@@ -55,7 +55,7 @@ public class CAVerifierController : CAServerController
         if (string.IsNullOrWhiteSpace(version) || version != CurrentVersion)
         {
             return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchatoken, sendVerificationRequestInput,
-                OperationType.GuardianOperations);
+                OperationType.Register);
         }
 
         var type = verifierServerInput.OperationType;
@@ -74,9 +74,54 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
     {
-        return _currentUser.IsAuthenticated
-            ? await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput, operationType)
-            : null;
+        if (!_currentUser.IsAuthenticated)
+        {
+            return null;
+        }
+
+        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType);
+    }
+
+    private async Task<VerifierServerResponse> CheckUserIpAndGoogleRecaptchaAsync(string recaptchaToken,
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
+    {
+        var userIpAddress = UserIpAddress(HttpContext);
+        if (string.IsNullOrWhiteSpace(userIpAddress))
+        {
+            return null;
+        }
+
+        var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
+
+
+        if (isInWhiteList)
+        {
+            return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
+                operationType);
+        }
+
+        var googleRecaptchaTokenSuccess = false;
+        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        {
+            return null;
+        }
+
+        try
+        {
+            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("GoogleRecaptchaTokenAsync error: {errorMessage}", e.Message);
+            return null;
+        }
+
+        if (googleRecaptchaTokenSuccess)
+        {
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        }
+
+        return null;
     }
 
     private async Task<VerifierServerResponse> GoogleRecaptchaAndSendVerifyCodeAsync(string recaptchaToken,
@@ -132,47 +177,14 @@ public class CAVerifierController : CAServerController
             return null;
         }
 
-        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput, operationType);
+        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType);
     }
 
     private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
     {
-        var userIpAddress = UserIpAddress(HttpContext);
-        if (string.IsNullOrWhiteSpace(userIpAddress))
-        {
-            return null;
-        }
-
-        var result = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
-        if (result)
-        {
-            return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken,
-                sendVerificationRequestInput, operationType);
-        }
-
-        if (string.IsNullOrWhiteSpace(recaptchaToken))
-        {
-            return null;
-        }
-
-        var googleRecaptchaTokenSuccess = false;
-        try
-        {
-            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("GoogleRecaptchaTokenAsync error: {errorMessage}", e.Message);
-            return null;
-        }
-
-        if (googleRecaptchaTokenSuccess)
-        {
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-        }
-
-        return null;
+        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
+            operationType);
     }
 
     [HttpPost("verifyCode")]

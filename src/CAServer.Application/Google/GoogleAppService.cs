@@ -34,7 +34,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
 
-    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress,OperationType type)
+    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress, OperationType type)
     {
         var cacheCount =
             await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
@@ -42,18 +42,20 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         {
             cacheCount = 0;
         }
+
         _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheCount),
             _sendVerifierCodeRequestLimitOptions.Limit);
         if (int.TryParse(cacheCount, out var count))
         {
             return type switch
             {
-                OperationType.Register => count >= _sendVerifierCodeRequestLimitOptions.RegisterLimit,
+                OperationType.Register => true,
                 OperationType.Recovery => count >= _sendVerifierCodeRequestLimitOptions.Limit,
                 OperationType.GuardianOperations => count >= _sendVerifierCodeRequestLimitOptions.Limit,
                 _ => false
             };
         }
+
         return false;
     }
 

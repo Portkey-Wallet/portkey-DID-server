@@ -1,5 +1,5 @@
 using System;
-using System.Runtime.InteropServices;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.IpWhiteList;
 using CAServer.IpWhiteList.Dtos;
@@ -16,7 +16,6 @@ public class RealIpMiddleware
     private readonly RequestDelegate _requestDelegate;
     private readonly ILogger<RealIpMiddleware> _logger;
     private readonly RealIpOptions _realIpOptions;
-    private const string LocalIpaddress = "127.0.0.1";
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly AddToWhiteListUrlsOptions _addToWhiteListUrlsOptions;
     private readonly ICurrentUser _currentUser;
@@ -46,18 +45,22 @@ public class RealIpMiddleware
 
         if (!headers.ContainsKey(_realIpOptions.HeaderKey))
         {
-            throw new ExternalException("Unknown ip address. no setting");
+            _logger.LogDebug("Unknown ip address. no setting");
+            await _requestDelegate(context);
+            return;
         }
 
         var ipArr = headers["X-Forwarded-For"].ToString().Split(',');
         if (ipArr.Length == 0)
         {
-            _logger.LogDebug("Unknown ip address");
-            throw new ExternalException("Unknown ip address. Refused visit server.ipArr is null");
+            _logger.LogDebug("Unknown ip address,Refused visit server.ipArr is null");
+            await _requestDelegate(context);
+            return;
         }
 
         var userIp = ipArr[0].Trim();
         var userId = _currentUser.Id ?? Guid.Empty;
+        _logger.LogDebug("current user id is {id}", userId);
         if (userId == Guid.Empty)
         {
             _logger.LogDebug("Unknown user id");
@@ -68,7 +71,7 @@ public class RealIpMiddleware
 
         var requestDto = new AddUserIpToWhiteListRequestDto(
         );
-        var checkUrls = _addToWhiteListUrlsOptions.Urls;
+        var checkUrls = _addToWhiteListUrlsOptions.Urls.Distinct();
         try
         {
             if (context.Request.Path.Value != null)
@@ -84,7 +87,7 @@ public class RealIpMiddleware
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "AddIpToWhiteList error:{error}",e.Message);
+            _logger.LogError("AddIpToWhiteList error:{error}", e);
         }
         await _requestDelegate(context);
     }
