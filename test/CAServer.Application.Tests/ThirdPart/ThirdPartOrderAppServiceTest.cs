@@ -1,12 +1,10 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using CAServer.Security;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using Volo.Abp.Users;
 using Xunit;
 
 namespace CAServer.ThirdPart;

@@ -30,33 +30,34 @@ public class GetAlchemySignatureDto
     [Required] public string Address { get; set; }
 }
 
+public class GetAlchemySignatureV2Dto
+{
+    [Required] public Dictionary<string, string> SignParams { get; set; }
+}
+
 public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
 {
     [Required] public string MerchantOrderNo { get; set; }
     public string OrderNo { get; set; }
     public string PayType { get; set; }
     public string Amount { get; set; }
-    public string Address { get; set; }
     public string PayTime { get; set; }
-    public string Network { get; set; }
     public string TxHash { get; set; }
     public string Message { get; set; }
     public string Signature { get; set; }
     public string NetworkFee { get; set; }
     public string RampFee { get; set; }
     public string CompleteTime { get; set; }
-    public string CryptoAmount { get; set; }
     public string OrderAddress { get; set; }
     public string PaymentType { get; set; }
-    public string CryptoActualAmount { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (string.IsNullOrWhiteSpace(Status) || string.IsNullOrWhiteSpace(Address))
+        if (string.IsNullOrWhiteSpace(Status) || string.IsNullOrWhiteSpace(Address) ||
+            string.IsNullOrWhiteSpace(Signature) || string.IsNullOrWhiteSpace(OrderNo) ||
+            string.IsNullOrWhiteSpace(Crypto))
         {
-            yield return new ValidationResult(
-                $"Invalid input, status :{Status} Address :{Address}"
-            );
+            yield return new ValidationResult("Invalid input");
         }
 
         if (!ThirdPartHelper.ValidateMerchantOrderNo(MerchantOrderNo))
@@ -73,4 +74,24 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
             );
         }
     }
+}
+
+public class SendAlchemyTxHashDto
+{
+    [Required] public string MerchantName { get; set; }
+    [Required] public string OrderId { get; set; }
+    [Required] public string TxHash { get; set; }
+}
+
+public class WaitToSendOrderInfoDto
+{
+    public string OrderNo { get; set; }
+    public string Crypto { get; set; }
+    public string CryptoAmount { get; set; }
+
+    public string TxHash { get; set; }
+    public string Network { get; set; }
+    public string Address { get; set; }
+    public string AppId { get; set; }
+    public string Signature { get; set; }
 }

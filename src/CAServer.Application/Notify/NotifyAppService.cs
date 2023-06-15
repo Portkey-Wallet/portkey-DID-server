@@ -54,6 +54,7 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         IPromise<IList<ISort>> Sort(SortDescriptor<NotifyRulesIndex> s) => s.Descending(t => t.NotifyId);
 
         var (totalCount, notifyRulesIndices) = await _notifyRulesRepository.GetSortListAsync(Filter, sortFunc: Sort);
+
         if (totalCount <= 0)
         {
             return null;

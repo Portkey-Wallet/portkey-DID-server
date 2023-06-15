@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CAServer.Dtos;
 using CAServer.Google;
+using CAServer.IpWhiteList;
 using CAServer.Switch;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
@@ -28,11 +29,12 @@ public class CAVerifierController : CAServerController
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
-    private const string CurrentVersion = "v1.2.9";
+    private const string CurrentVersion = "v1.3.0";
+    private readonly IIpWhiteListAppService _ipWhiteListAppService;
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
@@ -40,6 +42,7 @@ public class CAVerifierController : CAServerController
         _switchAppService = switchAppService;
         _googleAppService = googleAppService;
         _currentUser = currentUser;
+        _ipWhiteListAppService = ipWhiteListAppService;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -51,32 +54,79 @@ public class CAVerifierController : CAServerController
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
         if (string.IsNullOrWhiteSpace(version) || version != CurrentVersion)
         {
-            return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchatoken, sendVerificationRequestInput);
+            return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchatoken, sendVerificationRequestInput,
+                OperationType.Register, version);
         }
 
         var type = verifierServerInput.OperationType;
         return type switch
         {
             OperationType.Register => await RegisterSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput),
+                sendVerificationRequestInput, type, version),
             OperationType.Recovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput),
+                sendVerificationRequestInput, type, version),
             OperationType.GuardianOperations => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput),
+                sendVerificationRequestInput, type, version),
             _ => throw new ArgumentOutOfRangeException()
         };
     }
 
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string version)
     {
-        return _currentUser.IsAuthenticated
-            ? await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput)
-            : null;
+        if (!_currentUser.IsAuthenticated)
+        {
+            return null;
+        }
+
+        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType,
+            version);
+    }
+
+    private async Task<VerifierServerResponse> CheckUserIpAndGoogleRecaptchaAsync(string recaptchaToken,
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string version)
+    {
+        var userIpAddress = UserIpAddress(HttpContext);
+        if (string.IsNullOrWhiteSpace(userIpAddress))
+        {
+            return null;
+        }
+
+        var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
+
+
+        if (isInWhiteList)
+        {
+            return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
+                operationType, version);
+        }
+
+        var googleRecaptchaTokenSuccess = false;
+        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        {
+            return null;
+        }
+
+        try
+        {
+            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("GoogleRecaptchaTokenAsync error: {errorMessage}", e.Message);
+            return null;
+        }
+
+        if (googleRecaptchaTokenSuccess)
+        {
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        }
+
+        return null;
     }
 
     private async Task<VerifierServerResponse> GoogleRecaptchaAndSendVerifyCodeAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string version)
     {
         var userIpAddress = UserIpAddress(HttpContext);
         if (string.IsNullOrWhiteSpace(userIpAddress))
@@ -86,7 +136,8 @@ public class CAVerifierController : CAServerController
 
         _logger.LogDebug("userIp is {userIp}", userIpAddress);
         var switchStatus = _switchAppService.GetSwitchStatus(GoogleRecaptcha);
-        var googleRecaptchaOpen = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
+        var googleRecaptchaOpen =
+            await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, operationType, version);
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         if (!switchStatus.IsOpen || !googleRecaptchaOpen)
         {
@@ -118,7 +169,7 @@ public class CAVerifierController : CAServerController
     }
 
     private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string version)
     {
         //check guardian isExists;
         var guardianExists =
@@ -128,34 +179,15 @@ public class CAVerifierController : CAServerController
             return null;
         }
 
-        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput);
+        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType,
+            version);
     }
 
     private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string version)
     {
-        if (string.IsNullOrWhiteSpace(recaptchaToken))
-        {
-            return null;
-        }
-
-        var googleRecaptchaTokenSuccess = false;
-        try
-        {
-            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("GoogleRecaptchaTokenAsync error: {errorMessage}", e.Message);
-            return null;
-        }
-
-        if (googleRecaptchaTokenSuccess)
-        {
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-        }
-
-        return null;
+        return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
+            operationType, version);
     }
 
     [HttpPost("verifyCode")]
@@ -177,10 +209,24 @@ public class CAVerifierController : CAServerController
     }
 
     [HttpPost("isGoogleRecaptchaOpen")]
-    public async Task<bool> IsGoogleRecaptchaOpen()
+    public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version)
     {
         var userIpAddress = UserIpAddress(HttpContext);
-        return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
+        _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
+        if (version != CurrentVersion || string.IsNullOrWhiteSpace(version))
+        {
+            return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.GuardianOperations,
+                version);
+        }
+
+        var result = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
+        if (!result)
+        {
+            return true;
+        }
+
+        return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.GuardianOperations,
+            version);
     }
 
 

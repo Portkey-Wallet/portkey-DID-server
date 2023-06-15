@@ -14,7 +14,7 @@ using Xunit;
 
 namespace CAServer.Grain.Tests.ContractService;
 
-public  class ContractServiceGrainTests : CAServerGrainTestBase
+public class ContractServiceGrainTests : CAServerGrainTestBase
 {
     [Fact]
     public async Task CreateHolderInfoAsyncTests()

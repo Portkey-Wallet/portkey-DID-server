@@ -6,7 +6,6 @@ using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using CAServer.AppleAuth.Dtos;
-using CAServer.AppleAuth.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
