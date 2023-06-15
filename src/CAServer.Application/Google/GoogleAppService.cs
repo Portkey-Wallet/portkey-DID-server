@@ -18,6 +18,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private readonly ILogger<GoogleAppService> _logger;
     private readonly GoogleRecaptchaOptions _googleRecaptchaOption;
     private readonly IHttpClientFactory _httpClientFactory;
+    private const string CurrentVersion = "v1.3.0";
 
     public GoogleAppService(
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
@@ -34,7 +35,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
 
-    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress, OperationType type)
+    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress, OperationType type, string version)
     {
         var cacheCount =
             await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
@@ -45,18 +46,24 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
 
         _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheCount),
             _sendVerifierCodeRequestLimitOptions.Limit);
-        if (int.TryParse(cacheCount, out var count))
+        if (!int.TryParse(cacheCount, out var count))
         {
-            return type switch
-            {
-                OperationType.Register => true,
-                OperationType.Recovery => count >= _sendVerifierCodeRequestLimitOptions.Limit,
-                OperationType.GuardianOperations => count >= _sendVerifierCodeRequestLimitOptions.Limit,
-                _ => false
-            };
+            return false;
         }
 
-        return false;
+        if (string.IsNullOrWhiteSpace(version) || version != CurrentVersion)
+        {
+            return count >= _sendVerifierCodeRequestLimitOptions.Limit; 
+        }
+
+        return type switch
+        {
+            OperationType.Register => true,
+            OperationType.Recovery => count >= _sendVerifierCodeRequestLimitOptions.Limit,
+            OperationType.GuardianOperations => count >= _sendVerifierCodeRequestLimitOptions.Limit,
+            _ => false
+        };
+
     }
 
     public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken)
