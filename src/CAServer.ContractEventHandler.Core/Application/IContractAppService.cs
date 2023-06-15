@@ -346,7 +346,7 @@ public class ContractAppService : IContractAppService
         {
             var failedRecords = new List<SyncRecord>();
 
-            var records = await _recordsBucketContainer.GetValidatedRecords(chainId);
+            var records = await _recordsBucketContainer.GetValidatedRecordsAsync(chainId);
 
             if (records.IsNullOrEmpty())
             {
@@ -524,7 +524,7 @@ public class ContractAppService : IContractAppService
 
                 var list = OptimizeQueryEvents(queryEvents);
 
-                list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecords(chainId), list);
+                list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecordsAsync(chainId), list);
 
                 await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, list);
             }
@@ -546,7 +546,7 @@ public class ContractAppService : IContractAppService
             var validatedRecords = new List<SyncRecord>();
             var failedRecords = new List<SyncRecord>();
 
-            var storedToBeValidatedRecords = await _recordsBucketContainer.GetToBeValidatedRecords(chainId);
+            var storedToBeValidatedRecords = await _recordsBucketContainer.GetToBeValidatedRecordsAsync(chainId);
 
             if (storedToBeValidatedRecords.IsNullOrEmpty())
             {
