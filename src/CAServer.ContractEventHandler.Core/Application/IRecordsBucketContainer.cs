@@ -15,8 +15,8 @@ public interface IRecordsBucketContainer
 {
     Task AddValidatedRecordsAsync(string chainId, List<SyncRecord> records);
     Task AddToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records);
-    Task<List<SyncRecord>> GetValidatedRecords(string chainId);
-    Task<List<SyncRecord>> GetToBeValidatedRecords(string chainId);
+    Task<List<SyncRecord>> GetValidatedRecordsAsync(string chainId);
+    Task<List<SyncRecord>> GetToBeValidatedRecordsAsync(string chainId);
     Task SetValidatedRecordsAsync(string chainId, List<SyncRecord> records);
     Task SetToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records);
 }
@@ -89,7 +89,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         }
     }
 
-    public async Task<List<SyncRecord>> GetValidatedRecords(string chainId)
+    public async Task<List<SyncRecord>> GetValidatedRecordsAsync(string chainId)
     {
         var list = new List<SyncRecord>();
 
@@ -108,7 +108,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
         return list;
     }
 
-    public async Task<List<SyncRecord>> GetToBeValidatedRecords(string chainId)
+    public async Task<List<SyncRecord>> GetToBeValidatedRecordsAsync(string chainId)
     {
         var list = new List<SyncRecord>();
 
