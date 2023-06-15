@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using CAServer.AppleMigrate;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
@@ -302,5 +303,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         : f.DeviceTypes.Select(t => ((DeviceType)t.DeviceType.Value).ToString())))
             .ForMember(t => t.StyleType, m => m.MapFrom(f => (StyleType)f.StyleType.Value));
         //.ForMember()
+        
+        CreateMap<GuardianGrainDto, AppleMigrateResponseDto>();
     }
 }

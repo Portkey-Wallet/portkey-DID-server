@@ -43,4 +43,8 @@
       <Orleans_CodeGenInputs Remove="Grain\Activity\IActivityGrain.cs" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Grain\AppleMigrate" />
+    </ItemGroup>
+
 </Project>
