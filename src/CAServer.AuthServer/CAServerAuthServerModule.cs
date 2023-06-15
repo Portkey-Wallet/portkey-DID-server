@@ -213,6 +213,7 @@ public class CAServerAuthServerModule : AbpModule
                     .AllowCredentials();
             });
         });
+        context.Services.AddHttpClient();
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
