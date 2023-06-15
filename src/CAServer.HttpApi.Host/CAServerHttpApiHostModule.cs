@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CAServer.Filters;
@@ -30,6 +31,7 @@ using Orleans.Providers.MongoDB.Configuration;
 using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
+using Volo.Abp.AspNetCore.Mvc.ExceptionHandling;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
@@ -79,10 +81,14 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
-        
+
         context.Services.AddMvc(options =>
         {
-            options.Filters.Add((typeof(CaAsyncResultFilter)));
+            options.Filters.Add(typeof(CaAsyncResultFilter));
+
+            options.Filters.ReplaceOne(
+                x => (x as ServiceFilterAttribute)?.ServiceType?.Name == nameof(AbpExceptionFilter),
+                new ServiceFilterAttribute(typeof(CAExceptionFilter)));
         });
     }
 
@@ -320,10 +326,7 @@ public class CAServerHttpApiHostModule : AbpModule
         if (env.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseAbpSwaggerUI(options =>
-            {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API");
-            });
+            app.UseAbpSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API"); });
         }
 
         app.UseAuditing();
