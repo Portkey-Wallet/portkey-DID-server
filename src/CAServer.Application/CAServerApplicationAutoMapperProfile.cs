@@ -250,7 +250,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<GoogleUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<AppleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
-        CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>();
+        CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>().ReverseMap();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoEto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoResultDto>()
             .ForMember(t => t.IsPrivate, m => m.MapFrom(f => f.IsPrivateEmail));
