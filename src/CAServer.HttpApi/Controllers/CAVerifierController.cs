@@ -212,6 +212,11 @@ public class CAVerifierController : CAServerController
     public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version)
     {
         var userIpAddress = UserIpAddress(HttpContext);
+        var result = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
+        if (!result)
+        {
+            return false;
+        }
         return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.GuardianOperations,
             version);
     }
