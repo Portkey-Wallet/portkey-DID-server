@@ -25,8 +25,7 @@ public interface IContractAppService
     Task QueryAndSyncAsync();
 
     Task InitializeIndexAsync();
-
-    Task Clear();
+    
     // Task InitializeQueryRecordIndexAsync();
     // Task InitializeIndexAsync(long blockHeight);
 }
