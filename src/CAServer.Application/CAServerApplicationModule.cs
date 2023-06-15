@@ -42,6 +42,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<TokenListOptions>(configuration.GetSection("Tokens"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfo"));
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
+        Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();

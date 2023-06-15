@@ -180,7 +180,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 token.Price = priceDict[token.Symbol];
                 token.BalanceInUsd = balanceInUsd.ToString();
             }
-
+            
             return dto;
         }
         catch (Exception e)
