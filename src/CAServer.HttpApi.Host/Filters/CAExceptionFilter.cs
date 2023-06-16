@@ -90,13 +90,16 @@ public class CAExceptionFilter : IAsyncExceptionFilter, ITransientDependency
         {
             context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
 
-            //var mess = new RemoteServiceErrorResponse(remoteServiceErrorInfo);
-
-            logger.LogInformation("error message: {message}", context.Exception.Message);
-            context.Result = new ObjectResult(new ResponseDto()
+            var code = "50000";
+            if (context.Exception is IHasErrorCode hasErrorCodeException &&
+                !string.IsNullOrWhiteSpace(hasErrorCodeException.Code))
             {
-                Message = context.Exception.Message
-            });
+                code = hasErrorCodeException.Code;
+            }
+
+            context.Result =
+                new ObjectResult(
+                    new ResponseDto().UnhandedExceptionResult(code, context.Exception.Message));
         }
 
         context.Exception = null; //Handled!
