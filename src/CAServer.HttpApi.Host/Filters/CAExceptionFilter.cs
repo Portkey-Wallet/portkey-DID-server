@@ -90,7 +90,7 @@ public class CAExceptionFilter : IAsyncExceptionFilter, ITransientDependency
         {
             context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
 
-            var code = "50000";
+            var code = ResponseCode.UnhandledException;
             if (context.Exception is IHasErrorCode hasErrorCodeException &&
                 !string.IsNullOrWhiteSpace(hasErrorCodeException.Code))
             {
