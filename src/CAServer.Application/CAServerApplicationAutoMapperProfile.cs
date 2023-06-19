@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using CAServer.AppleMigrate.Dtos;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
@@ -250,7 +251,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<GoogleUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<AppleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
-        CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>();
+        CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>().ReverseMap();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoEto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoResultDto>()
             .ForMember(t => t.IsPrivate, m => m.MapFrom(f => f.IsPrivateEmail));
@@ -307,5 +308,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         : f.DeviceTypes.Select(t => ((DeviceType)t.DeviceType.Value).ToString())))
             .ForMember(t => t.StyleType, m => m.MapFrom(f => (StyleType)f.StyleType.Value));
         //.ForMember()
+        
+        CreateMap<GuardianGrainDto, AppleMigrateResponseDto>();
     }
 }
