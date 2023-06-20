@@ -11,7 +11,7 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.EntityEventHandler.Core;
 
-public class GuardianHandler : IDistributedEventHandler<GuardianEto>, ITransientDependency
+public class GuardianHandler : IDistributedEventHandler<GuardianEto>,IDistributedEventHandler<GuardianDeleteEto>, ITransientDependency
 {
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     private readonly IObjectMapper _objectMapper;
@@ -36,6 +36,23 @@ public class GuardianHandler : IDistributedEventHandler<GuardianEto>, ITransient
             await _guardianRepository.AddAsync(guardian);
 
             _logger.LogDebug($"Guardian add success: {JsonConvert.SerializeObject(guardian)}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Message}: {Data}", "Guardian add fail",
+                JsonConvert.SerializeObject(eventData));
+        }
+    }
+
+    public async Task HandleEventAsync(GuardianDeleteEto eventData)
+    {
+        try
+        {
+            var guardian = _objectMapper.Map<GuardianDeleteEto, GuardianIndex>(eventData);
+
+            await _guardianRepository.DeleteAsync(guardian);
+
+            _logger.LogDebug($"Guardian delete success: {JsonConvert.SerializeObject(guardian)}");
         }
         catch (Exception ex)
         {
