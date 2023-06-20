@@ -74,7 +74,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
-            _logger.LogDebug("This alchemy order {grainId} will be updated.", grainId);
+            _logger.LogInformation("This alchemy order {grainId} will be updated.", grainId);
 
             var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
 
