@@ -38,17 +38,9 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
         var migratedUserId = input.MigratedUserId;
 
         var guardianGrainDto = await AddGuardianAsync(guardian, migratedUserId);
-        if (guardianGrainDto.Success)
-        {
-            Logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
-                JsonConvert.SerializeObject(guardianGrainDto.Data));
-
-            await _distributedEventBus.PublishAsync(
-                ObjectMapper.Map<GuardianGrainDto, GuardianEto>(guardianGrainDto.Data));
-        }
 
         var userInfoDto = await GetUserInfoAsync(input.GuardianIdentifier);
-        userInfoDto.Id = input.GuardianIdentifier;
+        userInfoDto.Id = input.MigratedUserId;
 
         Logger.LogInformation("user extra info : {info}", JsonConvert.SerializeObject(userInfoDto));
         await AddUserInfoAsync(ObjectMapper.Map<UserExtraInfoGrainDto, Verifier.Dtos.UserExtraInfo>(userInfoDto));
@@ -60,8 +52,11 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
             FirstName = userInfoDto.FirstName,
             LastName = userInfoDto.LastName,
         });
+        
+        await _distributedEventBus.PublishAsync(
+            ObjectMapper.Map<GuardianGrainDto, GuardianDeleteEto>(guardian));
 
-        return ObjectMapper.Map<GuardianGrainDto, AppleMigrateResponseDto>(guardianGrainDto.Data);
+        return ObjectMapper.Map<GuardianGrainDto, AppleMigrateResponseDto>(guardianGrainDto);
     }
 
     private GuardianGrainDto GetGuardian(string guardianIdentifier)
@@ -79,7 +74,7 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
         return guardianGrainDto.Data;
     }
 
-    private async Task<GrainResultDto<GuardianGrainDto>> AddGuardianAsync(GuardianGrainDto guardianGrainDto,
+    private async Task<GuardianGrainDto> AddGuardianAsync(GuardianGrainDto guardianGrainDto,
         string migratedUserId)
     {
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", migratedUserId);
@@ -93,7 +88,14 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
             throw new UserFriendlyException(resultDto.Message);
         }
 
-        return resultDto;
+        Logger.LogInformation("Add guardian success, prepare to publish to mq: {data}",
+            JsonConvert.SerializeObject(resultDto.Data));
+
+        await _distributedEventBus.PublishAsync(
+            ObjectMapper.Map<GuardianGrainDto, GuardianEto>(resultDto.Data));
+
+
+        return resultDto.Data;
     }
 
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)

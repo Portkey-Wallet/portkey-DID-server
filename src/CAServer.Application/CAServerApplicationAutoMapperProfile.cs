@@ -310,5 +310,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         //.ForMember()
         
         CreateMap<GuardianGrainDto, AppleMigrateResponseDto>();
+        CreateMap<GuardianGrainDto, GuardianDeleteEto>();
     }
 }
