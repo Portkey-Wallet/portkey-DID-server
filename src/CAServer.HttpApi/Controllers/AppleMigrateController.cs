@@ -10,6 +10,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("AppleMigrate")]
 [Route("api/app/apple")]
+[IgnoreAntiforgeryToken]
 public class AppleMigrateController : CAServerController
 {
     private readonly IAppleMigrateAppService _appleMigrateAppService;
