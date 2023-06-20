@@ -60,7 +60,11 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetAlchemyFiatListAsyncTest()
     {
-        var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync();
+        var input = new GetAlchemyFiatListDto()
+        {
+            Type = "BUY"
+        };
+        var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
         result.Success.ShouldBe("Success");
     }
 
