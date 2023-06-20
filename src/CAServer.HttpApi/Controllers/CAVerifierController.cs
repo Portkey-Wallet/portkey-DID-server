@@ -101,6 +101,7 @@ public class CAVerifierController : CAServerController
                 operationType, version);
         }
 
+        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         var googleRecaptchaTokenSuccess = false;
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
@@ -215,7 +216,7 @@ public class CAVerifierController : CAServerController
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
         if (version != CurrentVersion || string.IsNullOrWhiteSpace(version))
         {
-            return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.GuardianOperations,
+            return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.Register,
                 version);
         }
 
