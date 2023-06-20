@@ -49,9 +49,12 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     {
         try
         {
+            _logger.LogInformation("UpdateAlchemyOrderAsync input: {input} get from alchemy",
+                JsonConvert.SerializeObject(input));
+
             if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
             {
-                _logger.LogWarning("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
+                _logger.LogError("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
                     input.OrderNo);
                 return new BasicOrderResult();
             }
@@ -98,6 +101,8 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     {
         try
         {
+            _logger.LogInformation("UpdateAlchemyTxHash input: {input} will send to alchemy",
+                JsonConvert.SerializeObject(input));
             Guid grainId = ThirdPartHelper.GetOrderId(input.OrderId);
             var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
             if (orderData == null)
