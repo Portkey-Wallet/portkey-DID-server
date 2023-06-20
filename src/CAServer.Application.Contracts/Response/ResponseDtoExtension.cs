@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
 namespace CAServer.Response;
 
 public static class ResponseDtoExtension
@@ -29,6 +32,15 @@ public static class ResponseDtoExtension
     {
         responseDto.Code = Prefix + code;
         responseDto.Message = message;
+        return responseDto;
+    }
+
+    public static ValidationResponseDto ValidationResult(this ValidationResponseDto responseDto, string code,
+        string message, IList<ValidationResult> validationErrors)
+    {
+        responseDto.Code = code;
+        responseDto.Message = message;
+        responseDto.ValidationErrors = validationErrors;
         return responseDto;
     }
 }

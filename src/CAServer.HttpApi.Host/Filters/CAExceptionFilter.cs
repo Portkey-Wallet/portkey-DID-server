@@ -19,6 +19,7 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.ExceptionHandling;
 using Volo.Abp.Http;
 using Volo.Abp.Json;
+using Volo.Abp.Validation;
 
 namespace CAServer.Filters;
 
@@ -95,6 +96,18 @@ public class CAExceptionFilter : IAsyncExceptionFilter, ITransientDependency
                 !string.IsNullOrWhiteSpace(hasErrorCodeException.Code))
             {
                 code = hasErrorCodeException.Code;
+            }
+
+            if (context.Exception is IHasValidationErrors { ValidationErrors.Count: > 0 } validationErrors)
+            {
+                code = "-1";
+                context.Result =
+                    new ObjectResult(
+                        new ValidationResponseDto().ValidationResult(code, context.Exception.Message,
+                            validationErrors.ValidationErrors));
+                
+                context.Exception = null;
+                return;
             }
 
             context.Result =

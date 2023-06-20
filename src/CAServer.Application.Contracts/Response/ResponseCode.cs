@@ -9,4 +9,6 @@ public static  class ResponseCode
     public const string EmptyResult = "20011";
     public const string NoContent = "20014";
     public const string UnhandledException = "50000";
+
+    public const string NotExist = "30001";
 }
