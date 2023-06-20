@@ -215,7 +215,7 @@ public class CAVerifierController : CAServerController
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
         if (version != CurrentVersion || string.IsNullOrWhiteSpace(version))
         {
-            return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.GuardianOperations,
+            return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.Register,
                 version);
         }
 
