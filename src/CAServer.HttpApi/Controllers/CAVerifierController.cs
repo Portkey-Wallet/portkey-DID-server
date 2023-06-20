@@ -101,6 +101,7 @@ public class CAVerifierController : CAServerController
                 operationType, version);
         }
 
+        await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
         var googleRecaptchaTokenSuccess = false;
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
