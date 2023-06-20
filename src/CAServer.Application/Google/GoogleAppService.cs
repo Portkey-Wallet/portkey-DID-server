@@ -51,10 +51,6 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
             return false;
         }
 
-        if (string.IsNullOrWhiteSpace(version) || version != CurrentVersion)
-        {
-            return count >= _sendVerifierCodeRequestLimitOptions.Limit; 
-        }
 
         return type switch
         {
@@ -63,7 +59,6 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
             OperationType.GuardianOperations => count >= _sendVerifierCodeRequestLimitOptions.Limit,
             _ => false
         };
-
     }
 
     public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken)
