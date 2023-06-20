@@ -41,7 +41,8 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
         HttpResponseMessage respMsg = await client.GetAsync(_alchemyOptions.BaseUrl + path);
         var respStr = await respMsg.Content.ReadAsStringAsync();
 
-        _logger.LogInformation("[ACH][get]request url: \n{url}", _alchemyOptions.BaseUrl + path);
+        _logger.LogInformation("[ACH][{StatusCode}][get]request url: \n{url}", respMsg.StatusCode,
+            _alchemyOptions.BaseUrl + path);
 
         return respStr;
     }
@@ -53,11 +54,13 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
         StringContent str2Json = new StringContent(inputStr, Encoding.UTF8, "application/json");
 
         var client = _httpClientFactory.CreateClient();
+
         SetAlchemyRequestHeader(client);
         HttpResponseMessage respMsg = await client.PostAsync(_alchemyOptions.BaseUrl + path, str2Json);
         var respStr = await respMsg.Content.ReadAsStringAsync();
 
-        _logger.Debug("[ACH][post]request url: \n{url}", _alchemyOptions.BaseUrl + path);
+        _logger.LogInformation("[ACH][{StatusCode}][post]request url: \n{url}", respMsg.StatusCode,
+            _alchemyOptions.BaseUrl + path);
 
         return respStr;
     }

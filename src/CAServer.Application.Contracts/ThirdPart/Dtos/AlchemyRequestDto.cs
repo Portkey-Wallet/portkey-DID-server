@@ -13,6 +13,11 @@ public class GetAlchemyCryptoListDto
     public string Fiat { get; set; }
 }
 
+public class GetAlchemyFiatListDto
+{
+    public string Type { get; set; } = "BUY";
+}
+
 public class GetAlchemyOrderQuoteDto
 {
     [Required] public string Crypto { get; set; }
@@ -28,11 +33,6 @@ public class GetAlchemyOrderQuoteDto
 public class GetAlchemySignatureDto
 {
     [Required] public string Address { get; set; }
-}
-
-public class GetAlchemySignatureV2Dto
-{
-    [Required] public Dictionary<string, string> SignParams { get; set; }
 }
 
 public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject

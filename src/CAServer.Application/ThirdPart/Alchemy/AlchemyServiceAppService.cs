@@ -49,12 +49,15 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
     // get Alchemy fiat list
-    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync()
+    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
         try
         {
+            string queryString = string.Join("&", input.GetType().GetProperties()
+                .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(input)}"));
+
             return JsonConvert.DeserializeObject<AlchemyFiatListDto>(
-                await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.FiatListUri));
+                await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.FiatListUri + "?" + queryString));
         }
         catch (Exception e)
         {
@@ -68,9 +71,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         try
         {
-            string queryString = string.Join("&",
-                input.GetType().GetProperties()
-                    .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(input)}"));
+            string queryString = string.Join("&", input.GetType().GetProperties()
+                .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(input)}"));
 
             return JsonConvert.DeserializeObject<AlchemyCryptoListDto>(
                 await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.CryptoListUri + "?" + queryString));
@@ -98,6 +100,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
     }
 
+    // generate alchemy
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         try
