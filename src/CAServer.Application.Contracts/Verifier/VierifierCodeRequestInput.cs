@@ -1,3 +1,5 @@
+using System;
+
 namespace CAServer.Verifier;
 
 public class VierifierCodeRequestInput
@@ -10,4 +12,6 @@ public class VierifierCodeRequestInput
     public string ChainId { get; set; }
     public string Salt { get; set; }
     public string GuardianIdentifierHash { get; set; }
+    
+    public VerifierCodeOperationType OperationType { get; set; }
 }

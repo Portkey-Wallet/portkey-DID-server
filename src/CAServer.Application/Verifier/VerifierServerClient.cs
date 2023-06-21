@@ -78,8 +78,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
     public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input)
     {
-        var endPoint =
-            await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+        var endPoint = "http://localhost:5588";
+            // await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
         if (null == endPoint)
         {
             _logger.LogInformation("No Available Service Tips.{VerifierId}", input.VerifierId);
@@ -90,6 +90,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
+        var type = Convert.ToInt32(input.OperationType);
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {
@@ -97,7 +98,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "code", input.VerificationCode },
             { "guardianIdentifier", input.GuardianIdentifier },
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
-            { "salt", input.Salt }
+            { "salt", input.Salt },
+            { "operationType", type.ToString()}
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
