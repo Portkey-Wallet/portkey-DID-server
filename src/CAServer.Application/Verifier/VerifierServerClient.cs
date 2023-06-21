@@ -30,7 +30,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
-        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory,true);
+        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
     }
 
@@ -78,8 +78,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
     public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input)
     {
-        var endPoint = "http://localhost:5588";
-            // await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+        var endPoint =
+            await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
         if (null == endPoint)
         {
             _logger.LogInformation("No Available Service Tips.{VerifierId}", input.VerifierId);
@@ -99,7 +99,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", input.GuardianIdentifier },
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
-            { "operationType", type.ToString()}
+            { "operationType", type.ToString() }
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }

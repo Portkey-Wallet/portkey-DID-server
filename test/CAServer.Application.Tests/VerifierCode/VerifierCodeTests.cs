@@ -122,7 +122,8 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
             VerifierSessionId = Guid.NewGuid().ToString(),
             GuardianIdentifier = FakeEmail,
             VerifierId = DefaultVerifierId,
-            ChainId = DefaultChainId
+            ChainId = DefaultChainId,
+            OperationType = VerifierCodeOperationType.AddGuardian
         };
         var response = await _verifierAppService.VerifyCodeAsync(input);
         response.VerificationDoc.ShouldBe("verificationDoc");
@@ -134,7 +135,9 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
             VerifierSessionId = Guid.NewGuid().ToString(),
             GuardianIdentifier = FakeEmail,
             VerifierId = DefaultVerifierId,
-            ChainId = SideChainId
+            ChainId = SideChainId,
+            OperationType = VerifierCodeOperationType.AddGuardian
+            
         };
         try
         {
