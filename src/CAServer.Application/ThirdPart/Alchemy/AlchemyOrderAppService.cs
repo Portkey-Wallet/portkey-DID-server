@@ -11,6 +11,7 @@ using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
@@ -27,6 +28,11 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
+    
+    private readonly JsonSerializerSettings _setting = new()
+    {
+        ContractResolver = new CamelCasePropertyNamesContractResolver()
+    };
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
@@ -119,7 +125,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
                 orderPendingUpdate.Network, orderPendingUpdate.Address);
 
             await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.UpdateSellOrderUri,
-                JsonConvert.SerializeObject(orderPendingUpdate));
+                JsonConvert.SerializeObject(orderPendingUpdate, Formatting.None, _setting));
         }
         catch (Exception e)
         {
