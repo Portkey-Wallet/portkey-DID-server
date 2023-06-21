@@ -90,7 +90,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
-        var type = Convert.ToInt32(input.OperationType);
+        var type = Convert.ToInt32(input.VerifierCodeOperationType);
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {

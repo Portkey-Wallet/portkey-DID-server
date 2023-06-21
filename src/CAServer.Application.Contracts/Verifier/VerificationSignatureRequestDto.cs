@@ -12,13 +12,13 @@ public class VerificationSignatureRequestDto : IValidatableObject
 
     [Required] public string VerifierId { get; set; }
     [Required] public string ChainId { get; set; }
-    [Required] public VerifierCodeOperationType OperationType {get;set; }
+    [Required] public VerifierCodeOperationType VerifierCodeOperationType {get;set; }
 
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (VerifierSessionId.IsNullOrEmpty() || VerifierId.IsNullOrEmpty() ||
-            VerificationCode.IsNullOrEmpty() || GuardianIdentifier.IsNullOrEmpty() || ChainId.IsNullOrEmpty() || OperationType == 0)
+            VerificationCode.IsNullOrEmpty() || GuardianIdentifier.IsNullOrEmpty() || ChainId.IsNullOrEmpty() || VerifierCodeOperationType == 0)
         {
             yield return new ValidationResult("Input is null or empty");
         }
