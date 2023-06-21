@@ -13,7 +13,7 @@ public class OrderEto
     public string Address { get; set; }
     public string Crypto { get; set; }
     public string CryptoPrice { get; set; }
-    public object ThirdPartOrderNo { get; set; }
+    public string ThirdPartOrderNo { get; set; }
     public string Network { get; set; }
     public string CryptoAmount { get; set; }
     public string Fiat { get; set; }

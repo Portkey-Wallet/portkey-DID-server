@@ -77,14 +77,13 @@ public class AlchemyController : CAServerController
     }
 
     [HttpGet("fiatList")]
-    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync()
+    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemyFiatListAsync();
+        return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
     }
 
     [HttpGet("cryptoList")]
-    public async Task<AlchemyCryptoListDto> GetAchCryptoListAsync(
-        GetAlchemyCryptoListDto input)
+    public async Task<AlchemyCryptoListDto> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input);
     }

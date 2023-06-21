@@ -11,6 +11,7 @@ using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
@@ -27,6 +28,11 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
+
+    private readonly JsonSerializerSettings _setting = new()
+    {
+        ContractResolver = new CamelCasePropertyNamesContractResolver()
+    };
 
     public AlchemyOrderAppService(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
@@ -49,9 +55,13 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     {
         try
         {
+            _logger.LogInformation(
+                "Update Order OrderNo:{MerchantOrderNo}, MerchantOrderNo:{OrderNo}, Status:{Status}, get from alchemy",
+                input.MerchantOrderNo, input.OrderNo, input.Status);
+
             if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
             {
-                _logger.LogWarning("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
+                _logger.LogError("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
                     input.OrderNo);
                 return new BasicOrderResult();
             }
@@ -74,7 +84,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
-            _logger.LogDebug("This alchemy order {grainId} will be updated.", grainId);
+            _logger.LogInformation("This alchemy order {grainId} will be updated.", grainId);
 
             var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
 
@@ -98,12 +108,14 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     {
         try
         {
-            Guid grainId = ThirdPartHelper.GetOrderId(input.OrderId);
-            var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
+            _logger.LogInformation("UpdateAlchemyTxHash OrderId: {OrderId} TxHash:{TxHash} will send to alchemy",
+                input.OrderId, input.TxHash);
+            Guid orderId = ThirdPartHelper.GetOrderId(input.OrderId);
+            var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(orderId.ToString());
             if (orderData == null)
             {
-                _logger.LogError("No order found for {grainId}", grainId);
-                throw new UserFriendlyException($"No order found for {grainId}");
+                _logger.LogError("No order found for {orderId}", orderId);
+                throw new UserFriendlyException($"No order found for {orderId}");
             }
 
             var orderPendingUpdate = _objectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
@@ -114,7 +126,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
                 orderPendingUpdate.Network, orderPendingUpdate.Address);
 
             await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.UpdateSellOrderUri,
-                JsonConvert.SerializeObject(orderPendingUpdate));
+                JsonConvert.SerializeObject(orderPendingUpdate, Formatting.None, _setting));
         }
         catch (Exception e)
         {

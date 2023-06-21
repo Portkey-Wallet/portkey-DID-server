@@ -9,6 +9,7 @@ public class AlchemyBaseResponseDto
     public string ReturnCode { get; set; } = "0000";
     public string ReturnMsg { get; set; } = "";
     public string Extend { get; set; } = "";
+    public string TraceId { get; set; }
 }
 
 public class AlchemyTokenDto : AlchemyBaseResponseDto
@@ -37,6 +38,7 @@ public class AlchemyFiatDto
     public string RateFee { get; set; }
     public string PayMin { get; set; }
     public string PayMax { get; set; }
+    public string CountryName { get; set; }
 }
 
 public class AlchemyCryptoListDto : AlchemyBaseResponseDto

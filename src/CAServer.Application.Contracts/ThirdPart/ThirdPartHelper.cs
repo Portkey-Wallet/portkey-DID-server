@@ -1,13 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using CAServer.ThirdPart.Dtos;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.Logging;
-using Orleans.Runtime;
 
 namespace CAServer.ThirdPart;
 
@@ -42,12 +37,12 @@ public static class AlchemyHelper
         { "FINISHED", OrderStatusType.Finish },
         { "PAY_FAIL", OrderStatusType.Failed },
         { "PAY_SUCCESS", OrderStatusType.Pending },
-        { "1", OrderStatusType.Finish },
-        { "2", OrderStatusType.Pending },
-        { "3", OrderStatusType.Pending },
-        { "4", OrderStatusType.Pending },
-        { "5", OrderStatusType.Failed },
-        { "6", OrderStatusType.Refunded },
+        { "1", OrderStatusType.Created },
+        { "2", OrderStatusType.UserCompletesCoinDeposit },
+        { "3", OrderStatusType.StartPayment },
+        { "4", OrderStatusType.SuccessfulPayment },
+        { "5", OrderStatusType.PaymentFailed },
+        { "6", OrderStatusType.RefundSuccessfully },
         { "7", OrderStatusType.Expired },
     };
 

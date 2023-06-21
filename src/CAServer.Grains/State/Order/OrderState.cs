@@ -5,7 +5,7 @@ public class OrderState
     // common parameters
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
-    public object ThirdPartOrderNo { get; set; }
+    public string ThirdPartOrderNo { get; set; }
     public string MerchantName { get; set; }
     public string TransDirect { get; set; }
     public string Address { get; set; }
