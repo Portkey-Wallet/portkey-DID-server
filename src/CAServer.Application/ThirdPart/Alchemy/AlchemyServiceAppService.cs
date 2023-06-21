@@ -100,7 +100,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
     }
 
-    // generate alchemy
+    // generate alchemy signature
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         try
@@ -113,7 +113,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "AES encrypting exception");
+            _logger.LogError(e, "Alchemy signature AES encrypting exception");
             return new AlchemySignatureResultDto()
             {
                 Success = "Fail",
