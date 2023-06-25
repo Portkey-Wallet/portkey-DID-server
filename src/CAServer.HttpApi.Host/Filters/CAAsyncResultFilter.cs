@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using CAServer.Response;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -9,6 +10,11 @@ public class CaAsyncResultFilter : IAsyncResultFilter
 {
     public async Task OnResultExecutionAsync(ResultExecutingContext context, ResultExecutionDelegate next)
     {
+        if (context.Result is EmptyResult or NoContentResult)
+        {
+            context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
+        }
+
         if (context.Result is ObjectResult objectResult)
         {
             if (objectResult?.Value is not ResponseDto)
@@ -24,7 +30,15 @@ public class CaAsyncResultFilter : IAsyncResultFilter
         {
             context.Result = new ObjectResult(new ResponseDto().NoContent());
         }
-
+        else if (context.Result is StatusCodeResult)
+        {
+            context.Result =
+                new ObjectResult(new ResponseDto().StatusCodeResult(context.HttpContext.Response.StatusCode,
+                    context.Result.GetType().Name));
+            
+            context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
+        }
+        
         await next();
     }
 }

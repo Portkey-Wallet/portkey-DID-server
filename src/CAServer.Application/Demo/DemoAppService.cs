@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CAServer.Demo.Dtos;
 using CAServer.Response;
+using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Authorization;
@@ -53,5 +54,11 @@ public class DemoAppService : CAServerAppService, IDemoAppService
     public Task<DemoDto> NotExistErrorAsync()
     {
         throw new UserFriendlyException(ResponseMessage.NotExist, ResponseCode.NotExist);
+    }
+
+    public Task NoContentAsync()
+    {
+        Logger.LogDebug("no content");
+        return Task.CompletedTask;
     }
 }

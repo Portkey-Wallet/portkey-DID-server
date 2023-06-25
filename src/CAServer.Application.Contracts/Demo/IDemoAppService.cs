@@ -9,4 +9,5 @@ public interface IDemoAppService
     Task<DemoDto> UnAuthExceptionAsync();
     Task<DemoDto> ExceptionAsync();
     Task<DemoDto> NotExistErrorAsync();
+    Task NoContentAsync();
 }

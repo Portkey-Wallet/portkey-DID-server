@@ -26,6 +26,13 @@ public static class ResponseDtoExtension
         return responseDto;
     }
 
+    public static ResponseDto StatusCodeResult(this ResponseDto responseDto, int statusCode, string name)
+    {
+        responseDto.Code = ResponseCode.StatusCodeResult;
+        responseDto.Message = $"{ResponseMessage.StatusCodeResult}{statusCode}, {name}";
+        return responseDto;
+    }
+
     public static ResponseDto UnhandedExceptionResult(this ResponseDto responseDto, string code, string message)
     {
         responseDto.Code = code;

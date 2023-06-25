@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Demo;
 using CAServer.Demo.Dtos;
@@ -35,7 +36,7 @@ public class ResponseDemoController : CAServerController
         return _demoAppService.SuccessAsync(input);
     }
     
-    [HttpPost("UnAuthExceptionAsync")]
+    [HttpPost("unAuthException")]
     public Task<DemoDto> UnAuthExceptionAsync(DemoRequestDto input)
     {
         return _demoAppService.UnAuthExceptionAsync();
@@ -45,6 +46,37 @@ public class ResponseDemoController : CAServerController
     public Task<DemoDto> SuccessAsync(DemoRequestDto input)
     {
         return _demoAppService.SuccessAsync(input);
+    }
+    
+        
+    [HttpPost("emptyResult")]
+    public Task EmptyResultAsync(DemoRequestDto input)
+    {
+        return _demoAppService.NoContentAsync();
+    }
+    
+    [HttpPost("noContent")]
+    public IActionResult NoContent(DemoRequestDto input)
+    {
+        return NoContent();
+    }
+    
+    [HttpPost("content")]
+    public IActionResult Content()
+    {
+        return Content("this is from content"); 
+    }
+    
+    [HttpPost("okResult")]
+    public IActionResult OkResult()
+    {
+        return Ok(new { address = "beijing", weather = "sun" });
+    }
+    
+    [HttpPost("okEmptyResult")]
+    public IActionResult OkEmptyResult()
+    {
+        return Ok();
     }
 
     [HttpPost("exception")]
@@ -57,5 +89,11 @@ public class ResponseDemoController : CAServerController
     public Task<DemoDto> NotExistErrorAsync()
     {
         return _demoAppService.NotExistErrorAsync();
+    }
+    
+    [HttpPost("unImplement")]
+    public Task<DemoDto> UnImplement()
+    {
+        throw new NotImplementedException();
     }
 }
