@@ -123,7 +123,7 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
             GuardianIdentifier = FakeEmail,
             VerifierId = DefaultVerifierId,
             ChainId = DefaultChainId,
-            OperationType = VerifierCodeOperationType.AddGuardian
+            VerifierCodeOperationType = VerifierCodeOperationType.AddGuardian
         };
         var response = await _verifierAppService.VerifyCodeAsync(input);
         response.VerificationDoc.ShouldBe("verificationDoc");
@@ -136,7 +136,7 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
             GuardianIdentifier = FakeEmail,
             VerifierId = DefaultVerifierId,
             ChainId = SideChainId,
-            OperationType = VerifierCodeOperationType.AddGuardian
+            VerifierCodeOperationType = VerifierCodeOperationType.AddGuardian
             
         };
         try

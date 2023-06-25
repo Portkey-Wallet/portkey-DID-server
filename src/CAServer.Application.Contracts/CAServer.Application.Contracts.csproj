@@ -40,8 +40,4 @@
         </Reference>
     </ItemGroup>
 
-    <ItemGroup>
-        <Orleans_CodeGenInputs Remove="Sample\ISampleAppService.cs"/>
-        <Orleans_CodeGenInputs Remove="Sample\TestDto.cs"/>
-    </ItemGroup>
 </Project>
