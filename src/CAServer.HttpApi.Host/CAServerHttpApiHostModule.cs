@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using AutoResponseWrapper;
 using CAServer.Filters;
 using CAServer.Grains;
 using CAServer.Hub;
@@ -83,14 +84,16 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
 
-        context.Services.AddMvc(options =>
-        {
-            options.Filters.Add(typeof(CaAsyncResultFilter));
+        context.Services.AddAutoResponseWrapper();
 
-            options.Filters.ReplaceOne(
-                x => (x as ServiceFilterAttribute)?.ServiceType?.Name == nameof(AbpExceptionFilter),
-                new ServiceFilterAttribute(typeof(CAExceptionFilter)));
-        });
+        // context.Services.AddMvc(options =>
+        // {
+        //     options.Filters.Add(typeof(CaAsyncResultFilter));
+        //
+        //     options.Filters.ReplaceOne(
+        //         x => (x as ServiceFilterAttribute)?.ServiceType?.Name == nameof(AbpExceptionFilter),
+        //         new ServiceFilterAttribute(typeof(CAExceptionFilter)));
+        // });
     }
 
     private void ConfigureCache(IConfiguration configuration)

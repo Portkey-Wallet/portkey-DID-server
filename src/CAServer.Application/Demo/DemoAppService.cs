@@ -53,7 +53,7 @@ public class DemoAppService : CAServerAppService, IDemoAppService
 
     public Task<DemoDto> NotExistErrorAsync()
     {
-        throw new UserFriendlyException(ResponseMessage.NotExist, ResponseCode.NotExist);
+        throw new UserFriendlyException(BussinessMessage.NotExist, BussinessCode.NotExist);
     }
 
     public Task NoContentAsync()

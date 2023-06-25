@@ -85,15 +85,9 @@ public class ResponseDemoController : CAServerController
         return _demoAppService.ExceptionAsync();
     }
 
-    [HttpPost("notExistError")]
+    [HttpPost("notExist")]
     public Task<DemoDto> NotExistErrorAsync()
     {
         return _demoAppService.NotExistErrorAsync();
-    }
-    
-    [HttpPost("unImplement")]
-    public Task<DemoDto> UnImplement()
-    {
-        throw new NotImplementedException();
     }
 }

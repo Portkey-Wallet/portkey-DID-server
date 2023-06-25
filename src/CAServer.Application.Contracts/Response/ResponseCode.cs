@@ -12,5 +12,5 @@ public static  class ResponseCode
     
     
     
-    public const string NotExist = "30002";
+    
 }
