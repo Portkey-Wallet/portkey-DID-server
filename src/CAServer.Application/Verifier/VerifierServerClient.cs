@@ -89,7 +89,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 Message = "No Available Service Tips."
             };
         }
-
+        var type = Convert.ToInt32(input.VerifierCodeOperationType).ToString();
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {
@@ -97,7 +97,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "code", input.VerificationCode },
             { "guardianIdentifier", input.GuardianIdentifier },
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
-            { "salt", input.Salt }
+            { "salt", input.Salt },
+            { "operationType", type }
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
