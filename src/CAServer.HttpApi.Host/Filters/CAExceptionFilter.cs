@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using System.Threading.Tasks;
 using CAServer.Response;
 using Microsoft.AspNetCore.Http;
@@ -9,16 +8,12 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp.AspNetCore.ExceptionHandling;
 using Volo.Abp.AspNetCore.Mvc;
-using Volo.Abp.AspNetCore.Mvc.ExceptionHandling;
 using Volo.Abp.Authorization;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ExceptionHandling;
 using Volo.Abp.Http;
-using Volo.Abp.Json;
 using Volo.Abp.Validation;
 
 namespace CAServer.Filters;
@@ -58,29 +53,10 @@ public class CAExceptionFilter : IAsyncExceptionFilter, ITransientDependency
 
     protected virtual async Task HandleAndWrapException(ExceptionContext context)
     {
-        var exceptionHandlingOptions = context.GetRequiredService<IOptions<AbpExceptionHandlingOptions>>().Value;
-        var exceptionToErrorInfoConverter = context.GetRequiredService<IExceptionToErrorInfoConverter>();
-        var remoteServiceErrorInfo = exceptionToErrorInfoConverter.Convert(context.Exception, options =>
-        {
-            options.SendExceptionsDetailsToClients = exceptionHandlingOptions.SendExceptionsDetailsToClients;
-            options.SendStackTraceToClients = exceptionHandlingOptions.SendStackTraceToClients;
-        });
-
         var logLevel = context.Exception.GetLogLevel();
-
-        var remoteServiceErrorInfoBuilder = new StringBuilder();
-        remoteServiceErrorInfoBuilder.AppendLine($"---------- {nameof(RemoteServiceErrorInfo)} ----------");
-        remoteServiceErrorInfoBuilder.AppendLine(context.GetRequiredService<IJsonSerializer>()
-            .Serialize(remoteServiceErrorInfo, indented: true));
-
-        var logger = context.GetService<ILogger<AbpExceptionFilter>>(NullLogger<AbpExceptionFilter>.Instance);
-
-        logger.LogWithLevel(logLevel, remoteServiceErrorInfoBuilder.ToString());
-
+        var logger = context.GetService<ILogger<CAExceptionFilter>>(NullLogger<CAExceptionFilter>.Instance);
+        
         logger.LogException(context.Exception, logLevel);
-
-        await context.GetRequiredService<IExceptionNotifier>()
-            .NotifyAsync(new ExceptionNotificationContext(context.Exception));
 
         if (context.Exception is AbpAuthorizationException)
         {
@@ -100,12 +76,11 @@ public class CAExceptionFilter : IAsyncExceptionFilter, ITransientDependency
 
             if (context.Exception is IHasValidationErrors { ValidationErrors.Count: > 0 } validationErrors)
             {
-                code = "-1";
                 context.Result =
                     new ObjectResult(
-                        new ValidationResponseDto().ValidationResult(code, context.Exception.Message,
+                        new ValidationResponseDto().ValidationResult(context.Exception.Message,
                             validationErrors.ValidationErrors));
-                
+
                 context.Exception = null;
                 return;
             }

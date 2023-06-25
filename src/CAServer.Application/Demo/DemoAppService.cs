@@ -4,6 +4,8 @@ using CAServer.Demo.Dtos;
 using CAServer.Response;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Authorization;
+using Volo.Abp.Users;
 
 namespace CAServer.Demo;
 
@@ -17,6 +19,22 @@ public class DemoAppService : CAServerAppService, IDemoAppService
             UserId = Guid.NewGuid(),
             Name = input.Name,
             Age = input.Age
+        });
+    }
+
+    public Task<DemoDto> UnAuthExceptionAsync()
+    {
+        var userId = CurrentUser.Id;
+        if (userId == null || userId == Guid.Empty)
+        {
+            throw new AbpAuthorizationException("user id is not set");
+        }
+
+        return Task.FromResult(new DemoDto()
+        {
+            UserId = Guid.NewGuid(),
+            Age = 10,
+            Name = "John"
         });
     }
 

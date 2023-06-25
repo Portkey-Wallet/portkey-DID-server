@@ -34,6 +34,12 @@ public class ResponseDemoController : CAServerController
     {
         return _demoAppService.SuccessAsync(input);
     }
+    
+    [HttpPost("UnAuthExceptionAsync")]
+    public Task<DemoDto> UnAuthExceptionAsync(DemoRequestDto input)
+    {
+        return _demoAppService.UnAuthExceptionAsync();
+    }
 
     [HttpPost("success")]
     public Task<DemoDto> SuccessAsync(DemoRequestDto input)
