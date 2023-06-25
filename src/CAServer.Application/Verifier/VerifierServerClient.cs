@@ -90,7 +90,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
-        var type = Convert.ToInt32(input.VerifierCodeOperationType);
+        var type = Convert.ToInt32(input.VerifierCodeOperationType).ToString();
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {
@@ -99,7 +99,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", input.GuardianIdentifier },
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
-            { "operationType", type.ToString() }
+            { "operationType", type }
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
