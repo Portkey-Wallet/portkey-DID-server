@@ -36,6 +36,7 @@ using Volo.Abp.UI.Navigation.Urls;
 using Volo.Abp.VirtualFileSystem;
 using Volo.Abp.OpenIddict.ExtensionGrantTypes;
 using Volo.Abp.EventBus.RabbitMq;
+using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Uow;
 
 namespace CAServer;
@@ -207,6 +208,7 @@ public class CAServerAuthServerModule : AbpModule
             });
         });
         context.Services.AddHttpClient();
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)

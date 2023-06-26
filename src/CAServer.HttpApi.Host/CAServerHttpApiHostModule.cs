@@ -37,6 +37,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
 using Volo.Abp.VirtualFileSystem;
@@ -79,6 +80,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
 
     private void ConfigureCache(IConfiguration configuration)
