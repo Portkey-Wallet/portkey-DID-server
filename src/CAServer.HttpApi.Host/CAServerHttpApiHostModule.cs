@@ -315,20 +315,17 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
-        //if (env.IsDevelopment())
+        
+        if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>
             {
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API");
-
-                // var configuration = context.GetConfiguration();
-                // options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
-                // options.OAuthScopes("CAServer");
             });
         }
 
-        app.UseAuditing();
+        //app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
