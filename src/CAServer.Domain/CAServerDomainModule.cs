@@ -21,7 +21,7 @@ namespace CAServer;
 
 [DependsOn(
     typeof(CAServerDomainSharedModule),
-    typeof(AbpAuditLoggingDomainModule),
+    // typeof(AbpAuditLoggingDomainModule),
     // typeof(AbpBackgroundJobsDomainModule),
     typeof(AbpFeatureManagementDomainModule),
     typeof(AbpIdentityDomainModule),
@@ -29,7 +29,7 @@ namespace CAServer;
     typeof(AbpPermissionManagementDomainOpenIddictModule),
     typeof(AbpPermissionManagementDomainIdentityModule),
     typeof(AbpSettingManagementDomainModule),
-    typeof(AbpTenantManagementDomainModule),
+    //typeof(AbpTenantManagementDomainModule),
     typeof(AbpEmailingModule),
     typeof(AElfIndexingElasticsearchModule)
 )]
