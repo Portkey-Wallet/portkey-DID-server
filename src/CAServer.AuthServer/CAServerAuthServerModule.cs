@@ -148,13 +148,6 @@ public class CAServerAuthServerModule : AbpModule
             );
         });
 
-        Configure<AbpAuditingOptions>(options =>
-        {
-            options.IsEnabled = false;
-            //options.IsEnabledForGetRequests = true;
-            //options.ApplicationName = "AuthServer";
-        });
-
         if (hostingEnvironment.IsDevelopment())
         {
             Configure<AbpVirtualFileSystemOptions>(options =>
@@ -247,7 +240,7 @@ public class CAServerAuthServerModule : AbpModule
 
         app.UseUnitOfWork();
         app.UseAuthorization();
-        app.UseAuditing();
+        //app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
     }
