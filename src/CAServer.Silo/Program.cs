@@ -14,16 +14,20 @@ public class Program
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
+
         Log.Logger = new LoggerConfiguration()
 #if DEBUG
             .MinimumLevel.Debug()
 #else
-            .MinimumLevel.Information()
+                .MinimumLevel.Information()
 #endif
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .Enrich.FromLogContext()
-            .WriteTo.Async(c => c.File("Logs/logs.txt"))
+            .ReadFrom.Configuration(configuration)
+#if DEBUG
             .WriteTo.Async(c => c.Console())
+#endif
             .CreateLogger();
         
         try
@@ -47,12 +51,13 @@ public class Program
 
     internal static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
+            .UseSerilog()
             .ConfigureServices((hostcontext, services) =>
             {
                 services.AddApplication<CAServerOrleansSiloModule>();
             })
             .UseOrleansSnapshot()
             .UseAutofac()
-            .UseSerilog();
+            ;
     
 }
