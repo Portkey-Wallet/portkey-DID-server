@@ -2,10 +2,11 @@ namespace CAServer.Verifier;
 
 public enum VerifierCodeOperationType
 {
-    CreateCAHolder = 0,
-    SocialRecovery = 1,
-    AddGuardian = 2,
-    RemoveGuardian = 3,
-    UpdateGuardian = 4,
-    RemoveOtherManagerInfo = 5
+    Unknown = 0,
+    CreateCAHolder = 1,
+    SocialRecovery = 2,
+    AddGuardian = 3,
+    RemoveGuardian = 4,
+    UpdateGuardian = 5,
+    RemoveOtherManagerInfo = 6
 }
