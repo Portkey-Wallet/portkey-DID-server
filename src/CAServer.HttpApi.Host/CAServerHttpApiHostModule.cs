@@ -78,7 +78,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureGraphQl(context, configuration);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
-        ConfigureOrleans(context, configuration);
+        //ConfigureOrleans(context, configuration);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -305,16 +305,8 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseCors();
         app.UseAuthentication();
 
-        if (MultiTenancyConsts.IsEnabled)
-        {
-            app.UseMultiTenancy();
-        }
-
         app.UseAuthorization();
-        if (!env.IsDevelopment())
-        {
-            app.UseMiddleware<RealIpMiddleware>();
-        }
+
         //if (env.IsDevelopment())
         {
             app.UseSwagger();
@@ -333,7 +325,7 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
 
-        StartOrleans(context.ServiceProvider);
+        //StartOrleans(context.ServiceProvider);
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

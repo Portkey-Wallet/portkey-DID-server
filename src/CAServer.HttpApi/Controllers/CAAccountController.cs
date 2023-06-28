@@ -19,9 +19,8 @@ public class CAAccountController : CAServerController
     private readonly ICAAccountAppService _caAccountService;
     private readonly IGuardianAppService _guardianAppService;
 
-    public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService)
+    public CAAccountController(IGuardianAppService guardianAppService)
     {
-        _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
     }
 
@@ -48,5 +47,11 @@ public class CAAccountController : CAServerController
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
         return await _guardianAppService.GetRegisterInfoAsync(requestDto);
+    }
+    
+    [HttpGet("search")]
+    public async Task<List<SearchResponseDto>> SearchAsync()
+    {
+        return await _guardianAppService.SearchAsync();
     }
 }

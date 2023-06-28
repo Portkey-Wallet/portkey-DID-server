@@ -41,7 +41,7 @@ public class GuardianProvider : IGuardianProvider, ITransientDependency
                 }",
             Variables = new
             {
-                caHash, loginGuardianIdentifierHash, skipCount = 0, maxResultCount = 10
+                caHash, loginGuardianIdentifierHash, skipCount = 0, maxResultCount = 100000000
             }
         });
     }
