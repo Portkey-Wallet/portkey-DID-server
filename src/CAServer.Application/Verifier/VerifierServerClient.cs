@@ -30,7 +30,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
-        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory,true);
+        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
     }
 
@@ -89,7 +89,12 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 Message = "No Available Service Tips."
             };
         }
+
         var type = Convert.ToInt32(input.VerifierCodeOperationType).ToString();
+        if (input.VerifierCodeOperationType == VerifierCodeOperationType.Unknown)
+        {
+            type = Convert.ToInt32(VerifierCodeOperationType.CreateCAHolder).ToString();
+        }
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {
@@ -135,15 +140,21 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         var url = endPoint + requestUri;
 
 
-        return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt);
+        return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
+            input.VerifierCodeOperationType);
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
-        string accessToken, string identifierHash, string salt)
+        string accessToken, string identifierHash, string salt,
+        VerifierCodeOperationType verifierCodeOperationType)
     {
         var client = _httpClientFactory.CreateClient();
-
-        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt });
+        var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
+        if (verifierCodeOperationType == VerifierCodeOperationType.Unknown)
+        {
+            operationType = Convert.ToInt32(VerifierCodeOperationType.CreateCAHolder).ToString();
+        }
+        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType });
 
         var param = new StringContent(tokenParam,
             Encoding.UTF8,

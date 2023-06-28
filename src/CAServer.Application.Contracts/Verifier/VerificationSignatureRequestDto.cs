@@ -19,8 +19,7 @@ public class VerificationSignatureRequestDto : IValidatableObject
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (VerifierSessionId.IsNullOrEmpty() || VerifierId.IsNullOrEmpty() ||
-            VerificationCode.IsNullOrEmpty() || GuardianIdentifier.IsNullOrEmpty() || ChainId.IsNullOrEmpty() ||
-            VerifierCodeOperationType == VerifierCodeOperationType.Unknown)
+            VerificationCode.IsNullOrEmpty() || GuardianIdentifier.IsNullOrEmpty() || ChainId.IsNullOrEmpty())
         {
             yield return new ValidationResult("Input is null or empty");
         }
