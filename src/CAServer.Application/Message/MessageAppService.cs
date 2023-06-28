@@ -17,9 +17,17 @@ public class MessageAppService : CAServerAppService, IMessageAppService
         _distributedEventBus = distributedEventBus;
     }
 
-    public async Task ScanLoginSuccess(ScanLoginDto request)
+    public async Task ScanLoginSuccessAsync(ScanLoginDto request)
     {
+        var eto = ObjectMapper.Map<ScanLoginDto, ScanLoginEto>(request);
+        eto.MethodName = "onScanLoginSuccess";
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ScanLoginDto, ScanLoginEto>(request));
     }
 
+    public async Task ScanLoginAsync(ScanLoginDto request)
+    {
+        var eto = ObjectMapper.Map<ScanLoginDto, ScanLoginEto>(request);
+        eto.MethodName = "onScanLogin";
+        await _distributedEventBus.PublishAsync(eto);
+    }
 }

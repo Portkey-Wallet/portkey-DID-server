@@ -16,7 +16,7 @@ public class MessageTest : CAServerApplicationTestBase
     [Fact]
     public void ScanLoginSuccessTest()
     {
-        _messageAppService.ScanLoginSuccess(new ScanLoginDto
+        _messageAppService.ScanLoginSuccessAsync(new ScanLoginDto
         {
             TargetClientId = "test-client-id"
         });
