@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
@@ -32,7 +33,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IGuardianProvider _guardianProvider;
     private readonly IUserAssetsProvider _userAssetsProvider;
 
-    public GuardianAppService(IGuardianProvider guardianProvider, 
+    public GuardianAppService(IGuardianProvider guardianProvider,
         IUserAssetsProvider userAssetsProvider)
     {
         _guardianProvider = guardianProvider;
@@ -49,9 +50,10 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         return new RegisterInfoResultDto { OriginChainId = "" };
     }
 
-    public async Task<List<SearchResponseDto>> SearchAsync()
+    public async Task<SearchResponsePageDto> SearchAsync()
     {
-        var result = new List<SearchResponseDto>();
+        var list = new List<SearchResponseDto>();
+        var strList = new List<string>();
         var guardians = await _guardianProvider.GetGuardiansAsync(string.Empty, string.Empty);
 
         var users = guardians?.CaHolderInfo?.Where(t => t.GuardianList?.Guardians?.Count == 1);
@@ -65,25 +67,46 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             }
         }
 
-        var caAddressInfos = dic.Keys.Select(address => new CAAddressInfo { CaAddress = address })
-            .ToList();
-
-        var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
-            0, 1000000);
-
-        var data =
-            res.CaHolderTokenBalanceInfo.Data.Where(t => t.Balance > 0).ToList();
-
-        foreach (var d in data)
+        for (int i = 0; i < 100000; i += 1000)
         {
-            result.Add(new SearchResponseDto
+            var caAddressInfos = dic.Keys.Select(address => new CAAddressInfo { CaAddress = address }).Skip(i)
+                .Take(1000).ToList();
+            if (caAddressInfos.Count == 0)
             {
-                Balance = d.Balance,
-                CaAddress = d.CaAddress,
-                CaHash = dic[d.CaAddress]
-            });
+                break;
+            }
+
+            var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
+                0, 1000000);
+
+            var data =
+                res.CaHolderTokenBalanceInfo.Data.Where(t => t.Balance > 0).ToList();
+
+            foreach (var d in data)
+            {
+                list.Add(new SearchResponseDto
+                {
+                    Balance = d.Balance,
+                    CaAddress = d.CaAddress,
+                    CaHash = dic[d.CaAddress]
+                });
+            }
+
+            list = list.OrderByDescending(t => t.Balance).ToList();
+            
+
         }
 
-        return result;
+        foreach (var d in list)
+        {
+            strList.Add($"{dic[d.CaAddress]}\t{d.CaAddress}\t{d.Balance}");
+        }
+        await File.WriteAllLinesAsync("WriteLines2.txt", strList);
+        
+        return new SearchResponsePageDto()
+        {
+            Data = list,
+            TotalCount = list.Count
+        };
     }
 }

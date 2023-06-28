@@ -50,7 +50,7 @@ public class CAAccountController : CAServerController
     }
     
     [HttpGet("search")]
-    public async Task<List<SearchResponseDto>> SearchAsync()
+    public async Task<SearchResponsePageDto> SearchAsync()
     {
         return await _guardianAppService.SearchAsync();
     }

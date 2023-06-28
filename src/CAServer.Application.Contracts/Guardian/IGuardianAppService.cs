@@ -8,5 +8,5 @@ public interface IGuardianAppService
 {
     Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto);
     Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto);
-    Task<List<SearchResponseDto>> SearchAsync();
+    Task<SearchResponsePageDto> SearchAsync();
 }

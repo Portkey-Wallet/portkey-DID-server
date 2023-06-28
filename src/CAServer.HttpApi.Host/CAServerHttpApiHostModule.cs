@@ -330,7 +330,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        StopOrleans(context.ServiceProvider);
+        //StopOrleans(context.ServiceProvider);
     }
 
     private static void StartOrleans(IServiceProvider serviceProvider)
