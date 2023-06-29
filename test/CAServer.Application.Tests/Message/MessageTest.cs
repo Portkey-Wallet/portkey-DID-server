@@ -21,4 +21,13 @@ public class MessageTest : CAServerApplicationTestBase
             TargetClientId = "test-client-id"
         });
     }
+    
+    [Fact]
+    public void ScanLoginTest()
+    {
+        _messageAppService.ScanLoginAsync(new ScanLoginDto
+        {
+            TargetClientId = "test-client-id"
+        });
+    }
 }
