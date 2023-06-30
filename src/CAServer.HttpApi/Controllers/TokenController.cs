@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
@@ -32,5 +33,17 @@ public class TokenController : CAServerController
     public Task<ContractAddressDto> GetContractAddressAsync()
     {
         return _tokenAppService.GetContractAddressAsync();
+    }
+
+    [HttpGet("list")]
+    public async Task<List<GetTokenListDto>> GetTokenListAsync(GetTokenListRequestDto input)
+    {
+        return await _tokenAppService.GetTokenListAsync(input);
+    }
+
+    [HttpGet("token")]
+    public async Task<GetTokenInfoDto> GetTokenInfoAsync([Required] string chainId, [Required] string symbol)
+    {
+        return await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
     }
 }

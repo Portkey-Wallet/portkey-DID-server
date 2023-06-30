@@ -33,6 +33,7 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
+using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
@@ -278,6 +279,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<NotifyGrainDto, DeleteNotifyEto>();
         CreateMap<NotifyGrainDto, NotifyEto>();
         CreateMap<NotifyGrainDto, PullNotifyResultDto>();
+
         CreateMap<ScanLoginDto, ScanLoginEto>().BeforeMap((src, dest) => { dest.Message = "Login Successful"; });
 
         CreateMap<CreateUserEto, CAHolderIndex>();
@@ -306,6 +308,25 @@ public class CAServerApplicationAutoMapperProfile : Profile
                         ? null
                         : f.DeviceTypes.Select(t => ((DeviceType)t.DeviceType.Value).ToString())))
             .ForMember(t => t.StyleType, m => m.MapFrom(f => (StyleType)f.StyleType.Value));
-        //.ForMember()
+
+        CreateMap<UserTokenIndex, GetTokenInfoDto>()
+            .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
+            .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
+            .ForPath(t => t.Id, m => m.MapFrom(f => f.Token.Id.ToString()))
+            .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
+            .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
+            .ForPath(t => t.TokenContractAddress, m => m.MapFrom(f => f.Token.Address))
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+
+        CreateMap<UserTokenIndex, GetTokenListDto>()
+            .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
+            .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
+            .ForPath(t => t.Id, m => m.MapFrom(f => f.Token.Id.ToString()))
+            .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
+            .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+
+        CreateMap<IndexerToken, GetTokenInfoDto>();
+        CreateMap<IndexerToken, GetTokenListDto>();
     }
 }

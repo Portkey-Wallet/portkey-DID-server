@@ -2,16 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
+using Volo.Abp.Users;
 
 namespace CAServer.Tokens;
 
@@ -21,10 +24,13 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 {
     private readonly IClusterClient _clusterClient;
     private readonly ContractAddressOptions _contractAddressOptions;
+    private readonly ITokenProvider _tokenProvider;
 
-    public TokenAppService(IClusterClient clusterClient, IOptions<ContractAddressOptions> contractAddressesOptions)
+    public TokenAppService(IClusterClient clusterClient, IOptions<ContractAddressOptions> contractAddressesOptions,
+        ITokenProvider tokenProvider)
     {
         _clusterClient = clusterClient;
+        _tokenProvider = tokenProvider;
         _contractAddressOptions = contractAddressesOptions.Value;
     }
 
@@ -110,5 +116,64 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             MainChainAddress = _contractAddressOptions.TokenClaimAddress.MainChainAddress,
             SideChainAddress = _contractAddressOptions.TokenClaimAddress.SideChainAddress
         });
+    }
+
+    public async Task<List<GetTokenListDto>> GetTokenListAsync(GetTokenListRequestDto input)
+    {
+        //symbol is fuzzy matching
+        var chainId = input.ChainIds.Count == 1 ? input.ChainIds.First() : string.Empty;
+
+        var userTokensDto = await _tokenProvider.GetUserTokenInfoListAsync(CurrentUser.GetId(), chainId, string.Empty);
+        var indexerToken =
+            await _tokenProvider.GetTokenInfosAsync(chainId, input.Symbol.Trim().ToUpper(), short.MaxValue);
+
+        return GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
+    }
+
+    public async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
+    {
+        var tokenIndex = await _tokenProvider.GetUserTokenInfoAsync(CurrentUser.GetId(), chainId, symbol);
+        if (tokenIndex != null)
+        {
+            return ObjectMapper.Map<UserTokenIndex, GetTokenInfoDto>(tokenIndex);
+        }
+
+        var dto = await _tokenProvider.GetTokenInfosAsync(chainId, symbol.Trim().ToUpper(), 1);
+        var tokenInfo = dto?.TokenInfo?.FirstOrDefault();
+        if (tokenInfo == null)
+        {
+            return new GetTokenInfoDto();
+        }
+
+        return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
+    }
+
+    private List<GetTokenListDto> GetTokenInfoList(List<UserTokenIndex> userTokenInfos, List<IndexerToken> tokenInfos)
+    {
+        var result = new List<GetTokenListDto>();
+        var tokenList = ObjectMapper.Map<List<IndexerToken>, List<GetTokenListDto>>(tokenInfos);
+        var userTokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetTokenListDto>>(userTokenInfos);
+        if (tokenList.Count > 0)
+        {
+            tokenList.RemoveAll(t => userTokens.Select(f => f.Symbol).Contains(t.Symbol));
+        }
+
+        // get elf if exist
+        if (userTokens.Select(t => t.Symbol).Contains("ELF"))
+        {
+            result.AddRange(userTokens.Where(t => t.Symbol == "ELF").OrderBy(t => t.ChainId));
+            userTokens.RemoveAll(t => t.Symbol == "ELF");
+        }
+
+        if (userTokens.Select(t => t.IsDisplay).Contains(true))
+        {
+            result.AddRange(userTokens.Where(t => t.IsDisplay).OrderBy(t => t.Symbol).ThenBy(t => t.ChainId));
+            userTokens.RemoveAll(t => t.IsDisplay);
+        }
+
+        result.AddRange(userTokens);
+        result.AddRange(tokenList);
+
+        return result.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
     }
 }
