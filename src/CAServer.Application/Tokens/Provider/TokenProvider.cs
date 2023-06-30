@@ -29,19 +29,19 @@ public class TokenProvider : ITokenProvider, ISingletonDependency
         _userTokenIndexRepository = userTokenIndexRepository;
     }
 
-    public async Task<IndexerTokens> GetTokenInfosAsync(string chainId, string symbol, int maxResultCount)
+    public async Task<IndexerTokens> GetTokenInfosAsync(string chainId, string symbolKeyword, int maxResultCount)
     {
         return await _graphQlHelper.QueryAsync<IndexerTokens>(new GraphQLRequest
         {
             Query = @"
-			    query($chainId:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!) {
-                    tokenInfo(dto: {chainId:$chainId,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+			    query($chainId:String,$symbolKeyword:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    tokenInfo(dto: {chainId:$chainId,symbolKeyword:$symbolKeyword,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         id,chainId,blockHash,blockHeight,symbol,type,tokenContractAddress,decimals,tokenName,totalSupply,issuer,isBurnable,issueChainId
                     }
                 }",
             Variables = new
             {
-                chainId, symbol, skipCount = 0, maxResultCount
+                chainId, symbolKeyword, skipCount = 0, maxResultCount
             }
         });
     }
@@ -54,7 +54,7 @@ public class TokenProvider : ITokenProvider, ISingletonDependency
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Token.ChainId).Value(chainId)));
         QueryContainer Filter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
 
-        return await _userTokenIndexRepository.GetAsync();
+        return await _userTokenIndexRepository.GetAsync(Filter);
     }
 
     public async Task<List<UserTokenIndex>> GetUserTokenInfoListAsync(Guid userId, string chainId, string symbol)
@@ -64,7 +64,7 @@ public class TokenProvider : ITokenProvider, ISingletonDependency
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Token.Symbol).Value(symbol)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Token.ChainId).Value(chainId)));
         QueryContainer Filter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var (totalCount, userTokens) = await _userTokenIndexRepository.GetSortListAsync();
+        var (totalCount, userTokens) = await _userTokenIndexRepository.GetSortListAsync(Filter);
         
         return userTokens;
     }

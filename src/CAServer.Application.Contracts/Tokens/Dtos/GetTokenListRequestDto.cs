@@ -10,7 +10,7 @@ public class GetTokenListRequestDto : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (ChainIds?.Count == 0)
+        if (ChainIds == null || ChainIds.Count == 0)
         {
             yield return new ValidationResult(
                 "Invalid type input.",

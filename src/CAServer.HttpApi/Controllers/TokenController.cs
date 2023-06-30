@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -35,13 +36,13 @@ public class TokenController : CAServerController
         return _tokenAppService.GetContractAddressAsync();
     }
 
-    [HttpGet("list")]
+    [Authorize, HttpGet("list")]
     public async Task<List<GetTokenListDto>> GetTokenListAsync(GetTokenListRequestDto input)
     {
         return await _tokenAppService.GetTokenListAsync(input);
     }
 
-    [HttpGet("token")]
+    [Authorize, HttpGet("token")]
     public async Task<GetTokenInfoDto> GetTokenInfoAsync([Required] string chainId, [Required] string symbol)
     {
         return await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
