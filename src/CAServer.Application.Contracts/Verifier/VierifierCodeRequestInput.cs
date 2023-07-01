@@ -11,5 +11,5 @@ public class VierifierCodeRequestInput
     public string Salt { get; set; }
     public string GuardianIdentifierHash { get; set; }
     
-    public VerifierCodeOperationType VerifierCodeOperationType { get; set; }
+    public OperationType OperationType { get; set; }
 }

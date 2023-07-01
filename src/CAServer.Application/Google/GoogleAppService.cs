@@ -35,7 +35,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
 
-    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress, OperationType type, string version)
+    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress, OperationType type)
     {
         var cacheCount =
             await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
