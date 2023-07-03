@@ -328,5 +328,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<IndexerToken, GetTokenInfoDto>();
         CreateMap<IndexerToken, GetTokenListDto>();
+        CreateMap<IndexerToken, UserTokenItem>()
+            .ForMember(t => t.SortWeight, m => m.MapFrom(f => f.ChainId == "ELF" ? 1 : 0))
+            .ForPath(t => t.Token.ChainId, m => m.MapFrom(f => f.ChainId))
+            .ForPath(t => t.Token.Symbol, m => m.MapFrom(f => f.Symbol))
+            .ForPath(t => t.Token.Address, m => m.MapFrom(f => f.TokenContractAddress))
+            .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals));
     }
 }

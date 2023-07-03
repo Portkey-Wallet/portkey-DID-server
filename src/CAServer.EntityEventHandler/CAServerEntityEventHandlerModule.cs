@@ -1,15 +1,21 @@
+using System.Collections.Generic;
+using System.Linq;
 using AElf.Indexing.Elasticsearch.Options;
+using CAServer.Commons;
 using CAServer.EntityEventHandler.Core;
 using CAServer.Grains;
 using CAServer.MongoDB;
+using CAServer.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
+using Volo.Abp.Caching;
 using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
@@ -39,7 +45,8 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .UseMongoDBClient(configuration["Orleans:MongoDBClient"])
                 .UseMongoDBClustering(options =>
                 {
-                    options.DatabaseName = configuration["Orleans:DataBase"];;
+                    options.DatabaseName = configuration["Orleans:DataBase"];
+                    ;
                     options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
                 .Configure<ClusterOptions>(options =>
@@ -53,12 +60,16 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
                 .Build();
         });
-        
     }
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
+        var tokenList = context.ServiceProvider.GetRequiredService<IOptions<TokenListOptions>>().Value;
+        var cache = context.ServiceProvider.GetRequiredService<IDistributedCache<List<string>>>();
+        cache.Set(CommonConstant.ResourceTokenKey, tokenList.UserToken.Select(t => t.Token.Symbol).Distinct().ToList());
+
         var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(async ()=> await client.Connect());
+        AsyncHelper.RunSync(async () => await client.Connect());
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
@@ -72,7 +83,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
     {
         Configure<IndexCreateOption>(x => { x.AddModule(typeof(CAServerDomainModule)); });
     }
-    
+
     // TODO Temporary Needed fixed later.
     private void ConfigureTokenCleanupService()
     {

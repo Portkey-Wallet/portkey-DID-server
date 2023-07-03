@@ -10,7 +10,8 @@ using Volo.Abp.EventBus.Distributed;
 namespace CAServer.EntityEventHandler.Core;
 
 public class UserTokenEntityHandler : EntityHandlerBase,
-    IDistributedEventHandler<UserTokenEto>
+    IDistributedEventHandler<UserTokenEto>,
+    IDistributedEventHandler<UserTokenDeleteEto>
 {
     private readonly INESTRepository<UserTokenIndex,Guid> _userTokenIndexRepository;
     private readonly ILogger<UserTokenEntityHandler> _logger;
@@ -35,5 +36,20 @@ public class UserTokenEntityHandler : EntityHandlerBase,
             _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
         }
        
-    }   
+    }
+
+    public async Task HandleEventAsync(UserTokenDeleteEto eventData)
+    {
+        _logger.LogInformation($"user token delete.{eventData.UserId}-{eventData.Token.ChainId}-{eventData.Token.Symbol}");
+        var index = ObjectMapper.Map<UserTokenDeleteEto, UserTokenIndex>(eventData);
+        try
+        {
+            await _userTokenIndexRepository.DeleteAsync(eventData.Id);
+            _logger.LogInformation($"user token delete success.{eventData.UserId}-{eventData.Token.ChainId}-{eventData.Token.Symbol}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+        }
+    }
 }

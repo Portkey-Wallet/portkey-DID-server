@@ -124,8 +124,10 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var chainId = input.ChainIds.Count == 1 ? input.ChainIds.First() : string.Empty;
 
         var userTokensDto = await _tokenProvider.GetUserTokenInfoListAsync(CurrentUser.GetId(), chainId, string.Empty);
+        userTokensDto = userTokensDto?.Where(t => t.Token.Symbol.Contains(input.Symbol.Trim().ToUpper())).ToList();
         var indexerToken =
-            await _tokenProvider.GetTokenInfosAsync(chainId, input.Symbol.Trim().ToUpper(), short.MaxValue);
+            await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper(),
+                short.MaxValue);
 
         return GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
     }
@@ -138,7 +140,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             return ObjectMapper.Map<UserTokenIndex, GetTokenInfoDto>(tokenIndex);
         }
 
-        var dto = await _tokenProvider.GetTokenInfosAsync(chainId, symbol.Trim().ToUpper(), 1);
+        var dto = await _tokenProvider.GetTokenInfosAsync(chainId, symbol.Trim().ToUpper(), string.Empty, 1);
         var tokenInfo = dto?.TokenInfo?.FirstOrDefault();
         if (tokenInfo == null)
         {
@@ -158,11 +160,10 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             tokenList.RemoveAll(t => userTokens.Select(f => f.Symbol).Contains(t.Symbol));
         }
 
-        // get elf if exist
-        if (userTokens.Select(t => t.Symbol).Contains("ELF"))
+        if (userTokens.Select(t => t.IsDefault).Contains(true))
         {
-            result.AddRange(userTokens.Where(t => t.Symbol == "ELF").OrderBy(t => t.ChainId));
-            userTokens.RemoveAll(t => t.Symbol == "ELF");
+            result.AddRange(userTokens.Where(t => t.IsDefault).OrderBy(t => t.ChainId));
+            userTokens.RemoveAll(t => t.IsDefault);
         }
 
         if (userTokens.Select(t => t.IsDisplay).Contains(true))
@@ -171,9 +172,9 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             userTokens.RemoveAll(t => t.IsDisplay);
         }
 
-        result.AddRange(userTokens);
-        result.AddRange(tokenList);
+        userTokens.AddRange(tokenList);
+        result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
-        return result.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
+        return result;
     }
 }

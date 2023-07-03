@@ -66,7 +66,7 @@ public class UserTokenAppServiceTests : CAServerApplicationTestBase
         };
         await grain.AddUserTokenAsync(userId, token);
 
-        var result = _userTokenAppService.ChangeTokenDisplayAsync(display, userId);
+        var result = _userTokenAppService.ChangeTokenDisplayAsync(display, userId.ToString());
         var data = result.Result;
         data.IsDisplay.ShouldBe(display);
     }
