@@ -26,6 +26,20 @@ public class UserTokenGrain : Grain<UserTokenState>, IUserTokenGrain
         await base.OnDeactivateAsync();
     }
 
+    public Task<GrainResultDto<UserTokenGrainDto>> GetUserToken()
+    {
+        var result = new GrainResultDto<UserTokenGrainDto>();
+        if (State.IsDelete || State.Id == Guid.Empty)
+        {
+            result.Message = UserTokenMessage.NotExistMessage;
+            return Task.FromResult(result);
+        }
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<UserTokenState, UserTokenGrainDto>(State);
+        return Task.FromResult(result);
+    }
+
     public async Task<GrainResultDto<UserTokenGrainDto>> AddUserTokenAsync(Guid userId, UserTokenGrainDto tokenItem)
     {
         var result = new GrainResultDto<UserTokenGrainDto>();
@@ -38,26 +52,35 @@ public class UserTokenGrain : Grain<UserTokenState>, IUserTokenGrain
             return result;
         }
 
-        State.Id = this.GetPrimaryKey();
-        State.UserId = userId;
-        State.IsDefault = tokenItem.IsDefault;
-        State.IsDisplay = tokenItem.IsDisplay;
-        State.SortWeight = tokenItem.SortWeight;
-        State.Token = new Token
+        if (State.IsDelete)
         {
-            Id = Guid.NewGuid(),
-            Address = tokenItem.Token.Address,
-            ChainId = tokenItem.Token.ChainId,
-            Decimals = tokenItem.Token.Decimals,
-            Symbol = tokenItem.Token.Symbol
-        };
+            State.IsDelete = false;
+        }
+        else
+        {
+            State.Id = this.GetPrimaryKey();
+            State.UserId = userId;
+            State.IsDefault = tokenItem.IsDefault;
+            State.IsDisplay = tokenItem.IsDisplay;
+            State.SortWeight = tokenItem.SortWeight;
+            State.Token = new Token
+            {
+                Id = Guid.NewGuid(),
+                Address = tokenItem.Token.Address,
+                ChainId = tokenItem.Token.ChainId,
+                Decimals = tokenItem.Token.Decimals,
+                Symbol = tokenItem.Token.Symbol
+            };
+        }
+
         await WriteStateAsync();
         result.Success = true;
         result.Data = _objectMapper.Map<UserTokenState, UserTokenGrainDto>(State);
         return result;
     }
 
-    public async Task<GrainResultDto<UserTokenGrainDto>> ChangeTokenDisplayAsync(Guid userId, bool isDisplay)
+    public async Task<GrainResultDto<UserTokenGrainDto>> ChangeTokenDisplayAsync(Guid userId, bool isDisplay,
+        bool isDelete = false)
     {
         var result = new GrainResultDto<UserTokenGrainDto>();
         if (userId != State.UserId)
@@ -65,12 +88,15 @@ public class UserTokenGrain : Grain<UserTokenState>, IUserTokenGrain
             result.Message = UserTokenMessage.UserNotMatchMessage;
             return result;
         }
+
         if (State.Token.Symbol == "ELF")
         {
             result.Message = UserTokenMessage.SymbolCanNotChangeMessage;
             return result;
         }
+
         State.IsDisplay = isDisplay;
+        State.IsDelete = isDelete;
         await WriteStateAsync();
         result.Success = true;
         result.Data = _objectMapper.Map<UserTokenState, UserTokenGrainDto>(State);

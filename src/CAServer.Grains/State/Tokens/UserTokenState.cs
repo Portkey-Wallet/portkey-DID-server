@@ -10,4 +10,5 @@ public class UserTokenState
     public bool IsDefault { get; set; }
     public int SortWeight { get; set; }
     public Token Token { get; set; }
+    public bool IsDelete { get; set; }
 }
