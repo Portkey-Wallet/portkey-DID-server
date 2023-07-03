@@ -90,24 +90,24 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
-        if (hostingEnvironment.IsDevelopment())
-        {
-            Configure<AbpVirtualFileSystemOptions>(options =>
-            {
-                options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainSharedModule>(
-                    Path.Combine(hostingEnvironment.ContentRootPath,
-                        $"..{Path.DirectorySeparatorChar}CAServer.Domain.Shared"));
-                options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainModule>(
-                    Path.Combine(hostingEnvironment.ContentRootPath,
-                        $"..{Path.DirectorySeparatorChar}CAServer.Domain"));
-                options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationContractsModule>(
-                    Path.Combine(hostingEnvironment.ContentRootPath,
-                        $"..{Path.DirectorySeparatorChar}CAServer.Application.Contracts"));
-                options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationModule>(
-                    Path.Combine(hostingEnvironment.ContentRootPath,
-                        $"..{Path.DirectorySeparatorChar}CAServer.Application"));
-            });
-        }
+        // if (hostingEnvironment.IsDevelopment())
+        // {
+        //     Configure<AbpVirtualFileSystemOptions>(options =>
+        //     {
+        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainSharedModule>(
+        //             Path.Combine(hostingEnvironment.ContentRootPath,
+        //                 $"..{Path.DirectorySeparatorChar}CAServer.Domain.Shared"));
+        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainModule>(
+        //             Path.Combine(hostingEnvironment.ContentRootPath,
+        //                 $"..{Path.DirectorySeparatorChar}CAServer.Domain"));
+        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationContractsModule>(
+        //             Path.Combine(hostingEnvironment.ContentRootPath,
+        //                 $"..{Path.DirectorySeparatorChar}CAServer.Application.Contracts"));
+        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationModule>(
+        //             Path.Combine(hostingEnvironment.ContentRootPath,
+        //                 $"..{Path.DirectorySeparatorChar}CAServer.Application"));
+        //     });
+        // }
     }
 
     private void ConfigureConventionalControllers()
