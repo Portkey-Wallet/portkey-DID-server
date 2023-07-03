@@ -95,6 +95,12 @@ public class UserTokenGrain : Grain<UserTokenState>, IUserTokenGrain
             return result;
         }
 
+        if (isDelete)
+        {
+            var userTokenSymbolGrain = GetUserTokenSymbolGrain(userId, State.Token.ChainId, State.Token.Symbol);
+            await userTokenSymbolGrain.DeleteUserTokenSymbol();
+        }
+
         State.IsDisplay = isDisplay;
         State.IsDelete = isDelete;
         await WriteStateAsync();

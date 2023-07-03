@@ -38,6 +38,15 @@ public class UserTokenSymbolGrain : Grain<UserTokenSymbolState>, IUserTokenSymbo
         return true;
     }
 
+    public async Task DeleteUserTokenSymbol()
+    {
+        if (!State.IsDelete)
+        {
+            State.IsDelete = true;
+            await WriteStateAsync();
+        }
+    }
+
     private bool IsUserTokenSymbolAvailableAsync()
     {
         return State.UserId == Guid.Empty && string.IsNullOrWhiteSpace(State.ChainId) &&
