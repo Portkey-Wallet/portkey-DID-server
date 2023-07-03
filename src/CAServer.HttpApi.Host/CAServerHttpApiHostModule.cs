@@ -253,7 +253,6 @@ public class CAServerHttpApiHostModule : AbpModule
         ServiceConfigurationContext context,
         IConfiguration configuration)
     {
-        context.Services.AddSignalR();
         var multiplexer = ConnectionMultiplexer
             .Connect(configuration["Redis:Configuration"]);
         context.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
@@ -333,10 +332,6 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapHub<CAHub>("ca");
-        });
         app.UseConfiguredEndpoints();
 
         StartOrleans(context.ServiceProvider);
