@@ -28,5 +28,6 @@ public enum OrderStatusType
     StartPayment,
     SuccessfulPayment,
     PaymentFailed,
-    RefundSuccessfully
+    RefundSuccessfully,
+    Transferred
 }
