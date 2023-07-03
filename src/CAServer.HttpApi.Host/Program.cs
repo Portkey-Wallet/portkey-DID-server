@@ -41,10 +41,8 @@ public class Program
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseSerilog();
-            builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
-            app.MapHub<CAHub>("ca");
             await app.InitializeApplicationAsync();
             await app.RunAsync();
             return 0;

@@ -21,7 +21,7 @@ public class MessageAppService : CAServerAppService, IMessageAppService
     {
         var eto = ObjectMapper.Map<ScanLoginDto, ScanLoginEto>(request);
         eto.MethodName = "onScanLoginSuccess";
-        await _distributedEventBus.PublishAsync(ObjectMapper.Map<ScanLoginDto, ScanLoginEto>(request));
+        await _distributedEventBus.PublishAsync(eto);
     }
 
     public async Task ScanLoginAsync(ScanLoginDto request)
