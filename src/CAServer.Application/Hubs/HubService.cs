@@ -45,7 +45,7 @@ public class HubService : CAServerAppService, IHubService
         _logger = logger;
     }
 
-     public async Task Ping(HubRequestContext context, string content)
+    public async Task Ping(HubRequestContext context, string content)
     {
         const string PingMethodName = "Ping";
         _hubProvider.ResponseAsync(new HubResponse<string>() { RequestId = context.RequestId, Body = content },
@@ -115,7 +115,7 @@ public class HubService : CAServerAppService, IHubService
 
     public async Task RequestAchTxAddressAsync(string targetClientId, string orderId)
     {
-        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
+        var cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
         {
             try
@@ -128,16 +128,17 @@ public class HubService : CAServerAppService, IHubService
                     break;
                 }
 
-                Guid grainId = ThirdPartHelper.GetOrderId(orderId);
-                var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-                if (esOrderData == null)
+                var grainId = ThirdPartHelper.GetOrderId(orderId);
+                // get order data from grain
+                var order = await _thirdPartOrderProvider.GetThirdPartOrderFromGrainAsync(grainId);
+                if (order == null)
                 {
-                    _logger.LogError("This order {OrderId} not exists in the es", orderId);
+                    _logger.LogError("This order {OrderId} not exist", orderId);
                     break;
                 }
 
                 // address not callback yet
-                if (string.IsNullOrWhiteSpace(esOrderData.Address))
+                if (string.IsNullOrWhiteSpace(order.Address))
                 {
                     _logger.LogWarning("Get alchemy order {OrderId} target address failed, wait for next time",
                         orderId);
@@ -150,12 +151,14 @@ public class HubService : CAServerAppService, IHubService
                 var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(
                     new AlchemyTargetAddressDto()
                     {
-                        OrderId = esOrderData.Id,
-                        MerchantName = esOrderData.MerchantName,
-                        Address = esOrderData.Address,
-                        Network = esOrderData.Network,
-                        Crypto = esOrderData.Crypto,
-                        CryptoAmount = esOrderData.CryptoAmount
+                        OrderId = order.Id,
+                        ThirdPartOrderId = order.ThirdPartOrderNo,
+                        MerchantName = order.MerchantName,
+                        Address = order.Address,
+                        Network = order.Network,
+                        Crypto = order.Crypto,
+                        CryptoAmount = order.CryptoAmount,
+                        Status = order.Status
                     },
                     Formatting.None,
                     new JsonSerializerSettings
@@ -170,7 +173,7 @@ public class HubService : CAServerAppService, IHubService
                     targetClientId, "onAchTxAddressReceived"
                 );
                 _logger.LogInformation("Get alchemy order {OrderId} target address {Address} success",
-                    orderId, esOrderData.Address);
+                    orderId, order.Address);
                 break;
             }
             catch (OperationCanceledException oce)

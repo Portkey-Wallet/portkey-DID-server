@@ -85,9 +85,11 @@ public class AlchemySignatureResultDto : AlchemyBaseResponseDto
 public class AlchemyTargetAddressDto
 {
     public Guid OrderId { get; set; }
+    public string ThirdPartOrderId { get; set; }
     public string MerchantName { get; set; }
     public string Address { get; set; }
     public string Network { get; set; }
     public string Crypto { get; set; }
     public string CryptoAmount { get; set; }
+    public string Status { get; set; }
 }

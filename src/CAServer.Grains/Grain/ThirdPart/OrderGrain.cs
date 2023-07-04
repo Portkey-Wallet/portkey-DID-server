@@ -40,11 +40,25 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
         {
             State.Id = this.GetPrimaryKey();
         }
-        
+
         await WriteStateAsync();
 
         result.Data = _objectMapper.Map<OrderState, OrderGrainDto>(State);
         result.Success = true;
         return result;
+    }
+
+    public Task<GrainResultDto<OrderGrainDto>> GetOrder()
+    {
+        var result = new GrainResultDto<OrderGrainDto>();
+        if (State.Id == Guid.Empty)
+        {
+            result.Message = GrainResultMessage.OrderNotExist;
+            return Task.FromResult(result);
+        }
+
+        result.Data = _objectMapper.Map<OrderState, OrderGrainDto>(State);
+        result.Success = true;
+        return Task.FromResult(result);
     }
 }

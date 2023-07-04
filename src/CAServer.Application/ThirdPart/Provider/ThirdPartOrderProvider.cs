@@ -4,8 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Nest;
+using Orleans;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -14,13 +16,15 @@ namespace CAServer.ThirdPart.Provider;
 public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDependency
 {
     private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
+    private readonly IClusterClient _clusterClient;
     private readonly IObjectMapper _objectMapper;
 
     public ThirdPartOrderProvider(INESTRepository<OrderIndex, Guid> orderRepository,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper, IClusterClient clusterClient)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
+        _clusterClient = clusterClient;
     }
 
     public async Task<OrderDto> GetThirdPartOrderAsync(string orderId)
@@ -38,6 +42,13 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         }
 
         return _objectMapper.Map<OrderIndex, OrderDto>(userOrders.First());
+    }
+
+    public async Task<OrderDto> GetThirdPartOrderFromGrainAsync(Guid orderId)
+    {
+        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
+        var order = await orderGrain.GetOrder();
+        return order.Success ? _objectMapper.Map<OrderGrainDto, OrderDto>(order.Data) : null;
     }
 
     public async Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, int skipCount, int maxResultCount)
