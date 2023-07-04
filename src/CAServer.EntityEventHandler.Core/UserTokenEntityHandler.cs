@@ -41,7 +41,6 @@ public class UserTokenEntityHandler : EntityHandlerBase,
     public async Task HandleEventAsync(UserTokenDeleteEto eventData)
     {
         _logger.LogInformation($"user token delete.{eventData.UserId}-{eventData.Token.ChainId}-{eventData.Token.Symbol}");
-        var index = ObjectMapper.Map<UserTokenDeleteEto, UserTokenIndex>(eventData);
         try
         {
             await _userTokenIndexRepository.DeleteAsync(eventData.Id);
