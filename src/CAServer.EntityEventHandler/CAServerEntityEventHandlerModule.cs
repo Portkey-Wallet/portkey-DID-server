@@ -6,6 +6,7 @@ using CAServer.EntityEventHandler.Core;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,6 +17,7 @@ using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.Caching;
+using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
@@ -28,6 +30,7 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(CAServerEntityEventHandlerCoreModule),
     typeof(AbpAspNetCoreSerilogModule),
+    typeof(AbpCachingStackExchangeRedisModule),
     typeof(AbpEventBusRabbitMqModule))]
 public class CAServerEntityEventHandlerModule : AbpModule
 {
@@ -37,6 +40,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureTokenCleanupService();
         //ConfigureEsIndexCreation();
         context.Services.AddHostedService<CAServerHostedService>();
+        ConfigureCache();
 
         context.Services.AddSingleton<IClusterClient>(o =>
         {
@@ -60,6 +64,11 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
                 .Build();
         });
+    }
+    
+    private void ConfigureCache()
+    {
+        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)

@@ -58,6 +58,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
     public CAServerApplicationAutoMapperProfile()
     {
         CreateMap<UserTokenGrainDto, UserTokenEto>();
+        CreateMap<UserTokenGrainDto, UserTokenDeleteEto>();
         CreateMap<UserTokenGrainDto, UserTokenDto>();
         CreateMap<UserTokenItem, UserTokenGrainDto>()
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
@@ -312,7 +313,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<UserTokenIndex, GetTokenInfoDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
             .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
-            .ForPath(t => t.Id, m => m.MapFrom(f => f.Token.Id.ToString()))
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToString()))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
             .ForPath(t => t.TokenContractAddress, m => m.MapFrom(f => f.Token.Address))
@@ -321,7 +322,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<UserTokenIndex, GetTokenListDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
             .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
-            .ForPath(t => t.Id, m => m.MapFrom(f => f.Token.Id.ToString()))
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToString()))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
             .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));

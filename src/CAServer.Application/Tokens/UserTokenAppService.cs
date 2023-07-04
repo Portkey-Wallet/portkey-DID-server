@@ -48,15 +48,15 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     [Authorize]
     public async Task<UserTokenDto> ChangeTokenDisplayAsync(bool isDisplay, string id)
     {
-        if (!Guid.TryParse(id, out var tokenId))
+        if (!Guid.TryParse(id, out var grainId))
         {
             var valueTuple = GetTokenInfoFromId(id);
-            tokenId = await AddTokenAsync(valueTuple.symbol, valueTuple.chainId);
+            grainId = await AddTokenAsync(valueTuple.symbol, valueTuple.chainId);
         }
 
-        var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(tokenId);
+        var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(grainId);
 
-        var grain = _clusterClient.GetGrain<IUserTokenGrain>(tokenId);
+        var grain = _clusterClient.GetGrain<IUserTokenGrain>(grainId);
         var userId = CurrentUser.GetId();
         var tokenResult = await grain.ChangeTokenDisplayAsync(userId, isDisplay, isNeedDelete);
         if (!tokenResult.Success)
@@ -79,7 +79,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
     private (string chainId, string symbol) GetTokenInfoFromId(string tokenId)
     {
-        return (tokenId[..tokenId.IndexOf('-')], tokenId.Substring(tokenId.IndexOf('-') + 1, tokenId.Length));
+        return (tokenId[..tokenId.IndexOf('-')], tokenId.Substring(tokenId.IndexOf('-') + 1));
     }
 
     private async Task<bool> IsNeedDeleteAsync(Guid tokenId)
