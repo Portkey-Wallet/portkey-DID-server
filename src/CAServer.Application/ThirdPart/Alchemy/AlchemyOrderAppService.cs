@@ -110,8 +110,8 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         {
             _logger.LogInformation("UpdateAlchemyTxHash OrderId: {OrderId} TxHash:{TxHash} will send to alchemy",
                 input.OrderId, input.TxHash);
-            Guid orderId = ThirdPartHelper.GetOrderId(input.OrderId);
-            var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(orderId.ToString());
+            var orderId = ThirdPartHelper.GetOrderId(input.OrderId);
+            var orderData = await _thirdPartOrderProvider.GetThirdPartOrderFromGrainAsync(orderId);
             if (orderData == null)
             {
                 _logger.LogError("No order found for {orderId}", orderId);
@@ -125,6 +125,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
                 orderPendingUpdate.Network, orderPendingUpdate.Address);
 
+            // whether success? if success update status to transfered
             await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.UpdateSellOrderUri,
                 JsonConvert.SerializeObject(orderPendingUpdate, Formatting.None, _setting));
         }
