@@ -19,9 +19,9 @@ public class QrCodeController : CAServerController
         _qrCodeAppService = qrCodeAppService;
     }
 
-    [HttpPost("exist")]
-    public async Task<bool> ExistAsync(QrCodeRequestDto input)
+    [HttpPost]
+    public async Task<bool> CreateAsync(QrCodeRequestDto input)
     {
-        return await _qrCodeAppService.ExistAsync(input);
+        return await _qrCodeAppService.CreateAsync(input);
     }
 }

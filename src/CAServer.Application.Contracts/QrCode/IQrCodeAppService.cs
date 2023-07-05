@@ -5,5 +5,5 @@ namespace CAServer.QrCode;
 
 public interface IQrCodeAppService
 {
-    Task<bool> ExistAsync(QrCodeRequestDto input);
+    Task<bool> CreateAsync(QrCodeRequestDto input);
 }
