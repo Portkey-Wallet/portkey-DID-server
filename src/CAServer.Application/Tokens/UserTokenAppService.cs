@@ -98,7 +98,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
     private async Task<Guid> AddTokenAsync(string symbol, string chainId)
     {
-        var indexerTokens = await _tokenProvider.GetTokenInfosAsync(chainId, symbol, string.Empty, 1);
+        var indexerTokens = await _tokenProvider.GetTokenInfosAsync(chainId, symbol, string.Empty, 0, 1);
         var tokenInfo = indexerTokens?.TokenInfo?.FirstOrDefault();
         if (tokenInfo == null)
         {

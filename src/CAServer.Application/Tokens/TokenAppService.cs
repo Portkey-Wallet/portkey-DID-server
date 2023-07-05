@@ -126,8 +126,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var userTokensDto = await _tokenProvider.GetUserTokenInfoListAsync(CurrentUser.GetId(), chainId, string.Empty);
         userTokensDto = userTokensDto?.Where(t => t.Token.Symbol.Contains(input.Symbol.Trim().ToUpper())).ToList();
         var indexerToken =
-            await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper(),
-                short.MaxValue);
+            await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
 
         return GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
     }
@@ -140,7 +139,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             return ObjectMapper.Map<UserTokenIndex, GetTokenInfoDto>(tokenIndex);
         }
 
-        var dto = await _tokenProvider.GetTokenInfosAsync(chainId, symbol.Trim().ToUpper(), string.Empty, 1);
+        var dto = await _tokenProvider.GetTokenInfosAsync(chainId, symbol.Trim().ToUpper(), string.Empty, 0, 1);
         var tokenInfo = dto?.TokenInfo?.FirstOrDefault();
         if (tokenInfo == null)
         {
