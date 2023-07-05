@@ -4,5 +4,5 @@ namespace CAServer.Grains.Grain.QrCode;
 
 public interface IQrCodeGrain : IGrainWithStringKey
 {
-    Task<GrainResultDto> AddQrCode();
+    Task<bool> Exist();
 }

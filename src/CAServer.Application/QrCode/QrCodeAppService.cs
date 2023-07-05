@@ -20,11 +20,10 @@ public class QrCodeAppService : CAServerAppService, IQrCodeAppService
 
     public async Task<bool> ExistAsync(QrCodeRequestDto input)
     {
-        var grainId =
-            GrainIdHelper.GenerateGrainId("QrCode", input.Id);
+        var grainId = GrainIdHelper.GenerateGrainId("QrCode", input.Id);
         var grain = _clusterClient.GetGrain<IQrCodeGrain>(grainId);
-        var resultDto = await grain.AddQrCode();
-        
-        return resultDto.Success;
+        var exist = await grain.Exist();
+
+        return exist;
     }
 }

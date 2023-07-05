@@ -17,16 +17,25 @@ public class QrCodeGrain : Grain<QrCodeState>, IQrCodeGrain
         await base.OnDeactivateAsync();
     }
 
-    public Task<GrainResultDto> AddQrCode()
+    public Task<bool> Exist()
     {
-        var result = new GrainResultDto();
+        if (string.IsNullOrEmpty(State.Id))
+        {
+            AddQrCode();
+            return Task.FromResult(false);
+        }
+        
+        return Task.FromResult(true);
+    }
+
+    private Task AddQrCode()
+    {
         if (string.IsNullOrEmpty(State.Id))
         {
             State.Id = this.GetPrimaryKeyString();
             State.ScanTime = DateTime.UtcNow;
-            result.Success = true;
         }
 
-        return Task.FromResult(result);
+        return Task.CompletedTask;
     }
 }
