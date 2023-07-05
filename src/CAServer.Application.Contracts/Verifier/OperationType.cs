@@ -8,5 +8,6 @@ public enum OperationType
     AddGuardian = 3,
     RemoveGuardian = 4,
     UpdateGuardian = 5,
-    RemoveOtherManagerInfo = 6
+    RemoveOtherManagerInfo = 6,
+    SetLoginGuardian = 7
 }

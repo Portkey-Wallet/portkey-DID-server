@@ -91,10 +91,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var type = Convert.ToInt32(input.OperationType).ToString();
-        if (input.OperationType == OperationType.Unknown)
-        {
-            type = Convert.ToInt32(OperationType.CreateCAHolder).ToString();
-        }
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {
@@ -150,10 +146,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        if (verifierCodeOperationType == OperationType.Unknown)
-        {
-            operationType = Convert.ToInt32(OperationType.CreateCAHolder).ToString();
-        }
         var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType });
 
         var param = new StringContent(tokenParam,

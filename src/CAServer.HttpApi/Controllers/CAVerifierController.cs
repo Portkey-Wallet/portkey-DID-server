@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using CAServer.Dtos;
 using CAServer.Google;
@@ -53,12 +53,19 @@ public class CAVerifierController : CAServerController
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
         var type = verifierServerInput.OperationType;
+        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
+        if (!values.Contains(type))
+        {
+            throw new UserFriendlyException("OperationType is invalid");
+        }
+
         if (type == OperationType.Unknown)
         {
             type = OperationType.CreateCAHolder;
         }
+
         return type switch
-        { 
+        {
             OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
                 sendVerificationRequestInput, type),
             OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
@@ -68,6 +75,10 @@ public class CAVerifierController : CAServerController
             OperationType.RemoveGuardian => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
                 sendVerificationRequestInput, type),
             OperationType.UpdateGuardian => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
+                sendVerificationRequestInput, type),
+            OperationType.RemoveOtherManagerInfo => await GuardianOperationsSendVerificationRequestAsync(
+                recaptchatoken, sendVerificationRequestInput, type),
+            OperationType.SetLoginGuardian => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
                 sendVerificationRequestInput, type),
             _ => throw new ArgumentOutOfRangeException()
         };
@@ -194,24 +205,47 @@ public class CAVerifierController : CAServerController
     [HttpPost("verifyCode")]
     public async Task<VerificationCodeResponse> VerifyCode(VerificationSignatureRequestDto requestDto)
     {
+        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
+        if (!values.Contains(requestDto))
+        {
+            throw new UserFriendlyException("OperationType is invalid");
+        }
         return await _verifierAppService.VerifyCodeAsync(requestDto);
     }
 
     [HttpPost("verifyGoogleToken")]
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
     {
+        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
+        if (!values.Contains(requestDto))
+        {
+            throw new UserFriendlyException("OperationType is invalid");
+        }
+
         return await _verifierAppService.VerifyGoogleTokenAsync(requestDto);
     }
 
     [HttpPost("verifyAppleToken")]
     public async Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto)
     {
+        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
+        if (!values.Contains(requestDto.OperationType))
+        {
+            throw new UserFriendlyException("OperationType is invalid");
+        }
+
         return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
 
     [HttpPost("isGoogleRecaptchaOpen")]
-    public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version , OperationType operationType)
+    public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version, OperationType operationType)
     {
+        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
+        if (!values.Contains(operationType))
+        {
+            throw new UserFriendlyException("OperationType is invalid");
+        }
+        
         var userIpAddress = UserIpAddress(HttpContext);
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
 

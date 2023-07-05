@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq.Dynamic.Core;
 using CAServer.Commons;
 
 namespace CAServer.Verifier;
@@ -18,15 +19,6 @@ public class VerifierServerInput : VerifierServerBase, IValidatableObject
             yield return new ValidationResult(
                 "Invalid email input.",
                 new[] { "GuardianIdentifier" }
-            );
-        }
-
-
-        if (OperationType == OperationType.RemoveOtherManagerInfo)
-        {
-            yield return new ValidationResult(
-                "Invalid operation type.",
-                new[] { "OperationType" }
             );
         }
     }
