@@ -24,8 +24,8 @@ public class QrCodeTest : CAServerApplicationTestBase
     [Fact]
     public async Task ExistTest()
     {
-        var result = await _qrCodeAppService.ExistAsync(new QrCodeRequestDto { Id = "test" });
-        result.ShouldBeFalse();
+        var result = await _qrCodeAppService.CreateAsync(new QrCodeRequestDto { Id = "test" });
+        result.ShouldBeTrue();
     }
 
     [Fact]
@@ -34,9 +34,9 @@ public class QrCodeTest : CAServerApplicationTestBase
         var grainId =
             GrainIdHelper.GenerateGrainId("QrCode", "test_not_exist");
         var grain = _cluster.Client.GetGrain<IQrCodeGrain>(grainId);
-        await grain.Exist();
+        await grain.AddIfAbsent();
         
-        var result = await _qrCodeAppService.ExistAsync(new QrCodeRequestDto { Id = "test_not_exist" });
-        result.ShouldBeTrue();
+        var result = await _qrCodeAppService.CreateAsync(new QrCodeRequestDto { Id = "test_not_exist" });
+        result.ShouldBeFalse();
     }
 }
