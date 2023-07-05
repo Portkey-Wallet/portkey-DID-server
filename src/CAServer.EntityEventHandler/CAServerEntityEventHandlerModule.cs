@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElf.Indexing.Elasticsearch.Options;
@@ -6,6 +7,7 @@ using CAServer.EntityEventHandler.Core;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -40,7 +42,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureTokenCleanupService();
         //ConfigureEsIndexCreation();
         context.Services.AddHostedService<CAServerHostedService>();
-        ConfigureCache();
+        ConfigureCache(configuration);
 
         context.Services.AddSingleton<IClusterClient>(o =>
         {
@@ -50,7 +52,6 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .UseMongoDBClustering(options =>
                 {
                     options.DatabaseName = configuration["Orleans:DataBase"];
-                    ;
                     options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
                 .Configure<ClusterOptions>(options =>
@@ -65,10 +66,20 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .Build();
         });
     }
-    
-    private void ConfigureCache()
+
+    private void ConfigureCache(IConfiguration configuration)
     {
-        Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
+        var cacheOptions = configuration.GetSection("Cache").Get<CacheOptions>();
+        var expirationDays = cacheOptions?.ExpirationDays ?? 365;
+
+        Configure<AbpDistributedCacheOptions>(options =>
+        {
+            options.KeyPrefix = "CAServer:";
+            options.GlobalCacheEntryOptions = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(expirationDays)
+            };
+        });
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
