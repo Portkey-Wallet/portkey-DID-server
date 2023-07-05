@@ -53,12 +53,7 @@ public class CAVerifierController : CAServerController
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
         var type = verifierServerInput.OperationType;
-        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(type))
-        {
-            throw new UserFriendlyException("OperationType is invalid");
-        }
-
+        ValidateOperationType(type);
         if (type == OperationType.Unknown)
         {
             type = OperationType.CreateCAHolder;
@@ -205,47 +200,28 @@ public class CAVerifierController : CAServerController
     [HttpPost("verifyCode")]
     public async Task<VerificationCodeResponse> VerifyCode(VerificationSignatureRequestDto requestDto)
     {
-        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(requestDto.OperationType))
-        {
-            throw new UserFriendlyException("OperationType is invalid");
-        }
+       ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyCodeAsync(requestDto);
     }
 
     [HttpPost("verifyGoogleToken")]
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
     {
-        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(requestDto.OperationType))
-        {
-            throw new UserFriendlyException("OperationType is invalid");
-        }
-
+        ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyGoogleTokenAsync(requestDto);
     }
 
     [HttpPost("verifyAppleToken")]
     public async Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto)
     {
-        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(requestDto.OperationType))
-        {
-            throw new UserFriendlyException("OperationType is invalid");
-        }
-
+        ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
 
     [HttpPost("isGoogleRecaptchaOpen")]
     public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version, OperationType operationType)
     {
-        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(operationType))
-        {
-            throw new UserFriendlyException("OperationType is invalid");
-        }
-        
+        ValidateOperationType(operationType);
         var userIpAddress = UserIpAddress(HttpContext);
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
 
@@ -279,5 +255,14 @@ public class CAVerifierController : CAServerController
 
         userIpAddress = context.Connection.RemoteIpAddress?.ToString();
         return userIpAddress;
+    }
+
+    private void ValidateOperationType(OperationType operationType)
+    {
+        var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
+        if (!values.Contains(operationType))
+        {
+            throw new UserFriendlyException("OperationType is invalid");
+        }
     }
 }
