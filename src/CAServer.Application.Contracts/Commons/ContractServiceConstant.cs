@@ -12,4 +12,5 @@ public static class AElfContractMethodName
 public static class CommonConstant
 {
     public const string ResourceTokenKey = "ResourceToken";
+    public const int CacheExpirationDays = 365;
 }

@@ -70,7 +70,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
     private void ConfigureCache(IConfiguration configuration)
     {
         var cacheOptions = configuration.GetSection("Cache").Get<CacheOptions>();
-        var expirationDays = cacheOptions?.ExpirationDays ?? 365;
+        var expirationDays = cacheOptions?.ExpirationDays ?? CommonConstant.CacheExpirationDays;
 
         Configure<AbpDistributedCacheOptions>(options =>
         {
