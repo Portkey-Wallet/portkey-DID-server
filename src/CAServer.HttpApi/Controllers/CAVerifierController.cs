@@ -206,7 +206,7 @@ public class CAVerifierController : CAServerController
     public async Task<VerificationCodeResponse> VerifyCode(VerificationSignatureRequestDto requestDto)
     {
         var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(requestDto))
+        if (!values.Contains(requestDto.OperationType))
         {
             throw new UserFriendlyException("OperationType is invalid");
         }
@@ -217,7 +217,7 @@ public class CAVerifierController : CAServerController
     public async Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto)
     {
         var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(requestDto))
+        if (!values.Contains(requestDto.OperationType))
         {
             throw new UserFriendlyException("OperationType is invalid");
         }
