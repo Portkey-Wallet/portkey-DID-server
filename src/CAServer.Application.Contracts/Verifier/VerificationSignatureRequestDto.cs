@@ -13,6 +13,8 @@ public class VerificationSignatureRequestDto : IValidatableObject
     [Required] public string VerifierId { get; set; }
     [Required] public string ChainId { get; set; }
 
+    [Required] public VerifierCodeOperationType VerifierCodeOperationType { get; set; }
+
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
