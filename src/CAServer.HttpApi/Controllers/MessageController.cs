@@ -22,8 +22,14 @@ public class MessageController : CAServerController
 
     //[Authorize]
     [HttpPost("scanLoginSuccess")]
-    public async Task ScanLoginSuccess(ScanLoginDto request)
+    public async Task ScanLoginSuccessAsync(ScanLoginDto request)
     {
-        await _messageAppService.ScanLoginSuccess(request);
+        await _messageAppService.ScanLoginSuccessAsync(request);
+    }
+    
+    [HttpPost("scanLogin")]
+    public async Task ScanLoginAsync(ScanLoginDto request)
+    {
+        await _messageAppService.ScanLoginAsync(request);
     }
 }

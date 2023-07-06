@@ -17,8 +17,8 @@ public class ScanLoginHandler : IDistributedEventHandler<ScanLoginEto>, ITransie
 
     public async Task HandleEventAsync(ScanLoginEto eventData)
     {
-        await _caHubProvider.ResponseAsync(new HubResponseBase<string> { Body = eventData.Message },
-            eventData.TargetClientId,
-            "onScanLoginSuccess");
+        await _caHubProvider.ResponseAsync(
+            new HubResponse<string> { Body = eventData.Message, RequestId = eventData.TargetClientId },
+            eventData.TargetClientId, eventData.MethodName, true);
     }
 }
