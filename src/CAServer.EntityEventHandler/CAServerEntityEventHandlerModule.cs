@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch.Options;
 using CAServer.Commons;
 using CAServer.EntityEventHandler.Core;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,6 +47,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         //ConfigureEsIndexCreation();
         context.Services.AddHostedService<CAServerHostedService>();
         ConfigureCache(configuration);
+        ConfigureGraphQl(context, configuration);
 
         context.Services.AddSingleton<IClusterClient>(o =>
         {
@@ -66,6 +71,14 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .Build();
         });
     }
+    
+    private void ConfigureGraphQl(ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
+            new NewtonsoftJsonSerializer()));
+        context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
+    }
 
     private void ConfigureCache(IConfiguration configuration)
     {
@@ -82,7 +95,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         });
     }
 
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
         var tokenList = context.ServiceProvider.GetRequiredService<IOptions<TokenListOptions>>().Value;
         var cache = context.ServiceProvider.GetRequiredService<IDistributedCache<List<string>>>();
