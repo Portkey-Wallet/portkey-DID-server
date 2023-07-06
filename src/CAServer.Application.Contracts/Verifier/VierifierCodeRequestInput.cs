@@ -10,4 +10,6 @@ public class VierifierCodeRequestInput
     public string ChainId { get; set; }
     public string Salt { get; set; }
     public string GuardianIdentifierHash { get; set; }
+    
+    public VerifierCodeOperationType VerifierCodeOperationType { get; set; }
 }
