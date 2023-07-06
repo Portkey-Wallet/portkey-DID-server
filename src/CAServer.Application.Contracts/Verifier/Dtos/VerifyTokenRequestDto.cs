@@ -7,4 +7,6 @@ public class VerifyTokenRequestDto
     [Required] public string AccessToken { get; set; }
     [Required] public string VerifierId { get; set; }
     [Required] public string ChainId { get; set; }
+    
+    [Required] public VerifierCodeOperationType VerifierCodeOperationType { get; set; }
 }

@@ -39,9 +39,4 @@
             <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Application.dll</HintPath>
         </Reference>
     </ItemGroup>
-
-    <ItemGroup>
-        <Orleans_CodeGenInputs Remove="Sample\ISampleAppService.cs" />
-        <Orleans_CodeGenInputs Remove="Sample\TestDto.cs" />
-    </ItemGroup>
 </Project>
