@@ -8,3 +8,9 @@ public static class AElfContractMethodName
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
 }
+
+public static class CommonConstant
+{
+    public const string ResourceTokenKey = "ResourceToken";
+    public const int CacheExpirationDays = 365;
+}

@@ -1,14 +1,15 @@
-using CAServer.Tokens.Dtos;
+using System;
+using Volo.Abp.EventBus;
 
-namespace CAServer.Grains.State.Tokens;
+namespace CAServer.Tokens.Etos;
 
-public class UserTokenState
+[EventName("UserTokenDeleteEto")]
+public class UserTokenDeleteEto
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public bool IsDisplay { get; set; }
     public bool IsDefault { get; set; }
     public int SortWeight { get; set; }
-    public Token Token { get; set; }
-    public bool IsDelete { get; set; }
+    public Dtos.Token Token { get; set; }
 }

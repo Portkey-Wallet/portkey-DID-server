@@ -1,11 +1,13 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Security;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Orleans.TestingHost;
@@ -35,6 +37,12 @@ public class UserTokenAppServiceTests : CAServerApplicationTestBase
     {
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
         services.AddSingleton(_currentUser);
+        
+        var graphQlHelper = Substitute.For<IGraphQLHelper>();
+        var graphQlClient = Substitute.For<IGraphQLClient>();
+        // var contractProvider = Substitute.For<IContractProvider>();
+        services.AddSingleton(graphQlClient);
+        services.AddSingleton(graphQlHelper);
     }
 
     private void Login(Guid userId)
@@ -66,7 +74,7 @@ public class UserTokenAppServiceTests : CAServerApplicationTestBase
         };
         await grain.AddUserTokenAsync(userId, token);
 
-        var result = _userTokenAppService.ChangeTokenDisplayAsync(display, userId);
+        var result = _userTokenAppService.ChangeTokenDisplayAsync(display, userId.ToString());
         var data = result.Result;
         data.IsDisplay.ShouldBe(display);
     }
