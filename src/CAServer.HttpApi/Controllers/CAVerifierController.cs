@@ -58,24 +58,14 @@ public class CAVerifierController : CAServerController
         {
             type = OperationType.CreateCAHolder;
         }
-
         return type switch
         {
             OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
                 sendVerificationRequestInput, type),
             OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
                 sendVerificationRequestInput, type),
-            OperationType.AddGuardian => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
-            OperationType.RemoveGuardian => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
-            OperationType.UpdateGuardian => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
-            OperationType.RemoveOtherManagerInfo => await GuardianOperationsSendVerificationRequestAsync(
-                recaptchatoken, sendVerificationRequestInput, type),
-            OperationType.SetLoginGuardian => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
-            _ => throw new ArgumentOutOfRangeException()
+            _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
+                type)
         };
     }
 
@@ -200,7 +190,7 @@ public class CAVerifierController : CAServerController
     [HttpPost("verifyCode")]
     public async Task<VerificationCodeResponse> VerifyCode(VerificationSignatureRequestDto requestDto)
     {
-       ValidateOperationType(requestDto.OperationType);
+        ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyCodeAsync(requestDto);
     }
 

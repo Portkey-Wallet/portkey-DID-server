@@ -50,18 +50,10 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         {
             return false;
         }
-
-
         return type switch
         {
             OperationType.CreateCAHolder => true,
-            OperationType.SocialRecovery => count >= _sendVerifierCodeRequestLimitOptions.Limit,
-            OperationType.AddGuardian => count >= _sendVerifierCodeRequestLimitOptions.Limit,
-            OperationType.RemoveGuardian=> count >= _sendVerifierCodeRequestLimitOptions.Limit,
-            OperationType.RemoveOtherManagerInfo => count >= _sendVerifierCodeRequestLimitOptions.Limit,
-            OperationType.UpdateGuardian => count >= _sendVerifierCodeRequestLimitOptions.Limit,
-            OperationType.SetLoginGuardian => count >= _sendVerifierCodeRequestLimitOptions.Limit,
-            _ => false
+            _ => count >= _sendVerifierCodeRequestLimitOptions.Limit
         };
     }
 
