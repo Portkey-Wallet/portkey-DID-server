@@ -40,6 +40,8 @@ public class UserTokenSymbolGrain : Grain<UserTokenSymbolState>, IUserTokenSymbo
 
     public async Task DeleteUserTokenSymbol()
     {
+        if(State.IsDelete) return;
+        
         State.IsDelete = true;
         await WriteStateAsync();
     }
