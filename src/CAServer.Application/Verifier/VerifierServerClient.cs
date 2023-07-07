@@ -90,11 +90,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
-        var type = Convert.ToInt32(input.VerifierCodeOperationType).ToString();
-        if (input.VerifierCodeOperationType == VerifierCodeOperationType.Unknown)
-        {
-            type = Convert.ToInt32(VerifierCodeOperationType.CreateCAHolder).ToString();
-        }
+        var type = Convert.ToInt32(input.OperationType).ToString();
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {
@@ -141,19 +137,15 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
 
         return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
-            input.VerifierCodeOperationType);
+            input.OperationType);
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
         string accessToken, string identifierHash, string salt,
-        VerifierCodeOperationType verifierCodeOperationType)
+        OperationType verifierCodeOperationType)
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        if (verifierCodeOperationType == VerifierCodeOperationType.Unknown)
-        {
-            operationType = Convert.ToInt32(VerifierCodeOperationType.CreateCAHolder).ToString();
-        }
         var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType });
 
         var param = new StringContent(tokenParam,
