@@ -133,7 +133,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
     public async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
     {
-        var tokenIndex = await _tokenProvider.GetUserTokenInfoAsync(CurrentUser.GetId(), chainId, symbol);
+        var tokenIndex = await _tokenProvider.GetUserTokenInfoAsync(CurrentUser.GetId(), chainId, symbol.Trim().ToUpper());
         if (tokenIndex != null)
         {
             return ObjectMapper.Map<UserTokenIndex, GetTokenInfoDto>(tokenIndex);
