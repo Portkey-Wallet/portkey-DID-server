@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -21,6 +21,9 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
     private readonly IDistributedCache<IpInfoResultDto> _distributedCache;
     private readonly IpServiceSettingOptions _ipServiceSettingOptions;
     private readonly string _prefix = "IpInfo-";
+
+    private readonly string _ipPattern =
+        @"^([0,1]?\d{1,2}|2([0-4][0-9]|5[0-5]))(\.([0,1]?\d{1,2}|2([0-4][0-9]|5[0-5]))){3}$";
 
     public IpInfoAppService(IIpInfoClient ipInfoClient,
         IHttpContextAccessor httpContextAccessor,
@@ -77,11 +80,15 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
         var ip = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString().Split(',')
             .FirstOrDefault();
 
-        if (string.IsNullOrWhiteSpace(ip))
+        ip ??= string.Empty;
+
+        if (!Match(ip))
         {
-            throw new UserFriendlyException("Unknown ip address. ip is empty.");
+            throw new UserFriendlyException("Unknown ip address: {ip}.", ip);
         }
 
         return ip;
     }
+
+    private bool Match(string ip) => new Regex(_ipPattern).IsMatch(ip);
 }
