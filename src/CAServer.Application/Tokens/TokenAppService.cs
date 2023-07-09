@@ -133,7 +133,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
     public async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
     {
-        var tokenIndex = await _tokenProvider.GetUserTokenInfoAsync(CurrentUser.GetId(), chainId, symbol.Trim().ToUpper());
+        var tokenIndex =
+            await _tokenProvider.GetUserTokenInfoAsync(CurrentUser.GetId(), chainId, symbol.Trim().ToUpper());
         if (tokenIndex != null)
         {
             return ObjectMapper.Map<UserTokenIndex, GetTokenInfoDto>(tokenIndex);
@@ -156,7 +157,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var userTokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetTokenListDto>>(userTokenInfos);
         if (tokenList.Count > 0)
         {
-            tokenList.RemoveAll(t => userTokens.Select(f => f.Symbol).Contains(t.Symbol));
+            tokenList.RemoveAll(t =>
+                userTokens.Select(f => new { f.Symbol, f.ChainId }).Contains(new { t.Symbol, t.ChainId }));
         }
 
         if (userTokens.Select(t => t.IsDefault).Contains(true))
