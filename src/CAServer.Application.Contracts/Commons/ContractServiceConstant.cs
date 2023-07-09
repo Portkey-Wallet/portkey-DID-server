@@ -1,3 +1,5 @@
+using System;
+
 namespace CAServer.Commons;
 
 public static class AElfContractMethodName
@@ -15,7 +17,7 @@ public static class CommonConstant
     public const int CacheExpirationDays = 365;
 
     public const string FiatListKey = "FiatList";
-    public const string OrderQuoteKey = "OrderQuote";
     public const int FiatListExpirationMinutes = 30;
     public const int OrderQuoteExpirationMinutes = 30;
+    public static DateTimeOffset DefaultAbsoluteExpiration = DateTime.Parse("2099-01-01 12:00:00");
 }

@@ -2,8 +2,10 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -57,7 +59,10 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
                 return ObjectMapper.Map<DefaultIpInfoOptions, IpInfoResultDto>(_defaultIpInfoOptions);
             }
 
-            await _distributedCache.SetAsync(_prefix + ip, ipInfo);
+            await _distributedCache.SetAsync(_prefix + ip, ipInfo, new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+            });
             return ipInfo;
         }
         catch (Exception e)
