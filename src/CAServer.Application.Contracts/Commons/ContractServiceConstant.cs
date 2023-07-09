@@ -13,4 +13,9 @@ public static class CommonConstant
 {
     public const string ResourceTokenKey = "ResourceToken";
     public const int CacheExpirationDays = 365;
+
+    public const string FiatListKey = "FiatList";
+    public const string OrderQuoteKey = "OrderQuote";
+    public const int FiatListExpirationMinutes = 30;
+    public const int OrderQuoteExpirationMinutes = 30;
 }

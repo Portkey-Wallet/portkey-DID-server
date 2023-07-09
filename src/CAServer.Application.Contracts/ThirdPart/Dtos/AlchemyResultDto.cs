@@ -35,7 +35,7 @@ public class AlchemyFiatDto
     public string PayWayCode { get; set; }
     public string PayWayName { get; set; }
     public string FixedFee { get; set; }
-    public string RateFee { get; set; }
+    public string FeeRate { get; set; }
     public string PayMin { get; set; }
     public string PayMax { get; set; }
     public string CountryName { get; set; }
