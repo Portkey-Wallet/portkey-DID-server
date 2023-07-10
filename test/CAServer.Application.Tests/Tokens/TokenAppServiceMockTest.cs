@@ -18,6 +18,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver.Core.Clusters;
 using Moq;
 using NSubstitute;
+using Org.BouncyCastle.Bcpg;
 using Orleans;
 using Volo.Abp.Application.Dtos;
 
@@ -160,9 +161,31 @@ public partial class TokenAppServiceTest
                 }
             });
 
+        mockTokenPriceProvider.Setup(o =>
+                o.GetUserTokenInfoAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((Guid userId, string chainId, string symbol) =>
+            {
+                if (symbol == "VOTE")
+                {
+                    return null;
+                }
+
+                return new UserTokenIndex()
+                {
+                    IsDisplay = false,
+                    IsDefault = false,
+                    Token = new CAServer.Entities.Es.Token()
+                    {
+                        Symbol = "CPU",
+                        ChainId = "AELF",
+                        Decimals = 8
+                    }
+                };
+            });
+
         return mockTokenPriceProvider.Object;
     }
-    
+
     private IGraphQLHelper GetMockIGraphQLHelper()
     {
         var mockHelper = new Mock<IGraphQLHelper>();

@@ -1,8 +1,11 @@
 using AElf;
+using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Search;
 using CAServer.Tokens;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Newtonsoft.Json;
 using Shouldly;
 using Volo.Abp.Application.Dtos;
@@ -23,7 +26,12 @@ public class UserTokenHandlerTests : CAServerEntityEventHandlerTestBase
         _searchAppService = GetRequiredService<ISearchAppService>();
         _userTokenAppService = GetRequiredService<IUserTokenAppService>();
     }
-
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetMockIGraphQLHelper());
+    }
+    
     [Fact]
     public async Task HandlerEvent_NewUserToken()
     {
@@ -44,5 +52,11 @@ public class UserTokenHandlerTests : CAServerEntityEventHandlerTestBase
 
         var userTokenId = info.Items[0].Id;
         userTokenId.ShouldNotBe(Guid.Empty);
+    }
+    
+    private IGraphQLHelper GetMockIGraphQLHelper()
+    {
+        var mockHelper = new Mock<IGraphQLHelper>();
+        return mockHelper.Object;
     }
 }
