@@ -2,12 +2,12 @@
 using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
-using CAServer.Device;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
+using CAServer.Signature;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -30,7 +30,8 @@ namespace CAServer;
     typeof(AbpTenantManagementApplicationModule),
     typeof(AbpFeatureManagementApplicationModule),
     typeof(AbpSettingManagementApplicationModule),
-    typeof(CAServerGrainsModule)
+    typeof(CAServerGrainsModule),
+    typeof(CAServerSignatureModule)
 )]
 public class CAServerApplicationModule : AbpModule
 {
@@ -40,6 +41,8 @@ public class CAServerApplicationModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         Configure<TokenListOptions>(configuration.GetSection("Tokens"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfo"));
+        Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
+        Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
@@ -50,8 +53,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
-        
-        
+
+
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -66,6 +69,13 @@ public class CAServerApplicationModule : AbpModule
         Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
+        Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
+        Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions"));
+        Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
+        Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
+        Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
+        Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
+        Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

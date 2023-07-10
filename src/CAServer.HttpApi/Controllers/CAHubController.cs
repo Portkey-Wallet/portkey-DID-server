@@ -19,7 +19,7 @@ public class CAHubController : CAServerController
     [HttpPost("ping")]
     public async Task<string> Ping([FromBody] HubPingRequestDto requestDto)
     {
-        _hubService.Ping(requestDto.Context, requestDto.Content);
+        await _hubService.Ping(requestDto.Context, requestDto.Content);
         return "OK";
     }
 

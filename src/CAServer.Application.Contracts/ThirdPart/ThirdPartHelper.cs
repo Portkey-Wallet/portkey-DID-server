@@ -37,12 +37,12 @@ public static class AlchemyHelper
         { "FINISHED", OrderStatusType.Finish },
         { "PAY_FAIL", OrderStatusType.Failed },
         { "PAY_SUCCESS", OrderStatusType.Pending },
-        { "1", OrderStatusType.Finish },
-        { "2", OrderStatusType.Pending },
-        { "3", OrderStatusType.Pending },
-        { "4", OrderStatusType.Pending },
-        { "5", OrderStatusType.Failed },
-        { "6", OrderStatusType.Refunded },
+        { "1", OrderStatusType.Created },
+        { "2", OrderStatusType.UserCompletesCoinDeposit },
+        { "3", OrderStatusType.StartPayment },
+        { "4", OrderStatusType.SuccessfulPayment },
+        { "5", OrderStatusType.PaymentFailed },
+        { "6", OrderStatusType.RefundSuccessfully },
         { "7", OrderStatusType.Expired },
     };
 
@@ -57,13 +57,10 @@ public static class AlchemyHelper
         {
             return _orderStatusDict[status].ToString();
         }
-        else
-        {
-            return "Unknown";
-        }
-    }
 
-    public static string AESEncrypt(string plainText, string secretKeyData)
+        return "Unknown";
+    }
+    public static string AesEncrypt(string plainText, string secretKeyData)
     {
         try
         {
@@ -90,5 +87,15 @@ public static class AlchemyHelper
         {
             throw e;
         }
+    }
+
+    private static string ComputeHmacSha256(string message, string secretKey)
+    {
+        var encoding = new ASCIIEncoding();
+        var keyByte = encoding.GetBytes(secretKey);
+        var messageBytes = encoding.GetBytes(message);
+        using var hmacSha256 = new HMACSHA256(keyByte);
+        var hashMessage = hmacSha256.ComputeHash(messageBytes);
+        return BitConverter.ToString(hashMessage).Replace("-", "").ToLower();
     }
 }

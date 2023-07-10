@@ -6,7 +6,7 @@ namespace CAServer.ThirdPart;
 public interface IAlchemyServiceAppService
 {
     Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input);
-    Task<AlchemyFiatListDto> GetAlchemyFiatListAsync();
+    Task<AlchemyFiatListDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input);
     Task<AlchemyCryptoListDto> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input);
     Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
     Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input);

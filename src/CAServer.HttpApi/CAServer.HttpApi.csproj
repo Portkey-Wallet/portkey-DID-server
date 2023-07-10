@@ -17,7 +17,6 @@
     <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
     <PackageReference Include="Volo.Abp.Account.HttpApi" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.AspNetCore.SignalR" Version="7.0.0" />
-    <PackageReference Include="Volo.Abp.AspNetCore.SignalR" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.PermissionManagement.HttpApi" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.TenantManagement.HttpApi" Version="7.0.0" />

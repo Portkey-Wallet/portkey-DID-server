@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
@@ -63,12 +64,69 @@ public class RegisterServiceTests : CAServerApplicationTestBase
         result.ShouldNotBeNull();
         result.SessionId.ShouldNotBeEmpty();
     }
+    
+    [Fact]
+    public async Task RegisterRequestAsync_Type_Not_Exist_Test()
+    {
+        try
+        {
+            var result = await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
+            {
+                Type = (GuardianIdentifierType)8,
+                LoginGuardianIdentifier = DefaultEmailAddress,
+                Manager = DefaultManager,
+                ExtraData = DefaultExtraData,
+                ChainId = DefaultChainId,
+                VerifierId = DefaultVerifierId,
+                VerificationDoc = DefaultVerificationDoc,
+                Signature = DefaultVerifierSignature,
+                Context = new HubRequestContextDto
+                {
+                    ClientId = DefaultClientId,
+                    RequestId = DefaultRequestId
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            Assert.True(e is AbpValidationException);
+        }
+    }
 
     [Fact]
     public async Task RegisterRequestAsync_Register_LoginGuardianIdentifier_Is_NullOrEmpty_Test()
     {
         try
         {
+            var message = new AccountCompletedMessageBase
+            {
+                CaAddress = string.Empty,
+                CaHash = string.Empty
+            };
+
+            var header = new ActivityHeader
+            {
+                PubKey = string.Empty
+            };
+
+            var info = new GuardianAccountInfoDto
+            {
+                Type = GuardianType.GUARDIAN_TYPE_OF_APPLE,
+                Value = string.Empty,
+                VerificationInfo = new VerificationInfoDto
+                {
+                    VerificationDoc = string.Empty,
+                    Id = string.Empty,
+                    Signature = string.Empty
+                }
+            };
+
+            var registerMessage = new RegisterCompletedMessageDto
+            {
+                RegisterStatus = "PASS",
+                RegisterMessage = string.Empty
+            };
+
             await _caAccountAppService.RegisterRequestAsync(new RegisterRequestDto
             {
                 Type = GuardianIdentifierType.Email,

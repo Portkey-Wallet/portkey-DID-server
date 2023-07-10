@@ -5,5 +5,22 @@ namespace CAServer.ThirdPart.Alchemy;
 
 public partial class AlchemyOrderAppServiceTest
 {
-   
+    private IOptions<ThirdPartOptions> getMockThirdPartOptions()
+    {
+        var thirdPartOptions = new ThirdPartOptions()
+        {
+            alchemy = new AlchemyOptions()
+            {
+                AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
+                AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
+                BaseUrl = "http://localhost:9200/book/_search",
+            },
+            timer = new ThirdPartTimerOptions()
+            {
+                TimeoutMillis = 5000,
+                DelaySeconds = 1,
+            }
+        };
+        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+    }
 }

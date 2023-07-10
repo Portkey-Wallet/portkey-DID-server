@@ -13,21 +13,8 @@ namespace CAServer.Verifier;
 
 public interface IHttpService
 {
-    
-    Task<T> GetResponseAsync<T>(string url, string? version = null,
-        HttpStatusCode expectedStatusCode = HttpStatusCode.OK);
-    
     Task<T?> PostResponseAsync<T>(string url, Dictionary<string, string> parameters,
         string? version = null, HttpStatusCode expectedStatusCode = HttpStatusCode.OK,
-        AuthenticationHeaderValue? authenticationHeaderValue = null);
-
-    Task<T?> DeleteResponseAsObjectAsync<T>(string url, string? version = null,
-        HttpStatusCode expectedStatusCode = HttpStatusCode.OK,
-        AuthenticationHeaderValue? authenticationHeaderValue = null);
-
-    Task<string> PostVerifyCodeResponseAsync<T>(string url, Dictionary<string, string> parameters,
-        string? version = null,
-        HttpStatusCode expectedStatusCode = HttpStatusCode.OK,
         AuthenticationHeaderValue? authenticationHeaderValue = null);
 }
 
@@ -45,20 +32,6 @@ public class HttpService : IHttpService
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<T?> GetResponseAsync<T>(string url, string? version = null,
-        HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
-    {
-        var response = await GetResponseAsync(url, version, expectedStatusCode);
-        var stream = await response.Content.ReadAsStreamAsync();
-        var jsonSerializerOptions = _useCamelCase
-            ? new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            }
-            : new JsonSerializerOptions();
-        return await JsonSerializer.DeserializeAsync<T>(stream, jsonSerializerOptions);
-    }
-    
     public async Task<T?> PostResponseAsync<T>(string url, Dictionary<string, string> parameters,
         string? version = null,
         HttpStatusCode expectedStatusCode = HttpStatusCode.OK,
@@ -76,46 +49,6 @@ public class HttpService : IHttpService
         return await JsonSerializer.DeserializeAsync<T>(stream, jsonSerializerOptions);
     }
 
-    public async Task<T?> DeleteResponseAsObjectAsync<T>(string url, string? version = null,
-        HttpStatusCode expectedStatusCode = HttpStatusCode.OK,
-        AuthenticationHeaderValue? authenticationHeaderValue = null)
-    {
-        var response = await DeleteResponseAsync(url, version, expectedStatusCode, authenticationHeaderValue);
-        var stream = await response.Content.ReadAsStreamAsync();
-        var jsonSerializerOptions = _useCamelCase
-            ? new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            }
-            : new JsonSerializerOptions();
-        return await JsonSerializer.DeserializeAsync<T>(stream, jsonSerializerOptions);
-    }
-
-    public async Task<string> PostVerifyCodeResponseAsync<T>(string url, Dictionary<string, string> parameters, string version = null,
-        HttpStatusCode expectedStatusCode = HttpStatusCode.OK, AuthenticationHeaderValue authenticationHeaderValue = null)
-    {
-        var response = await PostResponseAsync(url, parameters, version, true, expectedStatusCode,
-            authenticationHeaderValue);
-        return await response.Content.ReadAsStringAsync();
-    }
-    
-    private async Task<HttpResponseMessage> GetResponseAsync(string url, string? version = null,
-        HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
-    {
-        version = !string.IsNullOrWhiteSpace(version) ? $";v={version}" : string.Empty;
-
-        var client = GetHttpClient(version);
-        try
-        {
-            var response = await client.GetAsync(url);
-            return response;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
-    }
-    
     private HttpClient GetHttpClient(string? version = null)
     {
         if (Client != null)
@@ -173,30 +106,5 @@ public class HttpService : IHttpService
         }
        
     }
-    
-    private async Task<HttpResponseMessage> DeleteResponseAsync(string url, string? version = null,
-        HttpStatusCode expectedStatusCode = HttpStatusCode.OK,
-        AuthenticationHeaderValue? authenticationHeaderValue = null)
-    {
-        version = !string.IsNullOrWhiteSpace(version) ? $";v={version}" : string.Empty;
-        var client = GetHttpClient(version);
-
-        if (authenticationHeaderValue != null)
-        {
-            client.DefaultRequestHeaders.Authorization = authenticationHeaderValue;
-        }
-
-        try
-        {
-            var response = await client.DeleteAsync(url);
-            return response;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
-    }
-    
-    
 }
 

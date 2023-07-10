@@ -1,10 +1,14 @@
+using System;
 using System.Collections.Generic;
+using System.Configuration;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
@@ -21,6 +25,16 @@ public class CAServerApplicationTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // load config from [appsettings.Development.json]
+        var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
+            .AddEnvironmentVariables();
+
+        var configuration = builder.Build();
+
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
@@ -56,20 +70,39 @@ public class CAServerApplicationTestModule : AbpModule
         tokenList.Add(token1);
         tokenList.Add(token2);
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
-        context.Services.Configure<IpServiceSettingOptions>(o =>
-        {
-            o.ExpirationDays = 1;
-            o.BaseUrl = "http://127.0.0.1:6889";
-            o.Language = "zh";
-            o.AccessKey = "";
-        });
-        // context.Services.AddTransient<IDistributedEventHandler<UserTokenEto>>(sp =>
-        //     sp.GetService<UserTokenEntityHandler>());
-
+        context.Services.Configure<IpServiceSettingOptions>(o => o.ExpirationDays = 1);
+        context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
         {
             option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
                 { { "TEST", new CAServer.Grains.Grain.ApplicationHandler.ChainInfo() } };
+        });
+
+        context.Services.Configure<CAServer.Options.ChainOptions>(option =>
+        {
+            option.ChainInfos = new Dictionary<string, CAServer.Options.ChainInfo>
+            {
+                {
+                    "TEST", new CAServer.Options.ChainInfo()
+                    {
+                        BaseUrl = "http://127.0.0.1:6889",
+                        ChainId = "TEST",
+                        PrivateKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91"
+                    }
+                }
+            };
+        });
+
+        context.Services.Configure<ClaimTokenInfoOptions>(option =>
+        {
+            option.ChainId = "TEST";
+            option.PublicKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91";
+        });
+        context.Services.Configure<DefaultIpInfoOptions>(options =>
+        {
+            options.Country = "Singapore";
+            options.Code = "SG";
+            options.Iso = "65";
         });
         base.ConfigureServices(context);
     }

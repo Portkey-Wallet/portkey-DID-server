@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Settings;
 using CAServer.Verifier;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -31,7 +33,8 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
 
     public GetVerifierServerProvider(
         IDistributedCache<GuardianVerifierServerCacheItem> distributedCache,
-        IOptions<AdaptableVariableOptions> adaptableVariableOptions, ILogger<GetVerifierServerProvider> logger, IContractProvider contractProvider)
+        IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions, ILogger<GetVerifierServerProvider> logger,
+        IContractProvider contractProvider)
     {
         _adaptableVariableOptions = adaptableVariableOptions.Value;
         _distributedCache = distributedCache;
@@ -71,6 +74,7 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
     private async Task<GuardianVerifierServerCacheItem> GetVerifierServerListAsync(string chainId)
     {
         var result = await _contractProvider.GetVerifierServersListAsync(chainId);
+
         if (null == result)
         {
             return null;

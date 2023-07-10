@@ -41,6 +41,8 @@ using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using MongoDB.Bson.Serialization.IdGenerators;
 using Portkey.Contracts.CA;
+using AlchemyTargetAddressDto = CAServer.Message.Dtos.AlchemyTargetAddressDto;
+using Volo.Abp.AutoMapper;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
 using GuardianType = CAServer.Account.GuardianType;
@@ -257,6 +259,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Code, m => m.MapFrom(f => f.CountryCode))
             .ForPath(t => t.Iso, m => m.MapFrom(f => f.Location.CallingCode));
 
+        // third part order auto map
         CreateMap<CreateUserOrderDto, OrderGrainDto>();
         CreateMap<OrderGrainDto, OrderDto>();
         CreateMap<OrderDto, OrderGrainDto>();
@@ -264,7 +267,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderIndex, OrderDto>();
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
-            .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType));
+            .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
+            .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo));
+        CreateMap<OrderDto, WaitToSendOrderInfoDto>()
+            .ForMember(t => t.OrderNo, m => m.MapFrom(f => f.ThirdPartOrderNo));
 
         CreateMap<CreateNotifyDto, NotifyGrainDto>();
         CreateMap<UpdateNotifyDto, NotifyGrainDto>();
@@ -273,8 +279,33 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<NotifyGrainDto, NotifyEto>();
         CreateMap<NotifyGrainDto, PullNotifyResultDto>();
         CreateMap<ScanLoginDto, ScanLoginEto>().BeforeMap((src, dest) => { dest.Message = "Login Successful"; });
-        
+
         CreateMap<CreateUserEto, CAHolderIndex>();
         CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoResultDto>();
+        CreateMap<TransactionsDto, IndexerTransactions>()
+            .ForMember(t => t.CaHolderTransaction, m => m.MapFrom(f => f.TwoCaHolderTransaction));
+
+        CreateMap<CmsNotify, NotifyGrainDto>()
+            .Ignore(t => t.Id)
+            .ForMember(t => t.NotifyId, m => m.MapFrom(f => f.Id))
+            .ForMember(t => t.AppVersions,
+                m => m.MapFrom(f => f.AppVersions == null ? null : f.AppVersions.Select(t => t.AppVersion.Value)))
+            .ForMember(t => t.TargetVersion, m => m.MapFrom(f => f.TargetVersion == null ? "" : f.TargetVersion.Value))
+            .ForMember(t => t.Countries,
+                m => m.MapFrom(f => f.Countries == null ? null : f.Countries.Select(t => t.Country.Value)))
+            .ForMember(t => t.DeviceBrands,
+                m => m.MapFrom(f => f.DeviceBrands == null ? null : f.DeviceBrands.Select(t => t.DeviceBrand.Value)))
+            .ForMember(t => t.OperatingSystemVersions,
+                m => m.MapFrom(f =>
+                    f.OperatingSystemVersions == null
+                        ? null
+                        : f.OperatingSystemVersions.Select(t => t.OperatingSystemVersion.Value)))
+            .ForMember(t => t.DeviceTypes,
+                m => m.MapFrom(f =>
+                    f.DeviceTypes == null
+                        ? null
+                        : f.DeviceTypes.Select(t => ((DeviceType)t.DeviceType.Value).ToString())))
+            .ForMember(t => t.StyleType, m => m.MapFrom(f => (StyleType)f.StyleType.Value));
+        //.ForMember()
     }
 }

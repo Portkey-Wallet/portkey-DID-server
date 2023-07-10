@@ -22,6 +22,7 @@
     <None Remove="GraphQL.Client" />
     <None Remove="GraphQL.Client.Serializer.Newtonsoft" />
     <None Remove="System.IdentityModel.Tokens.Jwt" />
+    <None Include="appsettings.Development.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -67,6 +68,7 @@
     <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
+    <ProjectReference Include="..\CAServer.Signature\CAServer.Signature.csproj" />
   </ItemGroup>
 
 </Project>

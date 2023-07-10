@@ -6,12 +6,14 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
+using CAServer.Signature;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Orleans;
 using Orleans.Hosting;
@@ -55,7 +57,18 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         {
             hostBuilder.ConfigureServices(services =>
                 {
-                    services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
+
+                    var mockTokenProvider = new Mock<ITokenPriceProvider>();
+                    mockTokenProvider.Setup(o => o.GetPriceAsync(It.IsAny<string>()))
+                        .ReturnsAsync(123);
+                    mockTokenProvider.Setup(o => o.GetHistoryPriceAsync(It.IsAny<string>(),It.IsAny<string>()))
+                        .ReturnsAsync(123);
+                    services.AddSingleton<ITokenPriceProvider>(mockTokenProvider.Object);
+                    
+                    var mockSignatureProvider = new Mock<ISignatureProvider>();
+                    mockSignatureProvider.Setup(o => o.SignTxMsg(It.IsAny<string>(), It.IsAny<string>()))
+                        .ReturnsAsync("123");
+                    services.AddSingleton<ISignatureProvider>(mockSignatureProvider.Object);
                     services.AddSingleton<IRequestLimitProvider, RequestLimitProvider>();
                     services.Configure<ChainOptions>(o =>
                     {
@@ -68,8 +81,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                     BaseUrl = "url",
                                     ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
-                                    CrossChainContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
-                                    PrivateKey = HashHelper.ComputeFrom("private").ToHex(),
+                                    CrossChainContractAddress =
+                                        Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                    PublicKey = HashHelper.ComputeFrom("private").ToHex(),
                                     IsMainChain = true
                                 }
                             },
@@ -80,8 +94,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                     BaseUrl = "url",
                                     ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
-                                    CrossChainContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
-                                    PrivateKey = "private",
+                                    CrossChainContractAddress =
+                                        Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                    PublicKey = "private",
                                     IsMainChain = false
                                 }
                             }
@@ -98,7 +113,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     {
                         o.CoinIdMapping = new Dictionary<string, string>
                         {
-                            {"ELF","aelf"}
+                            { "ELF", "aelf" }
                         };
                     });
                     services.Configure<CAAccountOption>(o =>
@@ -173,8 +188,6 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                         Mapper = sp.GetRequiredService<IMapper>()
                     });
                     services.AddTransient<IMapperAccessor>(provider => provider.GetRequiredService<MapperAccessor>());
-
-                    
                 })
                 .AddSimpleMessageStreamProvider(CAServerApplicationConsts.MessageStreamName)
                 .AddMemoryGrainStorage("PubSubStore")
@@ -368,6 +381,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
 
             SetDefaultOptions();
         }
+
         protected virtual void SetDefaultOptions()
         {
             CacheName = CacheNameAttribute.GetCacheName(typeof(TCacheItem));
@@ -378,6 +392,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
             //Configure default cache entry options
             DefaultCacheOptions = GetDefaultCacheEntryOptions();
         }
+
         protected virtual DistributedCacheEntryOptions GetDefaultCacheEntryOptions()
         {
             foreach (var configure in _distributedCacheOption.CacheConfigurators)
@@ -391,6 +406,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
 
             return _distributedCacheOption.GlobalCacheEntryOptions;
         }
+
         public TCacheItem Get(TCacheKey key, bool? hideErrors = null, bool considerUow = false)
         {
             throw new NotImplementedException();
@@ -504,11 +520,12 @@ public class ClusterFixture : IDisposable, ISingletonDependency
 
             return value;
         }
+
         protected virtual bool ShouldConsiderUow(bool considerUow)
         {
             return considerUow && UnitOfWorkManager.Current != null;
         }
-        
+
         protected virtual Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>> GetUnitOfWorkCache()
         {
             if (UnitOfWorkManager.Current == null)
@@ -519,7 +536,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
             return UnitOfWorkManager.Current.GetOrAddItem(GetUnitOfWorkCacheKey(),
                 key => new Dictionary<TCacheKey, UnitOfWorkCacheItem<TCacheItem>>());
         }
-        
+
         protected virtual string GetUnitOfWorkCacheKey()
         {
             return UowCacheName + CacheName;
@@ -612,6 +629,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                 )
             );
         }
+
         protected virtual async Task HandleExceptionAsync(Exception ex)
         {
             Logger.LogException(ex, LogLevel.Warning);
@@ -623,6 +641,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     .NotifyAsync(new ExceptionNotificationContext(ex, LogLevel.Warning));
             }
         }
+
         public void SetMany(IEnumerable<KeyValuePair<TCacheKey, TCacheItem>> items,
             DistributedCacheEntryOptions options = null, bool? hideErrors = null,
             bool considerUow = false)
@@ -682,11 +701,12 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         }
     }
 
-    public class AsyncLocalCurrentTenantAccessor : ICurrentTenantAccessor,ISingletonDependency
+    public class AsyncLocalCurrentTenantAccessor : ICurrentTenantAccessor, ISingletonDependency
     {
         public static AsyncLocalCurrentTenantAccessor Instance { get; } = new();
 
-        public BasicTenantInfo Current {
+        public BasicTenantInfo Current
+        {
             get => _currentScope.Value;
             set => _currentScope.Value = value;
         }
@@ -698,6 +718,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
             _currentScope = new AsyncLocal<BasicTenantInfo>();
         }
     }
+
     private class TestClientBuilderConfigurator : IClientBuilderConfigurator
     {
         public void Configure(IConfiguration configuration, IClientBuilder clientBuilder) => clientBuilder

@@ -1,82 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\common.props" />
+    <Import Project="..\..\common.props"/>
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <RootNamespace>CAServer</RootNamespace>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <RootNamespace>CAServer</RootNamespace>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\CAServer.Domain.Shared\CAServer.Domain.Shared.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\CAServer.Domain.Shared\CAServer.Domain.Shared.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
-    <PackageReference Include="AElf.Sdk.CSharp" Version="1.2.3" />
-    <PackageReference Include="AutoMapper" Version="12.0.0" />
-    <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.6.5">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="3.6.5" />
-    <PackageReference Include="NEST" Version="7.17.1" />
-    <PackageReference Include="Orleans.Providers.MongoDB" Version="3.8.0" />
-    <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
-    <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
-    <PackageReference Include="Volo.Abp.Ddd.Domain" Version="7.0.0" />
-    <PackageReference Include="Volo.Abp.ObjectExtending" Version="7.0.0" />
-    <PackageReference Include="Volo.Abp.Account.Application.Contracts" Version="7.0.0" />
-    <PackageReference Include="Volo.Abp.Identity.Application.Contracts" Version="7.0.0" />
-    <PackageReference Include="Volo.Abp.PermissionManagement.Application.Contracts" Version="7.0.0" />
-    <PackageReference Include="Volo.Abp.TenantManagement.Application.Contracts" Version="7.0.0" />
-    <PackageReference Include="Volo.Abp.FeatureManagement.Application.Contracts" Version="7.0.0" />
-    <PackageReference Include="Volo.Abp.SettingManagement.Application.Contracts" Version="7.0.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="AElf.CSharp.Core" Version="1.2.3"/>
+        <PackageReference Include="AElf.Sdk.CSharp" Version="1.2.3"/>
+        <PackageReference Include="AutoMapper" Version="12.0.0"/>
+        <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.6.5">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="3.6.5"/>
+        <PackageReference Include="NEST" Version="7.17.1"/>
+        <PackageReference Include="Orleans.Providers.MongoDB" Version="3.8.0"/>
+        <PackageReference Include="AElf.Cryptography" Version="1.2.3"/>
+        <PackageReference Include="StackExchange.Redis" Version="2.2.4"/>
+        <PackageReference Include="Volo.Abp.Ddd.Domain" Version="7.0.0"/>
+        <PackageReference Include="Volo.Abp.ObjectExtending" Version="7.0.0"/>
+        <PackageReference Include="Volo.Abp.Account.Application.Contracts" Version="7.0.0"/>
+        <PackageReference Include="Volo.Abp.Identity.Application.Contracts" Version="7.0.0"/>
+        <PackageReference Include="Volo.Abp.PermissionManagement.Application.Contracts" Version="7.0.0"/>
+        <PackageReference Include="Volo.Abp.TenantManagement.Application.Contracts" Version="7.0.0"/>
+        <PackageReference Include="Volo.Abp.FeatureManagement.Application.Contracts" Version="7.0.0"/>
+        <PackageReference Include="Volo.Abp.SettingManagement.Application.Contracts" Version="7.0.0"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Orleans_CodeGenInputs Remove="ApplicationHandler\IContractAppService.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\AccountCompletedMessageDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\AccountRequestResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\ActivityHeader.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\CAHolderAfterCreatedInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\CAHolderRequestBaseDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\ChainAddInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\ChainsResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\GeneralResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\GuardianDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\HubRequestContextDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\NickNameResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\QueryRecoveryResponse.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RecoveryManagerAddressInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RecoveryRequestInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RecoveryStateDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RegisterRequestInput.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RegisterStateDto.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\RegisterStatus.cs" />
-    <Orleans_CodeGenInputs Remove="Dtos\Validation\ValidManagerAddressAttribute.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\AccountRecoverCompletedEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\AccountRecoverCreateEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\AccountRegisterCompletedEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\AccountRegisterCreateEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\CAAccountEto.cs" />
-    <Orleans_CodeGenInputs Remove="Etos\CAAccountRecoveryEto.cs" />
-    <Orleans_CodeGenInputs Remove="Service\HttpService.cs" />
-    <Orleans_CodeGenInputs Remove="Service\IVerifierServerClient.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Dtos\IndexerOrderInfo.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Dtos\OrderEnum.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Dtos\UserOrderRequestDto.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Dtos\UserOrderResponseDto.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\Etos\OrderEto.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\IMerchant.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\IOrderStatus.cs" />
-    <Orleans_CodeGenInputs Remove="Merchant\MerchantType.cs" />
-  </ItemGroup>
+    <ItemGroup>
+        <Reference Include="CAServer.Application">
+            <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Application.dll</HintPath>
+        </Reference>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="CAActivity\Dtos\GetActivitiesRequest.cs" />
-    <Compile Remove="CAActivity\Dtos\GetActivityRequest.cs" />
-    <Compile Remove="Hubs\GetHubRequest.cs" />
-  </ItemGroup>
-
+    <ItemGroup>
+        <Orleans_CodeGenInputs Remove="Sample\ISampleAppService.cs"/>
+        <Orleans_CodeGenInputs Remove="Sample\TestDto.cs"/>
+    </ItemGroup>
 </Project>

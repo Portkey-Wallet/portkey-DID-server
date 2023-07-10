@@ -36,13 +36,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IAppleUserProvider _appleUserProvider;
 
     public GuardianAppService(
-        INESTRepository<GuardianIndex, string> guardianRepository,
-        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
-        ILogger<GuardianAppService> logger,
-        IOptions<ChainOptions> chainOptions,
-        IGuardianProvider guardianProvider,
-        IClusterClient clusterClient,
-        IAppleUserProvider appleUserProvider)
+        INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
+        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
+        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -116,13 +112,13 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<string> GetOriginChainIdAsync(string guardianIdentifierHash, string caHash)
     {
-        foreach (var chainInfo in _chainOptions.ChainInfos)
+        foreach (var (chainId, chainInfo) in _chainOptions.ChainInfos)
         {
             try
             {
-                //var holderInfo = await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
-                var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo.Value);
-                if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainInfo.Key;
+                var holderInfo =
+                    await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
+                if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainId;
             }
             catch (Exception e)
             {
@@ -186,9 +182,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         try
         {
-            var chainInfo = _chainOptions.ChainInfos[chainId];
-            //return await GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
-            return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainInfo);
+            return await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
         }
         catch (Exception ex)
         {
@@ -208,31 +202,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException($"{guardianIdentifier ?? "identifier"} not exist.",
                 GuardianMessageCode.NotExist);
         }
-    }
-
-    private async Task<GetHolderInfoOutput> GetHolderInfoFromContractAsync(
-        string guardianIdentifierHash,
-        string caHash,
-        ChainInfo chainInfo)
-    {
-        var param = new GetHolderInfoInput();
-
-        if (!string.IsNullOrWhiteSpace(caHash))
-        {
-            param.CaHash = Hash.LoadFromHex(caHash);
-            param.LoginGuardianIdentifierHash = null;
-        }
-        else
-        {
-            param.LoginGuardianIdentifierHash = AElf.Types.Hash.LoadFromHex(guardianIdentifierHash);
-            param.CaHash = null;
-        }
-
-        var output =
-            await ContractHelper.CallTransactionAsync<GetHolderInfoOutput>(MethodName.GetHolderInfo, param, false,
-                chainInfo);
-
-        return output;
     }
 
     private async Task<Dictionary<string, string>> GetIdentifiersAsync(List<string> identifierHashList)
@@ -269,7 +238,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,"in GetUserExtraInfoAsync");
+            _logger.LogError(ex, "in GetUserExtraInfoAsync");
         }
 
         return new List<UserExtraInfoIndex>();

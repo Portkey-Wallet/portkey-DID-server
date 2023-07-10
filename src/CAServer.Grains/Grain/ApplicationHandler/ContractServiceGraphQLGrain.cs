@@ -5,14 +5,17 @@ namespace CAServer.Grains.Grain.ApplicationHandler;
 
 public class ContractServiceGraphQLGrain : Grain<GraphQlState>, IContractServiceGraphQLGrain
 {
-    public override Task OnActivateAsync()
+    public override async Task OnActivateAsync()
     {
-        ReadStateAsync();
-        return base.OnActivateAsync();
+        await ReadStateAsync();
     }
 
     public async Task SetStateAsync(long height)
     {
+        if (height < State.EndHeight)
+        {
+            return;
+        }
         State.EndHeight = height;
         await WriteStateAsync();
     }

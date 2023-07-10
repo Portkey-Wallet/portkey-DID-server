@@ -3,6 +3,8 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
+using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -22,14 +24,16 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private readonly ChainOptions _chainOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractServiceGrain> _logger;
+    private readonly ISignatureProvider _signatureProvider;
 
     public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions,
-        IObjectMapper objectMapper, ILogger<ContractServiceGrain> logger)
+        IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractServiceGrain> logger)
     {
         _objectMapper = objectMapper;
         _logger = logger;
         _grainOptions = grainOptions.Value;
         _chainOptions = chainOptions.Value;
+        _signatureProvider = signatureProvider;
     }
 
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
@@ -37,19 +41,25 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
-            var chainInfo = _chainOptions.ChainInfos[chainId];
+            if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+            {
+                return null;
+            }
+
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
-            var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
+            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
+                ownAddress, chainInfo.ContractAddress);
 
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
                     param);
-            
+
             var refBlockNumber = transaction.RefBlockNumber;
 
             refBlockNumber -= _grainOptions.SafeBlockHeight;
-        
+
             if (refBlockNumber < 0)
             {
                 refBlockNumber = 0;
@@ -59,12 +69,14 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             transaction.RefBlockNumber = refBlockNumber;
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
-            
-            var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
+
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
+            _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
+            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var result = await client.SendTransactionAsync(new SendTransactionInput
             {
-                RawTransaction = txWithSign.ToByteArray().ToHex()
+                RawTransaction = transaction.ToByteArray().ToHex()
             });
 
             await Task.Delay(_grainOptions.Delay);
@@ -97,6 +109,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
 
         var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
+        
+        DeactivateOnIdle();
+        
         return result.TransactionResultDto;
     }
 
@@ -105,6 +120,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         var param = _objectMapper.Map<SocialRecoveryDto, SocialRecoveryInput>(socialRecoveryDto);
 
         var result = await SendTransactionToChainAsync(socialRecoveryDto.ChainId, param, MethodName.SocialRecovery);
+        
+        DeactivateOnIdle();
+        
         return result.TransactionResultDto;
     }
 
@@ -122,12 +140,14 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
 
         var result = await SendTransactionToChainAsync(chainId, param, MethodName.Validate);
+        
+        DeactivateOnIdle();
 
         return result;
     }
 
     public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId,
-        TransactionInfoDto transactionInfoDto)
+        TransactionInfo transactionInfo)
     {
         try
         {
@@ -137,10 +157,10 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             var syncHolderInfoInput = new SyncHolderInfoInput();
 
-            var validateTokenHeight = transactionInfoDto.TransactionResultDto.BlockNumber;
+            var validateTokenHeight = transactionInfo.BlockNumber;
 
             var merklePathDto =
-                await client.GetMerklePathByTransactionIdAsync(transactionInfoDto.TransactionResultDto.TransactionId);
+                await client.GetMerklePathByTransactionIdAsync(transactionInfo.TransactionId);
             var merklePath = new MerklePath();
             foreach (var node in merklePathDto.MerklePathNodes)
             {
@@ -156,7 +176,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 FromChainId = ChainHelper.ConvertBase58ToChainId(chainId),
                 MerklePath = merklePath,
                 ParentChainHeight = validateTokenHeight,
-                TransactionBytes = transactionInfoDto.Transaction.ToByteString()
+                TransactionBytes = ByteString.CopyFrom(transactionInfo.Transaction)
             };
 
             syncHolderInfoInput.VerificationTransactionInfo = verificationTransactionInfo;
@@ -165,12 +185,17 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             {
                 syncHolderInfoInput = await UpdateMerkleTreeAsync(chainId, client, syncHolderInfoInput);
             }
+            
+            DeactivateOnIdle();
 
             return syncHolderInfoInput;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "GetSyncHolderInfoInput error: ");
+            
+            DeactivateOnIdle();
+            
             return new SyncHolderInfoInput();
         }
     }
@@ -182,7 +207,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         {
             var chainInfo = _chainOptions.ChainInfos[chainId];
 
-            var ownAddress = client.GetAddressFromPrivateKey(chainInfo.PrivateKey);
+            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
 
             var transaction = await client.GenerateTransactionAsync(ownAddress, chainInfo.CrossChainContractAddress,
                 MethodName.UpdateMerkleTree,
@@ -190,11 +215,12 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 {
                     Value = syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight
                 });
-            var txWithSign = client.SignTransaction(chainInfo.PrivateKey, transaction);
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
+            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
-                RawTransaction = txWithSign.ToByteArray().ToHex()
+                RawTransaction = transaction.ToByteArray().ToHex()
             });
 
             var context = CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
@@ -217,6 +243,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)
     {
         var result = await SendTransactionToChainAsync(chainId, input, MethodName.SyncHolderInfo);
+        
+        DeactivateOnIdle();
 
         return result.TransactionResultDto;
     }

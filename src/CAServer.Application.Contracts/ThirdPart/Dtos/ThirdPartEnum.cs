@@ -23,5 +23,10 @@ public enum OrderStatusType
     Failed,
     Pending,
     Refunded,
-    Unknown
+    Unknown,
+    UserCompletesCoinDeposit,
+    StartPayment,
+    SuccessfulPayment,
+    PaymentFailed,
+    RefundSuccessfully
 }

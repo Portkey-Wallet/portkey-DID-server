@@ -46,6 +46,13 @@ public class ThirdPartOrderController : CAServerController
     {
         return await _alchemyOrderService.UpdateAlchemyOrderAsync(input);
     }
+
+    [Authorize]
+    [HttpPost("alchemy/txHash")]
+    public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
+    {
+        await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
+    }
 }
 
 [RemoteService]
@@ -70,14 +77,13 @@ public class AlchemyController : CAServerController
     }
 
     [HttpGet("fiatList")]
-    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync()
+    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemyFiatListAsync();
+        return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
     }
 
     [HttpGet("cryptoList")]
-    public async Task<AlchemyCryptoListDto> GetAchCryptoListAsync(
-        GetAlchemyCryptoListDto input)
+    public async Task<AlchemyCryptoListDto> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input);
     }

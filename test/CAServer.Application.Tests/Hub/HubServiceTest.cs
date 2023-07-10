@@ -1,9 +1,15 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Hubs;
+using CAServer.Options;
+using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
+using NSubstitute.ReturnsExtensions;
 using Shouldly;
 using Xunit;
 
@@ -25,6 +31,8 @@ public class HubServiceTest : CAServerApplicationTestBase
         services.AddSingleton(GetHubProvider());
         // services.AddSingleton(GetConnectionProvider());
         services.AddSingleton(GetHubCacheProvider());
+        services.AddSingleton(GetThirdPartOrderProvider());
+        services.AddSingleton(GetMockThirdPartOptions());
     }
 
     [Fact]
@@ -70,6 +78,20 @@ public class HubServiceTest : CAServerApplicationTestBase
         await _hubService.Ack("123", "456");
     }
 
+    [Fact]
+    public async void RequestAchTxAddressTest()
+    {
+        //  test after regist
+        await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000001");
+        
+        // test after register client
+        await _hubService.RegisterClient("123", "conn-123123");
+        await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000001");
+        await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000002");
+        await _hubService.RequestAchTxAddressAsync("123", "00000000-0000-0000-0000-000000000003");
+        
+    }
+
     private IHubProvider GetHubProvider()
     {
         var provider = new Mock<IHubProvider>();
@@ -78,6 +100,30 @@ public class HubServiceTest : CAServerApplicationTestBase
         provider.Setup(m => m.ResponseAsync(It.IsAny<HubResponseBase<string>>(), It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
 
         return provider.Object;
+    }
+
+
+    private IThirdPartOrderProvider GetThirdPartOrderProvider()
+    {
+        var mockProvider = new Mock<IThirdPartOrderProvider>();
+
+        var noAddressData = new OrderDto
+        {
+            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+        };
+
+        var withAddressData = new OrderDto
+        {
+            Id = new Guid("00000000-0000-0000-0000-000000000002"),
+            Address = "123456"
+        };
+        
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000001"))).ReturnsAsync(noAddressData);
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000002"))).ReturnsAsync(withAddressData);
+        mockProvider.Setup(provider => provider.GetThirdPartOrderAsync(It.Is<string>(id => id == "00000000-0000-0000-0000-000000000003"))).ReturnsAsync((OrderDto)null);
+        
+
+        return mockProvider.Object;
     }
 
     private IConnectionProvider GetConnectionProvider()
@@ -125,5 +171,26 @@ public class HubServiceTest : CAServerApplicationTestBase
                     })
                     : Task.FromResult(new List<HubResponseCacheEntity<object>> { }));
         return provider.Object;
+    }
+    
+    
+    private IOptions<ThirdPartOptions> GetMockThirdPartOptions()
+    {
+        var thirdPartOptions = new ThirdPartOptions()
+        {
+            alchemy = new AlchemyOptions()
+            {
+                AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
+                AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
+                BaseUrl = "http://localhost:9200/book/_search",
+                SkipCheckSign = true
+            },
+            timer =  new ThirdPartTimerOptions()
+            {
+                TimeoutMillis = 100,
+                DelaySeconds = 1,
+            }
+        };
+        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
     }
 }

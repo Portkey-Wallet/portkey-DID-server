@@ -3,6 +3,7 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using CAServer.Signature;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -35,6 +36,7 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpBackgroundWorkersModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
+    typeof(CAServerSignatureModule),
     typeof(AbpCachingStackExchangeRedisModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {
@@ -53,15 +55,17 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.Services.AddSingleton<IContractAppService, ContractAppService>();
         context.Services.AddSingleton<IContractProvider, ContractProvider>();
         context.Services.AddSingleton<IGraphQLProvider, GraphQLProvider>();
+        context.Services.AddSingleton<IRecordsBucketContainer, RecordsBucketContainer>();
+        context.Services.AddHttpClient();
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
     }
-    
+
     private void ConfigureCache(IConfiguration configuration)
     {
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
     }
-    
+
     private void ConfigureDataProtection(
         ServiceConfigurationContext context,
         IConfiguration configuration,
@@ -110,8 +114,7 @@ public class CAServerContractEventHandlerModule : AbpModule
                 .Build();
         });
     }
-    
-   
+
 
     private static void StartOrleans(IServiceProvider serviceProvider)
     {

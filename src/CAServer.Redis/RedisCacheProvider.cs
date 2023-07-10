@@ -15,13 +15,13 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
         _database = _connectionMultiplexer.GetDatabase();
     }
 
-    public async Task HSetWithExpire(string key, string member, string value, TimeSpan? expiry)
+    public async Task HSetWithExpire(string key, string member, string value, TimeSpan? expire)
     {
         _database.HashSet(key, member, value);
-        _database.KeyExpire(key, expiry);
+        _database.KeyExpire(key, expire);
     }
 
-    public async Task<bool> HashDelete(string key, string member)
+    public async Task<bool> HashDeleteAsync(string key, string member)
     {
         return _database.HashDelete(key, member);
     }
@@ -31,10 +31,10 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
         return await _database.HashGetAllAsync(key);
     }
 
-    public async Task Set(string key, string value, TimeSpan? expiry)
+    public async Task Set(string key, string value, TimeSpan? expire)
     {
         await _database.StringSetAsync(key, value);
-        _database.KeyExpire(key, expiry);
+        _database.KeyExpire(key, expire);
     }
 
     public async Task<RedisValue> Get(string key)
@@ -64,5 +64,16 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
         }
 
         return realAns;
+    }
+
+    public async Task<long> Increase(string key, int increase, TimeSpan? expire)
+    {
+        var count = await _database.StringIncrementAsync(key, increase);
+        if (expire != null)
+        {
+            _database.KeyExpire(key, expire);
+        }
+
+        return count;
     }
 }

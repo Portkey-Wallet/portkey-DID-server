@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Nest;
 
 namespace CAServer.Options;
 
@@ -14,4 +13,8 @@ public class ChainInfo
     public string BaseUrl { get; set; }
     public string ContractAddress { get; set; }
     public string PrivateKey { get; set; }
+    
+    public string TokenContractAddress { get; set; }
+    
+    
 }
