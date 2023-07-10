@@ -227,7 +227,19 @@ public class CAVerifierController : CAServerController
     public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version,
         OperationTypeRequestInput operationTypeRequestInput)
     {
-        ValidateOperationType(operationTypeRequestInput.OperationType);
+        
+        var type = operationTypeRequestInput.OperationType;
+        ValidateOperationType(type);
+        if (!string.IsNullOrWhiteSpace(version) && version == CurrentVersion)
+        {
+            type = type switch
+            {
+                OperationType.Unknown => OperationType.CreateCAHolder,
+                OperationType.CreateCAHolder => OperationType.SocialRecovery,
+                OperationType.SocialRecovery => OperationType.AddGuardian,
+                _ => type
+            };
+        }
         var userIpAddress = UserIpAddress(HttpContext);
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
 
@@ -238,7 +250,7 @@ public class CAVerifierController : CAServerController
         }
 
         return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,
-            operationTypeRequestInput.OperationType);
+            type);
     }
 
 
