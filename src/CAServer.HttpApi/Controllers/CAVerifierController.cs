@@ -53,7 +53,7 @@ public class CAVerifierController : CAServerController
     {
         var type = verifierServerInput.OperationType;
         ValidateOperationType(type);
-        if (!string.IsNullOrWhiteSpace(version) && version == CurrentVersion)
+        if (!string.IsNullOrWhiteSpace(version) && version.Equals(CurrentVersion))
         {
             type = type switch
             {
@@ -230,7 +230,7 @@ public class CAVerifierController : CAServerController
         
         var type = operationTypeRequestInput.OperationType;
         ValidateOperationType(type);
-        if (!string.IsNullOrWhiteSpace(version) && version == CurrentVersion)
+        if (!string.IsNullOrWhiteSpace(version) && version.Equals(CurrentVersion))
         {
             type = type switch
             {
