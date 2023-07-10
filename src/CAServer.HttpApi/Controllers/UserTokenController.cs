@@ -24,7 +24,7 @@ public class UserTokenController : CAServerController
     [HttpPut]
     [Route("{id}/display")]
     [Authorize]
-    public async Task ChangeTokenDisplayAsync(Guid id, [FromBody] IsTokenDisplayInput input)
+    public async Task ChangeTokenDisplayAsync(string id, [FromBody] IsTokenDisplayInput input)
     {
         await _userTokenAppService.ChangeTokenDisplayAsync(input.IsDisplay, id);
     }

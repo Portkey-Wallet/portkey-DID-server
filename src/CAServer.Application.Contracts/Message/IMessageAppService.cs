@@ -5,5 +5,6 @@ namespace CAServer.Message;
 
 public interface IMessageAppService
 {
-    Task ScanLoginSuccess(ScanLoginDto request);
+    Task ScanLoginSuccessAsync(ScanLoginDto request);
+    Task ScanLoginAsync(ScanLoginDto request);
 }

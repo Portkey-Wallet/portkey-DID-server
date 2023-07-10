@@ -30,7 +30,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
-        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory,true);
+        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
     }
 
@@ -90,6 +90,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
+        var type = Convert.ToInt32(input.OperationType).ToString();
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
         {
@@ -97,7 +98,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "code", input.VerificationCode },
             { "guardianIdentifier", input.GuardianIdentifier },
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
-            { "salt", input.Salt }
+            { "salt", input.Salt },
+            { "operationType", type }
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
@@ -134,15 +136,17 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         var url = endPoint + requestUri;
 
 
-        return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt);
+        return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
+            input.OperationType);
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
-        string accessToken, string identifierHash, string salt)
+        string accessToken, string identifierHash, string salt,
+        OperationType verifierCodeOperationType)
     {
         var client = _httpClientFactory.CreateClient();
-
-        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt });
+        var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
+        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType });
 
         var param = new StringContent(tokenParam,
             Encoding.UTF8,

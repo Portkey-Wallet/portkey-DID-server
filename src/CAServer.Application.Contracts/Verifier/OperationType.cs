@@ -2,7 +2,12 @@ namespace CAServer.Verifier;
 
 public enum OperationType
 {
-    Register = 0,
-    Recovery = 1,
-    GuardianOperations = 2,
+    Unknown = 0,
+    CreateCAHolder = 1,
+    SocialRecovery = 2,
+    AddGuardian = 3,
+    RemoveGuardian = 4,
+    UpdateGuardian = 5,
+    RemoveOtherManagerInfo = 6,
+    SetLoginGuardian = 7
 }

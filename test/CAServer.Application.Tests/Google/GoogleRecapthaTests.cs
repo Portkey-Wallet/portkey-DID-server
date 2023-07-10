@@ -45,7 +45,7 @@ public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
     {
         var version = "v12345";
         var userIpAddress = "127.0.0.1";
-        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,OperationType.GuardianOperations,version);
+        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,OperationType.AddGuardian);
         result.ShouldBeTrue();
     }
 }
