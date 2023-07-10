@@ -12,15 +12,9 @@ using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
-using CAServer.Verifier;
-using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Core.Clusters;
 using Moq;
-using NSubstitute;
-using Org.BouncyCastle.Bcpg;
 using Orleans;
-using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Tokens;
 
@@ -128,7 +122,6 @@ public partial class TokenAppServiceTest
     {
         var mockTokenPriceProvider = new Mock<ITokenProvider>();
 
-
         mockTokenPriceProvider.Setup(o =>
                 o.GetUserTokenInfoListAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new List<UserTokenIndex>
@@ -147,18 +140,30 @@ public partial class TokenAppServiceTest
 
         mockTokenPriceProvider.Setup(o =>
                 o.GetTokenInfosAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), default, default))
-            .ReturnsAsync(new IndexerTokens()
+            .ReturnsAsync((string chainId, string symbol, string symbolKeyword, int skipCount, int maxResultCount) =>
             {
-                TokenInfo = new List<IndexerToken>()
+                return new IndexerTokens()
                 {
-                    new IndexerToken()
+                    TokenInfo = new List<IndexerToken>()
                     {
-                        Id = "AELF",
-                        Symbol = "CPU",
-                        ChainId = "AELF",
-                        Decimals = 8
+                        new IndexerToken()
+                        {
+                            Id = "AELF-CPU",
+                            Symbol = "CPU",
+                            ChainId = "AELF",
+                            Decimals = 8,
+                            BlockHash = string.Empty,
+                            BlockHeight = 0,
+                            Type = string.Empty,
+                            TokenContractAddress = string.Empty,
+                            TokenName = "CPU",
+                            TotalSupply = 100000,
+                            Issuer = string.Empty,
+                            IsBurnable = false,
+                            IssueChainId = 1264323
+                        }
                     }
-                }
+                };
             });
 
         mockTokenPriceProvider.Setup(o =>

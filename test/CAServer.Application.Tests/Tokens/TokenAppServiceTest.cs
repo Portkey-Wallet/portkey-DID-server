@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Grain.Tests;
-using CAServer.Grains;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
-using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Security;
 using CAServer.Tokens.Dtos;
+using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Users;
@@ -41,8 +41,11 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockTokenPriceExpirationTimeOptions());
         services.AddSingleton(GetMockClusterClient());
         services.AddSingleton(GetMockTokenPriceGrain());
+        var graphQlHelper = Substitute.For<IGraphQLHelper>();
+        var graphQlClient = Substitute.For<IGraphQLClient>();
+        services.AddSingleton(graphQlClient);
+        services.AddSingleton(graphQlHelper);
         services.AddSingleton(GetMockITokenProvider());
-        services.AddSingleton(GetMockIGraphQLHelper());
     }
 
     [Fact]
