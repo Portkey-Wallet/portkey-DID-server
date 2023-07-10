@@ -315,7 +315,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
-        //if (env.IsDevelopment())
+        if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>
