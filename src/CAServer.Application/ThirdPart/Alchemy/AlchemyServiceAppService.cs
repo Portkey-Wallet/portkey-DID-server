@@ -89,7 +89,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             async () => await GetFiatListDataAsync(queryString),
             () => new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(CommonConstant.FiatListExpirationMinutes)
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.FiatListExpirationMinutes)
             }
         );
     }
@@ -192,7 +192,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             async () => await GetOrderQuoteFromAlchemyAsync(input),
             () => new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(CommonConstant.OrderQuoteExpirationMinutes)
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.OrderQuoteExpirationMinutes)
             }
         );
     }
