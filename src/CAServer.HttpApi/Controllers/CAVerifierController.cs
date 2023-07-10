@@ -31,6 +31,7 @@ public class CAVerifierController : CAServerController
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
+    private const string CurrentVersion = "v1.3.0";
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
@@ -50,14 +51,28 @@ public class CAVerifierController : CAServerController
         [FromHeader] string version,
         VerifierServerInput verifierServerInput)
     {
-        var sendVerificationRequestInput =
-            _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
         var type = verifierServerInput.OperationType;
         ValidateOperationType(type);
+        if (string.IsNullOrWhiteSpace(version) && version == CurrentVersion)
+        {
+            type = type switch
+            {
+                OperationType.Unknown => OperationType.CreateCAHolder,
+                OperationType.CreateCAHolder => OperationType.SocialRecovery,
+                OperationType.SocialRecovery => OperationType.AddGuardian,
+                _ => type
+            };
+        }
+
+        var sendVerificationRequestInput =
+            _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+
+
         if (type == OperationType.Unknown)
         {
             type = OperationType.CreateCAHolder;
         }
+
         return type switch
         {
             OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
@@ -209,7 +224,8 @@ public class CAVerifierController : CAServerController
     }
 
     [HttpPost("isGoogleRecaptchaOpen")]
-    public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version, OperationTypeRequestInput operationTypeRequestInput)
+    public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version,
+        OperationTypeRequestInput operationTypeRequestInput)
     {
         ValidateOperationType(operationTypeRequestInput.OperationType);
         var userIpAddress = UserIpAddress(HttpContext);
@@ -221,7 +237,8 @@ public class CAVerifierController : CAServerController
             return true;
         }
 
-        return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, operationTypeRequestInput.OperationType);
+        return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,
+            operationTypeRequestInput.OperationType);
     }
 
 
