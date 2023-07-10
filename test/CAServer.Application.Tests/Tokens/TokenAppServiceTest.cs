@@ -6,6 +6,7 @@ using CAServer.Common;
 using CAServer.Grain.Tests;
 using CAServer.Security;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.Provider;
 using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -99,6 +100,22 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetTokenInfoAsync_Search_From_GraphQL_Test()
     {
+        var token = new IndexerToken()
+        {
+            Id = "AELF-CPU",
+            Symbol = "CPU",
+            ChainId = "AELF",
+            Decimals = 8,
+            BlockHash = string.Empty,
+            BlockHeight = 0,
+            Type = string.Empty,
+            TokenContractAddress = string.Empty,
+            TokenName = "CPU",
+            TotalSupply = 100000,
+            Issuer = string.Empty,
+            IsBurnable = false,
+            IssueChainId = 1264323
+        };
         var tokenInfo = await _tokenAppService.GetTokenInfoAsync("AELF", "VOTE");
     }
 }
