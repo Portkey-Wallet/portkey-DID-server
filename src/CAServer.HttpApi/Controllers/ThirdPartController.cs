@@ -24,7 +24,7 @@ public class ThirdPartOrderController : CAServerController
         _thirdPartOrdersAppService = thirdPartOrderAppService;
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpGet("orders")]
     public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
