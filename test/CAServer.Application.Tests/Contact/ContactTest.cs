@@ -1,9 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
+using AElf.Kernel;
 using CAServer.Contacts;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Security;
+using CAServer.Verifier;
+using Google.Protobuf.WellKnownTypes;
 using Shouldly;
 using Volo.Abp.Users;
 using Volo.Abp.Validation;
@@ -117,7 +122,7 @@ public class ContactTest : CAServerApplicationTestBase
             e.Message.ShouldBe(ContactMessage.NotExistMessage);
         }
     }
-    
+
     [Fact]
     public async Task Get_Not_Exist_Test()
     {
@@ -130,7 +135,7 @@ public class ContactTest : CAServerApplicationTestBase
             e.Message.ShouldBe(ContactMessage.NotExistMessage);
         }
     }
-    
+
     [Fact]
     public async Task Delete_Not_Exist_Test()
     {

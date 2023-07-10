@@ -1,3 +1,5 @@
+using CAServer.Commons;
+
 namespace CAServer.Options;
 
 public class ThirdPartOptions
@@ -23,4 +25,6 @@ public class AlchemyOptions
     public string OrderQuoteUri { get; set; }
     public string GetTokenUri { get; set; }
     public bool SkipCheckSign { get; set; } = false;
+    public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
+    public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
 }

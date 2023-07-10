@@ -157,7 +157,7 @@ public class ModelTest
                     Country = string.Empty,
                     PayWayName = string.Empty,
                     FixedFee = string.Empty,
-                    RateFee = string.Empty,
+                    FeeRate = string.Empty,
                     PayMin = string.Empty,
                     PayMax = string.Empty,
                     PayWayCode = string.Empty

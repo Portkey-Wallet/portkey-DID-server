@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Distributed;
@@ -21,6 +23,9 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
     private readonly IDistributedCache<IpInfoResultDto> _distributedCache;
     private readonly IpServiceSettingOptions _ipServiceSettingOptions;
     private readonly string _prefix = "IpInfo-";
+
+    private readonly string _ipPattern =
+        @"^([0,1]?\d{1,2}|2([0-4][0-9]|5[0-5]))(\.([0,1]?\d{1,2}|2([0-4][0-9]|5[0-5]))){3}$";
 
     public IpInfoAppService(IIpInfoClient ipInfoClient,
         IHttpContextAccessor httpContextAccessor,
@@ -54,7 +59,10 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
                 return ObjectMapper.Map<DefaultIpInfoOptions, IpInfoResultDto>(_defaultIpInfoOptions);
             }
 
-            await _distributedCache.SetAsync(_prefix + ip, ipInfo);
+            await _distributedCache.SetAsync(_prefix + ip, ipInfo, new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+            });
             return ipInfo;
         }
         catch (Exception e)
@@ -77,11 +85,15 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
         var ip = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString().Split(',')
             .FirstOrDefault();
 
-        if (string.IsNullOrWhiteSpace(ip))
+        ip ??= string.Empty;
+
+        if (!Match(ip))
         {
-            throw new UserFriendlyException("Unknown ip address. ip is empty.");
+            throw new UserFriendlyException("Unknown ip address: {ip}.", ip);
         }
 
         return ip;
     }
+
+    private bool Match(string ip) => new Regex(_ipPattern).IsMatch(ip);
 }

@@ -12,4 +12,7 @@ public interface ITokenAppService
     Task<ListResultDto<TokenPriceDataDto>> GetTokenHistoryPriceDataAsync(List<GetTokenHistoryPriceInput> inputs);
 
     Task<ContractAddressDto> GetContractAddressAsync();
+
+    Task<List<GetTokenListDto>> GetTokenListAsync(GetTokenListRequestDto input);
+    Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol);
 }

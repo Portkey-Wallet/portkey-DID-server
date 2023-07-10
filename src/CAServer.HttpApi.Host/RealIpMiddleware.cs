@@ -19,8 +19,7 @@ public class RealIpMiddleware
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
     private readonly AddToWhiteListUrlsOptions _addToWhiteListUrlsOptions;
     private readonly ICurrentUser _currentUser;
-    private const string Version = "version";
-    private const string CurrentVersion = "v1.3.0";
+
 
     public RealIpMiddleware(RequestDelegate requestDelegate, IOptions<RealIpOptions> realIpOptions,
         ILogger<RealIpMiddleware> logger, IIpWhiteListAppService ipWhiteListAppService,
@@ -37,12 +36,6 @@ public class RealIpMiddleware
     public async Task Invoke(HttpContext context)
     {
         var headers = context.Request.Headers;
-        if (!headers.ContainsKey(Version) || headers[Version].ToString() != CurrentVersion)
-        {
-            await _requestDelegate(context);
-            return;
-        }
-
         if (!headers.ContainsKey(_realIpOptions.HeaderKey))
         {
             _logger.LogDebug("Unknown ip address. no setting");

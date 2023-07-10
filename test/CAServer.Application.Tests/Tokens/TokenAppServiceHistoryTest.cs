@@ -41,7 +41,7 @@ public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockTokenPriceExpirationTimeOptions());
         services.AddSingleton(GetMockTokenPriceSnapshotClusterClient());
         services.AddSingleton(GetMockTokenPriceSnapshotGrain());
-
+        services.AddSingleton(GetMockIGraphQLHelper());
     }
     
     [Fact]
