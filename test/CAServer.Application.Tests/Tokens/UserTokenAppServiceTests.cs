@@ -20,7 +20,7 @@ using Xunit;
 namespace CAServer.Tokens;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public class UserTokenAppServiceTests : CAServerApplicationTestBase
+public partial class UserTokenAppServiceTests : CAServerApplicationTestBase
 {
     private readonly IUserTokenAppService _userTokenAppService;
     protected readonly TestCluster Cluster;
@@ -40,9 +40,11 @@ public class UserTokenAppServiceTests : CAServerApplicationTestBase
         
         var graphQlHelper = Substitute.For<IGraphQLHelper>();
         var graphQlClient = Substitute.For<IGraphQLClient>();
-        // var contractProvider = Substitute.For<IContractProvider>();
         services.AddSingleton(graphQlClient);
         services.AddSingleton(graphQlHelper);
+
+        services.AddSingleton(GetMockSymbolCache());
+        services.AddSingleton(GetMockITokenProvider());
     }
 
     private void Login(Guid userId)
@@ -66,7 +68,7 @@ public class UserTokenAppServiceTests : CAServerApplicationTestBase
             Token = new Tokens.Dtos.Token
             {
                 Id = Guid.NewGuid(),
-                Symbol = "AELF",
+                Symbol = "CPU",
                 ChainId = "AELF",
                 Address = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
                 Decimals = 8
@@ -79,6 +81,21 @@ public class UserTokenAppServiceTests : CAServerApplicationTestBase
         data.IsDisplay.ShouldBe(display);
     }
 
+    [Fact]
+    public async Task Change_None_Resource_Token_Display_Async_Test()
+    {
+        try
+        {
+            var display = true;
+            var result = await _userTokenAppService.ChangeTokenDisplayAsync(display, "AELF-VOTE");
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldBe("Token not found.");
+        }
+
+    }
+    
     [Fact]
     public async Task AddUserTokenAsyncTest()
     {

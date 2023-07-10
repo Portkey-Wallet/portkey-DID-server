@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
@@ -17,6 +18,7 @@ using Moq;
 using NSubstitute;
 using Orleans;
 using Volo.Abp.Application.Dtos;
+using Volo.Abp.Caching;
 
 namespace CAServer.Tokens;
 
@@ -35,13 +37,12 @@ public partial class TokenAppServiceHistoryTest
                         Symbol = Symbol,
                         PriceInUsd = 1000,
                     }
-                } 
+                }
             );
 
         return mockITokenPriceGrainClient.Object;
-
     }
-    
+
     private ITokenPriceSnapshotGrain GetMockTokenPriceSnapshotGrain()
     {
         var mockITokenPriceGrainClient = new Mock<ITokenPriceSnapshotGrain>();
@@ -58,17 +59,15 @@ public partial class TokenAppServiceHistoryTest
                 }
             );
         return mockITokenPriceGrainClient.Object;
-
     }
-    
+
     private ITokenPriceProvider GetMockTokenPriceProvider()
     {
         var mockTokenPriceProvider = new Mock<ITokenPriceProvider>();
         mockTokenPriceProvider.Setup(o => o.GetPriceAsync(It.IsAny<string>()))
             .ReturnsAsync((string dto) => dto == Symbol ? 1000 : 100);
-        
-        return mockTokenPriceProvider.Object;
 
+        return mockTokenPriceProvider.Object;
     }
 
     private IOptions<TokenPriceExpirationTimeOptions> GetMockTokenPriceExpirationTimeOptions()
@@ -77,8 +76,6 @@ public partial class TokenAppServiceHistoryTest
         {
             Time = 100
         });
-
-
     }
 
     private static IOptions<ContractAddressOptions> GetMockContractAddressOptions()
@@ -93,10 +90,10 @@ public partial class TokenAppServiceHistoryTest
         {
             TokenClaimAddress = tokenClaimContractAddress
         };
-        
+
         return new OptionsWrapper<ContractAddressOptions>(contractAddressOptions);
     }
-    
+
     private IHttpClientFactory GetMockHttpClientFactory()
     {
         var clientHandlerStub = new DelegatingHistoryHandlerStub();
@@ -108,44 +105,58 @@ public partial class TokenAppServiceHistoryTest
         var factory = mockFactory.Object;
         return factory;
     }
-    
+
     private IClusterClient GetMockClusterClient()
     {
         var mockClusterClient = new Mock<IClusterClient>();
         mockClusterClient.Setup(o => o.GetGrain<IGrainWithStringKey>(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns((string primaryKey, string namePrefix) =>
-            {
-                return GetMockTokenPriceGrain();
-            });
+            .Returns((string primaryKey, string namePrefix) => { return GetMockTokenPriceGrain(); });
         return mockClusterClient.Object;
     }
-    
+
     private IClusterClient GetMockTokenPriceSnapshotClusterClient()
     {
         var mockClusterClient = new Mock<IClusterClient>();
         mockClusterClient.Setup(o => o.GetGrain<IGrainWithStringKey>(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns((string primaryKey, string namePrefix) =>
-            {
-                return GetMockTokenPriceSnapshotGrain();
-            });
+            .Returns((string primaryKey, string namePrefix) => { return GetMockTokenPriceSnapshotGrain(); });
         return mockClusterClient.Object;
     }
+
+    private IGraphQLHelper GetMockIGraphQLHelper()
+    {
+        var mockHelper = new Mock<IGraphQLHelper>();
+        return mockHelper.Object;
+    }
+
+
+    private IDistributedCache<List<string>> GetMockSymbolCache()
+    {
+        var mockCache = new Mock<IDistributedCache<List<string>>>();
+
+        mockCache.Setup(t => t.GetAsync(It.IsAny<string>(), null, false, default))
+            .Returns((string key) => new List<string>() { "ELF" });
+        return mockCache.Object;
+    }
 }
+
 public class DelegatingHistoryHandlerStub : DelegatingHandler
 {
     private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _handlerFunc;
 
     public DelegatingHistoryHandlerStub()
     {
-        _handlerFunc = (request, cancellationToken) => Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.OK });
+        _handlerFunc = (request, cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.OK });
     }
 
-    public DelegatingHistoryHandlerStub(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handlerFunc)
+    public DelegatingHistoryHandlerStub(
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handlerFunc)
     {
         _handlerFunc = handlerFunc;
     }
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        CancellationToken cancellationToken)
     {
         return _handlerFunc(request, cancellationToken);
     }
