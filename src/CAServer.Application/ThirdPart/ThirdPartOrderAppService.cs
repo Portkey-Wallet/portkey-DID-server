@@ -37,9 +37,12 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
+        var userId = input.UserId;
+        // userId = CurrentUser.GetId();
+
         var orderId = GuidGenerator.Create();
         var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);
-        orderGrainData.UserId = CurrentUser.GetId();
+        orderGrainData.UserId = userId;
         _logger.LogInformation("This third part order {orderId} will be created.", orderId);
         orderGrainData.Status = OrderStatusType.Created.ToString();
         orderGrainData.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
@@ -62,8 +65,10 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
     public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
+        var userId = input.UserId;
+        // userId = CurrentUser.GetId();
         var orderList =
-            await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(CurrentUser.GetId(), input.SkipCount,
+            await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, input.SkipCount,
                 input.MaxResultCount);
         return new OrdersDto
         {

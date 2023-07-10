@@ -34,4 +34,5 @@ public class CreateUserOrderDto : IValidatableObject
 
 public class GetUserOrdersDto : PagedResultRequestDto
 {
+    public Guid UserId { get; set; }
 }

@@ -26,13 +26,12 @@ public class ThirdPartOrderController : CAServerController
 
     [Authorize]
     [HttpGet("orders")]
-    public async Task<OrdersDto> GetThirdPartOrdersAsync(
-        GetUserOrdersDto input)
+    public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpPost("order")]
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(
         CreateUserOrderDto input)
@@ -47,7 +46,7 @@ public class ThirdPartOrderController : CAServerController
         return await _alchemyOrderService.UpdateAlchemyOrderAsync(input);
     }
 
-    [Authorize]
+    // [Authorize]
     [HttpPost("alchemy/txHash")]
     public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
     {
@@ -59,7 +58,7 @@ public class ThirdPartOrderController : CAServerController
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/alchemy")]
-[Authorize]
+// [Authorize]
 public class AlchemyController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
