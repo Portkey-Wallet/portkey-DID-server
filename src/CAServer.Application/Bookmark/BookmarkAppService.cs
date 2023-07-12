@@ -58,20 +58,20 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task DeleteAsync()
     {
-        var grain = GetBookmarkGrain();
-
-        var addResult = await grain.DeleteAll();
-        if (!addResult.Success)
+        var bookMarkMetaGrain = GetBookmarkMetaGrain();
+        var bookMarkMetaItems = bookMarkMetaGrain.RemoveAll();
+        foreach (var metaItem in bookMarkMetaItems)
         {
-            throw new UserFriendlyException(addResult.Message);
+            var bookmarkGrain = GetBookmarkGrain(metaItem.GrainIndex);
+            await bookmarkGrain.DeleteAll();
         }
-
         await _eventBus.PublishAsync(new BookmarkDeleteEto { UserId = CurrentUser.GetId() });
     }
 
     public async Task DeleteListAsync(DeleteBookmarkDto input)
     {
-        var grain = GetBookmarkGrain();
+        // 
+        var grain = GetBookmarkGrain(0);
         var result = await grain.DeleteItems(input.Ids);
         if (!result.Success)
         {
@@ -86,10 +86,17 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         throw new System.NotImplementedException();
     }
 
-    private IBookmarkGrain GetBookmarkGrain()
+    private IBookmarkGrain GetBookmarkGrain(int grainIndex)
     {
         var userId = CurrentUser.GetId();
         return _clusterClient.GetGrain<IBookmarkGrain>(
-            GrainIdHelper.GenerateGrainId("Bookmark", userId.ToString("N")));
+            GrainIdHelper.GenerateGrainId("Bookmark", userId.ToString("N"), grainIndex));
+    }
+    
+    private IBookmarkMetaGrain GetBookmarkMetaGrain()
+    {
+        var userId = CurrentUser.GetId();
+        return _clusterClient.GetGrain<IBookmarkMetaGrain>(
+            GrainIdHelper.GenerateGrainId("BookmarkMeta", userId.ToString("N")));
     }
 }
