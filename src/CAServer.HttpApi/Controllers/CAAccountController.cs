@@ -51,8 +51,8 @@ public class CAAccountController : CAServerController
     }
 
     [HttpGet("transactionFee")]
-    public TransactionFeeDto GetTransactionFee(string type)
+    public List<TransactionFeeResultDto> GetTransactionFee(TransactionFeeDto input)
     {
-        return _guardianAppService.GetTransactionFee(type);
+        return _guardianAppService.GetTransactionFee(input);
     }
 }

@@ -98,13 +98,10 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 
-    public TransactionFeeDto GetTransactionFee(string type)
+    public List<TransactionFeeResultDto> GetTransactionFee(TransactionFeeDto input)
     {
-        var fee = _transactionFeeOptions?.TransactionFee.ContainsKey(type) == true
-            ? _transactionFeeOptions.TransactionFee[type]
-            : CommonConstant.DefaultTransactionFee;
-
-        return new TransactionFeeDto { Fee = fee };
+        var feeInfos = _transactionFeeOptions.TransactionFees.Where(t => input.ChainIds.Contains(t.ChainId)).ToList();
+        return ObjectMapper.Map<List<TransactionFeeInfo>, List<TransactionFeeResultDto>>(feeInfos);
     }
 
     private string GetHash(string guardianIdentifier)
