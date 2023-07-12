@@ -39,4 +39,8 @@
             <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Application.dll</HintPath>
         </Reference>
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Bookmark\Etos" />
+    </ItemGroup>
 </Project>
