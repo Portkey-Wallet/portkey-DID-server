@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
@@ -41,7 +43,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         var userId = CurrentUser.GetId();
 
         var metaGrain = GetBookmarkMetaGrain();
-        var index = metaGrain.GetTailBookMarkGrainIndex();
+        var index = await metaGrain.GetTailBookMarkGrainIndexAsync();
         var grain = GetBookmarkGrain(index);
 
         var grainDto = ObjectMapper.Map<CreateBookmarkDto, BookmarkGrainDto>(input);
@@ -77,7 +79,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
     public async Task DeleteAsync()
     {
         var bookMarkMetaGrain = GetBookmarkMetaGrain();
-        var bookMarkMetaItems = bookMarkMetaGrain.RemoveAll();
+        var bookMarkMetaItems = await bookMarkMetaGrain.RemoveAllAsync();
         foreach (var metaItem in bookMarkMetaItems)
         {
             var bookmarkGrain = GetBookmarkGrain(metaItem.GrainIndex);
@@ -88,15 +90,22 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task DeleteListAsync(DeleteBookmarkDto input)
     {
-        // 
-        var grain = GetBookmarkGrain(0);
-        var result = await grain.DeleteItems(input.Ids);
-        if (!result.Success)
+        var grainIndexList = input.Ids
+            .GroupBy(i => i.Value)
+            .ToDictionary(g => g.Key, g => g.Select(i => i.Key).ToList());
+        var grainMetaCountDict = new Dictionary<int, int>();
+        foreach (var grainIndexItems in grainIndexList)
         {
-            throw new UserFriendlyException(result.Message);
+            var grain = GetBookmarkGrain(grainIndexItems.Key);
+            var result = await grain.DeleteItems(grainIndexItems.Value);
+            if (result.Success)
+            {
+                grainMetaCountDict[grainIndexItems.Key] = result.Data.Count;
+            }
         }
-
-        await _eventBus.PublishAsync(new BookmarkMultiDeleteEto { UserId = CurrentUser.GetId(), Ids = input.Ids });
+        var metaGrain = GetBookmarkMetaGrain();
+        await metaGrain.UpdateGrainIndexCountAsync(grainMetaCountDict);
+        await _eventBus.PublishAsync(new BookmarkMultiDeleteEto { UserId = CurrentUser.GetId(), Ids = input.Ids.Keys.ToList() });
     }
 
     public Task SortAsync(SortBookmarksDto input)

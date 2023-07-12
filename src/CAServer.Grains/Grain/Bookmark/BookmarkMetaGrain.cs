@@ -1,4 +1,5 @@
 using CAServer.Grains.State.Bookmark;
+using Google.Protobuf.WellKnownTypes;
 using Orleans;
 using Volo.Abp.ObjectMapping;
 
@@ -25,11 +26,12 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
         await base.OnDeactivateAsync();
     }
 
-    public int GetTailBookMarkGrainIndex()
+    public async Task<int> GetTailBookMarkGrainIndexAsync()
     {
         if (State.Items.IsNullOrEmpty())
         {
             State.Items.Add(new BookMarkMetaItem() { GrainIndex = 1 });
+            await WriteStateAsync();
             return 1;
         }
         var hasDataList = State.Items.Where(item => item.Size > 0).ToList();
@@ -40,12 +42,13 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
         {
             var idx = tail.GrainIndex;
             State.Items.Add(new BookMarkMetaItem() { GrainIndex = idx });
+            await WriteStateAsync();
             return idx;
         }
         return tail.GrainIndex;
     }
 
-    public List<BookMarkMetaItem> RemoveAll()
+    public async Task<List<BookMarkMetaItem>> RemoveAllAsync()
     {
         var oldData = State.Items;
         State.Items = new List<BookMarkMetaItem>()
@@ -55,6 +58,20 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
                 GrainIndex = 1
             }
         };
+        await WriteStateAsync();
         return oldData;
+    }
+
+    public async Task<Empty> UpdateGrainIndexCountAsync(Dictionary<int, int> indexCountDict)
+    { 
+        var itemDict = State.Items.ToDictionary(i => i.GrainIndex, i => i);
+        foreach (var indexCount in indexCountDict)
+        {
+            if (!itemDict.ContainsKey(indexCount.Key))
+                continue;
+            itemDict.GetValueOrDefault(indexCount.Key).Size = indexCount.Value;
+        }
+        await WriteStateAsync();
+        return null;
     }
 }

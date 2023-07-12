@@ -1,4 +1,6 @@
 using CAServer.Grains.State.Bookmark;
+using Google.Protobuf.WellKnownTypes;
+using JetBrains.Annotations;
 using Orleans;
 
 namespace CAServer.Grains.Grain.Bookmark;
@@ -6,9 +8,10 @@ namespace CAServer.Grains.Grain.Bookmark;
 public interface IBookmarkMetaGrain: IGrainWithStringKey
 {
 
-    int GetTailBookMarkGrainIndex();
+    Task<int> GetTailBookMarkGrainIndexAsync();
 
-    List<BookMarkMetaItem> RemoveAll();
+    Task<List<BookMarkMetaItem>> RemoveAllAsync();
 
+    Task<Empty> UpdateGrainIndexCountAsync(Dictionary<int, int> indexCountDict);
 
 }
