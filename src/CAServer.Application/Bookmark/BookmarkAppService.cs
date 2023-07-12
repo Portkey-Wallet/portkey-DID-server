@@ -26,7 +26,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _eventBus;
     private readonly IBookmarkProvider _bookmarkProvider;
-    private IAbpDistributedLock _distributedLock;
+    private readonly IAbpDistributedLock _distributedLock;
     private readonly string _lockKeyPrefix = "CAServer:Bookmark:";
 
     public BookmarkAppService(IClusterClient clusterClient, IDistributedEventBus eventBus,
@@ -41,7 +41,6 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
     public async Task CreateAsync(CreateBookmarkDto input)
     {
         var userId = CurrentUser.GetId();
-
         var metaGrain = GetBookmarkMetaGrain();
         var index = await metaGrain.GetTailBookMarkGrainIndexAsync();
         var grain = GetBookmarkGrain(index);
@@ -66,7 +65,8 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         }
         else
         {
-            Logger.LogError("Do not get lock, keys already exits. userId: {0}", userId.ToString());
+            Logger.LogError("Create bookmark fail, do not get lock, keys already exits. userId: {0}",
+                userId.ToString());
         }
     }
 
@@ -78,14 +78,26 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task DeleteAsync()
     {
-        var bookMarkMetaGrain = GetBookmarkMetaGrain();
-        var bookMarkMetaItems = await bookMarkMetaGrain.RemoveAllAsync();
-        foreach (var metaItem in bookMarkMetaItems)
+        await using var handle =
+            await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + CurrentUser.GetId().ToString());
+
+        if (handle != null)
         {
-            var bookmarkGrain = GetBookmarkGrain(metaItem.GrainIndex);
-            await bookmarkGrain.DeleteAll();
+            var bookMarkMetaGrain = GetBookmarkMetaGrain();
+            var bookMarkMetaItems = bookMarkMetaGrain.RemoveAll();
+            foreach (var metaItem in bookMarkMetaItems)
+            {
+                var bookmarkGrain = GetBookmarkGrain(metaItem.GrainIndex);
+                await bookmarkGrain.DeleteAll();
+            }
+
+            await _eventBus.PublishAsync(new BookmarkDeleteEto { UserId = CurrentUser.GetId() });
         }
-        await _eventBus.PublishAsync(new BookmarkDeleteEto { UserId = CurrentUser.GetId() });
+        else
+        {
+            Logger.LogError("Delete all bookmarks fail, do not get lock, keys already exits. userId: {0}",
+                CurrentUser.GetId().ToString());
+        }
     }
 
     public async Task DeleteListAsync(DeleteBookmarkDto input)
@@ -106,11 +118,6 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         var metaGrain = GetBookmarkMetaGrain();
         await metaGrain.UpdateGrainIndexCountAsync(grainMetaCountDict);
         await _eventBus.PublishAsync(new BookmarkMultiDeleteEto { UserId = CurrentUser.GetId(), Ids = input.Ids.Keys.ToList() });
-    }
-
-    public Task SortAsync(SortBookmarksDto input)
-    {
-        throw new System.NotImplementedException();
     }
 
     private IBookmarkGrain GetBookmarkGrain(int index)

@@ -10,5 +10,4 @@ public interface IBookmarkAppService
     Task<PagedResultDto<BookmarkResultDto>> GetBookmarksAsync(GetBookmarksDto input);
     Task DeleteAsync();
     Task DeleteListAsync(DeleteBookmarkDto input);
-    Task SortAsync(SortBookmarksDto input);
 }

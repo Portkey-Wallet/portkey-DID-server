@@ -11,5 +11,5 @@ public class BookmarkIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string Name { get; set; }
     [Keyword] public string Url { get; set; }
     [Keyword] public long ModificationTime { get; set; }
-    public int SortWeight { get; set; }
+    public int GrainIndex { get; set; }
 }

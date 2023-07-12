@@ -45,10 +45,4 @@ public class BookmarkController : CAServerController
     {
         await _bookmarkAppService.DeleteListAsync(input);
     }
-
-    [HttpPost("sort")]
-    public async Task SortAsync(SortBookmarksDto input)
-    {
-        await _bookmarkAppService.SortAsync(input);
-    }
 }

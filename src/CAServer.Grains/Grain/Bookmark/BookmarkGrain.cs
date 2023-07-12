@@ -49,7 +49,7 @@ public class BookmarkGrain : Grain<BookmarkState>, IBookmarkGrain
             Name = grainDto.Name,
             Url = grainDto.Url,
             ModificationTime = TimeHelper.GetTimeStampInMilliseconds(),
-            SortWeight = State.BookmarkItems.Count + 1
+            GrainIndex = grainDto.GrainIndex
         };
 
         State.BookmarkItems.Add(item);
@@ -68,9 +68,10 @@ public class BookmarkGrain : Grain<BookmarkState>, IBookmarkGrain
             result.Message = "Not exist.";
             return result;
         }
+
         State.BookmarkItems = new List<BookmarkItem>();
         await WriteStateAsync();
-        
+
         result.Success = true;
         return result;
     }
@@ -83,7 +84,7 @@ public class BookmarkGrain : Grain<BookmarkState>, IBookmarkGrain
             result.Message = "Not exist.";
             return result;
         }
-        
+
         var items = State.BookmarkItems.Where(t => ids.Contains(t.Id)).ToList();
         State.BookmarkItems.RemoveAll(items);
         await WriteStateAsync();

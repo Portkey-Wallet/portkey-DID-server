@@ -30,9 +30,11 @@ public class BookmarkProvider : IBookmarkProvider, ISingletonDependency
         mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
 
         QueryContainer Filter(QueryContainerDescriptor<BookmarkIndex> f) => f.Bool(b => b.Must(mustQuery));
-        IPromise<IList<ISort>> Sort(SortDescriptor<BookmarkIndex> s) => s.Ascending(t => t.SortWeight);
+        IPromise<IList<ISort>> Sort(SortDescriptor<BookmarkIndex> s) => s.Ascending(t => t.ModificationTime);
 
-        var (totalCount, bookmarkIndices) = await _bookmarkRepository.GetSortListAsync(Filter, sortFunc: Sort);
+        var (totalCount, bookmarkIndices) = await _bookmarkRepository.GetSortListAsync(Filter, sortFunc: Sort,
+            limit: input.MaxResultCount, skip: input.SkipCount);
+        
         return new PagedResultDto<BookmarkIndex>(totalCount, bookmarkIndices);
     }
 }
