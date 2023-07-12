@@ -46,6 +46,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
         var grainDto = ObjectMapper.Map<CreateBookmarkDto, BookmarkGrainDto>(input);
         grainDto.UserId = userId;
+        grainDto.GrainIndex = index;
 
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + userId.ToString());

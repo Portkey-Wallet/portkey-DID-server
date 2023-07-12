@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using CAServer.Bookmark.Dtos;
+using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
@@ -15,6 +17,7 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.Notify;
@@ -42,6 +45,7 @@ using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using MongoDB.Bson.Serialization.IdGenerators;
 using Portkey.Contracts.CA;
+using Volo.Abp.Application.Dtos;
 using AlchemyTargetAddressDto = CAServer.Message.Dtos.AlchemyTargetAddressDto;
 using Volo.Abp.AutoMapper;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
@@ -329,6 +333,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<IndexerToken, GetTokenInfoDto>();
         CreateMap<IndexerToken, GetTokenListDto>();
+        CreateMap<CreateBookmarkDto, BookmarkGrainDto>();
+        CreateMap<BookmarkGrainResultDto, BookmarkCreateEto>();
+        CreateMap<BookmarkIndex, BookmarkResultDto>();
+        CreateMap<BookmarkCreateEto, BookmarkIndex>();
+        CreateMap<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>();
         CreateMap<IndexerToken, UserTokenItem>()
             .ForMember(t => t.SortWeight, m => m.MapFrom(f => f.ChainId == "ELF" ? 1 : 0))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(f => f.ChainId))

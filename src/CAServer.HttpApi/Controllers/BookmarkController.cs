@@ -13,6 +13,7 @@ namespace CAServer.Controllers;
 [ControllerName("Bookmark")]
 [Route("api/app/bookmarks/")]
 [Authorize]
+[IgnoreAntiforgeryToken]
 public class BookmarkController : CAServerController
 {
     private readonly IBookmarkAppService _bookmarkAppService;
@@ -40,7 +41,7 @@ public class BookmarkController : CAServerController
         await _bookmarkAppService.DeleteAsync();
     }
 
-    [HttpDelete("deleteBookmarks")]
+    [HttpPost("deleteBookmarks")]
     public async Task DeleteBookmarksAsync(DeleteBookmarkDto input)
     {
         await _bookmarkAppService.DeleteListAsync(input);

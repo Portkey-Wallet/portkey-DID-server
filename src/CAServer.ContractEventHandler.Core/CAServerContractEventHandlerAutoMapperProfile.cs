@@ -2,6 +2,8 @@ using System.Linq;
 using AElf;
 using AElf.Types;
 using AutoMapper;
+using CAServer.Bookmark.Etos;
+using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using Portkey.Contracts.CA;

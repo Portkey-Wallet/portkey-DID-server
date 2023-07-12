@@ -4,7 +4,7 @@ public class BookmarkState
 {
     public string Id { get; set; }
     public Guid UserId { get; set; }
-    public List<BookmarkItem> BookmarkItems { get; set; }
+    public List<BookmarkItem> BookmarkItems { get; set; } = new();
 }
 
 public class BookmarkItem
