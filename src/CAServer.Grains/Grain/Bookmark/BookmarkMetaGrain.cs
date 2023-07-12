@@ -28,11 +28,33 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
     public int GetTailBookMarkGrainIndex()
     {
         if (State.Items.IsNullOrEmpty())
+        {
+            State.Items.Add(new BookMarkMetaItem() { GrainIndex = 1 });
             return 1;
+        }
         var hasDataList = State.Items.Where(item => item.Size > 0).ToList();
         if (hasDataList.IsNullOrEmpty())
             return 1;
         var tail = hasDataList[hasDataList.Count - 1];
-        return tail.Size >= 100 ? tail.GrainIndex + 1 : tail.GrainIndex;
+        if (tail.Size >= 100)
+        {
+            var idx = tail.GrainIndex;
+            State.Items.Add(new BookMarkMetaItem() { GrainIndex = idx });
+            return idx;
+        }
+        return tail.GrainIndex;
+    }
+
+    public List<BookMarkMetaItem> RemoveAll()
+    {
+        var oldData = State.Items;
+        State.Items = new List<BookMarkMetaItem>()
+        {
+            new()
+            {
+                GrainIndex = 1
+            }
+        };
+        return oldData;
     }
 }

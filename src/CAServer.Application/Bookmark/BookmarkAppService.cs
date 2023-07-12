@@ -76,19 +76,19 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task DeleteAsync()
     {
-        var grain = GetBookmarkGrain(0);
-
-        var addResult = await grain.DeleteAll();
-        if (!addResult.Success)
+        var bookMarkMetaGrain = GetBookmarkMetaGrain();
+        var bookMarkMetaItems = bookMarkMetaGrain.RemoveAll();
+        foreach (var metaItem in bookMarkMetaItems)
         {
-            throw new UserFriendlyException(addResult.Message);
+            var bookmarkGrain = GetBookmarkGrain(metaItem.GrainIndex);
+            await bookmarkGrain.DeleteAll();
         }
-
         await _eventBus.PublishAsync(new BookmarkDeleteEto { UserId = CurrentUser.GetId() });
     }
 
     public async Task DeleteListAsync(DeleteBookmarkDto input)
     {
+        // 
         var grain = GetBookmarkGrain(0);
         var result = await grain.DeleteItems(input.Ids);
         if (!result.Success)
