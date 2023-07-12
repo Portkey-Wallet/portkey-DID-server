@@ -1,10 +1,18 @@
 using System.Threading.Tasks;
 using CAServer.Bookmark.Dtos;
+using CAServer.Bookmark.Etos;
+using CAServer.Bookmark.Provider;
+using CAServer.Entities.Es;
+using CAServer.Grains;
+using CAServer.Grains.Grain.Bookmark;
+using CAServer.Grains.Grain.Bookmark.Dtos;
+using Org.BouncyCastle.Tls;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.Users;
 
 namespace CAServer.Bookmark;
 
@@ -12,36 +20,76 @@ namespace CAServer.Bookmark;
 public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 {
     private readonly IClusterClient _clusterClient;
-    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IDistributedEventBus _eventBus;
+    private readonly IBookmarkProvider _bookmarkProvider;
 
-    public BookmarkAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus)
+    public BookmarkAppService(IClusterClient clusterClient, IDistributedEventBus eventBus,
+        IBookmarkProvider bookmarkProvider)
     {
         _clusterClient = clusterClient;
-        _distributedEventBus = distributedEventBus;
-    }
-    
-    public Task CreateAsync(CreateBookmarkDto input)
-    {
-        throw new System.NotImplementedException();
+        _eventBus = eventBus;
+        _bookmarkProvider = bookmarkProvider;
     }
 
-    public Task<PagedResultDto<BookmarkResultDto>> GetBookmarksAsync(GetBookmarksDto input)
+    public async Task CreateAsync(CreateBookmarkDto input)
     {
-        throw new System.NotImplementedException();
+        var userId = CurrentUser.GetId();
+        var grain = GetBookmarkGrain();
+
+        var grainDto = ObjectMapper.Map<CreateBookmarkDto, BookmarkGrainDto>(input);
+        grainDto.UserId = userId;
+
+        var addResult = await grain.AddBookMark(grainDto);
+        if (!addResult.Success)
+        {
+            throw new UserFriendlyException(addResult.Message);
+        }
+
+        var bookmarkCreateEto = ObjectMapper.Map<BookmarkGrainResultDto, BookmarkCreateEto>(addResult.Data);
+        bookmarkCreateEto.UserId = userId;
+        await _eventBus.PublishAsync(bookmarkCreateEto);
     }
 
-    public Task DeleteAsync()
+    public async Task<PagedResultDto<BookmarkResultDto>> GetBookmarksAsync(GetBookmarksDto input)
     {
-        throw new System.NotImplementedException();
+        var bookmarks = await _bookmarkProvider.GetBookmarksAsync(CurrentUser.GetId(), input);
+        return ObjectMapper.Map<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>(bookmarks);
     }
 
-    public Task DeleteListAsync(DeleteBookmarkDto input)
+    public async Task DeleteAsync()
     {
-        throw new System.NotImplementedException();
+        var grain = GetBookmarkGrain();
+
+        var addResult = await grain.DeleteAll();
+        if (!addResult.Success)
+        {
+            throw new UserFriendlyException(addResult.Message);
+        }
+
+        await _eventBus.PublishAsync(new BookmarkDeleteEto { UserId = CurrentUser.GetId() });
+    }
+
+    public async Task DeleteListAsync(DeleteBookmarkDto input)
+    {
+        var grain = GetBookmarkGrain();
+        var result = await grain.DeleteItems(input.Ids);
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+
+        await _eventBus.PublishAsync(new BookmarkMultiDeleteEto { UserId = CurrentUser.GetId(), Ids = input.Ids });
     }
 
     public Task SortAsync(SortBookmarksDto input)
     {
         throw new System.NotImplementedException();
+    }
+
+    private IBookmarkGrain GetBookmarkGrain()
+    {
+        var userId = CurrentUser.GetId();
+        return _clusterClient.GetGrain<IBookmarkGrain>(
+            GrainIdHelper.GenerateGrainId("Bookmark", userId.ToString("N")));
     }
 }

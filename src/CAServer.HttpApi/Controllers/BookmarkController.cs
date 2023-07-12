@@ -43,7 +43,7 @@ public class BookmarkController : CAServerController
     [HttpDelete("deleteBookmarks")]
     public async Task DeleteBookmarksAsync(DeleteBookmarkDto input)
     {
-        await _bookmarkAppService.DeleteAsync();
+        await _bookmarkAppService.DeleteListAsync(input);
     }
 
     [HttpPost("sort")]
