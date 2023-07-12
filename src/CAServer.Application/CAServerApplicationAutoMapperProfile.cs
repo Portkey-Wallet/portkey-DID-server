@@ -335,5 +335,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(f => f.Symbol))
             .ForPath(t => t.Token.Address, m => m.MapFrom(f => f.TokenContractAddress))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals));
+        
+        CreateMap<TransactionDto, TransactionEto>();
     }
 }

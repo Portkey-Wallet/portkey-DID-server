@@ -2,6 +2,8 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Cryptography;
 using CAServer.Common;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
@@ -131,6 +133,41 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         catch (Exception e)
         {
             _logger.LogError(e, "Occurred error during update alchemy order transaction hash.");
+        }
+    }
+
+    public async Task TransactionAsync(TransactionDto input)
+    {
+        var valid = ValidParams(input);
+        if (!valid)
+        {
+            throw new UserFriendlyException("Signature validation failed.");
+        }
+        
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
+    }
+
+    private bool ValidParams(TransactionDto input)
+    {
+        try
+        {
+            var signatureStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
+
+            var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
+            var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
+
+            var hash = Encoding.UTF8.GetBytes(signatureStr).ComputeHash();
+            if (!CryptoHelper.VerifySignature(signature, hash, publicKey))
+            {
+                throw new UserFriendlyException("Signature validation failed.");
+            }
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Signature validation error.");
+            return false;
         }
     }
 

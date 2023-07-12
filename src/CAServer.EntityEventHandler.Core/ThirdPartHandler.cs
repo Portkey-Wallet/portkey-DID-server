@@ -10,7 +10,8 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.EntityEventHandler.Core;
 
-public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
+public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributedEventHandler<TransactionEto>,
+    ITransientDependency
 {
     private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
     private readonly IObjectMapper _objectMapper;
@@ -41,4 +42,21 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, ITransientDe
             _logger.LogError(ex, $"An error occurred while processing the event,orderId: {eventData.Id}");
         }
     }
+
+    public async Task HandleEventAsync(TransactionEto eventData)
+    {
+        // try
+        // {
+        //     var userOrder = _objectMapper.Map<OrderEto, OrderIndex>(eventData);
+        //
+        //     await _orderRepository.AddOrUpdateAsync(userOrder);
+        //
+        //     _logger.LogInformation($"Order{eventData.Id} add or update success orderId.");
+        // }
+        // catch (Exception ex)
+        // {
+        //     _logger.LogError(ex, $"An error occurred while processing the event,orderId: {eventData.Id}");
+        // }
+    }
+    
 }
