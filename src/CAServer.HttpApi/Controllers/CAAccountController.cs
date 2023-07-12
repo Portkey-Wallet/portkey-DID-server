@@ -49,4 +49,10 @@ public class CAAccountController : CAServerController
     {
         return await _guardianAppService.GetRegisterInfoAsync(requestDto);
     }
+
+    [HttpGet("transactionFee")]
+    public TransactionFeeDto GetTransactionFee(string type)
+    {
+        return _guardianAppService.GetTransactionFee(type);
+    }
 }

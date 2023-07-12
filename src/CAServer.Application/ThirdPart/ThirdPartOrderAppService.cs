@@ -77,4 +77,6 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             Data = orderList
         };
     }
+    
+    
 }
