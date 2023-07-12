@@ -8,5 +8,4 @@ public interface IGuardianAppService
 {
     Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto);
     Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto);
-    List<TransactionFeeResultDto> GetTransactionFee(TransactionFeeDto input);
 }

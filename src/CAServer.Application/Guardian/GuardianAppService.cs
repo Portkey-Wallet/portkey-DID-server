@@ -36,13 +36,12 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IGuardianProvider _guardianProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IAppleUserProvider _appleUserProvider;
-    private readonly TransactionFeeOptions _transactionFeeOptions;
+
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
-        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
-        IOptionsSnapshot<TransactionFeeOptions> transactionFeeOptions)
+        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -51,7 +50,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
         _appleUserProvider = appleUserProvider;
-        _transactionFeeOptions = transactionFeeOptions.Value;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -96,12 +94,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             : guardian.OriginChainId;
 
         return new RegisterInfoResultDto { OriginChainId = originChainId };
-    }
-
-    public List<TransactionFeeResultDto> GetTransactionFee(TransactionFeeDto input)
-    {
-        var feeInfos = _transactionFeeOptions.TransactionFees.Where(t => input.ChainIds.Contains(t.ChainId)).ToList();
-        return ObjectMapper.Map<List<TransactionFeeInfo>, List<TransactionFeeResultDto>>(feeInfos);
     }
 
     private string GetHash(string guardianIdentifier)
