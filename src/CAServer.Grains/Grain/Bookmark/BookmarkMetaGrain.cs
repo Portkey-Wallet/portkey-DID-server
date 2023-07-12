@@ -26,7 +26,7 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
         await base.OnDeactivateAsync();
     }
 
-    public async Task<int> GetTailBookMarkGrainIndexAsync()
+    public async Task<int> GetTailBookMarkGrainIndex()
     {
         if (State.Items.IsNullOrEmpty())
         {
@@ -48,7 +48,7 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
         return tail.GrainIndex;
     }
 
-    public async Task<List<BookMarkMetaItem>> RemoveAllAsync()
+    public async Task<List<BookMarkMetaItem>> RemoveAll()
     {
         var oldData = State.Items;
         State.Items = new List<BookMarkMetaItem>()
@@ -62,7 +62,7 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
         return oldData;
     }
 
-    public async Task<Empty> UpdateGrainIndexCountAsync(Dictionary<int, int> indexCountDict)
+    public async Task<Empty> UpdateGrainIndexCount(Dictionary<int, int> indexCountDict)
     { 
         var itemDict = State.Items.ToDictionary(i => i.GrainIndex, i => i);
         foreach (var indexCount in indexCountDict)

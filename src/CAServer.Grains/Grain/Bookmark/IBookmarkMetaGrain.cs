@@ -8,10 +8,10 @@ namespace CAServer.Grains.Grain.Bookmark;
 public interface IBookmarkMetaGrain: IGrainWithStringKey
 {
 
-    Task<int> GetTailBookMarkGrainIndexAsync();
+    Task<int> GetTailBookMarkGrainIndex();
 
-    Task<List<BookMarkMetaItem>> RemoveAllAsync();
+    Task<List<BookMarkMetaItem>> RemoveAll();
 
-    Task<Empty> UpdateGrainIndexCountAsync(Dictionary<int, int> indexCountDict);
+    Task<Empty> UpdateGrainIndexCount(Dictionary<int, int> indexCountDict);
 
 }

@@ -93,4 +93,9 @@ public class BookmarkGrain : Grain<BookmarkState>, IBookmarkGrain
         result.Data = _objectMapper.Map<List<BookmarkItem>, List<BookmarkGrainResultDto>>(items);
         return result;
     }
+
+    public Task<int> GetItemCount()
+    {
+        return Task.FromResult(State.BookmarkItems.Count);
+    }
 }
