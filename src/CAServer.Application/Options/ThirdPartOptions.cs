@@ -27,4 +27,5 @@ public class AlchemyOptions
     public bool SkipCheckSign { get; set; } = false;
     public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
+    public string MerchantQueryTradeUri { get; set; }
 }
