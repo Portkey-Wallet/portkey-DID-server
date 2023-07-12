@@ -6,11 +6,13 @@ using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Bookmark;
 using CAServer.Grains.Grain.Bookmark.Dtos;
+using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Tls;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 
@@ -22,32 +24,48 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _eventBus;
     private readonly IBookmarkProvider _bookmarkProvider;
+    private IAbpDistributedLock _distributedLock;
+    private readonly string _lockKeyPrefix = "CAServer:Bookmark:";
 
     public BookmarkAppService(IClusterClient clusterClient, IDistributedEventBus eventBus,
-        IBookmarkProvider bookmarkProvider)
+        IBookmarkProvider bookmarkProvider, IAbpDistributedLock distributedLock)
     {
         _clusterClient = clusterClient;
         _eventBus = eventBus;
         _bookmarkProvider = bookmarkProvider;
+        _distributedLock = distributedLock;
     }
 
     public async Task CreateAsync(CreateBookmarkDto input)
     {
         var userId = CurrentUser.GetId();
-        var grain = GetBookmarkGrain();
+
+        var metaGrain = GetBookmarkMetaGrain();
+        var index = metaGrain.GetTailBookMarkGrainIndex();
+        var grain = GetBookmarkGrain(index);
 
         var grainDto = ObjectMapper.Map<CreateBookmarkDto, BookmarkGrainDto>(input);
         grainDto.UserId = userId;
 
-        var addResult = await grain.AddBookMark(grainDto);
-        if (!addResult.Success)
-        {
-            throw new UserFriendlyException(addResult.Message);
-        }
+        await using var handle =
+            await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + userId.ToString());
 
-        var bookmarkCreateEto = ObjectMapper.Map<BookmarkGrainResultDto, BookmarkCreateEto>(addResult.Data);
-        bookmarkCreateEto.UserId = userId;
-        await _eventBus.PublishAsync(bookmarkCreateEto);
+        if (handle != null)
+        {
+            var addResult = await grain.AddBookMark(grainDto);
+            if (!addResult.Success)
+            {
+                throw new UserFriendlyException(addResult.Message);
+            }
+
+            var bookmarkCreateEto = ObjectMapper.Map<BookmarkGrainResultDto, BookmarkCreateEto>(addResult.Data);
+            bookmarkCreateEto.UserId = userId;
+            await _eventBus.PublishAsync(bookmarkCreateEto);
+        }
+        else
+        {
+            Logger.LogError("Do not get lock, keys already exits. userId: {0}", userId.ToString());
+        }
     }
 
     public async Task<PagedResultDto<BookmarkResultDto>> GetBookmarksAsync(GetBookmarksDto input)
@@ -58,7 +76,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task DeleteAsync()
     {
-        var grain = GetBookmarkGrain();
+        var grain = GetBookmarkGrain(0);
 
         var addResult = await grain.DeleteAll();
         if (!addResult.Success)
@@ -71,7 +89,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task DeleteListAsync(DeleteBookmarkDto input)
     {
-        var grain = GetBookmarkGrain();
+        var grain = GetBookmarkGrain(0);
         var result = await grain.DeleteItems(input.Ids);
         if (!result.Success)
         {
@@ -86,10 +104,17 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         throw new System.NotImplementedException();
     }
 
-    private IBookmarkGrain GetBookmarkGrain()
+    private IBookmarkGrain GetBookmarkGrain(int index)
     {
         var userId = CurrentUser.GetId();
         return _clusterClient.GetGrain<IBookmarkGrain>(
-            GrainIdHelper.GenerateGrainId("Bookmark", userId.ToString("N")));
+            GrainIdHelper.GenerateGrainId("Bookmark", userId.ToString("N"), index));
+    }
+
+    private IBookmarkMetaGrain GetBookmarkMetaGrain()
+    {
+        var userId = CurrentUser.GetId();
+        return _clusterClient.GetGrain<IBookmarkMetaGrain>(
+            GrainIdHelper.GenerateGrainId("BookmarkMeta", userId.ToString("N")));
     }
 }
