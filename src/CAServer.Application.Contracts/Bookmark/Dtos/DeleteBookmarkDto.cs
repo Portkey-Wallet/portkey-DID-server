@@ -7,7 +7,7 @@ namespace CAServer.Bookmark.Dtos;
 
 public class DeleteBookmarkDto
 {
-    [Required] public List<BookmarkInfo> Ids { get; set; }
+    [Required] public List<BookmarkInfo> DeleteInfos { get; set; }
 }
 
 
