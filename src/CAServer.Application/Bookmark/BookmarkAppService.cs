@@ -70,6 +70,8 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         {
             Logger.LogError("Create bookmark fail, do not get lock, keys already exits. userId: {0}",
                 userId.ToString());
+            
+            throw new UserFriendlyException("Get lock fail");
         }
     }
 
@@ -100,6 +102,8 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         {
             Logger.LogError("Delete all bookmarks fail, do not get lock, keys already exits. userId: {0}",
                 CurrentUser.GetId().ToString());
+            
+            throw new UserFriendlyException("Get lock fail");
         }
     }
 
@@ -109,20 +113,34 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
             .GroupBy(i => i.Index)
             .ToDictionary(g => g.Key, g => g.Select(i => i.Id).ToList());
         var grainMetaCountDict = new Dictionary<int, int>();
-        foreach (var grainIndexItems in grainIndexList)
-        {
-            var grain = GetBookmarkGrain(grainIndexItems.Key);
-            var result = await grain.DeleteItems(grainIndexItems.Value);
-            if (result.Success)
-            {
-                grainMetaCountDict[grainIndexItems.Key] = result.Data.Count;
-            }
-        }
+        
+        await using var handle =
+            await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + CurrentUser.GetId().ToString());
 
-        var metaGrain = GetBookmarkMetaGrain();
-        await metaGrain.UpdateGrainIndexCount(grainMetaCountDict);
-        await _eventBus.PublishAsync(new BookmarkMultiDeleteEto
-            { UserId = CurrentUser.GetId(), Ids = input.Ids.Select(i => i.Id).ToList() });
+        if (handle != null)
+        {
+            foreach (var grainIndexItems in grainIndexList)
+            {
+                var grain = GetBookmarkGrain(grainIndexItems.Key);
+                var result = await grain.DeleteItems(grainIndexItems.Value);
+                if (result.Success)
+                {
+                    grainMetaCountDict[grainIndexItems.Key] = result.Data.Count;
+                }
+            }
+
+            var metaGrain = GetBookmarkMetaGrain();
+            await metaGrain.UpdateGrainIndexCount(grainMetaCountDict);
+            await _eventBus.PublishAsync(new BookmarkMultiDeleteEto
+                { UserId = CurrentUser.GetId(), Ids = input.Ids.Select(i => i.Id).ToList() });
+        }
+        else
+        {
+            Logger.LogError("Delete bookmarks fail, do not get lock, keys already exits. userId: {0}",
+                CurrentUser.GetId().ToString());
+            
+            throw new UserFriendlyException("Get lock fail");
+        }
     }
 
     private IBookmarkGrain GetBookmarkGrain(int index)
