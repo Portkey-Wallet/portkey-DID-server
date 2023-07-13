@@ -41,8 +41,8 @@ public class BookmarkController : CAServerController
         await _bookmarkAppService.DeleteAsync();
     }
 
-    [HttpPost("deleteBookmarks")]
-    public async Task DeleteBookmarksAsync(DeleteBookmarkDto input)
+    [HttpPost("modify")]
+    public async Task ModifyAsync(DeleteBookmarkDto input)
     {
         await _bookmarkAppService.DeleteListAsync(input);
     }
