@@ -23,17 +23,13 @@ namespace CAServer.Bookmark;
 public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 {
     private readonly IClusterClient _clusterClient;
-    private readonly IDistributedEventBus _eventBus;
-    private readonly IBookmarkProvider _bookmarkProvider;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly string _lockKeyPrefix = "CAServer:Bookmark:";
 
-    public BookmarkAppService(IClusterClient clusterClient, IDistributedEventBus eventBus,
-        IBookmarkProvider bookmarkProvider, IAbpDistributedLock distributedLock)
+    public BookmarkAppService(IClusterClient clusterClient,
+        IAbpDistributedLock distributedLock)
     {
         _clusterClient = clusterClient;
-        _eventBus = eventBus;
-        _bookmarkProvider = bookmarkProvider;
         _distributedLock = distributedLock;
     }
 
@@ -48,7 +44,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
                 userId.ToString());
             throw new UserFriendlyException("Get lock fail");
         }
-        
+
         var metaGrain = GetBookmarkMetaGrain();
         var index = await metaGrain.GetTailBookMarkGrainIndex();
         var grain = GetBookmarkGrain(index);
@@ -64,16 +60,12 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
         var itemCount = await grain.GetItemCount();
         await metaGrain.UpdateGrainIndexCount(new Dictionary<int, int> { [index] = itemCount });
-
-        var bookmarkCreateEto = ObjectMapper.Map<BookmarkGrainResultDto, BookmarkCreateEto>(addResult.Data);
-        bookmarkCreateEto.UserId = userId;
-        await _eventBus.PublishAsync(bookmarkCreateEto);
     }
 
     public async Task<PagedResultDto<BookmarkResultDto>> GetBookmarksAsync(GetBookmarksDto input)
     {
-        var bookmarks = await _bookmarkProvider.GetBookmarksAsync(CurrentUser.GetId(), input);
-        return ObjectMapper.Map<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>(bookmarks);
+        // todo
+        // return ObjectMapper.Map<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>(bookmarks);
     }
 
     public async Task DeleteAsync()
@@ -87,7 +79,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
                 CurrentUser.GetId().ToString());
             throw new UserFriendlyException("Get lock fail");
         }
-        
+
         var bookMarkMetaGrain = GetBookmarkMetaGrain();
         var bookMarkMetaItems = await bookMarkMetaGrain.RemoveAll();
         foreach (var metaItem in bookMarkMetaItems)
@@ -95,8 +87,6 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
             var bookmarkGrain = GetBookmarkGrain(metaItem.Index);
             await bookmarkGrain.DeleteAll();
         }
-
-        await _eventBus.PublishAsync(new BookmarkDeleteEto { UserId = CurrentUser.GetId() });
     }
 
     public async Task DeleteListAsync(DeleteBookmarkDto input)
@@ -105,7 +95,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
             .GroupBy(i => i.Index)
             .ToDictionary(g => g.Key, g => g.Select(i => i.Id).ToList());
         var grainMetaCountDict = new Dictionary<int, int>();
-        
+
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + CurrentUser.GetId());
         if (handle == null)
@@ -114,7 +104,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
                 CurrentUser.GetId().ToString());
             throw new UserFriendlyException("Get lock fail");
         }
-        
+
         foreach (var grainIndexItems in grainIndexList)
         {
             var grain = GetBookmarkGrain(grainIndexItems.Key);
@@ -127,8 +117,6 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
         var metaGrain = GetBookmarkMetaGrain();
         await metaGrain.UpdateGrainIndexCount(grainMetaCountDict);
-        await _eventBus.PublishAsync(new BookmarkMultiDeleteEto
-            { UserId = CurrentUser.GetId(), Ids = input.DeleteInfos.Select(i => i.Id).ToList() });
     }
 
     public IBookmarkGrain GetBookmarkGrain(int index)
