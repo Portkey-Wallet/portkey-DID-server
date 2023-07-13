@@ -37,8 +37,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
-        // var userId = input.UserId;
-        var userId = CurrentUser.GetId();
+        var userId = input.UserId;
+        // var userId = CurrentUser.GetId();
 
         var orderId = GuidGenerator.Create();
         var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);

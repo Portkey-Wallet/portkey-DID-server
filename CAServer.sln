@@ -73,6 +73,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Signature.HttpApi.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Signature", "src\CAServer.Signature\CAServer.Signature.csproj", "{EC87414A-45DA-4FEB-9A25-874C5A852B91}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.MockServer.HttpApi.Host", "src\CAServer.MockServer.HttpApi.Host\CAServer.MockServer.HttpApi.Host.csproj", "{8EE14C3C-7ADC-44B1-96A2-B0BD37F2D36D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.MockServer.HttpApi", "src\CAServer.MockServer.HttpApi\CAServer.MockServer.HttpApi.csproj", "{099842B4-E37B-42B0-8E86-07753076F7FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -211,6 +215,14 @@ Global
 		{EC87414A-45DA-4FEB-9A25-874C5A852B91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC87414A-45DA-4FEB-9A25-874C5A852B91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC87414A-45DA-4FEB-9A25-874C5A852B91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8EE14C3C-7ADC-44B1-96A2-B0BD37F2D36D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EE14C3C-7ADC-44B1-96A2-B0BD37F2D36D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EE14C3C-7ADC-44B1-96A2-B0BD37F2D36D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EE14C3C-7ADC-44B1-96A2-B0BD37F2D36D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{099842B4-E37B-42B0-8E86-07753076F7FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{099842B4-E37B-42B0-8E86-07753076F7FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{099842B4-E37B-42B0-8E86-07753076F7FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{099842B4-E37B-42B0-8E86-07753076F7FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -249,6 +261,8 @@ Global
 		{13DC2010-60D4-4925-BE24-996A0516F0B6} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{B0079C9F-368D-4CDB-B097-27A6250BD402} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
 		{EC87414A-45DA-4FEB-9A25-874C5A852B91} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{8EE14C3C-7ADC-44B1-96A2-B0BD37F2D36D} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
+		{099842B4-E37B-42B0-8E86-07753076F7FA} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}

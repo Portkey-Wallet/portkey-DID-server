@@ -9,6 +9,7 @@
 <!--        <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />-->
         <ProjectReference Include="..\CAServer.Application\CAServer.Application.csproj" />
         <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
+        <ProjectReference Include="..\CAServer.MockServer.HttpApi\CAServer.MockServer.HttpApi.csproj" />
     </ItemGroup>
 
 </Project>

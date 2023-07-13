@@ -16,8 +16,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
     private readonly IObjectMapper _objectMapper;
 
-    public ThirdPartOrderProvider(INESTRepository<OrderIndex, Guid> orderRepository,
-        IObjectMapper objectMapper)
+    public ThirdPartOrderProvider(INESTRepository<OrderIndex, Guid> orderRepository, IObjectMapper objectMapper)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <RootNamespace>MockServer</RootNamespace>
+    </PropertyGroup>
+
+
+    <ItemGroup>
+        <PackageReference Include="AElf.Types" Version="1.2.3" />
+        <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
+        <PackageReference Include="Volo.Abp.Account.HttpApi" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.AspNetCore.SignalR" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.Identity.HttpApi" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.PermissionManagement.HttpApi" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.TenantManagement.HttpApi" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.FeatureManagement.HttpApi" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.SettingManagement.HttpApi" Version="7.0.0" />
+        <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="7.0.0" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
+      <ProjectReference Include="..\CAServer.Application\CAServer.Application.csproj" />
+      <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
+    </ItemGroup>
+
+</Project>
