@@ -7,12 +7,12 @@ namespace CAServer.Bookmark.Dtos;
 
 public class DeleteBookmarkDto
 {
-    [Required] public List<BookmarkId> Ids { get; set; }
+    [Required] public List<BookmarkInfo> Ids { get; set; }
 }
 
 
-public class BookmarkId
+public class BookmarkInfo
 {
     [Required] public Guid Id { get; set; }
-    [Required] public int GrainIndex { get; set; }
+    [Required] public int Index { get; set; }
 }

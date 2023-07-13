@@ -106,7 +106,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
     public async Task DeleteListAsync(DeleteBookmarkDto input)
     {
         var grainIndexList = input.Ids
-            .GroupBy(i => i.GrainIndex)
+            .GroupBy(i => i.Index)
             .ToDictionary(g => g.Key, g => g.Select(i => i.Id).ToList());
         var grainMetaCountDict = new Dictionary<int, int>();
         foreach (var grainIndexItems in grainIndexList)
