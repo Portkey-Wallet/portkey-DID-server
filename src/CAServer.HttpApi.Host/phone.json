@@ -27,14 +27,39 @@
         "Iso": "DK"
       },
       {
+        "Country": "Finland",
+        "Code": "358",
+        "Iso": "FIN"
+      },
+      {
         "Country": "France",
         "Code": "33",
         "Iso": "FR"
       },
       {
+        "Country": "United Kingdom",
+        "Code": "44",
+        "Iso": "GB"
+      },
+      {
+        "Country": "Lithuania",
+        "Code": "370",
+        "Iso": "LT"
+      },
+      {
+        "Country": "Latvia",
+        "Code": "371",
+        "Iso": "LVA"
+      },
+      {
         "Country": "Hong Kong",
         "Code": "852",
         "Iso": "HK"
+      },
+      {
+        "Country": "Morocco",
+        "Code": "212",
+        "Iso": "MA"
       },
       {
         "Country": "Mexico",
@@ -47,36 +72,9 @@
         "Iso": "SG"
       },
       {
-        "Country": "United Kingdom",
-        "Code": "44",
-        "Iso": "GB"
-      },
-      {
         "Country": "United States",
         "Code": "1",
         "Iso": "US"
-      },
-      {
-        "Country": "Finland",
-        "Code": "358",
-        "Iso": "FIN"
-      },
-  
-      
-      {
-        "Country": "Latvia",
-        "Code": "371",
-        "Iso": "LVA"
-      },
-      {
-        "Country": "Lithuania",
-        "Code": "370",
-        "Iso": "LT"
-      },
-      {
-        "Country": "Morocco",
-        "Code": "212",
-        "Iso": "MA"
       }
     ]
   }
