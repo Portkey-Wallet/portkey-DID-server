@@ -125,7 +125,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
                 var result = await grain.DeleteItems(grainIndexItems.Value);
                 if (result.Success)
                 {
-                    grainMetaCountDict[grainIndexItems.Key] = result.Data.Count;
+                    grainMetaCountDict[grainIndexItems.Key] = await grain.GetItemCount();
                 }
             }
 
