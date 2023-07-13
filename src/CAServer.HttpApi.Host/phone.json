@@ -42,6 +42,11 @@
         "Iso": "GB"
       },
       {
+        "Country": "Hong Kong",
+        "Code": "852",
+        "Iso": "HK"
+      },
+      {
         "Country": "Lithuania",
         "Code": "370",
         "Iso": "LT"
@@ -50,11 +55,6 @@
         "Country": "Latvia",
         "Code": "371",
         "Iso": "LVA"
-      },
-      {
-        "Country": "Hong Kong",
-        "Code": "852",
-        "Iso": "HK"
       },
       {
         "Country": "Morocco",
