@@ -24,6 +24,7 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State.Bookmark;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
@@ -338,6 +339,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<BookmarkIndex, BookmarkResultDto>();
 
         CreateMap<BookmarkCreateEto, BookmarkIndex>();
+        CreateMap<BookmarkGrainDto, BookmarkResultDto>();
         CreateMap<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>();
         CreateMap<IndexerToken, UserTokenItem>()
             .ForMember(t => t.SortWeight, m => m.MapFrom(f => f.ChainId == "ELF" ? 1 : 0))

@@ -5,6 +5,7 @@ using CAServer.Bookmark.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
+using Xunit.Sdk;
 
 namespace CAServer.Bookmark;
 
@@ -160,5 +161,38 @@ public sealed class BookmarkAppServiceTest : CAServerApplicationTestBase
         #endregion
 
     }
+
+    [Fact]
+    public async void QueryPage()
+    {
+        for (var i = 0 ; i < 12 ; i++ )
+        {
+            await _bookmarkAppService.CreateAsync(new CreateBookmarkDto()
+            {
+                Name = "name_" + i,
+                Url = "url_" + i
+            });
+        }
+
+        try
+        {
+
+            var pageResult = await _bookmarkAppService.GetBookmarksAsync(new()
+            {
+                SkipCount = 3,
+                MaxResultCount = 8
+            });
+
+            pageResult.TotalCount.ShouldBe(12);
+            pageResult.Items.Count.ShouldBe(8);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            throw;
+        }
+    }
+    
+    
     
 }

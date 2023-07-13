@@ -92,7 +92,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
             pageCount -= end - start + 1;
             var subRange = await bookmarkGrain.GetRange(start, end);
             subRange.Reverse();
-            resultList.AddRange(ObjectMapper.Map<List<BookmarkGrainDto>, List<BookmarkResultDto>>(subRange));
+            resultList.AddRange(subRange);
         }
 
         return new PagedResultDto<BookmarkResultDto>

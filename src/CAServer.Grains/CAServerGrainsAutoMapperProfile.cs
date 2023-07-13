@@ -1,5 +1,6 @@
 using AElf.Types;
 using AutoMapper;
+using CAServer.Bookmark.Dtos;
 using CAServer.Contacts;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -98,5 +99,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<NotifyRulesGrainDto, NotifyRulesState>().ReverseMap();
         CreateMap<NotifyState, NotifyGrainResultDto>().ForMember(d => d.Id, opt => opt.MapFrom(e => e.RulesId));
         CreateMap<BookmarkItem, BookmarkGrainResultDto>();
+        CreateMap<BookmarkItem, BookmarkResultDto>();
     }
 }

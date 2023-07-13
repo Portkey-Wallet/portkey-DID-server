@@ -7,7 +7,7 @@ namespace CAServer.Grains.Grain.Bookmark;
 
 public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
 {
-    private const int GrainSize = 5;
+    private const int GrainSize = 100;
     private readonly IObjectMapper _objectMapper;
 
     public BookmarkMetaGrain(IObjectMapper objectMapper)
