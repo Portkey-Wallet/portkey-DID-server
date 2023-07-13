@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using CAServer.Bookmark;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
@@ -38,6 +39,7 @@ public class CAServerApplicationTestModule : AbpModule
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
+        context.Services.AddSingleton<BookmarkAppService>();
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();

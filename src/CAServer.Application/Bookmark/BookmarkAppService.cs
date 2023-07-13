@@ -133,14 +133,14 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
             { UserId = CurrentUser.GetId(), Ids = input.Ids.Select(i => i.Id).ToList() });
     }
 
-    private IBookmarkGrain GetBookmarkGrain(int index)
+    public IBookmarkGrain GetBookmarkGrain(int index)
     {
         var userId = CurrentUser.GetId();
         return _clusterClient.GetGrain<IBookmarkGrain>(
             GrainIdHelper.GenerateGrainId("Bookmark", userId.ToString("N"), index));
     }
 
-    private IBookmarkMetaGrain GetBookmarkMetaGrain()
+    public IBookmarkMetaGrain GetBookmarkMetaGrain()
     {
         var userId = CurrentUser.GetId();
         return _clusterClient.GetGrain<IBookmarkMetaGrain>(
