@@ -106,8 +106,8 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
     public async Task DeleteListAsync(DeleteBookmarkDto input)
     {
         var grainIndexList = input.Ids
-            .GroupBy(i => i.Value)
-            .ToDictionary(g => g.Key, g => g.Select(i => i.Key).ToList());
+            .GroupBy(i => i.GrainIndex)
+            .ToDictionary(g => g.Key, g => g.Select(i => i.Id).ToList());
         var grainMetaCountDict = new Dictionary<int, int>();
         foreach (var grainIndexItems in grainIndexList)
         {
@@ -122,7 +122,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         var metaGrain = GetBookmarkMetaGrain();
         await metaGrain.UpdateGrainIndexCount(grainMetaCountDict);
         await _eventBus.PublishAsync(new BookmarkMultiDeleteEto
-            { UserId = CurrentUser.GetId(), Ids = input.Ids.Keys.ToList() });
+            { UserId = CurrentUser.GetId(), Ids = input.Ids.Select(i => i.Id).ToList() });
     }
 
     private IBookmarkGrain GetBookmarkGrain(int index)
