@@ -39,16 +39,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task CreateAsync(CreateBookmarkDto input)
     {
-        
         var userId = CurrentUser.GetId();
-        var metaGrain = GetBookmarkMetaGrain();
-        var index = await metaGrain.GetTailBookMarkGrainIndex();
-        var grain = GetBookmarkGrain(index);
-
-        var grainDto = ObjectMapper.Map<CreateBookmarkDto, BookmarkGrainDto>(input);
-        grainDto.UserId = userId;
-        grainDto.Index = index;
-
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + userId);
         if (handle == null)
@@ -57,6 +48,13 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
                 userId.ToString());
             throw new UserFriendlyException("Get lock fail");
         }
+        
+        var metaGrain = GetBookmarkMetaGrain();
+        var index = await metaGrain.GetTailBookMarkGrainIndex();
+        var grain = GetBookmarkGrain(index);
+        var grainDto = ObjectMapper.Map<CreateBookmarkDto, BookmarkGrainDto>(input);
+        grainDto.UserId = userId;
+        grainDto.Index = index;
 
         var addResult = await grain.AddBookMark(grainDto);
         if (!addResult.Success)
