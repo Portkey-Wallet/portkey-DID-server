@@ -7,6 +7,7 @@ namespace CAServer.Grains.Grain.Bookmark;
 
 public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
 {
+    private const int GrainSize = 5;
     private readonly IObjectMapper _objectMapper;
 
     public BookmarkMetaGrain(IObjectMapper objectMapper)
@@ -39,9 +40,9 @@ public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
         if (hasDataList.IsNullOrEmpty())
             return 1;
         var tail = hasDataList[hasDataList.Count - 1];
-        if (tail.Size >= 100)
+        if (tail.Size >= GrainSize)
         {
-            var idx = tail.Index;
+            var idx = tail.Index + 1;
             State.Items.Add(new BookMarkMetaItem() { Index = idx });
             await WriteStateAsync();
             return idx;
