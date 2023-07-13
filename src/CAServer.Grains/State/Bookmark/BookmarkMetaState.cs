@@ -10,7 +10,7 @@ public class BookmarkMetaState
 
 public class BookMarkMetaItem
 {
-    public int GrainIndex { get; set; }
+    public int Index { get; set; }
     
     public int Size { get; set; }
     

@@ -5,6 +5,6 @@ public class BookmarkGrainDto
     public Guid UserId { get; set; }
     public string Name { get; set; }
     public string Url { get; set; }
-    public int GrainIndex { get; set; }
+    public int Index { get; set; }
     
 }

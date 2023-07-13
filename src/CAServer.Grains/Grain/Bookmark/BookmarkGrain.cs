@@ -49,7 +49,7 @@ public class BookmarkGrain : Grain<BookmarkState>, IBookmarkGrain
             Name = grainDto.Name,
             Url = grainDto.Url,
             ModificationTime = TimeHelper.GetTimeStampInMilliseconds(),
-            GrainIndex = grainDto.GrainIndex
+            Index = grainDto.Index
         };
 
         State.BookmarkItems.Add(item);

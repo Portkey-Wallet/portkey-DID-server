@@ -11,5 +11,5 @@ public class BookmarkCreateEto
     public string Name { get; set; }
     public string Url { get; set; }
     public long ModificationTime { get; set; }
-    public int GrainIndex { get; set; }
+    public int Index { get; set; }
 }

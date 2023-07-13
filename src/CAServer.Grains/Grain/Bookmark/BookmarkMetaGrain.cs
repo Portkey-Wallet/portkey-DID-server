@@ -5,7 +5,7 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.Bookmark;
 
-public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
+public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
 {
     private readonly IObjectMapper _objectMapper;
 
@@ -30,22 +30,24 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
     {
         if (State.Items.IsNullOrEmpty())
         {
-            State.Items.Add(new BookMarkMetaItem() { GrainIndex = 1 });
+            State.Items.Add(new BookMarkMetaItem() { Index = 1 });
             await WriteStateAsync();
             return 1;
         }
+
         var hasDataList = State.Items.Where(item => item.Size > 0).ToList();
         if (hasDataList.IsNullOrEmpty())
             return 1;
         var tail = hasDataList[hasDataList.Count - 1];
         if (tail.Size >= 100)
         {
-            var idx = tail.GrainIndex;
-            State.Items.Add(new BookMarkMetaItem() { GrainIndex = idx });
+            var idx = tail.Index;
+            State.Items.Add(new BookMarkMetaItem() { Index = idx });
             await WriteStateAsync();
             return idx;
         }
-        return tail.GrainIndex;
+
+        return tail.Index;
     }
 
     public async Task<List<BookMarkMetaItem>> RemoveAll()
@@ -55,7 +57,7 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
         {
             new()
             {
-                GrainIndex = 1
+                Index = 1
             }
         };
         await WriteStateAsync();
@@ -63,14 +65,15 @@ public class BookmarkMetaGrain: Grain<BookmarkMetaState>, IBookmarkMetaGrain
     }
 
     public async Task<Empty> UpdateGrainIndexCount(Dictionary<int, int> indexCountDict)
-    { 
-        var itemDict = State.Items.ToDictionary(i => i.GrainIndex, i => i);
+    {
+        var itemDict = State.Items.ToDictionary(i => i.Index, i => i);
         foreach (var indexCount in indexCountDict)
         {
             if (!itemDict.ContainsKey(indexCount.Key))
                 continue;
             itemDict.GetValueOrDefault(indexCount.Key).Size = indexCount.Value;
         }
+
         await WriteStateAsync();
         return null;
     }

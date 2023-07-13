@@ -335,8 +335,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<IndexerToken, GetTokenListDto>();
         CreateMap<CreateBookmarkDto, BookmarkGrainDto>();
         CreateMap<BookmarkGrainResultDto, BookmarkCreateEto>();
-        CreateMap<BookmarkIndex, BookmarkResultDto>()
-            .ForMember(t => t.Index, m => m.MapFrom(f => f.GrainIndex));
+        CreateMap<BookmarkIndex, BookmarkResultDto>();
 
         CreateMap<BookmarkCreateEto, BookmarkIndex>();
         CreateMap<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>();

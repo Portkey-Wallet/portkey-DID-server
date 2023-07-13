@@ -46,7 +46,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
         var grainDto = ObjectMapper.Map<CreateBookmarkDto, BookmarkGrainDto>(input);
         grainDto.UserId = userId;
-        grainDto.GrainIndex = index;
+        grainDto.Index = index;
 
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + userId.ToString());
@@ -92,7 +92,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
             var bookMarkMetaItems = await bookMarkMetaGrain.RemoveAll();
             foreach (var metaItem in bookMarkMetaItems)
             {
-                var bookmarkGrain = GetBookmarkGrain(metaItem.GrainIndex);
+                var bookmarkGrain = GetBookmarkGrain(metaItem.Index);
                 await bookmarkGrain.DeleteAll();
             }
 
