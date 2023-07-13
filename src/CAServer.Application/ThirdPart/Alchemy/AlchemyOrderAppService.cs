@@ -3,13 +3,17 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Client;
 using AElf.Cryptography;
+using AElf.Types;
+using AElf.Kernel;
 using CAServer.Common;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -149,16 +153,66 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         // await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
     }
 
+    public static bool VerifySignature(Transaction transaction, string pubKey)
+    {
+        if (!transaction.VerifyFields())
+            return false;
+
+
+        var recovered = CryptoHelper.RecoverPublicKey(transaction.Signature.ToByteArray(),
+            transaction.GetHash().ToByteArray(), out var publicKey);
+
+        var aaa = ByteString.CopyFrom(publicKey).ToHex();
+        if (aaa != pubKey)
+        {
+            //return false;
+        }
+
+        var sss = Address.FromPublicKey(publicKey);
+        var s1 = sss.ToString();
+        var s12 = transaction.From.ToString();
+
+        return recovered && Address.FromPublicKey(publicKey) == transaction.From;
+    }
+
     private bool ValidParams(TransactionDto input)
     {
         try
         {
+            var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
+            transaction.Signature = ByteString.CopyFrom(ByteArrayHelper.HexStringToByteArray(input.Signature));
+            // var txIds = await PublishTransactionsAsync(new[] { transaction.ToByteArray().ToHex() });
+
+            var transactionId =
+                HashHelper.ComputeFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
+
+            // var json =
+            //     "{ \"from\": { \"value\": \"" + from + "\" }, \"to\": { \"value\": \"" + to +
+            //     "\" }, \"ref_block_number\": \"11\", \"ref_block_prefix\": \"H9f1zQ==\", \"method_name\": \"Transfer\", \"params\": \"CiIKIDAK0LTy1ZAHaf1nAnq/gkSqTCs4Kh6czxWpbNEX4EwaEgNFTEYYFA==\"}";
+            // var transaction = Transaction.Parser.ParseJson(json);
+
+            // if (!transaction.VerifySignature())
+            //     throw new UserFriendlyException(Error.Message[Error.InvalidSignature],
+            //         Error.InvalidSignature.ToString());
+
+
+            // if (!VerifySignature(transaction, input.PublicKey))
+            //     throw new UserFriendlyException(Error.Message[Error.InvalidSignature],
+            //         Error.InvalidSignature.ToString());
+
             var signatureStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
 
-            var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
+           var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
+           // var publicKey = ByteArrayHelper.HexStringToByteArray("041b30237d5d1d055d19ba55f6bf77a67877e49b136ba66f7c170cc852384bd7fa3ec9e8b5454ba29c8068393b5628276a4c81c55ed488efcb014b44e13cf22620");
             var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
 
             var hash = Encoding.UTF8.GetBytes(signatureStr).ComputeHash();
+
+            ByteString sss = ByteStringHelper.FromHexString(input.RawTransaction);
+            var str = Encoding.UTF8.GetString(sss.ToByteArray());
+            var str1 = sss.ToBase64();
+            var address = Address.FromPublicKey(publicKey).ToBase58();
+
             if (!CryptoHelper.VerifySignature(signature, hash, publicKey))
             {
                 throw new UserFriendlyException("Signature validation failed.");
