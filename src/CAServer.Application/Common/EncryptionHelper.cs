@@ -16,7 +16,7 @@ public static class EncryptionHelper
         byte[] computeHash = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input));
         for (var i = 0; i < computeHash.Length; i++)
         {
-            result = result + computeHash[i].ToString("X");
+            result = result + computeHash[i].ToString("x");
         }
 
         return result;

@@ -16,11 +16,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Alchemy;
 
+[RemoteService(false), DisableAuditing]
 public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppService
 {
     private readonly IClusterClient _clusterClient;
@@ -143,8 +145,8 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         {
             throw new UserFriendlyException("Signature validation failed.");
         }
-        
-        await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
+
+        // await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
     }
 
     private bool ValidParams(TransactionDto input)
