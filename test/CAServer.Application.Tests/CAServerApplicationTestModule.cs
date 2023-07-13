@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using CAServer.Bookmark;
+using CAServer.EntityEventHandler.Core;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
@@ -40,6 +41,7 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
+        context.Services.AddSingleton<BookmarkHandler>();
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();

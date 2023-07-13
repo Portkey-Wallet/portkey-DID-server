@@ -40,19 +40,18 @@ public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
         var hasDataList = State.Items.Where(item => item.Size > 0).ToList();
         if (hasDataList.IsNullOrEmpty())
             return 1;
+        
         var tail = hasDataList[hasDataList.Count - 1];
-        if (tail.Size >= GrainSize)
+        if (tail.Size < GrainSize) 
+            return tail.Index;
+        
+        var idx = tail.Index + 1;
+        if (!itemDict.ContainsKey(idx))
         {
-            var idx = tail.Index + 1;
-            if (!itemDict.ContainsKey(idx))
-            {
-                State.Items.Add(new BookMarkMetaItem() { Index = idx });
-                await WriteStateAsync();
-            }
-            return idx;
+            State.Items.Add(new BookMarkMetaItem() { Index = idx });
+            await WriteStateAsync();
         }
-
-        return tail.Index;
+        return idx;
     }
 
     public async Task<List<BookMarkMetaItem>> RemoveAll()
