@@ -7,7 +7,7 @@ namespace CAServer.Grains.Grain.Bookmark;
 
 public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
 {
-    private const int GrainSize = 100;
+    private const int GrainSize = 5;
     private readonly IObjectMapper _objectMapper;
 
     public BookmarkMetaGrain(IObjectMapper objectMapper)
@@ -40,17 +40,18 @@ public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
         var hasDataList = State.Items.Where(item => item.Size > 0).ToList();
         if (hasDataList.IsNullOrEmpty())
             return 1;
-        
+
         var tail = hasDataList[hasDataList.Count - 1];
-        if (tail.Size < GrainSize) 
+        if (tail.Size < GrainSize)
             return tail.Index;
-        
+
         var idx = tail.Index + 1;
         if (!itemDict.ContainsKey(idx))
         {
             State.Items.Add(new BookMarkMetaItem() { Index = idx });
             await WriteStateAsync();
         }
+
         return idx;
     }
 
@@ -80,5 +81,13 @@ public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
 
         await WriteStateAsync();
         return null;
+    }
+
+    public async Task<List<Tuple<int, int>>> GetIndexCount()
+    {
+        return State
+            .Items.Where(item => item.Size > 0)
+            .Select(item => new Tuple<int, int>(item.Index, item.Size))
+            .ToList();
     }
 }

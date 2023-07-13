@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Bookmark;
 using CAServer.Grains.Grain.Bookmark.Dtos;
+using CAServer.Grains.State.Bookmark;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Volo.Abp;
@@ -64,8 +66,40 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task<PagedResultDto<BookmarkResultDto>> GetBookmarksAsync(GetBookmarksDto input)
     {
-        // todo
-        // return ObjectMapper.Map<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>(bookmarks);
+        var metaGrain = GetBookmarkMetaGrain();
+        var indexCountList = await metaGrain.GetIndexCount();
+        var skipCount = input.SkipCount;
+        var tailIdx = indexCountList.Count - 1;
+        
+        // find tailIdx by skipCount as startIndex
+        while (tailIdx >= 0 && skipCount >= indexCountList[tailIdx].Item2)
+            skipCount -= indexCountList[tailIdx --].Item1;
+        
+        // skipped all data
+        if (tailIdx < 0) 
+            return new PagedResultDto<BookmarkResultDto>(0, new List<BookmarkResultDto>());
+
+        // from tail to head
+        var resultList = new List<BookmarkResultDto>();
+        var pageCount = input.MaxResultCount;
+        for (var i = tailIdx ; pageCount > 0 && i >= 0 ; i--)
+        {
+            var bookmarkGrain = GetBookmarkGrain(indexCountList[i].Item1);
+            var itemCount = await bookmarkGrain.GetItemCount();
+            if (itemCount < 1) continue;
+            var end = i == tailIdx ? itemCount - skipCount - 1 : itemCount - 1;
+            var start = Math.Max(0, end - pageCount + 1);
+            pageCount -= end - start + 1;
+            var subRange = await bookmarkGrain.GetRange(start, end);
+            subRange.Reverse();
+            resultList.AddRange(ObjectMapper.Map<List<BookmarkGrainDto>, List<BookmarkResultDto>>(subRange));
+        }
+
+        return new PagedResultDto<BookmarkResultDto>
+        {
+            TotalCount = indexCountList.Select(i => i.Item2).Sum(),
+            Items = resultList
+        };
     }
 
     public async Task DeleteAsync()
@@ -132,4 +166,5 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         return _clusterClient.GetGrain<IBookmarkMetaGrain>(
             GrainIdHelper.GenerateGrainId("BookmarkMeta", userId.ToString("N")));
     }
+
 }

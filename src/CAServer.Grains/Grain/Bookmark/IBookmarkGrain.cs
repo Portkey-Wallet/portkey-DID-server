@@ -8,5 +8,6 @@ public interface IBookmarkGrain : IGrainWithStringKey
     Task<GrainResultDto> DeleteAll();
     Task<GrainResultDto<BookmarkGrainResultDto>> AddBookMark(BookmarkGrainDto grainDto);
     Task<GrainResultDto<List<BookmarkGrainResultDto>>> DeleteItems(List<Guid> ids);
+    Task<List<BookmarkGrainDto>> GetRange(int from, int to);
     Task<int> GetItemCount();
 }

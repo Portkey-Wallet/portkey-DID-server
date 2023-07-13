@@ -1,6 +1,6 @@
 using CAServer.Commons;
-using CAServer.Grains.State.Bookmark;
 using CAServer.Grains.Grain.Bookmark.Dtos;
+using CAServer.Grains.State.Bookmark;
 using Orleans;
 using Volo.Abp.ObjectMapping;
 
@@ -92,6 +92,16 @@ public class BookmarkGrain : Grain<BookmarkState>, IBookmarkGrain
         result.Success = true;
         result.Data = _objectMapper.Map<List<BookmarkItem>, List<BookmarkGrainResultDto>>(items);
         return result;
+    }
+
+    public async Task<List<BookmarkGrainDto>> GetRange(int from, int to)
+    {
+        from = Math.Max(from, 0);
+        to = Math.Min(to, State.BookmarkItems.Count);
+        if (from > to)
+            return new List<BookmarkGrainDto>();
+        var items = from > to ? new List<BookmarkItem>() : State.BookmarkItems.GetRange(from, to - from);
+        return _objectMapper.Map<List<BookmarkItem>, List<BookmarkGrainDto>>(items);
     }
 
     public Task<int> GetItemCount()
