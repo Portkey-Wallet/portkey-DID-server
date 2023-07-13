@@ -6,7 +6,9 @@ using CAServer.Orleans.TestBase;
 using CAServer.Search;
 using CAServer.Tokens;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.Modularity;
 
 namespace CAServer.EntityEventHandler.Tests;
@@ -64,7 +66,8 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
         });
         context.Services.Configure<IndexSettingOptions>(o =>
         {
-            o.IndexPrefix = "caserver";
+            o.IndexPrefix = "caservertest";
         });
     }
+
 }

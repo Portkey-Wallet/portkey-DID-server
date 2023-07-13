@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Device.Dtos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
@@ -76,7 +77,7 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
         catch (Exception e)
         {
             _logger.LogError(e, "ExtraDataEncrypt Error: {extraData}", extraData);
-            return TimeStampHelper.GetTimeStampInMilliseconds();
+            return TimeHelper.GetTimeStampInMilliseconds().ToString();
         }
     }
 
@@ -89,7 +90,7 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
         catch (Exception e)
         {
             _logger.LogError(e, "Encrypt Error");
-            return TimeStampHelper.GetTimeStampInMilliseconds();
+            return TimeHelper.GetTimeStampInMilliseconds().ToString();
         }
     }
 
@@ -102,7 +103,7 @@ public class DeviceAppService : CAServerAppService, IDeviceAppService
         catch (Exception e)
         {
             _logger.LogError(e, "Decrypt Error");
-            return TimeStampHelper.GetTimeStampInMilliseconds();
+            return TimeHelper.GetTimeStampInMilliseconds().ToString();
         }
     }
 

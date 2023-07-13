@@ -10,4 +10,14 @@ public static class TimeHelper
         //return start.AddMilliseconds(timeStamp).ToLocalTime(); // DateTime.UtcNow.
         return start.AddMilliseconds(timeStamp).ToUniversalTime();
     }
+    
+    public static long GetTimeStampInMilliseconds()
+    {
+        return new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds();
+    }
+    
+    public static long GetTimeStampInSeconds()
+    {
+        return new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+    }
 }

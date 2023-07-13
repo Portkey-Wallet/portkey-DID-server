@@ -1,8 +1,10 @@
 using AElf.Types;
 using AutoMapper;
+using CAServer.Bookmark.Dtos;
 using CAServer.Contacts;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.CrossChain;
 using CAServer.Grains.Grain.Guardian;
@@ -11,6 +13,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
+using CAServer.Grains.State.Bookmark;
 using CAServer.Grains.State.Chain;
 using CAServer.Grains.State.Contacts;
 using CAServer.Grains.State.CrossChain;
@@ -95,5 +98,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<NotifyGrainDto, NotifyRulesGrainDto>();
         CreateMap<NotifyRulesGrainDto, NotifyRulesState>().ReverseMap();
         CreateMap<NotifyState, NotifyGrainResultDto>().ForMember(d => d.Id, opt => opt.MapFrom(e => e.RulesId));
+        CreateMap<BookmarkItem, BookmarkGrainResultDto>();
+        CreateMap<BookmarkItem, BookmarkResultDto>();
     }
 }

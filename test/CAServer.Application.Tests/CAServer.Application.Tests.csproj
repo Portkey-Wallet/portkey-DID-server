@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\src\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
     <ProjectReference Include="..\..\src\CAServer.Application\CAServer.Application.csproj" />
     <ProjectReference Include="..\..\src\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
+    <ProjectReference Include="..\..\src\CAServer.EntityEventHandler.Core\CAServer.EntityEventHandler.Core.csproj" />
 <!--    <ProjectReference Include="..\..\src\CAServer.EntityEventHandler\CAServer.EntityEventHandler.csproj" />-->
     <ProjectReference Include="..\CAServer.Domain.Tests\CAServer.Domain.Tests.csproj" />
     <ProjectReference Include="..\CAServer.Grain.Tests\CAServer.Grain.Tests.csproj" />
