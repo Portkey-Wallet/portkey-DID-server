@@ -151,17 +151,25 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             throw new UserFriendlyException("Signature validation failed.");
         }
 
-         await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
+         //await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
     }
 
     private bool ValidInput(TransactionDto input)
     {
         try
         {
+            // var validStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
+            // var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
+            // var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
+            // var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
+            
             var validStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
-            var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
-            var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
-            var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
+            Console.WriteLine(validStr);
+            Console.WriteLine(validStr.Length);
+            Console.WriteLine("68a074ea8f88120140a02c115e04763b");
+            var publicKey = ByteArrayHelper.HexStringToByteArray("04bc680e9f8ea189fb510f3f9758587731a9a64864f9edbc706cea6e8bf85cf6e56f236ba58d8840f3fce34cbf16a97f69dc784183d2eef770b367f6e8a90151af");
+            var signature = ByteArrayHelper.HexStringToByteArray("3fbb06404fd57c9a4da8288651569c10e87eee19e6da13344c5d8bae4f5408295fef1381686f9f75783296b8de1a24393364ec7ba859a7abac6de5b85ceab7ef00");
+            var data = Encoding.UTF8.GetBytes("68a074ea8f8812140a02c115e4763b").ComputeHash();
 
             if (!CryptoHelper.VerifySignature(signature, data, publicKey))
             {

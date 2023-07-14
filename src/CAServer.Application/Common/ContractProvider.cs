@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -25,6 +26,8 @@ public interface IContractProvider
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
     public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
+
+    public Task<SendTransactionOutput> SendRawTransaction(string chainId, string rawTransaction);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -124,7 +127,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         {
             return null;
         }
-        
+
         return await CallTransactionAsync<GetVerifierServersOutput>(AElfContractMethodName.GetVerifierServers,
             new Empty(), _chainOptions.ChainInfos[chainId].ContractAddress, chainId);
     }
@@ -169,5 +172,23 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
             _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
+    }
+
+    public async Task<SendTransactionOutput> SendRawTransaction(string chainId, string rawTransaction)
+    {
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+        {
+            return null;
+        }
+
+        var client = new AElfClient(chainInfo.BaseUrl);
+        await client.IsConnectedAsync();
+
+        var result = await client.SendTransactionAsync(new SendTransactionInput
+        {
+            RawTransaction = rawTransaction
+        });
+
+        return result;
     }
 }
