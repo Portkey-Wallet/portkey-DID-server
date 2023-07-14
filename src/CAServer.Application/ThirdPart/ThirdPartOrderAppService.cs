@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
@@ -45,7 +46,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         orderGrainData.UserId = userId;
         _logger.LogInformation("This third part order {orderId} will be created.", orderId);
         orderGrainData.Status = OrderStatusType.Created.ToString();
-        orderGrainData.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
+        orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
         var result = await orderGrain.CreateUserOrderAsync(orderGrainData);

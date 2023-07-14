@@ -23,6 +23,7 @@ public partial class CaVerifierHandlerTests : CAServerEntityEventHandlerTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(GetClient());
+        services.AddSingleton(GetMockAbpDistributedLock());
     }
     
     [Fact]
