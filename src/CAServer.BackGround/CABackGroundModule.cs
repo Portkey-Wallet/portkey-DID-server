@@ -59,9 +59,6 @@ public class CABackGroundModule : AbpModule
 
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        // var mongoUrlBuilder = new MongoUrlBuilder("mongodb://localhost/jobs");
-        // var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
-
         context.Services.AddHangfire(x =>
         {
             var connectionString = configuration["Hangfire:ConnectionString"];

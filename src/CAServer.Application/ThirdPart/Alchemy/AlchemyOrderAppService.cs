@@ -178,6 +178,16 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     {
         try
         {
+            var validStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
+            var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
+            var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
+            var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
+
+            if (!CryptoHelper.VerifySignature(signature, data, publicKey))
+            {
+                return false;
+            }
+
             var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
             if (!VerifyHelper.VerifySignature(transaction, input.PublicKey))
                 throw new UserFriendlyException("Signature validation failed");

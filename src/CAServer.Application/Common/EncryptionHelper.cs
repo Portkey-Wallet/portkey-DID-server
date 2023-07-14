@@ -12,13 +12,18 @@ public static class EncryptionHelper
     /// <returns></returns>
     public static string MD5Encrypt32(string input)
     {
-        var result = "";
-        byte[] computeHash = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input));
-        for (var i = 0; i < computeHash.Length; i++)
+        using (MD5 md5 = MD5.Create())
         {
-            result = result + computeHash[i].ToString("x");
-        }
+            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
 
-        return result;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < hashBytes.Length; i++)
+            {
+                sb.Append(hashBytes[i].ToString("x2"));
+            }
+
+            return sb.ToString();
+        }
     }
 }
