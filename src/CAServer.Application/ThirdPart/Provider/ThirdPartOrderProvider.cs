@@ -23,7 +23,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         _objectMapper = objectMapper;
     }
 
-    public async Task<OrderDto> GetThirdPartOrderAsync(string orderId)
+    public async Task<OrderIndex> GetThirdPartOrderIndexAsync(string orderId)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(orderId)));
@@ -32,12 +32,14 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             f.Bool(b => b.Must(mustQuery));
 
         var (totalCount, userOrders) = await _orderRepository.GetListAsync(Filter);
-        if (totalCount < 1)
-        {
-            return new OrderDto();
-        }
-
-        return _objectMapper.Map<OrderIndex, OrderDto>(userOrders.First());
+        
+        return totalCount < 1 ? null : userOrders.First();
+    }
+    
+    public async Task<OrderDto> GetThirdPartOrderAsync(string orderId)
+    {
+        var orderIndex = await GetThirdPartOrderIndexAsync(orderId);
+        return orderIndex == null ? new OrderDto() : _objectMapper.Map<OrderIndex, OrderDto>(orderIndex);
     }
 
     public async Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, int skipCount, int maxResultCount)

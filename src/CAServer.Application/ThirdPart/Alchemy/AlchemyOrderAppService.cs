@@ -147,31 +147,9 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     public async Task TransactionAsync(TransactionDto input)
     {
         var transaction = VerifySignature(input);
-        var forwardCallDto = ManagerForwardCallDto<TransferInput>.Decode(transaction);
-
-        TransferInput transferInput;
-        if (forwardCallDto == null 
-            || forwardCallDto.MethodName != "Transfer" 
-            || (transferInput = forwardCallDto.Args?.Value as TransferInput) == null)
-            throw new UserFriendlyException("NOT Transfer-ManagerForwardCall transaction");
-
-        var order = await _thirdPartOrderProvider.GetThirdPartOrderAsync(input.OrderId.ToString());
-        if (order == null)
-            throw new UserFriendlyException("Order not exists, please try again later");
-        
-        if (order.Address.IsNullOrEmpty())
-            throw new UserFriendlyException("Order address not exists, please try again later");
-
-        if (transferInput.To.ToBase58() != order.Address)
-            throw new UserFriendlyException("Transfer address NOT match");
-        
-        if (transferInput.Amount - double.Parse(order.CryptoQuantity) != 0)
-            throw new UserFriendlyException("Transfer amount NOT match");
-
-        if (transferInput.Symbol == order.Crypto) 
-            throw new UserFriendlyException("Transfer symbol NOT match");
-        
-        await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
+        var transactionEto = ObjectMapper.Map<TransactionDto, TransactionEto>(input);
+        transactionEto.Transaction = transaction;
+        await _distributedEventBus.PublishAsync(transactionEto);
     }
 
     private Transaction VerifySignature(TransactionDto input)
