@@ -35,7 +35,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         _distributedLock = distributedLock;
     }
 
-    public async Task CreateAsync(CreateBookmarkDto input)
+    public async Task<BookmarkResultDto> CreateAsync(CreateBookmarkDto input)
     {
         var userId = CurrentUser.GetId();
         await using var handle =
@@ -62,6 +62,8 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
         var itemCount = await grain.GetItemCount();
         await metaGrain.UpdateGrainIndexCount(new Dictionary<int, int> { [index] = itemCount });
+
+        return ObjectMapper.Map<BookmarkGrainResultDto, BookmarkResultDto>(addResult.Data);
     }
 
     public async Task<PagedResultDto<BookmarkResultDto>> GetBookmarksAsync(GetBookmarksDto input)
@@ -70,19 +72,19 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         var indexCountList = await metaGrain.GetIndexCount();
         var skipCount = input.SkipCount;
         var tailIdx = indexCountList.Count - 1;
-        
+
         // find tailIdx by skipCount as startIndex
         while (tailIdx >= 0 && skipCount >= indexCountList[tailIdx].Item2)
-            skipCount -= indexCountList[tailIdx --].Item2;
+            skipCount -= indexCountList[tailIdx--].Item2;
 
         // skipped all data
-        if (tailIdx < 0) 
+        if (tailIdx < 0)
             return new PagedResultDto<BookmarkResultDto>(0, new List<BookmarkResultDto>());
 
         // from tail to head
         var resultList = new List<BookmarkResultDto>();
         var pageCount = input.MaxResultCount;
-        for (var i = tailIdx ; pageCount > 0 && i >= 0 ; i--)
+        for (var i = tailIdx; pageCount > 0 && i >= 0; i--)
         {
             var bookmarkGrain = GetBookmarkGrain(indexCountList[i].Item1);
             var itemCount = await bookmarkGrain.GetItemCount();
@@ -166,5 +168,4 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         return _clusterClient.GetGrain<IBookmarkMetaGrain>(
             GrainIdHelper.GenerateGrainId("BookmarkMeta", userId.ToString("N")));
     }
-
 }

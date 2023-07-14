@@ -24,9 +24,9 @@ public class BookmarkController : CAServerController
     }
 
     [HttpPost]
-    public async Task CreateAsync(CreateBookmarkDto input)
+    public async Task<BookmarkResultDto> CreateAsync(CreateBookmarkDto input)
     {
-        await _bookmarkAppService.CreateAsync(input);
+        return await _bookmarkAppService.CreateAsync(input);
     }
 
     [HttpGet]

@@ -349,5 +349,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals));
         
         CreateMap<TransactionFeeInfo, TransactionFeeResultDto>();
+        CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
     }
 }

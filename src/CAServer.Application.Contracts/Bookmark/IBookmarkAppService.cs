@@ -6,7 +6,7 @@ namespace CAServer.Bookmark;
 
 public interface IBookmarkAppService
 {
-    Task CreateAsync(CreateBookmarkDto input);
+    Task<BookmarkResultDto> CreateAsync(CreateBookmarkDto input);
     Task<PagedResultDto<BookmarkResultDto>> GetBookmarksAsync(GetBookmarksDto input);
     Task DeleteAsync();
     Task DeleteListAsync(DeleteBookmarkDto input);
