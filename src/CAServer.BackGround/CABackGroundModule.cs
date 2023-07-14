@@ -1,13 +1,15 @@
-﻿using CAServer.Grains;
+﻿using CAServer.CAActivity.Provider;
+using CAServer.Grains;
 using CAServer.MongoDB;
+using CAServer.ThirdPart.Provider;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.Mongo;
 using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -52,9 +54,13 @@ public class CABackGroundModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
 
         var configuration = context.Services.GetConfiguration();
-        // ConfigureOrleans(context, configuration);
-        // context.Services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
+        ConfigureOrleans(context, configuration);
         ConfigureHangfire(context, configuration);
+        ConfigureGraphQl(context, configuration);
+
+        // context.Services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
+        context.Services.AddSingleton<IThirdPartOrderProvider, ThirdPartOrderProvider>();
+        context.Services.AddSingleton<IActivityProvider, ActivityProvider>();
     }
 
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
@@ -87,6 +93,14 @@ public class CABackGroundModule : AbpModule
                 .UseDashboardMetric(DashboardMetrics.FailedCountOrNull)
                 .UseDashboardMetric(DashboardMetrics.DeletedCount);
         });
+    }
+    
+    private void ConfigureGraphQl(ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
+            new NewtonsoftJsonSerializer()));
+        context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
 
     public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
