@@ -182,15 +182,12 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
             var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
             var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
-
             if (!CryptoHelper.VerifySignature(signature, data, publicKey))
-            {
-                return false;
-            }
-
+                throw new UserFriendlyException("data validation failed");
+            
             var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
             if (!VerifyHelper.VerifySignature(transaction, input.PublicKey))
-                throw new UserFriendlyException("Signature validation failed");
+                throw new UserFriendlyException("RawTransaction validation failed");
             return transaction;
         }
         catch (UserFriendlyException e)
@@ -199,7 +196,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "Signature validation internal error");
+            Logger.LogError(e, "Input validation internal error");
             throw new UserFriendlyException("Something was wrong, please try again later!");
         }
     }
