@@ -1,5 +1,6 @@
 using System;
 using System.Linq.Dynamic.Core;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 using CAServer.Dtos;
 using CAServer.Google;
@@ -89,7 +90,7 @@ public class CAVerifierController : CAServerController
     {
         if (!_currentUser.IsAuthenticated)
         {
-            return null;
+            throw new AuthenticationException("Not Authenticated");
         }
 
         return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType);
