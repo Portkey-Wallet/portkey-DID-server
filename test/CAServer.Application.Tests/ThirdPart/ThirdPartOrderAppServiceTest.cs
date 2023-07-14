@@ -6,6 +6,7 @@ using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace CAServer.ThirdPart;
 
@@ -14,10 +15,12 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
 {
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly ITestOutputHelper _testOutputHelper;
 
 
-    public ThirdPartOrderAppServiceTest()
+    public ThirdPartOrderAppServiceTest(ITestOutputHelper testOutputHelper)
     {
+        _testOutputHelper = testOutputHelper;
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
         _thirdPartOrderProvider = GetRequiredService<IThirdPartOrderProvider>();
     }

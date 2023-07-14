@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client;
+using AElf.Contracts.MultiToken;
 using AElf.Cryptography;
 using AElf.Types;
 using AElf.Kernel;
@@ -145,44 +146,51 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
     public async Task TransactionAsync(TransactionDto input)
     {
-        var valid = ValidInput(input);
-        if (!valid)
-        {
-            throw new UserFriendlyException("Signature validation failed.");
-        }
+        var transaction = VerifySignature(input);
+        var forwardCallDto = ManagerForwardCallDto<TransferInput>.Decode(transaction);
 
-         //await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
+        TransferInput transferInput;
+        if (forwardCallDto == null 
+            || forwardCallDto.MethodName != "Transfer" 
+            || (transferInput = forwardCallDto.Args?.Value as TransferInput) == null)
+            throw new UserFriendlyException("NOT Transfer-ManagerForwardCall transaction");
+
+        var order = await _thirdPartOrderProvider.GetThirdPartOrderAsync(input.OrderId.ToString());
+        if (order == null)
+            throw new UserFriendlyException("Order not exists, please try again later");
+        
+        if (order.Address.IsNullOrEmpty())
+            throw new UserFriendlyException("Order address not exists, please try again later");
+
+        if (transferInput.To.ToBase58() != order.Address)
+            throw new UserFriendlyException("Transfer address NOT match");
+        
+        if (transferInput.Amount - double.Parse(order.CryptoQuantity) != 0)
+            throw new UserFriendlyException("Transfer amount NOT match");
+
+        if (transferInput.Symbol == order.Crypto) 
+            throw new UserFriendlyException("Transfer symbol NOT match");
+        
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<TransactionDto, TransactionEto>(input));
     }
 
-    private bool ValidInput(TransactionDto input)
+    private Transaction VerifySignature(TransactionDto input)
     {
         try
         {
-            // var validStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
-            // var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
-            // var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
-            // var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
-            
-            var validStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
-            Console.WriteLine(validStr);
-            Console.WriteLine(validStr.Length);
-            Console.WriteLine("68a074ea8f88120140a02c115e04763b");
-            var publicKey = ByteArrayHelper.HexStringToByteArray("04bc680e9f8ea189fb510f3f9758587731a9a64864f9edbc706cea6e8bf85cf6e56f236ba58d8840f3fce34cbf16a97f69dc784183d2eef770b367f6e8a90151af");
-            var signature = ByteArrayHelper.HexStringToByteArray("3fbb06404fd57c9a4da8288651569c10e87eee19e6da13344c5d8bae4f5408295fef1381686f9f75783296b8de1a24393364ec7ba859a7abac6de5b85ceab7ef00");
-            var data = Encoding.UTF8.GetBytes("68a074ea8f8812140a02c115e4763b").ComputeHash();
-
-            if (!CryptoHelper.VerifySignature(signature, data, publicKey))
-            {
-                return false;
-            }
-            
             var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
-            return VerifyHelper.VerifySignature(transaction, input.PublicKey);
+            if (!VerifyHelper.VerifySignature(transaction, input.PublicKey))
+                throw new UserFriendlyException("Signature validation failed");
+            return transaction;
+        }
+        catch (UserFriendlyException e)
+        {
+            throw;
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "Signature validation error.");
-            return false;
+            Logger.LogError(e, "Signature validation internal error");
+            throw new UserFriendlyException("Something was wrong, please try again later!");
         }
     }
 

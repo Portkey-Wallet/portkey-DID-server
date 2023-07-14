@@ -5,13 +5,20 @@ using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Contracts.MultiToken;
+using AElf.Types;
 using CAServer.AppleAuth.Dtos;
+using CAServer.Commons;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Newtonsoft.Json;
+using Portkey.Contracts.CA;
 using Shouldly;
 using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace CAServer.AppleAuth;
 
@@ -19,9 +26,11 @@ namespace CAServer.AppleAuth;
 public partial class AppleAuthTest : CAServerApplicationTestBase
 {
     private readonly IAppleAuthAppService _appleAuthAppService;
+    private readonly ITestOutputHelper _testOutputHelper;
 
-    public AppleAuthTest()
+    public AppleAuthTest(ITestOutputHelper testOutputHelper)
     {
+        _testOutputHelper = testOutputHelper;
         _appleAuthAppService = GetService<IAppleAuthAppService>();
     }
 
@@ -30,7 +39,22 @@ public partial class AppleAuthTest : CAServerApplicationTestBase
         services.AddSingleton(GetJwtSecurityTokenHandlerMock());
         services.AddSingleton(GetMockAppleUserProvider());
     }
-
+    
+    [Fact]
+    public async Task DecodeRawTransactionTest()
+    {
+        var publicKey = "04bc680e9f8ea189fb510f3f9758587731a9a64864f9edbc706cea6e8bf85cf6e56f236ba58d8840f3fce34cbf16a97f69dc784183d2eef770b367f6e8a90151af";
+        var rawTransaction = "0a220a20e53eff822ad4b33e8ed0356a55e5b8ea83a88afdb15bdedcf52646d8c13209c812220a20e28c0b6c4145f3534431326f3c6d5a4bd6006632fd7551c26c103c368855531618d78ad30c2204ec4557c32a124d616e61676572466f727761726443616c6c3285010a220a20ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e7366657222310a220a207d2fbc18d14225b1708a15841d450973c12ae789c9e1f86c9c31a8cc3f86f5171203454c461880d88ee16f220082f1044198f955dcda3b805e944b3611f78144bab8a3a33d2ed7480cc5fbc325eda8efa27185755791e64f2682f00ea26b9507443453fe44059fe8e58f6a122b22f3474e00";
+        var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction));
+        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(transaction));
+        _testOutputHelper.WriteLine("VerifySignature : " + VerifyHelper.VerifySignature(transaction, publicKey));
+        
+        var param = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
+        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(param));
+        var transferArgs = TransferInput.Parser.ParseFrom(param.Args);
+        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(transferArgs));
+    }
+    
     [Fact]
     public async Task ReceiveTest()
     {
