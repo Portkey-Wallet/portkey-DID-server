@@ -73,8 +73,8 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         
         // find tailIdx by skipCount as startIndex
         while (tailIdx >= 0 && skipCount >= indexCountList[tailIdx].Item2)
-            skipCount -= indexCountList[tailIdx --].Item1;
-        
+            skipCount -= indexCountList[tailIdx --].Item2;
+
         // skipped all data
         if (tailIdx < 0) 
             return new PagedResultDto<BookmarkResultDto>(0, new List<BookmarkResultDto>());
