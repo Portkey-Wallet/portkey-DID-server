@@ -52,17 +52,12 @@ public class AlchemyMockServerController : CAServerMockServerController
         var orderData = await _alchemyMockServerProvider.GetThirdPartOrderAsync(input.OrderNo);
         if (!string.IsNullOrEmpty(orderData.OrderNo) && orderData.OrderNo == input.OrderNo)
         {
+            // change status to SuccessfulPayment 4
             orderData.Status = AlchemyHelper.GetOrderStatus(OrderStatusType.SuccessfulPayment);
             await _distributedEventBus.PublishAsync(orderData);
 
-            StringContent str2Json = new StringContent(JsonConvert.SerializeObject(orderData, Formatting.None,
-                _setting), Encoding.UTF8, "application/json");
-
-            var client = _httpClientFactory.CreateClient();
-            HttpResponseMessage respMsg = await client.PostAsync(_alchemyOptions.PortKeyBaseUrl +
-                                                                 _alchemyOptions.PortKeyCallbackUri, str2Json);
-            var respStr = await respMsg.Content.ReadAsStringAsync();
-            _logger.LogInformation("[{StatusCode}]ResBody: {ResBody}", respMsg.StatusCode, respStr);
+            await CallbackPortKey(new StringContent(JsonConvert.SerializeObject(orderData, Formatting.None, _setting),
+                Encoding.UTF8, "application/json"));
         }
 
         return new AlchemyResponseDto();
@@ -96,9 +91,18 @@ public class AlchemyMockServerController : CAServerMockServerController
         var orderData = _objectMapper.Map<CreateAlchemyMockOrderDto, AlchemyOrderDto>(input);
         orderData.OrderNo = GuidGenerator.Create().ToString();
         orderData.Side = TransferDirectionType.SELL.ToString();
-        orderData.Status = AlchemyHelper.GetOrderStatus(OrderStatusType.StartPayment);
 
+        // change status to Created 1
+        orderData.Status = AlchemyHelper.GetOrderStatus(OrderStatusType.Created);
         await _distributedEventBus.PublishAsync(orderData);
+        await CallbackPortKey(new StringContent(JsonConvert.SerializeObject(orderData, Formatting.None, _setting),
+            Encoding.UTF8, "application/json"));
+
+        // change status to StartPayment 3
+        orderData.Status = AlchemyHelper.GetOrderStatus(OrderStatusType.StartPayment);
+        await _distributedEventBus.PublishAsync(orderData);
+        await CallbackPortKey(new StringContent(JsonConvert.SerializeObject(orderData, Formatting.None, _setting),
+            Encoding.UTF8, "application/json"));
 
         return new CreateMockAlchemyOrderResponseDto()
         {
@@ -118,6 +122,15 @@ public class AlchemyMockServerController : CAServerMockServerController
         }
 
         return orderGrainData;
+    }
+
+    private async Task CallbackPortKey(StringContent str2Json)
+    {
+        var client = _httpClientFactory.CreateClient();
+        HttpResponseMessage respMsg = await client.PostAsync(_alchemyOptions.PortKeyBaseUrl +
+                                                             _alchemyOptions.PortKeyCallbackUri, str2Json);
+        var respStr = await respMsg.Content.ReadAsStringAsync();
+        _logger.LogInformation("[{StatusCode}]ResBody: {ResBody}", respMsg.StatusCode, respStr);
     }
 }
 
