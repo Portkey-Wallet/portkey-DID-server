@@ -18,11 +18,6 @@ public sealed class BookmarkAppServiceTest : CAServerApplicationTestBase
         _bookmarkAppService = GetRequiredService<BookmarkAppService>();
     }
 
-    protected override void AfterAddApplication(IServiceCollection services)
-    {
-        services.AddSingleton(GetMockAbpDistributedLock());
-    }
-
     [Fact]
     public async void CreateTest()
     {

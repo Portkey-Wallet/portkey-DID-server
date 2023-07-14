@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Volo.Abp.DistributedLocking;
 
@@ -9,6 +10,11 @@ namespace CAServer;
 public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApplicationTestModule>
 {
     
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetMockAbpDistributedLock());
+    }
+
     protected IAbpDistributedLock GetMockAbpDistributedLock()
     {
         var mockLockProvider = new Mock<IAbpDistributedLock>();

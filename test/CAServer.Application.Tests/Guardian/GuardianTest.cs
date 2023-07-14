@@ -39,6 +39,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetGuardianProviderMock());
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetChainOptions());

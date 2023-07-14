@@ -34,6 +34,7 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         _jwtSecurityTokenHandler = Substitute.For<JwtSecurityTokenHandler>();
         services.AddSingleton(GetMockVerifierServerClient());
         services.AddSingleton(GetMockHttpClientFactory());
