@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
@@ -89,17 +90,19 @@ public class AlchemyMockServerController : CAServerMockServerController
     public async Task<CreateMockAlchemyOrderResponseDto> CreateAlchemyMockOrderAsync(CreateAlchemyMockOrderDto input)
     {
         var orderData = _objectMapper.Map<CreateAlchemyMockOrderDto, AlchemyOrderDto>(input);
-        orderData.OrderNo = GuidGenerator.Create().ToString();
+        orderData.OrderNo = input.OrderNo.IsNullOrEmpty() ? GuidGenerator.Create().ToString() : input.OrderNo;
         orderData.Side = TransferDirectionType.SELL.ToString();
 
         // change status to Created 1
         orderData.Status = AlchemyHelper.GetOrderStatus(OrderStatusType.Created);
+        orderData.Signature = "test";
         await _distributedEventBus.PublishAsync(orderData);
         await CallbackPortKey(new StringContent(JsonConvert.SerializeObject(orderData, Formatting.None, _setting),
             Encoding.UTF8, "application/json"));
 
         // change status to StartPayment 3
         orderData.Status = AlchemyHelper.GetOrderStatus(OrderStatusType.StartPayment);
+        orderData.Signature = "test";
         await _distributedEventBus.PublishAsync(orderData);
         await CallbackPortKey(new StringContent(JsonConvert.SerializeObject(orderData, Formatting.None, _setting),
             Encoding.UTF8, "application/json"));

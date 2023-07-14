@@ -21,9 +21,14 @@ public class UpdateAlchemyMockOrderDto : AlchemyOrderDto
 
 public class CreateAlchemyMockOrderDto
 {
+    public string OrderNo { get; set; }
     [Required] public string MerchantOrderNo { get; set; }
     [Required] public string Address { get; set; }
     [Required] public string Crypto { get; set; }
+    public string CryptoPrice { get; set; } = "";
+    public string PaymentType { get; set; } = "";
+    public string CryptoQuantity { get; set; } = "";
+    public string CryptoActualAmount { get; set; } = "";
 }
 
 public class AlchemyResponseDto
@@ -76,4 +81,5 @@ public class AlchemyOrderDto
     public string PayType { get; set; } = "";
     public string CryptoQuantity { get; set; } = "";
     public string CryptoActualAmount { get; set; } = "";
+    public string Signature { get; set; } = "";
 }
