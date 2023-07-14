@@ -18,7 +18,7 @@ public class OrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     public string CryptoAmount { get; set; }
     public string Fiat { get; set; }
     public string FiatAmount { get; set; }
-    [Keyword]public string LastModifyTime { get; set; }
+    [Keyword] public string LastModifyTime { get; set; }
     public bool IsDeleted { get; set; } = false;
     public string Status { get; set; }
 
@@ -30,4 +30,5 @@ public class OrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     // sell order
     public string ReceivingMethod { get; set; }
     public string ReceiptTime { get; set; }
+    [Keyword] public string TransactionId { get; set; }
 }
