@@ -66,6 +66,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         var optput = await _contractProvider.SendRawTransaction("AELF", eventData.RawTransaction);
         //optput.TransactionId
         BackgroundJob.Schedule(() => Console.WriteLine("Delayed!"), TimeSpan.FromSeconds(10));
+        // BackgroundJob.Enqueue<IContractProvider>(async  x=> await x.SendRawTransaction());
     }
 
 
