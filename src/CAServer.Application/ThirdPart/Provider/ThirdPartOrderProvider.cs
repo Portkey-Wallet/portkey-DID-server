@@ -10,6 +10,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
+using Microsoft.Extensions.Options;
 using Nest;
 using Orleans;
 using Volo.Abp.DependencyInjection;
@@ -29,13 +30,13 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     public ThirdPartOrderProvider(INESTRepository<OrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         IClusterClient clusterClient,
-        IDistributedEventBus distributedEventBus, ThirdPartOptions thirdPartOptions)
+        IDistributedEventBus distributedEventBus, IOptions<ThirdPartOptions> thirdPartOptions)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
-        _thirdPartOptions = thirdPartOptions;
+        _thirdPartOptions = thirdPartOptions.Value;
     }
 
     public async Task<OrderIndex> GetThirdPartOrderIndexAsync(string orderId)
