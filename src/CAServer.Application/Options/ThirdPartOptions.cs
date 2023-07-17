@@ -5,7 +5,7 @@ namespace CAServer.Options;
 public class ThirdPartOptions
 {
     public AlchemyOptions alchemy { get; set; }
-    public ThirdPartTimerOptions timer { get; set; }
+    public ThirdPartTimerOptions timer { get; set; } = new ThirdPartTimerOptions();
 }
 
 public class ThirdPartTimerOptions
