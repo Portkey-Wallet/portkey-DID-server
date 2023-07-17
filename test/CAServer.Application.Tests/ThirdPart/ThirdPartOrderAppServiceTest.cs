@@ -45,7 +45,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         var caAddress = "2u6Dd139bHvZJdZ835XnNKL5y6cxqzV9PEWD5fZdQXdFZLgevc";
         var caHash = "e5c60d9e360a7e90fd3651e8e3eb1bc8eb40a37ce2f7ec478db62c784c251cce";
         var pk = "09ff2d585dd73238a64574977057e2f539a0bb9ed749c055a45acac33624d121";
-        var user = new UserWrapper(new AElfClient("http://192.168.67.1811:8000"), pk);
+        var user = new UserWrapper(new AElfClient("http://192.168.67.181:8000"), pk);
         var orderId = "eb076556-9250-74b6-647b-3a0bea35f17a";
         var transferRawTransaction = await user.CreateRawTransactionAsync( 
             tokenAddress, 
