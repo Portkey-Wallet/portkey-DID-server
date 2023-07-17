@@ -67,8 +67,8 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             if (order == null)
                 throw new UserFriendlyException("Order not exists");
 
-            // if (order.Status != OrderStatusType.Created.ToString())
-            // throw new UserFriendlyException("Order status is NOT Create");
+            if (order.Status != OrderStatusType.Created.ToString())
+            throw new UserFriendlyException("Order status is NOT Create");
 
             if (order.TransactionId != null && order.TransactionId != transactionId.ToHex())
                 throw new UserFriendlyException("TransactionId exists");

@@ -146,12 +146,12 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
     public async Task TransactionAsync(TransactionDto input)
     {
-        var transaction = VerifySignature(input);
+        VerifySignature(input);
         var transactionEto = ObjectMapper.Map<TransactionDto, TransactionEto>(input);
         await _distributedEventBus.PublishAsync(transactionEto);
     }
 
-    private Transaction VerifySignature(TransactionDto input)
+    private void VerifySignature(TransactionDto input)
     {
         try
         {
@@ -162,12 +162,6 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             
             if (!CryptoHelper.VerifySignature(signature, data, publicKey))
                 throw new UserFriendlyException("data validation failed");
-
-            var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(input.RawTransaction));
-            if (!VerifyHelper.VerifySignature(transaction, input.PublicKey))
-                throw new UserFriendlyException("transaction validation failed");
-
-            return transaction;
         }
         catch (Exception e)
         {
