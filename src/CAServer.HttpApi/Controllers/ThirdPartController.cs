@@ -54,7 +54,7 @@ public class ThirdPartOrderController : CAServerController
         await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
     }
     
-    //[Authorize]
+    [Authorize]
     [HttpPost("alchemy/transaction")]
     public async Task TransactionAsync(TransactionDto input)
     {
