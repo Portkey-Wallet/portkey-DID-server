@@ -7,6 +7,7 @@ using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using Nest;
@@ -23,16 +24,18 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly ThirdPartOptions _thirdPartOptions;
 
     public ThirdPartOrderProvider(INESTRepository<OrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         IClusterClient clusterClient,
-        IDistributedEventBus distributedEventBus)
+        IDistributedEventBus distributedEventBus, ThirdPartOptions thirdPartOptions)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
+        _thirdPartOptions = thirdPartOptions;
     }
 
     public async Task<OrderIndex> GetThirdPartOrderIndexAsync(string orderId)
@@ -56,9 +59,13 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public async Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync()
     {
+        const string transDirectSell = "TokenSell";
+        var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.timer.HandleUnCompletedOrderMinuteAgo).ToUnixTimeMilliseconds();
         var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.Status).Terms(OrderStatusType.Transferred.ToString())));
-        //modify time
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.TransDirect).Terms(transDirectSell)));
+        mustQuery.Add(q => q.TermRange(i => i.Field(f => f.TransDirect).LessThan(modifyTimeLt.ToString())));
 
         QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
