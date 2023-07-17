@@ -78,7 +78,7 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
 
 public class SendAlchemyTxHashDto
 {
-    [Required] public string MerchantName { get; set; }
+    public string MerchantName { get; set; }
     [Required] public string OrderId { get; set; }
     [Required] public string TxHash { get; set; }
 }

@@ -11,4 +11,5 @@ public class TransactionEto
     public Guid UserId { get; set; }
     public string RawTransaction { get; set; }
     public string PublicKey { get; set; }
+    public string MerchantName { get; set; }
 }

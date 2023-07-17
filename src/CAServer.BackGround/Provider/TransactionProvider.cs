@@ -1,10 +1,14 @@
+using AElf;
 using AElf.Client.Dto;
-using CAServer.BackGround.Job;
+using AElf.Types;
+using CAServer.BackGround.Dtos;
 using CAServer.BackGround.Options;
 using CAServer.Common;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
@@ -12,62 +16,88 @@ namespace CAServer.BackGround.Provider;
 
 public interface ITransactionProvider
 {
-    Task HandleTransactionAsync(string chainId, string rawTransaction);
+    Task HandleTransactionAsync(HandleTransactionDto transactionDto);
+    Task HandleUnCompletedOrdersAsync();
 }
 
 public class TransactionProvider : ITransactionProvider, ISingletonDependency
 {
     private readonly IContractProvider _contractProvider;
-    private readonly ILogger<TransactionJob> _logger;
+    private readonly ILogger<TransactionProvider> _logger;
     private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly TransactionOptions _transactionOptions;
+    private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
 
-    public TransactionProvider(IContractProvider contractProvider, ILogger<TransactionJob> logger,
+    public TransactionProvider(IContractProvider contractProvider, ILogger<TransactionProvider> logger,
         IAlchemyOrderAppService alchemyOrderService,
-        IOptionsSnapshot<TransactionOptions> options)
+        IOptionsSnapshot<TransactionOptions> options,
+        IThirdPartOrderProvider thirdPartOrderProvider)
     {
         _contractProvider = contractProvider;
         _logger = logger;
         _alchemyOrderService = alchemyOrderService;
+        _thirdPartOrderProvider = thirdPartOrderProvider;
         _transactionOptions = options.Value;
     }
 
-    public async Task HandleTransactionAsync(string chainId, string rawTransaction)
+    public async Task HandleTransactionAsync(HandleTransactionDto transactionDto)
     {
-        var transactionResult = await QueryTransactionAsync(chainId, rawTransaction);
+        var transaction =
+            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionDto.RawTransaction));
+        var transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
 
-        // retry transaction
+        // when to retry transaction
         var times = 0;
-        while (transactionResult.Status != TransactionState.Mined && _transactionOptions.RetryTime < times)
+        while (transactionResult.Status != TransactionState.Mined && times < _transactionOptions.RetryTime)
         {
             times++;
-            await _contractProvider.SendRawTransaction(chainId, rawTransaction);
-            transactionResult = await QueryTransactionAsync(chainId, rawTransaction);
+            await _contractProvider.SendRawTransaction(transactionDto.ChainId, transaction.ToByteArray().ToHex());
+            transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
         }
 
         if (transactionResult.Status != TransactionState.Mined)
         {
-            //log
+            _logger.LogWarning("Transaction handle fail, transactionId:{transactionId}, status:{}",
+                transaction.GetHash().ToHex(), transactionResult.Status);
             return;
         }
 
-        //send to ach
+        // send to ach
         await _alchemyOrderService.UpdateAlchemyTxHashAsync(new SendAlchemyTxHashDto()
         {
-            //OrderId=
+            MerchantName = transactionDto.MerchantName,
+            OrderId = transactionDto.OrderId.ToString(),
+            TxHash = transaction.ToByteArray().ToHex()
         });
     }
 
-    private async Task<TransactionResultDto> QueryTransactionAsync(string chainId, string rawTransaction)
+    public async Task HandleUnCompletedOrdersAsync()
     {
-        var transactionResult = await _contractProvider.GetTransactionResultAsync(chainId, rawTransaction);
+        var orders = await _thirdPartOrderProvider.GetUnCompletedThirdPartOrdersAsync();
+        if (orders == null || orders.Count == 0) return;
+        
+        foreach (var order in orders)
+        {
+            // get status from ach.
+            
+            // if status changed update
+            
+            // when to retry???
+        }
+
+        _logger.LogError("========{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    private async Task<TransactionResultDto> QueryTransactionAsync(string chainId, Transaction transaction)
+    {
+        var transactionId = transaction.GetHash().ToHex();
+        var transactionResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
         while (transactionResult.Status == TransactionState.Pending)
         {
             await Task.Delay(_transactionOptions.DelayTime);
-            transactionResult = await _contractProvider.GetTransactionResultAsync(chainId, rawTransaction);
+            transactionResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
         }
 
         return transactionResult;
     }
-    
 }

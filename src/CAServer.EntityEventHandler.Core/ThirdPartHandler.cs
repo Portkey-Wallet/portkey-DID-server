@@ -10,20 +10,24 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.EntityEventHandler.Core;
 
-public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
+public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributedEventHandler<OrderStatusInfoEto>,
+    ITransientDependency
 {
     private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
+    private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ThirdPartHandler> _logger;
 
     public ThirdPartHandler(
         INESTRepository<OrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
-        ILogger<ThirdPartHandler> logger)
+        ILogger<ThirdPartHandler> logger,
+        INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _logger = logger;
+        _orderStatusInfoRepository = orderStatusInfoRepository;
     }
 
     public async Task HandleEventAsync(OrderEto eventData)
@@ -39,6 +43,24 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, ITransientDe
         catch (Exception ex)
         {
             _logger.LogError(ex, $"An error occurred while processing the event,orderId: {eventData.Id}");
+        }
+    }
+
+    public async Task HandleEventAsync(OrderStatusInfoEto eventData)
+    {
+        try
+        {
+            var orderStatusInfo = _objectMapper.Map<OrderStatusInfoEto, OrderStatusInfoIndex>(eventData);
+
+            await _orderStatusInfoRepository.AddOrUpdateAsync(orderStatusInfo);
+
+            _logger.LogInformation("Order status add or update success, statusId:{id}, orderId:{orderId}", eventData.Id,
+                eventData.OrderId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while processing the event, statusId:{id}, orderId:{orderId}", eventData.Id,
+                eventData.OrderId);
         }
     }
 }

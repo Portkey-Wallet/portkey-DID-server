@@ -3,10 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.Grains;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Etos;
 using Nest;
+using Orleans;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Provider;
@@ -15,12 +21,18 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 {
     private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
     private readonly IObjectMapper _objectMapper;
+    private readonly IClusterClient _clusterClient;
+    private readonly IDistributedEventBus _distributedEventBus;
 
     public ThirdPartOrderProvider(INESTRepository<OrderIndex, Guid> orderRepository,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper,
+        IClusterClient clusterClient,
+        IDistributedEventBus distributedEventBus)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
+        _clusterClient = clusterClient;
+        _distributedEventBus = distributedEventBus;
     }
 
     public async Task<OrderIndex> GetThirdPartOrderIndexAsync(string orderId)
@@ -32,14 +44,33 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             f.Bool(b => b.Must(mustQuery));
 
         var (totalCount, userOrders) = await _orderRepository.GetListAsync(Filter);
-        
+
         return totalCount < 1 ? null : userOrders.First();
     }
-    
+
     public async Task<OrderDto> GetThirdPartOrderAsync(string orderId)
     {
         var orderIndex = await GetThirdPartOrderIndexAsync(orderId);
         return orderIndex == null ? new OrderDto() : _objectMapper.Map<OrderIndex, OrderDto>(orderIndex);
+    }
+
+    public async Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync()
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Status).Terms(OrderStatusType.Transferred.ToString())));
+        //modify time
+
+        QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var (totalCount, userOrders) = await _orderRepository.GetListAsync(Filter);
+
+        if (totalCount < 1)
+        {
+            return new List<OrderDto>();
+        }
+
+        return _objectMapper.Map<List<OrderIndex>, List<OrderDto>>(userOrders);
     }
 
     public async Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, int skipCount, int maxResultCount)
@@ -61,5 +92,16 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         }
 
         return userOrders.Select(i => _objectMapper.Map<OrderIndex, OrderDto>(i)).ToList();
+    }
+
+    public async Task AddOrderStatusInfoAsync(OrderStatusInfoGrainDto grainDto)
+    {
+        var orderStatusGrain = _clusterClient.GetGrain<IOrderStatusInfoGrain>(
+            GrainIdHelper.GenerateGrainId(CommonConstant.OrderStatusInfoPrefix, grainDto.OrderId.ToString("N")));
+        var addResult = await orderStatusGrain.AddOrderStatusInfo(new OrderStatusInfoGrainDto());
+        if (addResult == null) return;
+
+        await _distributedEventBus.PublishAsync(
+            _objectMapper.Map<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>(addResult));
     }
 }

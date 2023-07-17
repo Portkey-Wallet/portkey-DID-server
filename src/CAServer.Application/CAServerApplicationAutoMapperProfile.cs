@@ -335,7 +335,13 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(f => f.Symbol))
             .ForPath(t => t.Token.Address, m => m.MapFrom(f => f.TokenContractAddress))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals));
-        
+
         CreateMap<TransactionDto, TransactionEto>();
+        CreateMap<OrderGrainDto, OrderStatusInfoGrainDto>()
+            .ForMember(t => t.Id, opt => opt.Ignore())
+            .ForMember(t => t.OrderId, m => m.MapFrom(f => f.Id))
+            .ForPath(t => t.OrderStatusInfo.Status,
+                m => m.MapFrom(f => (OrderStatusType)Enum.Parse(typeof(OrderStatusType), f.Status)))
+            .ForPath(t => t.OrderStatusInfo.LastModifyTime, m => m.MapFrom(f => Convert.ToInt64(f.LastModifyTime)));
     }
 }

@@ -1,5 +1,7 @@
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Commons;
+using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
@@ -58,6 +60,9 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
         await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
 
+        var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data); // for debug
+        await _thirdPartOrderProvider.AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+
         var resp = _objectMapper.Map<OrderGrainDto, OrderCreatedDto>(result.Data);
         resp.Success = true;
         return resp;
@@ -67,7 +72,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         // var userId = input.UserId;
         var userId = CurrentUser.GetId();
-        
+
         var orderList =
             await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, input.SkipCount,
                 input.MaxResultCount);

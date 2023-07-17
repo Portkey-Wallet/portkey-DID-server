@@ -37,4 +37,8 @@
         </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Job" />
+    </ItemGroup>
+
 </Project>

@@ -5,11 +5,6 @@ namespace CAServer.Common;
 
 public static class EncryptionHelper
 {
-    /// <summary>
-    /// 32位MD5加密
-    /// </summary>
-    /// <param name="password"></param>
-    /// <returns></returns>
     public static string MD5Encrypt32(string input)
     {
         using (MD5 md5 = MD5.Create())

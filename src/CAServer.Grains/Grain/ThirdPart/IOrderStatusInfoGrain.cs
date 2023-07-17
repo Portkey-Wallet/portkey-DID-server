@@ -4,5 +4,5 @@ namespace CAServer.Grains.Grain.ThirdPart;
 
 public interface IOrderStatusInfoGrain : IGrainWithStringKey
 {
-    Task AddOrderStatusInfo();
+    Task<OrderStatusInfoGrainResultDto> AddOrderStatusInfo(OrderStatusInfoGrainDto grainDto);
 }

@@ -105,6 +105,10 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             }
 
             await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
+
+            var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data); // for debug
+            await _thirdPartOrderProvider.AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+            
             return new BasicOrderResult() { Success = true, Message = result.Message };
         }
         catch (Exception e)

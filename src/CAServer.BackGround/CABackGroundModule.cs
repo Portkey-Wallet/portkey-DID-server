@@ -1,5 +1,7 @@
-﻿using CAServer.CAActivity.Provider;
+﻿using CAServer.BackGround.Options;
+using CAServer.CAActivity.Provider;
 using CAServer.Grains;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.MongoDB;
 using CAServer.ThirdPart.Provider;
 using GraphQL.Client.Abstractions;
@@ -44,6 +46,7 @@ namespace CAServer.BackGround;
     typeof(AbpAspNetCoreMvcModule),
     typeof(CAServerMongoDbModule),
     typeof(AbpAspNetCoreSerilogModule),
+    typeof(AbpAutoMapperModule),
     typeof(AbpBackgroundJobsHangfireModule),
     typeof(AbpEventBusRabbitMqModule)
 )]
@@ -51,7 +54,7 @@ public class CABackGroundModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
 
         var configuration = context.Services.GetConfiguration();
         ConfigureOrleans(context, configuration);
@@ -61,6 +64,9 @@ public class CABackGroundModule : AbpModule
         // context.Services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
         context.Services.AddSingleton<IThirdPartOrderProvider, ThirdPartOrderProvider>();
         context.Services.AddSingleton<IActivityProvider, ActivityProvider>();
+        context.Services.AddSingleton<IHostedService, InitJobsService>();
+        Configure<TransactionOptions>(configuration.GetSection("Transaction"));
+        Configure<ChainOptions>(configuration.GetSection("Chains"));
     }
 
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
