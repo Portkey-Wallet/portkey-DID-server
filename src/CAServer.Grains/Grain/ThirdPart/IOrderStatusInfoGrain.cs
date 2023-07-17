@@ -1,0 +1,8 @@
+using Orleans;
+
+namespace CAServer.Grains.Grain.ThirdPart;
+
+public interface IOrderStatusInfoGrain : IGrainWithStringKey
+{
+    Task AddOrderStatusInfo();
+}
