@@ -1,5 +1,6 @@
 using System;
 using System.Linq.Dynamic.Core;
+using System.Net;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using CAServer.Dtos;
@@ -88,12 +89,14 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
     {
-        if (!_currentUser.IsAuthenticated)
+        if (_currentUser.IsAuthenticated)
         {
-            throw new AuthenticationException("Not Authenticated");
+            return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput,
+                operationType);
         }
 
-        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType);
+        HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+        return new VerifierServerResponse();
     }
 
     private async Task<VerifierServerResponse> CheckUserIpAndGoogleRecaptchaAsync(string recaptchaToken,
@@ -228,7 +231,6 @@ public class CAVerifierController : CAServerController
     public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version,
         OperationTypeRequestInput operationTypeRequestInput)
     {
-        
         var type = operationTypeRequestInput.OperationType;
         ValidateOperationType(type);
         if (!string.IsNullOrWhiteSpace(version) && version.Equals(CurrentVersion))
@@ -241,6 +243,7 @@ public class CAVerifierController : CAServerController
                 _ => type
             };
         }
+
         var userIpAddress = UserIpAddress(HttpContext);
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
 
