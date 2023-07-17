@@ -148,8 +148,6 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     {
         var transaction = VerifySignature(input);
         var transactionEto = ObjectMapper.Map<TransactionDto, TransactionEto>(input);
-        transactionEto.Transaction = transaction;
-        
         await _distributedEventBus.PublishAsync(transactionEto);
     }
 

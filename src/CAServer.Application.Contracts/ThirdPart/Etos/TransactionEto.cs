@@ -9,7 +9,6 @@ public class TransactionEto
 {
     public Guid OrderId { get; set; }
     public Guid UserId { get; set; }
-    public Transaction Transaction { get; set; }
     public string RawTransaction { get; set; }
     public string PublicKey { get; set; }
 }
