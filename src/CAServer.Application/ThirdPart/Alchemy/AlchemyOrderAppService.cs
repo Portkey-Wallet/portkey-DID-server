@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -171,6 +172,41 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         {
             Logger.LogError(e, "Input validation internal error");
             throw new UserFriendlyException("Something was wrong, please try again later!");
+        }
+    }
+
+    public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfo(QueryAlchemyOrderInfoDto input)
+    {
+        try
+        {
+            var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(input.OrderId);
+
+            if (String.IsNullOrEmpty(orderData.ThirdPartOrderNo) || string.IsNullOrEmpty(orderData.Id.ToString()) ||
+                string.IsNullOrEmpty(orderData.TransDirect))
+            {
+                _logger.LogError("Order {OrderId} is not existed in storage.", input.OrderId);
+                return new QueryAlchemyOrderInfo();
+            }
+
+            var orderQueryDto = new OrderQueryDto()
+            {
+                Side = AlchemyHelper.GetOrderTransDirectForQuery(orderData.TransDirect),
+                MerchantOrderNo = orderData.Id.ToString(),
+                OrderNo = orderData.ThirdPartOrderNo
+            };
+
+            var queryString = string.Join("&", orderQueryDto.GetType().GetProperties()
+                .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(orderQueryDto)}"));
+
+            var queryResult = JsonConvert.DeserializeObject<QueryAlchemyOrderInfoResultDto>(
+                await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.MerchantQueryTradeUri + "?" + queryString));
+
+            return queryResult.Data;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error deserializing query alchemy order info.");
+            return new QueryAlchemyOrderInfo();
         }
     }
 

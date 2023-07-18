@@ -33,3 +33,9 @@ public enum OrderStatusType
     PaymentFailed,
     RefundSuccessfully
 }
+
+public enum OrderTransDirect
+{
+    BUY,
+    SELL
+}

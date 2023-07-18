@@ -10,4 +10,5 @@ public interface IAlchemyOrderAppService
 
     Task UpdateAlchemyTxHashAsync(SendAlchemyTxHashDto input);
     Task TransactionAsync(TransactionDto input);
+    Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfo(QueryAlchemyOrderInfoDto request);
 }

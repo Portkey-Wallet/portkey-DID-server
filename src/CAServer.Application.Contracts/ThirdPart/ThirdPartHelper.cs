@@ -60,6 +60,7 @@ public static class AlchemyHelper
 
         return "Unknown";
     }
+
     public static string AesEncrypt(string plainText, string secretKeyData)
     {
         try
@@ -97,5 +98,15 @@ public static class AlchemyHelper
         using var hmacSha256 = new HMACSHA256(keyByte);
         var hashMessage = hmacSha256.ComputeHash(messageBytes);
         return BitConverter.ToString(hashMessage).Replace("-", "").ToLower();
+    }
+
+    public static string GetOrderTransDirectForQuery(string orderDataTransDirect)
+    {
+        switch (orderDataTransDirect)
+        {
+            case string s when s.ToLower().Contains("sell"): return OrderTransDirect.SELL.ToString();
+            case string s when s.ToLower().Contains("buy"): return OrderTransDirect.BUY.ToString();
+            default: return OrderTransDirect.SELL.ToString();
+        }
     }
 }
