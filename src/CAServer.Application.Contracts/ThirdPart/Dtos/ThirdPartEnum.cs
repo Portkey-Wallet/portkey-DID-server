@@ -26,6 +26,7 @@ public enum OrderStatusType
     Refunded,
     Unknown,
     StartTransfer,
+    TransferVerifyFailed,
     Transferring,
     Transferred,
     TransferFailed,

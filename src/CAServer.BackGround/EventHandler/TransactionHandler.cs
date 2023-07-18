@@ -3,20 +3,16 @@ using AElf.Contracts.MultiToken;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.BackGround.Dtos;
-using CAServer.CAActivity.Provider;
 using CAServer.BackGround.Options;
 using CAServer.BackGround.Provider;
+using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
-using Elasticsearch.Net;
-using Google.Protobuf;
-using Hangfire;
-using Nest;
-using Volo.Abp.BackgroundJobs;
 using CAServer.ThirdPart.Provider;
+using Hangfire;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -104,6 +100,10 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         {
             // add alarm.
             _logger.LogError(e, "Handle transaction fail: {message}", JsonConvert.SerializeObject(eventData));
+            
+            await _transactionProvider.UpdateOrderStatusAsync(eventData.OrderId.ToString(),
+                OrderStatusType.TransferVerifyFailed, string.Empty,
+                new Dictionary<string, object>() { ["reason"] = e.Message });
         }
     }
 
