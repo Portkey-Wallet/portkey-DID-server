@@ -13,13 +13,13 @@ namespace CAServer.EntityEventHandler.Core;
 public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributedEventHandler<OrderStatusInfoEto>,
     ITransientDependency
 {
-    private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
+    private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ThirdPartHandler> _logger;
 
     public ThirdPartHandler(
-        INESTRepository<OrderIndex, Guid> orderRepository,
+        INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         ILogger<ThirdPartHandler> logger,
         INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository)
@@ -34,7 +34,7 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
     {
         try
         {
-            var userOrder = _objectMapper.Map<OrderEto, OrderIndex>(eventData);
+            var userOrder = _objectMapper.Map<OrderEto, RampOrderIndex>(eventData);
 
             await _orderRepository.AddOrUpdateAsync(userOrder);
 

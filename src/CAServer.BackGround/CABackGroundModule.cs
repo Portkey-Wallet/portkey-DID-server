@@ -29,6 +29,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
+using Volo.Abp.Threading;
 
 namespace CAServer.BackGround;
 
@@ -157,5 +158,24 @@ public class CABackGroundModule : AbpModule
         {
             // IsReadOnlyFunc = (DashboardContext context) => true
         });
+        
+        StartOrleans(context.ServiceProvider);
+    }
+    
+    public override void OnApplicationShutdown(ApplicationShutdownContext context)
+    {
+        StopOrleans(context.ServiceProvider);
+    }
+
+    private static void StartOrleans(IServiceProvider serviceProvider)
+    {
+        var client = serviceProvider.GetRequiredService<IClusterClient>();
+        AsyncHelper.RunSync(async () => await client.Connect());
+    }
+
+    private static void StopOrleans(IServiceProvider serviceProvider)
+    {
+        var client = serviceProvider.GetRequiredService<IClusterClient>();
+        AsyncHelper.RunSync(client.Close);
     }
 }

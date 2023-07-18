@@ -48,7 +48,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<ChainUpdateEto, ChainsInfoIndex>();
         CreateMap<ChainDeleteEto, ChainsInfoIndex>();
         CreateMap<GuardianEto, GuardianIndex>();
-        CreateMap<OrderEto, OrderIndex>();
+        CreateMap<OrderEto, RampOrderIndex>();
         CreateMap<UserExtraInfoEto, UserExtraInfoIndex>();
         CreateMap<NotifyEto, NotifyRulesIndex>();
         CreateMap<DeleteNotifyEto, NotifyRulesIndex>();

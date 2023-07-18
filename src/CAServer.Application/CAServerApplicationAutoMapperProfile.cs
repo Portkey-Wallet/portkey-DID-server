@@ -266,7 +266,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderGrainDto, OrderDto>();
         CreateMap<OrderDto, OrderGrainDto>();
         CreateMap<OrderGrainDto, OrderEto>();
-        CreateMap<OrderIndex, OrderDto>();
+        CreateMap<RampOrderIndex, OrderDto>();
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))

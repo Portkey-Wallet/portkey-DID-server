@@ -149,12 +149,12 @@ public class AccountRegisterSearchService : SearchService<AccountRegisterIndex, 
         _indexSettingOptions = indexSettingOptions.Value;
     }
 }
-public class OrderSearchService : SearchService<OrderIndex, Guid>
+public class OrderSearchService : SearchService<RampOrderIndex, Guid>
 {
     private readonly IndexSettingOptions _indexSettingOptions;
     public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.orderindex";
 
-    public OrderSearchService(INESTRepository<OrderIndex, Guid> nestRepository,
+    public OrderSearchService(INESTRepository<RampOrderIndex, Guid> nestRepository,
         IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
     {
         _indexSettingOptions = indexSettingOptions.Value;

@@ -21,13 +21,13 @@ namespace CAServer.ThirdPart.Provider;
 
 public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDependency
 {
-    private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
+    private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly ThirdPartOptions _thirdPartOptions;
 
-    public ThirdPartOrderProvider(INESTRepository<OrderIndex, Guid> orderRepository,
+    public ThirdPartOrderProvider(INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus, IOptions<ThirdPartOptions> thirdPartOptions)
@@ -39,12 +39,12 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         _thirdPartOptions = thirdPartOptions.Value;
     }
 
-    public async Task<OrderIndex> GetThirdPartOrderIndexAsync(string orderId)
+    public async Task<RampOrderIndex> GetThirdPartOrderIndexAsync(string orderId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>() { };
+        var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(orderId)));
 
-        QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) =>
+        QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
         var (totalCount, userOrders) = await _orderRepository.GetListAsync(Filter);
@@ -55,20 +55,20 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     public async Task<OrderDto> GetThirdPartOrderAsync(string orderId)
     {
         var orderIndex = await GetThirdPartOrderIndexAsync(orderId);
-        return orderIndex == null ? new OrderDto() : _objectMapper.Map<OrderIndex, OrderDto>(orderIndex);
+        return orderIndex == null ? new OrderDto() : _objectMapper.Map<RampOrderIndex, OrderDto>(orderIndex);
     }
 
     public async Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync()
     {
         const string transDirectSell = "TokenSell";
         var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.timer.HandleUnCompletedOrderMinuteAgo).ToUnixTimeMilliseconds();
-        var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>() { };
+        var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.Status).Terms(OrderStatusType.Created.ToString())));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.TransDirect).Terms(transDirectSell)));
         mustQuery.Add(q => q.TermRange(i => i.Field(f => f.LastModifyTime).LessThan(modifyTimeLt.ToString())));
 
-        QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) =>
+        QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
         var (totalCount, userOrders) = await _orderRepository.GetListAsync(Filter);
@@ -78,18 +78,18 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             return new List<OrderDto>();
         }
 
-        return _objectMapper.Map<List<OrderIndex>, List<OrderDto>>(userOrders);
+        return _objectMapper.Map<List<RampOrderIndex>, List<OrderDto>>(userOrders);
     }
 
     public async Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, int skipCount, int maxResultCount)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>() { };
+        var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userId)));
 
-        QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) =>
+        QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
-        IPromise<IList<ISort>> Sort(SortDescriptor<OrderIndex> s) => s.Descending(a => a.LastModifyTime);
+        IPromise<IList<ISort>> Sort(SortDescriptor<RampOrderIndex> s) => s.Descending(a => a.LastModifyTime);
 
         var (totalCount, userOrders) =
             await _orderRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: maxResultCount, skip: skipCount);
@@ -99,7 +99,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             return new List<OrderDto>();
         }
 
-        return userOrders.Select(i => _objectMapper.Map<OrderIndex, OrderDto>(i)).ToList();
+        return userOrders.Select(i => _objectMapper.Map<RampOrderIndex, OrderDto>(i)).ToList();
     }
 
     public async Task AddOrderStatusInfoAsync(OrderStatusInfoGrainDto grainDto)

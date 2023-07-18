@@ -108,8 +108,9 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
 
             var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data); // for debug
-            await _thirdPartOrderProvider.AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
-            
+            await _thirdPartOrderProvider.AddOrderStatusInfoAsync(
+                _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+
             return new BasicOrderResult() { Success = true, Message = result.Message };
         }
         catch (Exception e)
@@ -164,7 +165,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
             var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
             var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
-            
+
             if (!CryptoHelper.VerifySignature(signature, data, publicKey))
                 throw new UserFriendlyException("data validation failed");
         }
@@ -175,24 +176,15 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
     }
 
-    public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfo(QueryAlchemyOrderInfoDto input)
+    public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfo(OrderDto input)
     {
         try
         {
-            var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(input.OrderId);
-
-            if (String.IsNullOrEmpty(orderData.ThirdPartOrderNo) || string.IsNullOrEmpty(orderData.Id.ToString()) ||
-                string.IsNullOrEmpty(orderData.TransDirect))
-            {
-                _logger.LogError("Order {OrderId} is not existed in storage.", input.OrderId);
-                return new QueryAlchemyOrderInfo();
-            }
-
             var orderQueryDto = new OrderQueryDto()
             {
-                Side = AlchemyHelper.GetOrderTransDirectForQuery(orderData.TransDirect),
-                MerchantOrderNo = orderData.Id.ToString(),
-                OrderNo = orderData.ThirdPartOrderNo
+                Side = AlchemyHelper.GetOrderTransDirectForQuery(input.TransDirect),
+                MerchantOrderNo = input.Id.ToString(),
+                OrderNo = input.ThirdPartOrderNo
             };
 
             var queryString = string.Join("&", orderQueryDto.GetType().GetProperties()
@@ -205,7 +197,9 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error deserializing query alchemy order info.");
+            _logger.LogError(e,
+                "Error deserializing query alchemy order info. orderId:{orderId}, thirdPartOrderNo:{thirdPartOrderNo}",
+                input.Id.ToString(), input.ThirdPartOrderNo);
             return new QueryAlchemyOrderInfo();
         }
     }

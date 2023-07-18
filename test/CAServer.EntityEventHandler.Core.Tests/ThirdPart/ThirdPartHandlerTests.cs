@@ -51,7 +51,7 @@ public class ThirdPartHandlerTests : CAServerEntityEventHandlerTestBase
         });
 
         result.ShouldNotBeNull();
-        var chainInfo = JsonConvert.DeserializeObject<PagedResultDto<OrderIndex>>(result);
+        var chainInfo = JsonConvert.DeserializeObject<PagedResultDto<RampOrderIndex>>(result);
         chainInfo.ShouldNotBeNull();
         chainInfo.Items[0].Status.ShouldBe("test01");
     }
