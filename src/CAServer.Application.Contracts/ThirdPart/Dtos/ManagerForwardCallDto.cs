@@ -13,7 +13,9 @@ public class ManagerForwardCallDto<T> where T : IMessage<T>
     public Hash CaHash { get; set; }
     public Address ContractAddress { get; set; }
     public string MethodName { get; set; }
-    public Args<T> Args { get; set; }
+    
+    public Transaction ForwardTransaction { get; set; }
+    public Args<T> ForwardTransactionArgs { get; set; }
 
     
     public static ManagerForwardCallDto<T> Decode(Transaction transaction)
@@ -31,9 +33,14 @@ public class ManagerForwardCallDto<T> where T : IMessage<T>
                 ContractAddress = param.ContractAddress
             };
 
+            var subTx = Transaction.Parser.ParseFrom(param.Args);
+            if (subTx == null || subTx.MethodName.IsNullOrEmpty())
+                throw new Exception("sub-transaction invalid");
+            
             var parser = typeof(T).GetProperty("Parser")!.GetValue(null, null) as MessageParser<T>;
-            var args = parser!.ParseFrom(param.Args);
-            forwardCallDto.Args = new Args<T> { Value = args };
+            var args = parser!.ParseFrom(subTx.Params);
+            forwardCallDto.ForwardTransaction = subTx;
+            forwardCallDto.ForwardTransactionArgs = new Args<T> { Value = args };
 
             return forwardCallDto;
         }

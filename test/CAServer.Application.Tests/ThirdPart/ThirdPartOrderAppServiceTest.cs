@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Client.MultiToken;
 using AElf.Client.Service;
+using AElf.Types;
 using CAServer.Common;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
@@ -36,6 +38,16 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(getMockTokenPriceGrain());
         services.AddSingleton(getMockOrderGrain());
         services.AddSingleton(getMockDistributedEventBus());
+    }
+
+    [Fact]
+    public async void DecodeManagerForwardCall()
+    {
+        var rawTransaction = "0a220a20e53eff822ad4b33e8ed0356a55e5b8ea83a88afdb15bdedcf52646d8c13209c812220a20f9f90416670ec1a0f2d302c9474d1bc7a475cb08caa366bcca16e2f3d7e549f518eed8f9082204fbd2b4ce2a124d616e61676572466f727761726443616c6c32e2010a220a20ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e73666572228d010a220a20e53eff822ad4b33e8ed0356a55e5b8ea83a88afdb15bdedcf52646d8c13209c812220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc18eed8f9082204fbd2b4ce2a085472616e73666572322e0a220a2061033c0453282232747683ffa571455f5511b5274f2125e2ee226b7fb2ebc9c11203454c461880c2d72f82f104410ed0facd9495edf7dd9d19574f1ca0f6d774745c3ed56c370349ea175b4c8c6f486983a722a367d77b4d66f301691833647a939dc4857116e734effb46e11cd001";
+        var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction));
+        var forwardCallDto = ManagerForwardCallDto<TransferInput>.Decode(transaction);
+        forwardCallDto.ForwardTransactionArgs.ShouldNotBeNull();
+        forwardCallDto.ForwardTransaction.MethodName.ShouldBe("Transfer");
     }
     
     [Fact]
