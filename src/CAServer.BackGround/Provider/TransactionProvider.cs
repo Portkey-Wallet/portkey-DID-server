@@ -4,14 +4,15 @@ using AElf.Types;
 using CAServer.BackGround.Dtos;
 using CAServer.BackGround.Options;
 using CAServer.Common;
-using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.ObjectMapping;
 
 namespace CAServer.BackGround.Provider;
 
@@ -28,16 +29,19 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly TransactionOptions _transactionOptions;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly IObjectMapper _objectMapper;
 
     public TransactionProvider(IContractProvider contractProvider, ILogger<TransactionProvider> logger,
         IAlchemyOrderAppService alchemyOrderService,
         IOptionsSnapshot<TransactionOptions> options,
-        IThirdPartOrderProvider thirdPartOrderProvider)
+        IThirdPartOrderProvider thirdPartOrderProvider,
+        IObjectMapper objectMapper)
     {
         _contractProvider = contractProvider;
         _logger = logger;
         _alchemyOrderService = alchemyOrderService;
         _thirdPartOrderProvider = thirdPartOrderProvider;
+        _objectMapper = objectMapper;
         _transactionOptions = options.Value;
     }
 
@@ -79,19 +83,12 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         {
             try
             {
-                // get status from ach.  
-                string achOrderStatus = "";
-                // if status changed update
-                var isOverInterval = long.Parse(TimeStampHelper.GetTimeStampInMilliseconds()) -
-                                     long.Parse(order.LastModifyTime) >
-                                     _transactionOptions.ResendTimeInterval * 1000;
+                // get status from ach.
+                var orderInfo = await _alchemyOrderService.QueryAlchemyOrderInfo(order);
+                if (orderInfo == null || string.IsNullOrWhiteSpace(orderInfo.OrderNo)) continue;
 
-                if (isOverInterval)
-                {
-                    _logger.LogError("over---======={orderId}", order.Id);
-                }
-
-                // time range
+                var achOrderStatus = AlchemyHelper.GetOrderStatus(orderInfo.Status);
+                await HandleUnCompletedOrderAsync(order, achOrderStatus);
             }
             catch (Exception e)
             {
@@ -113,12 +110,20 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         return transactionResult;
     }
 
-    private void StatusChange()
+    private async Task HandleUnCompletedOrderAsync(OrderDto order, string achOrderStatus)
     {
-    }
+        if (order.Status == achOrderStatus) return;
 
-    private async Task HandleOrderAsync(OrderDto order, string achOrderStatus)
-    {
+        if (order.Status != OrderStatusType.Transferred.ToString() &&
+            order.Status != OrderStatusType.StartTransfer.ToString() &&
+            order.Status != OrderStatusType.Transferring.ToString() &&
+            order.Status == achOrderStatus)
+        {
+            var statusInfoDto = _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order); // for debug
+            await _thirdPartOrderProvider.AddOrderStatusInfoAsync(
+                _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order));
+        }
+
         var isOverInterval = long.Parse(TimeStampHelper.GetTimeStampInMilliseconds()) -
                              long.Parse(order.LastModifyTime) >
                              _transactionOptions.ResendTimeInterval * 1000;
