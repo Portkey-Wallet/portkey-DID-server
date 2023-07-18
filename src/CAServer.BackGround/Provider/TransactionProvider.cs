@@ -144,7 +144,6 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             order.Status != OrderStatusType.Transferring.ToString() &&
             order.Status != achOrderStatus)
         {
-            var statusInfoDto = _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order); // for debug
             await _orderStatusProvider.AddOrderStatusInfoAsync(
                 _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order));
         }

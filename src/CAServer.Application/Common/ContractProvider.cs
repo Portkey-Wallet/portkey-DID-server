@@ -177,22 +177,13 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
     public async Task<SendTransactionOutput> SendRawTransaction(string chainId, string rawTransaction)
     {
-        try
+        var client = await GetAElfClientAsync(chainId);
+        var result = await client.SendTransactionAsync(new SendTransactionInput
         {
-            var client = await GetAElfClientAsync(chainId);
+            RawTransaction = rawTransaction
+        });
 
-            var result = await client.SendTransactionAsync(new SendTransactionInput
-            {
-                RawTransaction = rawTransaction
-            });
-
-            return result;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "send raw transaction fail.");
-            return null;
-        }
+        return result;
     }
 
     public async Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId)

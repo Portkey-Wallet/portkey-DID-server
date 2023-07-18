@@ -18,6 +18,7 @@ public enum OrderStatusType
 {
     Initialized,
     Created,
+    Invalid,
     Canceled,
     Expired,
     Finish,
@@ -26,7 +27,6 @@ public enum OrderStatusType
     Refunded,
     Unknown,
     StartTransfer,
-    TransferVerifyFailed,
     Transferring,
     Transferred,
     TransferFailed,

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -110,7 +111,6 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
             await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
 
-            var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data); // for debug
             await _orderStatusProvider.AddOrderStatusInfoAsync(
                 _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
 
@@ -158,8 +158,18 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         if (!VerifyInput(input))
         {
             _logger.LogWarning("Transaction input valid failed, orderId:{orderId}", input.OrderId);
-            // await _thirdPartOrderProvider.AddOrderStatusInfoAsync(
-            //     _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+            await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
+            {
+                OrderId = input.OrderId.ToString(),
+                RawTransaction = input.RawTransaction,
+                Status = OrderStatusType.Invalid,
+                DicExt = new Dictionary<string, object>()
+                {
+                    ["reason"] = "Transaction input valid failed."
+                }
+            });
+
+            throw new UserFriendlyException("Input validation failed.");
         }
 
         var transactionEto = ObjectMapper.Map<TransactionDto, TransactionEto>(input);

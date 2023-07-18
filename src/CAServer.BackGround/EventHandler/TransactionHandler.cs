@@ -1,6 +1,5 @@
 using AElf;
 using AElf.Contracts.MultiToken;
-using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.BackGround.Dtos;
 using CAServer.BackGround.Options;
@@ -14,7 +13,6 @@ using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Hangfire;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -79,13 +77,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             });
 
             var chainId = _transactionOptions.SendToChainId;
-            var output = await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
-            if (output == null)
-            {
-                // modify order status
-                _logger.LogWarning("send raw transaction failed. {rawTransaction}", eventData.RawTransaction);
-                return;
-            }
+            await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
 
             order.Status = OrderStatusType.Transferring.ToString();
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
@@ -111,7 +103,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
             {
                 OrderId = eventData.OrderId.ToString(),
-                Status = OrderStatusType.TransferVerifyFailed,
+                Status = OrderStatusType.Invalid,
                 RawTransaction = eventData.RawTransaction,
                 DicExt = new Dictionary<string, object>() { ["reason"] = e.Message }
             });
