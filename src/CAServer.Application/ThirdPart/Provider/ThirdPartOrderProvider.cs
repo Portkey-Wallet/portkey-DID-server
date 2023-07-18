@@ -64,8 +64,14 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         const string transDirectSell = "TokenSell";
         var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.timer.HandleUnCompletedOrderMinuteAgo)
             .ToUnixTimeMilliseconds();
+        var unCompletedState = new List<string>
+        {
+            OrderStatusType.Transferred.ToString(),
+            OrderStatusType.UserCompletesCoinDeposit.ToString(),
+            OrderStatusType.StartPayment.ToString(),
+        };
         var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Status).Terms(OrderStatusType.Created.ToString())));
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Status).Terms(unCompletedState)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.TransDirect).Terms(transDirectSell)));
         mustQuery.Add(q => q.TermRange(i => i.Field(f => f.LastModifyTime).LessThan(modifyTimeLt.ToString())));
