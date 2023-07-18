@@ -63,6 +63,13 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             var transaction =
                 Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(eventData.RawTransaction));
             var order = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(eventData.OrderId.ToString());
+
+            if (order.Status != OrderStatusType.Created.ToString())
+            {
+                _logger.LogWarning("Order status is NOT Create, orderId:{orderId}", eventData.OrderId);
+                return;
+            }
+
             var transactionId = transaction.GetHash().ToHex();
 
             await ValidTransactionAsync(transaction, eventData.PublicKey, order);
@@ -107,9 +114,6 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 
         if (order == null)
             throw new UserFriendlyException("Order not exists");
-
-        if (order.Status != OrderStatusType.Created.ToString())
-            throw new UserFriendlyException("Order status is NOT Create");
 
         if (!order.TransactionId.IsNullOrWhiteSpace())
             throw new UserFriendlyException("TransactionId exists");
