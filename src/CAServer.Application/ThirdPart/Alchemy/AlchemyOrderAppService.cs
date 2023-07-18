@@ -39,6 +39,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IAlchemyProvider _alchemyProvider;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     private readonly JsonSerializerSettings _setting = new()
     {
@@ -51,7 +52,8 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
         IAlchemyProvider alchemyProvider,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper,
+        IOrderStatusProvider orderStatusProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -60,6 +62,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _logger = logger;
         _alchemyOptions = merchantOptions.Value.alchemy;
         _alchemyProvider = alchemyProvider;
+        _orderStatusProvider = orderStatusProvider;
     }
 
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
@@ -108,7 +111,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
 
             var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data); // for debug
-            await _thirdPartOrderProvider.AddOrderStatusInfoAsync(
+            await _orderStatusProvider.AddOrderStatusInfoAsync(
                 _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
 
             return new BasicOrderResult() { Success = true, Message = result.Message };
