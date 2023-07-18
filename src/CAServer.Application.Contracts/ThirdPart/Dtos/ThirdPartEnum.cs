@@ -27,6 +27,7 @@ public enum OrderStatusType
     StartTransfer,
     Transferring,
     Transferred,
+    TransferFailed,
     UserCompletesCoinDeposit,
     StartPayment,
     SuccessfulPayment,
