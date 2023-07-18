@@ -14,7 +14,4 @@ public interface IThirdPartOrderProvider
     public Task<OrderDto> GetThirdPartOrderAsync(string orderId);
     public Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync();
     public Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, int skipCount, int maxResultCount);
-
-    public Task AddOrderStatusInfoAsync(OrderStatusInfoGrainDto grainDto);
-    public Task AddOrderStatusInfoAsync(string orderId, OrderStatusInfo orderStatusInfo);
 }

@@ -3,20 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
-using CAServer.Commons;
 using CAServer.Entities.Es;
-using CAServer.Grains;
-using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
-using CAServer.ThirdPart.Etos;
 using Microsoft.Extensions.Options;
 using Nest;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
-using OrderStatusInfo = CAServer.ThirdPart.Dtos.OrderStatusInfo;
 
 namespace CAServer.ThirdPart.Provider;
 
@@ -108,26 +103,5 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         }
 
         return userOrders.Select(i => _objectMapper.Map<RampOrderIndex, OrderDto>(i)).ToList();
-    }
-
-    public async Task AddOrderStatusInfoAsync(OrderStatusInfoGrainDto grainDto)
-    {
-        var orderStatusGrain = _clusterClient.GetGrain<IOrderStatusInfoGrain>(
-            GrainIdHelper.GenerateGrainId(CommonConstant.OrderStatusInfoPrefix, grainDto.OrderId.ToString("N")));
-        var addResult = await orderStatusGrain.AddOrderStatusInfo(grainDto);
-        if (addResult == null) return;
-
-        var eto = _objectMapper.Map<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>(addResult);
-        await _distributedEventBus.PublishAsync(eto);
-    }
-
-    public async Task AddOrderStatusInfoAsync(string orderId, OrderStatusInfo orderStatusInfo)
-    {
-        var order = await GetThirdPartOrderAsync(orderId);
-        if (order == null || order.Id == Guid.Empty) return;
-
-        var grainDto = _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order);
-        grainDto.OrderStatusInfo = orderStatusInfo;
-        await AddOrderStatusInfoAsync(grainDto);
     }
 }

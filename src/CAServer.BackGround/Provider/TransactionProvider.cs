@@ -1,6 +1,5 @@
 using AElf;
 using AElf.Client.Dto;
-using AElf.Kernel;
 using AElf.Types;
 using CAServer.BackGround.Dtos;
 using CAServer.BackGround.Options;
@@ -9,14 +8,10 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
-using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Orleans;
 using Volo.Abp.DependencyInjection;
-using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.BackGround.Provider;
@@ -25,12 +20,6 @@ public interface ITransactionProvider
 {
     Task HandleTransactionAsync(HandleTransactionDto transactionDto);
     Task HandleUnCompletedOrdersAsync();
-
-    Task UpdateOrderStatusAsync(string orderId, OrderStatusType status, string rawTransaction,
-        Dictionary<string, object>? dicExt);
-
-    Task UpdateOrderStatusAsync(OrderDto order, OrderStatusType status, string rawTransaction,
-        Dictionary<string, object>? dicExt);
 }
 
 public class TransactionProvider : ITransactionProvider, ISingletonDependency
@@ -41,24 +30,21 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     private readonly TransactionOptions _transactionOptions;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
-    private readonly IClusterClient _clusterClient;
-    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public TransactionProvider(IContractProvider contractProvider, ILogger<TransactionProvider> logger,
         IAlchemyOrderAppService alchemyOrderService,
         IOptionsSnapshot<TransactionOptions> options,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IObjectMapper objectMapper,
-        IDistributedEventBus distributedEventBus,
-        IClusterClient clusterClient)
+        IOrderStatusProvider orderStatusProvider)
     {
         _contractProvider = contractProvider;
         _logger = logger;
         _alchemyOrderService = alchemyOrderService;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
-        _distributedEventBus = distributedEventBus;
-        _clusterClient = clusterClient;
+        _orderStatusProvider = orderStatusProvider;
         _transactionOptions = options.Value;
     }
 
@@ -84,10 +70,18 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         var dicExt = new Dictionary<string, object>();
         if (transactionResult.Status != TransactionState.Mined)
         {
-            dicExt.Add("trans", transactionResult.Error);
+            dicExt.Add("transactionError", transactionResult.Error);
         }
 
-        await UpdateOrderStatusAsync(transactionDto.OrderId.ToString(), status, transactionDto.RawTransaction, dicExt);
+        var orderStatusUpdateDto = new OrderStatusUpdateDto()
+        {
+            OrderId = transactionDto.OrderId.ToString(),
+            Status = status,
+            RawTransaction = transactionDto.RawTransaction,
+            DicExt = dicExt
+        };
+
+        await _orderStatusProvider.UpdateOrderStatusAsync(orderStatusUpdateDto);
 
         if (transactionResult.Status != TransactionState.Mined)
         {
@@ -128,50 +122,6 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         }
     }
 
-    public async Task UpdateOrderStatusAsync(string orderId, OrderStatusType status, string rawTransaction,
-        Dictionary<string, object>? dicExt)
-    {
-        var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(orderId);
-
-        if (string.IsNullOrEmpty(orderData.ThirdPartOrderNo) || string.IsNullOrEmpty(orderData.Id.ToString()) ||
-            string.IsNullOrEmpty(orderData.TransDirect))
-        {
-            _logger.LogError("Order {OrderId} is not existed in storage.", orderId);
-        }
-
-        await UpdateOrderStatusAsync(orderData, status, string.Empty, dicExt);
-    }
-
-    public async Task UpdateOrderStatusAsync(OrderDto order, OrderStatusType status, string rawTransaction,
-        Dictionary<string, object>? dicExt)
-    {
-        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(order.Id);
-        var getGrainResult = await orderGrain.GetOrder();
-        if (!getGrainResult.Success)
-        {
-            _logger.LogError("Order {OrderId} is not existed in storage.", order.Id);
-        }
-
-        var grainDto = getGrainResult.Data;
-        grainDto.Status = status.ToString();
-        grainDto.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
-
-        var result = await orderGrain.UpdateOrderAsync(grainDto);
-
-        if (!result.Success)
-        {
-            _logger.LogError("Update user order fail, third part order number: {orderId}", order.Id);
-        }
-
-        await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
-
-        var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
-        statusInfoDto.OrderStatusInfo.Extension =
-            JsonConvert.SerializeObject(dicExt ?? new Dictionary<string, object>());
-
-        await _thirdPartOrderProvider.AddOrderStatusInfoAsync(statusInfoDto);
-    }
-
     private async Task<TransactionResultDto> QueryTransactionAsync(string chainId, Transaction transaction)
     {
         var transactionId = transaction.GetHash().ToHex();
@@ -195,7 +145,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             order.Status != achOrderStatus)
         {
             var statusInfoDto = _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order); // for debug
-            await _thirdPartOrderProvider.AddOrderStatusInfoAsync(
+            await _orderStatusProvider.AddOrderStatusInfoAsync(
                 _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order));
         }
 

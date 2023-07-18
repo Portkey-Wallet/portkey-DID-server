@@ -1,7 +1,5 @@
 using System.Threading.Tasks;
 using CAServer.Common;
-using CAServer.Commons;
-using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
@@ -21,12 +19,14 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     private readonly ILogger<ThirdPartOrderAppService> _logger;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<ThirdPartOrderAppService> logger,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper,
+        IOrderStatusProvider orderStatusProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -34,6 +34,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _objectMapper = objectMapper;
         _objectMapper = objectMapper;
         _logger = logger;
+        _orderStatusProvider = orderStatusProvider;
     }
 
 
@@ -60,8 +61,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
         await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
 
-        var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data); // for debug
-        await _thirdPartOrderProvider.AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+        await _orderStatusProvider.AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
 
         var resp = _objectMapper.Map<OrderGrainDto, OrderCreatedDto>(result.Data);
         resp.Success = true;

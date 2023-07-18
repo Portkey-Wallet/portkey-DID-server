@@ -24,7 +24,6 @@ namespace CAServer.BackGround.EventHandler;
 
 public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITransientDependency
 {
-    private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<TransactionHandler> _logger;
     private readonly ITransactionProvider _transactionProvider;
@@ -32,17 +31,18 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IActivityProvider _activityProvider;
     private readonly TransactionOptions _transactionOptions;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
-    public TransactionHandler(INESTRepository<RampOrderIndex, Guid> orderRepository,
+    public TransactionHandler(
         IObjectMapper objectMapper,
         ILogger<TransactionHandler> logger,
         IContractProvider contractProvider,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IActivityProvider activityProvider,
         ITransactionProvider transactionProvider,
-        IOptionsSnapshot<TransactionOptions> options)
+        IOptionsSnapshot<TransactionOptions> options,
+        IOrderStatusProvider orderStatusProvider)
     {
-        _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _logger = logger;
         _contractProvider = contractProvider;
@@ -50,6 +50,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         _activityProvider = activityProvider;
         _transactionProvider = transactionProvider;
         _transactionOptions = options.Value;
+        _orderStatusProvider = orderStatusProvider;
     }
 
     public async Task HandleEventAsync(TransactionEto eventData)
@@ -66,18 +67,18 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
                 return;
             }
 
-            var transactionId = transaction.GetHash().ToHex();
-
             await ValidTransactionAsync(transaction, eventData.PublicKey, order);
-
-            order.TransactionId = transactionId;
+            order.TransactionId = transaction.GetHash().ToHex();
             order.Status = OrderStatusType.StartTransfer.ToString();
 
-            await _transactionProvider.UpdateOrderStatusAsync(_objectMapper.Map<RampOrderIndex, OrderDto>(order),
-                OrderStatusType.StartTransfer, eventData.RawTransaction, null);
+            await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
+            {
+                Order = _objectMapper.Map<RampOrderIndex, OrderDto>(order),
+                Status = OrderStatusType.StartTransfer,
+                RawTransaction = eventData.RawTransaction
+            });
 
             var chainId = _transactionOptions.SendToChainId;
-            //send transaction
             var output = await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
             if (output == null)
             {
@@ -87,8 +88,12 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             }
 
             order.Status = OrderStatusType.Transferring.ToString();
-            await _transactionProvider.UpdateOrderStatusAsync(_objectMapper.Map<RampOrderIndex, OrderDto>(order),
-                OrderStatusType.Transferring, eventData.RawTransaction, null);
+            await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
+            {
+                Order = _objectMapper.Map<RampOrderIndex, OrderDto>(order),
+                Status = OrderStatusType.Transferring,
+                RawTransaction = eventData.RawTransaction
+            });
 
             var transactionDto = _objectMapper.Map<TransactionEto, HandleTransactionDto>(eventData);
             transactionDto.ChainId = chainId;
@@ -99,11 +104,17 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         catch (Exception e)
         {
             // add alarm.
-            _logger.LogError(e, "Handle transaction fail: {message}", JsonConvert.SerializeObject(eventData));
-            
-            await _transactionProvider.UpdateOrderStatusAsync(eventData.OrderId.ToString(),
-                OrderStatusType.TransferVerifyFailed, string.Empty,
-                new Dictionary<string, object>() { ["reason"] = e.Message });
+            _logger.LogError(e,
+                "Handle transaction fail: orderId:{orderId}, rawTransaction:{rawTransaction}, publicKey:{publicKey}",
+                eventData.OrderId, eventData.RawTransaction, eventData.PublicKey);
+
+            await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
+            {
+                OrderId = eventData.OrderId.ToString(),
+                Status = OrderStatusType.TransferVerifyFailed,
+                RawTransaction = eventData.RawTransaction,
+                DicExt = new Dictionary<string, object>() { ["reason"] = e.Message }
+            });
         }
     }
 
