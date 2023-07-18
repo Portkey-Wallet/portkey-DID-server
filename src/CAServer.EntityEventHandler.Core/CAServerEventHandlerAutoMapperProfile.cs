@@ -34,7 +34,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(u => u.Token.ChainId))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(u => u.Token.Decimals))
             .ForPath(t => t.Token.Address, m => m.MapFrom(u => u.Token.Address));
-        
+
         CreateMap<UserTokenDeleteEto, UserTokenIndex>()
             .ForPath(t => t.Token.Id, m => m.MapFrom(u => u.Token.Id))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(u => u.Token.Symbol))
@@ -52,5 +52,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<UserExtraInfoEto, UserExtraInfoIndex>();
         CreateMap<NotifyEto, NotifyRulesIndex>();
         CreateMap<DeleteNotifyEto, NotifyRulesIndex>();
+        CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
+        CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
     }
 }

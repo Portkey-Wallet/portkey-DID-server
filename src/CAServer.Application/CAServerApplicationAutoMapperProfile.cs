@@ -337,6 +337,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals));
 
         CreateMap<TransactionDto, TransactionEto>();
+        CreateMap<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>();
         CreateMap<OrderGrainDto, OrderStatusInfoGrainDto>()
             .ForMember(t => t.Id, opt => opt.Ignore())
             .ForMember(t => t.OrderId, m => m.MapFrom(f => f.Id))

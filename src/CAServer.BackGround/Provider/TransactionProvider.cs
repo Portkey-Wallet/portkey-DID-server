@@ -4,6 +4,7 @@ using AElf.Types;
 using CAServer.BackGround.Dtos;
 using CAServer.BackGround.Options;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
@@ -46,7 +47,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionDto.RawTransaction));
         var transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
 
-        // when to retry transaction
+        // when to retry transaction, not existed-> retry  pending->wait for long  notinvaldidd->give up
         var times = 0;
         while (transactionResult.Status != TransactionState.Mined && times < _transactionOptions.RetryTime)
         {
@@ -63,29 +64,40 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         }
 
         // send to ach
-        await _alchemyOrderService.UpdateAlchemyTxHashAsync(new SendAlchemyTxHashDto()
-        {
-            MerchantName = transactionDto.MerchantName,
-            OrderId = transactionDto.OrderId.ToString(),
-            TxHash = transaction.ToByteArray().ToHex()
-        });
+        await SendToAlchemyAsync(transactionDto.MerchantName, transactionDto.OrderId.ToString(),
+            transaction.ToByteArray().ToHex());
     }
 
     public async Task HandleUnCompletedOrdersAsync()
     {
         var orders = await _thirdPartOrderProvider.GetUnCompletedThirdPartOrdersAsync();
+        _logger.LogInformation("{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+
         if (orders == null || orders.Count == 0) return;
-        
+
         foreach (var order in orders)
         {
-            // get status from ach.
-            
-            // if status changed update
-            
-            // when to retry???
-        }
+            try
+            {
+                // get status from ach.  
+                string achOrderStatus = "";
+                // if status changed update
+                var isOverInterval = long.Parse(TimeStampHelper.GetTimeStampInMilliseconds()) -
+                                     long.Parse(order.LastModifyTime) >
+                                     _transactionOptions.ResendTimeInterval * 1000;
 
-        _logger.LogError("========{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                if (isOverInterval)
+                {
+                    _logger.LogError("over---======={orderId}", order.Id);
+                }
+
+                // time range
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Handle unCompleted order fail, orderId:{orderId}", order.Id);
+            }
+        }
     }
 
     private async Task<TransactionResultDto> QueryTransactionAsync(string chainId, Transaction transaction)
@@ -99,5 +111,34 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         }
 
         return transactionResult;
+    }
+
+    private void StatusChange()
+    {
+    }
+
+    private async Task HandleOrderAsync(OrderDto order, string achOrderStatus)
+    {
+        var isOverInterval = long.Parse(TimeStampHelper.GetTimeStampInMilliseconds()) -
+                             long.Parse(order.LastModifyTime) >
+                             _transactionOptions.ResendTimeInterval * 1000;
+
+        if (order.Status == OrderStatusType.Transferred.ToString() &&
+            achOrderStatus == OrderStatusType.Created.ToString() && isOverInterval)
+        {
+            await SendToAlchemyAsync(order.MerchantName, order.Id.ToString(), order.TransactionId);
+        }
+    }
+
+    private async Task SendToAlchemyAsync(string merchantName, string orderId, string txHash)
+    {
+        if (string.IsNullOrWhiteSpace(txHash)) return;
+
+        await _alchemyOrderService.UpdateAlchemyTxHashAsync(new SendAlchemyTxHashDto
+        {
+            MerchantName = merchantName,
+            OrderId = orderId,
+            TxHash = txHash
+        });
     }
 }

@@ -18,6 +18,7 @@ using Nest;
 using Volo.Abp.BackgroundJobs;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -32,7 +33,6 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
     private readonly ILogger<TransactionHandler> _logger;
     private readonly ITransactionProvider _transactionProvider;
     private readonly IContractProvider _contractProvider;
-    private readonly IBackgroundJobManager _backgroundJobManager;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IActivityProvider _activityProvider;
     private readonly TransactionOptions _transactionOptions;
@@ -43,7 +43,6 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         IContractProvider contractProvider,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IActivityProvider activityProvider,
-        IBackgroundJobManager backgroundJobManager,
         ITransactionProvider transactionProvider,
         IOptionsSnapshot<TransactionOptions> options)
     {
@@ -51,7 +50,6 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         _objectMapper = objectMapper;
         _logger = logger;
         _contractProvider = contractProvider;
-        _backgroundJobManager = backgroundJobManager;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _activityProvider = activityProvider;
         _transactionProvider = transactionProvider;
@@ -60,94 +58,81 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 
     public async Task HandleEventAsync(TransactionEto eventData)
     {
-        var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(eventData.RawTransaction));
-        // var order = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(eventData.OrderId.ToString());
-        var transactionId = transaction.GetHash().ToHex();
-        //
-        // try
-        // {
-        //     if (!VerifyHelper.VerifySignature(transaction, eventData.PublicKey))
-        //         throw new UserFriendlyException("RawTransaction validation failed");
-        //
-        //     if (order == null)
-        //         throw new UserFriendlyException("Order not exists");
-        //
-        //     if (order.Status != OrderStatusType.Created.ToString())
-        //         throw new UserFriendlyException("Order status is NOT Create");
-        //
-        //     if (order.TransactionId != null && order.TransactionId != transactionId.ToHex())
-        //         throw new UserFriendlyException("TransactionId exists");
-        //
-        //     var forwardCallDto =
-        //         ManagerForwardCallDto<TransferInput>.Decode(transaction);
-        //
-        //     TransferInput? transferInput;
-        //     if (forwardCallDto == null
-        //         || forwardCallDto.MethodName != "Transfer"
-        //         || (transferInput = forwardCallDto.Args?.Value as TransferInput) == null)
-        //         throw new UserFriendlyException("NOT Transfer-ManagerForwardCall transaction");
-        //
-        //     if (order.Address.IsNullOrEmpty())
-        //         throw new UserFriendlyException("Order address not exists");
-        //
-        //     if (transferInput.To.ToBase58() != order.Address)
-        //         throw new UserFriendlyException("Transfer address not match");
-        //
-        //     if (transferInput.Symbol != order.Crypto)
-        //         throw new UserFriendlyException("Transfer symbol not match");
-        //
-        //     var decimalsList = await _activityProvider.GetTokenDecimalsAsync(transferInput.Symbol);
-        //     if (decimalsList == null || decimalsList.TokenInfo.IsNullOrEmpty())
-        //         throw new UserFriendlyException("Decimal of Symbol [{}] NOT found", transferInput.Symbol);
-        //     var decimals = decimalsList.TokenInfo.First().Decimals;
-        //
-        //     var amount = transferInput.Amount / Math.Pow(10, decimals);
-        //     if (amount - double.Parse(order.CryptoQuantity) != 0)
-        //         throw new UserFriendlyException("Transfer amount NOT match");
-        // }
-        // catch (Exception e)
-        // {
-        //     _logger.LogWarning(e, "HandleEventAsync failed, userId={}, orderId={}, transactionId={}",
-        //         eventData.UserId, eventData.OrderId, transactionId);
-        //     return;
-        // }
+        try
+        {
+            var transaction =
+                Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(eventData.RawTransaction));
+            //var order = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(eventData.OrderId.ToString());
+            var transactionId = transaction.GetHash().ToHex();
 
-        OrderIndex order = new OrderIndex();
-        // if (order.TransactionId.IsNullOrEmpty())
-        // {
-        order.TransactionId = transactionId;
-        order.Status = OrderStatusType.StartTransfer.ToString();
-        // await _orderRepository.UpdateAsync(order);
-        // }
+            var order = new OrderIndex();
+           // await ValidTransactionAsync(transaction, eventData.PublicKey, order);
 
-        var chainId = _transactionOptions.SendToChainId;
-        //send transaction
-        await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
-        order.Status = OrderStatusType.Transferring.ToString();
-        // await _orderRepository.UpdateAsync(order);
+            if (order.TransactionId.IsNullOrEmpty())
+            {
+                order.TransactionId = transactionId;
+                order.Status = OrderStatusType.StartTransfer.ToString();
+                //await _orderRepository.UpdateAsync(order);
+            }
 
-        var transactionDto = _objectMapper.Map<TransactionEto, HandleTransactionDto>(eventData);
-        transactionDto.ChainId = chainId;
+            var chainId = _transactionOptions.SendToChainId;
+            //send transaction
+            await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
+            order.Status = OrderStatusType.Transferring.ToString();
+           // await _orderRepository.UpdateAsync(order);
 
-        BackgroundJob.Schedule<ITransactionProvider>(provider =>
-            provider.HandleTransactionAsync(transactionDto), TimeSpan.FromSeconds(_transactionOptions.DelayTime));
+            var transactionDto = _objectMapper.Map<TransactionEto, HandleTransactionDto>(eventData);
+            transactionDto.ChainId = chainId;
+
+            // BackgroundJob.Schedule<ITransactionProvider>(provider =>
+            //     provider.HandleTransactionAsync(transactionDto), TimeSpan.FromSeconds(_transactionOptions.DelayTime));
+        }
+        catch (Exception e)
+        {
+            // add alarm.
+            _logger.LogError(e, "Handle transaction fail: {message}", JsonConvert.SerializeObject(eventData));
+        }
     }
 
-    private async Task<OrderIndex> UpdateOrderAsync(Guid orderId)
+    private async Task ValidTransactionAsync(Transaction transaction, string publicKey, OrderIndex order)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.Id).Value(orderId)));
+        if (!VerifyHelper.VerifySignature(transaction, publicKey))
+            throw new UserFriendlyException("RawTransaction validation failed");
 
-        QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) => f.Bool(b => b.Must(mustQuery));
-        return await _orderRepository.GetAsync(Filter);
-    }
+        if (order == null)
+            throw new UserFriendlyException("Order not exists");
 
-    private async Task<OrderIndex> GetOrderAsync(Guid orderId)
-    {
-        var mustQuery = new List<Func<QueryContainerDescriptor<OrderIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.Id).Value(orderId)));
+        if (order.Status != OrderStatusType.Created.ToString())
+            throw new UserFriendlyException("Order status is NOT Create");
 
-        QueryContainer Filter(QueryContainerDescriptor<OrderIndex> f) => f.Bool(b => b.Must(mustQuery));
-        return await _orderRepository.GetAsync(Filter);
+        if (!order.TransactionId.IsNullOrWhiteSpace())
+            throw new UserFriendlyException("TransactionId exists");
+
+        var forwardCallDto =
+            ManagerForwardCallDto<TransferInput>.Decode(transaction);
+
+        TransferInput? transferInput;
+        if (forwardCallDto == null
+            || forwardCallDto.MethodName != "Transfer"
+            || (transferInput = forwardCallDto.Args?.Value as TransferInput) == null)
+            throw new UserFriendlyException("NOT Transfer-ManagerForwardCall transaction");
+
+        if (order.Address.IsNullOrEmpty())
+            throw new UserFriendlyException("Order address not exists");
+
+        if (transferInput.To.ToBase58() != order.Address)
+            throw new UserFriendlyException("Transfer address not match");
+
+        if (transferInput.Symbol != order.Crypto)
+            throw new UserFriendlyException("Transfer symbol not match");
+
+        var decimalsList = await _activityProvider.GetTokenDecimalsAsync(transferInput.Symbol);
+        if (decimalsList == null || decimalsList.TokenInfo.IsNullOrEmpty())
+            throw new UserFriendlyException("Decimal of Symbol [{}] NOT found", transferInput.Symbol);
+        var decimals = decimalsList.TokenInfo.First().Decimals;
+
+        var amount = transferInput.Amount / Math.Pow(10, decimals);
+        if (amount - double.Parse(order.CryptoQuantity) != 0)
+            throw new UserFriendlyException("Transfer amount NOT match");
     }
 }
