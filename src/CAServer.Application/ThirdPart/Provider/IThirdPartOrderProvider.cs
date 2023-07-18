@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using OrderStatusInfo = CAServer.ThirdPart.Dtos.OrderStatusInfo;
 
 namespace CAServer.ThirdPart.Provider;
 
@@ -15,4 +16,5 @@ public interface IThirdPartOrderProvider
     public Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, int skipCount, int maxResultCount);
 
     public Task AddOrderStatusInfoAsync(OrderStatusInfoGrainDto grainDto);
+    public Task AddOrderStatusInfoAsync(string orderId, OrderStatusInfo orderStatusInfo);
 }

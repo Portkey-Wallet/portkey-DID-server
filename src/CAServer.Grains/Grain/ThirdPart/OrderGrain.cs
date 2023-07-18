@@ -49,6 +49,20 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
         return result;
     }
 
+    public Task<GrainResultDto<OrderGrainDto>> GetOrder()
+    {
+        var result = new GrainResultDto<OrderGrainDto>();
+
+        if (State.Id == Guid.Empty)
+        {
+            return Task.FromResult(result);
+        }
+
+        result.Data = _objectMapper.Map<OrderState, OrderGrainDto>(State);
+        result.Success = true;
+        return Task.FromResult(result);
+    }
+
     private IOrderStatusInfoGrain GetOrderStatusInfoGrain(Guid id)
     {
         return GrainFactory.GetGrain<IOrderStatusInfoGrain>(

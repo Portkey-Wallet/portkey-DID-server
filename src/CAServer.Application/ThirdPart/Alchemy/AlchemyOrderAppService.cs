@@ -70,12 +70,12 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
                 "Update Order OrderNo:{MerchantOrderNo}, MerchantOrderNo:{OrderNo}, Status:{Status}, get from alchemy",
                 input.MerchantOrderNo, input.OrderNo, input.Status);
 
-            // if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
-            // {
-            //     _logger.LogError("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
-            //         input.OrderNo);
-            //     return new BasicOrderResult();
-            // }
+            if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
+            {
+                _logger.LogError("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
+                    input.OrderNo);
+                return new BasicOrderResult();
+            }
 
             Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
             var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());

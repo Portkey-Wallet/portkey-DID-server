@@ -16,6 +16,7 @@ using Orleans;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using OrderStatusInfo = CAServer.ThirdPart.Dtos.OrderStatusInfo;
 
 namespace CAServer.ThirdPart.Provider;
 
@@ -61,7 +62,8 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     public async Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync()
     {
         const string transDirectSell = "TokenSell";
-        var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.timer.HandleUnCompletedOrderMinuteAgo).ToUnixTimeMilliseconds();
+        var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.timer.HandleUnCompletedOrderMinuteAgo)
+            .ToUnixTimeMilliseconds();
         var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.Status).Terms(OrderStatusType.Created.ToString())));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
@@ -111,5 +113,15 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
         await _distributedEventBus.PublishAsync(
             _objectMapper.Map<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>(addResult));
+    }
+
+    public async Task AddOrderStatusInfoAsync(string orderId, OrderStatusInfo orderStatusInfo)
+    {
+        var order = await GetThirdPartOrderAsync(orderId);
+        if (order == null || order.Id == Guid.Empty) return;
+
+        var grainDto = _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order);
+        grainDto.OrderStatusInfo = orderStatusInfo;
+        await AddOrderStatusInfoAsync(grainDto);
     }
 }

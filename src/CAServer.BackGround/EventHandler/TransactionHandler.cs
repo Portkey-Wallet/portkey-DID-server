@@ -62,30 +62,29 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         {
             var transaction =
                 Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(eventData.RawTransaction));
-            //var order = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(eventData.OrderId.ToString());
+            var order = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(eventData.OrderId.ToString());
             var transactionId = transaction.GetHash().ToHex();
 
-            var order = new RampOrderIndex();
-           // await ValidTransactionAsync(transaction, eventData.PublicKey, order);
+            await ValidTransactionAsync(transaction, eventData.PublicKey, order);
 
             if (order.TransactionId.IsNullOrEmpty())
             {
                 order.TransactionId = transactionId;
                 order.Status = OrderStatusType.StartTransfer.ToString();
-                //await _orderRepository.UpdateAsync(order);
+                await _orderRepository.UpdateAsync(order);
             }
 
             var chainId = _transactionOptions.SendToChainId;
             //send transaction
             await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
             order.Status = OrderStatusType.Transferring.ToString();
-           // await _orderRepository.UpdateAsync(order);
+             await _orderRepository.UpdateAsync(order);
 
             var transactionDto = _objectMapper.Map<TransactionEto, HandleTransactionDto>(eventData);
             transactionDto.ChainId = chainId;
 
-            // BackgroundJob.Schedule<ITransactionProvider>(provider =>
-            //     provider.HandleTransactionAsync(transactionDto), TimeSpan.FromSeconds(_transactionOptions.DelayTime));
+            BackgroundJob.Schedule<ITransactionProvider>(provider =>
+                provider.HandleTransactionAsync(transactionDto), TimeSpan.FromSeconds(_transactionOptions.DelayTime));
         }
         catch (Exception e)
         {
