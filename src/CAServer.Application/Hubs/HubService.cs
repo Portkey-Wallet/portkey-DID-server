@@ -111,11 +111,25 @@ public class HubService : CAServerAppService, IHubService
     {
         await _hubCacheProvider.RemoveResponseByClientId(clientId, requestId);
     }
-
+    
+    public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
+    {
+        await RequestConditionOrderAsync(targetClientId, orderId,      
+            esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString(),
+            "onOrderTransferredReceived");
+    }
 
     public async Task RequestAchTxAddressAsync(string targetClientId, string orderId)
     {
-        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
+        await RequestConditionOrderAsync(targetClientId, orderId, 
+            esOrderData => string.IsNullOrWhiteSpace(esOrderData.Address),
+            "onAchTxAddressReceived");
+    }
+    
+
+    public async Task RequestConditionOrderAsync(string targetClientId, string orderId, Func<OrderDto, bool> condition, string callbackMethod)
+    {
+        var cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
         {
             try
@@ -123,12 +137,12 @@ public class HubService : CAServerAppService, IHubService
                 // stop while disconnected
                 if (_connectionProvider.GetConnectionByClientId(targetClientId) == null)
                 {
-                    _logger.LogWarning("Get alchemy order {OrderId} target address STOP, connection disconnected",
+                    _logger.LogWarning("Get third-part order {OrderId} target address STOP, connection disconnected",
                         orderId);
                     break;
                 }
 
-                Guid grainId = ThirdPartHelper.GetOrderId(orderId);
+                var grainId = ThirdPartHelper.GetOrderId(orderId);
                 var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
                 if (esOrderData == null)
                 {
@@ -137,14 +151,13 @@ public class HubService : CAServerAppService, IHubService
                 }
 
                 // address not callback yet
-                if (string.IsNullOrWhiteSpace(esOrderData.Address))
+                if (condition(esOrderData))
                 {
-                    _logger.LogWarning("Get alchemy order {OrderId} target address failed, wait for next time",
-                        orderId);
+                    _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} condition failed, wait for next time",
+                        orderId, callbackMethod);
                     await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.DelaySeconds));
                     continue;
                 }
-
 
                 // push address to client via ws
                 var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(
@@ -155,7 +168,8 @@ public class HubService : CAServerAppService, IHubService
                         Address = esOrderData.Address,
                         Network = esOrderData.Network,
                         Crypto = esOrderData.Crypto,
-                        CryptoAmount = esOrderData.CryptoAmount
+                        CryptoAmount = esOrderData.CryptoAmount,
+                        Status = esOrderData.Status
                     },
                     Formatting.None,
                     new JsonSerializerSettings
@@ -167,19 +181,19 @@ public class HubService : CAServerAppService, IHubService
                     {
                         Body = bodyDict
                     },
-                    targetClientId, "onAchTxAddressReceived"
+                    targetClientId, callbackMethod
                 );
-                _logger.LogInformation("Get alchemy order {OrderId} target address {Address} success",
+                _logger.LogInformation("Get third-part order {OrderId} target address {Address} success",
                     orderId, esOrderData.Address);
                 break;
             }
             catch (OperationCanceledException oce)
             {
-                _logger.LogError(oce, "Timed out waiting for alchemy order {OrderId} update status", orderId);
+                _logger.LogError(oce, "Timed out waiting for third-part order {OrderId} update status", orderId);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "An exception occurred during the query alchemy order {OrderId} target address",
+                _logger.LogError(e, "An exception occurred during the query third-part order {OrderId} target address",
                     orderId);
                 break;
             }
