@@ -122,12 +122,12 @@ public class HubService : CAServerAppService, IHubService
     public async Task RequestAchTxAddressAsync(string targetClientId, string orderId)
     {
         await RequestConditionOrderAsync(targetClientId, orderId, 
-            esOrderData => string.IsNullOrWhiteSpace(esOrderData.Address),
+            esOrderData => !string.IsNullOrWhiteSpace(esOrderData.Address),
             "onAchTxAddressReceived");
     }
     
 
-    public async Task RequestConditionOrderAsync(string targetClientId, string orderId, Func<OrderDto, bool> condition, string callbackMethod)
+    private async Task RequestConditionOrderAsync(string targetClientId, string orderId, Func<OrderDto, bool> matchCondition, string callbackMethod)
     {
         var cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
@@ -144,16 +144,16 @@ public class HubService : CAServerAppService, IHubService
 
                 var grainId = ThirdPartHelper.GetOrderId(orderId);
                 var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-                if (esOrderData == null)
+                if (esOrderData == null || esOrderData.Id == new Guid())
                 {
                     _logger.LogError("This order {OrderId} not exists in the es", orderId);
                     break;
                 }
 
-                // address not callback yet
-                if (condition(esOrderData))
+                // condition mot match
+                if (!matchCondition(esOrderData))
                 {
-                    _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} condition failed, wait for next time",
+                    _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
                         orderId, callbackMethod);
                     await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.DelaySeconds));
                     continue;
@@ -183,18 +183,18 @@ public class HubService : CAServerAppService, IHubService
                     },
                     targetClientId, callbackMethod
                 );
-                _logger.LogInformation("Get third-part order {OrderId} target address {Address} success",
-                    orderId, esOrderData.Address);
+                _logger.LogInformation("Get third-part order {OrderId} {CallbackMethod}  success",
+                    orderId, callbackMethod);
                 break;
             }
             catch (OperationCanceledException oce)
             {
-                _logger.LogError(oce, "Timed out waiting for third-part order {OrderId} update status", orderId);
+                _logger.LogError(oce, "Timed out waiting for third-part order { {OrderId} {CallbackMethod}  update status", orderId, callbackMethod);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "An exception occurred during the query third-part order {OrderId} target address",
-                    orderId);
+                _logger.LogError(e, "An exception occurred during the query third-part order {OrderId} {CallbackMethod} ",
+                    orderId, callbackMethod);
                 break;
             }
         }
