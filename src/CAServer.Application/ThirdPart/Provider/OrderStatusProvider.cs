@@ -69,7 +69,8 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
                 return;
             }
 
-            await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
+            await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data), false,
+                false);
 
             var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
             statusInfoDto.OrderStatusInfo.Extension =
@@ -96,7 +97,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         if (addResult == null) return;
 
         var eto = _objectMapper.Map<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>(addResult);
-        await _distributedEventBus.PublishAsync(eto);
+        await _distributedEventBus.PublishAsync(eto, false, false);
     }
 
     private async Task<OrderDto> GetOrderAsync(string orderId)
