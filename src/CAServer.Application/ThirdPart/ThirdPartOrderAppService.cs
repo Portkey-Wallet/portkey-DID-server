@@ -46,7 +46,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);
         orderGrainData.UserId = userId;
         _logger.LogInformation("This third part order {orderId} will be created.", orderId);
-        orderGrainData.Status = OrderStatusType.Created.ToString();
+        orderGrainData.Status = OrderStatusType.Initialized.ToString();
         orderGrainData.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
 
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);

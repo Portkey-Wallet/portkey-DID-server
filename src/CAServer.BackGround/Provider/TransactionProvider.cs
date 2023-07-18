@@ -13,6 +13,7 @@ using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -24,7 +25,12 @@ public interface ITransactionProvider
 {
     Task HandleTransactionAsync(HandleTransactionDto transactionDto);
     Task HandleUnCompletedOrdersAsync();
-    Task UpdateOrderStatusAsync(string orderId, string status);
+
+    Task UpdateOrderStatusAsync(string orderId, OrderStatusType status, string rawTransaction,
+        Dictionary<string, object>? dicExt);
+
+    Task UpdateOrderStatusAsync(OrderDto order, OrderStatusType status, string rawTransaction,
+        Dictionary<string, object>? dicExt);
 }
 
 public class TransactionProvider : ITransactionProvider, ISingletonDependency
@@ -71,18 +77,22 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
         }
 
-        var orderStatusInfo = new OrderStatusInfo
+        var status = transactionResult.Status == TransactionState.Mined
+            ? OrderStatusType.Transferred
+            : OrderStatusType.TransferFailed;
+
+        var dicExt = new Dictionary<string, object>();
+        if (transactionResult.Status != TransactionState.Mined)
         {
-            LastModifyTime = long.Parse(TimeStampHelper.GetTimeStampInMilliseconds()),
-            Status = transactionResult.Status == TransactionState.Mined
-                ? OrderStatusType.Transferred
-                : OrderStatusType.TransferFailed
-        };
-        await UpdateOrderStatusAsync(transactionDto.OrderId.ToString(), orderStatusInfo.Status.ToString());
+            dicExt.Add("trans", transactionResult.Error);
+        }
+
+        await UpdateOrderStatusAsync(transactionDto.OrderId.ToString(), status, transactionDto.RawTransaction, dicExt);
 
         if (transactionResult.Status != TransactionState.Mined)
         {
-            _logger.LogWarning("Transaction handle fail, orderId:{}, transactionId:{transactionId}, status:{}",
+            _logger.LogWarning(
+                "Transaction handle fail, orderId:{orderId}, transactionId:{transactionId}, status:{status}",
                 transactionDto.OrderId.ToString(), transaction.GetHash().ToHex(), transactionResult.Status);
 
             return;
@@ -118,7 +128,8 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         }
     }
 
-    public async Task UpdateOrderStatusAsync(string orderId, string status)
+    public async Task UpdateOrderStatusAsync(string orderId, OrderStatusType status, string rawTransaction,
+        Dictionary<string, object>? dicExt)
     {
         var orderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(orderId);
 
@@ -128,29 +139,37 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             _logger.LogError("Order {OrderId} is not existed in storage.", orderId);
         }
 
-        var grainId = ThirdPartHelper.GetOrderId(orderId);
-        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
+        await UpdateOrderStatusAsync(orderData, status, string.Empty, dicExt);
+    }
+
+    public async Task UpdateOrderStatusAsync(OrderDto order, OrderStatusType status, string rawTransaction,
+        Dictionary<string, object>? dicExt)
+    {
+        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(order.Id);
         var getGrainResult = await orderGrain.GetOrder();
         if (!getGrainResult.Success)
         {
-            _logger.LogError("Order {OrderId} is not existed in storage.", orderId);
+            _logger.LogError("Order {OrderId} is not existed in storage.", order.Id);
         }
 
         var grainDto = getGrainResult.Data;
-        grainDto.Status = AlchemyHelper.GetOrderStatus(status);
+        grainDto.Status = status.ToString();
         grainDto.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
 
         var result = await orderGrain.UpdateOrderAsync(grainDto);
 
         if (!result.Success)
         {
-            _logger.LogError("Update user order fail, third part order number: {orderId}",orderId);
+            _logger.LogError("Update user order fail, third part order number: {orderId}", order.Id);
         }
 
         await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
 
-        await _thirdPartOrderProvider.AddOrderStatusInfoAsync(
-            _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+        var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
+        statusInfoDto.OrderStatusInfo.Extension =
+            JsonConvert.SerializeObject(dicExt ?? new Dictionary<string, object>());
+
+        await _thirdPartOrderProvider.AddOrderStatusInfoAsync(statusInfoDto);
     }
 
     private async Task<TransactionResultDto> QueryTransactionAsync(string chainId, Transaction transaction)

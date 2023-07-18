@@ -40,7 +40,8 @@ public class OrderStatusInfoGrain : Grain<OrderStatusInfoState>, IOrderStatusInf
         {
             State.RawTransaction = grainDto.RawTransaction;
         }
-        
+
+        State.ThirdPartOrderNo = grainDto.ThirdPartOrderNo;
         State.OrderStatusList.Add(grainDto.OrderStatusInfo);
         await WriteStateAsync();
 

@@ -70,12 +70,12 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
                 "Update Order OrderNo:{MerchantOrderNo}, MerchantOrderNo:{OrderNo}, Status:{Status}, get from alchemy",
                 input.MerchantOrderNo, input.OrderNo, input.Status);
 
-            if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
-            {
-                _logger.LogError("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
-                    input.OrderNo);
-                return new BasicOrderResult();
-            }
+            // if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
+            // {
+            //     _logger.LogError("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
+            //         input.OrderNo);
+            //     return new BasicOrderResult();
+            // }
 
             Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
             var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
@@ -152,12 +152,18 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
     public async Task TransactionAsync(TransactionDto input)
     {
-        VerifySignature(input);
+        if (!VerifyInput(input))
+        {
+            _logger.LogWarning("Transaction input valid failed, orderId:{orderId}", input.OrderId);
+            // await _thirdPartOrderProvider.AddOrderStatusInfoAsync(
+            //     _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+        }
+
         var transactionEto = ObjectMapper.Map<TransactionDto, TransactionEto>(input);
         await _distributedEventBus.PublishAsync(transactionEto);
     }
 
-    private void VerifySignature(TransactionDto input)
+    private bool VerifyInput(TransactionDto input)
     {
         try
         {
@@ -167,12 +173,17 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
 
             if (!CryptoHelper.VerifySignature(signature, data, publicKey))
-                throw new UserFriendlyException("data validation failed");
+            {
+                _logger.LogWarning("data validation failed");
+                return false;
+            }
+
+            return true;
         }
         catch (Exception e)
         {
             Logger.LogError(e, "Input validation internal error");
-            throw new UserFriendlyException("Something was wrong, please try again later!");
+            return false;
         }
     }
 

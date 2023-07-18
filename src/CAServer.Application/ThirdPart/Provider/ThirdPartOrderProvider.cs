@@ -108,11 +108,11 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     {
         var orderStatusGrain = _clusterClient.GetGrain<IOrderStatusInfoGrain>(
             GrainIdHelper.GenerateGrainId(CommonConstant.OrderStatusInfoPrefix, grainDto.OrderId.ToString("N")));
-        var addResult = await orderStatusGrain.AddOrderStatusInfo(new OrderStatusInfoGrainDto());
+        var addResult = await orderStatusGrain.AddOrderStatusInfo(grainDto);
         if (addResult == null) return;
 
-        await _distributedEventBus.PublishAsync(
-            _objectMapper.Map<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>(addResult));
+        var eto = _objectMapper.Map<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>(addResult);
+        await _distributedEventBus.PublishAsync(eto);
     }
 
     public async Task AddOrderStatusInfoAsync(string orderId, OrderStatusInfo orderStatusInfo)

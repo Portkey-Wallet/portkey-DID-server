@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
@@ -176,14 +177,22 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
     public async Task<SendTransactionOutput> SendRawTransaction(string chainId, string rawTransaction)
     {
-        var client = await GetAElfClientAsync(chainId);
-
-        var result = await client.SendTransactionAsync(new SendTransactionInput
+        try
         {
-            RawTransaction = rawTransaction
-        });
+            var client = await GetAElfClientAsync(chainId);
 
-        return result;
+            var result = await client.SendTransactionAsync(new SendTransactionInput
+            {
+                RawTransaction = rawTransaction
+            });
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "send raw transaction fail.");
+            return null;
+        }
     }
 
     public async Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId)

@@ -67,18 +67,25 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 
             await ValidTransactionAsync(transaction, eventData.PublicKey, order);
 
-            if (order.TransactionId.IsNullOrEmpty())
-            {
-                order.TransactionId = transactionId;
-                order.Status = OrderStatusType.StartTransfer.ToString();
-                await _orderRepository.UpdateAsync(order);
-            }
+            order.TransactionId = transactionId;
+            order.Status = OrderStatusType.StartTransfer.ToString();
+
+            await _transactionProvider.UpdateOrderStatusAsync(_objectMapper.Map<RampOrderIndex, OrderDto>(order),
+                OrderStatusType.StartTransfer, eventData.RawTransaction, null);
 
             var chainId = _transactionOptions.SendToChainId;
             //send transaction
-            await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
+            var output = await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
+            if (output == null)
+            {
+                // modify order status
+                _logger.LogWarning("send raw transaction failed. {rawTransaction}", eventData.RawTransaction);
+                return;
+            }
+
             order.Status = OrderStatusType.Transferring.ToString();
-             await _orderRepository.UpdateAsync(order);
+            await _transactionProvider.UpdateOrderStatusAsync(_objectMapper.Map<RampOrderIndex, OrderDto>(order),
+                OrderStatusType.StartTransfer, eventData.RawTransaction, null);
 
             var transactionDto = _objectMapper.Map<TransactionEto, HandleTransactionDto>(eventData);
             transactionDto.ChainId = chainId;
@@ -93,18 +100,18 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         }
     }
 
-    private async Task ValidTransactionAsync(Transaction transaction, string publicKey, RampOrderIndex rampOrder)
+    private async Task ValidTransactionAsync(Transaction transaction, string publicKey, RampOrderIndex order)
     {
         if (!VerifyHelper.VerifySignature(transaction, publicKey))
             throw new UserFriendlyException("RawTransaction validation failed");
 
-        if (rampOrder == null)
+        if (order == null)
             throw new UserFriendlyException("Order not exists");
 
-        if (rampOrder.Status != OrderStatusType.Created.ToString())
+        if (order.Status != OrderStatusType.Created.ToString())
             throw new UserFriendlyException("Order status is NOT Create");
 
-        if (!rampOrder.TransactionId.IsNullOrWhiteSpace())
+        if (!order.TransactionId.IsNullOrWhiteSpace())
             throw new UserFriendlyException("TransactionId exists");
 
         var forwardCallDto =
@@ -113,16 +120,16 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         TransferInput? transferInput;
         if (forwardCallDto == null
             || forwardCallDto.MethodName != "Transfer"
-            || (transferInput = forwardCallDto.Args?.Value as TransferInput) == null)
+            || (transferInput = forwardCallDto.ForwardTransactionArgs?.Value as TransferInput) == null)
             throw new UserFriendlyException("NOT Transfer-ManagerForwardCall transaction");
 
-        if (rampOrder.Address.IsNullOrEmpty())
+        if (order.Address.IsNullOrEmpty())
             throw new UserFriendlyException("Order address not exists");
 
-        if (transferInput.To.ToBase58() != rampOrder.Address)
+        if (transferInput.To.ToBase58() != order.Address)
             throw new UserFriendlyException("Transfer address not match");
 
-        if (transferInput.Symbol != rampOrder.Crypto)
+        if (transferInput.Symbol != order.Crypto)
             throw new UserFriendlyException("Transfer symbol not match");
 
         var decimalsList = await _activityProvider.GetTokenDecimalsAsync(transferInput.Symbol);
@@ -131,7 +138,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         var decimals = decimalsList.TokenInfo.First().Decimals;
 
         var amount = transferInput.Amount / Math.Pow(10, decimals);
-        if (amount - double.Parse(rampOrder.CryptoQuantity) != 0)
+        if (amount - double.Parse(order.CryptoQuantity) != 0)
             throw new UserFriendlyException("Transfer amount NOT match");
     }
 }

@@ -16,6 +16,7 @@ public enum TransferDirectionType
 
 public enum OrderStatusType
 {
+    Initialized,
     Created,
     Canceled,
     Expired,

@@ -119,6 +119,19 @@ public class ContractAppService : IContractAppService
 
             return;
         }
+        
+        if (!resultCreateCaHolder.Logs.Select(l => l.Name).Contains("CAHolderCreated"))
+        {
+            registerResult.RegisterMessage = "Transaction status: FAILED" +  ". Error: Verification failed";
+            registerResult.RegisterSuccess = false;
+
+            _logger.LogInformation("Register state pushed: " + "\n{result}",
+                JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+
+            await _distributedEventBus.PublishAsync(registerResult);
+
+            return;
+        }
 
         var outputGetHolderInfo =
             await _contractProvider.GetHolderInfoFromChainAsync(createHolderDto.ChainId,
@@ -186,6 +199,19 @@ public class ContractAppService : IContractAppService
         {
             recoveryResult.RecoveryMessage = "Transaction status: " + resultSocialRecovery.Status + ". Error: " +
                                              resultSocialRecovery.Error;
+            recoveryResult.RecoverySuccess = false;
+
+            _logger.LogInformation("Recovery state pushed: " + "\n{result}",
+                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+
+            await _distributedEventBus.PublishAsync(recoveryResult);
+
+            return;
+        }
+        
+        if (!resultSocialRecovery.Logs.Select(l => l.Name).Contains("ManagerInfoSocialRecovered"))
+        {
+            recoveryResult.RecoveryMessage = "Transaction status: FAILED" +  ". Error: Verification failed";
             recoveryResult.RecoverySuccess = false;
 
             _logger.LogInformation("Recovery state pushed: " + "\n{result}",
