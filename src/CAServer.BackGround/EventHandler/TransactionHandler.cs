@@ -88,7 +88,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 
             order.Status = OrderStatusType.Transferring.ToString();
             await _transactionProvider.UpdateOrderStatusAsync(_objectMapper.Map<RampOrderIndex, OrderDto>(order),
-                OrderStatusType.StartTransfer, eventData.RawTransaction, null);
+                OrderStatusType.Transferring, eventData.RawTransaction, null);
 
             var transactionDto = _objectMapper.Map<TransactionEto, HandleTransactionDto>(eventData);
             transactionDto.ChainId = chainId;
