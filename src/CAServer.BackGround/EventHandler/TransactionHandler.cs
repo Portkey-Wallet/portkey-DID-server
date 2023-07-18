@@ -28,7 +28,7 @@ namespace CAServer.BackGround.EventHandler;
 
 public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITransientDependency
 {
-    private readonly INESTRepository<OrderIndex, Guid> _orderRepository;
+    private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<TransactionHandler> _logger;
     private readonly ITransactionProvider _transactionProvider;
@@ -37,7 +37,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
     private readonly IActivityProvider _activityProvider;
     private readonly TransactionOptions _transactionOptions;
 
-    public TransactionHandler(INESTRepository<OrderIndex, Guid> orderRepository,
+    public TransactionHandler(INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         ILogger<TransactionHandler> logger,
         IContractProvider contractProvider,
@@ -65,7 +65,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             //var order = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(eventData.OrderId.ToString());
             var transactionId = transaction.GetHash().ToHex();
 
-            var order = new OrderIndex();
+            var order = new RampOrderIndex();
            // await ValidTransactionAsync(transaction, eventData.PublicKey, order);
 
             if (order.TransactionId.IsNullOrEmpty())
@@ -94,18 +94,18 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         }
     }
 
-    private async Task ValidTransactionAsync(Transaction transaction, string publicKey, OrderIndex order)
+    private async Task ValidTransactionAsync(Transaction transaction, string publicKey, RampOrderIndex rampOrder)
     {
         if (!VerifyHelper.VerifySignature(transaction, publicKey))
             throw new UserFriendlyException("RawTransaction validation failed");
 
-        if (order == null)
+        if (rampOrder == null)
             throw new UserFriendlyException("Order not exists");
 
-        if (order.Status != OrderStatusType.Created.ToString())
+        if (rampOrder.Status != OrderStatusType.Created.ToString())
             throw new UserFriendlyException("Order status is NOT Create");
 
-        if (!order.TransactionId.IsNullOrWhiteSpace())
+        if (!rampOrder.TransactionId.IsNullOrWhiteSpace())
             throw new UserFriendlyException("TransactionId exists");
 
         var forwardCallDto =
@@ -117,13 +117,13 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             || (transferInput = forwardCallDto.Args?.Value as TransferInput) == null)
             throw new UserFriendlyException("NOT Transfer-ManagerForwardCall transaction");
 
-        if (order.Address.IsNullOrEmpty())
+        if (rampOrder.Address.IsNullOrEmpty())
             throw new UserFriendlyException("Order address not exists");
 
-        if (transferInput.To.ToBase58() != order.Address)
+        if (transferInput.To.ToBase58() != rampOrder.Address)
             throw new UserFriendlyException("Transfer address not match");
 
-        if (transferInput.Symbol != order.Crypto)
+        if (transferInput.Symbol != rampOrder.Crypto)
             throw new UserFriendlyException("Transfer symbol not match");
 
         var decimalsList = await _activityProvider.GetTokenDecimalsAsync(transferInput.Symbol);
@@ -132,7 +132,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         var decimals = decimalsList.TokenInfo.First().Decimals;
 
         var amount = transferInput.Amount / Math.Pow(10, decimals);
-        if (amount - double.Parse(order.CryptoQuantity) != 0)
+        if (amount - double.Parse(rampOrder.CryptoQuantity) != 0)
             throw new UserFriendlyException("Transfer amount NOT match");
     }
 }
