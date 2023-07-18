@@ -137,8 +137,8 @@ public class HubService : CAServerAppService, IHubService
                 // stop while disconnected
                 if (_connectionProvider.GetConnectionByClientId(targetClientId) == null)
                 {
-                    _logger.LogWarning("Get third-part order {OrderId} target address STOP, connection disconnected",
-                        orderId);
+                    _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} STOP, connection disconnected",
+                        orderId, callbackMethod);
                     break;
                 }
 
@@ -146,7 +146,7 @@ public class HubService : CAServerAppService, IHubService
                 var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
                 if (esOrderData == null || esOrderData.Id == new Guid())
                 {
-                    _logger.LogError("This order {OrderId} not exists in the es", orderId);
+                    _logger.LogError("This order {OrderId} {CallbackMethod} not exists in the es", orderId, callbackMethod);
                     break;
                 }
 
