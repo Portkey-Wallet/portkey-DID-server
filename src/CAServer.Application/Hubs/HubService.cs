@@ -115,7 +115,8 @@ public class HubService : CAServerAppService, IHubService
     public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
     {
         await RequestConditionOrderAsync(targetClientId, orderId,      
-            esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString(),
+            esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString() 
+                           || esOrderData.Status == OrderStatusType.TransferFailed.ToString(),
             "onOrderTransferredReceived");
     }
 
