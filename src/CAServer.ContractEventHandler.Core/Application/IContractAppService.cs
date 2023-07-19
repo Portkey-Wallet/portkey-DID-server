@@ -120,7 +120,7 @@ public class ContractAppService : IContractAppService
             return;
         }
         
-        if (!resultCreateCaHolder.Logs.Select(l => l.Name).Contains("CAHolderCreated"))
+        if (!resultCreateCaHolder.Logs.Select(l => l.Name).Contains(LogEvent.CAHolderCreated))
         {
             registerResult.RegisterMessage = "Transaction status: FAILED" +  ". Error: Verification failed";
             registerResult.RegisterSuccess = false;
@@ -209,7 +209,7 @@ public class ContractAppService : IContractAppService
             return;
         }
         
-        if (!resultSocialRecovery.Logs.Select(l => l.Name).Contains("ManagerInfoSocialRecovered"))
+        if (!resultSocialRecovery.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
         {
             recoveryResult.RecoveryMessage = "Transaction status: FAILED" +  ". Error: Verification failed";
             recoveryResult.RecoverySuccess = false;
