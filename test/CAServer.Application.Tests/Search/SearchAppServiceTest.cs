@@ -50,7 +50,7 @@ public class SearchAppServiceTest : CAServerApplicationTestBase
         var list = new List<string>
         {
             "usertokenindex", "contactindex", "chainsinfoindex", "accountrecoverindex",
-            "accountregisterindex", "orderindex", "notifyrulesindex"
+            "accountregisterindex", "ramporderindex", "notifyrulesindex"
         };
         foreach (var indexName in list)
         {
