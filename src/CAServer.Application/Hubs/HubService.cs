@@ -116,7 +116,8 @@ public class HubService : CAServerAppService, IHubService
     {
         await RequestConditionOrderAsync(targetClientId, orderId,      
             esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString() 
-                           || esOrderData.Status == OrderStatusType.TransferFailed.ToString(),
+                           || esOrderData.Status == OrderStatusType.TransferFailed.ToString()
+                           || esOrderData.Status == OrderStatusType.Invalid.ToString(),
             "onOrderTransferredReceived");
     }
 
