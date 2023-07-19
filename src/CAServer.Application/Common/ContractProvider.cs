@@ -27,7 +27,7 @@ public interface IContractProvider
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
     public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
-    Task<SendTransactionOutput> SendRawTransaction(string chainId, string rawTransaction);
+    Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
 }
 
@@ -175,7 +175,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
-    public async Task<SendTransactionOutput> SendRawTransaction(string chainId, string rawTransaction)
+    public async Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction)
     {
         var client = await GetAElfClientAsync(chainId);
         var result = await client.SendTransactionAsync(new SendTransactionInput

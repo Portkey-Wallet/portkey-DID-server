@@ -75,7 +75,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             });
 
             var chainId = _transactionOptions.SendToChainId;
-            await _contractProvider.SendRawTransaction(chainId, eventData.RawTransaction);
+            await _contractProvider.SendRawTransactionAsync(chainId, eventData.RawTransaction);
 
             order.Status = OrderStatusType.Transferring.ToString();
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto

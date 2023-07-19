@@ -61,7 +61,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             while (transactionResult.Status == TransactionState.NotExisted && times < _transactionOptions.RetryTime)
             {
                 times++;
-                await _contractProvider.SendRawTransaction(transactionDto.ChainId, transaction.ToByteArray().ToHex());
+                await _contractProvider.SendRawTransactionAsync(transactionDto.ChainId, transaction.ToByteArray().ToHex());
                 transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
             }
 
