@@ -96,7 +96,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 
             // send to ach
             await SendToAlchemyAsync(transactionDto.MerchantName, transactionDto.OrderId.ToString(),
-                transaction.ToByteArray().ToHex());
+                transaction.GetHash().ToHex());
         }
         catch (Exception e)
         {
