@@ -59,7 +59,11 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
 
             var grainDto = getGrainResult.Data;
             grainDto.Status = orderStatusDto.Status.ToString();
-            grainDto.TransactionId = orderStatusDto.Order.TransactionId;
+
+            if (string.IsNullOrWhiteSpace(grainDto.TransactionId))
+            {
+                grainDto.TransactionId = orderStatusDto.Order.TransactionId;
+            }
             grainDto.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
 
             var result = await orderGrain.UpdateOrderAsync(grainDto);
