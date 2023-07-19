@@ -10,6 +10,7 @@ using AElf.Types;
 using CAServer.Common;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Shouldly;
@@ -50,27 +51,28 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         forwardCallDto.ForwardTransaction.MethodName.ShouldBe("Transfer");
     }
     
-    [Fact]
+    // [Fact]
     public async void MakeManagerForwardCal()
     {
         var tokenAddress = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE";
         var caAddress = "2u6Dd139bHvZJdZ835XnNKL5y6cxqzV9PEWD5fZdQXdFZLgevc";
-        var caHash = "e5c60d9e360a7e90fd3651e8e3eb1bc8eb40a37ce2f7ec478db62c784c251cce";
-        var pk = "09ff2d585dd73238a64574977057e2f539a0bb9ed749c055a45acac33624d121";
+        
+        var caHash = "ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e";
+        var pk = "191912fcda8996fda0397daf3b0b1eee840b1592c6756a1751723f98cd54812c";
         var user = new UserWrapper(new AElfClient("http://192.168.67.18:8000"), pk);
-        var orderId = "eb076556-9250-74b6-647b-3a0bea35f17a";
+        var orderId = "5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e";
         var transferRawTransaction = await user.CreateRawTransactionAsync( 
             tokenAddress, 
             "Transfer",
             new Dictionary<string, object>()
             {
-                ["to"] = user.AddressObj(),
+                ["to"] = AelfAddressHelper.ToAddressObj("jj4LacoSa95nFjdFUjsGy8NFk97Ss1RLebee5QnefY7zTYQNT"),
                 ["symbol"] = "ELF",
                 ["amount"] = 300_0000_0000,
             });
         
         var rawTransaction = await user.CreateRawTransactionAsync(
-            "2u6Dd139bHvZJdZ835XnNKL5y6cxqzV9PEWD5fZdQXdFZLgevc",
+            caAddress,
             "ManagerForwardCall",
             new Dictionary<string, object>
             {
@@ -79,8 +81,12 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
                 ["method_name"] = "Transfer",
                 ["args"] = UserWrapper.StringToByteArray(transferRawTransaction.RawTransaction) 
             });
+        
+        var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction.RawTransaction));
+        transaction.Signature = user.GetSignatureWith(transaction.GetHash().ToByteArray());
+        var rawTransactionHex = transaction.ToByteArray().ToHex();
 
-        var data = orderId + rawTransaction.RawTransaction;
+        var data = orderId + rawTransactionHex;
         var md5 = EncryptionHelper.MD5Encrypt32(data);
         var text = Encoding.UTF8.GetBytes(md5).ComputeHash();
         var sign = user.GetSignatureWith(text).ToHex();
@@ -89,7 +95,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         {
             ["merchantName"] = "Alchemy",
             ["orderId"] = orderId,
-            ["rawTransaction"] = rawTransaction.RawTransaction,
+            ["rawTransaction"] = rawTransactionHex,
             ["publicKey"] = user.PublicKey,
             ["signature"] = sign
         }));
