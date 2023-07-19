@@ -142,7 +142,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         var decimals = decimalsList.TokenInfo.First().Decimals;
 
         var amount = transferInput.Amount / Math.Pow(10, decimals);
-        if (amount - double.Parse(order.CryptoQuantity) != 0)
+        if (amount - double.Parse(order.CryptoAmount) != 0)
             throw new UserFriendlyException("Transfer amount NOT match");
     }
 }
