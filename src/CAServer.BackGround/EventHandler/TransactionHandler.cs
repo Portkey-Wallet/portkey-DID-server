@@ -24,7 +24,6 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 {
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<TransactionHandler> _logger;
-    private readonly ITransactionProvider _transactionProvider;
     private readonly IContractProvider _contractProvider;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IActivityProvider _activityProvider;
@@ -37,7 +36,6 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         IContractProvider contractProvider,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IActivityProvider activityProvider,
-        ITransactionProvider transactionProvider,
         IOptionsSnapshot<TransactionOptions> options,
         IOrderStatusProvider orderStatusProvider)
     {
@@ -46,7 +44,6 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         _contractProvider = contractProvider;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _activityProvider = activityProvider;
-        _transactionProvider = transactionProvider;
         _transactionOptions = options.Value;
         _orderStatusProvider = orderStatusProvider;
     }

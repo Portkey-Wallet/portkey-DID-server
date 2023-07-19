@@ -54,7 +54,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionDto.RawTransaction));
         var transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
 
-        // when to retry transaction, not existed-> retry  pending->wait for long  notinvaldidd->give up
+        // not existed->retry  pending->wait  other->fail
         var times = 0;
         while (transactionResult.Status == TransactionState.NotExisted && times < _transactionOptions.RetryTime)
         {
@@ -100,9 +100,11 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     public async Task HandleUnCompletedOrdersAsync()
     {
         var orders = await _thirdPartOrderProvider.GetUnCompletedThirdPartOrdersAsync();
-        _logger.LogInformation("{time}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        var count = orders?.Count ?? 0;
+        _logger.LogInformation("Get uncompleted order from es, time: {time}, count: {count}",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), count);
 
-        if (orders == null || orders.Count == 0) return;
+        if (count == 0) return;
 
         foreach (var order in orders)
         {
@@ -142,6 +144,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         if (order.Status != OrderStatusType.Transferred.ToString() &&
             order.Status != OrderStatusType.StartTransfer.ToString() &&
             order.Status != OrderStatusType.Transferring.ToString() &&
+            order.Status != OrderStatusType.TransferFailed.ToString() &&
             order.Status != achOrderStatus)
         {
             await _orderStatusProvider.AddOrderStatusInfoAsync(
