@@ -45,7 +45,7 @@ public class ThirdPartHandlerTests : CAServerEntityEventHandlerTestBase
         };
         await _eventBus.PublishAsync(order);
 
-        var result = await _searchAppService.GetListByLucenceAsync("orderindex", new GetListInput()
+        var result = await _searchAppService.GetListByLucenceAsync("ramporderindex", new GetListInput()
         {
             MaxResultCount = 1
         });

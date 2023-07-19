@@ -152,7 +152,7 @@ public class AccountRegisterSearchService : SearchService<AccountRegisterIndex, 
 public class OrderSearchService : SearchService<RampOrderIndex, Guid>
 {
     private readonly IndexSettingOptions _indexSettingOptions;
-    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.orderindex";
+    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.ramporderindex";
 
     public OrderSearchService(INESTRepository<RampOrderIndex, Guid> nestRepository,
         IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
