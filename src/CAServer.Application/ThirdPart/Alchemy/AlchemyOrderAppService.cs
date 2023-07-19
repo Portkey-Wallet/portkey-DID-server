@@ -5,19 +5,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
-using AElf.Client;
-using AElf.Contracts.MultiToken;
 using AElf.Cryptography;
-using AElf.Types;
-using AElf.Kernel;
 using CAServer.Common;
-using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
-using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -74,12 +68,12 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
                 "Update Order OrderNo:{MerchantOrderNo}, MerchantOrderNo:{OrderNo}, Status:{Status}, get from alchemy",
                 input.MerchantOrderNo, input.OrderNo, input.Status);
 
-            // if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
-            // {
-            //     _logger.LogError("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
-            //         input.OrderNo);
-            //     return new BasicOrderResult();
-            // }
+            if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
+            {
+                _logger.LogError("Alchemy signature check failed, OrderNo: {orderNo} will not update.",
+                    input.OrderNo);
+                return new BasicOrderResult();
+            }
 
             Guid grainId = ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
             var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
