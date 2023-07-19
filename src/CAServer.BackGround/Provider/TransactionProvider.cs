@@ -62,6 +62,8 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             {
                 times++;
                 await _contractProvider.SendRawTransactionAsync(transactionDto.ChainId, transaction.ToByteArray().ToHex());
+
+                await Task.Delay(_transactionOptions.DelayTime); 
                 transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
             }
 
