@@ -60,7 +60,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         var caHash = "ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e";
         var pk = "191912fcda8996fda0397daf3b0b1eee840b1592c6756a1751723f98cd54812c";
         var user = new UserWrapper(new AElfClient("http://192.168.67.18:8000"), pk);
-        var orderId = "5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e";
+        var orderId = "857569b8-7b73-e65d-36d3-3a0c7f872113";
         var transferRawTransaction = await user.CreateRawTransactionAsync( 
             tokenAddress, 
             "Transfer",
@@ -68,7 +68,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
             {
                 ["to"] = AelfAddressHelper.ToAddressObj("jj4LacoSa95nFjdFUjsGy8NFk97Ss1RLebee5QnefY7zTYQNT"),
                 ["symbol"] = "ELF",
-                ["amount"] = 300_0000_0000,
+                ["amount"] = 1_0000_0000,
             });
         var transferTx = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transferRawTransaction.RawTransaction));
         

@@ -70,7 +70,8 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             {
                 Order = _objectMapper.Map<RampOrderIndex, OrderDto>(order),
                 Status = OrderStatusType.StartTransfer,
-                RawTransaction = eventData.RawTransaction
+                RawTransaction = eventData.RawTransaction,
+                DicExt = new Dictionary<string, object> { ["TransactionId"] = order.TransactionId }
             });
 
             var chainId = _transactionOptions.SendToChainId;
