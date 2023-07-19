@@ -59,6 +59,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
 
             var grainDto = getGrainResult.Data;
             grainDto.Status = orderStatusDto.Status.ToString();
+            grainDto.TransactionId = orderStatusDto.Order.TransactionId;
             grainDto.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
 
             var result = await orderGrain.UpdateOrderAsync(grainDto);
@@ -73,6 +74,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
                 false);
 
             var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
+            statusInfoDto.RawTransaction = orderStatusDto.RawTransaction; 
             statusInfoDto.OrderStatusInfo.Extension =
                 JsonConvert.SerializeObject(orderStatusDto.DicExt ?? new Dictionary<string, object>());
 
