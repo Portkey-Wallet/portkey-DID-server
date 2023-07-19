@@ -44,14 +44,13 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async void DecodeManagerForwardCall()
     {
-        var rawTransaction = "0a220a203e1f7576c33fb1f8dc90f1ffd7775691d182ce99456d12f01aedf871014c22b412220a20e28c0b6c4145f3534431326f3c6d5a4bd6006632fd7551c26c103c368855531618b28c860d2204454729292a124d616e61676572466f727761726443616c6c3286010a220a20ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e7366657222320a220a20a7376d782cdf1b1caa2f8b5f56716209045cd5720b912e8441b4404427656cb91203454c461880a0be819501220082f10441117a69f02d7cd07d00f5702cd45b14074092c88cd8fb47acab1a3f2a7613fed01b1b163ebf876e74af193449282aaefa8a995c8fa8f45c6dcb1b427a32bf350201";
+        var rawTransaction = "0a220a20e53eff822ad4b33e8ed0356a55e5b8ea83a88afdb15bdedcf52646d8c13209c812220a20f9f90416670ec1a0f2d302c9474d1bc7a475cb08caa366bcca16e2f3d7e549f51892c3800922047f409b182a124d616e61676572466f727761726443616c6c3283010a220a20ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e73666572222f0a220a2061033c0453282232747683ffa571455f5511b5274f2125e2ee226b7fb2ebc9c11203454c461880d88ee16f82f10441709df46da9f835c02abec9ebd3e5d5c4ee03723657b86f10ba30d04f174fd45d543f4c2caa7984f293b5a19c112477a8f153416be902485ae40cb874dfc59fdd01";
         var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction));
         var forwardCallDto = ManagerForwardCallDto<TransferInput>.Decode(transaction);
         forwardCallDto.ForwardTransactionArgs.ShouldNotBeNull();
-        forwardCallDto.ForwardTransaction.MethodName.ShouldBe("Transfer");
     }
     
-    // [Fact]
+    [Fact]
     public async void MakeManagerForwardCal()
     {
         var tokenAddress = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE";
@@ -70,6 +69,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
                 ["symbol"] = "ELF",
                 ["amount"] = 300_0000_0000,
             });
+        var transferTx = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transferRawTransaction.RawTransaction));
         
         var rawTransaction = await user.CreateRawTransactionAsync(
             caAddress,
@@ -79,7 +79,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
                 ["ca_hash"] = new HashObj(caHash),
                 ["contract_address"] = AelfAddressHelper.ToAddressObj(tokenAddress),
                 ["method_name"] = "Transfer",
-                ["args"] = UserWrapper.StringToByteArray(transferRawTransaction.RawTransaction) 
+                ["args"] = UserWrapper.StringToByteArray(transferTx.Params.ToHex()) 
             });
         
         var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction.RawTransaction));
