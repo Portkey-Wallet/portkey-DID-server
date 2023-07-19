@@ -10,6 +10,7 @@ namespace CAServer.ThirdPart.Dtos;
 
 public class ManagerForwardCallDto<T> where T : IMessage<T>
 {
+    private const string ManagerForwardCallMethodName = "ManagerForwardCall";
     public Hash CaHash { get; set; }
     public Address ContractAddress { get; set; }
     public string MethodName { get; set; }
@@ -22,7 +23,7 @@ public class ManagerForwardCallDto<T> where T : IMessage<T>
     {
         try
         {
-            if (transaction == null || !transaction.MethodName.Equals("ManagerForwardCall"))
+            if (transaction == null || !transaction.MethodName.Equals(ManagerForwardCallMethodName))
                 throw new Exception("NOT ManagerForwardCall transaction");
 
             var param = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
