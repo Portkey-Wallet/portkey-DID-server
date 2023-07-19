@@ -11,7 +11,7 @@ public class ThirdPartOptions
 public class ThirdPartTimerOptions
 {
     public int DelaySeconds { get; set; } = 1;
-    public int TimeoutMillis { get; set; } = 5000;
+    public int TimeoutMillis { get; set; } = 60000;
     
     public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
 }
