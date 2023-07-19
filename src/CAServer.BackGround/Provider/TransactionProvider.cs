@@ -50,51 +50,59 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 
     public async Task HandleTransactionAsync(HandleTransactionDto transactionDto)
     {
-        var transaction =
-            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionDto.RawTransaction));
-        var transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
-
-        // not existed->retry  pending->wait  other->fail
-        var times = 0;
-        while (transactionResult.Status == TransactionState.NotExisted && times < _transactionOptions.RetryTime)
+        try
         {
-            times++;
-            await _contractProvider.SendRawTransaction(transactionDto.ChainId, transaction.ToByteArray().ToHex());
-            transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
+            var transaction =
+                Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transactionDto.RawTransaction));
+            var transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
+
+            // not existed->retry  pending->wait  other->fail
+            var times = 0;
+            while (transactionResult.Status == TransactionState.NotExisted && times < _transactionOptions.RetryTime)
+            {
+                times++;
+                await _contractProvider.SendRawTransaction(transactionDto.ChainId, transaction.ToByteArray().ToHex());
+                transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
+            }
+
+            var status = transactionResult.Status == TransactionState.Mined
+                ? OrderStatusType.Transferred
+                : OrderStatusType.TransferFailed;
+
+            var dicExt = new Dictionary<string, object>();
+            if (transactionResult.Status != TransactionState.Mined)
+            {
+                dicExt.Add("transactionError", transactionResult.Error);
+            }
+
+            var orderStatusUpdateDto = new OrderStatusUpdateDto()
+            {
+                OrderId = transactionDto.OrderId.ToString(),
+                Status = status,
+                RawTransaction = transactionDto.RawTransaction,
+                DicExt = dicExt
+            };
+
+            await _orderStatusProvider.UpdateOrderStatusAsync(orderStatusUpdateDto);
+
+            if (transactionResult.Status != TransactionState.Mined)
+            {
+                _logger.LogWarning(
+                    "Transaction handle fail, orderId:{orderId}, transactionId:{transactionId}, status:{status}",
+                    transactionDto.OrderId.ToString(), transaction.GetHash().ToHex(), transactionResult.Status);
+
+                return;
+            }
+
+            // send to ach
+            await SendToAlchemyAsync(transactionDto.MerchantName, transactionDto.OrderId.ToString(),
+                transaction.ToByteArray().ToHex());
         }
-
-        var status = transactionResult.Status == TransactionState.Mined
-            ? OrderStatusType.Transferred
-            : OrderStatusType.TransferFailed;
-
-        var dicExt = new Dictionary<string, object>();
-        if (transactionResult.Status != TransactionState.Mined)
+        catch (Exception e)
         {
-            dicExt.Add("transactionError", transactionResult.Error);
+            _logger.LogError(e, "handle transaction job fail, orderId:{orderId}, rawTransaction:{rawTransaction}",
+                transactionDto.OrderId.ToString(), transactionDto.RawTransaction);
         }
-
-        var orderStatusUpdateDto = new OrderStatusUpdateDto()
-        {
-            OrderId = transactionDto.OrderId.ToString(),
-            Status = status,
-            RawTransaction = transactionDto.RawTransaction,
-            DicExt = dicExt
-        };
-
-        await _orderStatusProvider.UpdateOrderStatusAsync(orderStatusUpdateDto);
-
-        if (transactionResult.Status != TransactionState.Mined)
-        {
-            _logger.LogWarning(
-                "Transaction handle fail, orderId:{orderId}, transactionId:{transactionId}, status:{status}",
-                transactionDto.OrderId.ToString(), transaction.GetHash().ToHex(), transactionResult.Status);
-
-            return;
-        }
-
-        // send to ach
-        await SendToAlchemyAsync(transactionDto.MerchantName, transactionDto.OrderId.ToString(),
-            transaction.ToByteArray().ToHex());
     }
 
     public async Task HandleUnCompletedOrdersAsync()
@@ -147,8 +155,25 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             order.Status != OrderStatusType.TransferFailed.ToString() &&
             order.Status != achOrderStatus)
         {
-            await _orderStatusProvider.AddOrderStatusInfoAsync(
-                _objectMapper.Map<OrderDto, OrderStatusInfoGrainDto>(order));
+            await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
+            {
+                OrderId = order.Id.ToString(),
+                Order = order,
+                Status = (OrderStatusType) Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
+            });
+            return;
+        }
+
+        if (order.Status == OrderStatusType.Transferred.ToString() &&
+            achOrderStatus != OrderStatusType.Created.ToString())
+        {
+            await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
+            {
+                OrderId = order.Id.ToString(),
+                Order = order,
+                Status = (OrderStatusType) Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
+            });
+            return;
         }
 
         var isOverInterval = long.Parse(TimeStampHelper.GetTimeStampInMilliseconds()) -
