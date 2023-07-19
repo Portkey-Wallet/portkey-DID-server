@@ -194,7 +194,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
     }
 
-    public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfo(OrderDto input)
+    public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfoAsync(OrderDto input)
     {
         try
         {

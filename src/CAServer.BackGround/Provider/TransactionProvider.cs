@@ -119,7 +119,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             try
             {
                 // get status from ach.
-                var orderInfo = await _alchemyOrderService.QueryAlchemyOrderInfo(order);
+                var orderInfo = await _alchemyOrderService.QueryAlchemyOrderInfoAsync(order);
                 if (orderInfo == null || string.IsNullOrWhiteSpace(orderInfo.OrderNo)) continue;
 
                 var achOrderStatus = AlchemyHelper.GetOrderStatus(orderInfo.Status);
