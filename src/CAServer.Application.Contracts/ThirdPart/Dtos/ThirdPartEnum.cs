@@ -16,6 +16,7 @@ public enum TransferDirectionType
 
 public enum OrderStatusType
 {
+    Unknown,
     Initialized,
     Created,
     Invalid,
@@ -25,7 +26,6 @@ public enum OrderStatusType
     Failed,
     Pending,
     Refunded,
-    Unknown,
     StartTransfer,
     Transferring,
     Transferred,

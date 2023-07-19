@@ -131,7 +131,6 @@ public class QueryAlchemyOrderInfo
     public string Email { get; set; }
     public string OrderAddress { get; set; }
     public string CryptoActualAmount { get; set; }
-    // public string Rampfee { get; set; }
     public string RampFee { get; set; }
     public string PaymentType { get; set; }
     public string Name { get; set; }
@@ -142,7 +141,6 @@ public class QueryAlchemyOrderInfo
     public string Amount { get; set; }
     public string TxTime { get; set; }
     public string Networkfee { get; set; }
-    // public string NetworkFee { get; set; }
     public string PayType { get; set; }
     public string CryptoQuantity { get; set; }
 }
