@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CAServer.Bookmark.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Volo.Abp;
 using Xunit;
 using Xunit.Sdk;
 
@@ -18,6 +20,12 @@ public sealed class BookmarkAppServiceTest : CAServerApplicationTestBase
         _bookmarkAppService = GetRequiredService<BookmarkAppService>();
     }
 
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetMockAbpDistributedLock());
+    }
+    
     [Fact]
     public async void CreateTest()
     {
@@ -92,6 +100,17 @@ public sealed class BookmarkAppServiceTest : CAServerApplicationTestBase
 
         #endregion
 
+        #region query page
+        var getPage = await _bookmarkAppService.GetBookmarksAsync(new GetBookmarksDto()
+        {
+            SkipCount = 10,
+            MaxResultCount = 10,
+        });
+        getPage.TotalCount.ShouldBe(101);
+        getPage.Items.Count().ShouldBe(10);
+        getPage.Items[0].Name.ShouldBe("name_90");
+        #endregion
+        
         #region delete last 2 items
         
         var list = await _bookmarkAppService.GetBookmarksAsync(new GetBookmarksDto()
@@ -160,7 +179,7 @@ public sealed class BookmarkAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async void QueryPage()
     {
-        for (var i = 0 ; i < 12 ; i++ )
+        for (var i = 0; i < 12; i++)
         {
             await _bookmarkAppService.CreateAsync(new CreateBookmarkDto()
             {
@@ -169,25 +188,74 @@ public sealed class BookmarkAppServiceTest : CAServerApplicationTestBase
             });
         }
 
-        try
+        var pageResult = await _bookmarkAppService.GetBookmarksAsync(new()
         {
+            SkipCount = 3,
+            MaxResultCount = 8
+        });
 
-            var pageResult = await _bookmarkAppService.GetBookmarksAsync(new()
+        pageResult.TotalCount.ShouldBe(12);
+        pageResult.Items.Count.ShouldBe(8);
+
+        pageResult = await _bookmarkAppService.GetBookmarksAsync(new()
+        {
+            SkipCount = 13,
+            MaxResultCount = 10
+        });
+        pageResult.TotalCount.ShouldBe(12);
+        pageResult.Items.Count.ShouldBe(0);
+        
+    }
+
+    [Fact]
+    public async void DistributedLockTestCreate()
+    {
+        var tasks = new List<Task>();
+        for (var i = 0; i < 12; i++)
+            tasks.Add(_bookmarkAppService.CreateAsync(new CreateBookmarkDto()
             {
-                SkipCount = 3,
-                MaxResultCount = 8
-            });
+                Name = "name_" + i,
+                Url = "url_" + i
+            }));
 
-            pageResult.TotalCount.ShouldBe(12);
-            pageResult.Items.Count.ShouldBe(8);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-            throw;
-        }
+        var exception = await Assert.ThrowsAsync<UserFriendlyException>(() => Task.WhenAll(tasks));
+        exception.ShouldNotBeNull();
+        exception.Message.ShouldContain("Get lock fail");
     }
     
+    [Fact]
+    public async void DistributedLockTestDelete()
+    {
+        var tasks = new List<Task>();
+        for (var i = 0; i < 12; i++)
+            tasks.Add(_bookmarkAppService.DeleteAsync());
+
+        var exception = await Assert.ThrowsAsync<UserFriendlyException>(() => Task.WhenAll(tasks));
+        exception.ShouldNotBeNull();
+        exception.Message.ShouldContain("Get lock fail");
+    }
     
+    [Fact]
+    public async void DistributedLockTestDeleteList()
+    {
+        var tasks = new List<Task>();
+        for (var i = 0; i < 12; i++)
+            tasks.Add(_bookmarkAppService.DeleteListAsync(new DeleteBookmarkDto()
+            {
+                DeleteInfos = new List<BookmarkInfo>()
+                {
+                    new BookmarkInfo()
+                    {
+                        Id = Guid.Empty,
+                        Index = i
+                    }
+                }
+            }));
+
+        var exception = await Assert.ThrowsAsync<UserFriendlyException>(() => Task.WhenAll(tasks));
+        exception.ShouldNotBeNull();
+        exception.Message.ShouldContain("Get lock fail");
+    }
     
+
 }

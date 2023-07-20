@@ -72,6 +72,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
         var indexCountList = await metaGrain.GetIndexCount();
         var skipCount = input.SkipCount;
         var tailIdx = indexCountList.Count - 1;
+        var totalCount = indexCountList.Select(i => i.Item2).Sum();
 
         // find tailIdx by skipCount as startIndex
         while (tailIdx >= 0 && skipCount >= indexCountList[tailIdx].Item2)
@@ -79,7 +80,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
         // skipped all data
         if (tailIdx < 0)
-            return new PagedResultDto<BookmarkResultDto>(0, new List<BookmarkResultDto>());
+            return new PagedResultDto<BookmarkResultDto>(totalCount, new List<BookmarkResultDto>());
 
         // from tail to head
         var resultList = new List<BookmarkResultDto>();
@@ -99,7 +100,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
         return new PagedResultDto<BookmarkResultDto>
         {
-            TotalCount = indexCountList.Select(i => i.Item2).Sum(),
+            TotalCount = totalCount,
             Items = resultList
         };
     }
