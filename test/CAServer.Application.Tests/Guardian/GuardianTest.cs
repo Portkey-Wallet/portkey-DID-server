@@ -136,6 +136,23 @@ public partial class GuardianTest : CAServerApplicationTestBase
     }
 
     [Fact]
+    public async Task GetRegisterInfo_Params_Test()
+    {
+        try
+        {
+            await _guardianAppService.GetRegisterInfoAsync(new RegisterInfoDto()
+            {
+                LoginGuardianIdentifier = string.Empty,
+                CaHash = string.Empty
+            });
+        }
+        catch (Exception e)
+        {
+            Assert.True(e is AbpValidationException);
+        }
+    }
+
+    [Fact]
     public async Task GetRegisterInfo_Guardian_Not_Exist_Test()
     {
         try
@@ -147,7 +164,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
                 GuardianList = new GuardianBaseListDto(),
                 ManagerInfos = new List<ManagerInfoDBase>()
             };
-            
+
             await _guardianAppService.GetRegisterInfoAsync(new RegisterInfoDto()
             {
                 LoginGuardianIdentifier = _identifier,
