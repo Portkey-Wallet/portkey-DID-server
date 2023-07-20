@@ -12,9 +12,12 @@ using Hangfire.Dashboard;
 using Hangfire.Mongo;
 using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
+using Medallion.Threading;
+using Medallion.Threading.Redis;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
+using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.Account;
 using Volo.Abp.AspNetCore.Mvc;
@@ -26,6 +29,7 @@ using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.PermissionManagement;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
@@ -68,6 +72,8 @@ public class CABackGroundModule : AbpModule
         context.Services.AddSingleton<IHostedService, InitJobsService>();
         Configure<TransactionOptions>(configuration.GetSection("Transaction"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        ConfigureTokenCleanupService();
+        ConfigureDistributedLocking(context, configuration);
     }
 
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
@@ -159,7 +165,7 @@ public class CABackGroundModule : AbpModule
             // IsReadOnlyFunc = (DashboardContext context) => true
         });
         
-        StartOrleans(context.ServiceProvider);
+        //StartOrleans(context.ServiceProvider);
     }
     
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
@@ -177,5 +183,22 @@ public class CABackGroundModule : AbpModule
     {
         var client = serviceProvider.GetRequiredService<IClusterClient>();
         AsyncHelper.RunSync(client.Close);
+    }
+    
+    private void ConfigureTokenCleanupService()
+    {
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+    }
+    
+    private void ConfigureDistributedLocking(
+        ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddSingleton<IDistributedLockProvider>(sp =>
+        {
+            var connection = ConnectionMultiplexer
+                .Connect(configuration["Redis:Configuration"]);
+            return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
+        });
     }
 }
