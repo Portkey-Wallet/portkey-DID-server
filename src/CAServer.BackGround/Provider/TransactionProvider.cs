@@ -4,6 +4,7 @@ using AElf.Types;
 using CAServer.BackGround.Dtos;
 using CAServer.BackGround.Options;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart;
@@ -61,9 +62,10 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             while (transactionResult.Status == TransactionState.NotExisted && times < _transactionOptions.RetryTime)
             {
                 times++;
-                await _contractProvider.SendRawTransactionAsync(transactionDto.ChainId, transaction.ToByteArray().ToHex());
+                await _contractProvider.SendRawTransactionAsync(transactionDto.ChainId,
+                    transaction.ToByteArray().ToHex());
 
-                await Task.Delay(_transactionOptions.DelayTime); 
+                await Task.Delay(_transactionOptions.DelayTime);
                 transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
             }
 
@@ -161,7 +163,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             {
                 OrderId = order.Id.ToString(),
                 Order = order,
-                Status = (OrderStatusType) Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
+                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
             });
             return;
         }
@@ -173,12 +175,12 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             {
                 OrderId = order.Id.ToString(),
                 Order = order,
-                Status = (OrderStatusType) Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
+                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
             });
             return;
         }
 
-        var isOverInterval = long.Parse(TimeStampHelper.GetTimeStampInMilliseconds()) -
+        var isOverInterval = long.Parse(TimeHelper.GetTimeStampInMilliseconds().ToString()) -
                              long.Parse(order.LastModifyTime) >
                              _transactionOptions.ResendTimeInterval * 1000;
 
