@@ -106,9 +106,12 @@ public class CAVerifierController : CAServerController
             return null;
         }
 
-        var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
-
-
+        var isInWhiteList = true;
+        if (!_webHostEnvironment.IsDevelopment())
+        {
+            isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
+        }
+        
         if (isInWhiteList)
         {
             return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
