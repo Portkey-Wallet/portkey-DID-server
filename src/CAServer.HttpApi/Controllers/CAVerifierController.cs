@@ -34,13 +34,11 @@ public class CAVerifierController : CAServerController
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
-    private readonly IWebHostEnvironment _webHostEnvironment;
     private const string CurrentVersion = "v1.3.0";
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
-        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService,
-        IWebHostEnvironment webHostEnvironment)
+        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
@@ -49,7 +47,6 @@ public class CAVerifierController : CAServerController
         _googleAppService = googleAppService;
         _currentUser = currentUser;
         _ipWhiteListAppService = ipWhiteListAppService;
-        _webHostEnvironment = webHostEnvironment;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -106,12 +103,8 @@ public class CAVerifierController : CAServerController
             return null;
         }
 
-        var isInWhiteList = true;
-        if (!_webHostEnvironment.IsDevelopment())
-        {
-            isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
-        }
-        
+        var isInWhiteList = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
+
         if (isInWhiteList)
         {
             return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
@@ -247,12 +240,6 @@ public class CAVerifierController : CAServerController
 
         var userIpAddress = UserIpAddress(HttpContext);
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
-
-        var isDevelopment = _webHostEnvironment.IsDevelopment();
-        if (isDevelopment)
-        {
-            return false;
-        }
 
         var result = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
         if (!result)
