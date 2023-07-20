@@ -46,7 +46,8 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async void DecodeManagerForwardCall()
     {
-        var rawTransaction = "0a220a203e1f7576c33fb1f8dc90f1ffd7775691d182ce99456d12f01aedf871014c22b412220a20e28c0b6c4145f3534431326f3c6d5a4bd6006632fd7551c26c103c368855531618abf9860d220411d0e8922a124d616e61676572466f727761726443616c6c3286010a220a20ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e7366657222320a220a20a7376d782cdf1b1caa2f8b5f56716209045cd5720b912e8441b4404427656cb91203454c461880a0be819501220082f104411d1acf81058c6a65ba0ed78368c815add80349b8e1fd7c4e5e2655c3dbde582833a475408094b486ddd14c6ad0f9c0e01788f209c2d0a1e356792e5bff1d4c2e01";
+        var rawTransaction =
+            "0a220a203e1f7576c33fb1f8dc90f1ffd7775691d182ce99456d12f01aedf871014c22b412220a20e28c0b6c4145f3534431326f3c6d5a4bd6006632fd7551c26c103c368855531618abf9860d220411d0e8922a124d616e61676572466f727761726443616c6c3286010a220a20ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e7366657222320a220a20a7376d782cdf1b1caa2f8b5f56716209045cd5720b912e8441b4404427656cb91203454c461880a0be819501220082f104411d1acf81058c6a65ba0ed78368c815add80349b8e1fd7c4e5e2655c3dbde582833a475408094b486ddd14c6ad0f9c0e01788f209c2d0a1e356792e5bff1d4c2e01";
         var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction));
         var forwardCallDto = ManagerForwardCallDto<TransferInput>.Decode(transaction);
         _testOutputHelper.WriteLine(JsonConvert.SerializeObject(forwardCallDto));
@@ -60,21 +61,20 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         exception.ShouldNotBeNull();
         _testOutputHelper.WriteLine(exception.Result.Message);
         exception.Result.Message.ShouldContain("Convert rawTransaction FAILED");
-
     }
-    
+
     // [Fact]
     public async void MakeManagerForwardCal()
     {
         var tokenAddress = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE";
         var caAddress = "2u6Dd139bHvZJdZ835XnNKL5y6cxqzV9PEWD5fZdQXdFZLgevc";
-        
+
         var caHash = "ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e";
         var pk = "191912fcda8996fda0397daf3b0b1eee840b1592c6756a1751723f98cd54812c";
         var user = new UserWrapper(new AElfClient("http://192.168.67.18:8000"), pk);
         var orderId = "857569b8-7b73-e65d-36d3-3a0c7f872113";
-        var transferRawTransaction = await user.CreateRawTransactionAsync( 
-            tokenAddress, 
+        var transferRawTransaction = await user.CreateRawTransactionAsync(
+            tokenAddress,
             "Transfer",
             new Dictionary<string, object>()
             {
@@ -82,8 +82,9 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
                 ["symbol"] = "ELF",
                 ["amount"] = 1_0000_0000,
             });
-        var transferTx = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transferRawTransaction.RawTransaction));
-        
+        var transferTx =
+            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transferRawTransaction.RawTransaction));
+
         var rawTransaction = await user.CreateRawTransactionAsync(
             caAddress,
             "ManagerForwardCall",
@@ -92,10 +93,11 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
                 ["ca_hash"] = new HashObj(caHash),
                 ["contract_address"] = AelfAddressHelper.ToAddressObj(tokenAddress),
                 ["method_name"] = "Transfer",
-                ["args"] = UserWrapper.StringToByteArray(transferTx.Params.ToHex()) 
+                ["args"] = UserWrapper.StringToByteArray(transferTx.Params.ToHex())
             });
-        
-        var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction.RawTransaction));
+
+        var transaction =
+            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction.RawTransaction));
         transaction.Signature = user.GetSignatureWith(transaction.GetHash().ToByteArray());
         var rawTransactionHex = transaction.ToByteArray().ToHex();
 
@@ -113,8 +115,8 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
             ["signature"] = sign
         }));
     }
-    
-    
+
+
     [Fact]
     public async Task GetThirdPartOrderListAsyncTest()
     {
@@ -155,5 +157,16 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
 
         var orderList = _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, skipCount, maxResultCount);
         orderList.Result.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void TestGetOrderTransDirectForQuery()
+    {
+        var sell = AlchemyHelper.GetOrderTransDirectForQuery("sell");
+        sell.ShouldBe(OrderTransDirect.SELL.ToString());
+        var buy = AlchemyHelper.GetOrderTransDirectForQuery("buy");
+        buy.ShouldBe(OrderTransDirect.BUY.ToString());
+        var defaultVal = AlchemyHelper.GetOrderTransDirectForQuery("test");
+        defaultVal.ShouldBe(OrderTransDirect.SELL.ToString());
     }
 }

@@ -90,16 +90,6 @@ public static class AlchemyHelper
         }
     }
 
-    private static string ComputeHmacSha256(string message, string secretKey)
-    {
-        var encoding = new ASCIIEncoding();
-        var keyByte = encoding.GetBytes(secretKey);
-        var messageBytes = encoding.GetBytes(message);
-        using var hmacSha256 = new HMACSHA256(keyByte);
-        var hashMessage = hmacSha256.ComputeHash(messageBytes);
-        return BitConverter.ToString(hashMessage).Replace("-", "").ToLower();
-    }
-
     public static string GetOrderTransDirectForQuery(string orderDataTransDirect)
     {
         switch (orderDataTransDirect)

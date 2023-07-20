@@ -150,6 +150,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
 
     public async Task TransactionAsync(TransactionDto input)
     {
+        _logger.LogInformation("TransactionAsync start, OrderId: {orderId}", input.OrderId);
         if (!VerifyInput(input))
         {
             _logger.LogWarning("Transaction input valid failed, orderId:{orderId}", input.OrderId);
