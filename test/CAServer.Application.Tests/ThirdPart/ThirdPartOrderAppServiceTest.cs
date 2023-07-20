@@ -14,6 +14,7 @@ using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Shouldly;
+using Volo.Abp;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -49,6 +50,16 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         var forwardCallDto = ManagerForwardCallDto<TransferInput>.Decode(transaction);
         _testOutputHelper.WriteLine(JsonConvert.SerializeObject(forwardCallDto));
         forwardCallDto.ForwardTransactionArgs.ShouldNotBeNull();
+
+        rawTransaction =
+            "0a220a20e53eff822ad4b33e8ed0356a55e5b8ea83a88afdb15bdedcf52646d8c13209c812220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc18b9e0890922041e26c0ba2a085472616e73666572322e0a220a2061033c0453282232747683ffa571455f5511b5274f2125e2ee226b7fb2ebc9c11203454c461880c2d72f";
+        transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction));
+        var expFunc = () => Task.FromResult(ManagerForwardCallDto<TransferInput>.Decode(transaction));
+        var exception = Assert.ThrowsAsync<UserFriendlyException>(expFunc);
+        exception.ShouldNotBeNull();
+        _testOutputHelper.WriteLine(exception.Result.Message);
+        exception.Result.Message.ShouldContain("Convert rawTransaction FAILED");
+
     }
     
     // [Fact]
