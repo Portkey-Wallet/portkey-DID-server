@@ -20,12 +20,14 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     private readonly ILogger<ThirdPartOrderAppService> _logger;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<ThirdPartOrderAppService> logger,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper,
+        IOrderStatusProvider orderStatusProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -33,6 +35,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _objectMapper = objectMapper;
         _objectMapper = objectMapper;
         _logger = logger;
+        _orderStatusProvider = orderStatusProvider;
     }
 
 
@@ -45,8 +48,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);
         orderGrainData.UserId = userId;
         _logger.LogInformation("This third part order {orderId} will be created.", orderId);
-        orderGrainData.Status = OrderStatusType.Created.ToString();
-        orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
+        orderGrainData.Status = OrderStatusType.Initialized.ToString();
+        orderGrainData.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
 
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
         var result = await orderGrain.CreateUserOrderAsync(orderGrainData);
@@ -59,6 +62,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
         await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
 
+        await _orderStatusProvider.AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+
         var resp = _objectMapper.Map<OrderGrainDto, OrderCreatedDto>(result.Data);
         resp.Success = true;
         return resp;
@@ -68,7 +73,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         // var userId = input.UserId;
         var userId = CurrentUser.GetId();
-        
+
         var orderList =
             await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, input.SkipCount,
                 input.MaxResultCount);

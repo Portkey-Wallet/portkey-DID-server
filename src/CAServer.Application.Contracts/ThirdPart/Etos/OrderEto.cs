@@ -30,4 +30,6 @@ public class OrderEto
     // sell order
     public string ReceivingMethod { get; set; }
     public string ReceiptTime { get; set; }
+    
+    public string TransactionId { get; set; }
 }

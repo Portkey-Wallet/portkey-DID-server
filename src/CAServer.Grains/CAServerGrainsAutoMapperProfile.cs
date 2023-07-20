@@ -98,6 +98,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<NotifyGrainDto, NotifyRulesGrainDto>();
         CreateMap<NotifyRulesGrainDto, NotifyRulesState>().ReverseMap();
         CreateMap<NotifyState, NotifyGrainResultDto>().ForMember(d => d.Id, opt => opt.MapFrom(e => e.RulesId));
+        CreateMap<OrderStatusInfoGrainDto, OrderStatusInfoState>();
+        CreateMap<OrderStatusInfoState, OrderStatusInfoGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkResultDto>();
     }

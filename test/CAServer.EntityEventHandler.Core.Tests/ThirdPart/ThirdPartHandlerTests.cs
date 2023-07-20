@@ -45,13 +45,13 @@ public class ThirdPartHandlerTests : CAServerEntityEventHandlerTestBase
         };
         await _eventBus.PublishAsync(order);
 
-        var result = await _searchAppService.GetListByLucenceAsync("orderindex", new GetListInput()
+        var result = await _searchAppService.GetListByLucenceAsync("ramporderindex", new GetListInput()
         {
             MaxResultCount = 1
         });
 
         result.ShouldNotBeNull();
-        var chainInfo = JsonConvert.DeserializeObject<PagedResultDto<OrderIndex>>(result);
+        var chainInfo = JsonConvert.DeserializeObject<PagedResultDto<RampOrderIndex>>(result);
         chainInfo.ShouldNotBeNull();
         chainInfo.Items[0].Status.ShouldBe("test01");
     }

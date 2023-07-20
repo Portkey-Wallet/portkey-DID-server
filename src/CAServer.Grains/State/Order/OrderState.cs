@@ -28,4 +28,6 @@ public class OrderState
     
     public string LastModifyTime { get; set; }
     public bool IsDeleted { get; set; } = false;
+    
+    public string TransactionId { get; set; }
 }
