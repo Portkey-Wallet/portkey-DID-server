@@ -5,6 +5,7 @@ using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Volo.Abp;
+using Volo.Abp.Validation;
 using Xunit;
 
 namespace CAServer.ThirdPart.Alchemy;
@@ -63,6 +64,72 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
         };
         var signResultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(signatureFail);
         signResultFail.Success.ShouldBe(false);
+    }
+
+    [Fact]
+    public async Task UpdateAlchemyOrderAsync_Signature_Is_Null_Test()
+    {
+        try
+        {
+            var input = new AlchemyOrderUpdateDto
+            {
+                MerchantOrderNo = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
+                Status = "1",
+                Address = "Address",
+                Crypto = "Crypto",
+                OrderNo = "OrderNo",
+                Signature = null
+            };
+            await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+        }
+        catch (Exception e)
+        {
+            Assert.True(e is AbpValidationException);
+        }
+    }
+    
+    [Fact]
+    public async Task UpdateAlchemyOrderAsync_MerchantOrderNo_Is_Null_Test()
+    {
+        try
+        {
+            var input = new AlchemyOrderUpdateDto
+            {
+                MerchantOrderNo = null, //MerchantOrderNo = Guid.NewGuid().ToString(),
+                Status = "1",
+                Address = "Address",
+                Crypto = "Crypto",
+                OrderNo = "OrderNo",
+                Signature = "1111111111111111111111111111111111"
+            };
+            await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+        }
+        catch (Exception e)
+        {
+            Assert.True(e is AbpValidationException);
+        }
+    }
+    
+    [Fact]
+    public async Task UpdateAlchemyOrderAsync_Status_Not_Exist_Test()
+    {
+        try
+        {
+            var input = new AlchemyOrderUpdateDto
+            {
+                MerchantOrderNo = null, //MerchantOrderNo = Guid.NewGuid().ToString(),
+                Status = "100",
+                Address = "Address",
+                Crypto = "Crypto",
+                OrderNo = "OrderNo",
+                Signature = "1111111111111111111111111111111111"
+            };
+            await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+        }
+        catch (Exception e)
+        {
+            Assert.True(e is AbpValidationException);
+        }
     }
 
     [Fact]
