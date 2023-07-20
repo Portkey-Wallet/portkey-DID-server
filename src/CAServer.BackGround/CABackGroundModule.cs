@@ -107,7 +107,7 @@ public class CABackGroundModule : AbpModule
                 .UseDashboardMetric(DashboardMetrics.DeletedCount);
         });
     }
-    
+
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
     {
@@ -143,8 +143,8 @@ public class CABackGroundModule : AbpModule
                 .Build();
         });
     }
-    
-    
+
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -164,10 +164,10 @@ public class CABackGroundModule : AbpModule
         {
             // IsReadOnlyFunc = (DashboardContext context) => true
         });
-        
-        //StartOrleans(context.ServiceProvider);
+
+        StartOrleans(context.ServiceProvider);
     }
-    
+
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
         StopOrleans(context.ServiceProvider);
@@ -184,12 +184,12 @@ public class CABackGroundModule : AbpModule
         var client = serviceProvider.GetRequiredService<IClusterClient>();
         AsyncHelper.RunSync(client.Close);
     }
-    
+
     private void ConfigureTokenCleanupService()
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
-    
+
     private void ConfigureDistributedLocking(
         ServiceConfigurationContext context,
         IConfiguration configuration)
