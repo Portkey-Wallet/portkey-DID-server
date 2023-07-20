@@ -21,7 +21,7 @@ public class TransactionFeeAppService : CAServerAppService, ITransactionFeeAppSe
 
     public List<TransactionFeeResultDto> CalculateFee(TransactionFeeDto input)
     {
-        var feeInfos = _transactionFeeOptions.TransactionFees.Where(t => input.ChainIds.Contains(t.ChainId)).ToList();
+        var feeInfos = _transactionFeeOptions.GetTransactionFees().Where(t => input.ChainIds.Contains(t.ChainId)).ToList();
         return ObjectMapper.Map<List<TransactionFeeInfo>, List<TransactionFeeResultDto>>(feeInfos);
     }
 }
