@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Commons;
 
 namespace CAServer.CAAccount.Dtos;
 
@@ -10,7 +11,7 @@ public class TransactionFeeResultDto
 
 public class Fee
 {
-    public double Ach { get; set; }
-    public double CrossChain { get; set; }
-    public double Max { get; set; }
+    public double Ach { get; set; } = CommonConstant.DefaultAchFee;
+    public double CrossChain { get; set; } = CommonConstant.DefaultCrossChainFee;
+    public double Max { get; set; } = CommonConstant.DefaultMaxFee;
 }
