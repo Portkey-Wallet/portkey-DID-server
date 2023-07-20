@@ -248,7 +248,7 @@ public class CAVerifierController : CAServerController
         var isDevelopment = _webHostEnvironment.IsDevelopment();
         if (isDevelopment)
         {
-            return true;
+            return false;
         }
 
         var result = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
