@@ -6,19 +6,19 @@ namespace CAServer.Options;
 
 public class TransactionFeeOptions
 {
-    public List<TransactionFeeInfo> TransactionFees { get; set; } = new List<TransactionFeeInfo>
+    public List<TransactionFeeInfo> TransactionFees { get; set; } = new()
     {
-        new()
+        new TransactionFeeInfo
         {
             ChainId = CommonConstant.MainChainId,
             TransactionFee = new Fee()
         },
-        new()
+        new TransactionFeeInfo
         {
             ChainId = CommonConstant.TDVVChainId,
             TransactionFee = new Fee()
         },
-        new()
+        new TransactionFeeInfo
         {
             ChainId = CommonConstant.TDVWChainId,
             TransactionFee = new Fee()
