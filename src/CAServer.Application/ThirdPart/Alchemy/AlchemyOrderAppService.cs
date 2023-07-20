@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
@@ -92,7 +93,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             dataToBeUpdated.Status = AlchemyHelper.GetOrderStatus(input.Status);
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
-            dataToBeUpdated.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
+            dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
             _logger.LogInformation("This alchemy order {grainId} will be updated.", grainId);
 
             var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);

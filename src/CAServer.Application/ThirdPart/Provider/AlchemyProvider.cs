@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart.Alchemy;
 using Microsoft.Extensions.Logging;
@@ -68,7 +69,7 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
     // Set Alchemy request header with appId timestamp sign.
     private void SetAlchemyRequestHeader(HttpClient client)
     {
-        string timeStamp = TimeStampHelper.GetTimeStampInMilliseconds();
+        string timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
         var sign = GenerateAlchemyApiSign(timeStamp);
         _logger.LogDebug("appId: {AppId}, timeStamp: {TimeStamp}, signature: {Signature}", _alchemyOptions.AppId,
             timeStamp, sign);

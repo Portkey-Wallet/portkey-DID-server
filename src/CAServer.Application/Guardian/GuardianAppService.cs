@@ -7,11 +7,12 @@ using AElf.Types;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -20,6 +21,7 @@ using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer.Guardian;
 
@@ -34,6 +36,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IGuardianProvider _guardianProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IAppleUserProvider _appleUserProvider;
+
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,

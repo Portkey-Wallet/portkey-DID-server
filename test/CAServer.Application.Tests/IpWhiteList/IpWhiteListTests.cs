@@ -21,9 +21,9 @@ public partial class IpWhiteListTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetAddToWhiteListUrlsOptions());
-        base.AfterAddApplication(services);
     }
 
     [Fact]

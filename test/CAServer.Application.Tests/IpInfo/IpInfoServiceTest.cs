@@ -21,6 +21,7 @@ public partial class IpInfoServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetIpInfoClient());
     }
 

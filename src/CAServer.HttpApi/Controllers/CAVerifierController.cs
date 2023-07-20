@@ -1,5 +1,6 @@
 using System;
 using System.Linq.Dynamic.Core;
+using System.Net;
 using System.Threading.Tasks;
 using CAServer.Dtos;
 using CAServer.Google;
@@ -7,8 +8,10 @@ using CAServer.IpWhiteList;
 using CAServer.Switch;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
@@ -31,11 +34,13 @@ public class CAVerifierController : CAServerController
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
+    private readonly IWebHostEnvironment _webHostEnvironment;
     private const string CurrentVersion = "v1.3.0";
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
-        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService)
+        ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService,
+        IWebHostEnvironment webHostEnvironment)
     {
         _verifierAppService = verifierAppService;
         _objectMapper = objectMapper;
@@ -44,6 +49,7 @@ public class CAVerifierController : CAServerController
         _googleAppService = googleAppService;
         _currentUser = currentUser;
         _ipWhiteListAppService = ipWhiteListAppService;
+        _webHostEnvironment = webHostEnvironment;
     }
 
     [HttpPost("sendVerificationRequest")]
@@ -67,12 +73,6 @@ public class CAVerifierController : CAServerController
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
 
-
-        if (type == OperationType.Unknown)
-        {
-            type = OperationType.CreateCAHolder;
-        }
-
         return type switch
         {
             OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
@@ -87,12 +87,14 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
     {
-        if (!_currentUser.IsAuthenticated)
+        if (_currentUser.IsAuthenticated)
         {
-            return null;
+            return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput,
+                operationType);
         }
 
-        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType);
+        HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+        return new VerifierServerResponse();
     }
 
     private async Task<VerifierServerResponse> CheckUserIpAndGoogleRecaptchaAsync(string recaptchaToken,
@@ -227,7 +229,6 @@ public class CAVerifierController : CAServerController
     public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version,
         OperationTypeRequestInput operationTypeRequestInput)
     {
-        
         var type = operationTypeRequestInput.OperationType;
         ValidateOperationType(type);
         if (!string.IsNullOrWhiteSpace(version) && version.Equals(CurrentVersion))
@@ -240,8 +241,15 @@ public class CAVerifierController : CAServerController
                 _ => type
             };
         }
+
         var userIpAddress = UserIpAddress(HttpContext);
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
+
+        var isDevelopment = _webHostEnvironment.IsDevelopment();
+        if (isDevelopment)
+        {
+            return true;
+        }
 
         var result = await _ipWhiteListAppService.IsInWhiteListAsync(userIpAddress);
         if (!result)
