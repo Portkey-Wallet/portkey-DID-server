@@ -21,6 +21,7 @@ public class TokenProviderTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         var graphQlHelper = Substitute.For<IGraphQLHelper>();
         var graphQlClient = Substitute.For<IGraphQLClient>();
         services.AddSingleton(graphQlClient);

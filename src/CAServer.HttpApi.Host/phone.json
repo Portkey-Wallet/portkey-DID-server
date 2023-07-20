@@ -1,40 +1,72 @@
 {
-  "PhoneInfoOptions":{
-    "Default" : {
+  "PhoneInfoOptions": {
+    "Default": {
       "Country": "Singapore",
       "Code": "65",
       "Iso": "SG"
     },
     "PhoneInfo": [
       {
+        "Country": "Bulgaria",
+        "Code": "359",
+        "Iso": "BGR"
+      },
+      {
         "Country": "China",
         "Code": "86",
         "Iso": "CN"
-      },{
+      },
+      {
+        "Country": "Germany",
+        "Code": "49",
+        "Iso": "DEU"
+      },
+      {
         "Country": "Denmark",
         "Code": "45",
         "Iso": "DK"
-      },{
+      },
+      {
+        "Country": "Finland",
+        "Code": "358",
+        "Iso": "FIN"
+      },
+      {
         "Country": "France",
         "Code": "33",
         "Iso": "FR"
-      },{
-        "Country": "Hong Kong",
-        "Code": "852",
-        "Iso": "HK"
-      },{
-        "Country": "Mexico",
-        "Code": "52",
-        "Iso": "MX"
-      },{
-        "Country": "Singapore",
-        "Code": "65",
-        "Iso": "SG"
-      },{
+      },
+      {
         "Country": "United Kingdom",
         "Code": "44",
         "Iso": "GB"
-      },{
+      },
+      {
+        "Country": "Hong Kong",
+        "Code": "852",
+        "Iso": "HK"
+      },
+      {
+        "Country": "Lithuania",
+        "Code": "370",
+        "Iso": "LT"
+      },
+      {
+        "Country": "Latvia",
+        "Code": "371",
+        "Iso": "LVA"
+      },
+      {
+        "Country": "Mexico",
+        "Code": "52",
+        "Iso": "MX"
+      },
+      {
+        "Country": "Singapore",
+        "Code": "65",
+        "Iso": "SG"
+      },
+      {
         "Country": "United States",
         "Code": "1",
         "Iso": "US"

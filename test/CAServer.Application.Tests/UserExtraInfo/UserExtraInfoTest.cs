@@ -25,6 +25,7 @@ public partial class UserExtraInfoTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetJwtSecurityTokenHandlerMock());
         services.AddSingleton(GetHttpClientService());

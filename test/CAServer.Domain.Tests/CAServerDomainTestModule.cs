@@ -38,7 +38,7 @@ public class CAServerDomainTestModule : AbpModule
             options.NumberOfReplicas = 1;
             options.NumberOfShards = 1;
             options.Refresh = Refresh.True;
-            options.IndexPrefix = "CAServer";
+            options.IndexPrefix = "CAServerTest";
         });
     }
     
@@ -53,7 +53,7 @@ public class CAServerDomainTestModule : AbpModule
             foreach (var t in types)
             {
                 AsyncHelper.RunSync(async () =>
-                    await elasticIndexService.DeleteIndexAsync("caserver." + t.Name.ToLower()));
+                    await elasticIndexService.DeleteIndexAsync("caservertest." + t.Name.ToLower()));
             }
         });
     }
