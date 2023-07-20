@@ -111,11 +111,27 @@ public class HubService : CAServerAppService, IHubService
     {
         await _hubCacheProvider.RemoveResponseByClientId(clientId, requestId);
     }
-
+    
+    public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
+    {
+        await RequestConditionOrderAsync(targetClientId, orderId,      
+            esOrderData => esOrderData.Status == OrderStatusType.Transferred.ToString() 
+                           || esOrderData.Status == OrderStatusType.TransferFailed.ToString()
+                           || esOrderData.Status == OrderStatusType.Invalid.ToString(),
+            "onOrderTransferredReceived");
+    }
 
     public async Task RequestAchTxAddressAsync(string targetClientId, string orderId)
     {
-        CancellationTokenSource cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
+        await RequestConditionOrderAsync(targetClientId, orderId, 
+            esOrderData => !string.IsNullOrWhiteSpace(esOrderData.Address),
+            "onAchTxAddressReceived");
+    }
+    
+
+    private async Task RequestConditionOrderAsync(string targetClientId, string orderId, Func<OrderDto, bool> matchCondition, string callbackMethod)
+    {
+        var cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
         {
             try
@@ -123,28 +139,27 @@ public class HubService : CAServerAppService, IHubService
                 // stop while disconnected
                 if (_connectionProvider.GetConnectionByClientId(targetClientId) == null)
                 {
-                    _logger.LogWarning("Get alchemy order {OrderId} target address STOP, connection disconnected",
-                        orderId);
+                    _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} STOP, connection disconnected",
+                        orderId, callbackMethod);
                     break;
                 }
 
-                Guid grainId = ThirdPartHelper.GetOrderId(orderId);
+                var grainId = ThirdPartHelper.GetOrderId(orderId);
                 var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-                if (esOrderData == null)
+                if (esOrderData == null || esOrderData.Id == new Guid())
                 {
-                    _logger.LogError("This order {OrderId} not exists in the es", orderId);
+                    _logger.LogError("This order {OrderId} {CallbackMethod} not exists in the es", orderId, callbackMethod);
                     break;
                 }
 
-                // address not callback yet
-                if (string.IsNullOrWhiteSpace(esOrderData.Address))
+                // condition mot match
+                if (!matchCondition(esOrderData))
                 {
-                    _logger.LogWarning("Get alchemy order {OrderId} target address failed, wait for next time",
-                        orderId);
+                    _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
+                        orderId, callbackMethod);
                     await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.DelaySeconds));
                     continue;
                 }
-
 
                 // push address to client via ws
                 var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(
@@ -155,7 +170,8 @@ public class HubService : CAServerAppService, IHubService
                         Address = esOrderData.Address,
                         Network = esOrderData.Network,
                         Crypto = esOrderData.Crypto,
-                        CryptoAmount = esOrderData.CryptoAmount
+                        CryptoAmount = esOrderData.CryptoAmount,
+                        Status = esOrderData.Status
                     },
                     Formatting.None,
                     new JsonSerializerSettings
@@ -167,20 +183,20 @@ public class HubService : CAServerAppService, IHubService
                     {
                         Body = bodyDict
                     },
-                    targetClientId, "onAchTxAddressReceived"
+                    targetClientId, callbackMethod
                 );
-                _logger.LogInformation("Get alchemy order {OrderId} target address {Address} success",
-                    orderId, esOrderData.Address);
+                _logger.LogInformation("Get third-part order {OrderId} {CallbackMethod}  success",
+                    orderId, callbackMethod);
                 break;
             }
             catch (OperationCanceledException oce)
             {
-                _logger.LogError(oce, "Timed out waiting for alchemy order {OrderId} update status", orderId);
+                _logger.LogError(oce, "Timed out waiting for third-part order { {OrderId} {CallbackMethod}  update status", orderId, callbackMethod);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "An exception occurred during the query alchemy order {OrderId} target address",
-                    orderId);
+                _logger.LogError(e, "An exception occurred during the query third-part order {OrderId} {CallbackMethod} ",
+                    orderId, callbackMethod);
                 break;
             }
         }

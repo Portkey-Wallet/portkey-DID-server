@@ -11,6 +11,8 @@ using CAServer.Options;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Medallion.Threading;
+using Medallion.Threading.Redis;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,7 @@ using Microsoft.Extensions.Options;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
+using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
@@ -48,6 +51,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         context.Services.AddHostedService<CAServerHostedService>();
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
+        ConfigureDistributedLocking(context, configuration);
 
         context.Services.AddSingleton<IClusterClient>(o =>
         {
@@ -80,6 +84,20 @@ public class CAServerEntityEventHandlerModule : AbpModule
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
 
+    
+    private void ConfigureDistributedLocking(
+        ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddSingleton<IDistributedLockProvider>(sp =>
+        {
+            var connection = ConnectionMultiplexer
+                .Connect(configuration["Redis:Configuration"]);
+            return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
+        });
+    }
+
+    
     private void ConfigureCache(IConfiguration configuration)
     {
         var cacheOptions = configuration.GetSection("Cache").Get<CacheOptions>();

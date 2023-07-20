@@ -49,6 +49,11 @@ public class CAHub : AbpHub
         await _hubService.RequestAchTxAddressAsync(request.TargetClientId, request.OrderId);
     }
 
+    public async Task RequestOrderTransferred(AlchemyTargetAddressDto request)
+    {
+        await _hubService.RequestOrderTransferredAsync(request.TargetClientId, request.OrderId);
+    }
+
     public override Task OnDisconnectedAsync(Exception? exception)
     {
         var clientId = _hubService.UnRegisterClient(Context.ConnectionId);

@@ -16,17 +16,29 @@ public enum TransferDirectionType
 
 public enum OrderStatusType
 {
+    Unknown,
+    Initialized,
     Created,
+    Invalid,
     Canceled,
     Expired,
     Finish,
     Failed,
     Pending,
     Refunded,
-    Unknown,
+    StartTransfer,
+    Transferring,
+    Transferred,
+    TransferFailed,
     UserCompletesCoinDeposit,
     StartPayment,
     SuccessfulPayment,
     PaymentFailed,
     RefundSuccessfully
+}
+
+public enum OrderTransDirect
+{
+    BUY,
+    SELL
 }

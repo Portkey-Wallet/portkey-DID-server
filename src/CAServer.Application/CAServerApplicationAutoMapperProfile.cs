@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using CAServer.Bookmark.Dtos;
+using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
@@ -15,12 +17,14 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State.Bookmark;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
@@ -42,6 +46,7 @@ using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using MongoDB.Bson.Serialization.IdGenerators;
 using Portkey.Contracts.CA;
+using Volo.Abp.Application.Dtos;
 using AlchemyTargetAddressDto = CAServer.Message.Dtos.AlchemyTargetAddressDto;
 using Volo.Abp.AutoMapper;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
@@ -266,7 +271,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderGrainDto, OrderDto>();
         CreateMap<OrderDto, OrderGrainDto>();
         CreateMap<OrderGrainDto, OrderEto>();
-        CreateMap<OrderIndex, OrderDto>();
+        CreateMap<RampOrderIndex, OrderDto>();
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
@@ -329,11 +334,30 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<IndexerToken, GetTokenInfoDto>();
         CreateMap<IndexerToken, GetTokenListDto>();
+        CreateMap<CreateBookmarkDto, BookmarkGrainDto>();
+        CreateMap<BookmarkGrainResultDto, BookmarkCreateEto>();
+        CreateMap<BookmarkIndex, BookmarkResultDto>();
+
+        CreateMap<BookmarkCreateEto, BookmarkIndex>();
+        CreateMap<BookmarkGrainDto, BookmarkResultDto>();
+        CreateMap<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>();
         CreateMap<IndexerToken, UserTokenItem>()
-            .ForMember(t => t.SortWeight, m => m.MapFrom(f => f.ChainId == "ELF" ? 1 : 0))
+            .ForMember(t => t.SortWeight, m => m.MapFrom(f => f.ChainId == "AELF" ? 1 : 0))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(f => f.ChainId))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(f => f.Symbol))
             .ForPath(t => t.Token.Address, m => m.MapFrom(f => f.TokenContractAddress))
             .ForPath(t => t.Token.Decimals, m => m.MapFrom(f => f.Decimals));
+
+        CreateMap<TransactionDto, TransactionEto>();
+        CreateMap<OrderStatusInfoGrainResultDto, OrderStatusInfoEto>();
+        CreateMap<OrderGrainDto, OrderStatusInfoGrainDto>()
+            .ForMember(t => t.Id, opt => opt.Ignore())
+            .ForMember(t => t.OrderId, m => m.MapFrom(f => f.Id))
+            .ForPath(t => t.OrderStatusInfo.Status,
+                m => m.MapFrom(f => (OrderStatusType)Enum.Parse(typeof(OrderStatusType), f.Status)))
+            .ForPath(t => t.OrderStatusInfo.LastModifyTime, m => m.MapFrom(f => Convert.ToInt64(f.LastModifyTime)));
+
+        CreateMap<TransactionFeeInfo, TransactionFeeResultDto>();
+        CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
     }
 }

@@ -20,4 +20,12 @@ public static class CommonConstant
     public const int FiatListExpirationMinutes = 30;
     public const int OrderQuoteExpirationMinutes = 30;
     public static DateTimeOffset DefaultAbsoluteExpiration = DateTime.Parse("2099-01-01 12:00:00");
+    public const string OrderStatusInfoPrefix = "OrderStatusInfo";
+
+    public const string MainChainId = "AELF";
+    public const string TDVVChainId = "tDVV";
+    public const string TDVWChainId = "tDVW";
+    public const double DefaultAchFee = 0.39;
+    public const double DefaultCrossChainFee = 0.35;
+    public const double DefaultMaxFee = 0.39;
 }

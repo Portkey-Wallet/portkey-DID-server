@@ -27,6 +27,7 @@ public class SearchAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetIndexSettingOptions());
@@ -50,7 +51,7 @@ public class SearchAppServiceTest : CAServerApplicationTestBase
         var list = new List<string>
         {
             "usertokenindex", "contactindex", "chainsinfoindex", "accountrecoverindex",
-            "accountregisterindex", "orderindex", "notifyrulesindex"
+            "accountregisterindex", "ramporderindex", "notifyrulesindex"
         };
         foreach (var indexName in list)
         {

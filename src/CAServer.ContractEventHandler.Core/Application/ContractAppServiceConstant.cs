@@ -32,3 +32,9 @@ public static class GrainId
 {
     public const string SyncRecord = "SyncRecordGrain";
 }
+
+public static class LogEvent
+{
+    public const string CAHolderCreated = "CAHolderCreated";
+    public const string ManagerInfoSocialRecovered = "ManagerInfoSocialRecovered";
+}

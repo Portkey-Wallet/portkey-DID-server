@@ -30,6 +30,7 @@ public class UserTokenHandlerTests : CAServerEntityEventHandlerTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(GetMockIGraphQLHelper());
+        services.AddSingleton(GetMockAbpDistributedLock());
     }
     
     [Fact]

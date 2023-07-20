@@ -1,5 +1,9 @@
 using System;
 using System.Text.RegularExpressions;
+using AElf;
+using AElf.Cryptography;
+using AElf.Types;
+using Google.Protobuf;
 
 namespace CAServer.Commons;
 
@@ -20,5 +24,16 @@ public static class VerifyHelper
         var phoneRegex = @"^1[0-9]{10}$";
         var emailReg = new Regex(phoneRegex);
         return emailReg.IsMatch(phoneNumber.Trim());
+    }
+
+    public static bool VerifySignature(Transaction transaction, string inputPublicKey)
+    {
+        if (!transaction.VerifyFields()) return false;
+
+        var recovered = CryptoHelper.RecoverPublicKey(transaction.Signature.ToByteArray(),
+            transaction.GetHash().ToByteArray(), out var publicKey);
+
+        return recovered && Address.FromPublicKey(publicKey) == transaction.From &&
+               ByteString.CopyFrom(publicKey).ToHex() == inputPublicKey;
     }
 }

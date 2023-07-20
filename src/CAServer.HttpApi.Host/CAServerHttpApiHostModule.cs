@@ -66,6 +66,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<RealIpOptions>(configuration.GetSection("RealIp"));
+        Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         ConfigureConventionalControllers();

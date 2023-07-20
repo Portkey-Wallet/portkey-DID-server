@@ -1,3 +1,4 @@
+using CAServer.Commons;
 using CAServer.Grains.State.Order;
 using Orleans;
 using Volo.Abp.ObjectMapping;
@@ -40,11 +41,31 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
         {
             State.Id = this.GetPrimaryKey();
         }
-        
+
         await WriteStateAsync();
 
         result.Data = _objectMapper.Map<OrderState, OrderGrainDto>(State);
         result.Success = true;
         return result;
+    }
+
+    public Task<GrainResultDto<OrderGrainDto>> GetOrder()
+    {
+        var result = new GrainResultDto<OrderGrainDto>();
+
+        if (State.Id == Guid.Empty)
+        {
+            return Task.FromResult(result);
+        }
+
+        result.Data = _objectMapper.Map<OrderState, OrderGrainDto>(State);
+        result.Success = true;
+        return Task.FromResult(result);
+    }
+
+    private IOrderStatusInfoGrain GetOrderStatusInfoGrain(Guid id)
+    {
+        return GrainFactory.GetGrain<IOrderStatusInfoGrain>(
+            GrainIdHelper.GenerateGrainId(CommonConstant.OrderStatusInfoPrefix, id.ToString("N")));
     }
 }
