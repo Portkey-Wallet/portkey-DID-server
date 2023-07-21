@@ -236,7 +236,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {
         var expire = TimeSpan.FromHours(_sendVerifierCodeRequestLimitOption.ExpireHours);
-        var countCacheItem = await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
+        var countCacheItem =
+            await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
         if (countCacheItem.HasValue)
         {
             return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
@@ -256,7 +257,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e,"GetGuardian failed");
+            _logger.LogError(e, "GetGuardian failed");
             throw new UserFriendlyException(e.Message);
         }
     }
@@ -269,14 +270,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             _logger.LogError("Get verifier server failed");
             return new GetVerifierServerResponse();
         }
-        var servers = result.VerifierServers;
+
         var random = new Random();
-        var index = random.Next(0, servers.Count);
-        var server =  servers[index];
-        var response = _objectMapper.Map<VerifierServer,GetVerifierServerResponse>(server);
-        return response;
-
-
+        var index = random.Next(0, result.VerifierServers.Count);
+        var server = result.VerifierServers[index];
+        return _objectMapper.Map<VerifierServer, GetVerifierServerResponse>(server);
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
