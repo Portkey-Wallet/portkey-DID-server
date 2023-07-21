@@ -360,9 +360,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TransactionFeeInfo, TransactionFeeResultDto>();
         CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
         CreateMap<VerifierServer, GetVerifierServerResponse>()
-            .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()))
-            .ForMember(t => t.EndPionts, m => m.MapFrom(f => f.EndPoints))
-            .ForMember(t => t.VerifierAddressses, m
-                => m.MapFrom(f => f.VerifierAddresses.Select(p => p.ToBase58()).ToList()));
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
     }
 }

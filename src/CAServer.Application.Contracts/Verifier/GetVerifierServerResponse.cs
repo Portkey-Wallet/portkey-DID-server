@@ -10,7 +10,4 @@ public class GetVerifierServerResponse
 
     public string ImageUrl { get; set; }
 
-    public List<string> EndPionts { get; set; }
-
-    public List<string> VerifierAddressses { get; set; }
 }
