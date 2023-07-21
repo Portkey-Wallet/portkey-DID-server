@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using AElf;
 using CAServer.AccountValidator;
 using CAServer.Cache;
+using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
@@ -21,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -41,6 +43,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
+    private readonly IContractProvider _contractProvider;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -56,7 +59,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -67,6 +70,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _httpClientFactory = httpClientFactory;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
+        _contractProvider = contractProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -255,6 +259,24 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             _logger.LogError(e,"GetGuardian failed");
             throw new UserFriendlyException(e.Message);
         }
+    }
+
+    public async Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId)
+    {
+        var result = await _contractProvider.GetVerifierServersListAsync(chainId);
+        if (null == result || result.VerifierServers.Count == 0)
+        {
+            _logger.LogError("Get verifier server failed");
+            return new GetVerifierServerResponse();
+        }
+        var servers = result.VerifierServers;
+        var random = new Random();
+        var index = random.Next(0, servers.Count);
+        var server =  servers[index];
+        var response = _objectMapper.Map<VerifierServer,GetVerifierServerResponse>(server);
+        return response;
+
+
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)

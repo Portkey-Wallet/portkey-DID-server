@@ -27,6 +27,11 @@
         "Iso": "DK"
       },
       {
+        "Country": "Spain",
+        "Code": "34",
+        "Iso": "ES"
+      },
+      {
         "Country": "Finland",
         "Code": "358",
         "Iso": "FIN"
@@ -62,14 +67,49 @@
         "Iso": "MX"
       },
       {
+        "Country": "Netherlands",
+        "Code": "31",
+        "Iso": "NL"
+      },
+      {
+        "Country": "Philippines",
+        "Code": "63",
+        "Iso": "PH"
+      },
+      {
         "Country": "Singapore",
         "Code": "65",
         "Iso": "SG"
       },
       {
+        "Country": "Sweden",
+        "Code": "46",
+        "Iso": "SE"
+      },
+      {
+        "Country": "Thailand",
+        "Code": "66",
+        "Iso": "TH"
+      },
+      {
+        "Country": "Thailand",
+        "Code": "90",
+        "Iso": "TR"
+      },
+      {
+        "Country": "Ukraine",
+        "Code": "380",
+        "Iso": "UA"
+      },
+      {
         "Country": "United States",
         "Code": "1",
         "Iso": "US"
+      },
+      {
+        "Country": "Vietnam",
+        "Code": "84",
+        "Iso": "VN"
       }
     ]
   }

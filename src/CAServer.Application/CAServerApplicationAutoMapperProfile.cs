@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AElf;
 using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
@@ -356,8 +357,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForPath(t => t.OrderStatusInfo.Status,
                 m => m.MapFrom(f => (OrderStatusType)Enum.Parse(typeof(OrderStatusType), f.Status)))
             .ForPath(t => t.OrderStatusInfo.LastModifyTime, m => m.MapFrom(f => Convert.ToInt64(f.LastModifyTime)));
-
         CreateMap<TransactionFeeInfo, TransactionFeeResultDto>();
         CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
+        CreateMap<VerifierServer, GetVerifierServerResponse>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()))
+            .ForMember(t => t.EndPionts, m => m.MapFrom(f => f.EndPoints))
+            .ForMember(t=>t.VerifierAddressses,m
+                =>m.MapFrom(f=>f.VerifierAddresses.Select(p=>p.ToBase58()).ToList()));
+        
+
     }
 }
