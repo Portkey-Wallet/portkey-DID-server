@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.TokenClaim;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
@@ -135,11 +136,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
     public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)
     {
-        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
-        {
-            return null;
-        }
-
         var getBalanceParam = new GetBalanceInput
         {
             Symbol = symbol,
@@ -178,6 +174,9 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction)
     {
         var client = await GetAElfClientAsync(chainId);
+        if (client == null)
+            throw new UserFriendlyException("Send RawTransaction FAILED!, client of ChainId={ChainId} NOT FOUND");
+
         var result = await client.SendTransactionAsync(new SendTransactionInput
         {
             RawTransaction = rawTransaction
