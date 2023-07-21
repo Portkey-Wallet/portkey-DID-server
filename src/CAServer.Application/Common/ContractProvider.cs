@@ -136,6 +136,11 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
     public async Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId)
     {
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out _))
+        {
+            return null;
+        }
+
         var getBalanceParam = new GetBalanceInput
         {
             Symbol = symbol,
