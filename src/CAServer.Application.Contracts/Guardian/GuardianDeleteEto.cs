@@ -1,6 +1,6 @@
-namespace CAServer.Grains.Grain.Guardian;
+namespace CAServer.Guardian;
 
-public class GuardianGrainDto
+public class GuardianDeleteEto
 {
     public string Id { get; set; }
     public string Identifier { get; set; }
