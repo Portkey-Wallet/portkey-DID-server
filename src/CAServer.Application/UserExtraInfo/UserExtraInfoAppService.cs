@@ -1,22 +1,26 @@
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using System.Net.Http;
+using AElf.Indexing.Elasticsearch;
 using CAServer.AppleAuth;
 using CAServer.AppleAuth.Provider;
 using CAServer.AppleVerify;
 using CAServer.CAAccount.Dtos;
 using CAServer.UserExtraInfo.Dtos;
 using CAServer.Common;
+using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.EventBus.Distributed;
@@ -34,6 +38,7 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
     private readonly IHttpClientService _httpClientService;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly IAppleUserProvider _appleUserProvider;
+    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
 
     public UserExtraInfoAppService(IHttpClientFactory httpClientFactory,
         IOptions<AppleAuthOptions> appleAuthVerifyOption,
@@ -41,7 +46,8 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
         IClusterClient clusterClient,
         IHttpClientService httpClientService,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
-        IAppleUserProvider appleUserProvider)
+        IAppleUserProvider appleUserProvider,
+        INESTRepository<GuardianIndex, string> guardianRepository)
     {
         _httpClientFactory = httpClientFactory;
         _appleAuthOptions = appleAuthVerifyOption.Value;
@@ -50,6 +56,7 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
         _httpClientService = httpClientService;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _appleUserProvider = appleUserProvider;
+        _guardianRepository = guardianRepository;
     }
 
 
@@ -120,6 +127,56 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
 
         await AddUserInfoAsync(userExtraInfo);
         return ObjectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoResultDto>(userExtraInfo);
+    }
+
+    public async Task RestoreUserExtraInfoAsync()
+    {
+        var list = await GetGuardianAsync();
+        foreach (var per in list)
+        {
+            try
+            {
+                var userExtraInfoGrainId =
+                    GrainIdHelper.GenerateGrainId("UserExtraInfo", per.Identifier);
+
+                var userExtraInfoGrain = _clusterClient.GetGrain<IUserExtraInfoGrain>(userExtraInfoGrainId);
+
+                var grainDto = await userExtraInfoGrain.GetAsync();
+
+                if (grainDto.Success)
+                {
+                    Logger.LogInformation("userExtraInfoGrainId: {userExtraInfoGrainId}", grainDto.Data.Id);
+                    await _distributedEventBus.PublishAsync(
+                        ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto.Data));
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+    }
+
+    private async Task<List<GuardianIndex>> GetGuardianAsync()
+    {
+        try
+        {
+            var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+
+            QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+                f.Bool(b => b.Must(mustQuery));
+
+            var userExtraInfos = await _guardianRepository.GetListAsync(Filter);
+
+            return userExtraInfos.Item2;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+
+        return new List<GuardianIndex>();
     }
 
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)

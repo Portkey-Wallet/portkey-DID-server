@@ -10,7 +10,8 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("UserExtraInfo")]
 [Route("api/app/userExtraInfo")]
-public class CAUserInfoController: CAServerController
+[IgnoreAntiforgeryToken]
+public class CAUserInfoController : CAServerController
 {
     private readonly IUserExtraInfoAppService _userExtraInfoAppService;
 
@@ -24,11 +25,16 @@ public class CAUserInfoController: CAServerController
     {
         return await _userExtraInfoAppService.AddAppleUserExtraInfoAsync(extraInfoDto);
     }
-    
+
     [HttpGet("{id}")]
     public async Task<UserExtraInfoResultDto> GetUserExtraInfoAsync(string id)
     {
         return await _userExtraInfoAppService.GetUserExtraInfoAsync(id);
     }
-    
+
+    [HttpPost("restoreUserExtraInfoAsync")]
+    public async Task RestoreUserExtraInfoAsync()
+    {
+        await _userExtraInfoAppService.RestoreUserExtraInfoAsync();
+    }
 }
