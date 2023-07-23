@@ -42,7 +42,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
-        AppleTransferOptions appleTransferOptions)
+        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -51,7 +51,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
         _appleUserProvider = appleUserProvider;
-        _appleTransferOptions = appleTransferOptions;
+        _appleTransferOptions = appleTransferOptions.Value;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -88,7 +88,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         if (_appleTransferOptions.IsNeedIntercept(requestDto.LoginGuardianIdentifier))
         {
-            throw new Exception(CommonConstant.AppleTransferMessage);
+            throw new UserFriendlyException(CommonConstant.AppleTransferMessage);
         }
         
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
