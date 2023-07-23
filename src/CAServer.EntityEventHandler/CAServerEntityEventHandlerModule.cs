@@ -119,14 +119,14 @@ public class CAServerEntityEventHandlerModule : AbpModule
         var cache = context.ServiceProvider.GetRequiredService<IDistributedCache<List<string>>>();
         cache.Set(CommonConstant.ResourceTokenKey, tokenList.UserToken.Select(t => t.Token.Symbol).Distinct().ToList());
 
-        var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(async () => await client.Connect());
+        // var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
+        // AsyncHelper.RunSync(async () => await client.Connect());
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
-        AsyncHelper.RunSync(client.Close);
+        // var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
+        // AsyncHelper.RunSync(client.Close);
     }
 
     //Create the ElasticSearch Index based on Domain Entity

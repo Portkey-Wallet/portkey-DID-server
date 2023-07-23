@@ -33,6 +33,8 @@ using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
+using CAServer.Test.Dtos;
+using CAServer.Test.Etos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
@@ -359,5 +361,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<TransactionFeeInfo, TransactionFeeResultDto>();
         CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
+        CreateMap<TestRequestDto, TestResultDto>();
+        CreateMap<TestIndex, TestResultDto>();
+        CreateMap<TestRequestDto, TestEto>();
     }
 }
