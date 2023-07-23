@@ -1,5 +1,6 @@
 using CAServer.AppleMigrate;
 using CAServer.AppleMigrate.Dtos;
+using CAServer.AppleMigrate.Modle;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -23,5 +24,23 @@ public class AppleMigrateController : CAServerController
     public async Task<AppleMigrateResponseDto> MigrateAsync(AppleMigrateRequestDto input)
     {
         return await _appleMigrateAppService.MigrateAsync(input);
+    }
+    
+    [HttpGet("getSub")]
+    public async Task<string> GetSubAsync()
+    {
+        throw new NotImplementedException();
+    }
+
+    [HttpGet("getNewUserId")]
+    public async Task<string> GetNewUserIdAsync(GetNewUserIdRequestDto input)
+    {
+        throw new NotImplementedException();
+    }
+
+    [HttpPost("migrateAll")]
+    public async Task<int> MigrateAllAsync()
+    {
+        throw new NotImplementedException();
     }
 }
