@@ -72,7 +72,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         {
             if (_appleTransferOptions.CloseLogin)
             {
-                throw new UserFriendlyException(CommonConstant.AppleTransferMessage);
+                throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
             }
 
             identityToken = await GetTokenAsync(appleAuthDto.Code);
@@ -83,7 +83,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         
         if (_appleTransferOptions.IsNeedIntercept(jwtPayload.Sub))
         {
-            throw new UserFriendlyException(CommonConstant.AppleTransferMessage);
+            throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
 
         if (string.IsNullOrWhiteSpace(appleAuthDto.User))

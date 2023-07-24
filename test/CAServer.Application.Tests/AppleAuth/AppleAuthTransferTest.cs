@@ -49,6 +49,7 @@ public class AppleAuthTransferTest : CAServerApplicationTestBase
             new AppleTransferOptions
             {
                 CloseLogin = true,
+                ErrorMessage = "test",
                 WhiteList = new List<string> { "" }
             });
         return mockOptionsSnapshot.Object;
