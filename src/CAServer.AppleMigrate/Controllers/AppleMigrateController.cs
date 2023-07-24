@@ -14,10 +14,13 @@ namespace CAServer.Controllers;
 public class AppleMigrateController : CAServerController
 {
     private readonly IAppleMigrateAppService _appleMigrateAppService;
+    private readonly IAppleMigrateProvider _appleMigrateProvider;
 
-    public AppleMigrateController(IAppleMigrateAppService appleMigrateAppService)
+    public AppleMigrateController(IAppleMigrateAppService appleMigrateAppService,
+        IAppleMigrateProvider appleMigrateProvider)
     {
         _appleMigrateAppService = appleMigrateAppService;
+        _appleMigrateProvider = appleMigrateProvider;
     }
 
     [HttpPost("migrate")]
@@ -25,15 +28,15 @@ public class AppleMigrateController : CAServerController
     {
         return await _appleMigrateAppService.MigrateAsync(input);
     }
-    
+
     [HttpGet("getSub")]
-    public async Task<string> GetSubAsync()
+    public async Task<GetSubDto> GetSubAsync(string userId)
     {
-        throw new NotImplementedException();
+        return await _appleMigrateProvider.GetSubAsync(userId);
     }
 
     [HttpGet("getNewUserId")]
-    public async Task<string> GetNewUserIdAsync(GetNewUserIdRequestDto input)
+    public async Task<GetNewUserIdDto> GetNewUserIdAsync(string userId)
     {
         throw new NotImplementedException();
     }
@@ -42,5 +45,11 @@ public class AppleMigrateController : CAServerController
     public async Task<int> MigrateAllAsync()
     {
         throw new NotImplementedException();
+    }
+
+    [HttpGet("getClientSecret")]
+    public string GetSecret()
+    {
+        return _appleMigrateProvider.GetSecret();
     }
 }
