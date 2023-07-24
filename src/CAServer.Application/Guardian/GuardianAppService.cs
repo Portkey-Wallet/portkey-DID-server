@@ -88,7 +88,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         if (_appleTransferOptions.IsNeedIntercept(requestDto.LoginGuardianIdentifier))
         {
-            throw new UserFriendlyException(CommonConstant.AppleTransferMessage);
+            throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
         
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
