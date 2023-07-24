@@ -6,9 +6,10 @@ using Shouldly;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.EventBus.Distributed;
 using Xunit;
+
 namespace CAServer.EntityEventHandler.Tests.CAContact;
 
-public class   CaContactHandlerTests : CAServerEntityEventHandlerTestBase
+public class CaContactHandlerTests : CAServerEntityEventHandlerTestBase
 {
     private readonly ISearchAppService _searchAppService;
     private readonly IDistributedEventBus _eventBus;
@@ -25,7 +26,7 @@ public class   CaContactHandlerTests : CAServerEntityEventHandlerTestBase
         ContactAddressEto add01 = new ContactAddressEto();
         add01.Address = "013232323232332";
         add01.ChainId = "chain01";
-        
+
         ContactAddressEto add02 = new ContactAddressEto();
         add02.Address = "023dsdsfds2";
         add02.ChainId = "chain02";
@@ -37,7 +38,7 @@ public class   CaContactHandlerTests : CAServerEntityEventHandlerTestBase
             Id = Guid.NewGuid(),
             Index = "1",
             Name = "test",
-            Addresses = list ,
+            Addresses = list,
             UserId = Guid.NewGuid(),
             IsDeleted = true,
             ModificationTime = new DateTime()
@@ -54,13 +55,23 @@ public class   CaContactHandlerTests : CAServerEntityEventHandlerTestBase
         extra.ShouldNotBeNull();
         extra.Items[0].Name.ShouldBe("test");
     }
+
     [Fact]
     public async Task HandlerEvent_ContactUpdateEto()
     {
+        var createCaHolder = new CreateCAHolderEto
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            CaAddress = string.Empty,
+            CaHash = string.Empty,
+            Nickname = string.Empty,
+            CreateTime = DateTime.UtcNow
+        };
         ContactAddressEto add01 = new ContactAddressEto();
         add01.Address = "013232323232332";
         add01.ChainId = "chain01";
-        
+
         ContactAddressEto add02 = new ContactAddressEto();
         add02.Address = "023dsdsfds2";
         add02.ChainId = "chain02";
@@ -72,7 +83,7 @@ public class   CaContactHandlerTests : CAServerEntityEventHandlerTestBase
             Id = Guid.Parse("f77dd0c8-3af4-4d3b-a739-c80bbd79a322"),
             Index = "1",
             Name = "test",
-            Addresses = list ,
+            Addresses = list,
             UserId = Guid.Parse("fde64344-e2b3-485b-8c6d-07954cc76669"),
             IsDeleted = true,
             ModificationTime = new DateTime()
@@ -84,7 +95,7 @@ public class   CaContactHandlerTests : CAServerEntityEventHandlerTestBase
         });
 
         addresult.ShouldNotBeNull();
-            
+
         var updateEto = new ContactUpdateEto
         {
             Id = Guid.Parse("f77dd0c8-3af4-4d3b-a739-c80bbd79a322"),
@@ -94,7 +105,7 @@ public class   CaContactHandlerTests : CAServerEntityEventHandlerTestBase
             ModificationTime = new DateTime()
         };
         await _eventBus.PublishAsync(updateEto);
-        
+
         var result = await _searchAppService.GetListByLucenceAsync("contactindex", new GetListInput()
         {
             MaxResultCount = 1
@@ -105,5 +116,4 @@ public class   CaContactHandlerTests : CAServerEntityEventHandlerTestBase
         extra.ShouldNotBeNull();
         extra.Items[0].Name.ShouldBe("test2");
     }
-    
 }

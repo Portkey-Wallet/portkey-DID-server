@@ -11,6 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/")]
+[IgnoreAntiforgeryToken]
 public class ThirdPartOrderController : CAServerController
 {
     private readonly IAlchemyOrderAppService _alchemyOrderService;
@@ -51,6 +52,13 @@ public class ThirdPartOrderController : CAServerController
     public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
     {
         await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
+    }
+    
+    [Authorize]
+    [HttpPost("alchemy/transaction")]
+    public async Task TransactionAsync(TransactionDto input)
+    {
+        await _alchemyOrderService.TransactionAsync(input);
     }
 }
 

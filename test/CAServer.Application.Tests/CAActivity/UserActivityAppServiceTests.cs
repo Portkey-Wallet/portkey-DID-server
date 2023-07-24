@@ -29,6 +29,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockTokenAppService());

@@ -120,6 +120,19 @@ public class ContractAppService : IContractAppService
             return;
         }
 
+        if (!resultCreateCaHolder.Logs.Select(l => l.Name).Contains(LogEvent.CAHolderCreated))
+        {
+            registerResult.RegisterMessage = "Transaction status: FAILED" + ". Error: Verification failed";
+            registerResult.RegisterSuccess = false;
+
+            _logger.LogInformation("Register state pushed, id:{id}, grainId:{grainId}, message:{result}",
+                registerResult.Id.ToString(), registerResult.GrainId, registerResult.RegisterMessage);
+
+            await _distributedEventBus.PublishAsync(registerResult);
+
+            return;
+        }
+
         var outputGetHolderInfo =
             await _contractProvider.GetHolderInfoFromChainAsync(createHolderDto.ChainId,
                 createHolderDto.GuardianInfo.IdentifierHash, null);
@@ -190,6 +203,19 @@ public class ContractAppService : IContractAppService
 
             _logger.LogInformation("Recovery state pushed: " + "\n{result}",
                 JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+
+            await _distributedEventBus.PublishAsync(recoveryResult);
+
+            return;
+        }
+
+        if (!resultSocialRecovery.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
+        {
+            recoveryResult.RecoveryMessage = "Transaction status: FAILED" + ". Error: Verification failed";
+            recoveryResult.RecoverySuccess = false;
+
+            _logger.LogInformation("Recovery state pushed, id:{id}, grainId:{grainId}, message:{result}",
+                recoveryResult.Id.ToString(), recoveryResult.GrainId, recoveryResult.RecoveryMessage);
 
             await _distributedEventBus.PublishAsync(recoveryResult);
 
@@ -469,7 +495,7 @@ public class ContractAppService : IContractAppService
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
 
             var targetIndexHeight = currentIndexHeight + _indexOptions.IndexAfter;
-            
+
             if (currentIndexHeight <= 0 || lastEndHeight >= targetIndexHeight)
             {
                 _logger.LogWarning(
@@ -488,7 +514,7 @@ public class ContractAppService : IContractAppService
             {
                 _logger.LogInformation("Query on chain: {id}, from {start} to {end}", chainId, startIndexHeight,
                     endIndexHeight);
-                
+
                 queryEvents.AddRange(await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
                     chainId, startIndexHeight, endIndexHeight));
                 queryEvents.AddRange(await _graphQLProvider.GetManagerTransactionInfosAsync(
@@ -522,7 +548,8 @@ public class ContractAppService : IContractAppService
 
                 var list = OptimizeQueryEvents(queryEvents);
 
-                list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecordsAsync(chainId), list);
+                list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecordsAsync(chainId),
+                    list);
 
                 await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, list);
             }
@@ -685,7 +712,6 @@ public class ContractAppService : IContractAppService
 
     public async Task InitializeIndexAsync()
     {
-
         var dict = _indexOptions.AutoSyncStartHeight;
 
         foreach (var info in _chainOptions.ChainInfos)

@@ -5,13 +5,15 @@ namespace CAServer.Options;
 public class ThirdPartOptions
 {
     public AlchemyOptions alchemy { get; set; }
-    public ThirdPartTimerOptions timer { get; set; }
+    public ThirdPartTimerOptions timer { get; set; } = new ThirdPartTimerOptions();
 }
 
 public class ThirdPartTimerOptions
 {
     public int DelaySeconds { get; set; } = 1;
-    public int TimeoutMillis { get; set; } = 5000;
+    public int TimeoutMillis { get; set; } = 60000;
+    
+    public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
 }
 
 public class AlchemyOptions
@@ -27,4 +29,5 @@ public class AlchemyOptions
     public bool SkipCheckSign { get; set; } = false;
     public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
+    public string MerchantQueryTradeUri { get; set; }
 }

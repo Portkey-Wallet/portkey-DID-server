@@ -34,6 +34,7 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(_currentUser);
@@ -75,19 +76,14 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetTokenListAsyncAsyncTest()
     {
-        try
+        var tokenInfo = await _tokenAppService.GetTokenListAsync(new GetTokenListRequestDto()
         {
-            var tokenInfo = await _tokenAppService.GetTokenListAsync(new GetTokenListRequestDto()
-            {
-                Symbol = "CPU",
-                ChainIds = new List<string>() { "AELF", "tDVV" }
-            });
+            Symbol = "C",
+            ChainIds = new List<string>() { "AELF", "tDVV" }
+        });
 
-            tokenInfo.Count.ShouldBe(1);
-        }
-        catch (Exception e)
-        {
-        }
+        tokenInfo.Count.ShouldNotBe(0);
+        tokenInfo?.Where(t=>t.Symbol.Contains("C")).Count().ShouldNotBe(0);
     }
 
     [Fact]

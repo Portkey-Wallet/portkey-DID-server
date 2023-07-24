@@ -18,11 +18,14 @@ public class CAAccountController : CAServerController
 {
     private readonly ICAAccountAppService _caAccountService;
     private readonly IGuardianAppService _guardianAppService;
+    private readonly ITransactionFeeAppService _transactionFeeAppService;
 
-    public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService)
+    public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
+        ITransactionFeeAppService transactionFeeAppService)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
+        _transactionFeeAppService = transactionFeeAppService;
     }
 
     [HttpPost("register/request")]
@@ -48,5 +51,11 @@ public class CAAccountController : CAServerController
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
         return await _guardianAppService.GetRegisterInfoAsync(requestDto);
+    }
+
+    [HttpGet("transactionFee")]
+    public List<TransactionFeeResultDto> CalculateFee(TransactionFeeDto input)
+    {
+        return _transactionFeeAppService.CalculateFee(input);
     }
 }

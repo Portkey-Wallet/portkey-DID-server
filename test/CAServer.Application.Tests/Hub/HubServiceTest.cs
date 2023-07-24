@@ -28,6 +28,7 @@ public class HubServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetHubProvider());
         // services.AddSingleton(GetConnectionProvider());
         services.AddSingleton(GetHubCacheProvider());

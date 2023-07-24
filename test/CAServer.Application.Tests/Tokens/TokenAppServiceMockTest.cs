@@ -134,12 +134,36 @@ public partial class TokenAppServiceTest
                         Symbol = "CPU",
                         ChainId = "AELF",
                         Decimals = 8
-                    }
+                    },
+                    IsDefault = true
+                },
+                new UserTokenIndex()
+                {
+                    Id = Guid.NewGuid(),
+                    Token = new Entities.Es.Token()
+                    {
+                        Symbol = "ELF",
+                        ChainId = "AELF",
+                        Decimals = 8
+                    },
+                    IsDefault = true,
+                    IsDisplay = true
+                },
+                new UserTokenIndex()
+                {
+                    Id = Guid.NewGuid(),
+                    Token = new Entities.Es.Token()
+                    {
+                        Symbol = "VCTE",
+                        ChainId = "AELF",
+                        Decimals = 8
+                    },
+                    IsDisplay = true
                 }
             });
 
         mockTokenPriceProvider.Setup(o =>
-                o.GetTokenInfosAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), default, default))
+                o.GetTokenInfosAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 0, 200))
             .ReturnsAsync((string chainId, string symbol, string symbolKeyword, int skipCount, int maxResultCount) =>
             {
                 return new IndexerTokens()
@@ -151,6 +175,22 @@ public partial class TokenAppServiceTest
                             Id = "AELF-CPU",
                             Symbol = "CPU",
                             ChainId = "AELF",
+                            Decimals = 8,
+                            BlockHash = string.Empty,
+                            BlockHeight = 0,
+                            Type = string.Empty,
+                            TokenContractAddress = string.Empty,
+                            TokenName = "CPU",
+                            TotalSupply = 100000,
+                            Issuer = string.Empty,
+                            IsBurnable = false,
+                            IssueChainId = 1264323
+                        },
+                        new IndexerToken()
+                        {
+                            Id = "tDVV-CPU",
+                            Symbol = "CPU",
+                            ChainId = "tDVV",
                             Decimals = 8,
                             BlockHash = string.Empty,
                             BlockHeight = 0,

@@ -53,7 +53,12 @@ public class ModelTest
             }
         };
 
-        var info = hub.ToString();
+        var hubPing = new HubPingRequestDto()
+        {
+            Content = "test"
+        };
+
+        var info = hub.Context.ToString();
         info.ShouldNotBeNull();
     }
 

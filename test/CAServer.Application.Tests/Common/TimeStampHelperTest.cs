@@ -1,4 +1,5 @@
 using System;
+using CAServer.Commons;
 using Shouldly;
 using Xunit;
 
@@ -9,8 +10,8 @@ public class TimeStampHelperTest
     [Fact]
     public void GetTimeStampTest()
     {
-        var millisecondsStr = TimeStampHelper.GetTimeStampInMilliseconds();
-        var secondsStr = TimeStampHelper.GetTimeStampInSeconds();
+        var millisecondsStr = TimeHelper.GetTimeStampInMilliseconds().ToString();
+        var secondsStr = TimeHelper.GetTimeStampInSeconds().ToString();
         millisecondsStr.ShouldNotBeNull();
         secondsStr.ShouldNotBeNull();
 

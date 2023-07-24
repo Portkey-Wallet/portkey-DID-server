@@ -7,9 +7,9 @@ namespace CAServer.Hub;
 public interface IConnectionProvider
 {
     void Add(string clientId, string connectionId);
-    string Remove(string connectionId);
-    ConnectionInfo GetConnectionByClientId(string clientId);
-    ConnectionInfo GetConnectionByConnectionId(string connectionId);
+    string? Remove(string connectionId);
+    ConnectionInfo? GetConnectionByClientId(string clientId);
+    ConnectionInfo? GetConnectionByConnectionId(string connectionId);
 }
 
 public class ConnectionProvider : IConnectionProvider, ISingletonDependency
@@ -27,7 +27,7 @@ public class ConnectionProvider : IConnectionProvider, ISingletonDependency
         _connectionIds[connectionId] = clientId;
     }
 
-    public string Remove(string connectionId)
+    public string? Remove(string connectionId)
     {
         if (!_connectionIds.TryGetValue(connectionId, out var clientId))
         {
@@ -40,12 +40,12 @@ public class ConnectionProvider : IConnectionProvider, ISingletonDependency
         return clientId;
     }
 
-    public ConnectionInfo GetConnectionByClientId(string clientId)
+    public ConnectionInfo? GetConnectionByClientId(string clientId)
     {
         return _connections.TryGetValue(clientId, out var connection) ? connection : null;
     }
 
-    public ConnectionInfo GetConnectionByConnectionId(string connectionId)
+    public ConnectionInfo? GetConnectionByConnectionId(string connectionId)
     {
         return _connectionIds.TryGetValue(connectionId, out var clientId) ? GetConnectionByClientId(clientId) : null;
     }
@@ -53,6 +53,6 @@ public class ConnectionProvider : IConnectionProvider, ISingletonDependency
 
 public class ConnectionInfo
 {
-    public string ConnectionId { get; set; }
-    public string ClientId { get; set; }
+    public string? ConnectionId { get; set; }
+    public string? ClientId { get; set; }
 }

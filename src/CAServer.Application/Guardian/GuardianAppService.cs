@@ -7,11 +7,12 @@ using AElf.Types;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -20,6 +21,7 @@ using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer.Guardian;
 
@@ -34,11 +36,13 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IGuardianProvider _guardianProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IAppleUserProvider _appleUserProvider;
+    private readonly AppleTransferOptions _appleTransferOptions;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
-        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient)
+        IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
+        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -47,6 +51,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
         _appleUserProvider = appleUserProvider;
+        _appleTransferOptions = appleTransferOptions.Value;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -81,6 +86,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
+        if (_appleTransferOptions.IsNeedIntercept(requestDto.LoginGuardianIdentifier))
+        {
+            throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
+        }
+        
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
 

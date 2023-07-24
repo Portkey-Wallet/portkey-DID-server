@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using CAServer.Bookmark;
+using CAServer.EntityEventHandler.Core;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
@@ -38,6 +40,8 @@ public class CAServerApplicationTestModule : AbpModule
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
+        context.Services.AddSingleton<BookmarkAppService>();
+        context.Services.AddSingleton<BookmarkHandler>();
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
@@ -70,7 +74,13 @@ public class CAServerApplicationTestModule : AbpModule
         tokenList.Add(token1);
         tokenList.Add(token2);
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
-        context.Services.Configure<IpServiceSettingOptions>(o => o.ExpirationDays = 1);
+        context.Services.Configure<IpServiceSettingOptions>(o =>
+        {
+            o.BaseUrl = "http://127.0.0.1/";
+            o.AccessKey = "AccessKey";
+            o.Language = "en";
+            o.ExpirationDays = 1;
+        });
         context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
         {

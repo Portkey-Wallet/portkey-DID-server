@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
@@ -31,7 +32,8 @@ namespace CAServer;
     typeof(AbpFeatureManagementApplicationModule),
     typeof(AbpSettingManagementApplicationModule),
     typeof(CAServerGrainsModule),
-    typeof(CAServerSignatureModule)
+    typeof(CAServerSignatureModule),
+    typeof(AbpDistributedLockingModule)
 )]
 public class CAServerApplicationModule : AbpModule
 {
@@ -43,6 +45,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfo"));
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
+        Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
