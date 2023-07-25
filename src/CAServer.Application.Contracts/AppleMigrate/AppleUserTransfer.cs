@@ -20,5 +20,5 @@ public class AppleUserTransferInfo
     /// </summary>
     public string Sub { get; set; }
     public string Email { get; set; }
-    public string IsPrivateEmail { get; set; }
+    public bool IsPrivateEmail { get; set; }
 }

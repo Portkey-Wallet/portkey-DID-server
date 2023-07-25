@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 using CAServer.AppleAuth;
 using CAServer.AppleMigrate.Dtos;
 using CAServer.AppleMigrate.Dtos.AppleDtos;
+using CAServer.Commons;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -19,6 +21,7 @@ using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 
 namespace CAServer.AppleMigrate;
 
@@ -28,7 +31,11 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
 {
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly AppleAuthOptions _oldAppleAuthOptions;
+    private readonly AppleAuthTransferredOptions _transferredAppleAuthOptions;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IDistributedCache<AppleUserTransfer> _distributedCache;
+
+
     private static string _oldAccessToken = string.Empty;
     private static string _accessToken = string.Empty;
 
@@ -37,11 +44,15 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
 
     public AppleMigrateProvider(JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptions<AppleAuthOptions> appleAuthOptions,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IDistributedCache<AppleUserTransfer> distributedCache,
+        IOptions<AppleAuthTransferredOptions> transferredAppleAuthOptions)
     {
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _oldAppleAuthOptions = appleAuthOptions.Value;
+        _transferredAppleAuthOptions = transferredAppleAuthOptions.Value;
         _httpClientFactory = httpClientFactory;
+        _distributedCache = distributedCache;
     }
 
     /// <summary>
@@ -55,9 +66,39 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
     /// <returns></returns>
     public async Task<GetSubDto> GetSubAsync(string userId)
     {
-        if (_oldSecret.IsNullOrWhiteSpace() || _oldAccessToken.IsNullOrWhiteSpace()) await SetConfig();
+        try
+        {
+            if (_oldSecret.IsNullOrWhiteSpace() || _oldAccessToken.IsNullOrWhiteSpace() ||
+                _secret.IsNullOrWhiteSpace() || _accessToken.IsNullOrWhiteSpace()) await SetConfig();
 
-        return new GetSubDto();
+            var url = "https://appleid.apple.com/auth/usermigrationinfo";
+
+            var dic = new Dictionary<string, string>
+            {
+                { "sub", userId },
+                { "target", _transferredAppleAuthOptions.ExtensionConfig.TeamId },
+                { "client_id", _oldAppleAuthOptions.ExtensionConfig.ClientId },
+                { "client_secret", _oldSecret }
+            };
+
+            var dto = await PostFormAsync<GetSubDto>(url, dic, _oldAccessToken);
+
+            return new GetSubDto
+            {
+                Sub = dto.Sub,
+                UserId = userId
+            };
+        }
+        catch (Exception e)
+        {
+            Logger.LogError("get sub from apple error. userId:{userId}, message:{message}", userId, e.Message);
+        }
+
+        return new GetSubDto
+        {
+            Sub = "",
+            UserId = userId
+        };
     }
 
     /// <summary>
@@ -87,17 +128,136 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
         return dto;
     }
 
+    public async Task<int> SetTransferSubAsync()
+    {
+        var count = 0;
+        var userTransfer = await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
+        if (userTransfer?.AppleUserTransferInfos == null || userTransfer?.AppleUserTransferInfos.Count <= 0)
+        {
+            throw new UserFriendlyException("in SetTransferSubAsync,  all user info not in cache.");
+        }
+
+        foreach (var userTransferInfo in userTransfer.AppleUserTransferInfos)
+        {
+            try
+            {
+                if (userTransferInfo == null || userTransferInfo.UserId.IsNullOrWhiteSpace())
+                {
+                    continue;
+                }
+
+                if (!userTransferInfo.TransferSub.IsNullOrWhiteSpace())
+                {
+                    continue;
+                }
+
+                var subDto = await GetSubAsync(userTransferInfo.UserId);
+                if (subDto.Sub.IsNullOrWhiteSpace())
+                {
+                    Logger.LogWarning("get sub fail: {userId}", userTransferInfo.UserId);
+                    continue;
+                }
+
+                userTransferInfo.TransferSub = subDto.Sub;
+                count++;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e.Message);
+            }
+        }
+
+        await _distributedCache.SetAsync(CommonConstant.AppleUserTransferKey, new AppleUserTransfer()
+        {
+            AppleUserTransferInfos = userTransfer.AppleUserTransferInfos
+        }, new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTime.UtcNow.AddYears(10)
+        });
+
+        return count;
+    }
+
+    public async Task<int> SetNewUserInfoAsync()
+    {
+        var count = 0;
+        var userTransfer = await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
+        if (userTransfer?.AppleUserTransferInfos == null || userTransfer?.AppleUserTransferInfos.Count <= 0)
+        {
+            throw new UserFriendlyException("in SetTransferSubAsync,  all user info not in cache.");
+        }
+
+        foreach (var userTransferInfo in userTransfer.AppleUserTransferInfos)
+        {
+            try
+            {
+                if (userTransferInfo == null || userTransferInfo.UserId.IsNullOrWhiteSpace())
+                {
+                    continue;
+                }
+
+                if (userTransferInfo.TransferSub.IsNullOrWhiteSpace())
+                {
+                    continue;
+                }
+
+                if (!userTransferInfo.Sub.IsNullOrWhiteSpace())
+                {
+                    continue;
+                }
+
+                var newUserIdDto = await GetNewUserIdAsync(userTransferInfo.TransferSub);
+                if (newUserIdDto.Sub.IsNullOrWhiteSpace())
+                {
+                    Logger.LogWarning("get sub fail: userId: {userId}, transferSub:{transferSub}",
+                        userTransferInfo.UserId, userTransferInfo.TransferSub);
+                    continue;
+                }
+
+                userTransferInfo.Sub = newUserIdDto.Sub;
+                if (!newUserIdDto.Email.IsNullOrWhiteSpace())
+                    userTransferInfo.Email = newUserIdDto.Email;
+
+                if (newUserIdDto.Is_private_email)
+                    userTransferInfo.IsPrivateEmail = newUserIdDto.Is_private_email;
+
+                count++;
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(
+                    "SetNewUserInfoAsync error: userId:{userId}, transferSub:{transferSub}, message:{message}",
+                    userTransferInfo?.UserId, userTransferInfo?.TransferSub, e.Message);
+            }
+        }
+
+        await _distributedCache.SetAsync(CommonConstant.AppleUserTransferKey, new AppleUserTransfer()
+        {
+            AppleUserTransferInfos = userTransfer.AppleUserTransferInfos
+        }, new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTime.UtcNow.AddYears(10)
+        });
+
+        return count;
+    }
+
     private async Task SetConfig()
     {
         _oldSecret = GetSecret(_oldAppleAuthOptions.ExtensionConfig.PrivateKey,
             _oldAppleAuthOptions.ExtensionConfig.KeyId,
             _oldAppleAuthOptions.ExtensionConfig.TeamId, _oldAppleAuthOptions.ExtensionConfig.ClientId);
+        Logger.LogInformation("old secret. {secret}", _oldSecret);
 
-        _secret = GetSecret(_oldAppleAuthOptions.ExtensionConfig.PrivateKey, _oldAppleAuthOptions.ExtensionConfig.KeyId,
-            _oldAppleAuthOptions.ExtensionConfig.TeamId, _oldAppleAuthOptions.ExtensionConfig.ClientId);
+        _secret = GetSecret(_transferredAppleAuthOptions.ExtensionConfig.PrivateKey,
+            _transferredAppleAuthOptions.ExtensionConfig.KeyId,
+            _transferredAppleAuthOptions.ExtensionConfig.TeamId, _transferredAppleAuthOptions.ExtensionConfig.ClientId);
+        Logger.LogInformation("transferred secret. {secret}", _secret);
 
         _oldAccessToken = await GetAccessToken(_oldAppleAuthOptions.ExtensionConfig.ClientId, _oldSecret);
-        _accessToken = await GetAccessToken(_oldAppleAuthOptions.ExtensionConfig.ClientId, _oldSecret);
+        Logger.LogInformation("get old access token success. {token}", _oldAccessToken);
+        _accessToken = await GetAccessToken(_transferredAppleAuthOptions.ExtensionConfig.ClientId, _secret);
+        Logger.LogInformation("get transferred access token success. {token}", _accessToken);
     }
 
     public async Task<string> GetAccessToken(string clientId, string clientSecret)
@@ -113,6 +273,10 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
         };
 
         var dto = await PostFormAsync<AccessDto>(url, dic);
+
+        if (dto == null)
+            throw new UserFriendlyException(
+                $"get access token success, clientId: {clientId}, clientSecret:{clientSecret}");
 
         Logger.LogInformation(
             "get access token success, clientId: {clientId}, clientSecret:{clientSecret}, accessToken:{accessToken}",

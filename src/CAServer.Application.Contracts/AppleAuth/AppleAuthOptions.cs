@@ -18,3 +18,9 @@ public class ExtensionConfig
     public string ClientId { get; set; }
     public string KeyId { get; set; }
 }
+
+public class AppleAuthTransferredOptions
+{
+    public List<string> Audiences { get; set; }
+    public ExtensionConfig ExtensionConfig { get; set; }
+}

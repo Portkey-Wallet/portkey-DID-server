@@ -72,4 +72,16 @@ public class AppleMigrateController : CAServerController
     {
         return await _appleGuardianProvider.GetAppleGuardianIntoCache();
     }
+    
+    [HttpPost("setTransferSub")]
+    public async Task<int> SetTransferSubAsync()
+    {
+        return await _appleMigrateProvider.SetTransferSubAsync();
+    }
+
+    [HttpPost("setNewUserInfo")]
+    public async Task<int> SetNewUserInfoAsync()
+    {
+        return await _appleMigrateProvider.SetNewUserInfoAsync();
+    }
 }

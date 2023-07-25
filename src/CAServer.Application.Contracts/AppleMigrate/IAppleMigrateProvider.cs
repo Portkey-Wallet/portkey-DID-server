@@ -9,4 +9,7 @@ public interface IAppleMigrateProvider
     Task<string> GetAccessToken(string clientId, string clientSecret);
     Task<GetSubDto> GetSubAsync(string userId);
     Task<GetNewUserIdDto> GetNewUserIdAsync(string transferSub);
+
+    Task<int> SetTransferSubAsync();
+    Task<int> SetNewUserInfoAsync();
 }
