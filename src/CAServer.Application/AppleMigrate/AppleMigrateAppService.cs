@@ -1,17 +1,21 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.AppleAuth.Provider;
 using CAServer.AppleMigrate.Dtos;
+using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
 using CAServer.Verifier.Etos;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.AppleMigrate;
@@ -23,13 +27,66 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IAppleUserProvider _appleUserProvider;
+    private readonly IDistributedCache<AppleUserTransfer> _distributedCache;
+    private readonly IDistributedCache<AppleMigrateResponseDto> _migrateUserInfo;
+
 
     public AppleMigrateAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        IAppleUserProvider appleUserProvider)
+        IAppleUserProvider appleUserProvider, IDistributedCache<AppleUserTransfer> distributedCache,
+        IDistributedCache<AppleMigrateResponseDto> migrateUserInfo)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _appleUserProvider = appleUserProvider;
+        _distributedCache = distributedCache;
+        _migrateUserInfo = migrateUserInfo;
+    }
+
+    public async Task<int> MigrateAllAsync(bool retry)
+    {
+        var count = 0;
+        var userTransfer = await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
+        if (userTransfer?.AppleUserTransferInfos == null || userTransfer?.AppleUserTransferInfos.Count <= 0)
+        {
+            throw new UserFriendlyException("all user info not in cache.");
+        }
+
+        foreach (var user in userTransfer.AppleUserTransferInfos)
+        {
+            try
+            {
+                var userInfo = await _migrateUserInfo.GetAsync(CommonConstant.AppleMigrateUserKey + user.UserId);
+                if (userInfo != null && !retry)
+                {
+                    Logger.LogInformation("user already transferred, userId: {userId}", userInfo.OriginalIdentifier);
+                    continue;
+                }
+
+                var responseDto = await MigrateAsync(new AppleMigrateRequestDto
+                {
+                    GuardianIdentifier = user.UserId,
+                    MigratedUserId = user.Sub
+                });
+
+                if (responseDto == null) continue;
+
+                // set responseDto in cache
+                await _migrateUserInfo.SetAsync(CommonConstant.AppleMigrateUserKey + responseDto.OriginalIdentifier, responseDto,
+                    new DistributedCacheEntryOptions()
+                    {
+                        AbsoluteExpiration = DateTime.UtcNow.AddDays(10)
+                    });
+                count++;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("userId transfer fail, userId: {userId}", user.UserId);
+            }
+        }
+
+        // add a log
+
+        return count;
     }
 
     public async Task<AppleMigrateResponseDto> MigrateAsync(AppleMigrateRequestDto input)
@@ -52,7 +109,8 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
             FirstName = userInfoDto.FirstName,
             LastName = userInfoDto.LastName,
         });
-        
+
+        // use bash to delete
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<GuardianGrainDto, GuardianDeleteEto>(guardian));
 

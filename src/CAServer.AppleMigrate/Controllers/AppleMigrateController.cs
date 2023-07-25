@@ -1,6 +1,5 @@
 using CAServer.AppleMigrate;
 using CAServer.AppleMigrate.Dtos;
-using CAServer.AppleMigrate.Modle;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -38,7 +37,7 @@ public class AppleMigrateController : CAServerController
     [HttpGet("getNewUserId")]
     public async Task<GetNewUserIdDto> GetNewUserIdAsync(string userId)
     {
-        throw new NotImplementedException();
+        return await _appleMigrateProvider.GetNewUserIdAsync(userId);
     }
 
     [HttpPost("migrateAll")]
@@ -51,5 +50,11 @@ public class AppleMigrateController : CAServerController
     public string GetSecret()
     {
         return _appleMigrateProvider.GetSecret();
+    }
+
+    [HttpGet("getAccessToken")]
+    public async Task<string> GetAccessToken(string clientId, string clientSecret)
+    {
+        return await _appleMigrateProvider.GetAccessToken(clientId, clientSecret);
     }
 }

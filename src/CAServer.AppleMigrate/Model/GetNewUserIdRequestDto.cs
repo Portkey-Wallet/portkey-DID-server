@@ -1,4 +1,4 @@
-namespace CAServer.AppleMigrate.Modle;
+namespace CAServer.AppleMigrate.Model;
 
 public class GetNewUserIdRequestDto
 {

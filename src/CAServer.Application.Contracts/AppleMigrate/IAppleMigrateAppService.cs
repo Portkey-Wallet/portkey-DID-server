@@ -6,4 +6,6 @@ namespace CAServer.AppleMigrate;
 public interface IAppleMigrateAppService
 {
     Task<AppleMigrateResponseDto> MigrateAsync(AppleMigrateRequestDto input);
+
+    Task<int> MigrateAllAsync(bool retry);
 }
