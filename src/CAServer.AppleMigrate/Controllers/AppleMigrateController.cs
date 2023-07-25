@@ -14,12 +14,15 @@ public class AppleMigrateController : CAServerController
 {
     private readonly IAppleMigrateAppService _appleMigrateAppService;
     private readonly IAppleMigrateProvider _appleMigrateProvider;
+    private readonly IAppleGuardianProvider _appleGuardianProvider;
 
     public AppleMigrateController(IAppleMigrateAppService appleMigrateAppService,
-        IAppleMigrateProvider appleMigrateProvider)
+        IAppleMigrateProvider appleMigrateProvider,
+        IAppleGuardianProvider appleGuardianProvider)
     {
         _appleMigrateAppService = appleMigrateAppService;
         _appleMigrateProvider = appleMigrateProvider;
+        _appleGuardianProvider = appleGuardianProvider;
     }
 
     [HttpPost("migrate")]
@@ -56,5 +59,11 @@ public class AppleMigrateController : CAServerController
     public async Task<string> GetAccessToken(string clientId, string clientSecret)
     {
         return await _appleMigrateProvider.GetAccessToken(clientId, clientSecret);
+    }
+
+    [HttpPost("setAppleGuardianIntoCache")]
+    public async Task<int> SetAppleGuardianIntoCache()
+    {
+        return await _appleGuardianProvider.SetAppleGuardianIntoCache();
     }
 }
