@@ -1,5 +1,4 @@
-﻿using CAServer.BackGround.Options;
-using CAServer.CAActivity.Provider;
+﻿using CAServer.CAActivity.Provider;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.MongoDB;
@@ -10,8 +9,10 @@ using GraphQL.Client.Serializer.Newtonsoft;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.Mongo;
+using Hangfire.Mongo.CosmosDB;
 using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
+using MongoDB.Driver;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -30,6 +31,7 @@ using Volo.Abp.PermissionManagement;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.Threading;
+using TransactionOptions = CAServer.BackGround.Options.TransactionOptions;
 
 namespace CAServer.BackGround;
 
@@ -72,33 +74,58 @@ public class CABackGroundModule : AbpModule
 
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        context.Services.AddHangfire(x =>
+        // context.Services.AddHangfire(x =>
+        // {
+        //     var connectionString = configuration["Hangfire:ConnectionString"];
+        //     x.UseMongoStorage(connectionString, new MongoStorageOptions
+        //     {
+        //         MigrationOptions = new MongoMigrationOptions
+        //         {
+        //             MigrationStrategy = new MigrateMongoMigrationStrategy(),
+        //             BackupStrategy = new CollectionMongoBackupStrategy()
+        //         },
+        //         // Prefix = "hangfire.mongo",
+        //         CheckConnection = true,
+        //         CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
+        //     });
+        //     
+        //
+        //     x.UseDashboardMetric(DashboardMetrics.ServerCount)
+        //         .UseDashboardMetric(DashboardMetrics.RecurringJobCount)
+        //         .UseDashboardMetric(DashboardMetrics.RetriesCount)
+        //         .UseDashboardMetric(DashboardMetrics.AwaitingCount)
+        //         .UseDashboardMetric(DashboardMetrics.EnqueuedAndQueueCount)
+        //         .UseDashboardMetric(DashboardMetrics.ScheduledCount)
+        //         .UseDashboardMetric(DashboardMetrics.ProcessingCount)
+        //         .UseDashboardMetric(DashboardMetrics.SucceededCount)
+        //         .UseDashboardMetric(DashboardMetrics.FailedCount)
+        //         .UseDashboardMetric(DashboardMetrics.EnqueuedCountOrNull)
+        //         .UseDashboardMetric(DashboardMetrics.FailedCountOrNull)
+        //         .UseDashboardMetric(DashboardMetrics.DeletedCount);
+        // });
+        
+        
+        // Add framework services.
+        context.Services.AddHangfire(config =>
         {
-            var connectionString = configuration["Hangfire:ConnectionString"];
-            x.UseMongoStorage(connectionString, new MongoStorageOptions
+            var connectionString =  configuration["Hangfire:ConnectionString"];
+            var mongoUrlBuilder = new MongoUrlBuilder(connectionString) {DatabaseName = "jobs"};
+            var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
+            var opt = new CosmosStorageOptions
             {
                 MigrationOptions = new MongoMigrationOptions
                 {
-                    MigrationStrategy = new MigrateMongoMigrationStrategy(),
-                    BackupStrategy = new CollectionMongoBackupStrategy()
-                },
-                // Prefix = "hangfire.mongo",
-                CheckConnection = true,
-                CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
-            });
+                    BackupStrategy = new NoneMongoBackupStrategy(),
+                    MigrationStrategy = new DropMongoMigrationStrategy(),
+                }
+            };
+            //config.UseLogProvider(new FileLogProvider());
+            config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
+        });
 
-            x.UseDashboardMetric(DashboardMetrics.ServerCount)
-                .UseDashboardMetric(DashboardMetrics.RecurringJobCount)
-                .UseDashboardMetric(DashboardMetrics.RetriesCount)
-                .UseDashboardMetric(DashboardMetrics.AwaitingCount)
-                .UseDashboardMetric(DashboardMetrics.EnqueuedAndQueueCount)
-                .UseDashboardMetric(DashboardMetrics.ScheduledCount)
-                .UseDashboardMetric(DashboardMetrics.ProcessingCount)
-                .UseDashboardMetric(DashboardMetrics.SucceededCount)
-                .UseDashboardMetric(DashboardMetrics.FailedCount)
-                .UseDashboardMetric(DashboardMetrics.EnqueuedCountOrNull)
-                .UseDashboardMetric(DashboardMetrics.FailedCountOrNull)
-                .UseDashboardMetric(DashboardMetrics.DeletedCount);
+        context.Services.AddHangfireServer(opt =>
+        {
+            opt.Queues = new[] {"default", "notDefault"};
         });
     }
     
