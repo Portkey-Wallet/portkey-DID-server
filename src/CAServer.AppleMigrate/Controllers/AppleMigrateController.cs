@@ -66,4 +66,10 @@ public class AppleMigrateController : CAServerController
     {
         return await _appleGuardianProvider.SetAppleGuardianIntoCache();
     }
+    
+    [HttpGet("getAppleGuardianIntoCache")]
+    public async Task<AppleUserTransfer> GetAppleGuardianIntoCache()
+    {
+        return await _appleGuardianProvider.GetAppleGuardianIntoCache();
+    }
 }

@@ -112,6 +112,11 @@ public class AppleGuardianProvider : CAServerAppService, IAppleGuardianProvider
         return count;
     }
 
+    public async Task<AppleUserTransfer> GetAppleGuardianIntoCache()
+    {
+        return await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
+    }
+
     public async Task<List<GuardianIndex>> GetGuardiansAsync(int skip, int limit)
     {
         var esResult = await _guardianRepository.GetListAsync(skip: skip, limit: limit);
