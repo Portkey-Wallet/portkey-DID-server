@@ -37,7 +37,7 @@ public class AppleMigrateController : CAServerController
         return await _appleMigrateAppService.MigrateAllAsync(retry);
     }
 
-    [HttpGet("getSub")]
+    [HttpGet("getTransferSub")]
     public async Task<GetSubDto> GetSubAsync(string userId)
     {
         return await _appleMigrateProvider.GetSubAsync(userId);
@@ -89,5 +89,11 @@ public class AppleMigrateController : CAServerController
     public async Task<int> SetNewUserInfoAsync()
     {
         return await _appleMigrateProvider.SetNewUserInfoAsync();
+    }
+
+    [HttpGet("getMigrateResult")]
+    public async Task<object> GetMigrateResult(string userId)
+    {
+        return await _appleGuardianProvider.GetMigrateResult(userId);
     }
 }

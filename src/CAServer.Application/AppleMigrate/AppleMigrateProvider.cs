@@ -388,7 +388,7 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
         {
             throw new UserFriendlyException("userId is must");
         }
-        
+
         var userTransfer = await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
         if (userTransfer?.AppleUserTransferInfos == null || userTransfer?.AppleUserTransferInfos.Count <= 0)
         {

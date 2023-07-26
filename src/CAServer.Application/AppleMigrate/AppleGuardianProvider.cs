@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.AppleMigrate.Dtos;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using Microsoft.Extensions.Caching.Distributed;
@@ -20,16 +21,19 @@ public class AppleGuardianProvider : CAServerAppService, IAppleGuardianProvider
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     private readonly IDistributedCache<AppleUserTransfer> _distributedCache;
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
+    private readonly IDistributedCache<AppleMigrateResponseDto> _migrateUserInfo;
     private static long _guardianTotalCount = 0;
 
     public AppleGuardianProvider(
         INESTRepository<GuardianIndex, string> guardianRepository,
         IDistributedCache<AppleUserTransfer> distributedCache,
-        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository)
+        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
+        IDistributedCache<AppleMigrateResponseDto> migrateUserInfo)
     {
         _guardianRepository = guardianRepository;
         _distributedCache = distributedCache;
         _userExtraInfoRepository = userExtraInfoRepository;
+        _migrateUserInfo = migrateUserInfo;
     }
 
     public async Task<int> SetAppleGuardianIntoCache()
@@ -152,5 +156,55 @@ public class AppleGuardianProvider : CAServerAppService, IAppleGuardianProvider
         Logger.LogInformation("user extra info count:{count}", esResult.Item1);
         var users = esResult.Item2;
         return users ?? new List<UserExtraInfoIndex>();
+    }
+
+    public async Task<object> GetMigrateResult(string userId)
+    {
+        var userInfo = await GetTransferInfoFromCache(userId);
+        if (userInfo == null)
+        {
+            throw new UserFriendlyException($"user not in cache, userId:{userId}");
+        }
+
+        var migrateResponseDto = await _migrateUserInfo.GetAsync(CommonConstant.AppleMigrateUserKey + userId);
+        if (migrateResponseDto == null)
+        {
+            throw new UserFriendlyException($"migrate guardian info not in cache, userId:{userId}");
+        }
+
+        var guardians = await GetGuardianAsync(userInfo.Sub);
+        if (guardians == null)
+        {
+            throw new UserFriendlyException($"migrate guardian info not in es, userId:{userId}");
+        }
+
+        return guardians;
+    }
+
+    private async Task<AppleUserTransferInfo> GetTransferInfoFromCache(string userId)
+    {
+        if (userId.IsNullOrWhiteSpace())
+        {
+            throw new UserFriendlyException("userId is must");
+        }
+
+        var userTransfer = await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
+        if (userTransfer?.AppleUserTransferInfos == null || userTransfer?.AppleUserTransferInfos.Count <= 0)
+        {
+            throw new UserFriendlyException("in SetTransferSubAsync,  all user info not in cache.");
+        }
+
+        return userTransfer.AppleUserTransferInfos.FirstOrDefault(t => t.UserId == userId);
+    }
+
+    private async Task<GuardianIndex> GetGuardianAsync(string userId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(userId)));
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var esResult = await _guardianRepository.GetAsync(Filter);
+
+        return esResult;
     }
 }
