@@ -114,7 +114,7 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
     {
         if (_oldSecret.IsNullOrWhiteSpace() || _oldAccessToken.IsNullOrWhiteSpace() ||
             _secret.IsNullOrWhiteSpace() || _accessToken.IsNullOrWhiteSpace()) await SetConfig();
-        
+
         // get transfer_sub from userId.
         transferSub = "000995.r61f00f5d5b4a461ba35d2b19ce2e8b8a";
         var url = "https://appleid.apple.com/auth/usermigrationinfo";
@@ -351,11 +351,11 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
         {
             await SetConfig();
         }
-        
-        result.Add("transferringSecret",_oldSecret);
-        result.Add("transferringAccessToken",_oldAccessToken);
-        result.Add("transferredSecret",_secret);
-        result.Add("transferredAccessToken",_accessToken);
+
+        result.Add("transferringSecret", _oldSecret);
+        result.Add("transferringAccessToken", _oldAccessToken);
+        result.Add("transferredSecret", _secret);
+        result.Add("transferredAccessToken", _accessToken);
 
         return result;
     }
@@ -380,5 +380,31 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
         var clientSecret = _jwtSecurityTokenHandler.WriteToken(token);
 
         return clientSecret;
+    }
+
+    public async Task<GetSubDto> GetSubFromCacheAsync(string userId)
+    {
+        if (userId.IsNullOrWhiteSpace())
+        {
+            throw new UserFriendlyException("userId is must");
+        }
+        
+        var userTransfer = await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
+        if (userTransfer?.AppleUserTransferInfos == null || userTransfer?.AppleUserTransferInfos.Count <= 0)
+        {
+            throw new UserFriendlyException("in SetTransferSubAsync,  all user info not in cache.");
+        }
+
+        var subDto = userTransfer.AppleUserTransferInfos.FirstOrDefault(t => t.UserId == userId);
+        if (subDto == null)
+        {
+            throw new UserFriendlyException("user not in cache.");
+        }
+
+        return new GetSubDto
+        {
+            UserId = userId,
+            Sub = subDto.Sub
+        };
     }
 }

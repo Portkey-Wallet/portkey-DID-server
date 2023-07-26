@@ -30,11 +30,23 @@ public class AppleMigrateController : CAServerController
     {
         return await _appleMigrateAppService.MigrateAsync(input);
     }
+    
+    [HttpPost("migrateAll")]
+    public async Task<int> MigrateAllAsync(bool retry)
+    {
+        return await _appleMigrateAppService.MigrateAllAsync(retry);
+    }
 
     [HttpGet("getSub")]
     public async Task<GetSubDto> GetSubAsync(string userId)
     {
         return await _appleMigrateProvider.GetSubAsync(userId);
+    }
+    
+    [HttpGet("getSubFromCache")]
+    public async Task<GetSubDto> GetSubFromCacheAsync(string userId)
+    {
+        return await _appleMigrateProvider.GetSubFromCacheAsync(userId);
     }
 
     [HttpGet("getNewUserId")]
@@ -42,13 +54,7 @@ public class AppleMigrateController : CAServerController
     {
         return await _appleMigrateProvider.GetNewUserIdAsync(userId);
     }
-
-    [HttpPost("migrateAll")]
-    public async Task<int> MigrateAllAsync(bool retry)
-    {
-        return await _appleMigrateAppService.MigrateAllAsync(retry);
-    }
-
+    
     [HttpGet("getSecretAndAccessToken")]
     public async Task<Dictionary<string, string>> GetSecretAndAccessToken()
     {
