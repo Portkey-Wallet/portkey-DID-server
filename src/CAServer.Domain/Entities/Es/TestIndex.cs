@@ -3,7 +3,7 @@ using Nest;
 
 namespace CAServer.Entities.Es;
 
-public class TestIndex : CAServerEsEntity<string>, IIndexBuild
+public class TestIndex : CAServerEsEntity<string>
 {
     [Keyword] public override string Id { get; set; }
     [Keyword] public string Name { get; set; }
