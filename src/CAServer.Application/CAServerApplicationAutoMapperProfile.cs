@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using CAServer.AppleMigrate.Dtos;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
 using CAServer.CAAccount.Dtos;
@@ -364,5 +365,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TestRequestDto, TestResultDto>();
         CreateMap<TestIndex, TestResultDto>();
         CreateMap<TestRequestDto, TestEto>();
+        CreateMap<GuardianGrainDto, GuardianIndex>();
+        CreateMap<GuardianGrainDto, AppleMigrateResponseDto>();
     }
 }

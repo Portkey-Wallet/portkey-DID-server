@@ -1,10 +1,11 @@
 using System;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using CAServer.AppleAuth.Provider;
 using CAServer.AppleMigrate.Dtos;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Grains;
-using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
@@ -29,17 +30,20 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly IDistributedCache<AppleUserTransfer> _distributedCache;
     private readonly IDistributedCache<AppleMigrateResponseDto> _migrateUserInfo;
+    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
 
 
     public AppleMigrateAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         IAppleUserProvider appleUserProvider, IDistributedCache<AppleUserTransfer> distributedCache,
-        IDistributedCache<AppleMigrateResponseDto> migrateUserInfo)
+        IDistributedCache<AppleMigrateResponseDto> migrateUserInfo,
+        INESTRepository<GuardianIndex, string> guardianRepository)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _appleUserProvider = appleUserProvider;
         _distributedCache = distributedCache;
         _migrateUserInfo = migrateUserInfo;
+        _guardianRepository = guardianRepository;
     }
 
     public async Task<int> MigrateAllAsync(bool retry)
@@ -98,6 +102,15 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
 
         var userInfoDto = await GetUserInfoAsync(input.GuardianIdentifier);
         userInfoDto.Id = input.MigratedUserId;
+        if (!input.Email.IsNullOrWhiteSpace())
+        {
+            userInfoDto.Email = input.Email;
+        }
+
+        if (input.IsPrivateEmail)
+        {
+            userInfoDto.IsPrivateEmail = input.IsPrivateEmail;
+        }
 
         Logger.LogInformation("user extra info : {info}", JsonConvert.SerializeObject(userInfoDto));
         await AddUserInfoAsync(ObjectMapper.Map<UserExtraInfoGrainDto, Verifier.Dtos.UserExtraInfo>(userInfoDto));
@@ -110,10 +123,7 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
             LastName = userInfoDto.LastName,
         });
 
-        // use bash to delete
-        await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<GuardianGrainDto, GuardianDeleteEto>(guardian));
-
+        await DeleteGuardian(guardian);
         return ObjectMapper.Map<GuardianGrainDto, AppleMigrateResponseDto>(guardianGrainDto);
     }
 
@@ -151,8 +161,7 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
 
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<GuardianGrainDto, GuardianEto>(resultDto.Data));
-
-
+        
         return resultDto.Data;
     }
 
@@ -185,5 +194,20 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
         }
 
         return resultDto.Data;
+    }
+
+    private async Task DeleteGuardian(GuardianGrainDto grainDto)
+    {
+        try
+        {
+            var guardian = ObjectMapper.Map<GuardianGrainDto, GuardianIndex>(grainDto);
+            await _guardianRepository.DeleteAsync(guardian);
+            Logger.LogDebug($"Guardian delete success: {JsonConvert.SerializeObject(guardian)}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "{Message}: {Data}", "Guardian add fail",
+                JsonConvert.SerializeObject(grainDto));
+        }
     }
 }

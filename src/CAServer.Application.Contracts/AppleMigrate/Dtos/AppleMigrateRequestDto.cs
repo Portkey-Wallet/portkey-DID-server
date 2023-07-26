@@ -9,4 +9,7 @@ public class AppleMigrateRequestDto
 
     [Required]
     public string MigratedUserId { get; set; }
+    
+    public string Email { get; set; }
+    public bool IsPrivateEmail { get; set; }
 }

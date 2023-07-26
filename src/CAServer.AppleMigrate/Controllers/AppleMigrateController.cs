@@ -44,15 +44,15 @@ public class AppleMigrateController : CAServerController
     }
 
     [HttpPost("migrateAll")]
-    public async Task<int> MigrateAllAsync()
+    public async Task<int> MigrateAllAsync(bool retry)
     {
-        throw new NotImplementedException();
+        return await _appleMigrateAppService.MigrateAllAsync(retry);
     }
 
-    [HttpGet("getClientSecret")]
-    public string GetSecret()
+    [HttpGet("getSecretAndAccessToken")]
+    public async Task<Dictionary<string, string>> GetSecretAndAccessToken()
     {
-        return _appleMigrateProvider.GetSecret();
+        return await _appleMigrateProvider.GetSecretAndAccessToken();
     }
 
     [HttpGet("getAccessToken")]
@@ -66,13 +66,13 @@ public class AppleMigrateController : CAServerController
     {
         return await _appleGuardianProvider.SetAppleGuardianIntoCache();
     }
-    
+
     [HttpGet("getAppleGuardianIntoCache")]
     public async Task<AppleUserTransfer> GetAppleGuardianIntoCache()
     {
         return await _appleGuardianProvider.GetAppleGuardianIntoCache();
     }
-    
+
     [HttpPost("setTransferSub")]
     public async Task<int> SetTransferSubAsync()
     {

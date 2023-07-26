@@ -112,7 +112,9 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
     /// <returns></returns>
     public async Task<GetNewUserIdDto> GetNewUserIdAsync(string transferSub)
     {
-        if (_secret.IsNullOrWhiteSpace() || _accessToken.IsNullOrWhiteSpace()) await SetConfig();
+        if (_oldSecret.IsNullOrWhiteSpace() || _oldAccessToken.IsNullOrWhiteSpace() ||
+            _secret.IsNullOrWhiteSpace() || _accessToken.IsNullOrWhiteSpace()) await SetConfig();
+        
         // get transfer_sub from userId.
         transferSub = "000995.r61f00f5d5b4a461ba35d2b19ce2e8b8a";
         var url = "https://appleid.apple.com/auth/usermigrationinfo";
@@ -341,13 +343,21 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
         return JsonConvert.DeserializeObject<T>(content);
     }
 
-    public string GetSecret()
+    public async Task<Dictionary<string, string>> GetSecretAndAccessToken()
     {
-        var secret = GetSecret(_oldAppleAuthOptions.ExtensionConfig.PrivateKey,
-            _oldAppleAuthOptions.ExtensionConfig.KeyId,
-            _oldAppleAuthOptions.ExtensionConfig.TeamId, _oldAppleAuthOptions.ExtensionConfig.ClientId);
+        var result = new Dictionary<string, string>();
+        if (_oldSecret.IsNullOrWhiteSpace() || _oldAccessToken.IsNullOrWhiteSpace() ||
+            _secret.IsNullOrWhiteSpace() || _accessToken.IsNullOrWhiteSpace())
+        {
+            await SetConfig();
+        }
+        
+        result.Add("transferringSecret",_oldSecret);
+        result.Add("transferringAccessToken",_oldAccessToken);
+        result.Add("transferredSecret",_secret);
+        result.Add("transferredAccessToken",_accessToken);
 
-        return secret;
+        return result;
     }
 
     private string GetSecret(string privateKey, string keyId, string teamId, string clientId)
