@@ -114,9 +114,7 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
     {
         if (_oldSecret.IsNullOrWhiteSpace() || _oldAccessToken.IsNullOrWhiteSpace() ||
             _secret.IsNullOrWhiteSpace() || _accessToken.IsNullOrWhiteSpace()) await SetConfig();
-
-        // get transfer_sub from userId.
-        transferSub = "000995.r61f00f5d5b4a461ba35d2b19ce2e8b8a";
+        
         var url = "https://appleid.apple.com/auth/usermigrationinfo";
 
         var dic = new Dictionary<string, string>
