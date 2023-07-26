@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.AppleAuth.Provider;
@@ -30,13 +31,15 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly IDistributedCache<AppleUserTransfer> _distributedCache;
     private readonly IDistributedCache<AppleMigrateResponseDto> _migrateUserInfo;
+    private readonly IDistributedCache<MigrateRecord> _migrateRecord;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
 
 
     public AppleMigrateAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         IAppleUserProvider appleUserProvider, IDistributedCache<AppleUserTransfer> distributedCache,
         IDistributedCache<AppleMigrateResponseDto> migrateUserInfo,
-        INESTRepository<GuardianIndex, string> guardianRepository)
+        INESTRepository<GuardianIndex, string> guardianRepository,
+        IDistributedCache<MigrateRecord> migrateRecord)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -44,6 +47,7 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
         _distributedCache = distributedCache;
         _migrateUserInfo = migrateUserInfo;
         _guardianRepository = guardianRepository;
+        _migrateRecord = migrateRecord;
     }
 
     public async Task<int> MigrateAllAsync(bool retry)
@@ -74,12 +78,6 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
 
                 if (responseDto == null) continue;
 
-                // set responseDto in cache
-                await _migrateUserInfo.SetAsync(CommonConstant.AppleMigrateUserKey + responseDto.OriginalIdentifier, responseDto,
-                    new DistributedCacheEntryOptions()
-                    {
-                        AbsoluteExpiration = DateTime.UtcNow.AddDays(10)
-                    });
                 count++;
             }
             catch (Exception ex)
@@ -88,8 +86,7 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
             }
         }
 
-        // add a log
-
+        Logger.LogInformation("#### MigrateAllAsync execute end, migrate count:{count}", count);
         return count;
     }
 
@@ -124,7 +121,52 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
         });
 
         await DeleteGuardian(guardian);
-        return ObjectMapper.Map<GuardianGrainDto, AppleMigrateResponseDto>(guardianGrainDto);
+
+        var responseDto = ObjectMapper.Map<GuardianGrainDto, AppleMigrateResponseDto>(guardianGrainDto);
+        if (responseDto == null || responseDto.OriginalIdentifier.IsNullOrWhiteSpace())
+        {
+            Logger.LogError("something error in guardian grain when migrate user. userId:{userId}",
+                input.GuardianIdentifier);
+
+            return null;
+        }
+
+        await SetMigrateInfoToCache(responseDto);
+
+        return responseDto;
+    }
+
+    private async Task SetMigrateInfoToCache(AppleMigrateResponseDto responseDto)
+    {
+        await _migrateUserInfo.SetAsync(CommonConstant.AppleMigrateUserKey + responseDto.Identifier,
+            responseDto,
+            new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = DateTime.UtcNow.AddDays(100)
+            });
+
+        var record = await _migrateRecord.GetAsync(CommonConstant.AppleMigrateRecordKey) ?? new MigrateRecord();
+
+        var exists = record?.AppleMigrateRecords?.Exists(t => t.Identifier == responseDto.Identifier);
+
+        if (exists == true)
+        {
+            return;
+        }
+
+        record.AppleMigrateRecords.Add(new AppleMigrateRecord()
+        {
+            Id = responseDto.Id,
+            Identifier = responseDto.Identifier,
+            OriginalIdentifier = responseDto.OriginalIdentifier
+        });
+
+        await _migrateRecord.SetAsync(CommonConstant.AppleMigrateRecordKey,
+            record,
+            new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = DateTime.UtcNow.AddDays(100)
+            });
     }
 
     private GuardianGrainDto GetGuardian(string guardianIdentifier)
@@ -161,7 +203,7 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
 
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<GuardianGrainDto, GuardianEto>(resultDto.Data));
-        
+
         return resultDto.Data;
     }
 

@@ -34,4 +34,5 @@ public static class CommonConstant
     
     public const string AppleUserTransferKey = "AppleUserTransfer";
     public const string AppleMigrateUserKey = "AppleMigrateUser";
+    public const string AppleMigrateRecordKey = "AppleMigrateRecordKey";
 }

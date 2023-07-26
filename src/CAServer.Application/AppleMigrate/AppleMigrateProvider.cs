@@ -34,8 +34,7 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
     private readonly AppleAuthTransferredOptions _transferredAppleAuthOptions;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IDistributedCache<AppleUserTransfer> _distributedCache;
-
-
+    
     private static string _oldAccessToken = string.Empty;
     private static string _accessToken = string.Empty;
 
