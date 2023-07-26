@@ -252,4 +252,24 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
                 JsonConvert.SerializeObject(grainDto));
         }
     }
+
+    public async Task<object> GetFailMigrateUser()
+    {
+        var userTransfer = await _distributedCache.GetAsync(CommonConstant.AppleUserTransferKey);
+        if (userTransfer?.AppleUserTransferInfos == null || userTransfer?.AppleUserTransferInfos.Count <= 0)
+        {
+            throw new UserFriendlyException("all user info not in cache.");
+        }
+
+        var record = await _migrateRecord.GetAsync(CommonConstant.AppleMigrateRecordKey) ?? new MigrateRecord();
+        if (record.AppleMigrateRecords.Count <= 0)
+        {
+            throw new UserFriendlyException("all user migrate info not in cache.");
+        }
+
+        var originalIdentifiers = record.AppleMigrateRecords.Select(t => t.OriginalIdentifier).ToList();
+        var failUsers = userTransfer.AppleUserTransferInfos.Where(t => !originalIdentifiers.Contains(t.UserId)).ToList();
+
+        return failUsers;
+    }
 }

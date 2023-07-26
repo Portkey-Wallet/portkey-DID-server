@@ -91,9 +91,21 @@ public class AppleMigrateController : CAServerController
         return await _appleMigrateProvider.SetNewUserInfoAsync();
     }
 
+    /// <summary>
+    /// 查询账号是否迁移成功
+    /// </summary>
     [HttpGet("getMigrateResult")]
     public async Task<object> GetMigrateResult(string userId)
     {
         return await _appleGuardianProvider.GetMigrateResult(userId);
+    }
+    
+    /// <summary>
+    /// 看看有哪些未迁移成功的账号
+    /// </summary>
+    [HttpGet("getFailMigrateUser")]
+    public async Task<object> GetFailMigrateUser()
+    {
+        return await _appleMigrateAppService.GetFailMigrateUser();
     }
 }
