@@ -43,10 +43,10 @@ public class AppleMigrateController : CAServerController
         return await _appleMigrateProvider.GetSubAsync(userId);
     }
     
-    [HttpGet("getSubFromCache")]
-    public async Task<GetSubDto> GetSubFromCacheAsync(string userId)
+    [HttpGet("getTransferInfoFromCache")]
+    public async Task<AppleUserTransferInfo> GetTransferInfoFromCache(string userId)
     {
-        return await _appleMigrateProvider.GetSubFromCacheAsync(userId);
+        return await _appleMigrateProvider.GetTransferInfoFromCache(userId);
     }
 
     [HttpGet("getNewUserId")]

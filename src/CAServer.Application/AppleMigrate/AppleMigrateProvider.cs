@@ -382,7 +382,7 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
         return clientSecret;
     }
 
-    public async Task<GetSubDto> GetSubFromCacheAsync(string userId)
+    public async Task<AppleUserTransferInfo> GetTransferInfoFromCache(string userId)
     {
         if (userId.IsNullOrWhiteSpace())
         {
@@ -395,16 +395,6 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
             throw new UserFriendlyException("in SetTransferSubAsync,  all user info not in cache.");
         }
 
-        var subDto = userTransfer.AppleUserTransferInfos.FirstOrDefault(t => t.UserId == userId);
-        if (subDto == null)
-        {
-            throw new UserFriendlyException("user not in cache.");
-        }
-
-        return new GetSubDto
-        {
-            UserId = userId,
-            Sub = subDto.Sub
-        };
+        return userTransfer.AppleUserTransferInfos.FirstOrDefault(t => t.UserId == userId);
     }
 }
