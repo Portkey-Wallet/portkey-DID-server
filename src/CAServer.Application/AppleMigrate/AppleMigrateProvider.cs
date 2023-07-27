@@ -235,7 +235,7 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
             AppleUserTransferInfos = userTransfer.AppleUserTransferInfos
         }, new DistributedCacheEntryOptions()
         {
-            AbsoluteExpiration = DateTime.UtcNow.AddYears(10)
+            AbsoluteExpiration = DateTime.UtcNow.AddYears(100)
         });
 
         return count;
