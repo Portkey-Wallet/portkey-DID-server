@@ -45,6 +45,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
 
+
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
@@ -264,17 +265,25 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId)
     {
-        var result = await _contractProvider.GetVerifierServersListAsync(chainId);
-        if (null == result || result.VerifierServers.Count == 0)
+        GetVerifierServersOutput result;
+        try
         {
-            _logger.LogError("Get verifier server failed");
-            return new GetVerifierServerResponse();
+            result = await _contractProvider.GetVerifierServersListAsync(chainId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Get verifier server failed");
+            throw new UserFriendlyException(CAServerApplicationConsts.ChooseVerifierServerErrorMsg);
         }
 
-        var random = new Random();
-        var index = random.Next(0, result.VerifierServers.Count);
-        var server = result.VerifierServers[index];
-        return _objectMapper.Map<VerifierServer, GetVerifierServerResponse>(server);
+        if (null == result || result.VerifierServers.Count == 0)
+        {
+            _logger.LogError("Get verifier server failed, result is null or empty");
+            throw new UserFriendlyException(CAServerApplicationConsts.ChooseVerifierServerErrorMsg);
+        }
+
+        var verifierServer = RandomHelper.GetRandomOfList(result.VerifierServers);
+        return _objectMapper.Map<VerifierServer, GetVerifierServerResponse>(verifierServer);
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
