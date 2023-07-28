@@ -59,6 +59,7 @@ namespace CAServer.AppleMigrate;
     typeof(AbpTenantManagementHttpApiModule),
     typeof(AbpFeatureManagementHttpApiModule),
     typeof(AbpSettingManagementHttpApiModule),
+    typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerRedisModule)
 )]
 public class AppleMigrateModule : AbpModule

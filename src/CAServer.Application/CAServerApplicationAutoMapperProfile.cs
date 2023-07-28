@@ -262,6 +262,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<AppleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoEto>();
+        CreateMap<UserExtraInfoGrainDto, Verifier.Dtos.UserExtraInfo>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoResultDto>()
             .ForMember(t => t.IsPrivate, m => m.MapFrom(f => f.IsPrivateEmail));
         CreateMap<DefaultIpInfoOptions, IpInfoResultDto>();

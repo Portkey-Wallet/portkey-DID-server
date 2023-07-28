@@ -202,7 +202,7 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
             JsonConvert.SerializeObject(resultDto.Data));
 
         await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<GuardianGrainDto, GuardianEto>(resultDto.Data));
+            ObjectMapper.Map<GuardianGrainDto, GuardianEto>(resultDto.Data), false, false);
 
         return resultDto.Data;
     }
@@ -219,7 +219,7 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
 
         grainDto.Id = userExtraInfo.Id;
         await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto));
+            ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto), false, false);
     }
 
 
@@ -268,7 +268,8 @@ public class AppleMigrateAppService : CAServerAppService, IAppleMigrateAppServic
         }
 
         var originalIdentifiers = record.AppleMigrateRecords.Select(t => t.OriginalIdentifier).ToList();
-        var failUsers = userTransfer.AppleUserTransferInfos.Where(t => !originalIdentifiers.Contains(t.UserId)).ToList();
+        var failUsers = userTransfer.AppleUserTransferInfos.Where(t => !originalIdentifiers.Contains(t.UserId))
+            .ToList();
 
         return failUsers;
     }

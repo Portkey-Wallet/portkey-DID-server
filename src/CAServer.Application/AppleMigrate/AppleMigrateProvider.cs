@@ -119,7 +119,7 @@ public class AppleMigrateProvider : CAServerAppService, IAppleMigrateProvider
         var dic = new Dictionary<string, string>
         {
             { "transfer_sub", transferSub },
-            { "client_id", _oldAppleAuthOptions.ExtensionConfig.ClientId },
+            { "client_id", _transferredAppleAuthOptions.ExtensionConfig.ClientId },
             { "client_secret", _secret }
         };
 
