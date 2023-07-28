@@ -8,10 +8,8 @@ using CAServer.IpWhiteList;
 using CAServer.Switch;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
@@ -249,6 +247,12 @@ public class CAVerifierController : CAServerController
 
         return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,
             type);
+    }
+
+    [HttpPost ("getVerifierServer")]
+    public async Task<GetVerifierServerResponse> GetVerifierServerAsync(GetVerifierServerInfoInput input)
+    {
+        return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
     }
 
 

@@ -27,6 +27,11 @@
         "Iso": "DK"
       },
       {
+        "Country": "Spain",
+        "Code": "34",
+        "Iso": "ES"
+      },
+      {
         "Country": "Finland",
         "Code": "358",
         "Iso": "FIN"
@@ -62,9 +67,24 @@
         "Iso": "MX"
       },
       {
+        "Country": "Netherlands",
+        "Code": "31",
+        "Iso": "NL"
+      },
+      {
+        "Country": "Philippines",
+        "Code": "63",
+        "Iso": "PH"
+      },
+      {
         "Country": "Singapore",
         "Code": "65",
         "Iso": "SG"
+      },
+      {
+        "Country": "Ukraine",
+        "Code": "380",
+        "Iso": "UA"
       },
       {
         "Country": "United States",
