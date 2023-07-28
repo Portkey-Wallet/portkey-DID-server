@@ -82,21 +82,6 @@
         "Iso": "SG"
       },
       {
-        "Country": "Sweden",
-        "Code": "46",
-        "Iso": "SE"
-      },
-      {
-        "Country": "Thailand",
-        "Code": "66",
-        "Iso": "TH"
-      },
-      {
-        "Country": "Turkey",
-        "Code": "90",
-        "Iso": "TR"
-      },
-      {
         "Country": "Ukraine",
         "Code": "380",
         "Iso": "UA"
@@ -105,11 +90,6 @@
         "Country": "United States",
         "Code": "1",
         "Iso": "US"
-      },
-      {
-        "Country": "Vietnam",
-        "Code": "84",
-        "Iso": "VN"
       }
     ]
   }
