@@ -19,7 +19,7 @@ using Volo.Abp.Users;
 
 namespace CAServer.ThirdPart.Processors;
 
-public abstract class AbstractOrderProcessor : CAServerAppService
+public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcessor
 {
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<AbstractOrderProcessor> _logger;

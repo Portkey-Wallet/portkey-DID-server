@@ -16,14 +16,15 @@ public class ThirdPartOrderController : CAServerController
 {
     private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly IThirdPartOrderAppService _thirdPartOrdersAppService;
-    private readonly OrderProcessorFactory _orderProcessorFactory;
+    private readonly IOrderProcessorFactory _orderProcessorFactory;
 
     public ThirdPartOrderController(IAlchemyOrderAppService alchemyOrderService,
-        IThirdPartOrderAppService thirdPartOrderAppService
-    )
+        IThirdPartOrderAppService thirdPartOrderAppService, 
+        IOrderProcessorFactory orderProcessorFactory)
     {
         _alchemyOrderService = alchemyOrderService;
         _thirdPartOrdersAppService = thirdPartOrderAppService;
+        _orderProcessorFactory = orderProcessorFactory;
     }
 
     [Authorize]
@@ -45,21 +46,21 @@ public class ThirdPartOrderController : CAServerController
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
         AlchemyOrderUpdateDto input, string merchant)
     {
-        return 
+        return await _orderProcessorFactory.GetProcessor(merchant).OrderUpdate(input);
     }
 
     [Authorize]
-    [HttpPost("alchemy/txHash")]
-    public async Task SendAlchemyTxHashAsync(TransactionHashDto request)
+    [HttpPost("{merchant}/txHash")]
+    public async Task SendAlchemyTxHashAsync(TransactionHashDto request, string merchant)
     {
-        await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
+        await _orderProcessorFactory.GetProcessor(merchant).UpdateTxHashAsync(request);
     }
     
     [Authorize]
-    [HttpPost("alchemy/transaction")]
-    public async Task TransactionAsync(TransactionDto input)
+    [HttpPost("{merchant}/transaction")]
+    public async Task TransactionAsync(TransactionDto input, string merchant)
     {
-        await _alchemyOrderService.TransactionAsync(input);
+        await _orderProcessorFactory.GetProcessor(merchant).ForwardTransactionAsync(input);
     }
 }
 

@@ -8,6 +8,7 @@ using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Processors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -86,8 +87,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         
-        context.Services.AddSingleton<AlchemyOrderProcessor>();
-        context.Services.AddSingleton<TransakOrderProcessor>();
-        context.Services.AddSingleton<OrderProcessorFactory>();
+        context.Services.AddSingleton<IOrderProcessor, AlchemyOrderProcessor>();
+        context.Services.AddSingleton<IOrderProcessor, TransakOrderProcessor>();
+        context.Services.AddSingleton<IOrderProcessorFactory, OrderProcessorFactory>();
     }
 }

@@ -1,20 +1,23 @@
 using System.Collections.Generic;
 using System.Linq;
+using Volo.Abp;
 
 namespace CAServer.ThirdPart.Processors;
 
-public class OrderProcessorFactory
+public class OrderProcessorFactory : IOrderProcessorFactory
 {
-    private IEnumerable<AbstractOrderProcessor> _processors;
+    private IEnumerable<IOrderProcessor> _processors;
 
-    public OrderProcessorFactory(List<AbstractOrderProcessor> processors)
+    public OrderProcessorFactory(List<IOrderProcessor> processors)
     {
         _processors = processors;
     }
 
-    public AbstractOrderProcessor GetProcessor(string merchantName)
+    public IOrderProcessor GetProcessor(string merchantName)
     {
-        return _processors.FirstOrDefault(p => p.MerchantName() == merchantName, null);
+        var processor = _processors.FirstOrDefault(p => p.MerchantName() == merchantName, null);
+        if (processor == null) throw new UserFriendlyException($"not support merchant {merchantName}");
+        return processor;
     }
     
 }
