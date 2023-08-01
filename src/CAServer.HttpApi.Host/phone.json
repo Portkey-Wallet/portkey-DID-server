@@ -40,11 +40,28 @@
         "Country": "France",
         "Code": "33",
         "Iso": "FR"
-      },{
+      },
+      {
+        "Country": "United Kingdom",
+        "Code": "44",
+        "Iso": "GB"
+      },
+      {
         "Country": "Hong Kong",
         "Code": "852",
         "Iso": "HK"
-      },{
+      },
+      {
+        "Country": "Lithuania",
+        "Code": "370",
+        "Iso": "LT"
+      },
+      {
+        "Country": "Latvia",
+        "Code": "371",
+        "Iso": "LVA"
+      },
+      {
         "Country": "Mexico",
         "Code": "52",
         "Iso": "MX"
