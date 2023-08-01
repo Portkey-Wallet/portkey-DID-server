@@ -28,6 +28,12 @@ public static class ThirdPartHelper
         Guid.TryParse(merchantOrderNo, out Guid orderNo);
         return orderNo;
     }
+    
+    public static Guid GetOrderId(string merchantName, string merchantOrderNo)
+    {
+        Guid.TryParse(merchantName + merchantOrderNo, out Guid orderNo);
+        return orderNo;
+    }
 }
 
 public static class AlchemyHelper

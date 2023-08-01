@@ -42,13 +42,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
-        // var userId = input.UserId;
         var userId = CurrentUser.GetId();
-
         var orderId = GuidGenerator.Create();
         var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);
         orderGrainData.UserId = userId;
-        _logger.LogInformation("This third part order {orderId} will be created.", orderId);
+        _logger.LogInformation("This third part {MerchantName} order {OrderId} will be created", input.MerchantName, orderId);
         orderGrainData.Status = OrderStatusType.Initialized.ToString();
         orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
@@ -56,7 +54,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         var result = await orderGrain.CreateUserOrderAsync(orderGrainData);
         if (!result.Success)
         {
-            _logger.LogError("Create user order fail, order id: {orderId} user id: {userId}", orderId,
+            _logger.LogError("Create user order fail, {MerchantName} order id: {OrderId} user id: {UserId}", input.MerchantName, orderId,
                 orderGrainData.UserId);
             return new OrderCreatedDto();
         }

@@ -53,7 +53,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             var getGrainResult = await orderGrain.GetOrder();
             if (!getGrainResult.Success)
             {
-                _logger.LogError("Order {OrderId} is not existed in storage.", orderStatusDto.Order.Id);
+                _logger.LogError("Order {OrderId} is not existed in storage", orderStatusDto.Order.Id);
                 return;
             }
 
@@ -70,7 +70,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
 
             if (!result.Success)
             {
-                _logger.LogError("Update user order fail, third part order number: {orderId}", orderStatusDto.Order.Id);
+                _logger.LogError("Update user order fail, third part order number: {OrderId}", orderStatusDto.Order.Id);
                 return;
             }
 
@@ -90,7 +90,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
                 ? orderStatusDto.OrderId
                 : orderStatusDto.Order.Id.ToString();
 
-            _logger.LogError(e, "Update order status fail. orderId:{orderId}, status:{status}", orderId,
+            _logger.LogError(e, "Update order status fail. orderId:{OrderId}, status:{Status}", orderId,
                 orderStatusDto.Status);
         }
     }

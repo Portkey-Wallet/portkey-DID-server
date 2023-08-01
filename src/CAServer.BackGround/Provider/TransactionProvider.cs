@@ -195,7 +195,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     {
         if (string.IsNullOrWhiteSpace(txHash)) return;
 
-        await _alchemyOrderService.UpdateAlchemyTxHashAsync(new SendAlchemyTxHashDto
+        await _alchemyOrderService.UpdateAlchemyTxHashAsync(new TransactionHashDto
         {
             MerchantName = merchantName,
             OrderId = orderId,

@@ -135,7 +135,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task UpdateAlchemyTxHashAsyncTest()
     {
-        var input = new SendAlchemyTxHashDto()
+        var input = new TransactionHashDto()
         {
             MerchantName = "Alchemy",
             OrderId = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -150,7 +150,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             e.ShouldBe(null);
         }
 
-        var inputFail = new SendAlchemyTxHashDto()
+        var inputFail = new TransactionHashDto()
         {
             MerchantName = "Alchemy",
             OrderId = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),

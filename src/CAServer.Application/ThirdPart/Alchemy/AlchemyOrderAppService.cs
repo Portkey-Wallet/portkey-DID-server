@@ -118,7 +118,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         }
     }
 
-    public async Task UpdateAlchemyTxHashAsync(SendAlchemyTxHashDto input)
+    public async Task UpdateAlchemyTxHashAsync(TransactionHashDto input)
     {
         try
         {
