@@ -251,6 +251,12 @@ public class CAVerifierController : CAServerController
             type);
     }
 
+    [HttpPost ("getVerifierServer")]
+    public async Task<GetVerifierServerResponse> GetVerifierServerAsync(GetVerifierServerInfoInput input)
+    {
+        return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
+    }
+
 
     private string UserIpAddress(HttpContext context)
     {

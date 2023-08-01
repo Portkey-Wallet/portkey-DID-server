@@ -24,7 +24,6 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
-using CAServer.Grains.State.Bookmark;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
@@ -44,15 +43,12 @@ using CAServer.UserExtraInfo.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
-using MongoDB.Bson.Serialization.IdGenerators;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
-using AlchemyTargetAddressDto = CAServer.Message.Dtos.AlchemyTargetAddressDto;
 using Volo.Abp.AutoMapper;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
 using GuardianType = CAServer.Account.GuardianType;
-using ManagerInfo = CAServer.Account.ManagerInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 
@@ -199,14 +195,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<SendVerificationRequestInput, VerifierCodeRequestDto>();
         CreateMap<GuardianGrainDto, GuardianEto>();
 
-        CreateMap<Portkey.Contracts.CA.ManagerInfo, ManagerInfoDto>()
+        CreateMap<ManagerInfo, ManagerInfoDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.Address.ToBase58()));
         CreateMap<Portkey.Contracts.CA.Guardian, GuardianDto>()
             .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()))
             .ForMember(t => t.Type, m => m.MapFrom(f => (GuardianIdentifierType)(int)f.Type));
 
-        CreateMap<Portkey.Contracts.CA.GuardianList, GuardianListDto>();
+        CreateMap<GuardianList, GuardianListDto>();
 
         CreateMap<GetHolderInfoOutput, GuardianResultDto>()
             .ForMember(t => t.CaHash, m => m.MapFrom(f => f.CaHash.ToHex()))
@@ -215,7 +211,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<RegisterRequestDto, RegisterDto>().BeforeMap((src, dest) =>
             {
-                dest.ManagerInfo = new ManagerInfo();
+                dest.ManagerInfo = new Account.ManagerInfo();
                 dest.GuardianInfo = new GuardianInfo
                 {
                     VerificationInfo = new VerificationInfo()
@@ -233,7 +229,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<RecoveryRequestDto, RecoveryDto>().BeforeMap((src, dest) =>
             {
-                dest.ManagerInfo = new ManagerInfo();
+                dest.ManagerInfo = new Account.ManagerInfo();
                 dest.GuardianApproved = new List<GuardianInfo>();
                 dest.Id = Guid.NewGuid();
             })
@@ -252,7 +248,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
                     }
                 }).ToList()));
 
-        CreateMap<CAServer.Entities.Es.ContactAddress, UserContactAddressDto>();
+        CreateMap<Entities.Es.ContactAddress, UserContactAddressDto>();
         CreateMap<AppleUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
@@ -359,5 +355,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<TransactionFeeInfo, TransactionFeeResultDto>();
         CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
+        CreateMap<VerifierServer, GetVerifierServerResponse>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
     }
 }
