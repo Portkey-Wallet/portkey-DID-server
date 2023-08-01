@@ -14,15 +14,13 @@ namespace CAServer.Controllers;
 [IgnoreAntiforgeryToken]
 public class ThirdPartOrderController : CAServerController
 {
-    private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly IThirdPartOrderAppService _thirdPartOrdersAppService;
     private readonly IOrderProcessorFactory _orderProcessorFactory;
 
-    public ThirdPartOrderController(IAlchemyOrderAppService alchemyOrderService,
-        IThirdPartOrderAppService thirdPartOrderAppService, 
+    public ThirdPartOrderController(
+        IThirdPartOrderAppService thirdPartOrderAppService,
         IOrderProcessorFactory orderProcessorFactory)
     {
-        _alchemyOrderService = alchemyOrderService;
         _thirdPartOrdersAppService = thirdPartOrderAppService;
         _orderProcessorFactory = orderProcessorFactory;
     }
@@ -55,7 +53,7 @@ public class ThirdPartOrderController : CAServerController
     {
         await _orderProcessorFactory.GetProcessor(merchant).UpdateTxHashAsync(request);
     }
-    
+
     [Authorize]
     [HttpPost("{merchant}/transaction")]
     public async Task ForwardTransactionAsync(TransactionDto input, string merchant)

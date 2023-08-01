@@ -27,7 +27,6 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 {
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<TransactionProvider> _logger;
-    private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly TransactionOptions _transactionOptions;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
@@ -35,7 +34,6 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     private readonly IOrderProcessorFactory _orderProcessorFactory;
 
     public TransactionProvider(IContractProvider contractProvider, ILogger<TransactionProvider> logger,
-        IAlchemyOrderAppService alchemyOrderService,
         IOptionsSnapshot<TransactionOptions> options,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IObjectMapper objectMapper,
@@ -43,7 +41,6 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     {
         _contractProvider = contractProvider;
         _logger = logger;
-        _alchemyOrderService = alchemyOrderService;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _orderStatusProvider = orderStatusProvider;
