@@ -40,47 +40,54 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
         _orderStatusProvider = orderStatusProvider;
         _objectMapper = objectMapper;
     }
-
-    // The impl class indicates the source of order processing through this method.
-    public abstract string MerchantName();
-
-    // To verify Third-order input data, such as Signature etc.
-    protected abstract void VerifyOrderInput<T>(T orderDto) where T : OrderDto;
     
-    // To notice Third-Service off-ramp transaction is finish.
-    public abstract Task UpdateTxHashAsync(TransactionHashDto transactionHashDto);
-    
-    // To query order via third-service-api
-    public abstract Task<T> QueryThirdOrder<T>(T orderDto) where T : OrderDto;
-
-
-    protected virtual Guid GetOrderId<T>(T input) where T : OrderDto
+    protected virtual Guid GenerateGrainId(OrderDto input)
     {
         return ThirdPartHelper.GetOrderId(input.MerchantName, input.ThirdPartOrderNo);
     }
     
-    public async Task<BasicOrderResult> OrderUpdate<T>(T input) where T : OrderDto
+    
+    protected abstract void VerifyOrderInput<T>(T iThirdPartOrder) where T : IThirdPartOrder;
+
+    protected abstract OrderDto ConvertOrderDto<T>(T iThirdPartOrder) where T : IThirdPartOrder;
+    
+    
+    public abstract string MapperOrderStatus(OrderDto orderDto);
+    
+    public abstract string MerchantName();
+    
+    public abstract Task UpdateTxHashAsync(TransactionHashDto transactionHashDto);
+    
+    // query new Third order data, and convert to orderDto
+    public abstract Task<OrderDto> QueryThirdOrder(OrderDto orderDto);
+    
+    
+    public async Task<BasicOrderResult> OrderUpdate(IThirdPartOrder thirdPartOrder)
     {
-        _logger.LogInformation("Update Order {MerchantName} OrderNo:{OrderNo}, Status:{Status}, get from alchemy",
-            input.MerchantName, input.Id, input.Status);
+        OrderDto inputOrderDto = null;
         try
         {
-            VerifyOrderInput(input);
+            VerifyOrderInput(thirdPartOrder);
             
-            Guid grainId = GetOrderId(input);
-            var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-            if (esOrderData == null || input.Id != esOrderData.Id)
-                throw new UserFriendlyException($"No order found for {grainId}");
-            if (esOrderData.Status == input.Status)
-                throw new UserFriendlyException($"Order status {input.Status} no need to update.");
+            inputOrderDto = ConvertOrderDto(thirdPartOrder);
 
-            var dataToBeUpdated = MergeEsAndInput2GrainModel(input, esOrderData);
+            Guid grainId = GenerateGrainId(inputOrderDto);
+            
+            var inputState = MapperOrderStatus(inputOrderDto);
+
+            var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
+            if (esOrderData == null || inputOrderDto.Id != esOrderData.Id)
+                throw new UserFriendlyException($"No order found for {grainId}");
+            if (esOrderData.Status == inputState)
+                throw new UserFriendlyException($"Order status {inputOrderDto.Status} no need to update.");
+
+            var dataToBeUpdated = MergeEsAndInput2GrainModel(inputOrderDto, esOrderData);
             var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
-            dataToBeUpdated.Status = AlchemyHelper.GetOrderStatus(input.Status);
+            dataToBeUpdated.Status = inputState;
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
-            _logger.LogInformation("This {MerchantName} order {GrainId} will be updated", input.MerchantName, grainId);
+            _logger.LogInformation("This {MerchantName} order {GrainId} will be updated", inputOrderDto.MerchantName, grainId);
 
             var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
 
@@ -96,14 +103,14 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning("Order update FAILED, {MerchantName}-{OrderId}-{ThirdPartOrderNo}", input.MerchantName,
-                input.Id, input.ThirdPartOrderNo);
+            _logger.LogWarning("Order update FAILED, {MerchantName}-{OrderId}-{ThirdPartOrderNo}", inputOrderDto?.MerchantName,
+                inputOrderDto?.Id, inputOrderDto?.ThirdPartOrderNo);
             return new BasicOrderResult() { Message = $"Update order failed, {e.Message}." };
         }
         catch (Exception e)
         {
-            _logger.LogWarning(e, "Order update ERROR, {MerchantName}-{OrderId}-{ThirdPartOrderNo}", input.MerchantName,
-                input.Id, input.ThirdPartOrderNo);
+            _logger.LogWarning(e, "Order update ERROR, {MerchantName}-{OrderId}-{ThirdPartOrderNo}", inputOrderDto?.MerchantName,
+                inputOrderDto?.Id, inputOrderDto?.ThirdPartOrderNo);
             return new BasicOrderResult() { Message = "INTERNAL ERROR, please try again later." };
         }
     }
@@ -153,10 +160,10 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
     }
 
 
-    private OrderGrainDto MergeEsAndInput2GrainModel(OrderDto alchemyData, OrderDto esOrderData)
+    private OrderGrainDto MergeEsAndInput2GrainModel(OrderDto fromData, OrderDto toData)
     {
-        var orderGrainData = _objectMapper.Map<OrderDto, OrderGrainDto>(alchemyData);
-        var orderData = _objectMapper.Map<OrderDto, OrderGrainDto>(esOrderData);
+        var orderGrainData = _objectMapper.Map<OrderDto, OrderGrainDto>(fromData);
+        var orderData = _objectMapper.Map<OrderDto, OrderGrainDto>(toData);
         foreach (var prop in typeof(OrderGrainDto).GetProperties())
         {
             // When the attribute in UpdateOrderData has been assigned, there is no need to overwrite it with the data in es

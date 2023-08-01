@@ -16,7 +16,7 @@ public class CreateUserOrderDto : IValidatableObject
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
     {
-        if (!ThirdPartHelper.MerchantNameExist(MerchantName))
+        if (ThirdPartHelper.MerchantNameExist(MerchantName) == null)
         {
             yield return new ValidationResult(
                 $"Merchant name {MerchantName} is not exist."

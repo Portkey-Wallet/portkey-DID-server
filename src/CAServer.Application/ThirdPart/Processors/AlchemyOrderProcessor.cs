@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
@@ -19,7 +21,7 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
 {
     private readonly ILogger<AbstractOrderProcessor> _logger;
     private readonly IObjectMapper _objectMapper;
-    private readonly AlchemyOptions _alchemyOptions;
+    private readonly ThirdPartOptions _thirdPartOptions;
     private readonly IAlchemyProvider _alchemyProvider;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
 
@@ -32,7 +34,7 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
         ILogger<AlchemyOrderProcessor> logger,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
-        AlchemyOptions alchemyOptions,
+        IOptions<ThirdPartOptions> thirdPartOptions,
         IAlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider,
         IObjectMapper objectMapper) : base(clusterClient, logger, thirdPartOrderProvider, distributedEventBus,
@@ -40,22 +42,39 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
     {
         _logger = logger;
         _thirdPartOrderProvider = thirdPartOrderProvider;
-        _alchemyOptions = alchemyOptions;
+        _thirdPartOptions = thirdPartOptions.Value;
         _alchemyProvider = alchemyProvider;
         _objectMapper = objectMapper;
     }
 
-    public override string MerchantName()
+    private AlchemyOrderUpdateDto ConvertToAlchemyOrder(IThirdPartOrder orderDto)
     {
-        return "Alchemy";
+        if (orderDto is not AlchemyOrderUpdateDto dto)
+            throw new UserFriendlyException("not Alchemy-order");
+        return dto;
     }
 
-    protected override void VerifyOrderInput<T>(T orderDto)
+    public override string MerchantName()
     {
-        if (orderDto is not AlchemyOrderUpdateDto)
-            throw new UserFriendlyException("not Alchemy-order");
-        AlchemyOrderUpdateDto input = orderDto as AlchemyOrderUpdateDto;
-        if (input.Signature != GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address))
+        return MerchantNameType.Alchemy.ToString();
+    }
+
+    protected override OrderDto ConvertOrderDto<T>(T iThirdPartOrder)
+    {
+        var aclOrder = ConvertToAlchemyOrder(iThirdPartOrder);
+        return _objectMapper.Map<QueryAlchemyOrderInfo, OrderDto>(aclOrder);
+    }
+
+    public override string MapperOrderStatus(OrderDto orderDto)
+    {
+        return AlchemyHelper.GetOrderStatus(orderDto.Status);
+    }
+
+    protected override void VerifyOrderInput<T>(T iThirdPartOrder)
+    {
+        var input = ConvertToAlchemyOrder(iThirdPartOrder);
+        var expectedSignature = GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address); 
+        if (input.Signature != expectedSignature)
             throw new UserFriendlyException("signature NOT match");
     }
 
@@ -75,12 +94,12 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
 
             var orderPendingUpdate = _objectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
             orderPendingUpdate.TxHash = input.TxHash;
-            orderPendingUpdate.AppId = _alchemyOptions.AppId;
+            orderPendingUpdate.AppId = _thirdPartOptions.alchemy.AppId;
 
             orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
                 orderPendingUpdate.Network, orderPendingUpdate.Address);
 
-            await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.UpdateSellOrderUri,
+            await _alchemyProvider.HttpPost2AlchemyAsync(_thirdPartOptions.alchemy.UpdateSellOrderUri,
                 JsonConvert.SerializeObject(orderPendingUpdate, Formatting.None, _setting));
         }
         catch (Exception e)
@@ -89,17 +108,38 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
         }
     }
 
-    public override Task<T> QueryThirdOrder<T>(T orderDto)
+    public override async Task<OrderDto> QueryThirdOrder(OrderDto orderDto)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var orderQueryDto = new OrderQueryDto()
+            {
+                Side = AlchemyHelper.GetOrderTransDirectForQuery(orderDto.TransDirect),
+                MerchantOrderNo = orderDto.Id.ToString(),
+                OrderNo = orderDto.ThirdPartOrderNo
+            };
+
+            var queryString = string.Join("&", orderQueryDto.GetType().GetProperties()
+                .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(orderQueryDto)}"));
+
+            var queryResult = JsonConvert.DeserializeObject<QueryAlchemyOrderInfoResultDto>(
+                await _alchemyProvider.HttpGetFromAlchemy(_thirdPartOptions.alchemy.MerchantQueryTradeUri + "?" +
+                                                          queryString));
+
+            return _objectMapper.Map<QueryAlchemyOrderInfo, OrderDto>(queryResult.Data);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                "Error deserializing query alchemy order info. orderId:{OrderId}, thirdPartOrderNo:{ThirdPartOrderNo}",
+                orderDto.Id.ToString(), orderDto.ThirdPartOrderNo);
+            return new OrderDto();
+        }
     }
 
-    protected override Guid GetOrderId<T>(T orderDto)
+    protected override Guid GenerateGrainId(OrderDto input)
     {
-        if (orderDto is not AlchemyOrderUpdateDto)
-            throw new UserFriendlyException("not Alchemy-order");
-        AlchemyOrderUpdateDto input = orderDto as AlchemyOrderUpdateDto;
-        return ThirdPartHelper.GetOrderId(input.MerchantOrderNo);
+        return ThirdPartHelper.GetOrderId(input.Id.ToString());
     }
 
 
@@ -107,7 +147,8 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
     {
         try
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(_alchemyOptions.AppId + _alchemyOptions.AppSecret + orderNo + crypto +
+            byte[] bytes = Encoding.UTF8.GetBytes(_thirdPartOptions.alchemy.AppId +
+                                                  _thirdPartOptions.alchemy.AppSecret + orderNo + crypto +
                                                   network + address);
             byte[] hashBytes = SHA1.Create().ComputeHash(bytes);
 

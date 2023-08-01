@@ -43,7 +43,7 @@ public class ThirdPartOrderController : CAServerController
     }
 
     [HttpPost("order/{merchant}")]
-    public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
+    public async Task<BasicOrderResult> UpdateOrderAsync(
         AlchemyOrderUpdateDto input, string merchant)
     {
         return await _orderProcessorFactory.GetProcessor(merchant).OrderUpdate(input);
@@ -51,14 +51,14 @@ public class ThirdPartOrderController : CAServerController
 
     [Authorize]
     [HttpPost("{merchant}/txHash")]
-    public async Task SendAlchemyTxHashAsync(TransactionHashDto request, string merchant)
+    public async Task SendTxHashAsync(TransactionHashDto request, string merchant)
     {
         await _orderProcessorFactory.GetProcessor(merchant).UpdateTxHashAsync(request);
     }
     
     [Authorize]
     [HttpPost("{merchant}/transaction")]
-    public async Task TransactionAsync(TransactionDto input, string merchant)
+    public async Task ForwardTransactionAsync(TransactionDto input, string merchant)
     {
         await _orderProcessorFactory.GetProcessor(merchant).ForwardTransactionAsync(input);
     }

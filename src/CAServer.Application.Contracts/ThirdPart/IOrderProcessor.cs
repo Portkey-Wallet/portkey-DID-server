@@ -7,11 +7,13 @@ public interface IOrderProcessor
 {
     public string MerchantName();
 
+    public string MapperOrderStatus(OrderDto orderDto);
+
     public Task UpdateTxHashAsync(TransactionHashDto transactionHashDto);
 
-    public Task<T> QueryThirdOrder<T>(T orderDto) where T : OrderDto;
+    public Task<OrderDto> QueryThirdOrder(OrderDto orderDto);
 
-    public Task<BasicOrderResult> OrderUpdate<T>(T input) where T : OrderDto;
+    public Task<BasicOrderResult> OrderUpdate(IThirdPartOrder thirdPartOrder);
 
     public Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input);
 

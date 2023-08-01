@@ -8,14 +8,15 @@ namespace CAServer.ThirdPart;
 
 public static class ThirdPartHelper
 {
-    public static bool MerchantNameExist(string merchantName)
+    public static MerchantNameType MerchantNameExist(string merchantName)
     {
-        return Enum.TryParse(merchantName, out MerchantNameType _);
+        var match = Enum.TryParse(merchantName, true, out MerchantNameType matched);
+        return match ? matched : MerchantNameType.Unknown;
     }
 
     public static bool TransferDirectionTypeExist(string transferDirectionType)
     {
-        return Enum.TryParse(transferDirectionType, out TransferDirectionType _);
+        return Enum.TryParse(transferDirectionType, true, out TransferDirectionType _);
     }
 
     public static bool ValidateMerchantOrderNo(string merchantOrderNo)

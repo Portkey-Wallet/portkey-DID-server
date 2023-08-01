@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
@@ -10,27 +11,46 @@ namespace CAServer.ThirdPart.Processors;
 
 public class TransakOrderProcessor : AbstractOrderProcessor
 {
-    public TransakOrderProcessor(IClusterClient clusterClient, ILogger<AbstractOrderProcessor> logger, IThirdPartOrderProvider thirdPartOrderProvider, IDistributedEventBus distributedEventBus, IOrderStatusProvider orderStatusProvider, IObjectMapper objectMapper) : base(clusterClient, logger, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, objectMapper)
+    public TransakOrderProcessor(IClusterClient clusterClient, ILogger<TransakOrderProcessor> logger,
+        IThirdPartOrderProvider thirdPartOrderProvider, IDistributedEventBus distributedEventBus,
+        IOrderStatusProvider orderStatusProvider, IObjectMapper objectMapper) : base(clusterClient, logger,
+        thirdPartOrderProvider, distributedEventBus, orderStatusProvider, objectMapper)
     {
+    }
+
+
+    protected override void VerifyOrderInput<T>(T iThirdPartOrder)
+    {
+        //TODO
+        throw new NotImplementedException();
+    }
+
+    protected override OrderDto ConvertOrderDto<T>(T iThirdPartOrder)
+    {
+        //TODO
+        throw new NotImplementedException();
+    }
+
+    public override string MapperOrderStatus(OrderDto orderDto)
+    {
+        //TODO
+        throw new NotImplementedException();
     }
 
     public override string MerchantName()
     {
-        throw new System.NotImplementedException();
-    }
-
-    protected override void VerifyOrderInput<T>(T orderDto)
-    {
-        throw new System.NotImplementedException();
+        //TODO
+        return MerchantNameType.Transak.ToString();
     }
 
     public override Task UpdateTxHashAsync(TransactionHashDto transactionHashDto)
     {
-        throw new System.NotImplementedException();
+        //TODO
+        throw new NotImplementedException();
     }
 
-    public override Task<T> QueryThirdOrder<T>(T orderDto)
+    public override Task<OrderDto> QueryThirdOrder(OrderDto orderDto)
     {
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
     }
 }

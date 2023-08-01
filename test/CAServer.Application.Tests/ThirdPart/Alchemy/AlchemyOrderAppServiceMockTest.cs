@@ -1,5 +1,6 @@
 using CAServer.Options;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -7,7 +8,8 @@ public partial class AlchemyOrderAppServiceTest
 {
     private IOptions<ThirdPartOptions> getMockThirdPartOptions()
     {
-        var thirdPartOptions = new ThirdPartOptions()
+        var mockOptions = new Mock<IOptions<ThirdPartOptions>>();
+        mockOptions.Setup(ap => ap.Value).Returns(new ThirdPartOptions
         {
             alchemy = new AlchemyOptions()
             {
@@ -20,7 +22,7 @@ public partial class AlchemyOrderAppServiceTest
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,
             }
-        };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+        });
+        return mockOptions.Object;
     }
 }

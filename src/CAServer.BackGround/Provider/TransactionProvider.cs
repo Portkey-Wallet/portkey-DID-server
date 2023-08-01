@@ -32,13 +32,14 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly IOrderStatusProvider _orderStatusProvider;
+    private readonly IOrderProcessorFactory _orderProcessorFactory;
 
     public TransactionProvider(IContractProvider contractProvider, ILogger<TransactionProvider> logger,
         IAlchemyOrderAppService alchemyOrderService,
         IOptionsSnapshot<TransactionOptions> options,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IObjectMapper objectMapper,
-        IOrderStatusProvider orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider, IOrderProcessorFactory orderProcessorFactory)
     {
         _contractProvider = contractProvider;
         _logger = logger;
@@ -46,6 +47,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _orderStatusProvider = orderStatusProvider;
+        _orderProcessorFactory = orderProcessorFactory;
         _transactionOptions = options.Value;
     }
 
@@ -113,25 +115,24 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     {
         var orders = await _thirdPartOrderProvider.GetUnCompletedThirdPartOrdersAsync();
         var count = orders?.Count ?? 0;
-        _logger.LogInformation("Get uncompleted order from es, time: {time}, count: {count}",
+        _logger.LogInformation("Get uncompleted order from es, time: {Time}, count: {Count}",
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), count);
 
         if (count == 0) return;
 
-        foreach (var order in orders)
+        foreach (var oldOrder in orders)
         {
             try
             {
+                var orderProcessor = _orderProcessorFactory.GetProcessor(oldOrder.MerchantName);
                 // get status from ach.
-                var orderInfo = await _alchemyOrderService.QueryAlchemyOrderInfoAsync(order);
-                if (orderInfo == null || string.IsNullOrWhiteSpace(orderInfo.OrderNo)) continue;
-
-                var achOrderStatus = AlchemyHelper.GetOrderStatus(orderInfo.Status);
-                await HandleUnCompletedOrderAsync(order, achOrderStatus);
+                var orderInfo = await orderProcessor.QueryThirdOrder(oldOrder);
+                if (orderInfo == null || orderInfo.Id == Guid.Empty) continue;
+                await HandleUnCompletedOrderAsync(orderInfo);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Handle unCompleted order fail, orderId:{orderId}", order.Id);
+                _logger.LogError(e, "Handle unCompleted order fail, orderId:{OrderId}", oldOrder.Id);
             }
         }
     }
@@ -149,33 +150,34 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         return transactionResult;
     }
 
-    private async Task HandleUnCompletedOrderAsync(OrderDto order, string achOrderStatus)
+    private async Task HandleUnCompletedOrderAsync(OrderDto order)
     {
-        if (order.Status == achOrderStatus) return;
+        var inputOrderStatus = _orderProcessorFactory.GetProcessor(order.MerchantName).MapperOrderStatus(order);
+        if (order.Status == inputOrderStatus) return;
 
         if (order.Status != OrderStatusType.Transferred.ToString() &&
             order.Status != OrderStatusType.StartTransfer.ToString() &&
             order.Status != OrderStatusType.Transferring.ToString() &&
             order.Status != OrderStatusType.TransferFailed.ToString() &&
-            order.Status != achOrderStatus)
+            order.Status != inputOrderStatus)
         {
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
             {
                 OrderId = order.Id.ToString(),
                 Order = order,
-                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
+                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), inputOrderStatus, true)
             });
             return;
         }
 
         if (order.Status == OrderStatusType.Transferred.ToString() &&
-            achOrderStatus != OrderStatusType.Created.ToString())
+            inputOrderStatus != OrderStatusType.Created.ToString())
         {
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
             {
                 OrderId = order.Id.ToString(),
                 Order = order,
-                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
+                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), inputOrderStatus, true)
             });
             return;
         }
@@ -185,7 +187,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
                              _transactionOptions.ResendTimeInterval * 1000;
 
         if (order.Status == OrderStatusType.Transferred.ToString() &&
-            achOrderStatus == OrderStatusType.Created.ToString() && isOverInterval)
+            inputOrderStatus == OrderStatusType.Created.ToString() && isOverInterval)
         {
             await SendToAlchemyAsync(order.MerchantName, order.Id.ToString(), order.TransactionId);
         }
@@ -194,8 +196,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     private async Task SendToAlchemyAsync(string merchantName, string orderId, string txHash)
     {
         if (string.IsNullOrWhiteSpace(txHash)) return;
-
-        await _alchemyOrderService.UpdateAlchemyTxHashAsync(new TransactionHashDto
+        await _orderProcessorFactory.GetProcessor(merchantName).UpdateTxHashAsync(new TransactionHashDto
         {
             MerchantName = merchantName,
             OrderId = orderId,

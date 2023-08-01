@@ -14,10 +14,12 @@ namespace CAServer.ThirdPart.Alchemy;
 public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 {
     private readonly IAlchemyOrderAppService _alchemyOrderAppService;
-
+    private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private const string MerchantName = "alchemy";
     public AlchemyOrderAppServiceTest()
     {
         _alchemyOrderAppService = GetRequiredService<IAlchemyOrderAppService>();
+        _orderProcessorFactory = GetRequiredService<IOrderProcessorFactory>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -38,7 +40,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             OrderNo = "OrderNo",
             Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
-        var result = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+        var result = await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(input);
         result.Success.ShouldBe(true);
 
         var inputFail = new AlchemyOrderUpdateDto
@@ -48,9 +50,9 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             Address = "Address",
             Crypto = "Crypto",
             OrderNo = "OrderNo",
-            Signature = "5f4e9f8c1f3a63c12032b9c6c59a019c259bd063"
+            Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
-        var resultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(inputFail);
+        var resultFail = await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(inputFail);
         resultFail.Success.ShouldBe(false);
 
         var signatureFail = new AlchemyOrderUpdateDto
@@ -62,7 +64,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             OrderNo = "OrderNo",
             Signature = "1111111111111111111111111111111111"
         };
-        var signResultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(signatureFail);
+        var signResultFail = await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(signatureFail);
         signResultFail.Success.ShouldBe(false);
     }
 
@@ -171,8 +173,6 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
     {
         var input = new AlchemyOrderUpdateDto()
         {
-            Id = new Guid("00000000-0000-0000-0000-000000000001"),
-            UserId = new Guid("00000000-0000-0000-0000-000000000001"),
             MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
             Status = "1",
             Address = "Address",

@@ -3,6 +3,7 @@ namespace CAServer.ThirdPart.Dtos;
 public enum MerchantNameType
 {
     Alchemy = 0,
+    Transak = 1,
     Unknown
 }
 

@@ -357,5 +357,18 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
         CreateMap<VerifierServer, GetVerifierServerResponse>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
+
+
+        CreateMap<QueryAlchemyOrderInfo, OrderDto>()
+            .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TxHash))
+            .ForMember(t => t.Address, m => m.MapFrom(f => f.OrderAddress))
+            .ForMember(t => t.CryptoAmount, m => m.MapFrom(f => f.CryptoActualAmount))
+            .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
+            .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
+            .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo))
+            .ForMember(t => t.Id, m => m.MapFrom(f => Guid.Parse(f.MerchantOrderNo)))
+            ;
+
+
     }
 }
