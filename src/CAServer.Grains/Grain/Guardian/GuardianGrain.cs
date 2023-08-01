@@ -25,7 +25,8 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         await base.OnDeactivateAsync();
     }
 
-    public async Task<GrainResultDto<GuardianGrainDto>> AddGuardianAsync(string identifier, string salt, string identifierHash)
+    public async Task<GrainResultDto<GuardianGrainDto>> AddGuardianAsync(string identifier, string salt,
+        string identifierHash, string originalIdentifier = "")
     {
         var result = new GrainResultDto<GuardianGrainDto>();
 
@@ -38,6 +39,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
 
         State.Id = this.GetPrimaryKeyString();
         State.Identifier = identifier;
+        State.OriginalIdentifier = originalIdentifier;
         State.Salt = salt;
         State.IdentifierHash = identifierHash;
 
@@ -57,7 +59,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
             result.Message = "Guardian not exist.";
             return Task.FromResult(result);
         }
-        
+
         result.Success = true;
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
         return Task.FromResult(result);

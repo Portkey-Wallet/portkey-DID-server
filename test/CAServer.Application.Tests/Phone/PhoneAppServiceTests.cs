@@ -29,7 +29,7 @@ public partial class PhoneInfoServiceTests : CAServerApplicationTestBase
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetPhoneInfoOptions());
-        services.AddSingleton(GetIpInfoClient());
+        services.AddSingleton(IpInfoClientTest.MockIpInfoHttpClient());
     }
 
     [Fact]

@@ -11,8 +11,10 @@ using CAServer.AppleAuth.Provider;
 using CAServer.AppleVerify;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Options;
 using CAServer.Verifier.Etos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -38,6 +40,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAppleUserProvider _appleUserProvider;
+    private readonly AppleTransferOptions _appleTransferOptions;
 
     public AppleAuthAppService(IHttpClientFactory httpClientFactory,
         IOptions<AppleAuthOptions> appleAuthVerifyOption,
@@ -46,7 +49,8 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         IHttpClientService httpClientService,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IHttpContextAccessor httpContextAccessor,
-        IAppleUserProvider appleUserProvider)
+        IAppleUserProvider appleUserProvider,
+        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions)
     {
         _httpClientFactory = httpClientFactory;
         _appleAuthOptions = appleAuthVerifyOption.Value;
@@ -56,6 +60,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _httpContextAccessor = httpContextAccessor;
         _appleUserProvider = appleUserProvider;
+        _appleTransferOptions = appleTransferOptions.Value;
     }
 
     public async Task ReceiveAsync(AppleAuthDto appleAuthDto)
@@ -65,11 +70,21 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         var identityToken = appleAuthDto.Id_token;
         if (string.IsNullOrEmpty(appleAuthDto.Id_token))
         {
+            if (_appleTransferOptions.CloseLogin)
+            {
+                throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
+            }
+
             identityToken = await GetTokenAsync(appleAuthDto.Code);
         }
 
         var securityToken = await ValidateTokenAsync(identityToken);
         var jwtPayload = ((JwtSecurityToken)securityToken).Payload;
+        
+        if (_appleTransferOptions.IsNeedIntercept(jwtPayload.Sub))
+        {
+            throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
+        }
 
         if (string.IsNullOrWhiteSpace(appleAuthDto.User))
         {

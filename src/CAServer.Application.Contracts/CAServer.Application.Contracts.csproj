@@ -39,4 +39,10 @@
             <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Application.dll</HintPath>
         </Reference>
     </ItemGroup>
+
+    <ItemGroup>
+      <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateRequestDto.cs" />
+      <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateResponseDto.cs" />
+      <Orleans_CodeGenInputs Remove="AppleMigrate\IAppleMigrateAppService.cs" />
+    </ItemGroup>
 </Project>
