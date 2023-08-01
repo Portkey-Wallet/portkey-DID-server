@@ -26,6 +26,8 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly ITestOutputHelper _testOutputHelper;
+    private readonly IOrderProcessorFactory _orderProcessorFactory;
+    
 
 
     public ThirdPartOrderAppServiceTest(ITestOutputHelper testOutputHelper)
@@ -33,6 +35,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         _testOutputHelper = testOutputHelper;
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
         _thirdPartOrderProvider = GetRequiredService<IThirdPartOrderProvider>();
+        _orderProcessorFactory = GetRequiredService<IOrderProcessorFactory>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -140,12 +143,12 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
     {
         var input = new CreateUserOrderDto
         {
-            MerchantName = "123",
+            MerchantName = MerchantNameType.Alchemy.ToString(),
             TransDirect = "123"
         };
 
-        var result = _thirdPartOrderAppService.CreateThirdPartOrderAsync(input);
-        result.Result.Success.ShouldBe(true);
+        var result = await _orderProcessorFactory.GetProcessor(input.MerchantName).CreateThirdPartOrderAsync(input);
+        result.Success.ShouldBe(true);
     }
 
     [Fact]

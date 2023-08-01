@@ -39,7 +39,6 @@ public class TransakOrderProcessor : AbstractOrderProcessor
 
     public override string MerchantName()
     {
-        //TODO
         return MerchantNameType.Transak.ToString();
     }
 
@@ -51,6 +50,7 @@ public class TransakOrderProcessor : AbstractOrderProcessor
 
     public override Task<OrderDto> QueryThirdOrder(OrderDto orderDto)
     {
+        //TODO
         throw new NotImplementedException();
     }
 }
