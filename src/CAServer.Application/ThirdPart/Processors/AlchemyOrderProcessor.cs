@@ -70,12 +70,13 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
         return AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
     }
 
-    protected override void VerifyOrderInput<T>(T iThirdPartOrder)
+    protected override IThirdPartOrder VerifyOrderInput<T>(T iThirdPartOrder)
     {
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
         var expectedSignature = GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address); 
         if (input.Signature != expectedSignature)
             throw new UserFriendlyException("signature NOT match");
+        return input;
     }
 
     public override async Task UpdateTxHashAsync(TransactionHashDto input)

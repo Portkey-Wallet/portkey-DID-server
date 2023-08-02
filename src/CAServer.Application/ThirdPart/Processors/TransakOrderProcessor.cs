@@ -19,7 +19,7 @@ public class TransakOrderProcessor : AbstractOrderProcessor
     }
 
 
-    protected override void VerifyOrderInput<T>(T iThirdPartOrder)
+    protected override IThirdPartOrder VerifyOrderInput<T>(T iThirdPartOrder)
     {
         //TODO
         throw new NotImplementedException();

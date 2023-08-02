@@ -3,7 +3,19 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CAServer.ThirdPart.Dtos;
 
-public class TransakOrderUpdateDto : IThirdPartOrder, IValidatableObject
+public class TransakEventRawDataDto : IThirdPartOrder, IValidatableObject
+{
+    public string Data { get; set; }
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (string.IsNullOrWhiteSpace(Data))
+        {
+            yield return new ValidationResult("Invalid input");
+        }
+    }
+}
+
+public class TransakOrderUpdateEventDto : IThirdPartOrder, IValidatableObject
 {
     public string EventId { get; set; }
     public string CreatedAt { get; set; }
@@ -44,4 +56,10 @@ public class TransakOrderDto : IThirdPartOrder
     public string AutoExpiresAt { get; set; }
     public string ReferenceCode { get; set; }
     
+}
+
+public class TransakAccessToken
+{
+    public string AccessToken { get; set; }
+    public long ExpiresAt { get; set; }
 }

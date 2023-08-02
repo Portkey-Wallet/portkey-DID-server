@@ -13,13 +13,14 @@ using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
 
 namespace CAServer.ThirdPart.Processors;
 
-public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcessor
+public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcessor, ISingletonDependency
 {
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<AbstractOrderProcessor> _logger;
@@ -47,7 +48,7 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
     }
     
     
-    protected abstract void VerifyOrderInput<T>(T iThirdPartOrder) where T : IThirdPartOrder;
+    protected abstract IThirdPartOrder VerifyOrderInput<T>(T iThirdPartOrder) where T : IThirdPartOrder;
 
     protected abstract OrderDto ConvertOrderDto<T>(T iThirdPartOrder) where T : IThirdPartOrder;
     
@@ -67,9 +68,9 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
         OrderDto inputOrderDto = null;
         try
         {
-            VerifyOrderInput(thirdPartOrder);
+            var verifiedOrderData = VerifyOrderInput(thirdPartOrder);
             
-            inputOrderDto = ConvertOrderDto(thirdPartOrder);
+            inputOrderDto = ConvertOrderDto(verifiedOrderData);
 
             Guid grainId = GenerateGrainId(inputOrderDto);
             

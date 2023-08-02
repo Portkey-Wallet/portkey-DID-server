@@ -5,6 +5,7 @@ namespace CAServer.Options;
 public class ThirdPartOptions
 {
     public AlchemyOptions alchemy { get; set; }
+    public TransakOptions transak { get; set; }
     public ThirdPartTimerOptions timer { get; set; } = new ThirdPartTimerOptions();
 }
 
@@ -30,4 +31,11 @@ public class AlchemyOptions
     public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
     public string MerchantQueryTradeUri { get; set; }
+}
+
+public class TransakOptions
+{
+    public string AppId { get; set; }
+    public string AppSecret { get; set; }
+    public string BaseUrl { get; set; }
 }

@@ -33,9 +33,9 @@ public class ThirdPartMerchantController : CAServerController
     }
 
     [HttpPost("order/transak")]
-    public async Task<BasicOrderResult> UpdateTransakOrderAsync(Dictionary<string, object> input)
+    public async Task<BasicOrderResult> UpdateTransakOrderAsync(TransakEventRawDataDto input)
     {
-        return await _orderProcessorFactory.GetProcessor(MerchantNameType.Transak.ToString()).OrderUpdate(new AlchemyOrderUpdateDto());
+        return await _orderProcessorFactory.GetProcessor(MerchantNameType.Transak.ToString()).OrderUpdate(input);
     }
 
 }

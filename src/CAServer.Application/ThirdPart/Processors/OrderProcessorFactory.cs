@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using CAServer.ThirdPart.Dtos;
 using Volo.Abp;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart.Processors;
 
-public class OrderProcessorFactory : IOrderProcessorFactory
+public class OrderProcessorFactory : IOrderProcessorFactory, ISingletonDependency
 {
     private IEnumerable<IOrderProcessor> _processors;
 

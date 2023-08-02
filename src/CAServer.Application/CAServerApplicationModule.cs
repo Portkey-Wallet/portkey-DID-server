@@ -86,9 +86,5 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-        
-        context.Services.AddSingleton<IOrderProcessor, AlchemyOrderProcessor>();
-        context.Services.AddSingleton<IOrderProcessor, TransakOrderProcessor>();
-        context.Services.AddSingleton<IOrderProcessorFactory, OrderProcessorFactory>();
     }
 }

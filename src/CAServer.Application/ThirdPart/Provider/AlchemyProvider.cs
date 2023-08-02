@@ -19,15 +19,15 @@ public interface IAlchemyProvider
     Task<string> HttpPost2AlchemyAsync(string path, string inputStr);
 }
 
-public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
+public class AlchemyProvider : AbstractThirdPartyProvider, IAlchemyProvider
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<AlchemyServiceAppService> _logger;
+    private readonly ILogger<AlchemyProvider> _logger;
     private readonly AlchemyOptions _alchemyOptions;
 
     public AlchemyProvider(IHttpClientFactory httpClientFactory,
         IOptions<ThirdPartOptions> merchantOptions,
-        ILogger<AlchemyServiceAppService> logger)
+        ILogger<AlchemyProvider> logger) : base(httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
         _alchemyOptions = merchantOptions.Value.alchemy;
