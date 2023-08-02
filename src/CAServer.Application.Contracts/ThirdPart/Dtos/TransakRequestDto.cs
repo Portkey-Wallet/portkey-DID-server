@@ -11,7 +11,11 @@ public class TransakOrderUpdateDto : IThirdPartOrder, IValidatableObject
     public TransakOrderDto WebhookOrder { get; set; }
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        throw new System.NotImplementedException();
+        if (string.IsNullOrWhiteSpace(EventId) || string.IsNullOrWhiteSpace(CreatedAt) ||
+            string.IsNullOrWhiteSpace(WebhookData))
+        {
+            yield return new ValidationResult("Invalid input");
+        }
     }
 }
 

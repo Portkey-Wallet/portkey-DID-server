@@ -67,7 +67,7 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
 
     public override string MapperOrderStatus(OrderDto orderDto)
     {
-        return AlchemyHelper.GetOrderStatus(orderDto.Status);
+        return AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
     }
 
     protected override void VerifyOrderInput<T>(T iThirdPartOrder)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
@@ -32,9 +33,9 @@ public class ThirdPartMerchantController : CAServerController
     }
 
     [HttpPost("order/transak")]
-    public async Task<BasicOrderResult> UpdateTransakOrderAsync(TransakOrderUpdateDto input)
+    public async Task<BasicOrderResult> UpdateTransakOrderAsync(Dictionary<string, object> input)
     {
-        return await _orderProcessorFactory.GetProcessor(MerchantNameType.Transak.ToString()).OrderUpdate(input);
+        return await _orderProcessorFactory.GetProcessor(MerchantNameType.Transak.ToString()).OrderUpdate(new AlchemyOrderUpdateDto());
     }
 
 }
