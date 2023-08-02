@@ -125,7 +125,9 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
                 // get status from ach.
                 var orderInfo = await orderProcessor.QueryThirdOrder(oldOrder);
                 if (orderInfo == null || orderInfo.Id == Guid.Empty) continue;
-                await HandleUnCompletedOrderAsync(orderInfo);
+                
+                var achOrderStatus = AlchemyHelper.GetOrderStatus(orderInfo.Status).ToString();
+                await HandleUnCompletedOrderAsync(oldOrder, achOrderStatus);
             }
             catch (Exception e)
             {
@@ -147,34 +149,33 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         return transactionResult;
     }
 
-    private async Task HandleUnCompletedOrderAsync(OrderDto order)
+    private async Task HandleUnCompletedOrderAsync(OrderDto order, string achOrderStatus)
     {
-        var inputOrderStatus = _orderProcessorFactory.GetProcessor(order.MerchantName).MapperOrderStatus(order);
-        if (order.Status == inputOrderStatus) return;
+        if (order.Status == achOrderStatus) return;
 
         if (order.Status != OrderStatusType.Transferred.ToString() &&
             order.Status != OrderStatusType.StartTransfer.ToString() &&
             order.Status != OrderStatusType.Transferring.ToString() &&
             order.Status != OrderStatusType.TransferFailed.ToString() &&
-            order.Status != inputOrderStatus)
+            order.Status != achOrderStatus)
         {
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
             {
                 OrderId = order.Id.ToString(),
                 Order = order,
-                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), inputOrderStatus, true)
+                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
             });
             return;
         }
 
         if (order.Status == OrderStatusType.Transferred.ToString() &&
-            inputOrderStatus != OrderStatusType.Created.ToString())
+            achOrderStatus != OrderStatusType.Created.ToString())
         {
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
             {
                 OrderId = order.Id.ToString(),
                 Order = order,
-                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), inputOrderStatus, true)
+                Status = (OrderStatusType)Enum.Parse(typeof(OrderStatusType), achOrderStatus, true)
             });
             return;
         }
@@ -184,7 +185,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
                              _transactionOptions.ResendTimeInterval * 1000;
 
         if (order.Status == OrderStatusType.Transferred.ToString() &&
-            inputOrderStatus == OrderStatusType.Created.ToString() && isOverInterval)
+            achOrderStatus == OrderStatusType.Created.ToString() && isOverInterval)
         {
             await SendToAlchemyAsync(order.MerchantName, order.Id.ToString(), order.TransactionId);
         }
