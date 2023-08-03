@@ -6,7 +6,7 @@ namespace CAServer.ThirdPart.Alchemy;
 
 public partial class AlchemyOrderAppServiceTest
 {
-    private IOptions<ThirdPartOptions> getMockThirdPartOptions()
+    public static IOptions<ThirdPartOptions> GetMockThirdPartOptions()
     {
         var mockOptions = new Mock<IOptions<ThirdPartOptions>>();
         mockOptions.Setup(ap => ap.Value).Returns(new ThirdPartOptions

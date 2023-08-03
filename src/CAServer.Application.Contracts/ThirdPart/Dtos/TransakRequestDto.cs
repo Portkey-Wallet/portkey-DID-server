@@ -73,6 +73,11 @@ public class TransakOrderDto : IThirdPartOrder
     public string ReferenceCode { get; set; }
 }
 
+public class TransakAccessTokenResp
+{
+    public TransakAccessToken Data { get; set; }
+}
+
 public class TransakAccessToken
 {
     public string AccessToken { get; set; }

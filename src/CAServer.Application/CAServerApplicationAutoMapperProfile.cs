@@ -370,9 +370,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
             ;
 
         CreateMap<TransakOrderDto, OrderDto>()
-            .ForMember(t => t.Id, m => m.MapFrom(f => f.PartnerOrderId))
+            .ForMember(t => t.Id, m => m.MapFrom(f => Guid.Parse(f.PartnerOrderId)))
             .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.Id))
-            .ForMember(t => t.TransDirect, m => m.MapFrom(f => f.IsBuyOrSell))
+            .ForMember(t => t.TransDirect, m
+                => m.MapFrom(f => f.IsBuyOrSell == "BUY" ? TransferDirectionType.TokenBuy.ToString() : TransferDirectionType.TokenSell.ToString()))
             .ForMember(t => t.Address, m => m.MapFrom(f => f.WalletAddress))
             .ForMember(t => t.Crypto, m => m.MapFrom(f => f.Cryptocurrency))
             .ForMember(t => t.CryptoAmount, m => m.MapFrom(f => f.CryptoAmount))

@@ -34,7 +34,7 @@ public class TransakOrderProcessor : AbstractOrderProcessor
             throw new UserFriendlyException("not TransakEventRawData");
 
         var accessToken = await _transakProvider.GetAccessTokenWithRetry();
-        var eventData = TransakHelper.DecodeJwt(accessToken, dto.Data);
+        var eventData = TransakHelper.DecodeJwt(dto.Data, accessToken);
         var eventObj = JsonConvert.DeserializeObject<TransakOrderUpdateEventDto>(eventData, JsonDecodeSettings);
         if (eventObj?.WebhookData == null || eventObj.WebhookData.IsNullOrEmpty() || eventObj.WebhookOrder == null) 
             throw new UserFriendlyException("convert raw data failed");

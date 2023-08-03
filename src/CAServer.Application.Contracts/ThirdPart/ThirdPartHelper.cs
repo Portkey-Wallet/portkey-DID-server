@@ -1,8 +1,7 @@
 using System;
-using System.Collections.Generic;
-using CAServer.ThirdPart.Dtos;
 using System.Security.Cryptography;
 using System.Text;
+using CAServer.ThirdPart.Dtos;
 
 namespace CAServer.ThirdPart;
 
@@ -29,10 +28,9 @@ public static class ThirdPartHelper
         Guid.TryParse(merchantOrderNo, out Guid orderNo);
         return orderNo;
     }
-    
-    public static Guid GetOrderId(string merchantName, string merchantOrderNo)
+
+    public static Guid GenerateOrderId(string merchantName, string merchantOrderNo)
     {
-        Guid.TryParse(merchantName + merchantOrderNo, out Guid orderNo);
-        return orderNo;
+        return new Guid(MD5.HashData(Encoding.Default.GetBytes(merchantName + merchantOrderNo)));
     }
 }

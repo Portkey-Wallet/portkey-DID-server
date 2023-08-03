@@ -103,20 +103,20 @@ public class TransakProvider : AbstractThirdPartyProvider
             throw new RateLimitRejectedException(TimeSpan.Zero);
 
         // cacheData not exists or force
-        var accessToken = await Invoke<TransakAccessToken>(_transakOptions.BaseUrl, TransakApi.RefreshAccessToken,
+        var accessTokenResp = await Invoke<TransakAccessTokenResp>(_transakOptions.BaseUrl, TransakApi.RefreshAccessToken,
             body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = apiKey }),
             header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.AppSecret },
             settings:JsonDecodeSettings);
-        if (accessToken == null)
+        if (accessTokenResp?.Data == null || accessTokenResp.Data.AccessToken.IsNullOrEmpty())
             throw new UserFriendlyException("Internal error, please try again later");
 
         // Expire ahead of 1/5 of the totalDuration.
-        var expiration = DateTimeOffset.FromUnixTimeSeconds(accessToken.ExpiresAt).UtcDateTime;
+        var expiration = DateTimeOffset.FromUnixTimeSeconds(accessTokenResp.Data.ExpiresAt).UtcDateTime;
         var totalDuration = expiration - DateTime.UtcNow;
         var earlyDuration = totalDuration * 0.8;
-        await _cacheProvider.Set(cacheKey, accessToken.AccessToken, earlyDuration);
+        await _cacheProvider.Set(cacheKey, accessTokenResp.Data.AccessToken, earlyDuration);
 
-        return accessToken.AccessToken;
+        return accessTokenResp.Data.AccessToken;
     }
     
     public async Task<TransakOrderDto> GetOrderById(string orderId)

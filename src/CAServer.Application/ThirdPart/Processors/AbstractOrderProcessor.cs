@@ -51,7 +51,7 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
     
     protected virtual Guid GenerateGrainId(OrderDto input)
     {
-        return ThirdPartHelper.GetOrderId(input.MerchantName, input.ThirdPartOrderNo);
+        return ThirdPartHelper.GenerateOrderId(input.MerchantName, input.ThirdPartOrderNo);
     }
     
     
@@ -129,7 +129,8 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
         var userId = CurrentUser.GetId();
-        var orderId = GuidGenerator.Create();
+        var orderId = input.OrderId == null ? GuidGenerator.Create() 
+            : ThirdPartHelper.GenerateOrderId( input.OrderId, input.MerchantName);
         var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);
         orderGrainData.UserId = userId;
         _logger.LogInformation("This third part {MerchantName} order {OrderId} will be created", input.MerchantName, orderId);
@@ -153,23 +154,6 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
         resp.Success = true;
         return resp;
     }
-
-    
-    public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
-    {
-        // var userId = input.UserId;
-        var userId = CurrentUser.GetId();
-
-        var orderList =
-            await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, input.SkipCount,
-                input.MaxResultCount);
-        return new OrdersDto
-        {
-            TotalRecordCount = orderList.Count,
-            Data = orderList
-        };
-    }
-
 
     private OrderGrainDto MergeEsAndInput2GrainModel(OrderDto fromData, OrderDto toData)
     {

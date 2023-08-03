@@ -8,6 +8,7 @@ namespace CAServer.ThirdPart.Dtos;
 
 public class CreateUserOrderDto : IValidatableObject
 {
+    public string OrderId { get; set; }
     // UserId Only available in test sessions since we don't' get authorized user. 
     public Guid UserId { get; set; }
     [Required] public string TransDirect { get; set; }
@@ -16,7 +17,7 @@ public class CreateUserOrderDto : IValidatableObject
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
     {
-        if (ThirdPartHelper.MerchantNameExist(MerchantName) == null)
+        if (ThirdPartHelper.MerchantNameExist(MerchantName) == MerchantNameType.Unknown)
         {
             yield return new ValidationResult(
                 $"Merchant name {MerchantName} is not exist."

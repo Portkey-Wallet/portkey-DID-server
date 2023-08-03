@@ -37,7 +37,7 @@ public static class TransakHelper
         return OrderStatusType.Unknown;
     }
     
-    public static string DecodeJwt(string token, string secretKey)
+    public static string DecodeJwt(string data, string secretKey)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(secretKey);
@@ -51,7 +51,7 @@ public static class TransakHelper
             ValidateLifetime = false,
         };
 
-        tokenHandler.ValidateToken(token, tokenValidationParameters, out var validatedToken);
+        tokenHandler.ValidateToken(data, tokenValidationParameters, out var validatedToken);
         var jwtToken = (JwtSecurityToken)validatedToken;
         return JsonConvert.SerializeObject(jwtToken.Claims.ToDictionary(c => c.Type, c => c.Value));
     }

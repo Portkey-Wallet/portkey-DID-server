@@ -15,7 +15,5 @@ public interface IOrderProcessor
 
     public Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input);
 
-    public Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input);
-
     public Task ForwardTransactionAsync(TransactionDto input);
 }
