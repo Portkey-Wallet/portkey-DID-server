@@ -254,6 +254,6 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             Id = Guid.Empty,
             ThirdPartOrderNo = "123"
         };
-        await _orderProcessorFactory.GetProcessor(MerchantName).QueryThirdOrder(input);
+        await _orderProcessorFactory.GetProcessor(MerchantName).QueryThirdOrderAsync(input);
     }
 }

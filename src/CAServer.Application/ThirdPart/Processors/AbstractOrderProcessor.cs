@@ -11,6 +11,8 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -28,6 +30,11 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
     private readonly IObjectMapper _objectMapper;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
+
+    protected readonly JsonSerializerSettings JsonDecodeSettings = new ()
+    {
+        ContractResolver = new CamelCasePropertyNamesContractResolver()
+    };
 
     protected AbstractOrderProcessor(IClusterClient clusterClient, 
         ILogger<AbstractOrderProcessor> logger,
@@ -48,19 +55,19 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
     }
     
     
-    protected abstract IThirdPartOrder VerifyOrderInput<T>(T iThirdPartOrder) where T : IThirdPartOrder;
+    protected abstract Task<IThirdPartOrder> VerifyOrderInputAsync<T>(T iThirdPartOrder) where T : IThirdPartOrder;
 
-    protected abstract OrderDto ConvertOrderDto<T>(T iThirdPartOrder) where T : IThirdPartOrder;
+    protected abstract Task<OrderDto> ConvertOrderDtoAsync<T>(T iThirdPartOrder) where T : IThirdPartOrder;
     
     
-    public abstract string MapperOrderStatus(OrderDto orderDto);
+    public abstract OrderStatusType MapperOrderStatus(OrderDto orderDto);
     
     public abstract string MerchantName();
     
     public abstract Task UpdateTxHashAsync(TransactionHashDto transactionHashDto);
     
     // query new Third order data, and convert to orderDto
-    public abstract Task<OrderDto> QueryThirdOrder(OrderDto orderDto);
+    public abstract Task<OrderDto> QueryThirdOrderAsync(OrderDto orderDto);
     
     
     public async Task<BasicOrderResult> OrderUpdate(IThirdPartOrder thirdPartOrder)
@@ -68,23 +75,25 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
         OrderDto inputOrderDto = null;
         try
         {
-            var verifiedOrderData = VerifyOrderInput(thirdPartOrder);
+            var verifiedOrderData = await VerifyOrderInputAsync(thirdPartOrder);
             
-            inputOrderDto = ConvertOrderDto(verifiedOrderData);
+            inputOrderDto = await ConvertOrderDtoAsync(verifiedOrderData);
 
             Guid grainId = GenerateGrainId(inputOrderDto);
             
             var inputState = MapperOrderStatus(inputOrderDto);
+            if (inputState == OrderStatusType.Unknown)
+                throw new UserFriendlyException($"Unknown order status {inputOrderDto.Status}");
 
             var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
             if (esOrderData == null || inputOrderDto.Id != esOrderData.Id)
                 throw new UserFriendlyException($"No order found for {grainId}");
-            if (esOrderData.Status == inputState)
+            if (esOrderData.Status == inputState.ToString())
                 throw new UserFriendlyException($"Order status {inputOrderDto.Status} no need to update.");
 
             var dataToBeUpdated = MergeEsAndInput2GrainModel(inputOrderDto, esOrderData);
             var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
-            dataToBeUpdated.Status = inputState;
+            dataToBeUpdated.Status = inputState.ToString();
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();

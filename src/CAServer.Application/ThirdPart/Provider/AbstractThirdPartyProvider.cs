@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart.Provider;
@@ -13,6 +14,11 @@ namespace CAServer.ThirdPart.Provider;
 public abstract class AbstractThirdPartyProvider : ISingletonDependency
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    
+    protected readonly JsonSerializerSettings JsonDecodeSettings = new ()
+    {
+        ContractResolver = new CamelCasePropertyNamesContractResolver()
+    };
 
     protected AbstractThirdPartyProvider(IHttpClientFactory httpClientFactory)
     {

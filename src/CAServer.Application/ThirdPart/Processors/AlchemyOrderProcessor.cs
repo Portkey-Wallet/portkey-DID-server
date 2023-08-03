@@ -19,7 +19,7 @@ namespace CAServer.ThirdPart.Processors;
 
 public class AlchemyOrderProcessor : AbstractOrderProcessor
 {
-    private readonly ILogger<AbstractOrderProcessor> _logger;
+    private readonly ILogger<AlchemyOrderProcessor> _logger;
     private readonly IObjectMapper _objectMapper;
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly IAlchemyProvider _alchemyProvider;
@@ -59,24 +59,24 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
         return MerchantNameType.Alchemy.ToString();
     }
 
-    protected override OrderDto ConvertOrderDto<T>(T iThirdPartOrder)
+    protected override Task<OrderDto> ConvertOrderDtoAsync<T>(T iThirdPartOrder)
     {
         var aclOrder = ConvertToAlchemyOrder(iThirdPartOrder);
-        return _objectMapper.Map<QueryAlchemyOrderInfo, OrderDto>(aclOrder);
+        return Task.FromResult(_objectMapper.Map<QueryAlchemyOrderInfo, OrderDto>(aclOrder));
     }
 
-    public override string MapperOrderStatus(OrderDto orderDto)
+    public override OrderStatusType MapperOrderStatus(OrderDto orderDto)
     {
-        return AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
+        return AlchemyHelper.GetOrderStatus(orderDto.Status);
     }
 
-    protected override IThirdPartOrder VerifyOrderInput<T>(T iThirdPartOrder)
+    protected override Task<IThirdPartOrder>  VerifyOrderInputAsync<T>(T iThirdPartOrder)
     {
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
         var expectedSignature = GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address); 
         if (input.Signature != expectedSignature)
             throw new UserFriendlyException("signature NOT match");
-        return input;
+        return Task.FromResult<IThirdPartOrder>(input);
     }
 
     public override async Task UpdateTxHashAsync(TransactionHashDto input)
@@ -109,7 +109,7 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
         }
     }
 
-    public override async Task<OrderDto> QueryThirdOrder(OrderDto orderDto)
+    public override async Task<OrderDto> QueryThirdOrderAsync(OrderDto orderDto)
     {
         try
         {

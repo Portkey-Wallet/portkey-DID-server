@@ -123,7 +123,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             {
                 var orderProcessor = _orderProcessorFactory.GetProcessor(oldOrder.MerchantName);
                 // get status from ach.
-                var orderInfo = await orderProcessor.QueryThirdOrder(oldOrder);
+                var orderInfo = await orderProcessor.QueryThirdOrderAsync(oldOrder);
                 if (orderInfo == null || orderInfo.Id == Guid.Empty) continue;
                 
                 var achOrderStatus = AlchemyHelper.GetOrderStatus(orderInfo.Status).ToString();

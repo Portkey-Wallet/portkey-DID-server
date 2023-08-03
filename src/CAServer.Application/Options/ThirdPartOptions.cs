@@ -38,4 +38,6 @@ public class TransakOptions
     public string AppId { get; set; }
     public string AppSecret { get; set; }
     public string BaseUrl { get; set; }
+    
+    public string WebhookUrl { get; set; }
 }

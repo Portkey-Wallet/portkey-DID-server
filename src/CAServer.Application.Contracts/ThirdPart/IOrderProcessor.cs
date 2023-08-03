@@ -6,12 +6,10 @@ namespace CAServer.ThirdPart;
 public interface IOrderProcessor
 {
     public string MerchantName();
-
-    public string MapperOrderStatus(OrderDto orderDto);
-
+    
     public Task UpdateTxHashAsync(TransactionHashDto transactionHashDto);
 
-    public Task<OrderDto> QueryThirdOrder(OrderDto orderDto);
+    public Task<OrderDto> QueryThirdOrderAsync(OrderDto orderDto);
 
     public Task<BasicOrderResult> OrderUpdate(IThirdPartOrder thirdPartOrder);
 

@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace CAServer.ThirdPart.Dtos;
 
@@ -19,7 +21,21 @@ public class TransakOrderUpdateEventDto : IThirdPartOrder, IValidatableObject
 {
     public string EventId { get; set; }
     public string CreatedAt { get; set; }
-    public string WebhookData { get; set; }
+    private string _webhookData;
+    public string WebhookData
+    {
+        get => _webhookData;
+        set
+        {
+            _webhookData = value;
+            WebhookOrder = string.IsNullOrWhiteSpace(_webhookData)
+                ? null
+                : JsonConvert.DeserializeObject<TransakOrderDto>(_webhookData, new JsonSerializerSettings()
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+                });
+        }
+    }
     public TransakOrderDto WebhookOrder { get; set; }
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
@@ -55,7 +71,6 @@ public class TransakOrderDto : IThirdPartOrder
     public string PaymentOption { get; set; }
     public string AutoExpiresAt { get; set; }
     public string ReferenceCode { get; set; }
-    
 }
 
 public class TransakAccessToken

@@ -3,7 +3,9 @@ using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Orleans;
+using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -11,30 +13,44 @@ namespace CAServer.ThirdPart.Processors;
 
 public class TransakOrderProcessor : AbstractOrderProcessor
 {
+
+    private readonly ILogger<TransakOrderProcessor> _logger;
+    private readonly IObjectMapper _objectMapper;
+    private readonly TransakProvider _transakProvider;
+    
     public TransakOrderProcessor(IClusterClient clusterClient, ILogger<TransakOrderProcessor> logger,
         IThirdPartOrderProvider thirdPartOrderProvider, IDistributedEventBus distributedEventBus,
-        IOrderStatusProvider orderStatusProvider, IObjectMapper objectMapper) : base(clusterClient, logger,
+        IOrderStatusProvider orderStatusProvider, IObjectMapper objectMapper, TransakProvider transakProvider) : base(clusterClient, logger,
         thirdPartOrderProvider, distributedEventBus, orderStatusProvider, objectMapper)
     {
+        _logger = logger;
+        _objectMapper = objectMapper;
+        _transakProvider = transakProvider;
     }
 
-
-    protected override IThirdPartOrder VerifyOrderInput<T>(T iThirdPartOrder)
+    protected override async Task<IThirdPartOrder>  VerifyOrderInputAsync<T>(T iThirdPartOrder)
     {
-        //TODO
-        throw new NotImplementedException();
+        if (iThirdPartOrder is not TransakEventRawDataDto dto)
+            throw new UserFriendlyException("not TransakEventRawData");
+
+        var accessToken = await _transakProvider.GetAccessTokenWithRetry();
+        var eventData = TransakHelper.DecodeJwt(accessToken, dto.Data);
+        var eventObj = JsonConvert.DeserializeObject<TransakOrderUpdateEventDto>(eventData, JsonDecodeSettings);
+        if (eventObj?.WebhookData == null || eventObj.WebhookData.IsNullOrEmpty() || eventObj.WebhookOrder == null) 
+            throw new UserFriendlyException("convert raw data failed");
+        return eventObj.WebhookOrder;
     }
 
-    protected override OrderDto ConvertOrderDto<T>(T iThirdPartOrder)
+    protected override Task<OrderDto> ConvertOrderDtoAsync<T>(T iThirdPartOrder)
     {
-        //TODO
-        throw new NotImplementedException();
+        if (iThirdPartOrder is not TransakOrderDto dto)
+            throw new UserFriendlyException("not TransakOrderDto");
+        return Task.FromResult(_objectMapper.Map<TransakOrderDto, OrderDto>(dto));
     }
 
-    public override string MapperOrderStatus(OrderDto orderDto)
+    public override OrderStatusType MapperOrderStatus(OrderDto orderDto)
     {
-        //TODO
-        throw new NotImplementedException();
+        return TransakHelper.GetOrderStatus(orderDto.Status);
     }
 
     public override string MerchantName()
@@ -44,13 +60,12 @@ public class TransakOrderProcessor : AbstractOrderProcessor
 
     public override Task UpdateTxHashAsync(TransactionHashDto transactionHashDto)
     {
-        //TODO
         throw new NotImplementedException();
     }
 
-    public override Task<OrderDto> QueryThirdOrder(OrderDto orderDto)
+    public override async Task<OrderDto> QueryThirdOrderAsync(OrderDto orderDto)
     {
-        //TODO
-        throw new NotImplementedException();
+        var orderInfo = await _transakProvider.GetOrderById(orderDto.Id.ToString());
+        return _objectMapper.Map<TransakOrderDto, OrderDto>(orderInfo);
     }
 }

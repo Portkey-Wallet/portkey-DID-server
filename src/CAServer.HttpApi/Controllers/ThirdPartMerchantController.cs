@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -17,13 +19,15 @@ public class ThirdPartMerchantController : CAServerController
 {
     private readonly IThirdPartOrderAppService _thirdPartOrdersAppService;
     private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private readonly ITransakServiceAppService _transakServiceAppService;
 
     public ThirdPartMerchantController(
         IThirdPartOrderAppService thirdPartOrderAppService,
-        IOrderProcessorFactory orderProcessorFactory)
+        IOrderProcessorFactory orderProcessorFactory, ITransakServiceAppService transakServiceAppService)
     {
         _thirdPartOrdersAppService = thirdPartOrderAppService;
         _orderProcessorFactory = orderProcessorFactory;
+        _transakServiceAppService = transakServiceAppService;
     }
 
     [HttpPost("order/alchemy")]
@@ -38,4 +42,11 @@ public class ThirdPartMerchantController : CAServerController
         return await _orderProcessorFactory.GetProcessor(MerchantNameType.Transak.ToString()).OrderUpdate(input);
     }
 
+    [HttpGet("transak/accesstoken")]
+    public async Task<Tuple<string, string>> GetWebhookAsync()
+    {
+        if (!EnvHelper.IsDevelopment())
+            throw new UserFriendlyException("Operation denied");
+        return await _transakServiceAppService.GetAccessTokenAsync();
+    }
 }

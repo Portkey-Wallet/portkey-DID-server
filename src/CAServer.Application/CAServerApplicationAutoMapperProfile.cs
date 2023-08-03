@@ -369,6 +369,17 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.Id, m => m.MapFrom(f => Guid.Parse(f.MerchantOrderNo)))
             ;
 
+        CreateMap<TransakOrderDto, OrderDto>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.PartnerOrderId))
+            .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.Id))
+            .ForMember(t => t.TransDirect, m => m.MapFrom(f => f.IsBuyOrSell))
+            .ForMember(t => t.Address, m => m.MapFrom(f => f.WalletAddress))
+            .ForMember(t => t.Crypto, m => m.MapFrom(f => f.Cryptocurrency))
+            .ForMember(t => t.CryptoAmount, m => m.MapFrom(f => f.CryptoAmount))
+            .ForMember(t => t.Fiat, m => m.MapFrom(f => f.FiatCurrency))
+            .ForMember(t => t.FiatAmount, m => m.MapFrom(f => f.FiatAmount))
+            .ForMember(t => t.Status, m => m.MapFrom(f => f.Status))
+            ;
 
     }
 }

@@ -9,7 +9,7 @@ namespace CAServer.ThirdPart.Processors;
 
 public class OrderProcessorFactory : IOrderProcessorFactory, ISingletonDependency
 {
-    private IEnumerable<IOrderProcessor> _processors;
+    private readonly IEnumerable<IOrderProcessor> _processors;
 
     public OrderProcessorFactory(IEnumerable<IOrderProcessor> processors)
     {

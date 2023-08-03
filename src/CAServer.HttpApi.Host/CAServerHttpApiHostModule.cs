@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.Hubs;
@@ -63,7 +64,8 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
-
+        EnvHelper.Init(hostingEnvironment);
+        
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
