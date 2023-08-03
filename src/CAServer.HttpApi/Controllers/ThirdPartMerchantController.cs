@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -45,7 +43,7 @@ public class ThirdPartMerchantController : CAServerController
     [HttpGet("transak/accesstoken")]
     public async Task<Tuple<string, string>> GetWebhookAsync()
     {
-        if (!EnvHelper.IsDevelopment())
+        if (EnvHelper.IsProduction())
             throw new UserFriendlyException("Operation denied");
         return await _transakServiceAppService.GetAccessTokenAsync();
     }

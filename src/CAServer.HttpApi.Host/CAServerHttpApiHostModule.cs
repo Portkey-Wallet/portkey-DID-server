@@ -64,7 +64,7 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
-        EnvHelper.Init(hostingEnvironment);
+        EnvHelper.Init(hostingEnvironment.EnvironmentName);
         
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<RealIpOptions>(configuration.GetSection("RealIp"));

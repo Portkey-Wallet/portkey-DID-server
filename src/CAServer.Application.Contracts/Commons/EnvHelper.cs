@@ -1,20 +1,37 @@
-using Microsoft.AspNetCore.Hosting;
+
 using Microsoft.Extensions.Hosting;
 
 namespace CAServer.Commons;
 
 public static class EnvHelper
 {
-    private static IWebHostEnvironment _hostingEnvironment;
+    private static string _hostingEnvironment;
 
-    public static void Init(IWebHostEnvironment hostingEnvironment)
+    public static void Init(string evn)
     {
-        if (_hostingEnvironment == null) _hostingEnvironment = hostingEnvironment;
+        _hostingEnvironment ??= evn;
     }
     
     public static bool IsDevelopment()
     {
-        return _hostingEnvironment == null || _hostingEnvironment.IsDevelopment();
+        return _hostingEnvironment == null ||  _hostingEnvironment == Environments.Development;
     }
+    
+    public static bool IsStaging()
+    {
+        return _hostingEnvironment == Environments.Staging;
+    }
+
+    public static bool IsProduction()
+    {
+        return !IsDevelopment() && !IsStaging();
+    }
+    
+    public static bool NotProduction()
+    {
+        return IsDevelopment() || IsStaging();
+    }
+    
+    
     
 }

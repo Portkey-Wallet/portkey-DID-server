@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using CAServer.Bookmark;
+using CAServer.Cache;
 using CAServer.EntityEventHandler.Core;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
@@ -10,10 +10,10 @@ using CAServer.Options;
 using CAServer.Search;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer;
 
@@ -40,6 +40,7 @@ public class CAServerApplicationTestModule : AbpModule
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
+        context.Services.AddSingleton<ICacheProvider, MockCacheProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
@@ -82,18 +83,18 @@ public class CAServerApplicationTestModule : AbpModule
             o.ExpirationDays = 1;
         });
         context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
-        context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
+        context.Services.Configure<ChainOptions>(option =>
         {
-            option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
-                { { "TEST", new CAServer.Grains.Grain.ApplicationHandler.ChainInfo() } };
+            option.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
+                { { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() } };
         });
 
-        context.Services.Configure<CAServer.Options.ChainOptions>(option =>
+        context.Services.Configure<Options.ChainOptions>(option =>
         {
-            option.ChainInfos = new Dictionary<string, CAServer.Options.ChainInfo>
+            option.ChainInfos = new Dictionary<string, Options.ChainInfo>
             {
                 {
-                    "TEST", new CAServer.Options.ChainInfo()
+                    "TEST", new Options.ChainInfo()
                     {
                         BaseUrl = "http://127.0.0.1:6889",
                         ChainId = "TEST",
