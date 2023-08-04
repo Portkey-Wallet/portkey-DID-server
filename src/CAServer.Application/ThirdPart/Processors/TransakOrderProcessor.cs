@@ -45,7 +45,9 @@ public class TransakOrderProcessor : AbstractOrderProcessor
     {
         if (iThirdPartOrder is not TransakOrderDto dto)
             throw new UserFriendlyException("not TransakOrderDto");
-        return Task.FromResult(_objectMapper.Map<TransakOrderDto, OrderDto>(dto));
+        var orderDto = _objectMapper.Map<TransakOrderDto, OrderDto>(dto);
+        orderDto.MerchantName = MerchantName();
+        return Task.FromResult(orderDto);
     }
 
     public override OrderStatusType MapperOrderStatus(OrderDto orderDto)

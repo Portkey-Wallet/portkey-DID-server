@@ -130,7 +130,7 @@ public abstract class AbstractOrderProcessor : CAServerAppService, IOrderProcess
     {
         var userId = CurrentUser.GetId();
         var orderId = input.OrderId == null ? GuidGenerator.Create() 
-            : ThirdPartHelper.GenerateOrderId( input.OrderId, input.MerchantName);
+            : ThirdPartHelper.GenerateOrderId(input.MerchantName, input.OrderId);
         var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);
         orderGrainData.UserId = userId;
         _logger.LogInformation("This third part {MerchantName} order {OrderId} will be created", input.MerchantName, orderId);

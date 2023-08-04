@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.IdentityModel.Tokens;
@@ -54,5 +56,23 @@ public static class TransakHelper
         tokenHandler.ValidateToken(data, tokenValidationParameters, out var validatedToken);
         var jwtToken = (JwtSecurityToken)validatedToken;
         return JsonConvert.SerializeObject(jwtToken.Claims.ToDictionary(c => c.Type, c => c.Value));
+    }
+    
+    public static string EncodeJwt(Dictionary<string, string> data, string secretKey)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(secretKey);
+
+        var claims = new List<Claim>();
+        foreach(var item in data)
+            claims.Add(new Claim(item.Key, item.Value));
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
     }
 }

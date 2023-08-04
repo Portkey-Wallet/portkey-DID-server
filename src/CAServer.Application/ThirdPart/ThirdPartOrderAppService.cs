@@ -38,36 +38,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
     }
-
-
-    public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
-    {
-        var userId = CurrentUser.GetId();
-        var orderId = GuidGenerator.Create();
-        var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);
-        orderGrainData.UserId = userId;
-        _logger.LogInformation("This third part {MerchantName} order {OrderId} will be created", input.MerchantName, orderId);
-        orderGrainData.Status = OrderStatusType.Initialized.ToString();
-        orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
-
-        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
-        var result = await orderGrain.CreateUserOrderAsync(orderGrainData);
-        if (!result.Success)
-        {
-            _logger.LogError("Create user order fail, {MerchantName} order id: {OrderId} user id: {UserId}", input.MerchantName, orderId,
-                orderGrainData.UserId);
-            return new OrderCreatedDto();
-        }
-
-        await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
-
-        await _orderStatusProvider.AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
-
-        var resp = _objectMapper.Map<OrderGrainDto, OrderCreatedDto>(result.Data);
-        resp.Success = true;
-        return resp;
-    }
-
+    
     public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         // var userId = input.UserId;
