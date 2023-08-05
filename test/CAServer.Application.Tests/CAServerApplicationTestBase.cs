@@ -2,15 +2,23 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Grain.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Orleans.TestingHost;
 using Volo.Abp.DistributedLocking;
 
 namespace CAServer;
 
 public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApplicationTestModule>
 {
-    
+    protected readonly TestCluster Cluster;
+
+    protected CAServerApplicationTestBase()
+    {
+        Cluster = GetRequiredService<ClusterFixture>().Cluster;
+    }
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());

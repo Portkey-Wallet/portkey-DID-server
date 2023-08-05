@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Grains.State.Thirdpart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Shouldly;
@@ -14,12 +17,14 @@ public sealed partial class TransakTest : CAServerApplicationTestBase
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly ITransakServiceAppService _transakServiceAppService;
     private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private readonly TransakProvider _transakProvider;
 
     public TransakTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
         _transakServiceAppService = GetRequiredService<ITransakServiceAppService>();
         _orderProcessorFactory = GetRequiredService<IOrderProcessorFactory>();
+        _transakProvider = GetRequiredService<TransakProvider>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -45,6 +50,28 @@ public sealed partial class TransakTest : CAServerApplicationTestBase
         orderUpdateEventDto.WebhookOrder.Id.ShouldNotBeNull();
 
         return orderUpdateEventDto;
+    }
+
+    [Fact]
+    public async Task AccessTokenTest()
+    {
+        await _transakProvider.GetAccessTokenAsync();
+        var grain = Cluster.Client.GetGrain<ITransakGrain>(_transakProvider.GetApiKey());
+        var accessToken = await grain.GetAccessToken();
+        accessToken.Data.History.Count.ShouldBe(1);
+        
+        await _transakProvider.GetAccessTokenAsync();
+        grain = Cluster.Client.GetGrain<ITransakGrain>(_transakProvider.GetApiKey());
+        accessToken = await grain.GetAccessToken();
+        accessToken.Data.History.Count.ShouldBe(1);
+        
+        await Task.Delay(1000);
+
+        await _transakProvider.GetAccessTokenAsync(force:true);
+        grain = Cluster.Client.GetGrain<ITransakGrain>(_transakProvider.GetApiKey());
+        accessToken = await grain.GetAccessToken();
+        accessToken.Data.History.Count.ShouldBe(2);
+        
     }
 
     [Fact]

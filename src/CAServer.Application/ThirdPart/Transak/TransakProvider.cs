@@ -5,17 +5,15 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Cache;
 using CAServer.Commons;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+using Orleans;
 using Polly.RateLimit;
-using RabbitMQ.Client;
 using Volo.Abp;
-using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
-using Volo.Abp.Modularity;
 
 namespace CAServer.ThirdPart.Provider;
 
@@ -37,13 +35,16 @@ public class TransakProvider : AbstractThirdPartyProvider
     private readonly TransakOptions _transakOptions;
     private readonly ICacheProvider _cacheProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly IClusterClient _clusterClient;
 
 
     public TransakProvider(IOptions<ThirdPartOptions> thirdPartOptions, ICacheProvider cacheProvider,
-        IHttpClientFactory httpClientFactory, IAbpDistributedLock distributedLock) : base(httpClientFactory)
+        IHttpClientFactory httpClientFactory, IAbpDistributedLock distributedLock, IClusterClient clusterClient) : base(
+        httpClientFactory)
     {
         _cacheProvider = cacheProvider;
         _distributedLock = distributedLock;
+        _clusterClient = clusterClient;
         _transakOptions = thirdPartOptions.Value.transak;
         InitAsync().GetAwaiter().GetResult();
     }
@@ -56,8 +57,9 @@ public class TransakProvider : AbstractThirdPartyProvider
         // Update the webhook address when the system starts.
         var accessToken = await GetAccessTokenWithRetry();
         await Invoke(_transakOptions.BaseUrl, TransakApi.UpdateWebhook,
-            body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["webhookURL"] = _transakOptions.WebhookUrl }),
-            header : new Dictionary<string, string>{ ["access-token"] = accessToken});
+            body: JsonConvert.SerializeObject(new Dictionary<string, string>
+                { ["webhookURL"] = _transakOptions.WebhookUrl }),
+            header: new Dictionary<string, string> { ["access-token"] = accessToken });
     }
 
     public string GetApiKey()
@@ -91,42 +93,57 @@ public class TransakProvider : AbstractThirdPartyProvider
         }
     }
 
-    public async Task<string> GetAccessTokenAsync(bool force = false)
+    public async Task<string> GetAccessTokenAsync(bool force = false, bool containsExpire = true)
     {
+        var now = DateTime.UtcNow;
         var apiKey = GetApiKey();
         var cacheKey = CacheKey(apiKey);
-        string cacheData = force ? string.Empty : await _cacheProvider.Get(cacheKey);
-        if (!cacheData.IsNullOrEmpty()) return cacheData;
+        var tokenGrain = _clusterClient.GetGrain<ITransakGrain>(apiKey);
+        var cacheData = force ? null : (await tokenGrain.GetAccessToken()).Data;
 
+        var hasData = cacheData != null && !cacheData.AccessToken.IsNullOrEmpty();
+        if (hasData && containsExpire) 
+            return cacheData.AccessToken;
+        if (hasData && cacheData.RefreshTime > DateTime.UtcNow) 
+            return cacheData.AccessToken;
+        
+        // Use a distributed lock to prevent duplicate refreshes during concurrent access.
         await using var handle = await _distributedLock.TryAcquireAsync(cacheKey);
         if (handle == null)
             throw new RateLimitRejectedException(TimeSpan.Zero);
 
         // cacheData not exists or force
-        var accessTokenResp = await Invoke<TransakAccessTokenResp>(_transakOptions.BaseUrl, TransakApi.RefreshAccessToken,
+        var accessTokenResp = await Invoke<TransakAccessTokenResp>(_transakOptions.BaseUrl,
+            TransakApi.RefreshAccessToken,
             body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = apiKey }),
             header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.AppSecret },
-            settings:JsonDecodeSettings);
+            settings: JsonDecodeSettings);
         if (accessTokenResp?.Data == null || accessTokenResp.Data.AccessToken.IsNullOrEmpty())
             throw new UserFriendlyException("Internal error, please try again later");
 
-        // Expire ahead of 1/5 of the totalDuration.
+        // Expire ahead of RefreshTokenDurationPercent of the totalDuration.
         var expiration = DateTimeOffset.FromUnixTimeSeconds(accessTokenResp.Data.ExpiresAt).UtcDateTime;
-        var totalDuration = expiration - DateTime.UtcNow;
-        var earlyDuration = totalDuration * 0.8;
-        await _cacheProvider.Set(cacheKey, accessTokenResp.Data.AccessToken, earlyDuration);
+        var refreshDuration = (expiration - now) * _transakOptions.RefreshTokenDurationPercent;
+        
+        // record accessToken data to Grain
+        await tokenGrain.SetAccessToken(new TransakAccessTokenDto()
+        {
+            AccessToken = accessTokenResp.Data.AccessToken,
+            ExpireTime = expiration,
+            RefreshTime = now + refreshDuration
+        });
 
         return accessTokenResp.Data.AccessToken;
     }
-    
+
     public async Task<TransakOrderDto> GetOrderById(string orderId)
     {
         var resp = await Invoke<QueryTransakOrderByIdResult>(_transakOptions.BaseUrl,
             TransakApi.GetOrderById.PathParam(new Dictionary<string, string> { ["orderId"] = orderId }),
             header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.AppSecret },
-            settings:JsonDecodeSettings
-            );
-        
+            settings: JsonDecodeSettings
+        );
+
         return resp?.Data;
     }
 }

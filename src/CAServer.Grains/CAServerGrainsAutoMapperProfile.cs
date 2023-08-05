@@ -19,6 +19,7 @@ using CAServer.Grains.State.Contacts;
 using CAServer.Grains.State.CrossChain;
 using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
+using CAServer.Grains.State.Thirdpart;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
 using CAServer.ThirdPart.Dtos;
@@ -102,5 +103,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<OrderStatusInfoState, OrderStatusInfoGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkResultDto>();
+        CreateMap<TransakAccessTokenState, TransakAccessTokenDto>();
+        CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
     }
 }
