@@ -32,6 +32,4 @@ public static class EnvHelper
         return IsDevelopment() || IsStaging();
     }
     
-    
-    
 }

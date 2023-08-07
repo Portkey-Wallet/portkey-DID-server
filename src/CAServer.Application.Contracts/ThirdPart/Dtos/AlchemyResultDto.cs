@@ -12,7 +12,7 @@ public class AlchemyBaseResponseDto
     public string TraceId { get; set; }
 }
 
-public class AlchemyTokenDto : AlchemyBaseResponseDto
+public class AlchemyTokenResponseDto : AlchemyBaseResponseDto
 {
     public AlchemyTokenDataDto Data { get; set; }
 }
@@ -23,7 +23,7 @@ public class AlchemyTokenDataDto
     public string AccessToken { get; set; }
 }
 
-public class AlchemyFiatListDto : AlchemyBaseResponseDto
+public class AlchemyFiatListResponseDto : AlchemyBaseResponseDto
 {
     public List<AlchemyFiatDto> Data { get; set; }
 }
@@ -41,7 +41,7 @@ public class AlchemyFiatDto
     public string CountryName { get; set; }
 }
 
-public class AlchemyCryptoListDto : AlchemyBaseResponseDto
+public class AlchemyCryptoListResponseDto : AlchemyBaseResponseDto
 {
     public List<AlchemyCryptoDto> Data { get; set; }
 }
@@ -60,7 +60,7 @@ public class AlchemyCryptoDto
     public string MaxSellAmount { get; set; }
 }
 
-public class AlchemyOrderQuoteResultDto : AlchemyBaseResponseDto
+public class AlchemyOrderQuoteResponseDto : AlchemyBaseResponseDto
 {
     public AlchemyOrderQuoteDataDto Data { get; set; }
 }
@@ -77,7 +77,7 @@ public class AlchemyOrderQuoteDataDto
     public string PayWayCode { get; set; }
 }
 
-public class AlchemySignatureResultDto : AlchemyBaseResponseDto
+public class AlchemySignatureResponseDto : AlchemyBaseResponseDto
 {
     public string Signature { get; set; }
 }

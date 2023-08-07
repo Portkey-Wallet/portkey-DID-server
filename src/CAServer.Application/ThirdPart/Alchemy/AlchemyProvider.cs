@@ -1,22 +1,36 @@
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
-using CAServer.ThirdPart.Alchemy;
+using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans.Runtime;
-using Volo.Abp.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace CAServer.ThirdPart.Provider;
 
 public interface IAlchemyProvider
 {
-    Task<string> HttpGetFromAlchemy(string path);
+    Task<AlchemyFiatListResponseDto> GetAlchemyFiatList(GetAlchemyFiatListDto request);
+    Task<QueryAlchemyOrderInfoResponseDto> GetAlchemyOrder(QueryAlchemyOrderDto request);
+    Task<AlchemyCryptoListResponseDto> GetAlchemyCryptoList(GetAlchemyCryptoListDto request);
+    Task<AlchemyOrderQuoteResponseDto> QueryAlchemyOrderQuoteList(GetAlchemyOrderQuoteDto request);
+
     Task<string> HttpPost2AlchemyAsync(string path, string inputStr);
+}
+
+public static class AlchemyApi
+{
+    public static ApiInfo GetOrder { get; } = new(HttpMethod.Get, "/merchant/query/trade");
+    public static ApiInfo GetFiatList { get; } = new(HttpMethod.Get, "/merchant/fiat/list");
+    public static ApiInfo GetCryptoList { get; } = new(HttpMethod.Get, "/merchant/crypto/list");
+
+    public static ApiInfo FetchToken { get; } = new(HttpMethod.Post, "/merchant/getToken");
+    public static ApiInfo CreateOrder { get; } = new(HttpMethod.Post, "/merchant/trade/create");
+    public static ApiInfo QueryPrice { get; } = new(HttpMethod.Post, "/merchant/order/quote");
 }
 
 public class AlchemyProvider : AbstractThirdPartyProvider, IAlchemyProvider
@@ -27,25 +41,62 @@ public class AlchemyProvider : AbstractThirdPartyProvider, IAlchemyProvider
 
     public AlchemyProvider(IHttpClientFactory httpClientFactory,
         IOptions<ThirdPartOptions> merchantOptions,
-        ILogger<AlchemyProvider> logger) : base(httpClientFactory)
+        ILogger<AlchemyProvider> logger) : base(httpClientFactory, logger)
     {
         _httpClientFactory = httpClientFactory;
         _alchemyOptions = merchantOptions.Value.alchemy;
         _logger = logger;
     }
 
-
-    public async Task<string> HttpGetFromAlchemy(string path)
+    private Dictionary<string, string> GetAlchemyRequestHeader()
     {
-        var client = _httpClientFactory.CreateClient();
-        SetAlchemyRequestHeader(client);
-        HttpResponseMessage respMsg = await client.GetAsync(_alchemyOptions.BaseUrl + path);
-        var respStr = await respMsg.Content.ReadAsStringAsync();
+        var timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
+        var sign = GenerateAlchemyApiSign(timeStamp);
+        _logger.LogDebug("appId: {AppId}, timeStamp: {TimeStamp}, signature: {Signature}", _alchemyOptions.AppId,
+            timeStamp, sign);
+        return new Dictionary<string, string>
+        {
+            ["appId"] = _alchemyOptions.AppId,
+            ["timestamp"] = timeStamp,
+            ["sign"] = sign
+        };
+    }
 
-        _logger.LogInformation("[ACH][{StatusCode}][get]request url: \n{url}", respMsg.StatusCode,
-            _alchemyOptions.BaseUrl + path);
+    private Dictionary<string, string> ToParamDict(object input)
+    {
+        var res = new Dictionary<string, string>();
+        foreach (var p in input.GetType().GetProperties())
+            res[char.ToLower(p.Name[0]) + p.Name.Substring(1)] = p.GetValue(input)?.ToString();
 
-        return respStr;
+        return res;
+    }
+
+    public async Task<AlchemyFiatListResponseDto> GetAlchemyFiatList(GetAlchemyFiatListDto request)
+    {
+        return await Invoke<AlchemyFiatListResponseDto>(_alchemyOptions.BaseUrl, AlchemyApi.GetFiatList,
+            param: ToParamDict(request),
+            header: GetAlchemyRequestHeader());
+    }
+
+    public async Task<QueryAlchemyOrderInfoResponseDto> GetAlchemyOrder(QueryAlchemyOrderDto request)
+    {
+        return await Invoke<QueryAlchemyOrderInfoResponseDto>(_alchemyOptions.BaseUrl, AlchemyApi.GetOrder,
+            param: ToParamDict(request),
+            header: GetAlchemyRequestHeader());
+    }
+
+    public async Task<AlchemyCryptoListResponseDto> GetAlchemyCryptoList(GetAlchemyCryptoListDto request)
+    {
+        return await Invoke<AlchemyCryptoListResponseDto>(_alchemyOptions.BaseUrl, AlchemyApi.GetCryptoList,
+            param: ToParamDict(request),
+            header: GetAlchemyRequestHeader());
+    }
+
+    public async Task<AlchemyOrderQuoteResponseDto> QueryAlchemyOrderQuoteList(GetAlchemyOrderQuoteDto request)
+    {
+        return await Invoke<AlchemyOrderQuoteResponseDto>(_alchemyOptions.BaseUrl, AlchemyApi.QueryPrice,
+            body: JsonConvert.SerializeObject(request, JsonSettings),
+            header: GetAlchemyRequestHeader());
     }
 
     public async Task<string> HttpPost2AlchemyAsync(string path, string inputStr)

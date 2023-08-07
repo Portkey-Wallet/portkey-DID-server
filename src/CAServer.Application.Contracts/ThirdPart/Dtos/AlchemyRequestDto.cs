@@ -15,7 +15,7 @@ public class GetAlchemyCryptoListDto
 
 public class GetAlchemyFiatListDto
 {
-    public string Type { get; set; } = "BUY";
+    public string Type { get; set; } = OrderTransDirect.BUY.ToString();
 }
 
 public class GetAlchemyOrderQuoteDto
@@ -86,14 +86,14 @@ public class QueryAlchemyOrderInfoDto
     public string OrderId { get; set; }
 }
 
-public class OrderQueryDto
+public class QueryAlchemyOrderDto
 {
     public string OrderNo { get; set; }
     public string MerchantOrderNo { get; set; }
     public string Side { get; set; }
 }
 
-public class QueryAlchemyOrderInfoResultDto : AlchemyBaseResponseDto
+public class QueryAlchemyOrderInfoResponseDto : AlchemyBaseResponseDto
 {
     public QueryAlchemyOrderInfo Data { get; set; }
 }

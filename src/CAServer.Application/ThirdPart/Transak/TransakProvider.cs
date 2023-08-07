@@ -8,6 +8,7 @@ using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
@@ -19,15 +20,15 @@ namespace CAServer.ThirdPart.Provider;
 
 public static class TransakApi
 {
-    public static readonly ApiInfo GetWebhooks = new(HttpMethod.Get, "/partners/api/v2/webhooks");
-    public static readonly ApiInfo GetOrderById = new(HttpMethod.Get, "/partners/api/v2/order/{orderId}");
-    public static readonly ApiInfo GetCountries = new(HttpMethod.Get, "/api/v2/countries");
-    public static readonly ApiInfo GetCryptoCurrencies = new(HttpMethod.Get, "/api/v2/currencies/crypto-currencies");
-    public static readonly ApiInfo GetFiatCurrencies = new(HttpMethod.Get, "/api/v2/currencies/fiat-currencies");
-    public static readonly ApiInfo GetPrice = new(HttpMethod.Get, "/api/v2/currencies/price");
+    public static ApiInfo GetWebhooks { get; } = new(HttpMethod.Get, "/partners/api/v2/webhooks");
+    public static ApiInfo GetOrderById { get; } = new(HttpMethod.Get, "/partners/api/v2/order/{orderId}");
+    public static ApiInfo GetCountries { get; } = new(HttpMethod.Get, "/api/v2/countries");
+    public static ApiInfo GetCryptoCurrencies { get; } = new(HttpMethod.Get, "/api/v2/currencies/crypto-currencies");
+    public static ApiInfo GetFiatCurrencies { get; } = new(HttpMethod.Get, "/api/v2/currencies/fiat-currencies");
+    public static ApiInfo GetPrice { get; } = new(HttpMethod.Get, "/api/v2/currencies/price");
 
-    public static readonly ApiInfo UpdateWebhook = new(HttpMethod.Post, "/partners/api/v2/update-webhook-url");
-    public static readonly ApiInfo RefreshAccessToken = new(HttpMethod.Post, "/partners/api/v2/refresh-token");
+    public static ApiInfo UpdateWebhook { get; } = new(HttpMethod.Post, "/partners/api/v2/update-webhook-url");
+    public static ApiInfo RefreshAccessToken { get; } = new(HttpMethod.Post, "/partners/api/v2/refresh-token");
 }
 
 public class TransakProvider : AbstractThirdPartyProvider
@@ -36,15 +37,17 @@ public class TransakProvider : AbstractThirdPartyProvider
     private readonly ICacheProvider _cacheProvider;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IClusterClient _clusterClient;
+    private readonly ILogger<TransakProvider> _logger;
 
 
     public TransakProvider(IOptions<ThirdPartOptions> thirdPartOptions, ICacheProvider cacheProvider,
-        IHttpClientFactory httpClientFactory, IAbpDistributedLock distributedLock, IClusterClient clusterClient) : base(
-        httpClientFactory)
+        IHttpClientFactory httpClientFactory, IAbpDistributedLock distributedLock, IClusterClient clusterClient,
+        ILogger<TransakProvider> logger) : base(httpClientFactory, logger)
     {
         _cacheProvider = cacheProvider;
         _distributedLock = distributedLock;
         _clusterClient = clusterClient;
+        _logger = logger;
         _transakOptions = thirdPartOptions.Value.transak;
         InitAsync().GetAwaiter().GetResult();
     }
@@ -102,11 +105,11 @@ public class TransakProvider : AbstractThirdPartyProvider
         var cacheData = force ? null : (await tokenGrain.GetAccessToken()).Data;
 
         var hasData = cacheData != null && !cacheData.AccessToken.IsNullOrEmpty();
-        if (hasData && containsExpire) 
+        if (hasData && containsExpire)
             return cacheData.AccessToken;
-        if (hasData && cacheData.RefreshTime > DateTime.UtcNow) 
+        if (hasData && cacheData.RefreshTime > DateTime.UtcNow)
             return cacheData.AccessToken;
-        
+
         // Use a distributed lock to prevent duplicate refreshes during concurrent access.
         await using var handle = await _distributedLock.TryAcquireAsync(cacheKey);
         if (handle == null)
@@ -117,14 +120,14 @@ public class TransakProvider : AbstractThirdPartyProvider
             TransakApi.RefreshAccessToken,
             body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = apiKey }),
             header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.AppSecret },
-            settings: JsonDecodeSettings);
+            settings: JsonSettings);
         if (accessTokenResp?.Data == null || accessTokenResp.Data.AccessToken.IsNullOrEmpty())
             throw new UserFriendlyException("Internal error, please try again later");
 
         // Expire ahead of RefreshTokenDurationPercent of the totalDuration.
         var expiration = DateTimeOffset.FromUnixTimeSeconds(accessTokenResp.Data.ExpiresAt).UtcDateTime;
         var refreshDuration = (expiration - now) * _transakOptions.RefreshTokenDurationPercent;
-        
+
         // record accessToken data to Grain
         await tokenGrain.SetAccessToken(new TransakAccessTokenDto()
         {
@@ -141,7 +144,7 @@ public class TransakProvider : AbstractThirdPartyProvider
         var resp = await Invoke<QueryTransakOrderByIdResult>(_transakOptions.BaseUrl,
             TransakApi.GetOrderById.PathParam(new Dictionary<string, string> { ["orderId"] = orderId }),
             header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.AppSecret },
-            settings: JsonDecodeSettings
+            settings: JsonSettings
         );
 
         return resp?.Data;

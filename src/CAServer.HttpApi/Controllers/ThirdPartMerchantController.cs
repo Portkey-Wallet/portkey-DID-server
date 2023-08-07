@@ -39,12 +39,5 @@ public class ThirdPartMerchantController : CAServerController
     {
         return await _orderProcessorFactory.GetProcessor(MerchantNameType.Transak.ToString()).OrderUpdate(input);
     }
-
-    [HttpGet("transak/accesstoken")]
-    public async Task<Tuple<string, string>> GetWebhookAsync()
-    {
-        if (EnvHelper.IsProduction())
-            throw new UserFriendlyException("Operation denied");
-        return await _transakServiceAppService.GetAccessTokenAsync();
-    }
+    
 }

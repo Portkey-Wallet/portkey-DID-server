@@ -118,7 +118,7 @@ public class ModelTest
             Type = string.Empty
         };
 
-        var responseDto = new AlchemyOrderQuoteResultDto
+        var responseDto = new AlchemyOrderQuoteResponseDto
         {
             Data = new AlchemyOrderQuoteDataDto()
             {
@@ -132,7 +132,7 @@ public class ModelTest
             }
         };
 
-        var dtos = new AlchemyCryptoListDto
+        var dtos = new AlchemyCryptoListResponseDto
         {
             Data = new List<AlchemyCryptoDto>()
             {
@@ -152,7 +152,7 @@ public class ModelTest
             }
         };
 
-        var fiatListDto = new AlchemyFiatListDto
+        var fiatListDto = new AlchemyFiatListResponseDto
         {
             Data = new List<AlchemyFiatDto>()
             {
@@ -170,7 +170,7 @@ public class ModelTest
             }
         };
 
-        var tokenDto = new AlchemyTokenDto
+        var tokenDto = new AlchemyTokenResponseDto
         {
             Data = new AlchemyTokenDataDto()
             {

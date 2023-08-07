@@ -3,16 +3,20 @@ using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace CAServer.ThirdPart.Alchemy;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
 {
+    
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
+    private readonly ITestOutputHelper _testOutputHelper;
 
-    public AlchemyServiceAppServiceTest()
+    public AlchemyServiceAppServiceTest(ITestOutputHelper testOutputHelper)
     {
+        _testOutputHelper = testOutputHelper;
         _alchemyServiceAppService = GetRequiredService<IAlchemyServiceAppService>();
     }
 
@@ -20,8 +24,10 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(getMockThirdPartOptions());
-        services.AddSingleton(GetMockAlchemyFiatDto());
-        services.AddSingleton(GetMockAlchemyOrderQuoteDto());
+        services.AddSingleton(MockHttpFactory(_testOutputHelper, 
+            MockAlchemyFiatListResponse, 
+            MockAlchemyOrderQuoteList, 
+            MockGetCryptoList));
     }
 
     [Fact]

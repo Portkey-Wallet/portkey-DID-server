@@ -10,6 +10,7 @@ namespace CAServer.ThirdPart.Processors;
 public class OrderProcessorFactory : IOrderProcessorFactory, ISingletonDependency
 {
     private readonly IEnumerable<IOrderProcessor> _processors;
+    private readonly IEnumerable<IThirdPartAppService> _thirdPartAppServices;
 
     public OrderProcessorFactory(IEnumerable<IOrderProcessor> processors)
     {
@@ -25,5 +26,14 @@ public class OrderProcessorFactory : IOrderProcessorFactory, ISingletonDependenc
         if (processor == null) throw new UserFriendlyException($"not support merchant {merchantName}");
         return processor;
     }
-    
+
+    public IThirdPartAppService GetAppService(string merchantName)
+    {
+        if (ThirdPartHelper.MerchantNameExist(merchantName) == MerchantNameType.Unknown)
+            throw new UserFriendlyException($"not support merchant {merchantName} !");
+        var processor = _thirdPartAppServices.FirstOrDefault(p
+            => String.Equals(p.MerchantName(), merchantName, StringComparison.CurrentCultureIgnoreCase), null);
+        if (processor == null) throw new UserFriendlyException($"not support merchant {merchantName}");
+        return processor;
+    }
 }

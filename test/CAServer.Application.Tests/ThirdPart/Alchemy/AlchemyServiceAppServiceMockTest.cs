@@ -1,9 +1,19 @@
+using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Options;
 using Moq;
+using Moq.Protected;
+using Newtonsoft.Json;
 using Volo.Abp.Caching;
+using Xunit.Abstractions;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -29,32 +39,122 @@ public partial class AlchemyServiceAppServiceTest
         return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
     }
 
-    private IDistributedCache<List<AlchemyFiatDto>> GetMockAlchemyFiatDto()
+    
+    public static IHttpClientFactory MockHttpFactory(ITestOutputHelper testOutputHelper,
+        params Action<Mock<HttpMessageHandler>, ITestOutputHelper>[] mockActions)
     {
-        var mockCache = new Mock<IDistributedCache<List<AlchemyFiatDto>>>();
+        var mockHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
 
-        mockCache.Setup(t => t.GetAsync(It.IsAny<string>(), default, default, default))
-            .ReturnsAsync(new List<AlchemyFiatDto>()
+        foreach (var mockFunc in mockActions)
+            mockFunc.Invoke(mockHandler, testOutputHelper);
+
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
+        httpClientFactoryMock
+            .Setup(_ => _.CreateClient(It.IsAny<string>()))
+            .Returns(new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://test.com/") });
+
+        return httpClientFactoryMock.Object;
+    }
+    
+    
+    public static readonly Action<Mock<HttpMessageHandler>, ITestOutputHelper> MockAlchemyFiatListResponse =
+        (mockHandler, testOutputHelper) =>
+        {
+            var expectedUri = AlchemyApi.GetFiatList;
+            DateTimeOffset offset = DateTime.UtcNow.AddDays(7);
+            var responseData = new AlchemyFiatListResponseDto()
             {
-                new AlchemyFiatDto()
+                Data = new List<AlchemyFiatDto>()
                 {
-                    Currency = "USD"
+                    new AlchemyFiatDto()
+                    {
+                        Currency = "USD"
+                    }
                 }
-            });
-        return mockCache.Object;
-    }
-
-    private IDistributedCache<AlchemyOrderQuoteDataDto> GetMockAlchemyOrderQuoteDto()
-    {
-        var mockCache = new Mock<IDistributedCache<AlchemyOrderQuoteDataDto>>();
-
-        mockCache.Setup(t => t.GetAsync(It.IsAny<string>(), default, default, default))
-            .ReturnsAsync(new AlchemyOrderQuoteDataDto()
+            };
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Crypto = "ELF",
-                CryptoPrice = "0.27",
-                CryptoQuantity = "0.27"
-            });
-        return mockCache.Object;
-    }
+                Content = new StringContent(JsonConvert.SerializeObject(responseData), Encoding.UTF8,
+                    "application/json")
+            };
+
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.Method == expectedUri.Method &&
+                        req.RequestUri.ToString().Contains(expectedUri.Path)),
+                    ItExpr.IsAny<CancellationToken>())
+                .Returns(() =>
+                {
+                    testOutputHelper?.WriteLine($"Mock Http {expectedUri.Method.Method} to {expectedUri.Path}, resp={response}");
+                    return Task.FromResult(response);
+                });            
+        };
+    
+    public static readonly Action<Mock<HttpMessageHandler>, ITestOutputHelper> MockAlchemyOrderQuoteList =
+        (mockHandler, testOutputHelper) =>
+        {
+            var expectedUri = AlchemyApi.QueryPrice;
+            DateTimeOffset offset = DateTime.UtcNow.AddDays(7);
+            var responseData = new AlchemyOrderQuoteResponseDto()
+            {
+                Data = new AlchemyOrderQuoteDataDto()
+                {
+                    Crypto = "ELF",
+                    CryptoPrice = "0.27",
+                    CryptoQuantity = "0.27"
+                }
+            };
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(responseData), Encoding.UTF8,
+                    "application/json")
+            };
+
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.Method == expectedUri.Method &&
+                        req.RequestUri.ToString().Contains(expectedUri.Path)),
+                    ItExpr.IsAny<CancellationToken>())
+                .Returns(() =>
+                {
+                    testOutputHelper?.WriteLine($"Mock Http {expectedUri.Method.Method} to {expectedUri.Path}, resp={response}");
+                    return Task.FromResult(response);
+                });            
+        };
+    
+    public static readonly Action<Mock<HttpMessageHandler>, ITestOutputHelper> MockGetCryptoList =
+        (mockHandler, testOutputHelper) =>
+        {
+            var expectedUri = AlchemyApi.GetCryptoList;
+            DateTimeOffset offset = DateTime.UtcNow.AddDays(7);
+            var responseData = new AlchemyCryptoListResponseDto()
+            {
+                Data = new List<AlchemyCryptoDto>()
+                {
+                    new AlchemyCryptoDto()
+                    {
+                        Crypto = "ELF",
+                    }
+                }
+            };
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(responseData), Encoding.UTF8,
+                    "application/json")
+            };
+
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.Method == expectedUri.Method &&
+                        req.RequestUri.ToString().Contains(expectedUri.Path)),
+                    ItExpr.IsAny<CancellationToken>())
+                .Returns(() =>
+                {
+                    testOutputHelper?.WriteLine($"Mock Http {expectedUri.Method.Method} to {expectedUri.Path}, resp={response}");
+                    return Task.FromResult(response);
+                });            
+        };
 }

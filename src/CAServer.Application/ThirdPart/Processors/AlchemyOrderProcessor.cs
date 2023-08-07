@@ -113,19 +113,14 @@ public class AlchemyOrderProcessor : AbstractOrderProcessor
     {
         try
         {
-            var orderQueryDto = new OrderQueryDto()
+            var orderQueryDto = new QueryAlchemyOrderDto()
             {
                 Side = AlchemyHelper.GetOrderTransDirectForQuery(orderDto.TransDirect),
                 MerchantOrderNo = orderDto.Id.ToString(),
                 OrderNo = orderDto.ThirdPartOrderNo
             };
 
-            var queryString = string.Join("&", orderQueryDto.GetType().GetProperties()
-                .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(orderQueryDto)}"));
-
-            var queryResult = JsonConvert.DeserializeObject<QueryAlchemyOrderInfoResultDto>(
-                await _alchemyProvider.HttpGetFromAlchemy(_thirdPartOptions.alchemy.MerchantQueryTradeUri + "?" +
-                                                          queryString));
+            var queryResult = await _alchemyProvider.GetAlchemyOrder(orderQueryDto);
 
             return _objectMapper.Map<QueryAlchemyOrderInfo, OrderDto>(queryResult.Data);
         }

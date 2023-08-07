@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 
@@ -5,9 +6,16 @@ namespace CAServer.ThirdPart;
 
 public interface IAlchemyServiceAppService
 {
-    Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input);
-    Task<AlchemyFiatListDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input);
-    Task<AlchemyCryptoListDto> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input);
-    Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
-    Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input);
+    Task<AlchemyTokenResponseDto> GetAlchemyFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input);
+    Task<AlchemySignatureResponseDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input);
+    
+    [Obsolete("For compatibility with old front-end versions.")]
+    Task<AlchemyFiatListResponseDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input);
+    
+    [Obsolete("For compatibility with old front-end versions.")]
+    Task<AlchemyCryptoListResponseDto> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input);
+    
+    [Obsolete("For compatibility with old front-end versions.")]
+    Task<AlchemyOrderQuoteResponseDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
+    
 }
