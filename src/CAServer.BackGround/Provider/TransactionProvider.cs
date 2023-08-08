@@ -31,20 +31,20 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly IOrderStatusProvider _orderStatusProvider;
-    private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private readonly IThirdPartFactory _thirdPartFactory;
 
     public TransactionProvider(IContractProvider contractProvider, ILogger<TransactionProvider> logger,
         IOptionsSnapshot<TransactionOptions> options,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IObjectMapper objectMapper,
-        IOrderStatusProvider orderStatusProvider, IOrderProcessorFactory orderProcessorFactory)
+        IOrderStatusProvider orderStatusProvider, IThirdPartFactory thirdPartFactory)
     {
         _contractProvider = contractProvider;
         _logger = logger;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _orderStatusProvider = orderStatusProvider;
-        _orderProcessorFactory = orderProcessorFactory;
+        _thirdPartFactory = thirdPartFactory;
         _transactionOptions = options.Value;
     }
 
@@ -121,7 +121,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         {
             try
             {
-                var orderProcessor = _orderProcessorFactory.GetProcessor(oldOrder.MerchantName);
+                var orderProcessor = _thirdPartFactory.GetProcessor(oldOrder.MerchantName);
                 // get status from ach.
                 var orderInfo = await orderProcessor.QueryThirdOrderAsync(oldOrder);
                 if (orderInfo == null || orderInfo.Id == Guid.Empty) continue;
@@ -194,7 +194,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     private async Task SendToAlchemyAsync(string merchantName, string orderId, string txHash)
     {
         if (string.IsNullOrWhiteSpace(txHash)) return;
-        await _orderProcessorFactory.GetProcessor(merchantName).UpdateTxHashAsync(new TransactionHashDto
+        await _thirdPartFactory.GetProcessor(merchantName).UpdateTxHashAsync(new TransactionHashDto
         {
             MerchantName = merchantName,
             OrderId = orderId,

@@ -7,7 +7,7 @@ namespace CAServer.ThirdPart;
 public interface IThirdPartAppService
 {
     string MerchantName();
-    Task<AlchemyFiatListResponseDto> GetMerchantFiatAsync(GetAlchemyFiatListDto input);
-    Task<AlchemyCryptoListResponseDto> GetMerchantCryptoAsync(GetAlchemyCryptoListDto input);
-    Task<AlchemyOrderQuoteResponseDto> GetMerchantPriceAsync(GetAlchemyOrderQuoteDto input);
+    Task<QueryFiatResponseDto> GetMerchantFiatAsync(QueryFiatRequestDto input);
+    Task<QueryCryptoResponseDto> GetMerchantCryptoAsync(QueryCurrencyRequestDto input);
+    Task<QueryPriceResponseDto> GetMerchantPriceAsync(QueryPriceRequestDto input);
 }

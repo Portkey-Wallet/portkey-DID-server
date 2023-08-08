@@ -7,12 +7,12 @@ using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart.Processors;
 
-public class OrderProcessorFactory : IOrderProcessorFactory, ISingletonDependency
+public class ThirdPartFactory : IThirdPartFactory, ISingletonDependency
 {
     private readonly IEnumerable<IOrderProcessor> _processors;
     private readonly IEnumerable<IThirdPartAppService> _thirdPartAppServices;
 
-    public OrderProcessorFactory(IEnumerable<IOrderProcessor> processors)
+    public ThirdPartFactory(IEnumerable<IOrderProcessor> processors)
     {
         _processors = processors;
     }

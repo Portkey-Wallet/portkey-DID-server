@@ -26,7 +26,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly ITestOutputHelper _testOutputHelper;
-    private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private readonly IThirdPartFactory _thirdPartFactory;
     
 
 
@@ -35,7 +35,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         _testOutputHelper = testOutputHelper;
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
         _thirdPartOrderProvider = GetRequiredService<IThirdPartOrderProvider>();
-        _orderProcessorFactory = GetRequiredService<IOrderProcessorFactory>();
+        _thirdPartFactory = GetRequiredService<IThirdPartFactory>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -147,7 +147,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
             TransDirect = "123"
         };
 
-        var result = await _orderProcessorFactory.GetProcessor(input.MerchantName).CreateThirdPartOrderAsync(input);
+        var result = await _thirdPartFactory.GetProcessor(input.MerchantName).CreateThirdPartOrderAsync(input);
         result.Success.ShouldBe(true);
     }
 

@@ -13,11 +13,11 @@ namespace CAServer.ThirdPart.Alchemy;
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 {
-    private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private readonly IThirdPartFactory _thirdPartFactory;
     private const string MerchantName = "alchemy";
     public AlchemyOrderAppServiceTest()
     {
-        _orderProcessorFactory = GetRequiredService<IOrderProcessorFactory>();
+        _thirdPartFactory = GetRequiredService<IThirdPartFactory>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -38,7 +38,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             OrderNo = "OrderNo",
             Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
-        var result = await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(input);
+        var result = await _thirdPartFactory.GetProcessor(MerchantName).OrderUpdate(input);
         result.Success.ShouldBe(true);
 
         var inputFail = new AlchemyOrderUpdateDto
@@ -50,7 +50,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             OrderNo = "OrderNo",
             Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
-        var resultFail = await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(inputFail);
+        var resultFail = await _thirdPartFactory.GetProcessor(MerchantName).OrderUpdate(inputFail);
         resultFail.Success.ShouldBe(false);
 
         var signatureFail = new AlchemyOrderUpdateDto
@@ -62,7 +62,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             OrderNo = "OrderNo",
             Signature = "1111111111111111111111111111111111"
         };
-        var signResultFail = await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(signatureFail);
+        var signResultFail = await _thirdPartFactory.GetProcessor(MerchantName).OrderUpdate(signatureFail);
         signResultFail.Success.ShouldBe(false);
     }
 
@@ -80,7 +80,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
                 OrderNo = "OrderNo",
                 Signature = null
             };
-            await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(input);
+            await _thirdPartFactory.GetProcessor(MerchantName).OrderUpdate(input);
         }
         catch (Exception e)
         {
@@ -102,7 +102,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
                 OrderNo = "OrderNo",
                 Signature = "1111111111111111111111111111111111"
             };
-            await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(input);
+            await _thirdPartFactory.GetProcessor(MerchantName).OrderUpdate(input);
         }
         catch (Exception e)
         {
@@ -124,7 +124,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
                 OrderNo = "OrderNo",
                 Signature = "1111111111111111111111111111111111"
             };
-            await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(input);
+            await _thirdPartFactory.GetProcessor(MerchantName).OrderUpdate(input);
         }
         catch (Exception e)
         {
@@ -143,7 +143,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
         };
         try
         {
-            await _orderProcessorFactory.GetProcessor(MerchantName).UpdateTxHashAsync(input);
+            await _thirdPartFactory.GetProcessor(MerchantName).UpdateTxHashAsync(input);
         }
         catch (Exception e)
         {
@@ -158,7 +158,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
         };
         try
         {
-            await _orderProcessorFactory.GetProcessor(MerchantName).UpdateTxHashAsync(inputFail);
+            await _thirdPartFactory.GetProcessor(MerchantName).UpdateTxHashAsync(inputFail);
         }
         catch (Exception e)
         {
@@ -179,14 +179,14 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
 
-        var signResultFail = await _orderProcessorFactory.GetProcessor(MerchantName).OrderUpdate(input);
+        var signResultFail = await _thirdPartFactory.GetProcessor(MerchantName).OrderUpdate(input);
         signResultFail.Success.ShouldBe(true);
     }
 
     [Fact]
     public async Task SignatureTest()
     {
-        await _orderProcessorFactory.GetProcessor(MerchantName).ForwardTransactionAsync(new TransactionDto()
+        await _thirdPartFactory.GetProcessor(MerchantName).ForwardTransactionAsync(new TransactionDto()
         {
             MerchantName = "Alchemy",
             OrderId = Guid.Parse("5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e"),
@@ -204,7 +204,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
     {
         try
         {
-            await _orderProcessorFactory.GetProcessor(MerchantName).ForwardTransactionAsync(new TransactionDto()
+            await _thirdPartFactory.GetProcessor(MerchantName).ForwardTransactionAsync(new TransactionDto()
             {
                 MerchantName = "Alchemy",
                 OrderId = Guid.Parse("5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e"),
@@ -227,7 +227,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
     {
         try
         {
-            await _orderProcessorFactory.GetProcessor(MerchantName).ForwardTransactionAsync(new TransactionDto()
+            await _thirdPartFactory.GetProcessor(MerchantName).ForwardTransactionAsync(new TransactionDto()
             {
                 MerchantName = "Alchemy",
                 OrderId = Guid.Parse("5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e"),
@@ -254,6 +254,6 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
             Id = Guid.Empty,
             ThirdPartOrderNo = "123"
         };
-        await _orderProcessorFactory.GetProcessor(MerchantName).QueryThirdOrderAsync(input);
+        await _thirdPartFactory.GetProcessor(MerchantName).QueryThirdOrderAsync(input);
     }
 }

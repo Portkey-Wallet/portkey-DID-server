@@ -48,7 +48,7 @@ public class AlchemyProvider : AbstractThirdPartyProvider, IAlchemyProvider
         _logger = logger;
     }
 
-    private Dictionary<string, string> GetAlchemyRequestHeader()
+    public Dictionary<string, string> GetAlchemyRequestHeader()
     {
         var timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
         var sign = GenerateAlchemyApiSign(timeStamp);

@@ -1,6 +1,6 @@
 namespace CAServer.ThirdPart;
 
-public interface IOrderProcessorFactory
+public interface IThirdPartFactory
 {
     public IOrderProcessor GetProcessor(string merchantName);
 

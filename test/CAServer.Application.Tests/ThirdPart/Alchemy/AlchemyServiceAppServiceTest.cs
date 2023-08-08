@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Shouldly;
 using Xunit;
 using Xunit.Abstractions;
@@ -12,12 +14,14 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
 {
     
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
+    private readonly AlchemyProvider _alchemyProvider;
     private readonly ITestOutputHelper _testOutputHelper;
 
     public AlchemyServiceAppServiceTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
         _alchemyServiceAppService = GetRequiredService<IAlchemyServiceAppService>();
+        _alchemyProvider = GetRequiredService<AlchemyProvider>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -30,6 +34,12 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
             MockGetCryptoList));
     }
 
+    [Fact]
+    public async Task GetAlchemyHeader()
+    {
+        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(_alchemyProvider.GetAlchemyRequestHeader()));
+    }
+    
     [Fact]
     public async Task GetAlchemyOrderQuoteAsyncTest()
     {

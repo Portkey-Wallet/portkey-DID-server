@@ -17,13 +17,13 @@ public sealed partial class TransakTest : CAServerApplicationTestBase
 {
     private IServiceCollection _services;
     private readonly ITestOutputHelper _testOutputHelper;
-    private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private readonly IThirdPartFactory _thirdPartFactory;
     private readonly TransakProvider _transakProvider;
 
     public TransakTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _orderProcessorFactory = GetRequiredService<IOrderProcessorFactory>();
+        _thirdPartFactory = GetRequiredService<IThirdPartFactory>();
         _transakProvider = GetRequiredService<TransakProvider>();
     }
 
@@ -86,7 +86,7 @@ public sealed partial class TransakTest : CAServerApplicationTestBase
             ThirdPartHelper.GenerateOrderId(MerchantNameType.Transak.ToString(), order.WebhookOrder.Id).ToString();
 
         // create new order
-        var createRes = await _orderProcessorFactory.GetProcessor(MerchantNameType.Transak.ToString())
+        var createRes = await _thirdPartFactory.GetProcessor(MerchantNameType.Transak.ToString())
             .CreateThirdPartOrderAsync(new CreateUserOrderDto
             {
                 MerchantName = MerchantNameType.Transak.ToString(),
@@ -105,7 +105,7 @@ public sealed partial class TransakTest : CAServerApplicationTestBase
                 ["webhookData"] = JsonConvert.SerializeObject(order.WebhookOrder)
             }, token)
         };
-        var res = await _orderProcessorFactory.GetProcessor(MerchantNameType.Transak.ToString())
+        var res = await _thirdPartFactory.GetProcessor(MerchantNameType.Transak.ToString())
             .OrderUpdate(transakEventRawDataDto);
         _testOutputHelper.WriteLine(JsonConvert.SerializeObject(res));
         res.Success.ShouldBeTrue();

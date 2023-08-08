@@ -12,11 +12,11 @@ namespace CAServer.ThirdPart.Alchemy;
 public sealed class ThirdPartOrderProviderTest : CAServerApplicationTestBase
 {
     private readonly IThirdPartOrderProvider _orderProvider;
-    private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private readonly IThirdPartFactory _thirdPartFactory;
 
     public ThirdPartOrderProviderTest()
     {
-        _orderProcessorFactory = GetRequiredService<IOrderProcessorFactory>();
+        _thirdPartFactory = GetRequiredService<IThirdPartFactory>();
         _orderProvider = GetRequiredService<IThirdPartOrderProvider>();
     }
     
@@ -36,7 +36,7 @@ public sealed class ThirdPartOrderProviderTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetUnCompletedThirdPartOrderTest()
     {
-        var orderCreatedDto = await _orderProcessorFactory.GetProcessor(MerchantNameType.Alchemy.ToString())
+        var orderCreatedDto = await _thirdPartFactory.GetProcessor(MerchantNameType.Alchemy.ToString())
             .CreateThirdPartOrderAsync(new CreateUserOrderDto 
             {
                 OrderId = "xunit",
@@ -59,7 +59,7 @@ public sealed class ThirdPartOrderProviderTest : CAServerApplicationTestBase
             Network = "AELF",
             Signature = "46a417ea93da116cdc0259996c124b7f4f10d503"
         };
-        var result = await _orderProcessorFactory.GetProcessor(MerchantNameType.Alchemy.ToString()).OrderUpdate(input);
+        var result = await _thirdPartFactory.GetProcessor(MerchantNameType.Alchemy.ToString()).OrderUpdate(input);
         result.Success.ShouldBe(true);
         unCompletedOrders = await _orderProvider.GetUnCompletedThirdPartOrdersAsync();
         unCompletedOrders.Count.ShouldBe(1);

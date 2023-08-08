@@ -23,19 +23,19 @@ public class TransakThirdPartAppService : CAServerAppService, IThirdPartAppServi
         return MerchantNameType.Transak.ToString();
     }
 
-    public Task<AlchemyFiatListResponseDto> GetMerchantFiatAsync(GetAlchemyFiatListDto input)
+    public Task<QueryFiatResponseDto> GetMerchantFiatAsync(QueryFiatRequestDto input)
     {
         //TODO
         throw new NotImplementedException();
     }
 
-    public Task<AlchemyCryptoListResponseDto> GetMerchantCryptoAsync(GetAlchemyCryptoListDto input)
+    public Task<QueryCryptoResponseDto> GetMerchantCryptoAsync(QueryCurrencyRequestDto input)
     {
         //TODO
         throw new NotImplementedException();
     }
 
-    public Task<AlchemyOrderQuoteResponseDto> GetMerchantPriceAsync(GetAlchemyOrderQuoteDto input)
+    public Task<QueryPriceResponseDto> GetMerchantPriceAsync(QueryPriceRequestDto input)
     {
         //TODO
         throw new NotImplementedException();

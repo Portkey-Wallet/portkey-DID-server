@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using AutoResponseWrapper.Response;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -16,17 +17,17 @@ namespace CAServer.Controllers;
 public class ThirdPartOrderController : CAServerController
 {
     private readonly IThirdPartOrderAppService _thirdPartOrdersAppService;
-    private readonly IOrderProcessorFactory _orderProcessorFactory;
+    private readonly IThirdPartFactory _thirdPartFactory;
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
 
 
     public ThirdPartOrderController(
         IThirdPartOrderAppService thirdPartOrderAppService,
-        IOrderProcessorFactory orderProcessorFactory, 
+        IThirdPartFactory thirdPartFactory, 
         IAlchemyServiceAppService alchemyServiceAppService)
     {
         _thirdPartOrdersAppService = thirdPartOrderAppService;
-        _orderProcessorFactory = orderProcessorFactory;
+        _thirdPartFactory = thirdPartFactory;
         _alchemyServiceAppService = alchemyServiceAppService;
     }
 
@@ -40,37 +41,37 @@ public class ThirdPartOrderController : CAServerController
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(
         CreateUserOrderDto input)
     {
-        return await _orderProcessorFactory.GetProcessor(input.MerchantName).CreateThirdPartOrderAsync(input);
+        return await _thirdPartFactory.GetProcessor(input.MerchantName).CreateThirdPartOrderAsync(input);
     }
 
     [HttpPost("{merchant}/txHash")]
     public async Task SendTxHashAsync(TransactionHashDto request, string merchant)
     {
-        await _orderProcessorFactory.GetProcessor(merchant).UpdateTxHashAsync(request);
+        await _thirdPartFactory.GetProcessor(merchant).UpdateTxHashAsync(request);
     }
 
     [HttpPost("{merchant}/transaction")]
     public async Task ForwardTransactionAsync(TransactionDto input, string merchant)
     {
-        await _orderProcessorFactory.GetProcessor(merchant).ForwardTransactionAsync(input);
+        await _thirdPartFactory.GetProcessor(merchant).ForwardTransactionAsync(input);
     }
     
     [HttpGet("{merchant}/fiat")]
-    public async Task<AlchemyFiatListResponseDto> GetMerchantFiatListAsync(GetAlchemyFiatListDto input, string merchant)
+    public async Task<ResponseDto> GetMerchantFiatListAsync(QueryFiatRequestDto input, string merchant)
     {
-        return await _orderProcessorFactory.GetAppService(merchant).GetMerchantFiatAsync(input);
+        return new ResponseDto().ObjectResult(await _thirdPartFactory.GetAppService(merchant).GetMerchantFiatAsync(input));
     }
 
     [HttpGet("{merchant}/crypto")]
-    public async Task<AlchemyCryptoListResponseDto> GetMerchantCryptoListAsync(GetAlchemyCryptoListDto input, string merchant)
+    public async Task<ResponseDto> GetMerchantCryptoListAsync(QueryCurrencyRequestDto input, string merchant)
     {
-        return await _orderProcessorFactory.GetAppService(merchant).GetMerchantCryptoAsync(input);
+        return new ResponseDto().ObjectResult(await _thirdPartFactory.GetAppService(merchant).GetMerchantCryptoAsync(input));
     }
 
     [HttpPost("{merchant}/price")]
-    public async Task<AlchemyOrderQuoteResponseDto> GetMerchantOrderQuoteAsync(GetAlchemyOrderQuoteDto input, string merchant)
+    public async Task<ResponseDto> GetMerchantOrderQuoteAsync(QueryPriceRequestDto input, string merchant)
     {
-        return await _orderProcessorFactory.GetAppService(merchant).GetMerchantPriceAsync(input);
+        return new ResponseDto().ObjectResult(await _thirdPartFactory.GetAppService(merchant).GetMerchantPriceAsync(input));
     }
     
     [HttpPost("alchemy/token")]
