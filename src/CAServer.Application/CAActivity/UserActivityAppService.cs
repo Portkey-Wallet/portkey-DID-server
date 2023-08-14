@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -14,7 +15,6 @@ using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -32,10 +32,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IUserContactProvider _userContactProvider;
     private readonly ActivitiesIcon _activitiesIcon;
     private readonly IImageProcessProvider _imageProcessProvider;
+    private readonly IContractProvider _contractProvider;
+    private readonly ChainOptions _chainOptions;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
-        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider)
+        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider, IContractProvider contractProvider, IOptions<ChainOptions> chainOptions)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -43,6 +45,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _userContactProvider = userContactProvider;
         _activitiesIcon = activitiesIconOption?.Value;
         _imageProcessProvider = imageProcessProvider;
+        _contractProvider = contractProvider;
+        _chainOptions = chainOptions.Value;
     }
 
 
@@ -144,6 +148,39 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             _logger.LogError(e, "GetActivityAsync Error {request}", request);
             return new GetActivityDto();
         }
+    }
+
+    public async Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto request)
+    {
+        var caHash = request.CaHash;
+        var caAddressInfos = new List<CAAddressInfo>();
+        foreach (var chainInfo in _chainOptions.ChainInfos)
+        {
+            var output =
+                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
+            caAddressInfos.Add(new CAAddressInfo
+            {
+                ChainId = chainInfo.Key,
+                CaAddress = output.CaAddress.ToBase58()
+            });
+        }
+
+        var filterTypes = new List<string>
+        {
+            "CreateCAHolder"
+        };
+        var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, null,
+            request.Symbol, filterTypes, 0, 100);
+        var date = transactions.CaHolderTransaction.Data[0].Timestamp;
+        var createTime = GetDateFromLong(date);
+        return createTime.ToString("s");
+    }
+    
+    private DateTime GetDateFromLong(long ticks)
+    {
+        var date = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1));
+        date = date.AddMilliseconds(ticks);
+        return date;
     }
 
     private async Task GetActivityName(List<string> addresses, GetActivityDto dto, IndexerTransaction transaction)

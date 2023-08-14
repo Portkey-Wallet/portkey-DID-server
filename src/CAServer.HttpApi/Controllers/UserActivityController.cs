@@ -39,4 +39,13 @@ public class UserActivityController
     {
         return await _userActivityAppService.GetActivityAsync(requestDto);
     }
+    
+    [HttpPost("getCaHolderCreateTime")]
+    public async Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto requestDto)
+    {
+        return await _userActivityAppService.GetCaHolderCreateTimeAsync(requestDto);
+    }
+    
+    
+    
 }   

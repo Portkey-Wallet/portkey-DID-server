@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
@@ -11,7 +12,6 @@ using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Users;
@@ -30,11 +30,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IUserContactProvider _userContactProvider;
     private readonly TokenInfoOptions _tokenInfoOptions;
     private readonly IImageProcessProvider _imageProcessProvider;
+    private readonly ChainOptions _chainOptions;
+    private readonly IContractProvider _contractProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
-        IImageProcessProvider imageProcessProvider)
+        IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
+        IContractProvider contractProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -42,6 +45,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenInfoOptions = tokenInfoOptions.Value;
         _tokenAppService = tokenAppService;
         _imageProcessProvider = imageProcessProvider;
+        _contractProvider = contractProvider;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -180,7 +185,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 token.Price = priceDict[token.Symbol];
                 token.BalanceInUsd = balanceInUsd.ToString();
             }
-            
+
             return dto;
         }
         catch (Exception e)
@@ -531,6 +536,32 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         dto.SymbolImages = _tokenInfoOptions.TokenInfos.ToDictionary(k => k.Key, v => v.Value.ImageUrl);
 
         return dto;
+    }
+
+    public async Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto)
+    {
+        var caHash = requestDto.CaHash;
+        var caAddressInfos = new List<CAAddressInfo>();
+        foreach (var chainInfo in _chainOptions.ChainInfos)
+        {
+            var output =
+                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
+            caAddressInfos.Add(new CAAddressInfo
+            {
+                ChainId = chainInfo.Key,
+                CaAddress = output.CaAddress.ToBase58()
+            });
+        }
+
+        var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, requestDto.Symbol,
+            0, 100);
+        var resCaHolderTokenBalanceInfo = res.CaHolderTokenBalanceInfo.Data;
+        var totalBalance = resCaHolderTokenBalanceInfo.Sum(tokenInfo => tokenInfo.Balance);
+
+        return new TokenInfoDto
+        {
+            Balance = totalBalance.ToString()
+        };
     }
 
     private async Task<Dictionary<string, decimal>> GetSymbolPrice(List<string> symbols)
