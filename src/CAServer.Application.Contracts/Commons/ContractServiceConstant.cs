@@ -22,6 +22,8 @@ public static class CommonConstant
     public static DateTimeOffset DefaultAbsoluteExpiration = DateTime.Parse("2099-01-01 12:00:00");
     public const string OrderStatusInfoPrefix = "OrderStatusInfo";
 
+    public const string ChainName = "aelf";
+
     public const string MainChainId = "AELF";
     public const string TDVVChainId = "tDVV";
     public const string TDVWChainId = "tDVW";

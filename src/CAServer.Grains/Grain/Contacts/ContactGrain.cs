@@ -28,7 +28,6 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
 
     public async Task<GrainResultDto<ContactGrainDto>> AddContactAsync(Guid userId, ContactGrainDto contactDto)
     {
-        //await ReadStateAsync();
         var result = new GrainResultDto<ContactGrainDto>();
         var contactNameGrain = GetContactNameGrain(userId, contactDto.Name);
         var addContactNameResult = await contactNameGrain.AddContactNameAsync(userId, contactDto.Name);
@@ -41,7 +40,8 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         State.Id = this.GetPrimaryKey();
         State.Index = GetIndex(contactDto.Name);
         State.Name = contactDto.Name;
-        State.UserId = userId;
+        //State.UserId = userId;
+        State.AddedUserId = userId;
         State.IsDeleted = false;
         State.ModificationTime = DateTime.UtcNow;
         State.Addresses = _objectMapper.Map<List<ContactAddressDto>, List<ContactAddress>>(contactDto.Addresses);
