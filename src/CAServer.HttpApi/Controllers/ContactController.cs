@@ -4,6 +4,7 @@ using CAServer.Contacts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Controllers;
 
@@ -11,7 +12,6 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
-[Authorize]
 public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
@@ -43,5 +43,17 @@ public class ContactController : CAServerController
     public async Task<ContractExistDto> GetExistAsync(string name)
     {
         return await _contactAppService.GetExistAsync(name);
+    }
+    
+    [HttpGet("{id}")]
+    public async Task<ContactResultDto> GetAsync(Guid id)
+    {
+        return await _contactAppService.GetAsync(id);
+    }
+    
+    [HttpGet("list")]
+    public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
+    {
+        return await _contactAppService.ListAsync(input);
     }
 }

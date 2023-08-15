@@ -109,6 +109,22 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         return result;
     }
 
+    public Task<GrainResultDto<ContactGrainDto>> GetContactAsync(Guid userId)
+    {
+        var result = new GrainResultDto<ContactGrainDto>();
+        
+        if (State.IsDeleted)
+        {
+            result.Message = ContactMessage.NotExistMessage;
+            return Task.FromResult(result);
+        }
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<ContactState, ContactGrainDto>(State);
+        
+        return Task.FromResult(result);
+    }
+
     private IContactNameGrain GetContactNameGrain(Guid userId, string name)
     {
         return GrainFactory.GetGrain<IContactNameGrain>(GrainIdHelper.GenerateGrainId(userId.ToString("N"), name));

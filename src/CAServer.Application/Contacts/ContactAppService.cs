@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
+using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
+using Nest;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
@@ -17,11 +22,14 @@ public class ContactAppService : CAServerAppService, IContactAppService
 {
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
 
-    public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient)
+    public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
+        INESTRepository<ContactIndex, Guid> contactRepository)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
+        _contactRepository = contactRepository;
     }
 
     public async Task<ContactResultDto> CreateAsync(CreateUpdateContactDto input)
@@ -95,5 +103,38 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             Existed = existed
         };
+    }
+
+    public async Task<ContactResultDto> GetAsync(Guid id)
+    {
+        var userId = CurrentUser.GetId();
+        var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
+        
+        var result = await contactGrain.GetContactAsync(userId);
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+        
+        return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+    }
+
+    public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
+    {
+        var shouldQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
+        shouldQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord)));
+        shouldQuery.Add(q => q.Match(i => i.Field(f => f.Name).Query(input.KeyWord).Fuzziness(Fuzziness.Auto)));
+        
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Should(shouldQuery));
+        var (totalCount, contactList) = await _contactRepository.GetListAsync(Filter);
+        
+        var pagedResultDto = new PagedResultDto<ContactResultDto>
+        {
+            TotalCount = totalCount,
+            Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
+            
+        };
+        
+        return pagedResultDto;
     }
 }
