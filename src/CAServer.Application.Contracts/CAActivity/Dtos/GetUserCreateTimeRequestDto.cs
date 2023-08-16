@@ -6,5 +6,4 @@ public class GetUserCreateTimeRequestDto
     
     public string Symbol { get; set; }
     
-    public string 
 }
