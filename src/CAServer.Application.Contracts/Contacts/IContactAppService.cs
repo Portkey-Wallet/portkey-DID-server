@@ -9,4 +9,5 @@ public interface IContactAppService
     Task<ContactResultDto> UpdateAsync(Guid id, CreateUpdateContactDto input);
     Task DeleteAsync(Guid id);
     Task<ContractExistDto> GetExistAsync(string name);
+    Task MergeAsync(ContactMergeDto input);
 }

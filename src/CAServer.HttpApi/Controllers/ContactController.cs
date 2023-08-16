@@ -44,4 +44,11 @@ public class ContactController : CAServerController
     {
         return await _contactAppService.GetExistAsync(name);
     }
+
+    [HttpPost("merge")]
+    public async Task MergeAsync(ContactMergeDto input)
+    {
+        throw new NotImplementedException();
+        // return await _contactAppService.GetExistAsync(name);
+    }
 }
