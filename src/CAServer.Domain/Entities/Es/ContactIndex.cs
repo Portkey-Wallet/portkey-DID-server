@@ -7,6 +7,7 @@ namespace CAServer.Entities.Es;
 
 public class ContactIndex : CAServerEsEntity<Guid>, IIndexBuild
 {
+    [Keyword] public override Guid Id { get; set; }
     [Keyword] public string Index { get; set; }
     [Keyword] public string Name { get; set; }
     public string Avatar { get; set; }
@@ -14,8 +15,8 @@ public class ContactIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public Guid UserId { get; set; }
     public CaHolderInfo CaHolderInfo { get; set; }
     public ImInfo ImInfo { get; set; }
-    [Keyword]  public bool IsDeleted { get; set; } = true;
-    [Keyword]  public bool IsImputation { get; set; }
+    [Keyword] public bool IsDeleted { get; set; } = true;
+    [Keyword] public bool IsImputation { get; set; }
     [Keyword] public DateTime CreateTime { get; set; }
     [Keyword] public DateTime ModificationTime { get; set; }
 }
