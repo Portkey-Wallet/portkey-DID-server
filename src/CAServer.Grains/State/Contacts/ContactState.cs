@@ -27,5 +27,6 @@ public class CaHolderInfo
 public class ImInfo
 {
     public string RelationId { get; set; }
+    public string PortkeyId { get; set; }
     public string Name { get; set; }
 }
