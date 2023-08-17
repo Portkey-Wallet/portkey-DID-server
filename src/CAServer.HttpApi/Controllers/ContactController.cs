@@ -12,6 +12,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
+[Authorize]
 public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
@@ -55,5 +56,12 @@ public class ContactController : CAServerController
     public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
     {
         return await _contactAppService.ListAsync(input);
+    }
+
+    [HttpPost("merge")]
+    public async Task MergeAsync(ContactMergeDto input)
+    {
+        throw new NotImplementedException();
+        // return await _contactAppService.GetExistAsync(name);
     }
 }
