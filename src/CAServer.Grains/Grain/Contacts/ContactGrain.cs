@@ -109,7 +109,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         return result;
     }
 
-    public Task<GrainResultDto<ContactGrainDto>> GetContactAsync(Guid userId)
+    public Task<GrainResultDto<ContactGrainDto>> GetContactAsync()
     {
         var result = new GrainResultDto<ContactGrainDto>();
         

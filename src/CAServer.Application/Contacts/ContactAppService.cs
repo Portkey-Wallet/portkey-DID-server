@@ -107,10 +107,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
-        var userId = CurrentUser.GetId();
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
         
-        var result = await contactGrain.GetContactAsync(userId);
+        var result = await contactGrain.GetContactAsync();
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
@@ -121,13 +120,22 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
     {
-        var shouldQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
-        shouldQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord)));
-        shouldQuery.Add(q => q.Match(i => i.Field(f => f.Name).Query(input.KeyWord).Fuzziness(Fuzziness.Auto)));
-        
-        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Should(shouldQuery));
-        var (totalCount, contactList) = await _contactRepository.GetListAsync(Filter);
-        
+        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(t => t.Field(f => f.UserId).Terms(input.UserId)));
+        mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord)) 
+                           || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+        long totalCount;
+        List<ContactIndex> contactList;
+        if (input.TabType == 0)
+        {
+            (totalCount, contactList) = await _contactRepository.GetListAsync(Filter, null,null, SortOrder.Ascending, input.MaxResultCount, input.SkipCount);
+        }
+        else
+        {
+            (totalCount, contactList) = await _contactRepository.GetListAsync(Filter);
+
+        }
         var pagedResultDto = new PagedResultDto<ContactResultDto>
         {
             TotalCount = totalCount,

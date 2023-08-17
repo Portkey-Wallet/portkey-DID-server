@@ -51,7 +51,7 @@ public class ContactController : CAServerController
         return await _contactAppService.GetAsync(id);
     }
     
-    [HttpGet("list")]
+    [HttpPost("list")]
     public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
     {
         return await _contactAppService.ListAsync(input);

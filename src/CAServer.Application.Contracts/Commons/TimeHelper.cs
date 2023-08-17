@@ -20,4 +20,10 @@ public static class TimeHelper
     {
         return new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
     }
+    
+    public static long GetTimeStampFromDateTime(DateTime dateTime)
+    {
+        TimeSpan timeSpan = dateTime.ToUniversalTime() - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        return (long)timeSpan.TotalMilliseconds;
+    }
 }
