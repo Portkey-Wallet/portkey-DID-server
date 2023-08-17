@@ -169,8 +169,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             "CreateCAHolder"
         };
-        var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, null,
-            request.Symbol, filterTypes, 0, 100);
+        var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, string.Empty,
+            string.Empty, filterTypes, 0, 100);
         var date = transactions.CaHolderTransaction.Data[0].Timestamp;
         var createTime = GetDateFromLong(date);
         return createTime.ToString("s");
@@ -179,7 +179,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private DateTime GetDateFromLong(long ticks)
     {
         var date = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1));
-        date = date.AddMilliseconds(ticks);
+        date = date.AddSeconds(ticks);
         return date;
     }
 
