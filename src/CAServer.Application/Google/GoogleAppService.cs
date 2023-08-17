@@ -61,10 +61,10 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken, PlatformType platformType)
     {
         var platformTypeName = platformType.ToString();
-        var secret = _googleRecaptchaOption.SecretMap[platformTypeName];
-        if (string.IsNullOrEmpty(secret))
+        var getSuccess = _googleRecaptchaOption.SecretMap.TryGetValue(platformTypeName, out var secret);
+        if (!getSuccess)
         {
-            throw new UserFriendlyException("Invalid platform type.");
+            throw new UserFriendlyException("Google Recaptcha Secret Not Found");
         }
 
         if (string.IsNullOrWhiteSpace(recaptchaToken))
