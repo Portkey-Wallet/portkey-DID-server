@@ -136,7 +136,7 @@ public class ContractAppService : IContractAppService
 
         _logger.LogInformation("Register state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));
-        
+
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
         _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "");
     }
@@ -212,7 +212,7 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("Recovery state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
-        ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "");
+        _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "");
     }
 
     private async Task<bool> ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,

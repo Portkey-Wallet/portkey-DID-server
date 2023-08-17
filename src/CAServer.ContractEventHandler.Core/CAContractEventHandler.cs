@@ -25,7 +25,7 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
     {
         try
         {
-            await _contractAppService.CreateHolderInfoAsync(eventData);
+            _ = _contractAppService.CreateHolderInfoAsync(eventData);
         }
         catch (Exception e)
         {
@@ -38,7 +38,7 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
     {
         try
         {
-            await _contractAppService.SocialRecoveryAsync(eventData);
+            _ =  _contractAppService.SocialRecoveryAsync(eventData);
         }
         catch (Exception e)
         {
