@@ -36,7 +36,6 @@ public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
     [Fact]
     public async Task VerifierGoogleReCaptcha_InvalidateToken_Test()
     {
-        var s = PlatformType.WEB.ToString();
         var token = "";
         var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token,PlatformType.IOS);
         result.ShouldBeFalse();

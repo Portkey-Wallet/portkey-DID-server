@@ -31,7 +31,7 @@ public partial class GoogleRecaptchaTests
     private IOptions<GoogleRecaptchaOptions> GetGoogleRecaptchaOptions()
     {
         var dic = new Dictionary<string, string>();
-        dic.Add("a","b");
+        dic.Add("IOS","bcd");
         return new OptionsWrapper<GoogleRecaptchaOptions>(
             new GoogleRecaptchaOptions
             {
