@@ -4,6 +4,7 @@ using CAServer.Contacts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Controllers;
 
@@ -50,5 +51,17 @@ public class ContactController : CAServerController
     {
         throw new NotImplementedException();
         // return await _contactAppService.GetExistAsync(name);
+    }
+    
+    [HttpGet("{id}")]
+    public async Task<ContactResultDto> GetAsync(Guid id)
+    {
+        return await _contactAppService.GetAsync(id);
+    }
+    
+    [HttpPost("list")]
+    public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
+    {
+        return await _contactAppService.ListAsync(input);
     }
 }

@@ -9,6 +9,7 @@ using CAServer.Grains.Grain.Contacts;
 using Nest;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
@@ -102,6 +103,47 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             Existed = existed
         };
+    }
+
+    public async Task<ContactResultDto> GetAsync(Guid id)
+    {
+        var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
+        
+        var result = await contactGrain.GetContactAsync();
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+        
+        return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+    }
+
+    public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(t => t.Field(f => f.UserId).Terms(input.UserId)));
+        mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord)) 
+                           || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+        long totalCount;
+        List<ContactIndex> contactList;
+        if (input.TabType == 0)
+        {
+            (totalCount, contactList) = await _contactRepository.GetListAsync(Filter, null,null, SortOrder.Ascending, input.MaxResultCount, input.SkipCount);
+        }
+        else
+        {
+            (totalCount, contactList) = await _contactRepository.GetListAsync(Filter);
+
+        }
+        var pagedResultDto = new PagedResultDto<ContactResultDto>
+        {
+            TotalCount = totalCount,
+            Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
+            
+        };
+        
+        return pagedResultDto;
     }
 
     public async Task MergeAsync(ContactMergeDto input)

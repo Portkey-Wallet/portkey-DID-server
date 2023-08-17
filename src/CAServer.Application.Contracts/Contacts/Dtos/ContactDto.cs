@@ -12,4 +12,8 @@ public class ContactDto
     public Guid UserId { get; set; }
     public bool IsDeleted { get; set; }
     public long ModificationTime { get; set; }
+    
+    public string Avatar { get; set; }
+    public Guid AddedUserId {get;set;}
+    public DateTime CreateTime { get; set; }
 }
