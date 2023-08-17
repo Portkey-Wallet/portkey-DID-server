@@ -40,8 +40,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         State.Id = this.GetPrimaryKey();
         State.Index = GetIndex(contactDto.Name);
         State.Name = contactDto.Name;
-        //State.UserId = userId;
-        State.AddedUserId = userId;
+        State.UserId = userId;
         State.IsDeleted = false;
         State.ModificationTime = DateTime.UtcNow;
         State.Addresses = _objectMapper.Map<List<ContactAddressDto>, List<ContactAddress>>(contactDto.Addresses);
