@@ -172,8 +172,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, string.Empty,
             string.Empty, filterTypes, 0, 100);
         var date = transactions.CaHolderTransaction.Data[0].Timestamp;
-        var createTime = GetDateFromLong(date);
-        return createTime.ToString("s");
+        return date.ToString();
     }
     
     private DateTime GetDateFromLong(long ticks)
