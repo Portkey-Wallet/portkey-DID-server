@@ -57,8 +57,10 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         };
     }
 
-    public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken)
+    public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken, PlatformType platformType)
     {
+        var platformTypeName = platformType.ToString();
+        var secret = _googleRecaptchaOption.SecretMap[platformTypeName];
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");
@@ -67,7 +69,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
 
         var content = new FormUrlEncodedContent(new[]
         {
-            new KeyValuePair<string, string>("secret", _googleRecaptchaOption.Secret),
+            new KeyValuePair<string, string>("secret", secret),
             new KeyValuePair<string, string>("response", recaptchaToken)
         });
         _logger.LogDebug("VerifyGoogleRecaptchaToken content is {content}", content.ToString());

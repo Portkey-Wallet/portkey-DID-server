@@ -1,8 +1,10 @@
+using System.Collections.Generic;
+
 namespace CAServer.Options;
 
 public class GoogleRecaptchaOptions
 {
-    public string Secret { get; set; }
+    public Dictionary<string,string> SecretMap { get; set; }
 
     public string VerifyUrl { get; set; }
 

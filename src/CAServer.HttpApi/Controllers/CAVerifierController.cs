@@ -8,10 +8,8 @@ using CAServer.IpWhiteList;
 using CAServer.Switch;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
@@ -120,7 +118,7 @@ public class CAVerifierController : CAServerController
 
         try
         {
-            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
+            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken,sendVerificationRequestInput.PlatformType);
         }
         catch (Exception e)
         {
@@ -163,7 +161,9 @@ public class CAVerifierController : CAServerController
 
         try
         {
-            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken);
+            googleRecaptchaTokenSuccess =
+                await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken,
+                    sendVerificationRequestInput.PlatformType);
         }
         catch (Exception e)
         {
@@ -251,7 +251,7 @@ public class CAVerifierController : CAServerController
             type);
     }
 
-    [HttpPost ("getVerifierServer")]
+    [HttpPost("getVerifierServer")]
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(GetVerifierServerInfoInput input)
     {
         return await _verifierAppService.GetVerifierServerAsync(input.ChainId);

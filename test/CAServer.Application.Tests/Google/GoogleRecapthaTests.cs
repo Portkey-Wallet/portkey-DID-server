@@ -29,15 +29,16 @@ public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
     public async Task VerifierGoogleReCaptcha_Test()
     {
         var token = "1234567890";
-        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token);
+        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token,PlatformType.IOS);
         result.ShouldBeTrue();
     }
     
     [Fact]
     public async Task VerifierGoogleReCaptcha_InvalidateToken_Test()
     {
+        var s = PlatformType.WEB.ToString();
         var token = "";
-        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token);
+        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token,PlatformType.IOS);
         result.ShouldBeFalse();
     }
 
