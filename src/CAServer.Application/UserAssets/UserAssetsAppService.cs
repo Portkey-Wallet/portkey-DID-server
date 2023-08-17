@@ -32,6 +32,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private const int MaxResultCount = 10;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -563,7 +564,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
 
         var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, requestDto.Symbol,
-            0, 100);
+            0, MaxResultCount);
         var resCaHolderTokenBalanceInfo = res.CaHolderTokenBalanceInfo.Data;
         var totalBalance = resCaHolderTokenBalanceInfo.Sum(tokenInfo => tokenInfo.Balance);
 

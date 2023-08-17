@@ -29,15 +29,15 @@ public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
     public async Task VerifierGoogleReCaptcha_Test()
     {
         var token = "1234567890";
-        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token,PlatformType.IOS);
+        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token, PlatformType.IOS);
         result.ShouldBeTrue();
     }
-    
+
     [Fact]
     public async Task VerifierGoogleReCaptcha_InvalidateToken_Test()
     {
         var token = "";
-        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token,PlatformType.IOS);
+        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token, PlatformType.IOS);
         result.ShouldBeFalse();
     }
 
@@ -46,7 +46,7 @@ public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
     {
         var version = "v12345";
         var userIpAddress = "127.0.0.1";
-        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,OperationType.AddGuardian);
+        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.AddGuardian);
         result.ShouldBeTrue();
     }
 }

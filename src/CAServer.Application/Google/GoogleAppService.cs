@@ -7,6 +7,7 @@ using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Google;
@@ -61,6 +62,11 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     {
         var platformTypeName = platformType.ToString();
         var secret = _googleRecaptchaOption.SecretMap[platformTypeName];
+        if (string.IsNullOrEmpty(secret))
+        {
+            throw new UserFriendlyException("Invalid platform type.");
+        }
+
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");

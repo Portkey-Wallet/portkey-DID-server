@@ -118,7 +118,9 @@ public class CAVerifierController : CAServerController
 
         try
         {
-            googleRecaptchaTokenSuccess = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken,sendVerificationRequestInput.PlatformType);
+            googleRecaptchaTokenSuccess =
+                await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken,
+                    sendVerificationRequestInput.PlatformType);
         }
         catch (Exception e)
         {

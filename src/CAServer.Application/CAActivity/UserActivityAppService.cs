@@ -34,6 +34,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ChainOptions _chainOptions;
+    private const int MaxResultCount = 10;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -179,7 +180,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             "CreateCAHolder"
         };
         var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, string.Empty,
-            string.Empty, filterTypes, 0, 100);
+            string.Empty, filterTypes, 0, MaxResultCount);
 
         if (transactions.CaHolderTransaction.Data.Count == 0)
         {

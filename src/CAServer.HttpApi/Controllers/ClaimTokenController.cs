@@ -34,7 +34,8 @@ public class ClaimTokenController : CAServerController
             throw new UserFriendlyException("Please try again");
         }
 
-        var isGoogleRecaptchaTokenValid = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken,PlatformType.WEB);
+        var isGoogleRecaptchaTokenValid =
+            await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken, PlatformType.WEB);
         if (isGoogleRecaptchaTokenValid)
         {
             return await _claimTokenAppService.GetClaimTokenAsync(claimTokenRequestDto);
