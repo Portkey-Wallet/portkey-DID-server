@@ -542,16 +542,25 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         var caHash = requestDto.CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        foreach (var chainInfo in _chainOptions.ChainInfos)
+        try
         {
-            var output =
-                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
-            caAddressInfos.Add(new CAAddressInfo
+            foreach (var chainInfo in _chainOptions.ChainInfos)
             {
-                ChainId = chainInfo.Key,
-                CaAddress = output.CaAddress.ToBase58()
-            });
+                var output =
+                    await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
+                caAddressInfos.Add(new CAAddressInfo
+                {
+                    ChainId = chainInfo.Key,
+                    CaAddress = output.CaAddress.ToBase58()
+                });
+            }
         }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetTokenBalanceAsync Error. {dto}", requestDto);
+            throw new UserFriendlyException("Internal service error, please try again later.");
+        }
+
 
         var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, requestDto.Symbol,
             0, 100);

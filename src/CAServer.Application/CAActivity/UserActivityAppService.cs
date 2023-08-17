@@ -37,7 +37,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
-        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider, IContractProvider contractProvider, IOptions<ChainOptions> chainOptions)
+        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
+        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -154,15 +155,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         var caHash = request.CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        foreach (var chainInfo in _chainOptions.ChainInfos)
+        try
         {
-            var output =
-                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
-            caAddressInfos.Add(new CAAddressInfo
+            foreach (var chainInfo in _chainOptions.ChainInfos)
             {
-                ChainId = chainInfo.Key,
-                CaAddress = output.CaAddress.ToBase58()
-            });
+                var output =
+                    await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
+                caAddressInfos.Add(new CAAddressInfo
+                {
+                    ChainId = chainInfo.Key,
+                    CaAddress = output.CaAddress.ToBase58()
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
+            throw new UserFriendlyException("Internal service error, please try again later.");
         }
 
         var filterTypes = new List<string>
@@ -171,16 +180,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         };
         var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, string.Empty,
             string.Empty, filterTypes, 0, 100);
+
+        if (transactions.CaHolderTransaction.Data.Count == 0)
+        {
+            return string.Empty;
+        }
+
         var date = transactions.CaHolderTransaction.Data[0].Timestamp;
+
         return date.ToString();
     }
-    
-    private DateTime GetDateFromLong(long ticks)
-    {
-        var date = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1));
-        date = date.AddSeconds(ticks);
-        return date;
-    }
+
 
     private async Task GetActivityName(List<string> addresses, GetActivityDto dto, IndexerTransaction transaction)
     {
