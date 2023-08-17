@@ -15,6 +15,7 @@ public class ContactIndex : CAServerEsEntity<Guid>, IIndexBuild
     public CaHolderInfo CaHolderInfo { get; set; }
     public ImInfo ImInfo { get; set; }
     [Keyword]  public bool IsDeleted { get; set; } = true;
+    [Keyword]  public bool IsImputation { get; set; }
     [Keyword] public DateTime CreateTime { get; set; }
     [Keyword] public DateTime ModificationTime { get; set; }
 }

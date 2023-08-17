@@ -13,6 +13,7 @@ public class ContactState
     public CaHolderInfo CaHolderInfo { get; set; }
     public ImInfo ImInfo { get; set; }
     public bool IsDeleted { get; set; } = true;
+    public bool IsImputation { get; set; }
     public DateTime CreateTime { get; set; }
     public DateTime ModificationTime { get; set; }
 }
