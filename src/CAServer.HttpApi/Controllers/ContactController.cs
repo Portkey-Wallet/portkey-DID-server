@@ -12,7 +12,6 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
-[Authorize]
 public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
@@ -52,10 +51,10 @@ public class ContactController : CAServerController
         return await _contactAppService.GetAsync(id);
     }
     
-    [HttpPost("list")]
-    public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
+    [HttpGet("list")]
+    public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
     {
-        return await _contactAppService.ListAsync(input);
+        return await _contactAppService.GetListAsync(input);
     }
 
     [HttpPost("merge")]

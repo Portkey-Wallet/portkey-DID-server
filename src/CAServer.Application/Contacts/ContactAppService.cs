@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
@@ -118,29 +119,35 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
     }
 
-    public async Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input)
+    public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Terms(t => t.Field(f => f.UserId).Terms(input.UserId)));
+        mustQuery.Add(q => q.Terms(t => t.Field("caHolderInfo.userId").Terms(input.UserId)));
         mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord)) 
                            || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
-        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-        long totalCount;
-        List<ContactIndex> contactList;
-        if (input.TabType == 0)
+        
+        if (input.IsAbleChat)
         {
-            (totalCount, contactList) = await _contactRepository.GetListAsync(Filter, null,null, SortOrder.Ascending, input.MaxResultCount, input.SkipCount);
+            mustQuery.Add(q => q.Exists(t => t.Field("imInfo.relationId")));
         }
-        else
-        {
-            (totalCount, contactList) = await _contactRepository.GetListAsync(Filter);
 
+        if (input.ModificationTime != 0)
+        {
+            mustQuery.Add(q => 
+                q.Range(r => r.Field(c => c.ModificationTime).GreaterThanOrEquals(input.ModificationTime)));
         }
+        
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+        
+        IPromise<IList<ISort>> Sort(SortDescriptor<ContactIndex> s) => s.Ascending(a => a.Name);
+
+        var (totalCount, contactList) = 
+            await _contactRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: input.MaxResultCount, skip: input.SkipCount);
+        
         var pagedResultDto = new PagedResultDto<ContactResultDto>
         {
             TotalCount = totalCount,
             Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
-            
         };
         
         return pagedResultDto;

@@ -11,6 +11,6 @@ public interface IContactAppService
     Task DeleteAsync(Guid id);
     Task<ContractExistDto> GetExistAsync(string name);
     Task<ContactResultDto> GetAsync(Guid id);
-    Task<PagedResultDto<ContactResultDto>> ListAsync(ContactListDto input);
+    Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input);
     Task MergeAsync(ContactMergeDto input);
 }

@@ -3,10 +3,14 @@ using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Contacts;
 
-public class ContactListDto : PagedResultRequestDto
+public class ContactGetListDto : PagedResultRequestDto
 {
     public string KeyWord { get; set; }
     public Guid UserId { get; set; }
     
-    public int TabType { get; set; } = 0;
+    public bool IsAbleChat { get; set; }
+    
+    public long ModificationTime { get; set; }
+    
+    
 }
