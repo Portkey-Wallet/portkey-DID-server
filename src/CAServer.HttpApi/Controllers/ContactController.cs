@@ -13,6 +13,7 @@ namespace CAServer.Controllers;
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
 [IgnoreAntiforgeryToken]
+[Authorize]
 public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
