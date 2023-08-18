@@ -53,6 +53,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<NotifyEto, NotifyRulesIndex>();
         CreateMap<DeleteNotifyEto, NotifyRulesIndex>();
         CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
+        CreateMap<CAServer.Contacts.CaHolderInfo, CAServer.Entities.Es.CaHolderInfo>().ReverseMap();
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
     }
 }
