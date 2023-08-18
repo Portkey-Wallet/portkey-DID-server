@@ -357,13 +357,18 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
         CreateMap<VerifierServer, GetVerifierServerResponse>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
+        CreateMap<ContactIndex, ContactResultDto>()
+            .ForMember(t => t.ModificationTime, m => m.MapFrom(f => TimeHelper.GetTimeStampFromDateTime(f.ModificationTime)))
+            .ReverseMap();
         CreateMap<CAHolderIndex, CAHolderResultDto>();
+        CreateMap<ContactAddress, ContactAddressDto>();
         CreateMap<CreateUpdateContactDto, ContactDto>();
         CreateMap<ContactDto, ContactGrainDto>();
         CreateMap<CAHolderIndex, Contacts.CaHolderInfo>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
         CreateMap<CAHolderGrainDto, Contacts.CaHolderInfo>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
-        
+        CreateMap<Entities.Es.CaHolderInfo, Contacts.CaHolderInfo>();
+        CreateMap<Entities.Es.ImInfo, Contacts.ImInfo>();
     }
 }

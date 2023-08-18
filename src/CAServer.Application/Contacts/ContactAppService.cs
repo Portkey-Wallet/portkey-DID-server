@@ -7,8 +7,10 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
+using Nest;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
@@ -98,6 +100,32 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             Existed = existed
         };
+    }
+
+    public async Task<ContactResultDto> GetAsync(Guid id)
+    {
+        var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
+        
+        var result = await contactGrain.GetContactAsync();
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+        
+        return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+    }
+
+    public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
+    {
+        var (totalCount, contactList) = await _contactProvider.GetListAsync(input);
+        
+        var pagedResultDto = new PagedResultDto<ContactResultDto>
+        {
+            TotalCount = totalCount,
+            Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
+        };
+        
+        return pagedResultDto;
     }
 
     public async Task MergeAsync(ContactMergeDto input)
