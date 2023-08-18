@@ -12,7 +12,6 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
-[Authorize]
 [IgnoreAntiforgeryToken]
 public class ContactController : CAServerController
 {

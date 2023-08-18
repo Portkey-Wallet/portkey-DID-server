@@ -368,6 +368,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
         CreateMap<CAHolderGrainDto, Contacts.CaHolderInfo>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
-        
+        CreateMap<Entities.Es.CaHolderInfo, Contacts.CaHolderInfo>();
+        CreateMap<Entities.Es.ImInfo, Contacts.ImInfo>();
     }
 }
