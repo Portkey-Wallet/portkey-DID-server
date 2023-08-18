@@ -71,7 +71,7 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     public async Task<Tuple<long, List<ContactIndex>>> GetListAsync(ContactGetListDto input)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Terms(t => t.Field("caHolderInfo.userId").Terms(input.UserId)));
+        mustQuery.Add(q => q.Terms(t => t.Field("userId").Terms(input.UserId)));
         mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord)) 
                            || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
         
