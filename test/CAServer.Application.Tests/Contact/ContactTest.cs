@@ -250,4 +250,18 @@ public class ContactTest : CAServerApplicationTestBase
             Assert.True(e is AbpValidationException);
         }
     }
+    
+    [Fact]
+    public async Task Get_Test()
+    {
+        try
+        {
+            await _contactAppService.GetAsync(Guid.Empty);
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldBe(ContactMessage.NotExistMessage);
+        }
+    }
+
 }
