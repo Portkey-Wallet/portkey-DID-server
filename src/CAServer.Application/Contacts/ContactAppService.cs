@@ -117,6 +117,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
     {
+        input.UserId = CurrentUser.GetId();
         var (totalCount, contactList) = await _contactProvider.GetListAsync(input);
         
         var pagedResultDto = new PagedResultDto<ContactResultDto>
