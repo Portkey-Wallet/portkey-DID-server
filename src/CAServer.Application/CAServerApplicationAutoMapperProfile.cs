@@ -360,6 +360,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<CAHolderIndex, CAHolderResultDto>();
         CreateMap<CreateUpdateContactDto, ContactDto>();
         CreateMap<ContactDto, ContactGrainDto>();
+        CreateMap<CAHolderIndex, Contacts.CaHolderInfo>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
         CreateMap<CAHolderGrainDto, Contacts.CaHolderInfo>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
         

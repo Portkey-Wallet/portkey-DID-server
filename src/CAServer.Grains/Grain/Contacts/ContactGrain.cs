@@ -52,6 +52,8 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
             State.IsDeleted = false;
             State.CreateTime = DateTime.UtcNow;
             State.ModificationTime = DateTime.UtcNow;
+            State.ImInfo = contactDto.ImInfo;
+            State.CaHolderInfo = contactDto.CaHolderInfo;
             State.Addresses = _objectMapper.Map<List<ContactAddressDto>, List<ContactAddress>>(contactDto.Addresses);
 
             SetIndex();

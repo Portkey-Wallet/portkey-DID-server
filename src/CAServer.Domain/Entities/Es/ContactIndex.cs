@@ -9,7 +9,7 @@ public class ContactIndex : CAServerEsEntity<Guid>, IIndexBuild
 {
     [Keyword] public override Guid Id { get; set; }
     [Keyword] public string Index { get; set; }
-    [Keyword] public string Name { get; set; }
+    [Wildcard] public string Name { get; set; }
     public string Avatar { get; set; }
     public List<ContactAddress> Addresses { get; set; } = new();
     [Keyword] public Guid UserId { get; set; }
@@ -32,12 +32,12 @@ public class CaHolderInfo
 {
     [Keyword] public Guid UserId { get; set; }
     [Keyword] public string CaHash { get; set; }
-    [Keyword] public string WalletName { get; set; }
+    [Wildcard] public string WalletName { get; set; }
 }
 
 public class ImInfo
 {
     [Keyword] public string RelationId { get; set; }
     [Keyword] public string PortKeyId { get; set; }
-    [Keyword] public string Name { get; set; }
+    [Wildcard] public string Name { get; set; }
 }
