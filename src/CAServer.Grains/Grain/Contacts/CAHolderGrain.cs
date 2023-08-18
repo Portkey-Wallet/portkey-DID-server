@@ -68,4 +68,18 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
     {
         return Task.FromResult(State.CaHash);
     }
+
+    public Task<GrainResultDto<CAHolderGrainDto>> GetCaHolder()
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return Task.FromResult(result);
+        }
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
+        return Task.FromResult(result);
+    }
 }

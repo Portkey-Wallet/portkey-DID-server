@@ -1,3 +1,4 @@
+using CAServer.Contacts;
 using CAServer.Grains.Grain.Contacts;
 
 namespace CAServer.Grains.State.Contacts;
@@ -16,18 +17,4 @@ public class ContactState
     public bool IsImputation { get; set; }
     public DateTime CreateTime { get; set; }
     public DateTime ModificationTime { get; set; }
-}
-
-public class CaHolderInfo
-{
-    public Guid UserId { get; set; }
-    public string CaHash { get; set; }
-    public string WalletName { get; set; }
-}
-
-public class ImInfo
-{
-    public string RelationId { get; set; }
-    public string PortkeyId { get; set; }
-    public string Name { get; set; }
 }

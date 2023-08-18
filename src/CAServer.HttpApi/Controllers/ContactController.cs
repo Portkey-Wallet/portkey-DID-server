@@ -12,6 +12,7 @@ namespace CAServer.Controllers;
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
 [Authorize]
+[IgnoreAntiforgeryToken]
 public class ContactController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
@@ -50,5 +51,17 @@ public class ContactController : CAServerController
     {
         throw new NotImplementedException();
         // return await _contactAppService.GetExistAsync(name);
+    }
+
+    [HttpGet("isImputation")]
+    public async Task<ContactImputationDto> GetImputationAsync()
+    {
+        return await _contactAppService.GetImputationAsync();
+    }
+
+    [HttpPost("read")]
+    public async Task ReadImputationAsync()
+    {
+        await _contactAppService.ReadImputationAsync();
     }
 }

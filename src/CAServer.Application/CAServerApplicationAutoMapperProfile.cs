@@ -358,5 +358,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<VerifierServer, GetVerifierServerResponse>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
         CreateMap<CAHolderIndex, CAHolderResultDto>();
+        CreateMap<CreateUpdateContactDto, ContactDto>();
+        CreateMap<ContactDto, ContactGrainDto>();
+        CreateMap<CAHolderGrainDto, Contacts.CaHolderInfo>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
+        
     }
 }

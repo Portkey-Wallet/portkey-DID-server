@@ -10,4 +10,6 @@ public interface IContactAppService
     Task DeleteAsync(Guid id);
     Task<ContractExistDto> GetExistAsync(string name);
     Task MergeAsync(ContactMergeDto input);
+    Task<ContactImputationDto> GetImputationAsync();
+    Task ReadImputationAsync();
 }

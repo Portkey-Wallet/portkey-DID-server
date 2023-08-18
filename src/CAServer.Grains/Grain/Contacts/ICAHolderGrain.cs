@@ -7,4 +7,5 @@ public interface ICAHolderGrain : IGrainWithGuidKey
     Task<GrainResultDto<CAHolderGrainDto>> AddHolderAsync(CAHolderGrainDto caHolderDto);
     Task<GrainResultDto<CAHolderGrainDto>> UpdateNicknameAsync(string nickname);
     Task<string> GetCAHashAsync();
+    Task<GrainResultDto<CAHolderGrainDto>> GetCaHolder();
 }
