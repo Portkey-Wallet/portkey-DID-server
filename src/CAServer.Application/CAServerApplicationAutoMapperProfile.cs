@@ -362,8 +362,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ReverseMap();
         CreateMap<CAHolderIndex, CAHolderResultDto>();
         CreateMap<ContactAddress, ContactAddressDto>();
-        CreateMap<CaHolderInfo, CaHolderInfoDto>();
-        CreateMap<ImInfo, ImInfoDto>();
         CreateMap<CreateUpdateContactDto, ContactDto>();
         CreateMap<ContactDto, ContactGrainDto>();
         CreateMap<CAHolderIndex, Contacts.CaHolderInfo>()

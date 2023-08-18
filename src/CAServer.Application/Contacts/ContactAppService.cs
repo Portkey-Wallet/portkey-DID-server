@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Contacts.Provider;
-using AElf.Indexing.Elasticsearch;
-using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
+using Nest;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -118,28 +117,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Terms(t => t.Field("caHolderInfo.userId").Terms(input.UserId)));
-        mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord)) 
-                           || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
-        
-        if (input.IsAbleChat)
-        {
-            mustQuery.Add(q => q.Exists(t => t.Field("imInfo.relationId")));
-        }
-
-        if (input.ModificationTime != 0)
-        {
-            mustQuery.Add(q => 
-                q.Range(r => r.Field(c => c.ModificationTime).GreaterThanOrEquals(input.ModificationTime)));
-        }
-        
-        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-        
-        IPromise<IList<ISort>> Sort(SortDescriptor<ContactIndex> s) => s.Ascending(a => a.Name);
-
-        var (totalCount, contactList) = 
-            await _contactRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: input.MaxResultCount, skip: input.SkipCount);
+        var (totalCount, contactList) = await _contactProvider.GetListAsync(input);
         
         var pagedResultDto = new PagedResultDto<ContactResultDto>
         {
