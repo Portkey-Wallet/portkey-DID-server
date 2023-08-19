@@ -2,11 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Options;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Nest;
 using Orleans;
 using Volo.Abp;
@@ -24,13 +29,22 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IContactProvider _contactProvider;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ImServerOptions _imServerOptions;
+    private readonly IHttpClientService _httpClientService;
 
     public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
-        IContactProvider contactProvider)
+        IHttpContextAccessor httpContextAccessor,
+        IContactProvider contactProvider,
+        IOptionsSnapshot<ImServerOptions> imServerOptions,
+        IHttpClientService httpClientService)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _contactProvider = contactProvider;
+        _httpContextAccessor = httpContextAccessor;
+        _imServerOptions = imServerOptions.Value;
+        _httpClientService = httpClientService;
     }
 
     public async Task<ContactResultDto> CreateAsync(CreateUpdateContactDto input)
@@ -105,13 +119,13 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
-        
+
         var result = await contactGrain.GetContactAsync();
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
         }
-        
+
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
     }
 
@@ -119,13 +133,13 @@ public class ContactAppService : CAServerAppService, IContactAppService
     {
         input.UserId = CurrentUser.GetId();
         var (totalCount, contactList) = await _contactProvider.GetListAsync(input);
-        
+
         var pagedResultDto = new PagedResultDto<ContactResultDto>
         {
             TotalCount = totalCount,
             Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
         };
-        
+
         return pagedResultDto;
     }
 
@@ -154,7 +168,13 @@ public class ContactAppService : CAServerAppService, IContactAppService
     {
         return Task.CompletedTask;
     }
-    
+
+    public async Task<ContactResultDto> GetContactAsync(Guid contactUserId)
+    {
+        var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), contactUserId);
+        return ObjectMapper.Map<ContactIndex, ContactResultDto>(contact);
+    }
+
     private async Task<bool> CheckExistAsync(Guid userId, string name)
     {
         if (name.IsNullOrWhiteSpace()) return false;
@@ -211,8 +231,20 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private async Task<ImInfo> GetImInfoAsync(string relationId)
     {
         if (relationId.IsNullOrWhiteSpace()) return null;
+        var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
+            out var authToken);
 
-        // get from im
-        return new ImInfo();
+
+        var header = new Dictionary<string, string>();
+        if (hasAuthToken)
+        {
+            header.Add(CommonConstant.AuthHeader, authToken);
+        }
+
+        var res = await _httpClientService.GetAsync<ImInfo>(
+            _imServerOptions.BaseUrl + "api/v1/users/imUserInfo?relationId={relationId}",
+            header);
+
+        return res;
     }
 }

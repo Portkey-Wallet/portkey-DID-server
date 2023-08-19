@@ -33,4 +33,6 @@ public static class CommonConstant
 
     public const string AppleTransferMessage =
         "We are currently upgrading our system to serve you better. During this period, the Apple ID service is temporarily unavailable.";
+    
+    public const string AuthHeader = "Authorization";
 }

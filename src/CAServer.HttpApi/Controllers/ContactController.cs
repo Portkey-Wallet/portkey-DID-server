@@ -46,13 +46,13 @@ public class ContactController : CAServerController
     {
         return await _contactAppService.GetExistAsync(name);
     }
-    
+
     [HttpGet("{id}")]
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
         return await _contactAppService.GetAsync(id);
     }
-    
+
     [HttpGet("list")]
     public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
     {
@@ -76,5 +76,11 @@ public class ContactController : CAServerController
     public async Task ReadImputationAsync()
     {
         await _contactAppService.ReadImputationAsync();
+    }
+
+    [HttpGet("getContact")]
+    public async Task<ContactResultDto> GetContactAsync(Guid contactUserId)
+    {
+        return await _contactAppService.GetContactAsync(contactUserId);
     }
 }

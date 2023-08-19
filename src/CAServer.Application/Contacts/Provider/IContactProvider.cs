@@ -16,6 +16,7 @@ namespace CAServer.Contacts.Provider;
 public interface IContactProvider
 {
     Task<List<ContactIndex>> GetContactsAsync(Guid userId);
+    Task<ContactIndex> GetContactAsync(Guid userId, Guid contactUserId);
     Task<CAHolderIndex> GetCaHolderAsync(string caHash);
 
     Task<GuardiansDto> GetCaHolderInfoAsync(List<string> caAddresses, int skipCount = 0,
@@ -72,9 +73,9 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
         mustQuery.Add(q => q.Terms(t => t.Field("userId").Terms(input.UserId)));
-        mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord)) 
+        mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord))
                            || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
-        
+
         if (input.IsAbleChat)
         {
             mustQuery.Add(q => q.Exists(t => t.Field("imInfo.relationId")));
@@ -82,16 +83,17 @@ public class ContactProvider : IContactProvider, ISingletonDependency
 
         if (input.ModificationTime != 0)
         {
-            mustQuery.Add(q => 
+            mustQuery.Add(q =>
                 q.Range(r => r.Field(c => c.ModificationTime).GreaterThanOrEquals(input.ModificationTime)));
         }
-        
+
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-        
+
         IPromise<IList<ISort>> Sort(SortDescriptor<ContactIndex> s) => s.Ascending(a => a.Name);
 
-        return 
-            await _contactRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: input.MaxResultCount, skip: input.SkipCount);
+        return
+            await _contactRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: input.MaxResultCount,
+                skip: input.SkipCount);
     }
 
     public async Task<List<ContactIndex>> GetContactsAsync(Guid userId)
@@ -108,5 +110,16 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         }
 
         return contact.Item2;
+    }
+
+    public async Task<ContactIndex> GetContactAsync(Guid userId, Guid contactUserId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.CaHolderInfo.UserId).Value(contactUserId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+        return await _contactRepository.GetAsync(Filter);
     }
 }

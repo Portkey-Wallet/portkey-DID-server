@@ -15,4 +15,5 @@ public interface IContactAppService
     Task MergeAsync(ContactMergeDto input);
     Task<ContactImputationDto> GetImputationAsync();
     Task ReadImputationAsync();
+    Task<ContactResultDto> GetContactAsync(Guid contactUserId);
 }
