@@ -241,10 +241,15 @@ public class ContactAppService : CAServerAppService, IContactAppService
             header.Add(CommonConstant.AuthHeader, authToken);
         }
 
-        var res = await _httpClientService.GetAsync<ImInfo>(
-            _imServerOptions.BaseUrl + "api/v1/users/imUserInfo?relationId={relationId}",
+        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(
+            _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}",
             header);
 
-        return res;
+        if (!responseDto.Success())
+        {
+            throw new UserFriendlyException(responseDto.Message);
+        }
+
+        return responseDto.Data;
     }
 }
