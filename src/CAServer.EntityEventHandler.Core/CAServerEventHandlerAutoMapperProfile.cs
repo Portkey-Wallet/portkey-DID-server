@@ -19,6 +19,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
 {
     public CAServerEventHandlerAutoMapperProfile()
     {
+        CreateMap<CAServer.Entities.Es.ImInfo, CAServer.Contacts.ImInfo>().ReverseMap();
         CreateMap<ContactIndex, ContactCreateEto>().ReverseMap();
         CreateMap<ContactUpdateEto, ContactIndex>();
         CreateMap<ContactAddress, ContactAddressEto>().ReverseMap();
