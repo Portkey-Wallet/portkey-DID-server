@@ -26,20 +26,20 @@ namespace CAServer.UserAssets.Provider;
 
 public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
 {
-    private readonly IHttpService _httpService;
     private readonly ILogger<ImageProcessProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly AwsThumbnailOptions _awsThumbnailOptions;
     private HttpClient? Client { get; set; }
 
     public ImageProcessProvider(ILogger<ImageProcessProvider> logger,
-        IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions, IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory, IOptions<AwsThumbnailOptions> awsThumbnailOptions)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
-        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, _httpClientFactory, true);
+        _awsThumbnailOptions = awsThumbnailOptions.Value;
     }
 
-    public string GetResizeImage(string imageUrl, int width, int height)
+    public async Task<string> GetResizeImageAsync(string imageUrl, int width, int height)
     {
         try
         {
@@ -59,10 +59,10 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
                 return imageUrl;
             }
 
-            var produceImage = getResizeUrl(imageUrl, width, height, true);
-            sendUrl(produceImage);
+            var produceImage = GetResizeUrl(imageUrl, width, height, true, ImageResizeType.PortKey);
+            await SendUrlAsync(produceImage);
 
-            var resImage = getResizeUrl(imageUrl, width, height, false);
+            var resImage = GetResizeUrl(imageUrl, width, height, false, ImageResizeType.PortKey);
             return resImage;
         }
         catch (Exception ex)
@@ -72,33 +72,58 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
         }
     }
 
-    public string getResizeUrl(string imageUrl, int width, int height, bool replaceDomain)
+    public async Task<string> GetImResizeImageAsync(string imageUrl, int width, int height)
+    {
+        try
+        {
+            if (!imageUrl.Contains(UserAssetsServiceConstant.AwsDomain))
+            {
+                return imageUrl;
+            }
+
+            var produceImage = GetResizeUrl(imageUrl, width, height, true, ImageResizeType.Im);
+            await SendUrlAsync(produceImage);
+
+            var resImage = GetResizeUrl(imageUrl, width, height, false, ImageResizeType.Im);
+            return resImage;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("sendImageRequest Execption:", ex);
+            return imageUrl;
+        }
+    }
+
+
+    public string GetResizeUrl(string imageUrl, int width, int height, bool replaceDomain, ImageResizeType type)
     {
         if (replaceDomain)
         {
-            string[] urlSplit = imageUrl.Split(new string[] { UserAssetsServiceConstant.AwsDomain },
+            var urlSplit = imageUrl.Split(new string[] { UserAssetsServiceConstant.AwsDomain },
                 StringSplitOptions.RemoveEmptyEntries);
-            imageUrl = UserAssetsServiceConstant.NewAwsDomain + urlSplit[1];
+            imageUrl = type switch
+            {
+                ImageResizeType.PortKey => _awsThumbnailOptions.PortKeyBaseUrl + urlSplit[1],
+                ImageResizeType.Im => _awsThumbnailOptions.ImBaseUrl + urlSplit[1],
+                _ => imageUrl
+            };
         }
 
-        int lastIndexOf = imageUrl.LastIndexOf("/");
+        var lastIndexOf = imageUrl.LastIndexOf("/", StringComparison.Ordinal);
         var pre = imageUrl.Substring(0, lastIndexOf);
         var last = imageUrl.Substring(lastIndexOf, imageUrl.Length - lastIndexOf);
         var resizeImage = pre + "/" + (width == -1 ? "AUTO" : width) + "x" + (height == -1 ? "AUTO" : height) + last;
         return resizeImage;
     }
 
-    private void sendUrl(string url, string? version = null)
+    private async Task SendUrlAsync(string url, string? version = null)
     {
-        if (Client == null)
-        {
-            Client = new HttpClient();
-        }
+        Client ??= new HttpClient();
 
         Client.DefaultRequestHeaders.Accept.Clear();
         Client.DefaultRequestHeaders.Accept.Add(
             MediaTypeWithQualityHeaderValue.Parse($"application/json{version}"));
         Client.DefaultRequestHeaders.Add("Connection", "close");
-        Client.GetAsync(url);
+        await Client.GetAsync(url);
     }
 }

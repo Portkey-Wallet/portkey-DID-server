@@ -232,7 +232,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 }
                 else
                 {
-                    nftCollection.ImageUrl = _imageProcessProvider.GetResizeImage(
+                    nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
                         nftCollectionInfo.NftCollectionInfo.ImageUrl, requestDto.Width, requestDto.Height);
                     dto.Data.Add(nftCollection);
                 }
@@ -285,8 +285,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
                 nftItem.ImageUrl =
-                    _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height);
-                nftItem.ImageLargeUrl = _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl,
+                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height);
+                nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
                     (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO);
 
                 dto.Data.Add(nftItem);
@@ -509,7 +509,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
 
                     item.NftInfo.ImageUrl =
-                        _imageProcessProvider.GetResizeImage(searchItem.NftInfo.ImageUrl, requestDto.Width,
+                        await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl, requestDto.Width,
                             requestDto.Height);
                 }
 
