@@ -215,17 +215,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException("Unable to add yourself to your Contacts");
         }
 
-        //check address
+        //check address is aelf
         if (address.ChainName == CommonConstant.ChainName)
         {
-            var guardians =
-                await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string> { address.Address },
-                    address.ChainId);
-
-            if (guardians?.CaHolderInfo?.Count == 0)
-            {
-                throw new UserFriendlyException("Invalid address");
-            }
         }
 
         // check if address already exist
@@ -247,9 +239,34 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     private async Task<ContactDto> GetContactDtoAsync(CreateUpdateContactDto input)
     {
+        var address = input.Addresses.First();
         var contact = ObjectMapper.Map<CreateUpdateContactDto, ContactDto>(input);
         contact.ImInfo = await GetImInfoAsync(input.RelationId);
         contact.CaHolderInfo = await GetHolderInfoAsync(contact.ImInfo, input.Addresses);
+
+        if (address.ChainName != CommonConstant.ChainName) return contact;
+
+        //get hash has problem
+        var guardians =
+            await _contactProvider.GetCaHolderInfoAsync(new List<string> { address.Address },
+                contact.CaHolderInfo.CaHash);
+
+        if (guardians?.CaHolderInfo?.Count > 0)
+        {
+            var addressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress != address.Address)
+                .Select(t => new { t.CaAddress, t.ChainId });
+            
+            foreach (var info in addressInfos)
+            {
+                contact.Addresses.Add(new ContactAddressDto()
+                {
+                    Address = info.CaAddress,
+                    ChainId = info.ChainId
+                });
+            }
+        }
+
+
         return contact;
     }
 
