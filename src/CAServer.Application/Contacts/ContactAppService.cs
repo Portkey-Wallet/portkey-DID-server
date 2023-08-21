@@ -55,7 +55,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
-        
+
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
@@ -190,7 +190,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     Logger.LogError("Imputation fail, contactId:{id}", contactRelation.Id.ToString());
                     continue;
                 }
-                
+
                 var result =
                     await contactGrain.Imputation();
 
@@ -198,6 +198,18 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 {
                     Logger.LogError("Imputation fail, contactId:{id}", contactRelation.Id.ToString());
                     continue;
+                }
+
+                var contactG = _clusterClient.GetGrain<IContactGrain>(contact.Id);
+                var deleteResult = await contactG.DeleteContactAsync(userId);
+                if (deleteResult.Success)
+                {
+                    await _distributedEventBus.PublishAsync(
+                        ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(deleteResult.Data), false, false);
+                }
+                else
+                {
+                    Logger.LogError("delete fail, contactId:{id}", contactRelation.Id.ToString());
                 }
 
                 await _distributedEventBus.PublishAsync(
