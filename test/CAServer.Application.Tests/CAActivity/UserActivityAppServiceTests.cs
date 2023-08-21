@@ -36,6 +36,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         services.AddSingleton(GetUserContactProvider());
         services.AddSingleton(GetActivitiesIcon());
         services.AddSingleton(GetMockActivityProvider());
+        services.AddSingleton(GetContractProvider());
     }
 
     private void Login(Guid userId)
@@ -208,4 +209,22 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         data.TransactionFees.First().Decimals.ShouldBe("8");
     }
+    
+    
+    [Fact]
+    public async Task GetUsercreateTimeTest()
+    {
+        var param = new GetUserCreateTimeRequestDto
+        {
+            CaHash = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+        };
+
+        var result = await _userActivityAppService.GetCaHolderCreateTimeAsync(param);
+        result.ShouldBe("1000");
+       
+    }
+    
+    
+    
+    
 }
