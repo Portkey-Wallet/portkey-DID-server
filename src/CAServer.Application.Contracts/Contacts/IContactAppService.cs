@@ -14,6 +14,6 @@ public interface IContactAppService
     Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input);
     Task MergeAsync(ContactMergeDto input);
     Task<ContactImputationDto> GetImputationAsync();
-    Task ReadImputationAsync();
+    Task ReadImputationAsync(ReadImputationDto input);
     Task<ContactResultDto> GetContactAsync(Guid contactUserId);
 }

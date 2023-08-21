@@ -12,7 +12,6 @@ using CAServer.Grains.Grain.Contacts;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using Nest;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -56,6 +55,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
 
+        await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
         var result =
@@ -67,6 +67,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException(result.Message);
         }
 
+        // follow
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactCreateEto>(result.Data));
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
     }
@@ -148,11 +149,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var userId = CurrentUser.GetId();
         var contacts = await _contactProvider.GetContactsAsync(userId);
 
-        if (contacts.Count <= 1)
+        if (contacts.Count == 0)
         {
             return;
         }
-        // 查询联系人地址是否是自己的，是自己的直接删除
+        // 查询联系人地址是否是自己的，是自己的直接删除(找产品过)
 
         // 若联系人的address中input中的address的所有联系人合并为1个、删除其它联系人
 
@@ -164,9 +165,17 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return Task.FromResult(new ContactImputationDto());
     }
 
-    public Task ReadImputationAsync()
+    public async Task ReadImputationAsync(ReadImputationDto input)
     {
-        return Task.CompletedTask;
+        var contactGrain = _clusterClient.GetGrain<IContactGrain>(input.ContactId);
+        var result = await contactGrain.ReadImputation();
+
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
     }
 
     public async Task<ContactResultDto> GetContactAsync(Guid contactUserId)
@@ -182,6 +191,58 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var contactNameGrain =
             _clusterClient.GetGrain<IContactNameGrain>(GrainIdHelper.GenerateGrainId(userId.ToString("N"), name));
         return await contactNameGrain.IsNameExist(name);
+    }
+
+    //need to optimize
+    private async Task CheckAddressAsync(Guid userId, List<ContactAddressDto> addresses, string relationId)
+    {
+        if (!relationId.IsNullOrWhiteSpace())
+        {
+            var contactRelation = await _contactProvider.GetContactByRelationIdAsync(userId, relationId);
+            if (contactRelation != null)
+            {
+                throw new UserFriendlyException("This address has already been taken in other contacts");
+            }
+        }
+
+        var address = addresses.First();
+
+        // check self
+        var holder = await _contactProvider.GetCaHolderAsync(userId, string.Empty);
+        var guardianDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, holder.CaHash);
+        if (guardianDto.CaHolderInfo.Select(t => t.CaAddress).ToList().Contains(address.Address))
+        {
+            throw new UserFriendlyException("Unable to add yourself to your Contacts");
+        }
+
+        //check address
+        if (address.ChainName == CommonConstant.ChainName)
+        {
+            var guardians =
+                await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string> { address.Address },
+                    address.ChainId);
+
+            if (guardians?.CaHolderInfo?.Count == 0)
+            {
+                throw new UserFriendlyException("Invalid address");
+            }
+        }
+
+        // check if address already exist
+        var contact = await _contactProvider.GetContactByAddressAsync(userId, address.Address);
+        if (contact != null)
+        {
+            throw new UserFriendlyException("This address has already been taken in other contacts");
+        }
+
+        var imInfo = await GetImUserAsync(address.Address);
+        if (imInfo == null || imInfo.RelationId.IsNullOrWhiteSpace()) return;
+
+        var contactInfo = await _contactProvider.GetContactByRelationIdAsync(userId, imInfo.RelationId);
+        if (contactInfo != null)
+        {
+            throw new UserFriendlyException("This address has already been taken in other contacts");
+        }
     }
 
     private async Task<ContactDto> GetContactDtoAsync(CreateUpdateContactDto input)
@@ -220,11 +281,12 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     private async Task<CaHolderInfo> GetHolderInfoAsync(ContactAddressDto address)
     {
-        var guardiansDto = await _contactProvider.GetCaHolderInfoAsync(new List<string> { address.Address });
+        var guardiansDto =
+            await _contactProvider.GetCaHolderInfoAsync(new List<string> { address.Address }, string.Empty);
         var caHash = guardiansDto?.CaHolderInfo?.FirstOrDefault()?.CaHash;
         if (caHash.IsNullOrWhiteSpace()) return null;
 
-        var caHolder = await _contactProvider.GetCaHolderAsync(caHash);
+        var caHolder = await _contactProvider.GetCaHolderAsync(Guid.Empty, caHash);
         return ObjectMapper.Map<CAHolderIndex, CaHolderInfo>(caHolder);
     }
 
@@ -243,6 +305,31 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(
             _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}",
+            header);
+
+        if (!responseDto.Success())
+        {
+            throw new UserFriendlyException(responseDto.Message);
+        }
+
+        return responseDto.Data;
+    }
+
+    private async Task<ImInfo> GetImUserAsync(string address)
+    {
+        if (address.IsNullOrWhiteSpace()) return null;
+        var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
+            out var authToken);
+
+
+        var header = new Dictionary<string, string>();
+        if (hasAuthToken)
+        {
+            header.Add(CommonConstant.AuthHeader, authToken);
+        }
+
+        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(
+            _imServerOptions.BaseUrl + $"api/v1/users/imUser?address={address}",
             header);
 
         if (!responseDto.Success())

@@ -138,7 +138,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
             var contactNameGrain = GetContactNameGrain(userId, State.Name);
             await contactNameGrain.DeleteContactNameAsync(userId, State.Name);
         }
-        
+
         State.IsDeleted = true;
         State.ModificationTime = DateTime.UtcNow;
         await WriteStateAsync();
@@ -151,7 +151,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
     public Task<GrainResultDto<ContactGrainDto>> GetContactAsync()
     {
         var result = new GrainResultDto<ContactGrainDto>();
-        
+
         if (State.IsDeleted)
         {
             result.Message = ContactMessage.NotExistMessage;
@@ -160,8 +160,27 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
 
         result.Success = true;
         result.Data = _objectMapper.Map<ContactState, ContactGrainDto>(State);
-        
+
         return Task.FromResult(result);
+    }
+
+    public async Task<GrainResultDto<ContactGrainDto>> ReadImputation()
+    {
+        var result = new GrainResultDto<ContactGrainDto>();
+
+        if (State.IsDeleted)
+        {
+            result.Message = ContactMessage.NotExistMessage;
+            return result;
+        }
+
+        State.IsImputation = false;
+        result.Success = true;
+        State.ModificationTime = DateTime.UtcNow;
+        await WriteStateAsync();
+
+        result.Data = _objectMapper.Map<ContactState, ContactGrainDto>(State);
+        return result;
     }
 
     private IContactNameGrain GetContactNameGrain(Guid userId, string name)

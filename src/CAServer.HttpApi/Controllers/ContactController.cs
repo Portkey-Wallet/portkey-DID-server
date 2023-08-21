@@ -73,9 +73,9 @@ public class ContactController : CAServerController
     }
 
     [HttpPost("read")]
-    public async Task ReadImputationAsync()
+    public async Task ReadImputationAsync(ReadImputationDto input)
     {
-        await _contactAppService.ReadImputationAsync();
+        await _contactAppService.ReadImputationAsync(input);
     }
 
     [HttpGet("getContact")]
