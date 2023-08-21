@@ -183,6 +183,25 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         return result;
     }
 
+    public async Task<GrainResultDto<ContactGrainDto>> Imputation()
+    {
+        var result = new GrainResultDto<ContactGrainDto>();
+
+        if (State.IsDeleted)
+        {
+            result.Message = ContactMessage.NotExistMessage;
+            return result;
+        }
+
+        State.IsImputation = true;
+        result.Success = true;
+        State.ModificationTime = DateTime.UtcNow;
+        await WriteStateAsync();
+
+        result.Data = _objectMapper.Map<ContactState, ContactGrainDto>(State);
+        return result;
+    }
+
     private IContactNameGrain GetContactNameGrain(Guid userId, string name)
     {
         return GrainFactory.GetGrain<IContactNameGrain>(GrainIdHelper.GenerateGrainId(userId.ToString("N"), name));

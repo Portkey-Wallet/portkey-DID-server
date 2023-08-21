@@ -28,6 +28,8 @@ public interface IContactProvider
     Task<Tuple<long, List<ContactIndex>>> GetListAsync(ContactGetListDto input);
     Task<ContactIndex> GetContactByAddressAsync(Guid userId, string address);
     Task<ContactIndex> GetContactByRelationIdAsync(Guid userId, string relationId);
+    
+    Task<ContactIndex> UpdateAsync(ContactIndex contactIndex);
 }
 
 public class ContactProvider : IContactProvider, ISingletonDependency
@@ -136,11 +138,17 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     public async Task<ContactIndex> GetContactByRelationIdAsync(Guid userId, string relationId)
     {
         var mustQuery = GetContactQueryContainer(userId);
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.ImInfo.RelationId).Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.ImInfo.RelationId).Value(relationId)));
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
         
         var contacts= await _contactRepository.GetListAsync(Filter);
         return contacts?.Item2?.FirstOrDefault();
+    }
+
+    public async Task<ContactIndex> UpdateAsync(ContactIndex contactIndex)
+    {
+        await _contactRepository.AddOrUpdateAsync(contactIndex);
+        return contactIndex;
     }
 
     public async Task<List<ContactIndex>> GetContactsAsync(Guid userId)

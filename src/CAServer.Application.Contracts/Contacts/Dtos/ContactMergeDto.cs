@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace CAServer.Contacts;
 
 public class ContactMergeDto
 {
-    public List<ContactAddressDto> Addresses { get; set; }
+    [Required]public List<ContactAddressDto> Addresses { get; set; }
 }

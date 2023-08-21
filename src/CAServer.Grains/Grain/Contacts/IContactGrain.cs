@@ -9,4 +9,5 @@ public interface IContactGrain : IGrainWithGuidKey
     Task<GrainResultDto<ContactGrainDto>> DeleteContactAsync(Guid userId);
     Task<GrainResultDto<ContactGrainDto>> GetContactAsync();
     Task<GrainResultDto<ContactGrainDto>> ReadImputation();
+    Task<GrainResultDto<ContactGrainDto>> Imputation();
 }

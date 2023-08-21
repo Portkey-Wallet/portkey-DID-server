@@ -11,6 +11,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
@@ -153,10 +154,46 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             return;
         }
-        // 查询联系人地址是否是自己的，是自己的直接删除(找产品过)
+
+        // 查询联系人地址是否是自己的，是自己的直接删除
+        // foreach (var contact in contacts)
+        // {
+        //     if(contact.Addresses)
+        // }
 
         // 若联系人的address中input中的address的所有联系人合并为1个、删除其它联系人
+        foreach (var contact in contacts)
+        {
+            if (contact.Addresses is { Count: 1 })
+            {
+                var imInfo = await GetImUserAsync(contact.Addresses.First().Address);
+                if (imInfo == null || imInfo.RelationId.IsNullOrWhiteSpace()) continue;
 
+                var contactRelation = await _contactProvider.GetContactByRelationIdAsync(userId, imInfo.RelationId);
+                if (contactRelation == null) continue;
+
+                contactRelation.Addresses.Add(new CAServer.Entities.Es.ContactAddress()
+                {
+                    ChainName = contact.Addresses.First().ChainName,
+                    ChainId = contact.Addresses.First().ChainId,
+                    Address = contact.Addresses.First().Address
+                });
+
+                var res = await _contactProvider.UpdateAsync(contactRelation);
+                var contactGrain = _clusterClient.GetGrain<IContactGrain>(res.Id);
+                var result =
+                    await contactGrain.Imputation();
+
+                if (!result.Success)
+                {
+                    Logger.LogError("Imputation fail, contactId:{id}", res.Id.ToString());
+                    continue;
+                }
+
+                await _distributedEventBus.PublishAsync(
+                    ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data), false, false);
+            }
+        }
         // 记录被删除的联系人
     }
 
@@ -255,7 +292,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             var addressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress != address.Address)
                 .Select(t => new { t.CaAddress, t.ChainId });
-            
+
             foreach (var info in addressInfos)
             {
                 contact.Addresses.Add(new ContactAddressDto()
@@ -265,7 +302,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 });
             }
         }
-
 
         return contact;
     }

@@ -62,8 +62,7 @@ public class ContactController : CAServerController
     [HttpPost("merge")]
     public async Task MergeAsync(ContactMergeDto input)
     {
-        throw new NotImplementedException();
-        // return await _contactAppService.GetExistAsync(name);
+        await _contactAppService.MergeAsync(input);
     }
 
     [HttpGet("isImputation")]
