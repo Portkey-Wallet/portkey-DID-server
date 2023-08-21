@@ -79,6 +79,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
         Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
+        Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

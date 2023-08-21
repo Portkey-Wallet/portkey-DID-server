@@ -15,9 +15,9 @@ public class ImageProcessProviderTests : CAServerApplicationTestBase
     [Fact]
     public async void GetResizeImage()
     {
-        _imageProcessProvider.GetResizeImage("https://portkey-did.s3.ap-northeast-1/img/Untitled/5.jpg", -1 ,-1);
-        _imageProcessProvider.GetResizeImage("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 144 ,144);
-        _imageProcessProvider.GetResizeImage("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 200 ,200);
-        _imageProcessProvider.GetResizeImage("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", -1 ,-1);
+        _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1/img/Untitled/5.jpg", -1 ,-1);
+        _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 144 ,144);
+        _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 200 ,200);
+        _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", -1 ,-1);
     }
 }

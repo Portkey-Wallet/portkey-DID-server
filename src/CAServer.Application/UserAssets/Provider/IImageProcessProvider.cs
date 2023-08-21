@@ -9,6 +9,8 @@ namespace CAServer.UserAssets.Provider;
 public interface IImageProcessProvider
 {
     
-    string GetResizeImage(string imageUrl, int width, int height);
+    Task<string> GetResizeImageAsync(string imageUrl, int width, int height);
+    
+    Task<string> GetImResizeImageAsync(string imageUrl, int width, int height);
 
 }
