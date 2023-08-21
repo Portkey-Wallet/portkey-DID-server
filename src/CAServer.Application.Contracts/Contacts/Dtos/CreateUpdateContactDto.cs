@@ -11,13 +11,28 @@ public class CreateUpdateContactDto : IValidatableObject
 
     public string RelationId { get; set; }
 
-    [ValidAddresses] public List<ContactAddressDto> Addresses { get; set; }
+    public List<ContactAddressDto> Addresses { get; set; } = new();
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (Name.IsNullOrWhiteSpace() && RelationId.IsNullOrWhiteSpace())
         {
             yield return new ValidationResult("Invalid input.");
+        }
+
+        if (!RelationId.IsNullOrWhiteSpace())
+        {
+            if (Addresses is { Count: > 0 })
+            {
+                yield return new ValidationResult("Invalid input.");
+            }
+        }
+        else
+        {
+            if (Addresses?.Count != 1)
+            {
+                yield return new ValidationResult("Invalid input.");
+            }
         }
     }
 }

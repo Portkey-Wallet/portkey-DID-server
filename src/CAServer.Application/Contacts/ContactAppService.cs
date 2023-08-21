@@ -240,6 +240,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             {
                 throw new UserFriendlyException("This address has already been taken in other contacts");
             }
+            return;
         }
 
         var address = addresses.First();
@@ -276,8 +277,13 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     private async Task<ContactDto> GetContactDtoAsync(CreateUpdateContactDto input)
     {
-        var address = input.Addresses.First();
         var contact = ObjectMapper.Map<CreateUpdateContactDto, ContactDto>(input);
+        if (input.Addresses.Count == 0)
+        {
+            return contact;
+        }
+        var address = input.Addresses.First();
+       
         contact.ImInfo = await GetImInfoAsync(input.RelationId);
         contact.CaHolderInfo = await GetHolderInfoAsync(contact.ImInfo, input.Addresses);
 
