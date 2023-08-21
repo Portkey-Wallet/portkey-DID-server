@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.ImUser.Dto;
 using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Contacts;
@@ -16,4 +18,5 @@ public interface IContactAppService
     Task<ContactImputationDto> GetImputationAsync();
     Task ReadImputationAsync(ReadImputationDto input);
     Task<ContactResultDto> GetContactAsync(Guid contactUserId);
+    Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input);
 }

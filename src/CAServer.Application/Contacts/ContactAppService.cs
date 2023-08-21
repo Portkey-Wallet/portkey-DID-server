@@ -9,6 +9,7 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.ImUser.Dto;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -443,5 +444,35 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         return responseDto.Data;
+    }
+
+
+    public async Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input)
+    {
+        var result = new List<GetNamesResultDto>();
+        int i = 0;
+        foreach (var dto in input)
+        {
+            if (i < 1)
+            {
+                result.Add(new GetNamesResultDto()
+                {
+                    PortkeyId = dto,
+                    Name = "Wallet 01"
+                });  
+            }
+            else
+            {
+                result.Add(new GetNamesResultDto()
+                {
+                    PortkeyId = dto,
+                    Name = ""
+                });  
+            }
+
+            i++;
+        }
+
+        return result;
     }
 }
