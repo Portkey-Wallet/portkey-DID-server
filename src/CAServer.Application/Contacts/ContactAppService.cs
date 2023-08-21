@@ -55,6 +55,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
+        
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
@@ -179,14 +180,23 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     Address = contact.Addresses.First().Address
                 });
 
-                var res = await _contactProvider.UpdateAsync(contactRelation);
-                var contactGrain = _clusterClient.GetGrain<IContactGrain>(res.Id);
+                //var res = await _contactProvider.UpdateAsync(contactRelation);
+                var contactGrain = _clusterClient.GetGrain<IContactGrain>(contactRelation.Id);
+
+                var dto = ObjectMapper.Map<ContactIndex, ContactGrainDto>(contactRelation);
+                var updateResult = await contactGrain.UpdateContactAsync(userId, dto);
+                if (!updateResult.Success)
+                {
+                    Logger.LogError("Imputation fail, contactId:{id}", contactRelation.Id.ToString());
+                    continue;
+                }
+                
                 var result =
                     await contactGrain.Imputation();
 
                 if (!result.Success)
                 {
-                    Logger.LogError("Imputation fail, contactId:{id}", res.Id.ToString());
+                    Logger.LogError("Imputation fail, contactId:{id}", contactRelation.Id.ToString());
                     continue;
                 }
 
@@ -240,6 +250,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             {
                 throw new UserFriendlyException("This address has already been taken in other contacts");
             }
+
             return;
         }
 
@@ -282,9 +293,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             return contact;
         }
+
         var address = input.Addresses.First();
-       
-        contact.ImInfo = await GetImInfoAsync(input.RelationId);
+
+        //contact.ImInfo = await GetImInfoAsync(input.RelationId);
+        contact.ImInfo = await GetImUserAsync(address.Address);
         contact.CaHolderInfo = await GetHolderInfoAsync(contact.ImInfo, input.Addresses);
 
         if (address.ChainName != CommonConstant.ChainName) return contact;
