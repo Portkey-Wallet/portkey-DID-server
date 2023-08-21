@@ -156,10 +156,31 @@ public class ContactAppService : CAServerAppService, IContactAppService
             return;
         }
 
+        contacts = contacts.Where(t => t.ImInfo == null).ToList();
+
         // 查询联系人地址是否是自己的，是自己的直接删除
         // foreach (var contact in contacts)
         // {
         //     if(contact.Addresses)
+        // }
+        // var holder = await GetHolderInfoAsync(userId);
+        // var guardians =
+        //     await _contactProvider.GetCaHolderInfoAsync(new List<string> { address.Address },
+        //         contact.CaHolderInfo.CaHash);
+        //
+        // if (guardians?.CaHolderInfo?.Count > 0)
+        // {
+        //     var addressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress != address.Address)
+        //         .Select(t => new { t.CaAddress, t.ChainId });
+        //
+        //     foreach (var info in addressInfos)
+        //     {
+        //         contact.Addresses.Add(new ContactAddressDto()
+        //         {
+        //             Address = info.CaAddress,
+        //             ChainId = info.ChainId
+        //         });
+        //     }
         // }
 
         // 若联系人的address中input中的address的所有联系人合并为1个、删除其它联系人
