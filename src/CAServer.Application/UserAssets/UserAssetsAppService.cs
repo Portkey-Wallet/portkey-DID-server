@@ -541,7 +541,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     public async Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto)
     {
-        var caHash = requestDto.CaHash;
+        var caAddress = new List<string>
+        {
+            requestDto.CaAddress
+        };
+        var result = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddress);
+        if (result == null || result.CaHolderManagerInfo.IsNullOrEmpty())
+        {
+            return new TokenInfoDto();
+        }
+        var caHash = result.CaHolderManagerInfo.First().CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
         try
         {

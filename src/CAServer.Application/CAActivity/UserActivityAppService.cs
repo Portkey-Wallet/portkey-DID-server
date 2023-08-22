@@ -35,11 +35,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IContractProvider _contractProvider;
     private readonly ChainOptions _chainOptions;
     private const int MaxResultCount = 10;
+    private readonly IUserAssetsProvider _userAssetsProvider;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
-        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions)
+        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions, IUserAssetsProvider userAssetsProvider)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -48,6 +49,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _activitiesIcon = activitiesIconOption?.Value;
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
+        _userAssetsProvider = userAssetsProvider;
         _chainOptions = chainOptions.Value;
     }
 
@@ -154,7 +156,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     public async Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto request)
     {
-        var caHash = request.CaHash;
+        var result = await _userAssetsProvider.GetCaHolderManagerInfoAsync(new List<string> { request.CaAddress });
+        if (result == null || result.CaHolderManagerInfo.IsNullOrEmpty())
+        {
+            return string.Empty;
+        }
+        var caHash = result.CaHolderManagerInfo.First().CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
         try
         {

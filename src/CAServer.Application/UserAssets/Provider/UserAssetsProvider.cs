@@ -39,6 +39,26 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             }
         });
     }
+    
+    
+    public async Task<IndexCaHolderManagerInfo> GetCaHolderManagerInfoAsync(List<string> userCaAddresses)
+    {
+        return await _graphQlHelper.QueryAsync<IndexCaHolderManagerInfo>(new GraphQLRequest
+        {
+            Query = @"
+			    query($caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderManagerInfo(dto: {caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        chainId,caHash,caAddress}
+                }",
+            Variables = new
+            {
+                caAddresses = userCaAddresses, skipCount = 0, maxResultCount = userCaAddresses.Count
+            }
+        });
+    }
+    
+    
+    
 
     public async Task<IndexerTokenInfos> GetUserTokenInfoAsync(List<CAAddressInfo> caAddressInfos, string symbol,
         int inputSkipCount, int inputMaxResultCount)
