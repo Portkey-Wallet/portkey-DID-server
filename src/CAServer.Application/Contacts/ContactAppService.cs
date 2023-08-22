@@ -59,7 +59,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
 
-        await CheckAddressAsync(userId, input.Addresses, input.RelationId);
+        //await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
         var result =
@@ -81,7 +81,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var userId = CurrentUser.GetId();
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId, id);
-        var contactDto = await GetContactDtoAsync(input);
+        var contactDto = await GetContactDtoAsync(input, id);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
         var result =
             await contactGrain.UpdateContactAsync(userId,
@@ -317,12 +317,23 @@ public class ContactAppService : CAServerAppService, IContactAppService
         // }
     }
 
-    private async Task<ContactDto> GetContactDtoAsync(CreateUpdateContactDto input)
+    private async Task<ContactDto> GetContactDtoAsync(CreateUpdateContactDto input, Guid? contactId = null)
     {
         //return ObjectMapper.Map<CreateUpdateContactDto, ContactDto>(input);
         var contact = ObjectMapper.Map<CreateUpdateContactDto, ContactDto>(input);
-        if (input.Addresses.Count == 0)
+        if (input.Addresses.Count == 0 && !input.RelationId.IsNullOrWhiteSpace())
         {
+            if (contactId.HasValue && contactId.Value != Guid.Empty)
+            {
+                return contact;
+            }
+
+            var userInfo = await GetImInfoAsync(input.RelationId);
+            if (userInfo != null)
+            {
+                contact.ImInfo = userInfo;
+            }
+
             return contact;
         }
 
