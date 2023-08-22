@@ -251,7 +251,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     }
                 }
  
-                await MergeUpdateAsync(group.Key, contactUpdate);
+                await MergeUpdateAsync(contactUpdate.Id, contactUpdate);
 
                 var needDeletes = group.Where(t => t.Id != contactUpdate.Id).ToList();
                 foreach (var needDeletedContact in needDeletes)
