@@ -1,10 +1,13 @@
+using System;
+using System.ComponentModel.DataAnnotations;
+
 namespace CAServer.Image.Dto;
 
 public class GetThumbnailInput
 {
-    public string ImageUrl { get; set; }
+    [Required] public string ImageUrl { get; set; }
     
-    public int Width{ get; set; }
+    [Required] [Range(1,int.MaxValue)]public int Width{ get; set; }
     
-    public int Height { get; set; }
+    [Required] [Range(1,int.MaxValue)]public int Height { get; set; }
 }
