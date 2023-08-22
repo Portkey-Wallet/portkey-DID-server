@@ -454,27 +454,56 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input)
     {
         var result = new List<GetNamesResultDto>();
-        int i = 0;
-        foreach (var dto in input)
-        {
-            if (i < 1)
-            {
-                result.Add(new GetNamesResultDto()
-                {
-                    PortkeyId = dto,
-                    Name = "Wallet 01"
-                });
-            }
-            else
-            {
-                result.Add(new GetNamesResultDto()
-                {
-                    PortkeyId = dto,
-                    Name = ""
-                });
-            }
+        var userId = CurrentUser.GetId();
+        var contacts = await _contactProvider.GetContactsAsync(userId);
 
-            i++;
+        var contas = contacts.Where(t => t.ImInfo != null).ToList();
+        var names = contas.Where(t => !t.Name.IsNullOrWhiteSpace());
+        foreach (var name in names)
+        {
+            result.Add(new GetNamesResultDto()
+            {
+                PortkeyId = Guid.Parse(name.ImInfo.PortKeyId),
+                Name = name.Name
+            });
+
+            input.Remove(Guid.Parse(name.ImInfo.PortKeyId));
+        }
+
+        var names2 = contas.Where(t => t.Name.IsNullOrWhiteSpace() && t.CaHolderInfo != null);
+        foreach (var name in names2)
+        {
+            result.Add(new GetNamesResultDto()
+            {
+                PortkeyId = name.CaHolderInfo.UserId,
+                Name = name.CaHolderInfo.WalletName
+            });
+
+            input.Remove(name.CaHolderInfo.UserId);
+        }
+
+
+        if (input.Count == 0) return result;
+
+        var holders = await _contactProvider.GetCaHoldersAsync(input);
+        foreach (var holder in holders)
+        {
+            result.Add(new GetNamesResultDto()
+            {
+                PortkeyId = holder.UserId,
+                Name = holder.NickName
+            });
+            
+            input.Remove(holder.UserId);
+        }
+
+        foreach (var per in input)
+        {
+            result.Add(new GetNamesResultDto()
+            {
+                PortkeyId = per,
+                Name = string.Empty
+            });
         }
 
         return result;

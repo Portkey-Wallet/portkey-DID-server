@@ -29,9 +29,11 @@ public interface IContactProvider
     Task<Tuple<long, List<ContactIndex>>> GetListAsync(ContactGetListDto input);
     Task<ContactIndex> GetContactByAddressAsync(Guid userId, string address);
     Task<ContactIndex> GetContactByRelationIdAsync(Guid userId, string relationId);
-    
+
     Task<bool> GetImputationAsync(Guid userId);
     Task<List<ContactIndex>> GetContactByAddressesAsync(Guid userId, List<string> addresses);
+
+    Task<List<CAHolderIndex>> GetCaHoldersAsync(List<Guid> userIds);
 }
 
 public class ContactProvider : IContactProvider, ISingletonDependency
@@ -199,6 +201,7 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         {
             mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
         }
+
         mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         return mustQuery;
@@ -217,5 +220,19 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         }
 
         return contacts.Item2;
+    }
+
+    public async Task<List<CAHolderIndex>> GetCaHoldersAsync(List<Guid> userIds)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userIds)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var holders = await _caHolderRepository.GetListAsync(Filter);
+        if (holders.Item1 <= 0)
+        {
+            return new List<CAHolderIndex>();
+        }
+        return holders.Item2;
     }
 }
