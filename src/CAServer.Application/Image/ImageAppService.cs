@@ -16,7 +16,7 @@ public class ImageAppService : CAServerAppService, IImageAppService
     }
 
 
-    public async Task<string> GetThumbnailAsync(GetThumbnailInput input)
+    public async Task<ThumbnailResponseDto> GetThumbnailAsync(GetThumbnailInput input)
     {
         return await _imageProcessProvider.GetImResizeImageAsync(input.ImageUrl, input.Width, input.Height);
     }

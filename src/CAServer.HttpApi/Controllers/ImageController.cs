@@ -14,7 +14,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Image")]
 [Route("api/app/image")]
-[Authorize]
+//[Authorize]
 public class ImageController : CAServerController
 {
     private readonly IImageAppService _imageAppService;
@@ -26,7 +26,7 @@ public class ImageController : CAServerController
     
     
     [HttpGet("getThumbnail")]
-    public async Task<string> GetThumbnailAsync(GetThumbnailInput input)
+    public async Task<ThumbnailResponseDto> GetThumbnailAsync(GetThumbnailInput input)
     {
         return await _imageAppService.GetThumbnailAsync(input);
     }

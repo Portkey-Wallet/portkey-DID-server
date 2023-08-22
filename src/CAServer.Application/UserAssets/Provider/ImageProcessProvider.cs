@@ -9,6 +9,7 @@ using CAServer.CAActivity;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
+using CAServer.Image.Dto;
 using CAServer.Options;
 using CAServer.Settings;
 using CAServer.Tokens;
@@ -72,25 +73,28 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
         }
     }
 
-    public async Task<string> GetImResizeImageAsync(string imageUrl, int width, int height)
+    public async Task<ThumbnailResponseDto> GetImResizeImageAsync(string imageUrl, int width, int height)
     {
         try
         {
             if (!imageUrl.Contains(UserAssetsServiceConstant.AwsDomain))
             {
-                return imageUrl;
+                return new ThumbnailResponseDto();
             }
 
             var produceImage = GetResizeUrl(imageUrl, width, height, true, ImageResizeType.Im);
             await SendUrlAsync(produceImage);
 
             var resImage = GetResizeUrl(imageUrl, width, height, false, ImageResizeType.Im);
-            return resImage;
+            return new ThumbnailResponseDto
+            {
+                ThumbnailUrl = resImage
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError("sendImageRequest Execption:", ex);
-            return imageUrl;
+            return new ThumbnailResponseDto();
         }
     }
 
