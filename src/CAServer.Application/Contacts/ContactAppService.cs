@@ -190,6 +190,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             var contactGroups = contacts.GroupBy(t => t.UserId);
             foreach (var group in contactGroups)
             {
+                // Whether the contact address is your own, it is your own direct deletion
                 if (group.Key == userId)
                 {
                     foreach (var needDeletedContact in group)
@@ -204,6 +205,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     break;
                 }
 
+                //If all contacts in the address in the input address of the contact are merged into one, the other contacts are deleted
                 var contactUpdate = group.Where(t => !t.Name.IsNullOrWhiteSpace()).OrderBy(t => t.Name)
                     .FirstOrDefault();
 
@@ -217,11 +219,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     await DeleteAsync(needDeletedContact.Id);
                 }
             }
-
-            // 查询联系人地址是否是自己的，是自己的直接删除
-
-            // 若联系人的address中input中的address的所有联系人合并为1个、删除其它联系人
-            // 记录被删除的联系人
+            
+            // record deleted contacts
         }
         catch (Exception e)
         {

@@ -114,8 +114,12 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
 
         State.Name = contactDto.Name;
         State.ModificationTime = DateTime.UtcNow;
-        State.Addresses = _objectMapper.Map<List<ContactAddressDto>, List<ContactAddress>>(contactDto.Addresses);
 
+        if (contactDto.Addresses != null && contactDto.Addresses.Count > 0)
+        {
+            State.Addresses = _objectMapper.Map<List<ContactAddressDto>, List<ContactAddress>>(contactDto.Addresses);
+        }
+        
         SetIndex();
         await WriteStateAsync();
 
