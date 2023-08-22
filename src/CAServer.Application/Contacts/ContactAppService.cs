@@ -59,7 +59,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
 
-        //await CheckAddressAsync(userId, input.Addresses, input.RelationId);
+        await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
         var result =
