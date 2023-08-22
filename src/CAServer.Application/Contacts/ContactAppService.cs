@@ -211,6 +211,12 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
                 contactUpdate.CaHolderInfo = await GetHolderInfoAsync(userId);
                 contactUpdate.ImInfo = input.ImInfo;
+
+                if (contactUpdate.CaHolderInfo == null)
+                {
+                    Logger.LogError("get holder error. userId:{userId}",userId.ToString());
+                    break;
+                }
                 var guardianDto =
                     await _contactProvider.GetCaHolderInfoAsync(new List<string>(), contactUpdate.CaHolderInfo.CaHash);
                 var caAddresses = guardianDto?.CaHolderInfo?.Select(t => new { t.CaAddress, t.ChainId }).ToList();
