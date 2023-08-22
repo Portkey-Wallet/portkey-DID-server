@@ -74,8 +74,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactDto, ContactCreateEto>()
             .ForMember(c => c.Id, d => d.Condition(src => src.Id != Guid.Empty));
 
-        CreateMap<ContactDto, ContactUpdateEto>().ForMember(c => c.ModificationTime,
-            d => d.MapFrom(s => TimeHelper.GetDateTimeFromTimeStamp(s.ModificationTime)));
+        CreateMap<ContactDto, ContactUpdateEto>();
 
         CreateMap<ContactIndex, ContactDto>();
         CreateMap<Entities.Es.ContactAddress, ContactAddressDto>().ReverseMap();
