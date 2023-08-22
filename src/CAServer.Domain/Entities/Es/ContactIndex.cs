@@ -38,6 +38,6 @@ public class CaHolderInfo
 public class ImInfo
 {
     [Keyword] public string RelationId { get; set; }
-    [Keyword] public string PortKeyId { get; set; }
+    [Keyword] public string PortkeyId { get; set; }
     [Wildcard] public string Name { get; set; }
 }
