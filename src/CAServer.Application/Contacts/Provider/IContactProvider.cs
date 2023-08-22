@@ -25,11 +25,13 @@ public interface IContactProvider
 
     Task<GuardiansDto> GetCaHolderInfoByAddressAsync(List<string> caAddresses, string chainId, int skipCount = 0,
         int maxResultCount = 10);
+
     Task<Tuple<long, List<ContactIndex>>> GetListAsync(ContactGetListDto input);
     Task<ContactIndex> GetContactByAddressAsync(Guid userId, string address);
     Task<ContactIndex> GetContactByRelationIdAsync(Guid userId, string relationId);
     
-    Task<ContactIndex> UpdateAsync(ContactIndex contactIndex);
+    Task<bool> GetImputationAsync(Guid userId);
+    Task<List<ContactIndex>> GetContactByAddressesAsync(Guid userId, List<string> addresses);
 }
 
 public class ContactProvider : IContactProvider, ISingletonDependency
@@ -80,8 +82,9 @@ public class ContactProvider : IContactProvider, ISingletonDependency
             }
         });
     }
-    
-    public async Task<GuardiansDto> GetCaHolderInfoByAddressAsync(List<string> caAddresses, string chainId, int skipCount = 0,
+
+    public async Task<GuardiansDto> GetCaHolderInfoByAddressAsync(List<string> caAddresses, string chainId,
+        int skipCount = 0,
         int maxResultCount = 10)
     {
         return await _graphQlHelper.QueryAsync<GuardiansDto>(new GraphQLRequest
@@ -130,25 +133,36 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         var mustQuery = GetContactQueryContainer(userId);
         mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(address)));
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-        
-        var contacts= await _contactRepository.GetListAsync(Filter);
+
+        var contacts = await _contactRepository.GetListAsync(Filter);
         return contacts?.Item2?.FirstOrDefault();
     }
-    
+
     public async Task<ContactIndex> GetContactByRelationIdAsync(Guid userId, string relationId)
     {
         var mustQuery = GetContactQueryContainer(userId);
         mustQuery.Add(q => q.Term(i => i.Field(f => f.ImInfo.RelationId).Value(relationId)));
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-        
-        var contacts= await _contactRepository.GetListAsync(Filter);
+
+        var contacts = await _contactRepository.GetListAsync(Filter);
         return contacts?.Item2?.FirstOrDefault();
     }
 
-    public async Task<ContactIndex> UpdateAsync(ContactIndex contactIndex)
+    public async Task<bool> GetImputationAsync(Guid userId)
     {
-        await _contactRepository.AddOrUpdateAsync(contactIndex);
-        return contactIndex;
+        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsImputation).Value(true)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var contact = await _contactRepository.GetListAsync(Filter);
+        if (contact.Item1 <= 0)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public async Task<List<ContactIndex>> GetContactsAsync(Guid userId)
@@ -180,9 +194,28 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     private List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>> GetContactQueryContainer(Guid userId)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+
+        if (userId != Guid.Empty)
+        {
+            mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        }
         mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         return mustQuery;
+    }
+
+    public async Task<List<ContactIndex>> GetContactByAddressesAsync(Guid userId, List<string> addresses)
+    {
+        var mustQuery = GetContactQueryContainer(userId);
+        mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(addresses)));
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+
+        var contacts = await _contactRepository.GetListAsync(Filter);
+        if (contacts.Item1 <= 0)
+        {
+            return new List<ContactIndex>();
+        }
+
+        return contacts.Item2;
     }
 }

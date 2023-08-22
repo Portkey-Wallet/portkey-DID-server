@@ -14,6 +14,8 @@ using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -57,7 +59,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
 
-
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
@@ -79,10 +80,12 @@ public class ContactAppService : CAServerAppService, IContactAppService
     {
         var userId = CurrentUser.GetId();
 
+        await CheckAddressAsync(userId, input.Addresses, input.RelationId);
+        var contactDto = await GetContactDtoAsync(input);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
         var result =
             await contactGrain.UpdateContactAsync(userId,
-                ObjectMapper.Map<CreateUpdateContactDto, ContactGrainDto>(input));
+                ObjectMapper.Map<ContactDto, ContactGrainDto>(contactDto));
 
         if (!result.Success)
         {
@@ -149,101 +152,90 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task MergeAsync(ContactMergeDto input)
     {
-        var userId = CurrentUser.GetId();
-        var contacts = await _contactProvider.GetContactsAsync(userId);
-
-        if (contacts.Count == 0)
+        try
         {
-            return;
-        }
+            var userId = CurrentUser.GetId();
+            // var contacts = await _contactProvider.GetContactsAsync(userId);
+            //
+            // if (contacts.Count == 0)
+            // {
+            //     return;
+            // }
+            //
+            // var holderInfo = await GetHolderInfoAsync(userId);
+            // var guardianDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>(), holderInfo.CaHash);
+            // var addresses = guardianDto?.CaHolderInfo?.Select(t => t.CaAddress).ToList();
+            // var needDeletedContacts = await _contactProvider.GetContactByAddressesAsync(userId, addresses);
+            //
+            // if (needDeletedContacts is { Count: > 0 })
+            // {
+            //     foreach (var contact in needDeletedContacts)
+            //     {
+            //         await DeleteAsync(contact.Id);
+            //     }
+            // }
 
-        contacts = contacts.Where(t => t.ImInfo == null).ToList();
+            var addresses = input.Addresses.Select(t => t.Address).ToList();
+            //merge
+            var rawContacts = await _contactProvider.GetContactByAddressesAsync(Guid.Empty, addresses);
+            var mergeContacts = rawContacts?.Where(t => t.ImInfo == null).ToList();
 
-        // 查询联系人地址是否是自己的，是自己的直接删除
-        // foreach (var contact in contacts)
-        // {
-        //     if(contact.Addresses)
-        // }
-        // var holder = await GetHolderInfoAsync(userId);
-        // var guardians =
-        //     await _contactProvider.GetCaHolderInfoAsync(new List<string> { address.Address },
-        //         contact.CaHolderInfo.CaHash);
-        //
-        // if (guardians?.CaHolderInfo?.Count > 0)
-        // {
-        //     var addressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress != address.Address)
-        //         .Select(t => new { t.CaAddress, t.ChainId });
-        //
-        //     foreach (var info in addressInfos)
-        //     {
-        //         contact.Addresses.Add(new ContactAddressDto()
-        //         {
-        //             Address = info.CaAddress,
-        //             ChainId = info.ChainId
-        //         });
-        //     }
-        // }
-
-        // 若联系人的address中input中的address的所有联系人合并为1个、删除其它联系人
-        foreach (var contact in contacts)
-        {
-            if (contact.Addresses is { Count: 1 })
+            if (mergeContacts == null || mergeContacts.Count == 0)
             {
-                var imInfo = await GetImUserAsync(contact.Addresses.First().Address);
-                if (imInfo == null || imInfo.RelationId.IsNullOrWhiteSpace()) continue;
-
-                var contactRelation = await _contactProvider.GetContactByRelationIdAsync(userId, imInfo.RelationId);
-                if (contactRelation == null) continue;
-
-                contactRelation.Addresses.Add(new CAServer.Entities.Es.ContactAddress()
-                {
-                    ChainName = contact.Addresses.First().ChainName,
-                    ChainId = contact.Addresses.First().ChainId,
-                    Address = contact.Addresses.First().Address
-                });
-
-                //var res = await _contactProvider.UpdateAsync(contactRelation);
-                var contactGrain = _clusterClient.GetGrain<IContactGrain>(contactRelation.Id);
-
-                var dto = ObjectMapper.Map<ContactIndex, ContactGrainDto>(contactRelation);
-                var updateResult = await contactGrain.UpdateContactAsync(userId, dto);
-                if (!updateResult.Success)
-                {
-                    Logger.LogError("Imputation fail, contactId:{id}", contactRelation.Id.ToString());
-                    continue;
-                }
-
-                var result =
-                    await contactGrain.Imputation();
-
-                if (!result.Success)
-                {
-                    Logger.LogError("Imputation fail, contactId:{id}", contactRelation.Id.ToString());
-                    continue;
-                }
-
-                var contactG = _clusterClient.GetGrain<IContactGrain>(contact.Id);
-                var deleteResult = await contactG.DeleteContactAsync(userId);
-                if (deleteResult.Success)
-                {
-                    await _distributedEventBus.PublishAsync(
-                        ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(deleteResult.Data), false, false);
-                }
-                else
-                {
-                    Logger.LogError("delete fail, contactId:{id}", contactRelation.Id.ToString());
-                }
-
-                await _distributedEventBus.PublishAsync(
-                    ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data), false, false);
+                Logger.LogInformation("[contact merge] no contact need merge, {userId}", userId.ToString());
             }
+
+            var contacts = ObjectMapper.Map<List<ContactIndex>, List<ContactDto>>(mergeContacts);
+            // linq group by  uid
+            var contactGroups = contacts.GroupBy(t => t.UserId);
+            foreach (var group in contactGroups)
+            {
+                if (group.Key == userId)
+                {
+                    foreach (var needDeletedContact in group)
+                    {
+                        Logger.LogInformation(
+                            "[contact merge] delete self success,userId:{userId},contactId:{contactId}",
+                            userId.ToString(), needDeletedContact.Id.ToString());
+
+                        await DeleteAsync(needDeletedContact.Id);
+                    }
+
+                    break;
+                }
+
+                var contactUpdate = group.Where(t => !t.Name.IsNullOrWhiteSpace()).OrderBy(t => t.Name)
+                    .FirstOrDefault();
+
+                contactUpdate.CaHolderInfo = await GetHolderInfoAsync(userId);
+                contactUpdate.ImInfo = input.ImInfo;
+                await MergeUpdateAsync(group.Key, contactUpdate);
+
+                var needDeletes = group.Where(t => t.Id != contactUpdate.Id).ToList();
+                foreach (var needDeletedContact in needDeletes)
+                {
+                    await DeleteAsync(needDeletedContact.Id);
+                }
+            }
+
+            // 查询联系人地址是否是自己的，是自己的直接删除
+
+            // 若联系人的address中input中的address的所有联系人合并为1个、删除其它联系人
+            // 记录被删除的联系人
         }
-        // 记录被删除的联系人
+        catch (Exception e)
+        {
+            Logger.LogError($"Merge fail,{JsonConvert.SerializeObject(input)}", e);
+        }
     }
 
-    public Task<ContactImputationDto> GetImputationAsync()
+    public async Task<ContactImputationDto> GetImputationAsync()
     {
-        return Task.FromResult(new ContactImputationDto());
+        var isImputation = await _contactProvider.GetImputationAsync(CurrentUser.GetId());
+        return new ContactImputationDto
+        {
+            IsImputation = isImputation
+        };
     }
 
     public async Task ReadImputationAsync(ReadImputationDto input)
@@ -310,18 +302,19 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException("This address has already been taken in other contacts");
         }
 
-        var imInfo = await GetImUserAsync(address.Address);
-        if (imInfo == null || imInfo.RelationId.IsNullOrWhiteSpace()) return;
-
-        var contactInfo = await _contactProvider.GetContactByRelationIdAsync(userId, imInfo.RelationId);
-        if (contactInfo != null)
-        {
-            throw new UserFriendlyException("This address has already been taken in other contacts");
-        }
+        // var imInfo = await GetImUserAsync(address.Address);
+        // if (imInfo == null || imInfo.RelationId.IsNullOrWhiteSpace()) return;
+        //
+        // var contactInfo = await _contactProvider.GetContactByRelationIdAsync(userId, imInfo.RelationId);
+        // if (contactInfo != null)
+        // {
+        //     throw new UserFriendlyException("This address has already been taken in other contacts");
+        // }
     }
 
     private async Task<ContactDto> GetContactDtoAsync(CreateUpdateContactDto input)
     {
+        //return ObjectMapper.Map<CreateUpdateContactDto, ContactDto>(input);
         var contact = ObjectMapper.Map<CreateUpdateContactDto, ContactDto>(input);
         if (input.Addresses.Count == 0)
         {
@@ -330,29 +323,40 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         var address = input.Addresses.First();
 
-        //contact.ImInfo = await GetImInfoAsync(input.RelationId);
         contact.ImInfo = await GetImUserAsync(address.Address);
         contact.CaHolderInfo = await GetHolderInfoAsync(contact.ImInfo, input.Addresses);
 
-        if (address.ChainName != CommonConstant.ChainName) return contact;
+        if (!address.ChainName.IsNullOrWhiteSpace() && address.ChainName != CommonConstant.ChainName) return contact;
 
-        //get hash has problem
+        var caHash = contact.CaHolderInfo == null ? string.Empty : contact.CaHolderInfo.CaHash;
+
         var guardians =
             await _contactProvider.GetCaHolderInfoAsync(new List<string> { address.Address },
-                contact.CaHolderInfo.CaHash);
+                caHash);
 
         if (guardians?.CaHolderInfo?.Count > 0)
         {
-            var addressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress != address.Address)
-                .Select(t => new { t.CaAddress, t.ChainId });
+            var addressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress == address.Address)
+                .Select(t => new { t.CaAddress, t.ChainId }).FirstOrDefault();
 
-            foreach (var info in addressInfos)
+            if (addressInfos != null && addressInfos.ChainId != address.ChainId)
             {
-                contact.Addresses.Add(new ContactAddressDto()
+                throw new UserFriendlyException("Invalid address");
+            }
+
+            if (contact.ImInfo != null)
+            {
+                var addAddressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress != address.Address)
+                    .Select(t => new { t.CaAddress, t.ChainId });
+
+                foreach (var info in addAddressInfos)
                 {
-                    Address = info.CaAddress,
-                    ChainId = info.ChainId
-                });
+                    contact.Addresses.Add(new ContactAddressDto()
+                    {
+                        Address = info.CaAddress,
+                        ChainId = info.ChainId
+                    });
+                }
             }
         }
 
@@ -459,7 +463,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 {
                     PortkeyId = dto,
                     Name = "Wallet 01"
-                });  
+                });
             }
             else
             {
@@ -467,12 +471,44 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 {
                     PortkeyId = dto,
                     Name = ""
-                });  
+                });
             }
 
             i++;
         }
 
         return result;
+    }
+
+    public async Task<ContactResultDto> MergeUpdateAsync(Guid id, ContactDto contactDto)
+    {
+        var userId = CurrentUser.GetId();
+
+        var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
+        var result =
+            await contactGrain.UpdateContactAsync(userId,
+                ObjectMapper.Map<ContactDto, ContactGrainDto>(contactDto));
+
+        if (!result.Success)
+        {
+            Logger.LogError("Imputation fail, contactId:{id}, message:{message}", id.ToString(), result.Message);
+            return null;
+        }
+
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data), false,
+            false);
+
+        var imputationResult = await contactGrain.Imputation();
+        if (!imputationResult.Success)
+        {
+            Logger.LogError("Imputation fail, contactId:{id}", id.ToString());
+            return null;
+        }
+
+        await _distributedEventBus.PublishAsync(
+            ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(imputationResult.Data), false,
+            false);
+
+        return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(imputationResult.Data);
     }
 }
