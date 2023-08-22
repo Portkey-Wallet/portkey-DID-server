@@ -32,4 +32,5 @@ public class NftInfo
     public long TotalSupply { get; set; }
     public long Supply { get; set; }
     public string TokenContractAddress { get; set; }
+    public long IssueChainId { get; set; }
 }

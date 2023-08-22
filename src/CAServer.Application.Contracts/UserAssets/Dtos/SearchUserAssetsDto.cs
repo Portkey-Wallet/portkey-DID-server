@@ -25,6 +25,10 @@ public class TokenInfoDto
     public string Decimals { get; set; }
     public string BalanceInUsd { get; set; }
     public string TokenContractAddress { get; set; }
+    
+    public long IssueChainId { get; set; }
+    
+    
 }
 
 public class NftInfoDto
@@ -35,4 +39,6 @@ public class NftInfoDto
     public string CollectionName { get; set; }
     public string Balance { get; set; }
     public string TokenContractAddress { get; set; }
+    
+    public long IssueChainId { get; set; }
 }

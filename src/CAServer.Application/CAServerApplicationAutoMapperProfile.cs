@@ -114,6 +114,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<IndexerTokenInfo, Token>()
             .ForMember(t => t.Balance, m => m.MapFrom(f => f.Balance.ToString()))
             .ForMember(t => t.Symbol, m => m.MapFrom(f => f.TokenInfo == null ? null : f.TokenInfo.Symbol))
+            .ForMember(t => t.IssueChainId, m => m.MapFrom(f => f.TokenInfo == null ? 0 : f.TokenInfo.IssueChainId))
             .ForMember(t => t.Decimals, m => m.MapFrom(f => f.TokenInfo == null ? new decimal() : f.TokenInfo.Decimals))
             .ForMember(t => t.TokenContractAddress,
                 m => m.MapFrom(f =>
@@ -131,6 +132,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<IndexerNftInfo, NftItem>()
             .ForMember(t => t.Balance, m => m.MapFrom(f => f.Balance.ToString()))
+            .ForMember(t => t.IssueChainId, m => m.MapFrom(f => f.NftInfo == null ? 0 : f.NftInfo.IssueChainId))
             .ForMember(t => t.Symbol, m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.Symbol))
             .ForMember(t => t.Alias, m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.TokenName))
             .ForMember(t => t.TokenContractAddress,

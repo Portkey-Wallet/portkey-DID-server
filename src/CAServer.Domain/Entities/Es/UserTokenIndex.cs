@@ -19,4 +19,7 @@ public class Token
     [Keyword] public string Address { get; set; }
     [Keyword] public string Symbol { get; set; }
     public int Decimals { get; set; }
+    public long IssueChainId { get; set; }
+    
+    
 }
