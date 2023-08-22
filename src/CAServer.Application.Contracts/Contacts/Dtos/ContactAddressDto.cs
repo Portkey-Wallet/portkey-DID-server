@@ -9,4 +9,6 @@ public class ContactAddressDto
 
     public string ChainName { get; set; } = CommonConstant.ChainName;
     [Required] public string Address { get; set; }
+    
+    public string Image { get; set; }
 }

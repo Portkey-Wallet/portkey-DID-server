@@ -7,7 +7,8 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
-using Nest;
+using CAServer.Options;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -24,13 +25,16 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IContactProvider _contactProvider;
+    private readonly VariablesOptions _variablesOptions;
 
     public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
-        IContactProvider contactProvider)
+        IContactProvider contactProvider,
+        IOptions<VariablesOptions> variablesOptions)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _contactProvider = contactProvider;
+        _variablesOptions = variablesOptions.Value;
     }
 
     public async Task<ContactResultDto> CreateAsync(CreateUpdateContactDto input)
@@ -117,7 +121,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
     {
-        input.UserId = CurrentUser.GetId();
         var (totalCount, contactList) = await _contactProvider.GetListAsync(input);
         
         var pagedResultDto = new PagedResultDto<ContactResultDto>
@@ -125,6 +128,17 @@ public class ContactAppService : CAServerAppService, IContactAppService
             TotalCount = totalCount,
             Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
         };
+        
+        var imageMap = _variablesOptions.ImageMap;
+        
+        foreach (var contactProfileDto in pagedResultDto.Items)
+        {
+            foreach (var contactAddressDto in contactProfileDto.Addresses)
+            {
+                contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
+
+            }
+        }
         
         return pagedResultDto;
     }
