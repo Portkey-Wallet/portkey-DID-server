@@ -211,6 +211,24 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
                 contactUpdate.CaHolderInfo = await GetHolderInfoAsync(userId);
                 contactUpdate.ImInfo = input.ImInfo;
+                var guardianDto =
+                    await _contactProvider.GetCaHolderInfoAsync(new List<string>(), contactUpdate.CaHolderInfo.CaHash);
+                var caAddresses = guardianDto?.CaHolderInfo?.Select(t => new { t.CaAddress, t.ChainId }).ToList();
+
+                if (caAddresses != null && caAddresses.Count > 0)
+                {
+                    contactUpdate.Addresses.Clear();
+                    foreach (var caAddress in caAddresses)
+                    {
+                        contactUpdate.Addresses.Add(new ContactAddressDto()
+                        {
+                            Address = caAddress.CaAddress,
+                            ChainId = caAddress.ChainId,
+                            ChainName = CommonConstant.ChainName
+                        });
+                    }
+                }
+ 
                 await MergeUpdateAsync(group.Key, contactUpdate);
 
                 var needDeletes = group.Where(t => t.Id != contactUpdate.Id).ToList();
