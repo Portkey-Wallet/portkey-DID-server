@@ -16,6 +16,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
+using CAServer.Options;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -35,16 +37,19 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ImServerOptions _imServerOptions;
     private readonly IHttpClientService _httpClientService;
+    private readonly VariablesOptions _variablesOptions;
 
     public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         IHttpContextAccessor httpContextAccessor,
         IContactProvider contactProvider,
         IOptionsSnapshot<ImServerOptions> imServerOptions,
-        IHttpClientService httpClientService)
+        IHttpClientService httpClientService,
+        IOptions<VariablesOptions> variablesOptions)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _contactProvider = contactProvider;
+        _variablesOptions = variablesOptions.Value;
         _httpContextAccessor = httpContextAccessor;
         _imServerOptions = imServerOptions.Value;
         _httpClientService = httpClientService;
@@ -146,7 +151,18 @@ public class ContactAppService : CAServerAppService, IContactAppService
             TotalCount = totalCount,
             Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
         };
+        
+        var imageMap = _variablesOptions.ImageMap;
+        
+        foreach (var contactProfileDto in pagedResultDto.Items)
+        {
+            foreach (var contactAddressDto in contactProfileDto.Addresses)
+            {
+                contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
 
+            }
+        }
+        
         return pagedResultDto;
     }
 
