@@ -106,19 +106,23 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     public async Task<Tuple<long, List<ContactIndex>>> GetListAsync(ContactGetListDto input)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Terms(t => t.Field("userId").Terms(input.UserId)));
-        mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord))
-                           || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
+        mustQuery.Add(q => q.Term(t => t.Field("userId").Value(input.UserId)));
 
+        if (!input.KeyWord.IsNullOrWhiteSpace())
+        {
+            mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord))
+                               || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
+        }
+        
         if (input.IsAbleChat)
         {
             mustQuery.Add(q => q.Exists(t => t.Field("imInfo.relationId")));
         }
 
-        if (input.ModificationTime != 0)
+        if (input.ModificationTime > 0)
         {
             mustQuery.Add(q =>
-                q.Range(r => r.Field(c => c.ModificationTime).GreaterThanOrEquals(input.ModificationTime)));
+                q.LongRange(r => r.Field(c => c.ModificationTime).GreaterThanOrEquals(input.ModificationTime)));
         }
 
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
@@ -233,6 +237,7 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         {
             return new List<CAHolderIndex>();
         }
+
         return holders.Item2;
     }
 }
