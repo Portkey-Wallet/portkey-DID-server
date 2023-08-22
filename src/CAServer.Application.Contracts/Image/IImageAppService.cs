@@ -6,5 +6,5 @@ namespace CAServer.Image;
 public interface IImageAppService
 {
     
-    Task<string> GetThumbnailAsync(GetThumbnailInput input);
+    Task<ThumbnailResponseDto> GetThumbnailAsync(GetThumbnailInput input);
 }
