@@ -421,9 +421,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     private async Task<CaHolderInfo> GetHolderInfoAsync(ImInfo imInfo, List<ContactAddressDto> addresses)
     {
-        if (imInfo != null && imInfo.PortKeyId != Guid.Empty)
+        if (imInfo != null && imInfo.PortkeyId != Guid.Empty)
         {
-            return await GetHolderInfoAsync(imInfo.PortKeyId);
+            return await GetHolderInfoAsync(imInfo.PortkeyId);
         }
 
         if (addresses == null || addresses.Count == 0) return null;
@@ -519,11 +519,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             result.Add(new GetNamesResultDto()
             {
-                PortkeyId = Guid.Parse(name.ImInfo.PortKeyId),
+                PortkeyId = Guid.Parse(name.ImInfo.PortkeyId),
                 Name = name.Name
             });
 
-            input.Remove(Guid.Parse(name.ImInfo.PortKeyId));
+            input.Remove(Guid.Parse(name.ImInfo.PortkeyId));
         }
 
         var names2 = contas.Where(t => t.Name.IsNullOrWhiteSpace() && t.CaHolderInfo != null);
