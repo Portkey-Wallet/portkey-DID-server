@@ -80,7 +80,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     {
         var userId = CurrentUser.GetId();
 
-        await CheckAddressAsync(userId, input.Addresses, input.RelationId);
+        await CheckAddressAsync(userId, input.Addresses, input.RelationId, id);
         var contactDto = await GetContactDtoAsync(input);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
         var result =
@@ -219,7 +219,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     await DeleteAsync(needDeletedContact.Id);
                 }
             }
-            
+
             // record deleted contacts
         }
         catch (Exception e)
@@ -266,8 +266,14 @@ public class ContactAppService : CAServerAppService, IContactAppService
     }
 
     //need to optimize
-    private async Task CheckAddressAsync(Guid userId, List<ContactAddressDto> addresses, string relationId)
+    private async Task CheckAddressAsync(Guid userId, List<ContactAddressDto> addresses, string relationId,
+        Guid? contactId = null)
     {
+        if (!relationId.IsNullOrWhiteSpace() && contactId.HasValue && contactId.Value != Guid.Empty)
+        {
+            return;
+        }
+
         if (!relationId.IsNullOrWhiteSpace())
         {
             var contactRelation = await _contactProvider.GetContactByRelationIdAsync(userId, relationId);
@@ -492,7 +498,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 PortkeyId = holder.UserId,
                 Name = holder.NickName
             });
-            
+
             input.Remove(holder.UserId);
         }
 
