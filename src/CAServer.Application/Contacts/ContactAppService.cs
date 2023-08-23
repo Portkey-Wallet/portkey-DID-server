@@ -623,7 +623,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             false);
 
         Logger.LogDebug("[contact merge update] merge update end, data:{data}",
-            JsonConvert.SerializeObject(contactDto));
+            JsonConvert.SerializeObject(imputationResult.Data));
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(imputationResult.Data);
     }
 }

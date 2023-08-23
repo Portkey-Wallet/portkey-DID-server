@@ -120,6 +120,11 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
             State.Addresses = _objectMapper.Map<List<ContactAddressDto>, List<ContactAddress>>(contactDto.Addresses);
         }
 
+        if (State.CaHolderInfo == null && contactDto.CaHolderInfo != null)
+        {
+            State.CaHolderInfo = contactDto.CaHolderInfo;
+        }
+        
         if (State.ImInfo == null && contactDto.ImInfo != null)
         {
             State.ImInfo = contactDto.ImInfo;
