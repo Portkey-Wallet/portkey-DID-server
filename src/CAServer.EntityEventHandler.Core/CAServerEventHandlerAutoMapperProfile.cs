@@ -20,8 +20,12 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
     public CAServerEventHandlerAutoMapperProfile()
     {
         CreateMap<CAServer.Entities.Es.ImInfo, CAServer.Contacts.ImInfo>().ReverseMap();
-        CreateMap<ContactIndex, ContactCreateEto>().ReverseMap();
-        CreateMap<ContactUpdateEto, ContactIndex>();
+        CreateMap<ContactIndex, ContactCreateEto>();
+        CreateMap<ContactCreateEto, ContactIndex>()
+            .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty));
+        CreateMap<ContactUpdateEto, ContactIndex>()
+            .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty));
+        CreateMap<ContactIndex, ContactUpdateEto>();
         CreateMap<ContactAddress, ContactAddressEto>().ReverseMap();
         CreateMap<CreateHolderEto, CreateHolderResultGrainDto>();
         CreateMap<RegisterGrainDto, AccountRegisterIndex>();
