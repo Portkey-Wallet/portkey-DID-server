@@ -264,6 +264,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     await DeleteAsync(needDeletedContact.Id);
                 }
             }
+
             Logger.LogDebug("[contact merge] out merge, params: {data}", JsonConvert.SerializeObject(input));
             // record deleted contacts
         }
@@ -298,6 +299,19 @@ public class ContactAppService : CAServerAppService, IContactAppService
     public async Task<ContactResultDto> GetContactAsync(Guid contactUserId)
     {
         var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), contactUserId);
+        if (contact != null)
+        {
+            return ObjectMapper.Map<ContactIndex, ContactResultDto>(contact);
+        }
+        
+        var holderInfo = await GetHolderInfoAsync(contactUserId);
+        if (holderInfo != null)
+        {
+            contact = new ContactIndex()
+            {
+                Name = holderInfo.WalletName
+            };
+        }
         return ObjectMapper.Map<ContactIndex, ContactResultDto>(contact);
     }
 
@@ -578,7 +592,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<ContactResultDto> MergeUpdateAsync(Guid id, ContactDto contactDto)
     {
-        Logger.LogDebug("[contact merge update] merge update begin, data:{data}", JsonConvert.SerializeObject(contactDto));
+        Logger.LogDebug("[contact merge update] merge update begin, data:{data}",
+            JsonConvert.SerializeObject(contactDto));
         var userId = CurrentUser.GetId();
 
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
@@ -592,7 +607,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 id.ToString(), result.Message);
             return null;
         }
-        
+
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data), false,
             false);
 
@@ -607,7 +622,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
             ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(imputationResult.Data), false,
             false);
 
-        Logger.LogDebug("[contact merge update] merge update end, data:{data}", JsonConvert.SerializeObject(contactDto));
+        Logger.LogDebug("[contact merge update] merge update end, data:{data}",
+            JsonConvert.SerializeObject(contactDto));
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(imputationResult.Data);
     }
 }
