@@ -185,7 +185,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             //         await DeleteAsync(contact.Id);
             //     }
             // }
-
+            Logger.LogDebug("[contact merge] in merge, params: {data}", JsonConvert.SerializeObject(input));
             var addresses = input.Addresses.Select(t => t.Address).ToList();
             //merge
             var rawContacts = await _contactProvider.GetContactByAddressesAsync(Guid.Empty, addresses);
@@ -196,6 +196,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 Logger.LogInformation("[contact merge] no contact need merge, {userId}", userId.ToString());
             }
 
+            Logger.LogDebug("[contact merge] need merge data: {data}", JsonConvert.SerializeObject(mergeContacts));
             var contacts = ObjectMapper.Map<List<ContactIndex>, List<ContactDto>>(mergeContacts);
             // linq group by  uid
             var contactGroups = contacts.GroupBy(t => t.UserId);
@@ -225,7 +226,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
                 if (contactUpdate.CaHolderInfo == null)
                 {
-                    Logger.LogError("get holder error. userId:{userId}", userId.ToString());
+                    Logger.LogError("[contact merge] get holder error. userId:{userId}", userId.ToString());
                     break;
                 }
 
@@ -247,15 +248,23 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     }
                 }
 
+                Logger.LogInformation(
+                    "[contact merge] begin merge ,userId:{userId},contactId:{contactId}",
+                    userId.ToString(), contactUpdate.Id.ToString());
+
                 await MergeUpdateAsync(contactUpdate.Id, contactUpdate);
 
                 var needDeletes = group.Where(t => t.Id != contactUpdate.Id).ToList();
                 foreach (var needDeletedContact in needDeletes)
                 {
+                    Logger.LogInformation(
+                        "[contact merge] needDeletedContact delete success,userId:{userId},contactId:{contactId}",
+                        userId.ToString(), needDeletedContact.Id.ToString());
+
                     await DeleteAsync(needDeletedContact.Id);
                 }
             }
-
+            Logger.LogDebug("[contact merge] out merge, params: {data}", JsonConvert.SerializeObject(input));
             // record deleted contacts
         }
         catch (Exception e)
@@ -568,6 +577,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<ContactResultDto> MergeUpdateAsync(Guid id, ContactDto contactDto)
     {
+        Logger.LogDebug("[contact merge update] merge update begin, data:{data}", JsonConvert.SerializeObject(contactDto));
         var userId = CurrentUser.GetId();
 
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
@@ -577,17 +587,18 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         if (!result.Success)
         {
-            Logger.LogError("Imputation fail, contactId:{id}, message:{message}", id.ToString(), result.Message);
+            Logger.LogError("[contact merge update] update contact fail, contactId:{id}, message:{message}",
+                id.ToString(), result.Message);
             return null;
         }
-
+        
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data), false,
             false);
 
         var imputationResult = await contactGrain.Imputation();
         if (!imputationResult.Success)
         {
-            Logger.LogError("Imputation fail, contactId:{id}", id.ToString());
+            Logger.LogError("[contact merge update] imputation fail, contactId:{id}", id.ToString());
             return null;
         }
 
@@ -595,6 +606,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(imputationResult.Data), false,
             false);
 
+        Logger.LogDebug("[contact merge update] merge update end, data:{data}", JsonConvert.SerializeObject(contactDto));
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(imputationResult.Data);
     }
 }
