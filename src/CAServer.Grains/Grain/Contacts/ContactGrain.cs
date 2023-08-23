@@ -119,6 +119,11 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         {
             State.Addresses = _objectMapper.Map<List<ContactAddressDto>, List<ContactAddress>>(contactDto.Addresses);
         }
+
+        if (State.ImInfo == null && contactDto.ImInfo != null)
+        {
+            State.ImInfo = contactDto.ImInfo;
+        }
         
         SetIndex();
         await WriteStateAsync();
