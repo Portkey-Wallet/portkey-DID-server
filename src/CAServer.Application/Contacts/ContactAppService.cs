@@ -151,18 +151,17 @@ public class ContactAppService : CAServerAppService, IContactAppService
             TotalCount = totalCount,
             Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
         };
-        
+
         var imageMap = _variablesOptions.ImageMap;
-        
+
         foreach (var contactProfileDto in pagedResultDto.Items)
         {
             foreach (var contactAddressDto in contactProfileDto.Addresses)
             {
                 contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
-
             }
         }
-        
+
         return pagedResultDto;
     }
 
@@ -230,9 +229,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
                 if (contactUpdate.CaHolderInfo == null)
                 {
-                    Logger.LogError("get holder error. userId:{userId}",userId.ToString());
+                    Logger.LogError("get holder error. userId:{userId}", userId.ToString());
                     break;
                 }
+
                 var guardianDto =
                     await _contactProvider.GetCaHolderInfoAsync(new List<string>(), contactUpdate.CaHolderInfo.CaHash);
                 var caAddresses = guardianDto?.CaHolderInfo?.Select(t => new { t.CaAddress, t.ChainId }).ToList();
@@ -250,7 +250,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                         });
                     }
                 }
- 
+
                 await MergeUpdateAsync(contactUpdate.Id, contactUpdate);
 
                 var needDeletes = group.Where(t => t.Id != contactUpdate.Id).ToList();
@@ -372,6 +372,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             if (userInfo != null)
             {
                 contact.ImInfo = userInfo;
+                contact.CaHolderInfo = await GetHolderInfoAsync(userInfo.PortkeyId);
             }
 
             return contact;
