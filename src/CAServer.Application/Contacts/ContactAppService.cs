@@ -303,7 +303,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             return ObjectMapper.Map<ContactIndex, ContactResultDto>(contact);
         }
-        
+
         var holderInfo = await GetHolderInfoAsync(contactUserId);
         if (holderInfo != null)
         {
@@ -312,6 +312,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 Name = holderInfo.WalletName
             };
         }
+
         return ObjectMapper.Map<ContactIndex, ContactResultDto>(contact);
     }
 
@@ -397,6 +398,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
             {
                 contact.ImInfo = userInfo;
                 contact.CaHolderInfo = await GetHolderInfoAsync(userInfo.PortkeyId);
+
+                if (contact.CaHolderInfo == null) return contact;
+                
+                contact.Addresses = await GetAddressesAsync(contact.CaHolderInfo.CaHash);
             }
 
             return contact;
@@ -442,6 +447,25 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         return contact;
+    }
+
+    private async Task<List<ContactAddressDto>> GetAddressesAsync(string caHash)
+    {
+        var addresses = new List<ContactAddressDto>();
+        var guardians =
+            await _contactProvider.GetCaHolderInfoAsync(new List<string>(), caHash);
+
+
+        guardians?.CaHolderInfo?.Select(t => new { t.CaAddress, t.ChainId })?.ToList().ForEach(t =>
+        {
+            addresses.Add(new ContactAddressDto()
+            {
+                Address = t.CaAddress,
+                ChainId = t.ChainId
+            });
+        });
+
+        return addresses;
     }
 
     private async Task<CaHolderInfo> GetHolderInfoAsync(ImInfo imInfo, List<ContactAddressDto> addresses)

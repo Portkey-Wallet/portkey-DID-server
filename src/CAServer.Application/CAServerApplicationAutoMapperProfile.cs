@@ -70,7 +70,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactAddressDto, ContactAddress>().ReverseMap();
         CreateMap<ContactAddressDto, ContactAddressEto>();
         CreateMap<CreateUpdateContactDto, ContactGrainDto>();
-        CreateMap<ContactGrainDto, ContactResultDto>();
+        CreateMap<ContactGrainDto, ContactResultDto>()
+            .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty));
+
         CreateMap<ContactDto, ContactCreateEto>().ForMember(c => c.ModificationTime,
                 d => d.MapFrom(s => TimeHelper.GetDateTimeFromTimeStamp(s.ModificationTime)))
             .ForMember(c => c.Id, d => d.Condition(src => src.Id != Guid.Empty));
@@ -358,7 +360,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<VerifierServer, GetVerifierServerResponse>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
         CreateMap<ContactIndex, ContactResultDto>()
-            .ForMember(t => t.ModificationTime, m => m.MapFrom(f => TimeHelper.GetTimeStampFromDateTime(f.ModificationTime)))
+            .ForMember(t => t.ModificationTime,
+                m => m.MapFrom(f => TimeHelper.GetTimeStampFromDateTime(f.ModificationTime)))
+            .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty))
             .ReverseMap();
         CreateMap<CAHolderIndex, CAHolderResultDto>();
         CreateMap<ContactAddress, ContactAddressDto>();
