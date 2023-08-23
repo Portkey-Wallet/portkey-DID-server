@@ -71,12 +71,15 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactAddressDto, ContactAddressEto>();
         CreateMap<CreateUpdateContactDto, ContactGrainDto>();
         CreateMap<ContactGrainDto, ContactResultDto>();
-        CreateMap<ContactDto, ContactCreateEto>()
+        CreateMap<ContactDto, ContactCreateEto>().ForMember(c => c.ModificationTime,
+                d => d.MapFrom(s => TimeHelper.GetDateTimeFromTimeStamp(s.ModificationTime)))
             .ForMember(c => c.Id, d => d.Condition(src => src.Id != Guid.Empty));
 
-        CreateMap<ContactDto, ContactUpdateEto>();
+        CreateMap<ContactDto, ContactUpdateEto>().ForMember(c => c.ModificationTime,
+            d => d.MapFrom(s => TimeHelper.GetDateTimeFromTimeStamp(s.ModificationTime)));
 
-        CreateMap<ContactIndex, ContactDto>();
+        CreateMap<ContactIndex, ContactDto>().ForMember(c => c.ModificationTime,
+            d => d.MapFrom(s => new DateTimeOffset(s.ModificationTime).ToUnixTimeMilliseconds()));
         CreateMap<Entities.Es.ContactAddress, ContactAddressDto>().ReverseMap();
 
         CreateMap<HubRequestContextDto, HubRequestContext>();
@@ -354,7 +357,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
         CreateMap<VerifierServer, GetVerifierServerResponse>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
-        CreateMap<ContactIndex, ContactResultDto>().ReverseMap();
+        CreateMap<ContactIndex, ContactResultDto>()
+            .ForMember(t => t.ModificationTime, m => m.MapFrom(f => TimeHelper.GetTimeStampFromDateTime(f.ModificationTime)))
+            .ReverseMap();
         CreateMap<CAHolderIndex, CAHolderResultDto>();
         CreateMap<ContactAddress, ContactAddressDto>();
         CreateMap<CreateUpdateContactDto, ContactDto>();

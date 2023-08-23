@@ -18,7 +18,7 @@ public class ContactIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public bool IsDeleted { get; set; } = true;
     [Keyword] public bool IsImputation { get; set; }
     [Keyword] public DateTime CreateTime { get; set; }
-    [Keyword] public long ModificationTime { get; set; }
+    [Keyword] public DateTime ModificationTime { get; set; }
 }
 
 public class ContactAddress
