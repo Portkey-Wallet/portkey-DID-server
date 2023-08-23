@@ -329,6 +329,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         // check self
         var holder = await _contactProvider.GetCaHolderAsync(userId, string.Empty);
+        if (holder == null)
+        {
+            throw new UserFriendlyException("Holder not found");
+        }
         var guardianDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, holder.CaHash);
         if (guardianDto.CaHolderInfo.Select(t => t.CaAddress).ToList().Contains(address.Address))
         {
