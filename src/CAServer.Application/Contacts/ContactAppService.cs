@@ -382,6 +382,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             if (userInfo != null)
             {
                 contact.ImInfo = userInfo;
+                contact.CaHolderInfo = await GetHolderInfoAsync(userInfo.PortkeyId);
             }
 
             return contact;
