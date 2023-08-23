@@ -14,10 +14,7 @@ using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
-using CAServer.Options;
-using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -143,26 +140,24 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
     {
-        input.UserId = CurrentUser.GetId();
-        var (totalCount, contactList) = await _contactProvider.GetListAsync(input);
+        var (totalCount, contactList) = await _contactProvider.GetListAsync(CurrentUser.GetId(), input);
 
         var pagedResultDto = new PagedResultDto<ContactResultDto>
         {
             TotalCount = totalCount,
             Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
         };
-        
+
         var imageMap = _variablesOptions.ImageMap;
-        
+
         foreach (var contactProfileDto in pagedResultDto.Items)
         {
             foreach (var contactAddressDto in contactProfileDto.Addresses)
             {
                 contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
-
             }
         }
-        
+
         return pagedResultDto;
     }
 
@@ -230,9 +225,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
                 if (contactUpdate.CaHolderInfo == null)
                 {
-                    Logger.LogError("get holder error. userId:{userId}",userId.ToString());
+                    Logger.LogError("get holder error. userId:{userId}", userId.ToString());
                     break;
                 }
+
                 var guardianDto =
                     await _contactProvider.GetCaHolderInfoAsync(new List<string>(), contactUpdate.CaHolderInfo.CaHash);
                 var caAddresses = guardianDto?.CaHolderInfo?.Select(t => new { t.CaAddress, t.ChainId }).ToList();
@@ -250,7 +246,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                         });
                     }
                 }
- 
+
                 await MergeUpdateAsync(contactUpdate.Id, contactUpdate);
 
                 var needDeletes = group.Where(t => t.Id != contactUpdate.Id).ToList();
@@ -333,6 +329,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             throw new UserFriendlyException("Holder not found");
         }
+
         var guardianDto = await _contactProvider.GetCaHolderInfoAsync(new List<string>() { }, holder.CaHash);
         if (guardianDto.CaHolderInfo.Select(t => t.CaAddress).ToList().Contains(address.Address))
         {

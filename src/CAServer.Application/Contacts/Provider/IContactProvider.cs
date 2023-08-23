@@ -7,6 +7,7 @@ using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
+using CAServer.Search;
 using GraphQL;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -26,7 +27,7 @@ public interface IContactProvider
     Task<GuardiansDto> GetCaHolderInfoByAddressAsync(List<string> caAddresses, string chainId, int skipCount = 0,
         int maxResultCount = 10);
 
-    Task<Tuple<long, List<ContactIndex>>> GetListAsync(ContactGetListDto input);
+    Task<Tuple<long, List<ContactIndex>>> GetListAsync(Guid userId, ContactGetListDto input);
     Task<ContactIndex> GetContactByAddressAsync(Guid userId, string address);
     Task<ContactIndex> GetContactByRelationIdAsync(Guid userId, string relationId);
 
@@ -103,35 +104,52 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         });
     }
 
-    public async Task<Tuple<long, List<ContactIndex>>> GetListAsync(ContactGetListDto input)
+    public async Task<Tuple<long, List<ContactIndex>>> GetListAsync(Guid userId, ContactGetListDto input)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>();
-        mustQuery.Add(q => q.Term(t => t.Field("userId").Value(input.UserId)));
-
-        if (!input.KeyWord.IsNullOrWhiteSpace())
+        Func<SortDescriptor<ContactIndex>, IPromise<IList<ISort>>> sort = null;
+        if (!string.IsNullOrEmpty(input.Sort))
         {
-            mustQuery.Add(q => q.Terms(t => t.Field("addresses.address").Terms(input.KeyWord))
-                               || q.Wildcard(i => i.Field(f => f.Name).Value($"*{input.KeyWord}*")));
-        }
-        
-        if (input.IsAbleChat)
-        {
-            mustQuery.Add(q => q.Exists(t => t.Field("imInfo.relationId")));
+            var sortList = ConvertSortOrder(input.Sort);
+            var sortDescriptor = new SortDescriptor<ContactIndex>();
+            sortDescriptor = sortList.Aggregate(sortDescriptor,
+                (current, sortType) => current.Field(new Field(sortType.SortField), sortType.SortOrder));
+            sort = s => sortDescriptor;
         }
 
-        if (input.ModificationTime > 0)
+        var filter = input.Filter.IsNullOrWhiteSpace()
+            ? $"userId:{userId.ToString()}"
+            : $"{input.Filter} && userId:{userId.ToString()}";
+
+        return await _contactRepository.GetListByLucenceAsync(filter, sort,
+            input.MaxResultCount, input.SkipCount);
+    }
+
+    private static IEnumerable<SortType> ConvertSortOrder(string sort)
+    {
+        var sortList = new List<SortType>();
+        foreach (var sortOrder in sort.Split(","))
         {
-            mustQuery.Add(q =>
-                q.LongRange(r => r.Field(c => c.ModificationTime).GreaterThanOrEquals(input.ModificationTime)));
+            var array = sortOrder.Split(" ");
+            var order = SortOrder.Ascending;
+            if (string.Equals(array.Last(), "asc", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(array.Last(), "ascending", StringComparison.OrdinalIgnoreCase))
+            {
+                order = SortOrder.Ascending;
+            }
+            else if (string.Equals(array.Last(), "desc", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(array.Last(), "descending", StringComparison.OrdinalIgnoreCase))
+            {
+                order = SortOrder.Descending;
+            }
+
+            sortList.Add(new SortType
+            {
+                SortField = array.First(),
+                SortOrder = order
+            });
         }
 
-        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-
-        IPromise<IList<ISort>> Sort(SortDescriptor<ContactIndex> s) => s.Ascending(a => a.Name);
-
-        return
-            await _contactRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: input.MaxResultCount,
-                skip: input.SkipCount);
+        return sortList;
     }
 
     public async Task<ContactIndex> GetContactByAddressAsync(Guid userId, string address)
