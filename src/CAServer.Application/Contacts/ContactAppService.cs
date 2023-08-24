@@ -75,7 +75,15 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         // follow
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactCreateEto>(result.Data));
-        return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+        var contactResultDto = ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+        var imageMap = _variablesOptions.ImageMap;
+
+        foreach (var contactAddressDto in contactResultDto.Addresses)
+        {
+            contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
+        }
+
+        return contactResultDto;
     }
 
     public async Task<ContactResultDto> UpdateAsync(Guid id, CreateUpdateContactDto input)
@@ -121,7 +129,17 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
-        return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+        // return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+
+        var contactResultDto = ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
+        var imageMap = _variablesOptions.ImageMap;
+
+        foreach (var contactAddressDto in contactResultDto.Addresses)
+        {
+            contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
+        }
+
+        return contactResultDto;
     }
 
     public async Task DeleteAsync(Guid id)
