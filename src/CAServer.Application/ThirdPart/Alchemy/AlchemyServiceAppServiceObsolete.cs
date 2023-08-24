@@ -110,7 +110,7 @@ public partial class AlchemyServiceAppService
     {
         return await _orderQuoteCache.GetOrAddAsync(
             key,
-            async () => (await _alchemyProvider.QueryAlchemyOrderQuoteList(input)).Data,
+            async () => (await _alchemyProvider.QueryAlchemyOrderQuote(input)).Data,
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.OrderQuoteExpirationMinutes)

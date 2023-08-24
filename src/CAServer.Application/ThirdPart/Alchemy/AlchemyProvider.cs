@@ -17,7 +17,7 @@ public interface IAlchemyProvider
     Task<AlchemyFiatListResponseDto> GetAlchemyFiatList(GetAlchemyFiatListDto request);
     Task<QueryAlchemyOrderInfoResponseDto> GetAlchemyOrder(QueryAlchemyOrderDto request);
     Task<AlchemyCryptoListResponseDto> GetAlchemyCryptoList(GetAlchemyCryptoListDto request);
-    Task<AlchemyOrderQuoteResponseDto> QueryAlchemyOrderQuoteList(GetAlchemyOrderQuoteDto request);
+    Task<AlchemyOrderQuoteResponseDto> QueryAlchemyOrderQuote(GetAlchemyOrderQuoteDto request);
 
     Task<string> HttpPost2AlchemyAsync(string path, string inputStr);
 }
@@ -92,7 +92,7 @@ public class AlchemyProvider : AbstractThirdPartyProvider, IAlchemyProvider
             header: GetAlchemyRequestHeader());
     }
 
-    public async Task<AlchemyOrderQuoteResponseDto> QueryAlchemyOrderQuoteList(GetAlchemyOrderQuoteDto request)
+    public async Task<AlchemyOrderQuoteResponseDto> QueryAlchemyOrderQuote(GetAlchemyOrderQuoteDto request)
     {
         return await Invoke<AlchemyOrderQuoteResponseDto>(_alchemyOptions.BaseUrl, AlchemyApi.QueryPrice,
             body: JsonConvert.SerializeObject(request, JsonSettings),

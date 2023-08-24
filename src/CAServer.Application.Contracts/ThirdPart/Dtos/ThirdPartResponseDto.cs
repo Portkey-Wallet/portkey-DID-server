@@ -12,6 +12,10 @@ public class QueryPriceResponseDto
     public string NetworkFee { get; set; }
     public string TotalFee { get; set; }
     public string PaymentCode { get; set; }
+    
+    public string LimitCurrency { get; set; }
+    public string MaxAmount { get; set; }
+    public string MinAmount { get; set; }
 }
 
 public class QueryCryptoResponseDto

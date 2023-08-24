@@ -29,11 +29,13 @@ public abstract class AbstractThirdPartyProvider : ISingletonDependency
         _logger = logger;
     }
 
-    public async Task<T> Invoke<T>(string domain, ApiInfo apiInfo, Dictionary<string, string> param = null,
+    public async Task<T> Invoke<T>(string domain, ApiInfo apiInfo, 
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
         string body = null,
         Dictionary<string, string> header = null, JsonSerializerSettings settings = null)
     {
-        var resp = await Invoke(domain, apiInfo, param, body, header);
+        var resp = await Invoke(domain, apiInfo, pathParams, param, body, header);
         try
         {
             return JsonConvert.DeserializeObject<T>(resp, settings);
@@ -44,12 +46,14 @@ public abstract class AbstractThirdPartyProvider : ISingletonDependency
         }
     }
 
-    public async Task<string> Invoke(string domain, ApiInfo apiInfo, Dictionary<string, string> param = null,
+    public async Task<string> Invoke(string domain, ApiInfo apiInfo,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
         string body = null,
         Dictionary<string, string> header = null)
     {
         // url params
-        var fullUrl = domain + apiInfo.Path;
+        var fullUrl = domain + apiInfo.PathParam(pathParams).Path;
         var builder = new UriBuilder(fullUrl);
         var query = HttpUtility.ParseQueryString(builder.Query);
         foreach (var item in param ?? new Dictionary<string, string>())
@@ -97,7 +101,8 @@ public class ApiInfo
 
     public ApiInfo PathParam(Dictionary<string, string> pathParams)
     {
-        var newPath = pathParams.Aggregate(Path, (current, param) => current.Replace($"{{{param.Key}}}", param.Value));
+        var newPath = pathParams.IsNullOrEmpty() ? Path 
+            : pathParams.Aggregate(Path, (current, param) => current.Replace($"{{{param.Key}}}", param.Value));
         return new ApiInfo(Method, newPath);
     }
 }

@@ -141,12 +141,12 @@ public class TransakProvider : AbstractThirdPartyProvider
 
     public async Task<TransakOrderDto> GetOrderById(string orderId)
     {
-        var resp = await Invoke<QueryTransakOrderByIdResult>(_transakOptions.BaseUrl,
-            TransakApi.GetOrderById.PathParam(new Dictionary<string, string> { ["orderId"] = orderId }),
+        var resp = await Invoke<QueryTransakOrderByIdResult>(_transakOptions.BaseUrl, TransakApi.GetOrderById,
+            pathParams:new Dictionary<string, string> { ["orderId"] = orderId },
             header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.AppSecret },
             settings: JsonSettings
         );
-
+        
         return resp?.Data;
     }
 }

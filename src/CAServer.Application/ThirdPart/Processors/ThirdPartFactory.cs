@@ -9,20 +9,20 @@ namespace CAServer.ThirdPart.Processors;
 
 public class ThirdPartFactory : IThirdPartFactory, ISingletonDependency
 {
-    private readonly IEnumerable<IOrderProcessor> _processors;
-    private readonly IEnumerable<IThirdPartAppService> _thirdPartAppServices;
+    private readonly Dictionary<string, IOrderProcessor> _processors;
+    private readonly Dictionary<string, IThirdPartAppService> _thirdPartAppServices;
 
-    public ThirdPartFactory(IEnumerable<IOrderProcessor> processors)
+    public ThirdPartFactory(IEnumerable<IOrderProcessor> processors, IEnumerable<IThirdPartAppService> thirdPartAppServices)
     {
-        _processors = processors;
+        _processors = processors.ToDictionary(p => p.MerchantName().ToLower(), processor => processor);
+        _thirdPartAppServices = thirdPartAppServices.ToDictionary(s => s.MerchantName().ToLower(), s => s);
     }
 
     public IOrderProcessor GetProcessor(string merchantName)
     {
         if (ThirdPartHelper.MerchantNameExist(merchantName) == MerchantNameType.Unknown)
             throw new UserFriendlyException($"not support merchant {merchantName} !");
-        var processor = _processors.FirstOrDefault(p
-            => String.Equals(p.MerchantName(), merchantName, StringComparison.CurrentCultureIgnoreCase), null);
+        var processor = _processors.GetValueOrDefault(merchantName.ToLower(), null);
         if (processor == null) throw new UserFriendlyException($"not support merchant {merchantName}");
         return processor;
     }
@@ -31,8 +31,7 @@ public class ThirdPartFactory : IThirdPartFactory, ISingletonDependency
     {
         if (ThirdPartHelper.MerchantNameExist(merchantName) == MerchantNameType.Unknown)
             throw new UserFriendlyException($"not support merchant {merchantName} !");
-        var processor = _thirdPartAppServices.FirstOrDefault(p
-            => String.Equals(p.MerchantName(), merchantName, StringComparison.CurrentCultureIgnoreCase), null);
+        var processor = _thirdPartAppServices.GetValueOrDefault(merchantName.ToLower(), null);
         if (processor == null) throw new UserFriendlyException($"not support merchant {merchantName}");
         return processor;
     }

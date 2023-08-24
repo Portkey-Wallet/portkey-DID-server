@@ -32,8 +32,8 @@ public sealed partial class TransakTest : CAServerApplicationTestBase
         _services = services;
         base.AfterAddApplication(services);
         MockEnvHelper(Environments.Production);
-        _services.AddSingleton(MockThirdPartOptions());
-        _services.AddSingleton(MockHttpFactory(_testOutputHelper,
+        _services.AddSingleton(ThirdPartMock.GetMockThirdPartOptions());
+        _services.AddSingleton(ThirdPartMock.MockHttpFactory(_testOutputHelper,
             MockRefreshAccessToken,
             MockUpdateWebhookUrl
         ));

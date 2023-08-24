@@ -27,11 +27,12 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        services.AddSingleton(getMockThirdPartOptions());
-        services.AddSingleton(MockHttpFactory(_testOutputHelper, 
+        services.AddSingleton(ThirdPartMock.GetMockThirdPartOptions());
+        services.AddSingleton(ThirdPartMock.MockHttpFactory(_testOutputHelper, 
             MockAlchemyFiatListResponse, 
             MockAlchemyOrderQuoteList, 
-            MockGetCryptoList));
+            MockGetCryptoList,
+            MockAlchemyFreeLoginTokenList));
     }
 
     [Fact]

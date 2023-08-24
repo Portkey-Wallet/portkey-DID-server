@@ -23,7 +23,7 @@ public sealed class ThirdPartOrderProviderTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        services.AddSingleton(AlchemyOrderAppServiceTest.GetMockThirdPartOptions());
+        services.AddSingleton(ThirdPartMock.GetMockThirdPartOptions());
     }
 
     [Fact]

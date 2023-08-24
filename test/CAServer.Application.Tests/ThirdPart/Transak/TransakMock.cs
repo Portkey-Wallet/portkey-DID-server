@@ -27,37 +27,6 @@ public sealed partial class TransakTest
         field?.SetValue(null, environments);
     }
     
-    private IOptions<ThirdPartOptions> MockThirdPartOptions()
-    {
-        var thirdPartOptions = new ThirdPartOptions()
-        {
-            transak = new TransakOptions()
-            {
-                BaseUrl = "http://localhost:9200/transak/_search",
-                AppId = "prod:test_appId",
-                AppSecret = "prod:test_appSecret"
-            }
-        };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
-    }
-
-    public static IHttpClientFactory MockHttpFactory(ITestOutputHelper testOutputHelper,
-        params Action<Mock<HttpMessageHandler>, ITestOutputHelper>[] mockActions)
-    {
-        var mockHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-
-        foreach (var mockFunc in mockActions)
-            mockFunc.Invoke(mockHandler, testOutputHelper);
-
-        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
-        httpClientFactoryMock
-            .Setup(_ => _.CreateClient(It.IsAny<string>()))
-            .Returns(new HttpClient(mockHandler.Object) { BaseAddress = new Uri("http://test.com/") });
-
-        return httpClientFactoryMock.Object;
-    }
-
-
     public static readonly Action<Mock<HttpMessageHandler>, ITestOutputHelper> MockRefreshAccessToken =
         (mockHandler, testOutputHelper) =>
         {

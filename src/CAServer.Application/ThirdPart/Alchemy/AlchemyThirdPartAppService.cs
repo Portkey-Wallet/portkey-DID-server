@@ -83,6 +83,21 @@ public partial class AlchemyServiceAppService
 
     public async Task<QueryPriceResponseDto> GetMerchantPriceAsync(QueryPriceRequestDto input)
     {
+        var cryptoResponseDto = await GetMerchantCryptoAsync(new QueryCurrencyRequestDto()
+        {
+            Fiat = input.Fiat,
+            Crypto = input.Crypto,
+            Type = input.Type
+        });
+        var cryptoItem = cryptoResponseDto.CryptoList
+            .Where(item => item.Network == input.Network)
+            .FirstOrDefault((CryptoItem)null);
+
+        await _alchemyProvider.QueryAlchemyOrderQuote(new GetAlchemyOrderQuoteDto()
+        {
+            
+        });
+        
         //TODO
         throw new NotImplementedException();
     }
