@@ -49,8 +49,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IDistributedEventBus distributedEventBus,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
         IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
-        IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
-        IContractProvider contractProvider,
+        IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
         INickNameAppService caHolderAppService)
     {
         _clusterClient = clusterClient;
