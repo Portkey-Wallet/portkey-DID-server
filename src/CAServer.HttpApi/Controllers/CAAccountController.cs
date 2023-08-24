@@ -8,6 +8,7 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
+using Volo.Abp.Users;
 
 namespace CAServer.Controllers;
 
@@ -71,8 +72,7 @@ public class CAAccountController : CAServerController
     [Authorize]
     public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)
     {
-        var userId = CurrentUser.Id;
-        return await _caAccountService.CancelCheckAsync(userId);
+        return await _caAccountService.CancelCheckAsync(CurrentUser.GetId());
     }
     
     [HttpGet("cancel/request")]

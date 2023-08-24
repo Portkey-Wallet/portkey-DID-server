@@ -6,7 +6,6 @@ using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
-using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
@@ -14,7 +13,6 @@ using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
-using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
@@ -22,10 +20,9 @@ using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
+using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
-using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -53,9 +50,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider,
         IGuardianAppService guardianAppService,
-        IGuardianProvider guardianProvider)
+        IGuardianProvider guardianProvider,
         IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
         IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
     {
@@ -166,20 +162,26 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
     {
-        //调用check guardian
-        var guid = CurrentUser.GetId();
-
-        var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(
-            null, "", "");
+        var resultDto = new RevokeEntranceResultDto();
         
-        var loginGuardians = holderInfo.GuardianList.Guardians.Where(g => g.IsLoginGuardian).ToList();
-
-        var appleLoginGuardians = loginGuardians.Where(g => ((GuardianIdentifierType)(int)g.Type).ToString().Equals(GuardianIdentifierType.Apple.ToString())).ToList();
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
         
-        return new RevokeEntranceResultDto
+        var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHolder.CaHash);
+
+        var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null 
+        && g.GuardianList.Guardians.Count > 0);
+
+        if (guardianInfo == null)
         {
-            EntranceDisplay = appleLoginGuardians.Count == 1 && loginGuardians.Count == 1
-        };
+            resultDto.EntranceDisplay = false;
+            return resultDto;
+        }
+
+        var loginGuardians = guardianInfo.GuardianList.Guardians.Where(g => g.IsLoginGuardian).ToList();
+        var appleLoginGuardians = loginGuardians.Where(g => g.Type.Equals(((int)GuardianIdentifierType.Apple).ToString())).ToList();
+        resultDto.EntranceDisplay = appleLoginGuardians.Count == 1 && loginGuardians.Count == 1;
+
+        return resultDto;
     }
 
     public async Task<CancelCheckResultDto> CancelCheckAsync(Guid uid)
