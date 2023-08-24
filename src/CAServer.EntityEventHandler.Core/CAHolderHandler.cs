@@ -16,7 +16,8 @@ using Volo.Abp.ObjectMapping;
 namespace CAServer.EntityEventHandler.Core;
 
 public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
-    IDistributedEventHandler<UpdateCAHolderEto>
+    IDistributedEventHandler<UpdateCAHolderEto>,
+    IDistributedEventHandler<DeleteCAHolderEto>
     , ITransientDependency
 {
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
@@ -73,6 +74,18 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         catch (Exception ex)
         {
             _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+        }
+    }
+
+    public async Task HandleEventAsync(DeleteCAHolderEto eventData)
+    {
+        try
+        {
+            await _caHolderRepository.UpdateAsync(_objectMapper.Map<DeleteCAHolderEto, CAHolderIndex>(eventData));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Delete holder error, userId: {userId}", eventData.UserId.ToString());
         }
     }
 }

@@ -38,4 +38,19 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
+    
+    public async Task<CAHolderResultDto> DeleteAsync()
+    {
+        var userId = CurrentUser.GetId();
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+
+        var result = await grain.DeleteAsync();
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, DeleteCAHolderEto>(result.Data));
+        return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
+    }
 }
