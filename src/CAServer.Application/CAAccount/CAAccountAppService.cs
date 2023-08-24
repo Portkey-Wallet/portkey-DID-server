@@ -50,6 +50,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly ICAAccountProvider _accountProvider;
 
     private readonly INickNameAppService _caHolderAppService;
+    private const int MaxResultCount = 10;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -214,7 +215,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var valedateAsset = false;
         var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
-            0, 100);
+            0, MaxResultCount);
 
         if (tokenRes.CaHolderTokenBalanceInfo.Data.Count > 0)
         {
@@ -227,7 +228,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
-            null, 0, 100);
+            null, 0, MaxResultCount);
         if (res.CaHolderNFTBalanceInfo.Data.Count > 0)
         {
             valedateAsset = true;
@@ -246,13 +247,26 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 validateDevice = true;
             }
         }
+        
+        var validateGuardian = false;
+        var appleLoginGuardians =await GetGuardianAsync(caHash);
+        if (appleLoginGuardians == null && appleLoginGuardians.Count != 1)
+        {
+            throw new Exception("");
+        }
 
-
+        var guardian = await _accountProvider.GetIdentifiersAsync(appleLoginGuardians.First().IdentifierHash);
+        
+        var caHolderDto = await _accountProvider.GetGuardianAddedCAHolderAsync(guardian.IdentifierHash,0,MaxResultCount);
+        if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 0)
+        {
+            validateGuardian = true;
+        }
         return new CancelCheckResultDto()
         {
             ValidatedDevice = validateDevice,
             ValidatedAssets = valedateAsset,
-            ValidatedGuardian = true
+            ValidatedGuardian = validateGuardian
         };
     }
 
