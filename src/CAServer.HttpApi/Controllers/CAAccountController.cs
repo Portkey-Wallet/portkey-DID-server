@@ -71,7 +71,8 @@ public class CAAccountController : CAServerController
     [Authorize]
     public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)
     {
-        return await _caAccountService.CancelCheckAsync(input);
+        var userId = CurrentUser.Id;
+        return await _caAccountService.CancelCheckAsync(userId);
     }
     
     [HttpGet("cancel/request")]

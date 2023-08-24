@@ -1,20 +1,28 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
+using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.UserAssets;
+using CAServer.UserAssets.Provider;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -38,6 +46,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IGuardianAppService _guardianAppService;
     private readonly IGuardianProvider _guardianProvider;
 
+    private readonly IUserAssetsAppService _userAssetsAppService;
+    private readonly IUserAssetsProvider _userAssetsProvider;
+    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -45,6 +56,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IContractProvider contractProvider,
         IGuardianAppService guardianAppService,
         IGuardianProvider guardianProvider)
+        IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
+        IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -54,6 +67,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _contractProvider = contractProvider;
         _guardianAppService = guardianAppService;
         _guardianProvider = guardianProvider;
+        _userAssetsAppService = userAssetsAppService;
+        _userAssetsProvider = userAssetsProvider;
+        _caHolderIndexRepository = caHolderIndexRepository;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -166,10 +182,47 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         };
     }
 
-    public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)
+    public async Task<CancelCheckResultDto> CancelCheckAsync(Guid uid)
     {
+        var caHolderIndexAsync = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
+        var caHash = caHolderIndexAsync.CaHash;
+        var caAddressInfos = new List<CAAddressInfo>();
+        foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key]).Select(chainOptionsChainInfo => chainOptionsChainInfo.ChainId))
+        {
+            var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
+            if (result != null)
+            {
+                caAddressInfos.Add(new CAAddressInfo
+                {
+                    CaAddress = result.CaAddress.ToString(),
+                    ChainId = chainId
+                });
+            }
+        }
+
+        var valedateAsset = false;
+        var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
+            0, 100);
+
+        if (tokenRes.CaHolderTokenBalanceInfo.Data.Count > 0)
+        {
+            var tokenInfos = tokenRes.CaHolderTokenBalanceInfo.Data
+                .Where(o => o.TokenInfo.Symbol == "ELF" && o.Balance >= 0.05).ToList();
+            if (tokenInfos.Count > 0)
+            {
+                valedateAsset = true;
+            }
+        }
+
+        var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
+            null, 0, 100);
+        if (res.CaHolderNFTBalanceInfo.Data.Count > 0)
+        {
+            valedateAsset = true;
+        }
+
         //check tokens    
-        //check guardian  扫链
+        //check guardian  
         //check device  
         return null;
     }

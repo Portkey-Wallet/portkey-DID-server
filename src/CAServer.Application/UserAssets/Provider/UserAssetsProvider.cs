@@ -16,12 +16,15 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<UserTokenIndex, Guid> _userTokenIndexRepository;
+    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
+
 
     public UserAssetsProvider(IGraphQLHelper graphQlHelper,
-        INESTRepository<UserTokenIndex, Guid> userTokenIndexRepository)
+        INESTRepository<UserTokenIndex, Guid> userTokenIndexRepository, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
     {
         _graphQlHelper = graphQlHelper;
         _userTokenIndexRepository = userTokenIndexRepository;
+        _caHolderIndexRepository = caHolderIndexRepository;
     }
 
     public async Task<IndexerChainIds> GetUserChainIdsAsync(List<string> userCaAddresses)
@@ -184,5 +187,15 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         }
 
         return userTokenIndices.Select(t => (t.Token.Symbol, t.Token.ChainId)).ToList();
+    }
+    
+    public async Task<CAHolderIndex> GetCaHolderIndexAsync(Guid paramUserId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(paramUserId)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
+        return caHolder;
     }
 }
