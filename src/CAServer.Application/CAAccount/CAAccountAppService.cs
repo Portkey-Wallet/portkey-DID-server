@@ -32,11 +32,13 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IDeviceAppService _deviceAppService;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly INickNameAppService _caHolderAppService;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider)
+        IContractProvider contractProvider,
+        INickNameAppService caHolderAppService)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -44,6 +46,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _deviceAppService = deviceAppService;
         _chainOptions = chainOptions.Value;
         _contractProvider = contractProvider;
+        _caHolderAppService = caHolderAppService;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -154,9 +157,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<RevokeResultDto> RevokeAsync()
     {
-        //cancel 调用apple id
+        //get apple userId
+        var appleId = "";
         
-        //caholder 加字段，标识被注销
+
+        await _caHolderAppService.DeleteAsync();
         return new RevokeResultDto()
         {
             Success = true
