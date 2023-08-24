@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Contacts;
+using CAServer.ImUser;
 using CAServer.ImUser.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,15 +19,23 @@ namespace CAServer.Controllers;
 public class ImUserController : CAServerController
 {
     private readonly IContactAppService _contactAppService;
+    private readonly IImUserAppService _imUserAppService;
 
-    public ImUserController(IContactAppService contactAppService)
+    public ImUserController(IContactAppService contactAppService, IImUserAppService imUserAppService)
     {
         _contactAppService = contactAppService;
+        _imUserAppService = imUserAppService;
     }
-    
+
     [HttpPost("names")]
     public async Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input)
     {
         return await _contactAppService.GetNameAsync(input);
+    }
+
+    [HttpGet("holder")]
+    public async Task<HolderInfoResultDto> GetHolderInfoAsync(Guid userId)
+    {
+        return await _imUserAppService.GetHolderInfoAsync(userId);
     }
 }
