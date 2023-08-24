@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
+using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
@@ -47,19 +50,17 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly ICAAccountProvider _accountProvider;
 
     private readonly INickNameAppService _caHolderAppService;
-
-    public CAAccountAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
-        ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IContractProvider contractProvider,
-        IUserAssetsProvider userAssetsProvider, INickNameAppService caHolderAppService,
-        IOptions<ChainOptions> chainOptions,
-        ICAAccountProvider accountProvider)
+    
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
         IGuardianAppService guardianAppService,
         IGuardianProvider guardianProvider,
         IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
-        IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
+        IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
+        ICAAccountProvider accountProvider,
+        INickNameAppService caHolderAppService
+        )
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
