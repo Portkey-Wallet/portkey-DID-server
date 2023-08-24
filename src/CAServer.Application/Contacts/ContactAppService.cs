@@ -82,9 +82,35 @@ public class ContactAppService : CAServerAppService, IContactAppService
     {
         var userId = CurrentUser.GetId();
 
-        await CheckAddressAsync(userId, input.Addresses, input.RelationId, id);
-        var contactDto = await GetContactDtoAsync(input, id);
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
+        var contactResult = await contactGrain.GetContactAsync();
+        if (!contactResult.Success)
+        {
+            throw new UserFriendlyException(contactResult.Message);
+        }
+
+        var contact = contactResult.Data;
+        if (contact.Addresses != null && contact.Addresses.Count > 1 && input.Addresses != null &&
+            input.Addresses.Count == 1)
+        {
+            throw new UserFriendlyException("can not modify address");
+        }
+
+        var isUpdate = false;
+        if (contact.Addresses != null && contact.Addresses.Count == 1 && input.Addresses != null &&
+            input.Addresses.Count == 1)
+        {
+            var addrInput = input.Addresses.First();
+            var addrContact = contact.Addresses.First();
+            if (addrInput.Address == addrContact.Address && addrInput.ChainId == addrContact.ChainId)
+            {
+                isUpdate = true;
+            }
+        }
+
+        await CheckAddressAsync(userId, input.Addresses, input.RelationId, id, isUpdate);
+        var contactDto = await GetContactDtoAsync(input, id);
+
         var result =
             await contactGrain.UpdateContactAsync(userId,
                 ObjectMapper.Map<ContactDto, ContactGrainDto>(contactDto));
@@ -327,7 +353,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     //need to optimize
     private async Task CheckAddressAsync(Guid userId, List<ContactAddressDto> addresses, string relationId,
-        Guid? contactId = null)
+        Guid? contactId = null, bool isUpdate = false)
     {
         if (!relationId.IsNullOrWhiteSpace() && contactId.HasValue && contactId.Value != Guid.Empty)
         {
@@ -365,6 +391,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
         }
 
+        if (isUpdate) return;
+
         // check if address already exist
         var contact = await _contactProvider.GetContactByAddressAsync(userId, address.Address);
         if (contact != null)
@@ -400,7 +428,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 contact.CaHolderInfo = await GetHolderInfoAsync(userInfo.PortkeyId);
 
                 if (contact.CaHolderInfo == null) return contact;
-                
+
                 contact.Addresses = await GetAddressesAsync(contact.CaHolderInfo.CaHash);
             }
 
