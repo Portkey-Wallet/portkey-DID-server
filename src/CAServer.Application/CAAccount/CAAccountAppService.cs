@@ -50,7 +50,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly ICAAccountProvider _accountProvider;
 
     private readonly INickNameAppService _caHolderAppService;
-    
+
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
@@ -60,7 +60,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
         ICAAccountProvider accountProvider,
         INickNameAppService caHolderAppService
-        )
+    )
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -171,13 +171,13 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
     {
         var resultDto = new RevokeEntranceResultDto();
-        
+
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-        
+
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHolder.CaHash);
 
-        var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null 
-        && g.GuardianList.Guardians.Count > 0);
+        var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
+                                                                       && g.GuardianList.Guardians.Count > 0);
 
         if (guardianInfo == null)
         {
@@ -186,7 +186,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var loginGuardians = guardianInfo.GuardianList.Guardians.Where(g => g.IsLoginGuardian).ToList();
-        var appleLoginGuardians = loginGuardians.Where(g => g.Type.Equals(((int)GuardianIdentifierType.Apple).ToString())).ToList();
+        var appleLoginGuardians = loginGuardians
+            .Where(g => g.Type.Equals(((int)GuardianIdentifierType.Apple).ToString())).ToList();
         resultDto.EntranceDisplay = appleLoginGuardians.Count == 1 && loginGuardians.Count == 1;
 
         return resultDto;
@@ -264,15 +265,31 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             throw new UserFriendlyException(ResponseMessage.AlreadyDeleted);
         }
 
-        var guardian = await _accountProvider.GetIdentifiersAsync(caHolder.CaHash);
+        var appleLoginGuardians =await GetGuardianAsync(caHolder.CaHash);
+        if (appleLoginGuardians == null && appleLoginGuardians.Count != 1)
+        {
+            throw new Exception("");
+        }
+
+        var guardian = await _accountProvider.GetIdentifiersAsync(appleLoginGuardians.First().IdentifierHash);
         var appleId = guardian.Identifier;
-        
-        
+
         await _caHolderAppService.DeleteAsync();
         return new RevokeResultDto()
         {
             Success = true
         };
+    }
+
+    private async Task<List<GuardianInfoBase>> GetGuardianAsync(string caHash)
+    {
+        var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
+
+        var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
+                                                                       && g.GuardianList.Guardians.Count > 0);
+
+        return guardianInfo?.GuardianList.Guardians
+            .Where(t => t.Type.Equals(((int)GuardianIdentifierType.Apple).ToString()) && t.IsLoginGuardian).ToList();
     }
 
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)

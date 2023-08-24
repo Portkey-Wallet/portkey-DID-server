@@ -24,15 +24,11 @@ public class CAAccountProvider : ICAAccountProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
-    private readonly IHttpClientService _httpClientService;
-
-
-    public CAAccountProvider(IGraphQLHelper graphQlHelper, INESTRepository<GuardianIndex, string> guardianRepository,
-        IHttpClientService httpClientService)
+    
+    public CAAccountProvider(IGraphQLHelper graphQlHelper, INESTRepository<GuardianIndex, string> guardianRepository)
     {
         _graphQlHelper = graphQlHelper;
         _guardianRepository = guardianRepository;
-        _httpClientService = httpClientService;
     }
 
     public async Task<GuardianAddedCAHolderDto> GetGuardianAddedCAHolderAsync(string loginGuardianIdentifierHash,
@@ -61,10 +57,5 @@ public class CAAccountProvider : ICAAccountProvider, ISingletonDependency
             f.Bool(b => b.Must(mustQuery));
 
         return await _guardianRepository.GetAsync(Filter);
-    }
-
-    public async Task RevokeAsync(string appleId)
-    {
-        
     }
 }
