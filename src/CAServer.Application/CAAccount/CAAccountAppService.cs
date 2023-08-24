@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
+using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Device;
@@ -135,6 +136,28 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             ObjectMapper.Map<RecoveryGrainDto, AccountRecoverCreateEto>(result.Data));
 
         return new AccountResultDto(recoveryDto.Id.ToString());
+    }
+
+    public async Task<CancelCheckResultDto> CancelEntranceAsync()
+    {
+        //调用check guardian
+        return null;
+    }
+
+    public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)
+    {
+        //check tokens    
+        //check guardian  扫链
+        //check device  
+        return null;
+    }
+
+    public async Task<CancelResultDto> CancelRequestAsync(CancelRequestDto input)
+    {
+        //delete device 前端传参数 调用合约
+        //cancel 调用apple id
+        //caholder 加字段，标识被注销
+        return null;
     }
 
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.Guardian;
+using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
@@ -57,5 +58,26 @@ public class CAAccountController : CAServerController
     public List<TransactionFeeResultDto> CalculateFee(TransactionFeeDto input)
     {
         return _transactionFeeAppService.CalculateFee(input);
+    }
+    
+    [HttpPost("cancel/entrance")]
+    [Authorize]
+    public async Task<CancelCheckResultDto> CancelEntranceAsync()
+    {
+        return await _caAccountService.CancelEntranceAsync();
+    }
+    
+    [HttpPost("cancel/check")]
+    [Authorize]
+    public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)
+    {
+        return await _caAccountService.CancelCheckAsync(input);
+    }
+    
+    [HttpPost("cancel/request")]
+    [Authorize]
+    public async Task<CancelResultDto> CancelRequestAsync(CancelRequestDto input)
+    {
+        return await _caAccountService.CancelRequestAsync(input);
     }
 }
