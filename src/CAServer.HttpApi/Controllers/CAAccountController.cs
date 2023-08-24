@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using CAServer.CAAccount;
@@ -8,6 +9,7 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
+using Volo.Abp.Users;
 
 namespace CAServer.Controllers;
 
@@ -20,13 +22,15 @@ public class CAAccountController : CAServerController
     private readonly ICAAccountAppService _caAccountService;
     private readonly IGuardianAppService _guardianAppService;
     private readonly ITransactionFeeAppService _transactionFeeAppService;
+    private readonly ICurrentUser _currentUser;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
-        ITransactionFeeAppService transactionFeeAppService)
+        ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
         _transactionFeeAppService = transactionFeeAppService;
+        _currentUser = currentUser;
     }
 
     [HttpPost("register/request")]
@@ -71,7 +75,7 @@ public class CAAccountController : CAServerController
     [Authorize]
     public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)
     {
-        var userId = CurrentUser.Id;
+        var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         return await _caAccountService.CancelCheckAsync(userId);
     }
     

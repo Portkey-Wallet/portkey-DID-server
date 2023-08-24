@@ -2,28 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
-using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
-using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
-using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
 using Newtonsoft.Json;
 using Orleans;
-using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -40,15 +34,14 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IDeviceAppService _deviceAppService;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
-    private readonly IUserAssetsAppService _userAssetsAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
-    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
+
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
-        IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
+        IContractProvider contractProvider,
+        IUserAssetsProvider userAssetsProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -56,9 +49,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _deviceAppService = deviceAppService;
         _chainOptions = chainOptions.Value;
         _contractProvider = contractProvider;
-        _userAssetsAppService = userAssetsAppService;
         _userAssetsProvider = userAssetsProvider;
-        _caHolderIndexRepository = caHolderIndexRepository;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -161,10 +152,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<CancelCheckResultDto> CancelCheckAsync(Guid uid)
     {
-        var caHolderIndexAsync = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
-        var caHash = caHolderIndexAsync.CaHash;
+        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
+        var caHash = caHolderIndex.CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key]).Select(chainOptionsChainInfo => chainOptionsChainInfo.ChainId))
+        foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key])
+                     .Select(chainOptionsChainInfo => chainOptionsChainInfo.ChainId))
         {
             var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
             if (result != null)
@@ -198,10 +190,27 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             valedateAsset = true;
         }
 
-        //check tokens    
-        //check guardian  
-        //check device  
-        return null;
+        var validateDevice = false;
+        var caAddresses = caAddressInfos.Select(t => t.CaAddress).ToList();
+        var caHolderManagerInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
+        if (caHolderManagerInfo != null && caHolderManagerInfo.CaHolderManagerInfo.Count > 0)
+        {
+            var originChainId = caHolderManagerInfo.CaHolderManagerInfo.First().OriginChainId;
+            foreach (var caHolderManager in caHolderManagerInfo.CaHolderManagerInfo
+                         .Where(caHolderManager => caHolderManager.OriginChainId == originChainId)
+                         .Where(caHolderManager => caHolderManager.Managers.Count > 1))
+            {
+                validateDevice = true;
+            }
+        }
+
+
+        return new CancelCheckResultDto
+        {
+            ValidatedDevice = validateDevice,
+            ValidatedAssets = valedateAsset,
+            ValidatedGuardian = true
+        };
     }
 
     public async Task<CancelResultDto> CancelRequestAsync(CancelRequestDto input)
@@ -215,7 +224,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
     {
         var output =
-            await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash), chainId);
+            await _contractProvider.GetHolderInfoAsync(null, Hash.LoadFromHex(loginGuardianIdentifierHash),
+                chainId);
 
         return output?.CaHash?.ToHex();
     }

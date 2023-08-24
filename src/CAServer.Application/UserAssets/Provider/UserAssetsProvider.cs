@@ -20,7 +20,8 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 
 
     public UserAssetsProvider(IGraphQLHelper graphQlHelper,
-        INESTRepository<UserTokenIndex, Guid> userTokenIndexRepository, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
+        INESTRepository<UserTokenIndex, Guid> userTokenIndexRepository,
+        INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
     {
         _graphQlHelper = graphQlHelper;
         _userTokenIndexRepository = userTokenIndexRepository;
@@ -188,7 +189,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
 
         return userTokenIndices.Select(t => (t.Token.Symbol, t.Token.ChainId)).ToList();
     }
-    
+
     public async Task<CAHolderIndex> GetCaHolderIndexAsync(Guid paramUserId)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
@@ -197,5 +198,21 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
         var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
         return caHolder;
+    }
+
+    public async Task<CAHolderManagerInfo> GetCaHolderManagerInfoAsync(List<string> userCaAddresses)
+    {
+        return await _graphQlHelper.QueryAsync<CAHolderManagerInfo>(new GraphQLRequest
+        {
+            Query = @"
+			    query($caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderManagerInfo(dto: {caAddresses:$caAddresses,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        originChainId,chainId,caHash,caAddress, managerInfos{address,extraData}}
+                }",
+            Variables = new
+            {
+                caAddresses = userCaAddresses, skipCount = 0, maxResultCount = userCaAddresses.Count
+            }
+        });
     }
 }
