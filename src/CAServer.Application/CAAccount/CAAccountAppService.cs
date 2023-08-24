@@ -152,7 +152,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return null;
     }
 
-    public async Task<CancelResultDto> CancelRequestAsync(CancelRequestDto input)
+    public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
         //delete device 前端传参数 调用合约
         //cancel 调用apple id
