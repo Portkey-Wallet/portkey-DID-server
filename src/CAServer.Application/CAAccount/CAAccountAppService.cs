@@ -6,7 +6,6 @@ using AElf.Types;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
 using CAServer.Common;
-using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
 using CAServer.Etos;
@@ -16,8 +15,11 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
+using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -37,6 +39,10 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IDeviceAppService _deviceAppService;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IGuardianAppService _guardianAppService;
+    private readonly IGuardianProvider _guardianProvider;
+
+    private readonly IUserAssetsAppService _userAssetsAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ICAAccountProvider _accountProvider;
 
@@ -47,12 +53,22 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IUserAssetsProvider userAssetsProvider, INickNameAppService caHolderAppService,
         IOptions<ChainOptions> chainOptions,
         ICAAccountProvider accountProvider)
+    public CAAccountAppService(IClusterClient clusterClient,
+        IDistributedEventBus distributedEventBus,
+        ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
+        IGuardianAppService guardianAppService,
+        IGuardianProvider guardianProvider,
+        IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
+        IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
         _logger = logger;
         _deviceAppService = deviceAppService;
         _contractProvider = contractProvider;
+        _guardianAppService = guardianAppService;
+        _guardianProvider = guardianProvider;
+        _userAssetsAppService = userAssetsAppService;
         _userAssetsProvider = userAssetsProvider;
         _caHolderAppService = caHolderAppService;
         _accountProvider = accountProvider;
@@ -151,10 +167,28 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new AccountResultDto(recoveryDto.Id.ToString());
     }
 
-    public async Task<CancelCheckResultDto> CancelEntranceAsync()
+    public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
     {
-        //调用check guardian
-        return null;
+        var resultDto = new RevokeEntranceResultDto();
+        
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        
+        var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHolder.CaHash);
+
+        var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null 
+        && g.GuardianList.Guardians.Count > 0);
+
+        if (guardianInfo == null)
+        {
+            resultDto.EntranceDisplay = false;
+            return resultDto;
+        }
+
+        var loginGuardians = guardianInfo.GuardianList.Guardians.Where(g => g.IsLoginGuardian).ToList();
+        var appleLoginGuardians = loginGuardians.Where(g => g.Type.Equals(((int)GuardianIdentifierType.Apple).ToString())).ToList();
+        resultDto.EntranceDisplay = appleLoginGuardians.Count == 1 && loginGuardians.Count == 1;
+
+        return resultDto;
     }
 
     public async Task<CancelCheckResultDto> CancelCheckAsync(Guid uid)

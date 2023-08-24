@@ -9,7 +9,7 @@ public interface ICAAccountAppService
 {
     Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input);
     Task<AccountResultDto> RecoverRequestAsync(RecoveryRequestDto input);
-    Task<CancelCheckResultDto> CancelEntranceAsync();
+    Task<RevokeEntranceResultDto> RevokeEntranceAsync();
     Task<CancelCheckResultDto> CancelCheckAsync(Guid uId);
     Task<RevokeResultDto> RevokeAsync(RevokeDto input);
 }
