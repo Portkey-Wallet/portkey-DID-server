@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Device;
@@ -37,13 +38,15 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
     private readonly IUserAssetsProvider _userAssetsProvider;
+    private readonly ICAAccountProvider _accountProvider;
 
     private readonly INickNameAppService _caHolderAppService;
 
     public CAAccountAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IContractProvider contractProvider,
         IUserAssetsProvider userAssetsProvider, INickNameAppService caHolderAppService,
-        IOptions<ChainOptions> chainOptions)
+        IOptions<ChainOptions> chainOptions,
+        ICAAccountProvider accountProvider)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -52,6 +55,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _contractProvider = contractProvider;
         _userAssetsProvider = userAssetsProvider;
         _caHolderAppService = caHolderAppService;
+        _accountProvider = accountProvider;
         _chainOptions = chainOptions.Value;
     }
 
@@ -158,7 +162,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
         var caHash = caHolderIndex.CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key]).Select(chainOptionsChainInfo => chainOptionsChainInfo.ChainId))
+        foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key])
+                     .Select(chainOptionsChainInfo => chainOptionsChainInfo.ChainId))
         {
             var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
             if (result != null)
@@ -223,11 +228,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             throw new UserFriendlyException(ResponseMessage.AlreadyDeleted);
         }
+
+        var guardian = await _accountProvider.GetIdentifiersAsync(caHolder.CaHash);
+        var appleId = guardian.Identifier;
         
         
-        var appleId = "";
-
-
         await _caHolderAppService.DeleteAsync();
         return new RevokeResultDto()
         {
