@@ -1,6 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
+using CAServer.AppleAuth;
 using CAServer.Common;
+using CAServer.Entities.Es;
 using GraphQL;
+using Nest;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.CAAccount.Provider;
@@ -9,16 +16,23 @@ public interface ICAAccountProvider
 {
     Task<GuardianAddedCAHolderDto> GetGuardianAddedCAHolderAsync(string loginGuardianIdentifierHash,
         int inputSkipCount, int inputMaxResultCount);
+
+    Task<GuardianIndex> GetIdentifiersAsync(string identifierHash);
 }
 
 public class CAAccountProvider : ICAAccountProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
+    private readonly IHttpClientService _httpClientService;
 
 
-    public CAAccountProvider(IGraphQLHelper graphQlHelper)
+    public CAAccountProvider(IGraphQLHelper graphQlHelper, INESTRepository<GuardianIndex, string> guardianRepository,
+        IHttpClientService httpClientService)
     {
         _graphQlHelper = graphQlHelper;
+        _guardianRepository = guardianRepository;
+        _httpClientService = httpClientService;
     }
 
     public async Task<GuardianAddedCAHolderDto> GetGuardianAddedCAHolderAsync(string loginGuardianIdentifierHash,
@@ -36,5 +50,21 @@ public class CAAccountProvider : ICAAccountProvider, ISingletonDependency
                 loginGuardianIdentifierHash, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
             }
         });
+    }
+
+    public async Task<GuardianIndex> GetIdentifiersAsync(string identifierHash)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IdentifierHash).Value(identifierHash)));
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        return await _guardianRepository.GetAsync(Filter);
+    }
+
+    public async Task RevokeAsync(string appleId)
+    {
+        
     }
 }

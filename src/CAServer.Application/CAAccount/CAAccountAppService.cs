@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
 using CAServer.Etos;
@@ -21,6 +22,7 @@ using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.Users;
 
 namespace CAServer.CAAccount;
 
@@ -156,8 +158,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
         var caHash = caHolderIndex.CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key])
-                     .Select(chainOptionsChainInfo => chainOptionsChainInfo.ChainId))
+        foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key]).Select(chainOptionsChainInfo => chainOptionsChainInfo.ChainId))
         {
             var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
             if (result != null)
@@ -215,9 +216,15 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     }
 
 
-    public async Task<RevokeResultDto> RevokeAsync()
+    public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
-        //get apple userId
+        var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+        if (caHolder.IsDeleted)
+        {
+            throw new UserFriendlyException(ResponseMessage.AlreadyDeleted);
+        }
+        
+        
         var appleId = "";
 
 
