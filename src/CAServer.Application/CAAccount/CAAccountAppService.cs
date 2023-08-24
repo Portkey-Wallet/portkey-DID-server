@@ -152,12 +152,15 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return null;
     }
 
-    public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
+    public async Task<RevokeResultDto> RevokeAsync()
     {
-        //delete device 前端传参数 调用合约
         //cancel 调用apple id
+        
         //caholder 加字段，标识被注销
-        return null;
+        return new RevokeResultDto()
+        {
+            Success = true
+        };
     }
 
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)

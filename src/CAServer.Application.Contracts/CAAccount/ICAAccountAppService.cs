@@ -10,5 +10,5 @@ public interface ICAAccountAppService
     Task<AccountResultDto> RecoverRequestAsync(RecoveryRequestDto input);
     Task<CancelCheckResultDto> CancelEntranceAsync();
     Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input);
-    Task<RevokeResultDto> RevokeAsync(RevokeDto input);
+    Task<RevokeResultDto> RevokeAsync();
 }
