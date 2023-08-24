@@ -43,12 +43,15 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IUserAssetsAppService _userAssetsAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
+    private readonly INickNameAppService _caHolderAppService;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
         IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
         IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
+        IContractProvider contractProvider,
+        INickNameAppService caHolderAppService)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -59,6 +62,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _userAssetsAppService = userAssetsAppService;
         _userAssetsProvider = userAssetsProvider;
         _caHolderIndexRepository = caHolderIndexRepository;
+        _caHolderAppService = caHolderAppService;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -204,12 +208,17 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return null;
     }
 
-    public async Task<CancelResultDto> CancelRequestAsync(CancelRequestDto input)
+    public async Task<RevokeResultDto> RevokeAsync()
     {
-        //delete device 前端传参数 调用合约
-        //cancel 调用apple id
-        //caholder 加字段，标识被注销
-        return null;
+        //get apple userId
+        var appleId = "";
+        
+
+        await _caHolderAppService.DeleteAsync();
+        return new RevokeResultDto()
+        {
+            Success = true
+        };
     }
 
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)

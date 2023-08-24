@@ -357,5 +357,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<BookmarkGrainResultDto, BookmarkResultDto>();
         CreateMap<VerifierServer, GetVerifierServerResponse>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
+        
+        CreateMap<CAHolderGrainDto, DeleteCAHolderEto>();
     }
 }

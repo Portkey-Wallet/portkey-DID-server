@@ -11,5 +11,6 @@ public class UpdateCAHolderEto
     public string CaAddress { get; set; }
     public string CaHash { get; set; }
     public string Nickname { get; set; }
+    public bool IsDeleted { get; set; }
     public DateTime CreateTime { get; set; }
 }

@@ -59,14 +59,14 @@ public class CAAccountController : CAServerController
     {
         return _transactionFeeAppService.CalculateFee(input);
     }
-    
+
     [HttpGet("cancel/entrance")]
     [Authorize]
     public async Task<CancelCheckResultDto> CancelEntranceAsync()
     {
         return await _caAccountService.CancelEntranceAsync();
     }
-    
+
     [HttpGet("cancel/check")]
     [Authorize]
     public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)
@@ -74,11 +74,10 @@ public class CAAccountController : CAServerController
         var userId = CurrentUser.Id;
         return await _caAccountService.CancelCheckAsync(userId);
     }
-    
-    [HttpGet("cancel/request")]
-    [Authorize]
-    public async Task<CancelResultDto> CancelRequestAsync(CancelRequestDto input)
+
+    [HttpPost("revoke/request"), Authorize]
+    public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
-        return await _caAccountService.CancelRequestAsync(input);
+        return await _caAccountService.RevokeAsync(input);
     }
 }
