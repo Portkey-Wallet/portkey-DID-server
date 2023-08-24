@@ -11,6 +11,8 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -19,6 +21,7 @@ using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.Users;
 
 namespace CAServer.CAAccount;
 
@@ -32,11 +35,16 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IDeviceAppService _deviceAppService;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IGuardianAppService _guardianAppService;
+    private readonly IGuardianProvider _guardianProvider;
+
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider)
+        IContractProvider contractProvider,
+        IGuardianAppService guardianAppService,
+        IGuardianProvider guardianProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -44,6 +52,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _deviceAppService = deviceAppService;
         _chainOptions = chainOptions.Value;
         _contractProvider = contractProvider;
+        _guardianAppService = guardianAppService;
+        _guardianProvider = guardianProvider;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -138,10 +148,22 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new AccountResultDto(recoveryDto.Id.ToString());
     }
 
-    public async Task<CancelCheckResultDto> CancelEntranceAsync()
+    public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
     {
         //调用check guardian
-        return null;
+        var guid = CurrentUser.GetId();
+
+        var holderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(
+            null, "", "");
+        
+        var loginGuardians = holderInfo.GuardianList.Guardians.Where(g => g.IsLoginGuardian).ToList();
+
+        var appleLoginGuardians = loginGuardians.Where(g => ((GuardianIdentifierType)(int)g.Type).ToString().Equals(GuardianIdentifierType.Apple.ToString())).ToList();
+        
+        return new RevokeEntranceResultDto
+        {
+            EntranceDisplay = appleLoginGuardians.Count == 1 && loginGuardians.Count == 1
+        };
     }
 
     public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)

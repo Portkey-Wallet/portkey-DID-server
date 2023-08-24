@@ -60,11 +60,11 @@ public class CAAccountController : CAServerController
         return _transactionFeeAppService.CalculateFee(input);
     }
     
-    [HttpGet("cancel/entrance")]
+    [HttpGet("revoke/entrance")]
     [Authorize]
-    public async Task<CancelCheckResultDto> CancelEntranceAsync()
+    public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
     {
-        return await _caAccountService.CancelEntranceAsync();
+        return await _caAccountService.RevokeEntranceAsync();
     }
     
     [HttpGet("cancel/check")]
