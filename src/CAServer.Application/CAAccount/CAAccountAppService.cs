@@ -256,7 +256,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var appleLoginGuardians = await GetGuardianAsync(caHash);
         if (appleLoginGuardians == null && appleLoginGuardians.Count != 1)
         {
-            throw new Exception("");
+            throw new Exception(ResponseMessage.AppleLoginGuardiansExceed);
         }
 
         var guardian = await _accountProvider.GetIdentifiersAsync(appleLoginGuardians.First().IdentifierHash);
