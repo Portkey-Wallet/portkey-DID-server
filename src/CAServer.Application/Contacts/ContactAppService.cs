@@ -21,6 +21,7 @@ using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
+using Environment = CAServer.Options.Environment;
 
 namespace CAServer.Contacts;
 
@@ -35,13 +36,15 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly ImServerOptions _imServerOptions;
     private readonly IHttpClientService _httpClientService;
     private readonly VariablesOptions _variablesOptions;
+    private readonly HostInfoOptions _hostInfoOptions;
 
     public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         IHttpContextAccessor httpContextAccessor,
         IContactProvider contactProvider,
         IOptionsSnapshot<ImServerOptions> imServerOptions,
         IHttpClientService httpClientService,
-        IOptions<VariablesOptions> variablesOptions)
+        IOptions<VariablesOptions> variablesOptions,
+        IOptionsSnapshot<HostInfoOptions> hostInfoOptions)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -49,6 +52,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _variablesOptions = variablesOptions.Value;
         _httpContextAccessor = httpContextAccessor;
         _imServerOptions = imServerOptions.Value;
+        _hostInfoOptions = hostInfoOptions.Value;
         _httpClientService = httpClientService;
     }
 
@@ -554,6 +558,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private async Task<ImInfo> GetImInfoAsync(string relationId)
     {
         if (relationId.IsNullOrWhiteSpace()) return null;
+        if (_hostInfoOptions.Environment == Environment.Development) return null;
+        
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
 
@@ -579,6 +585,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private async Task<ImInfo> GetImUserAsync(string address)
     {
         if (address.IsNullOrWhiteSpace()) return null;
+
+        if (_hostInfoOptions.Environment == Environment.Development) return null;
+        
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
 

@@ -47,6 +47,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
+        Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
