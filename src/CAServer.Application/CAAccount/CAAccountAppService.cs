@@ -211,8 +211,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             {
                 caAddressInfos.Add(new CAAddressInfo
                 {
-                    CaAddress = result.CaAddress.ToString(),
-                    ChainId = chainId
+                    CaAddress = result.CaAddress.ToString().Trim('"'),
+                    ChainId = chainId.Trim('"'),
                 });
             }
         }
@@ -296,8 +296,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             throw new UserFriendlyException("guardian not exist.");
         }
+
         var verifyResult = await _appleAuthProvider.VerifyAppleId(input.AppleToken, guardian.Identifier);
-        
+
         if (!verifyResult)
         {
             throw new UserFriendlyException(ResponseMessage.AppleIdVerifyFail);
