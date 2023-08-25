@@ -234,6 +234,13 @@ public class ContactAppService : CAServerAppService, IContactAppService
             //     }
             // }
             Logger.LogDebug("[contact merge] in merge, params: {data}", JsonConvert.SerializeObject(input));
+            
+            if (input.Addresses?.Count <= 1)
+            {
+                Logger.LogWarning("[contact merge] caAddress array not enough!");
+                return;
+            }
+            
             var addresses = input.Addresses.Select(t => t.Address).ToList();
             //merge
             var rawContacts = await _contactProvider.GetContactByAddressesAsync(Guid.Empty, addresses);
