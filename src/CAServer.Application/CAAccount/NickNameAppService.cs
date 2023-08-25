@@ -52,6 +52,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         {
             q => q.Term(i => i.Field(f => f.UserId).Value(CurrentUser.GetId()))
         };
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
 
         var holder = await _holderRepository.GetAsync(Filter);

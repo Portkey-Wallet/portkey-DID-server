@@ -59,6 +59,7 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(f => f.CaHash).Value(caHash)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         if (userId != Guid.Empty)
         {
@@ -248,6 +249,7 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userIds)));
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
         var holders = await _caHolderRepository.GetListAsync(Filter);
