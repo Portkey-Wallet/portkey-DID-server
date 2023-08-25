@@ -279,9 +279,15 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
+        Logger.LogInformation("user revoke, apple token: {token}", input.AppleToken);
         var validateResult = await CancelCheckAsync(CurrentUser.GetId());
         if (!validateResult.ValidatedDevice || !validateResult.ValidatedAssets || !validateResult.ValidatedGuardian)
         {
+            Logger.LogInformation(
+                "{message}, validateDevice:{validateDevice},validatedAssets:{validatedAssets},validateGuardian{validateGuardian}",
+                ResponseMessage.ValidFail, validateResult.ValidatedDevice, validateResult.ValidatedAssets,
+                validateResult.ValidatedGuardian);
+            
             throw new UserFriendlyException(ResponseMessage.ValidFail);
         }
 
@@ -316,6 +322,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             await DeleteGuardianAsync(guardian.Identifier);
             await _caHolderAppService.DeleteAsync();
+            Logger.LogInformation("user revoke success, apple token: {token}", input.AppleToken);
         }
 
         return new RevokeResultDto()
