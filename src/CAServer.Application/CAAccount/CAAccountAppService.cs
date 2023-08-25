@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
+using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
 using CAServer.Common;
@@ -44,12 +45,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IContractProvider _contractProvider;
     private readonly IGuardianAppService _guardianAppService;
     private readonly IGuardianProvider _guardianProvider;
-
     private readonly IUserAssetsAppService _userAssetsAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ICAAccountProvider _accountProvider;
-
     private readonly INickNameAppService _caHolderAppService;
+    private readonly IAppleAuthProvider _appleAuthProvider;
     private const int MaxResultCount = 10;
 
     public CAAccountAppService(IClusterClient clusterClient,
@@ -60,7 +60,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
         IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
         ICAAccountProvider accountProvider,
-        INickNameAppService caHolderAppService
+        INickNameAppService caHolderAppService,
+        IAppleAuthProvider appleAuthProvider
     )
     {
         _distributedEventBus = distributedEventBus;
@@ -74,6 +75,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _userAssetsProvider = userAssetsProvider;
         _caHolderAppService = caHolderAppService;
         _accountProvider = accountProvider;
+        _appleAuthProvider = appleAuthProvider;
         _chainOptions = chainOptions.Value;
     }
 
@@ -279,19 +281,29 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             throw new UserFriendlyException(ResponseMessage.AlreadyDeleted);
         }
 
-        var appleLoginGuardians =await GetGuardianAsync(caHolder.CaHash);
-        if (appleLoginGuardians == null && appleLoginGuardians.Count != 1)
+        var appleLoginGuardians = await GetGuardianAsync(caHolder.CaHash);
+        if (appleLoginGuardians?.Count != 1)
         {
-            throw new Exception("");
+            throw new UserFriendlyException(ResponseMessage.AppleLoginGuardiansExceed);
         }
 
         var guardian = await _accountProvider.GetIdentifiersAsync(appleLoginGuardians.First().IdentifierHash);
-        var appleId = guardian.Identifier;
+        var verifyResult = await _appleAuthProvider.VerifyAppleId(input.AppleToken, guardian.Identifier);
+        if (!verifyResult)
+        {
+            throw new UserFriendlyException(ResponseMessage.AppleIdVerifyFail);
+        }
 
-        await _caHolderAppService.DeleteAsync();
+        var revokeResult = await _appleAuthProvider.RevokeAsync(input.AppleToken);
+
+        if (revokeResult)
+        {
+            await _caHolderAppService.DeleteAsync();
+        }
+
         return new RevokeResultDto()
         {
-            Success = true
+            Success = revokeResult
         };
     }
 

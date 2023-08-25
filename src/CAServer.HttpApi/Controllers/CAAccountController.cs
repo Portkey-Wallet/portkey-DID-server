@@ -61,7 +61,7 @@ public class CAAccountController : CAServerController
     {
         return _transactionFeeAppService.CalculateFee(input);
     }
-    
+
     [HttpGet("revoke/entrance")]
     [Authorize]
     public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
@@ -77,7 +77,7 @@ public class CAAccountController : CAServerController
         return await _caAccountService.CancelCheckAsync(userId);
     }
 
-    [HttpPost("revoke/request"), Authorize]
+    [HttpPost("revoke/request"), Authorize, IgnoreAntiforgeryToken]
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
         return await _caAccountService.RevokeAsync(input);

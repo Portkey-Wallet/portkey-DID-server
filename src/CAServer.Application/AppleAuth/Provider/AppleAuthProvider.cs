@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using CAServer.AppleVerify;
 using CAServer.Common;
 using CAServer.Commons;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
@@ -17,7 +20,9 @@ namespace CAServer.AppleAuth.Provider;
 
 public interface IAppleAuthProvider
 {
-    string GetSecret();
+    Task<bool> RevokeAsync(string identityToken);
+    Task<SecurityToken> ValidateTokenAsync(string identityToken);
+    Task<bool> VerifyAppleId(string identityToken, string appleId);
 }
 
 public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
@@ -38,7 +43,78 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
         _logger = logger;
     }
 
-    private async Task<bool> RevokeAsync(string token)
+    public async Task<bool> VerifyAppleId(string identityToken, string appleId)
+    {
+        try
+        {
+            var securityToken = await ValidateTokenAsync(identityToken);
+            var jwtPayload = ((JwtSecurityToken)securityToken).Payload;
+            return jwtPayload.Sub == appleId;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            return false;
+        }
+    }
+    
+    public async Task<SecurityToken> ValidateTokenAsync(string identityToken)
+    {
+        try
+        {
+            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(identityToken);
+            var kid = jwtToken.Header["kid"].ToString();
+
+            var appleKeys = await GetAppleKeyFormAppleAsync();
+            var jwk = new JsonWebKey(
+                JsonConvert.SerializeObject(appleKeys.Keys.FirstOrDefault(t => t.Kid == kid)));
+
+            var validateParameter = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = "https://appleid.apple.com",
+                ValidateAudience = true,
+                ValidAudiences = _appleAuthOptions.Audiences,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = jwk
+            };
+
+            _jwtSecurityTokenHandler.ValidateToken(identityToken, validateParameter,
+                out SecurityToken validatedToken);
+
+            return validatedToken;
+        }
+        catch (SecurityTokenExpiredException e)
+        {
+            _logger.LogError(e, e.Message);
+            throw new UserFriendlyException("The token has expired.");
+        }
+        catch (SecurityTokenException e)
+        {
+            _logger.LogError(e, e.Message);
+            throw new UserFriendlyException("Valid token fail.");
+        }
+        catch (ArgumentException e)
+        {
+            _logger.LogError(e, e.Message);
+            throw new UserFriendlyException("Invalid token.");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, e.Message);
+            throw new UserFriendlyException(e.Message);
+        }
+    }
+    
+    private async Task<AppleKeys> GetAppleKeyFormAppleAsync()
+    {
+        var appleKeyUrl = "https://appleid.apple.com/auth/keys";
+        var response = await _httpClientFactory.CreateClient().GetStringAsync(appleKeyUrl);
+        return JsonConvert.DeserializeObject<AppleKeys>(response);
+    }
+
+    public async Task<bool> RevokeAsync(string token)
     {
         var client = _httpClientFactory.CreateClient();
         var parameters = new Dictionary<string, string>
@@ -54,7 +130,8 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError("request not success");
+            _logger.LogError("revoke not success, token: {token}, content:{content}", token,
+                response.Content.ReadAsStringAsync());
             return false;
         }
 
