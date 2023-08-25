@@ -69,7 +69,7 @@ public class CAAccountController : CAServerController
         return await _caAccountService.RevokeEntranceAsync();
     }
 
-    [HttpGet("cancel/check")]
+    [HttpGet("revoke/check")]
     [Authorize]
     public async Task<CancelCheckResultDto> CancelCheckAsync(CancelCheckDto input)
     {
