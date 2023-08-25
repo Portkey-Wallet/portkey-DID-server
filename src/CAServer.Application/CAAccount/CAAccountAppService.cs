@@ -217,7 +217,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             }
         }
 
-        var valedateAsset = false;
+        var valedateAsset = true;
         var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
             0, MaxResultCount);
 
@@ -227,7 +227,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 .Where(o => o.TokenInfo.Symbol == DefaultSymbol && o.Balance >= MinBanlance).ToList();
             if (tokenInfos.Count > 0)
             {
-                valedateAsset = true;
+                valedateAsset = false;
             }
         }
 
@@ -235,10 +235,10 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             null, 0, MaxResultCount);
         if (res.CaHolderNFTBalanceInfo.Data.Count > 0)
         {
-            valedateAsset = true;
+            valedateAsset = false;
         }
 
-        var validateDevice = false;
+        var validateDevice = true;
         var caAddresses = caAddressInfos.Select(t => t.CaAddress).ToList();
         var caHolderManagerInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
         if (caHolderManagerInfo != null && caHolderManagerInfo.CaHolderManagerInfo.Count > 0)
@@ -248,11 +248,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                          .Where(caHolderManager => caHolderManager.OriginChainId == originChainId)
                          .Where(caHolderManager => caHolderManager.ManagerInfos.Count > 1))
             {
-                validateDevice = true;
+                validateDevice = false;
             }
         }
 
-        var validateGuardian = false;
+        var validateGuardian = true;
         var appleLoginGuardians = await GetGuardianAsync(caHash);
         if (appleLoginGuardians == null && appleLoginGuardians.Count != 1)
         {
@@ -265,7 +265,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             await _accountProvider.GetGuardianAddedCAHolderAsync(guardian.IdentifierHash, 0, MaxResultCount);
         if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 0)
         {
-            validateGuardian = true;
+            validateGuardian = false;
         }
 
         return new CancelCheckResultDto()
