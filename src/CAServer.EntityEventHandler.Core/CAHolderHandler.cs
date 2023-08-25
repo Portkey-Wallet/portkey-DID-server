@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
@@ -25,18 +26,24 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly ILogger<CAHolderHandler> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IUserTokenAppService _userTokenAppService;
+    private readonly IContactProvider _contactProvider;
+    private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
         ILogger<CAHolderHandler> logger,
         IClusterClient clusterClient,
-        IUserTokenAppService userTokenAppService)
+        IUserTokenAppService userTokenAppService,
+        IContactProvider contactProvider,
+        INESTRepository<ContactIndex, Guid> contactRepository)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
         _logger = logger;
         _clusterClient = clusterClient;
         _userTokenAppService = userTokenAppService;
+        _contactProvider = contactProvider;
+        _contactRepository = contactRepository;
     }
 
     public async Task HandleEventAsync(CreateUserEto eventData)
@@ -70,6 +77,18 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         try
         {
             await _caHolderRepository.UpdateAsync(_objectMapper.Map<UpdateCAHolderEto, CAHolderIndex>(eventData));
+
+            var contacts = await _contactProvider.GetContactsAsync(eventData.UserId);
+            if (contacts == null || contacts.Count == 0) return;
+
+            foreach (var contact in contacts)
+            {
+                if (contact.CaHolderInfo == null) return;
+
+                contact.CaHolderInfo.WalletName = eventData.Nickname;
+                await _contactRepository.UpdateAsync(contact);
+                _logger.LogInformation("contact wallet name update success, contactId: {id}", contact.Id);
+            }
         }
         catch (Exception ex)
         {
