@@ -36,4 +36,6 @@ public static class CommonConstant
     
     public const string AuthHeader = "Authorization";
     public const string SuccessCode = "20000";
+
+    public const string AppleRevokeUrl = "https://appleid.apple.com/auth/revoke";
 }

@@ -196,6 +196,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<VerifierServerInput, SendVerificationRequestInput>();
         CreateMap<SendVerificationRequestInput, VerifierCodeRequestDto>();
         CreateMap<GuardianGrainDto, GuardianEto>();
+        CreateMap<GuardianGrainDto, GuardianDeleteEto>();
 
         CreateMap<ManagerInfo, ManagerInfoDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.Address.ToBase58()));
@@ -374,5 +375,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
         CreateMap<Entities.Es.CaHolderInfo, Contacts.CaHolderInfo>();
         CreateMap<Entities.Es.ImInfo, Contacts.ImInfo>();
+        
+        CreateMap<CAHolderGrainDto, DeleteCAHolderEto>();
     }
 }

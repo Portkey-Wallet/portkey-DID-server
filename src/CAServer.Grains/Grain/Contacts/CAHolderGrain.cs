@@ -64,6 +64,23 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         return result;
     }
 
+    public async Task<GrainResultDto<CAHolderGrainDto>> DeleteAsync()
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return result;
+        }
+
+        State.IsDeleted = true;
+        await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
+        return result;
+    }
+
     public Task<string> GetCAHashAsync()
     {
         return Task.FromResult(State.CaHash);
