@@ -211,8 +211,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             {
                 caAddressInfos.Add(new CAAddressInfo
                 {
-                    CaAddress = result.CaAddress.ToString().Trim('"'),
-                    ChainId = chainId.Trim('"'),
+                    CaAddress = result.CaAddress.ToBase58(),
+                    ChainId = chainId
                 });
             }
         }
