@@ -58,10 +58,13 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
-        return await _caHolderRepository.GetAsync(Filter);
+        var holder = await _caHolderRepository.GetAsync(Filter);
+        if (holder == null || holder.IsDeleted) return null;
+
+        return holder;
     }
 
     public async Task<GuardiansDto> GetCaHolderInfoAsync(string caHash, int skipCount = 0,

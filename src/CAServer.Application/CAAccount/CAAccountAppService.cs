@@ -292,7 +292,12 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
 
         var guardian = await _accountProvider.GetIdentifiersAsync(appleLoginGuardians.First().IdentifierHash);
+        if (guardian == null)
+        {
+            throw new UserFriendlyException("guardian not exist.");
+        }
         var verifyResult = await _appleAuthProvider.VerifyAppleId(input.AppleToken, guardian.Identifier);
+        
         if (!verifyResult)
         {
             throw new UserFriendlyException(ResponseMessage.AppleIdVerifyFail);
@@ -328,7 +333,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
 
         var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
-        var guardianGrainDto = await guardianGrain.GetGuardianAsync(guardianIdentifier);
+        var guardianGrainDto = await guardianGrain.DeleteGuardian();
         if (!guardianGrainDto.Success)
         {
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");

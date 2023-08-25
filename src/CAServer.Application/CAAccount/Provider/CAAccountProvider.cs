@@ -24,7 +24,7 @@ public class CAAccountProvider : ICAAccountProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
-    
+
     public CAAccountProvider(IGraphQLHelper graphQlHelper, INESTRepository<GuardianIndex, string> guardianRepository)
     {
         _graphQlHelper = graphQlHelper;
@@ -52,11 +52,14 @@ public class CAAccountProvider : ICAAccountProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(f => f.IdentifierHash).Value(identifierHash)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
-        return await _guardianRepository.GetAsync(Filter);
+        var guardian = await _guardianRepository.GetAsync(Filter);
+        if (guardian == null || guardian.IsDeleted) return null;
+
+        return guardian;
     }
 }

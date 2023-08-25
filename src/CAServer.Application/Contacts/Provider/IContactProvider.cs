@@ -59,7 +59,7 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(f => f.CaHash).Value(caHash)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         if (userId != Guid.Empty)
         {
@@ -67,7 +67,10 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         }
 
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
-        return await _caHolderRepository.GetAsync(Filter);
+        var holder = await _caHolderRepository.GetAsync(Filter);
+        if (holder == null || holder.IsDeleted) return null;
+
+        return holder;
     }
 
     public async Task<GuardiansDto> GetCaHolderInfoAsync(List<string> caAddresses, string caHash, int skipCount = 0,
@@ -249,7 +252,7 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userIds)));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
+        //mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
         var holders = await _caHolderRepository.GetListAsync(Filter);
