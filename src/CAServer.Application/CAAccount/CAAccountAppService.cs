@@ -279,6 +279,12 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
+        var validateResult = await CancelCheckAsync(CurrentUser.GetId());
+        if (!validateResult.ValidatedDevice || !validateResult.ValidatedAssets || !validateResult.ValidatedGuardian)
+        {
+            throw new UserFriendlyException(ResponseMessage.ValidFail);
+        }
+
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
         if (caHolder.IsDeleted)
         {
