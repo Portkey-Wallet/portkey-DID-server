@@ -52,6 +52,7 @@ public class CAAccountProvider : ICAAccountProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(f => f.IdentifierHash).Value(identifierHash)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
             f.Bool(b => b.Must(mustQuery));

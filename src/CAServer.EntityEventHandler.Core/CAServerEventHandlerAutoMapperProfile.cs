@@ -55,5 +55,6 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
         CreateMap<DeleteCAHolderEto, CAHolderIndex>();
+        CreateMap<GuardianDeleteEto, GuardianIndex>();
     }
 }

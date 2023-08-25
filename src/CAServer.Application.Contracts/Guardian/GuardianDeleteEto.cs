@@ -1,6 +1,9 @@
-namespace CAServer.Grains.Grain.Guardian;
+using Volo.Abp.EventBus;
 
-public class GuardianGrainDto
+namespace CAServer.Guardian;
+
+[EventName("GuardianDeleteEto")]
+public class GuardianDeleteEto
 {
     public string Id { get; set; }
     public string Identifier { get; set; }

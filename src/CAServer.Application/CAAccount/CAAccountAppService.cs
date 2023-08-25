@@ -302,6 +302,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         if (revokeResult)
         {
+            await DeleteGuardianAsync(guardian.Identifier);
             await _caHolderAppService.DeleteAsync();
         }
 
@@ -320,6 +321,26 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         return guardianInfo?.GuardianList.Guardians
             .Where(t => t.Type.Equals(((int)GuardianIdentifierType.Apple).ToString()) && t.IsLoginGuardian).ToList();
+    }
+
+    private async Task<GuardianGrainDto> DeleteGuardianAsync(string guardianIdentifier)
+    {
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
+
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        var guardianGrainDto = await guardianGrain.GetGuardianAsync(guardianIdentifier);
+        if (!guardianGrainDto.Success)
+        {
+            _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
+            throw new UserFriendlyException(guardianGrainDto.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(
+            ObjectMapper.Map<GuardianGrainDto, GuardianDeleteEto>(guardianGrainDto.Data));
+
+        Logger.LogInformation("guardian delete success, guardianIdentifier:{guardianIdentifier}", guardianIdentifier);
+
+        return guardianGrainDto.Data;
     }
 
     private async Task<string> GetCAHashAsync(string chainId, string loginGuardianIdentifierHash)
