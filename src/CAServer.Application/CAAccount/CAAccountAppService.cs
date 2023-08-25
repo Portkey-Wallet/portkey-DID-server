@@ -51,6 +51,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly INickNameAppService _caHolderAppService;
     private readonly IAppleAuthProvider _appleAuthProvider;
     private const int MaxResultCount = 10;
+    public const string DefaultSymbol = "ELF";
+    public const double MinBanlance = 0.05 * 100000000;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -222,7 +224,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         if (tokenRes.CaHolderTokenBalanceInfo.Data.Count > 0)
         {
             var tokenInfos = tokenRes.CaHolderTokenBalanceInfo.Data
-                .Where(o => o.TokenInfo.Symbol == "ELF" && o.Balance >= 0.05).ToList();
+                .Where(o => o.TokenInfo.Symbol == DefaultSymbol && o.Balance >= MinBanlance).ToList();
             if (tokenInfos.Count > 0)
             {
                 valedateAsset = true;
@@ -244,26 +246,28 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var originChainId = caHolderManagerInfo.CaHolderManagerInfo.First().OriginChainId;
             foreach (var caHolderManager in caHolderManagerInfo.CaHolderManagerInfo
                          .Where(caHolderManager => caHolderManager.OriginChainId == originChainId)
-                         .Where(caHolderManager => caHolderManager.Managers.Count > 1))
+                         .Where(caHolderManager => caHolderManager.ManagerInfos.Count > 1))
             {
                 validateDevice = true;
             }
         }
-        
+
         var validateGuardian = false;
-        var appleLoginGuardians =await GetGuardianAsync(caHash);
+        var appleLoginGuardians = await GetGuardianAsync(caHash);
         if (appleLoginGuardians == null && appleLoginGuardians.Count != 1)
         {
             throw new Exception("");
         }
 
         var guardian = await _accountProvider.GetIdentifiersAsync(appleLoginGuardians.First().IdentifierHash);
-        
-        var caHolderDto = await _accountProvider.GetGuardianAddedCAHolderAsync(guardian.IdentifierHash,0,MaxResultCount);
+
+        var caHolderDto =
+            await _accountProvider.GetGuardianAddedCAHolderAsync(guardian.IdentifierHash, 0, MaxResultCount);
         if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 0)
         {
             validateGuardian = true;
         }
+
         return new CancelCheckResultDto()
         {
             ValidatedDevice = validateDevice,

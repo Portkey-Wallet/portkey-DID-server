@@ -200,9 +200,9 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         return caHolder;
     }
 
-    public async Task<CAHolderManagerInfo> GetCaHolderManagerInfoAsync(List<string> userCaAddresses)
+    public async Task<CAHolderInfo> GetCaHolderManagerInfoAsync(List<string> userCaAddresses)
     {
-        return await _graphQlHelper.QueryAsync<CAHolderManagerInfo>(new GraphQLRequest
+        return await _graphQlHelper.QueryAsync<CAHolderInfo>(new GraphQLRequest
         {
             Query = @"
 			    query($caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
