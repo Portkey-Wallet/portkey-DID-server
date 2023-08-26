@@ -198,7 +198,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return resultDto;
     }
 
-    public async Task<CancelCheckResultDto> CancelCheckAsync(Guid uid)
+    public async Task<CancelCheckResultDto> RevokeCheckAsync(Guid uid)
     {
         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
         var caHash = caHolderIndex.CaHash;
@@ -287,7 +287,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 "{message}, validateDevice:{validateDevice},validatedAssets:{validatedAssets},validateGuardian{validateGuardian}",
                 ResponseMessage.ValidFail, validateResult.ValidatedDevice, validateResult.ValidatedAssets,
                 validateResult.ValidatedGuardian);
-            
+
             throw new UserFriendlyException(ResponseMessage.ValidFail);
         }
 

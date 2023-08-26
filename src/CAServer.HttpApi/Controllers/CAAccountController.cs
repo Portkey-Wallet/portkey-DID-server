@@ -74,7 +74,7 @@ public class CAAccountController : CAServerController
     public async Task<CancelCheckResultDto> CancelCheckAsync()
     {
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
-        return await _caAccountService.CancelCheckAsync(userId);
+        return await _caAccountService.RevokeCheckAsync(userId);
     }
 
     [HttpPost("revoke/request"), Authorize, IgnoreAntiforgeryToken]
