@@ -6,6 +6,7 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
+using Microsoft.Extensions.DependencyInjection;
 using Orleans.TestingHost;
 using Volo.Abp.Validation;
 using Xunit;
@@ -13,7 +14,7 @@ using Xunit;
 namespace CAServer.CAAccount;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public class RecoveryServiceTests : CAServerApplicationTestBase
+public partial class RecoveryServiceTests : CAServerApplicationTestBase
 {
     private const string DefaultEmailAddress = "1025289418@qq.com";
     private const string DefaultVerifierId = "DefaultVerifierId";
@@ -32,6 +33,12 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     {
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
+    }
+
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetMockUserAssetsProvider());
+        base.AfterAddApplication(services);
     }
 
     [Fact]
@@ -110,7 +117,7 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             Assert.True(ex is AbpValidationException);
         }
     }
-    
+
     [Fact]
     public async Task RecoverRequestAsync_Type_Is_Invalid_Test()
     {
@@ -166,7 +173,20 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             RecoveryStatus = "PASS",
             RecoveryMessage = string.Empty
         };
-        
-        
     }
+
+    [Fact]
+    public async Task RevokeCheckTest()
+    {
+        var uid = Guid.NewGuid();
+        await _caAccountAppService.RevokeCheckAsync(uid);
+        
+
+
+
+
+    }
+
+
+
 }
