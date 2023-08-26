@@ -263,7 +263,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var caHolderDto =
             await _accountProvider.GetGuardianAddedCAHolderAsync(guardian.IdentifierHash, 0, MaxResultCount);
-        if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 0)
+        if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 1)
         {
             validateGuardian = false;
         }
