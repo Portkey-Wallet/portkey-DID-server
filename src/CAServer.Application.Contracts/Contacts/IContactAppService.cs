@@ -13,7 +13,7 @@ public interface IContactAppService
     Task DeleteAsync(Guid id);
     Task<ContractExistDto> GetExistAsync(string name);
     Task<ContactResultDto> GetAsync(Guid id);
-    Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input);
+    Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input);
     Task MergeAsync(ContactMergeDto input);
     Task<ContactImputationDto> GetImputationAsync();
     Task ReadImputationAsync(ReadImputationDto input);
