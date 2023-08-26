@@ -49,6 +49,7 @@ using Volo.Abp.AutoMapper;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
 using GuardianType = CAServer.Account.GuardianType;
+using ImInfo = CAServer.Contacts.ImInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 
@@ -375,7 +376,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
         CreateMap<Entities.Es.CaHolderInfo, Contacts.CaHolderInfo>();
         CreateMap<Entities.Es.ImInfo, Contacts.ImInfo>();
-        
+
         CreateMap<CAHolderGrainDto, DeleteCAHolderEto>();
+        CreateMap<ImInfoDto, ImInfo>();
+        CreateMap<AddressWithChain, ContactAddressDto>()
+            .ForMember(t => t.ChainId, m => m.MapFrom(f => f.ChainName))
+            .ForMember(t => t.ChainName, f => f.MapFrom(m => m.ChainName));
     }
 }

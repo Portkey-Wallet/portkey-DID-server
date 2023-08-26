@@ -35,7 +35,10 @@ public static class CommonConstant
         "We are currently upgrading our system to serve you better. During this period, the Apple ID service is temporarily unavailable.";
     
     public const string AuthHeader = "Authorization";
+    public const string ImAuthHeader = "R-Authorization";
     public const string SuccessCode = "20000";
 
     public const string AppleRevokeUrl = "https://appleid.apple.com/auth/revoke";
+    public const string ImFollowUrl = "api/v1/contacts/follow";
+    public const string ImUnFollowUrl = "api/v1/contacts/unfollow";
 }

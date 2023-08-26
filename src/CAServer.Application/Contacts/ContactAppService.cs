@@ -20,6 +20,7 @@ using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
 using Environment = CAServer.Options.Environment;
 
@@ -86,6 +87,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
+
+        _ = FollowAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId);
 
         return contactResultDto;
     }
@@ -158,6 +161,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
+        _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
     }
 
     public async Task<ContractExistDto> GetExistAsync(string name)
@@ -234,13 +238,13 @@ public class ContactAppService : CAServerAppService, IContactAppService
             //     }
             // }
             Logger.LogDebug("[contact merge] in merge, params: {data}", JsonConvert.SerializeObject(input));
-            
+
             if (input.Addresses?.Count <= 1)
             {
                 Logger.LogWarning("[contact merge] caAddress array not enough!");
                 return;
             }
-            
+
             var addresses = input.Addresses.Select(t => t.Address).ToList();
             //merge
             var rawContacts = await _contactProvider.GetContactByAddressesAsync(Guid.Empty, addresses);
@@ -453,10 +457,16 @@ public class ContactAppService : CAServerAppService, IContactAppService
             var userInfo = await GetImInfoAsync(input.RelationId);
             if (userInfo != null)
             {
-                contact.ImInfo = userInfo;
+                contact.ImInfo = ObjectMapper.Map<ImInfoDto, ImInfo>(userInfo);
                 contact.CaHolderInfo = await GetHolderInfoAsync(userInfo.PortkeyId);
 
-                if (contact.CaHolderInfo == null) return contact;
+                if (contact.CaHolderInfo == null)
+                {
+                    contact.Addresses =
+                        ObjectMapper.Map<List<AddressWithChain>, List<ContactAddressDto>>(userInfo.AddressWithChain);
+                    
+                    return contact;
+                }
 
                 contact.Addresses = await GetAddressesAsync(contact.CaHolderInfo.CaHash);
             }
@@ -562,11 +572,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return ObjectMapper.Map<CAHolderIndex, CaHolderInfo>(caHolder);
     }
 
-    private async Task<ImInfo> GetImInfoAsync(string relationId)
+    private async Task<ImInfoDto> GetImInfoAsync(string relationId)
     {
         if (relationId.IsNullOrWhiteSpace()) return null;
         if (_hostInfoOptions.Environment == Environment.Development) return null;
-        
+
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
 
@@ -577,7 +587,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             header.Add(CommonConstant.AuthHeader, authToken);
         }
 
-        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(
+        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfoDto>>(
             _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}",
             header);
 
@@ -594,7 +604,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         if (address.IsNullOrWhiteSpace()) return null;
 
         if (_hostInfoOptions.Environment == Environment.Development) return null;
-        
+
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
 
@@ -618,14 +628,85 @@ public class ContactAppService : CAServerAppService, IContactAppService
     }
 
 
+    private async Task FollowAsync(string address, Guid userId)
+    {
+        try
+        {
+            if (address.IsNullOrWhiteSpace()) return;
+
+            var followDto = new FollowRequestDto()
+            {
+                Address = address
+            };
+
+            await ImPostAsync(_imServerOptions.BaseUrl + CommonConstant.ImFollowUrl, followDto);
+            Logger.LogInformation("{userId} follow address: {address}", address, userId.ToString());
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "{userId} follow error, address: {address}", address, userId.ToString());
+        }
+    }
+
+    private async Task UnFollowAsync(string address, Guid userId)
+    {
+        try
+        {
+            if (address.IsNullOrWhiteSpace()) return;
+
+            var followDto = new FollowRequestDto()
+            {
+                Address = address
+            };
+
+            await ImPostAsync(_imServerOptions.BaseUrl + CommonConstant.ImUnFollowUrl, followDto);
+            Logger.LogInformation("{userId} unfollow address: {address}", address, userId.ToString());
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "{userId} unfollow error, address: {address}", address, userId.ToString());
+        }
+    }
+
+    private async Task ImPostAsync(string url, object param)
+    {
+        if (_hostInfoOptions.Environment == Environment.Development) return;
+
+        if (!_httpContextAccessor.HttpContext.Request.Headers.Keys.Contains(CommonConstant.ImAuthHeader,
+                StringComparer.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var header = new Dictionary<string, string>();
+        header.Add(CommonConstant.ImAuthHeader,
+            _httpContextAccessor.HttpContext.Request.Headers[CommonConstant.ImAuthHeader]);
+
+        var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
+            out var authToken);
+
+        if (hasAuthToken)
+        {
+            header.Add(CommonConstant.AuthHeader, authToken);
+        }
+
+        var responseDto = await _httpClientService.PostAsync<CommonResponseDto<object>>(url, param, header);
+
+        if (!responseDto.Success())
+        {
+            Logger.LogError("request im error, url:{url}", url);
+        }
+    }
+
+
     public async Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input)
     {
         var result = new List<GetNamesResultDto>();
         var userId = CurrentUser.GetId();
         var contacts = await _contactProvider.GetContactsAsync(userId);
 
-        var contas = contacts.Where(t => t.ImInfo != null).ToList();
-        var names = contas.Where(t => !t.Name.IsNullOrWhiteSpace());
+        var contactsIm = contacts.Where(t => t.ImInfo != null).ToList();
+        var names = contactsIm.Where(t => !t.Name.IsNullOrWhiteSpace());
         foreach (var name in names)
         {
             result.Add(new GetNamesResultDto()
@@ -637,8 +718,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
             input.Remove(Guid.Parse(name.ImInfo.PortkeyId));
         }
 
-        var names2 = contas.Where(t => t.Name.IsNullOrWhiteSpace() && t.CaHolderInfo != null);
-        foreach (var name in names2)
+        var contactsHolder = contactsIm.Where(t => t.Name.IsNullOrWhiteSpace() && t.CaHolderInfo != null);
+        foreach (var name in contactsHolder)
         {
             result.Add(new GetNamesResultDto()
             {
