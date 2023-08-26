@@ -190,27 +190,25 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
     }
 
-    public async Task<PagedResultDto<ContactResultDto>> GetListAsync(ContactGetListDto input)
+    public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         var (totalCount, contactList) = await _contactProvider.GetListAsync(CurrentUser.GetId(), input);
 
-        var pagedResultDto = new PagedResultDto<ContactResultDto>
-        {
-            TotalCount = totalCount,
-            Items = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList)
-        };
+        var contactDtoList = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList);
+        
 
         var imageMap = _variablesOptions.ImageMap;
 
-        foreach (var contactProfileDto in pagedResultDto.Items)
+        foreach (var contactAddressDto in contactDtoList.SelectMany(contactProfileDto => contactProfileDto.Addresses))
         {
-            foreach (var contactAddressDto in contactProfileDto.Addresses)
-            {
-                contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
-            }
+            contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
 
-        return pagedResultDto;
+        return new PagedResultDto<ContactListDto>
+        {
+            TotalCount = totalCount,
+            Items = ObjectMapper.Map<List<ContactResultDto>, List<ContactListDto>>(contactDtoList)
+        };
     }
 
     public async Task MergeAsync(ContactMergeDto input)

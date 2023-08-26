@@ -382,5 +382,17 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<AddressWithChain, ContactAddressDto>()
             .ForMember(t => t.ChainId, m => m.MapFrom(f => f.ChainName))
             .ForMember(t => t.ChainName, f => f.MapFrom(m => m.ChainName));
+        CreateMap<Contacts.CaHolderInfo, CaHolderDto>()
+            .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
+            ;
+        CreateMap<ImInfo, ImInfos>()
+            .ForMember(t => t.PortkeyId, m => m.MapFrom(f => f.PortkeyId == Guid.Empty ? string.Empty : f.PortkeyId.ToString()))
+            ;
+        CreateMap<ContactResultDto, ContactListDto>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.Id == Guid.Empty ? string.Empty : f.Id.ToString()))
+            .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
+            .ReverseMap()
+            ;
+        
     }
 }
