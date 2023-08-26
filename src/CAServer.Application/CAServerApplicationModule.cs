@@ -46,6 +46,8 @@ public class CAServerApplicationModule : AbpModule
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
+        Configure<ImServerOptions>(configuration.GetSection("ImServer"));
+        Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
@@ -85,5 +87,6 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        Configure<VariablesOptions>(configuration.GetSection("Variables"));
     }
 }

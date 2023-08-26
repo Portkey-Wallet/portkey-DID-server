@@ -28,7 +28,7 @@ public class CAServerApplicationTestModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         // load config from [appsettings.Development.json]
-        var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+        var environmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
         var builder = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
