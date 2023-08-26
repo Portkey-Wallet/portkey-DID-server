@@ -217,7 +217,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             }
         }
 
-        var valedateAsset = true;
+        var validateAssets = true;
         var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
             0, MaxResultCount);
 
@@ -227,7 +227,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 .Where(o => o.TokenInfo.Symbol == DefaultSymbol && o.Balance >= MinBanlance).ToList();
             if (tokenInfos.Count > 0)
             {
-                valedateAsset = false;
+                validateAssets = false;
             }
         }
 
@@ -235,7 +235,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             null, 0, MaxResultCount);
         if (res.CaHolderNFTBalanceInfo.Data.Count > 0)
         {
-            valedateAsset = false;
+            validateAssets = false;
         }
 
         var validateDevice = true;
@@ -263,7 +263,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var caHolderDto =
             await _accountProvider.GetGuardianAddedCAHolderAsync(guardian.IdentifierHash, 0, MaxResultCount);
-        if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 0)
+        if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 1)
         {
             validateGuardian = false;
         }
@@ -271,7 +271,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new CancelCheckResultDto()
         {
             ValidatedDevice = validateDevice,
-            ValidatedAssets = valedateAsset,
+            ValidatedAssets = validateAssets,
             ValidatedGuardian = validateGuardian
         };
     }
