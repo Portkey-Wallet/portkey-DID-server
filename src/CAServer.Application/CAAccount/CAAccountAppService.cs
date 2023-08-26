@@ -280,7 +280,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
         Logger.LogInformation("user revoke, apple token: {token}", input.AppleToken);
-        var validateResult = await CancelCheckAsync(CurrentUser.GetId());
+        var validateResult = await RevokeCheckAsync(CurrentUser.GetId());
         if (!validateResult.ValidatedDevice || !validateResult.ValidatedAssets || !validateResult.ValidatedGuardian)
         {
             Logger.LogInformation(
