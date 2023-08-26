@@ -4,11 +4,14 @@ using System.Globalization;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using AElf.Kernel;
+using CAServer.Common;
 using CAServer.Contacts;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Security;
 using CAServer.Verifier;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Shouldly;
 using Volo.Abp.Users;
 using Volo.Abp.Validation;
@@ -31,6 +34,12 @@ public class ContactTest : CAServerApplicationTestBase
     {
         _contactAppService = GetRequiredService<IContactAppService>();
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
+    }
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        base.AfterAddApplication(services);
+        services.AddSingleton(GetMockIGraphQLHelper());
     }
 
     [Fact]
@@ -262,6 +271,12 @@ public class ContactTest : CAServerApplicationTestBase
         {
             e.Message.ShouldBe(ContactMessage.NotExistMessage);
         }
+    }
+    
+    private IGraphQLHelper GetMockIGraphQLHelper()
+    {
+        var mockHelper = new Mock<IGraphQLHelper>();
+        return mockHelper.Object;
     }
 
 }
