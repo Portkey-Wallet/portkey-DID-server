@@ -5,6 +5,9 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Options;
+using Microsoft.Extensions.Options;
+using Moq;
 using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Validation;
@@ -27,11 +30,13 @@ public class RegisterServiceTests : CAServerApplicationTestBase
 
     private readonly ICAAccountAppService _caAccountAppService;
     private readonly TestCluster _cluster;
-
+    private readonly AppleCacheOptions _appleCacheOptions;
+    
     public RegisterServiceTests()
     {
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
+          _appleCacheOptions = MockAppleCacheOptions().Value;
     }
 
     [Fact]
@@ -148,5 +153,15 @@ public class RegisterServiceTests : CAServerApplicationTestBase
         {
             Assert.True(ex is AbpValidationException);
         }
+    }
+    
+    private IOptionsSnapshot<AppleCacheOptions> MockAppleCacheOptions()
+    {
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AppleCacheOptions>>();
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+            new AppleCacheOptions
+            {
+            });
+        return mockOptionsSnapshot.Object;
     }
 }

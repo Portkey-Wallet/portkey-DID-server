@@ -6,6 +6,9 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Options;
+using Microsoft.Extensions.Options;
+using Moq;
 using Orleans.TestingHost;
 using Volo.Abp.Validation;
 using Xunit;
@@ -27,11 +30,13 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
     private readonly ICAAccountAppService _caAccountAppService;
     private readonly TestCluster _cluster;
+    private readonly AppleCacheOptions _appleCacheOptions;
 
     public RecoveryServiceTests()
     {
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
+        _appleCacheOptions = MockAppleCacheOptions().Value;
     }
 
     [Fact]
@@ -110,7 +115,7 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             Assert.True(ex is AbpValidationException);
         }
     }
-    
+
     [Fact]
     public async Task RecoverRequestAsync_Type_Is_Invalid_Test()
     {
@@ -166,7 +171,15 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             RecoveryStatus = "PASS",
             RecoveryMessage = string.Empty
         };
-        
-        
+    }
+
+    private IOptionsSnapshot<AppleCacheOptions> MockAppleCacheOptions()
+    {
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AppleCacheOptions>>();
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+            new AppleCacheOptions
+            {
+            });
+        return mockOptionsSnapshot.Object;
     }
 }
