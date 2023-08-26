@@ -206,14 +206,23 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key])
                      .Select(chainOptionsChainInfo => chainOptionsChainInfo.ChainId))
         {
-            var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
-            if (result != null)
+            try
             {
-                caAddressInfos.Add(new CAAddressInfo
+                var result = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
+                if (result != null)
                 {
-                    CaAddress = result.CaAddress.ToBase58(),
-                    ChainId = chainId
-                });
+                    caAddressInfos.Add(new CAAddressInfo
+                    {
+                        CaAddress = result.CaAddress.ToBase58(),
+                        ChainId = chainId
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "get holder from chain error, userId:{userId}, caHash:{caHash}", uid.ToString(),
+                    caHash);
+                continue;
             }
         }
 
