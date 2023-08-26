@@ -85,6 +85,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         foreach (var contactAddressDto in contactResultDto.Addresses)
         {
+            contactAddressDto.ChainName = contactAddressDto.ChainName.IsNullOrWhiteSpace()
+                ? CommonConstant.ChainName
+                : contactAddressDto.ChainName;
+            
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
 
@@ -143,6 +147,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         foreach (var contactAddressDto in contactResultDto.Addresses)
         {
+            contactAddressDto.ChainName = contactAddressDto.ChainName.IsNullOrWhiteSpace()
+                ? CommonConstant.ChainName
+                : contactAddressDto.ChainName;
+            
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
 
@@ -195,7 +203,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var (totalCount, contactList) = await _contactProvider.GetListAsync(CurrentUser.GetId(), input);
 
         var contactDtoList = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contactList);
-        
+
 
         var imageMap = _variablesOptions.ImageMap;
 
@@ -452,7 +460,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 {
                     contact.Addresses =
                         ObjectMapper.Map<List<AddressWithChain>, List<ContactAddressDto>>(userInfo.AddressWithChain);
-                    
+
                     return contact;
                 }
 
