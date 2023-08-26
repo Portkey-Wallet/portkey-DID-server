@@ -38,6 +38,7 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(GetMockUserAssetsProvider());
+        
         base.AfterAddApplication(services);
     }
 

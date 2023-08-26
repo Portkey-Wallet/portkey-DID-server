@@ -1,8 +1,13 @@
+using System;
 using System.Collections.Generic;
+using CAServer.Entities.Es;
+using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Microsoft.Extensions.Options;
 using Moq;
+using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
 
 namespace CAServer.CAAccount;
 
@@ -11,6 +16,16 @@ public partial class RecoveryServiceTests
     private IUserAssetsProvider GetMockUserAssetsProvider()
     {
         var mockUserAssetsProvider = new Mock<IUserAssetsProvider>();
+        var uid = Guid.NewGuid();
+        mockUserAssetsProvider.Setup(m => m.GetCaHolderIndexAsync(It.IsAny<Guid>())).ReturnsAsync(
+            new CAHolderIndex
+            {
+                UserId = uid,
+                CaHash = "",
+                NickName = "MockName",
+                IsDeleted = false,
+                CreateTime = DateTime.Now
+            });
 
         mockUserAssetsProvider.Setup(m => m.GetUserChainIdsAsync(It.IsAny<List<string>>())).ReturnsAsync(
             new IndexerChainIds
@@ -71,6 +86,31 @@ public partial class RecoveryServiceTests
                     }
                 }
             });
+
+
         return mockUserAssetsProvider.Object;
     }
+    
+    
+    private IOptions<ChainOptions> GetMockChainOptions()
+    {
+        var dict = new Dictionary<string, Options.ChainInfo>
+        {
+            ["MockChain"] = new()
+            {
+                ChainId = "MockChainId",
+                BaseUrl = "http://localhost:8000",
+                ContractAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                PrivateKey = "0x",
+                TokenContractAddress = ""
+            }
+        };
+
+        return new OptionsWrapper<ChainOptions>(new ChainOptions()
+        {
+            ChainInfos = dict
+        });
+    }
+    
+    
 }
