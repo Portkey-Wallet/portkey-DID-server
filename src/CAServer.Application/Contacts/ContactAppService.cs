@@ -432,20 +432,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             throw new UserFriendlyException("This address has already been taken in other contacts");
         }
-
-        // var imInfo = await GetImUserAsync(address.Address);
-        // if (imInfo == null || imInfo.RelationId.IsNullOrWhiteSpace()) return;
-        //
-        // var contactInfo = await _contactProvider.GetContactByRelationIdAsync(userId, imInfo.RelationId);
-        // if (contactInfo != null)
-        // {
-        //     throw new UserFriendlyException("This address has already been taken in other contacts");
-        // }
     }
 
     private async Task<ContactDto> GetContactDtoAsync(CreateUpdateContactDto input, Guid? contactId = null)
     {
-        //return ObjectMapper.Map<CreateUpdateContactDto, ContactDto>(input);
         var contact = ObjectMapper.Map<CreateUpdateContactDto, ContactDto>(input);
         if (input.Addresses.Count == 0 && !input.RelationId.IsNullOrWhiteSpace())
         {
