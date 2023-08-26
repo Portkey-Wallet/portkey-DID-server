@@ -209,6 +209,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         foreach (var contactAddressDto in contactDtoList.SelectMany(contactProfileDto => contactProfileDto.Addresses))
         {
+            contactAddressDto.ChainName = contactAddressDto.ChainName.IsNullOrWhiteSpace()
+                ? CommonConstant.ChainName
+                : contactAddressDto.ChainName;
+
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
 
