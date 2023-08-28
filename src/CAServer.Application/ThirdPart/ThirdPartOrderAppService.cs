@@ -52,7 +52,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _merchantOptions = thirdPartOptions.Value.Merchant;
     }
 
-
+    // crate user ramp order
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
         // var userId = input.UserId;
@@ -86,7 +86,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         return new OrderCreatedDto();
     }
 
-
+    // create base order with nft-order section
     public async Task<ResponseDto> CreateNftOrderAsync(CreateNftOrderRequestDto input)
     {
         try
