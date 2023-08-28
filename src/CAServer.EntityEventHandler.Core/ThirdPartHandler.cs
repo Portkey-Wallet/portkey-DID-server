@@ -15,6 +15,7 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
 {
     private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
+    private readonly INESTRepository<NftOrderIndex, Guid> _nftOrderRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ThirdPartHandler> _logger;
 
@@ -22,12 +23,14 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
         INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         ILogger<ThirdPartHandler> logger,
-        INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository)
+        INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository,
+        INESTRepository<NftOrderIndex, Guid> nftOrderRepository)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _logger = logger;
         _orderStatusInfoRepository = orderStatusInfoRepository;
+        _nftOrderRepository = nftOrderRepository;
     }
 
     public async Task HandleEventAsync(OrderEto eventData)
@@ -59,8 +62,29 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while processing the event, statusId:{id}, orderId:{orderId}", eventData.Id,
+            _logger.LogError(ex, "An error occurred while processing the event, statusId:{id}, orderId:{orderId}",
+                eventData.Id,
                 eventData.OrderId);
+        }
+    }
+
+    public async Task HandleEventAsync(NftOrderEto eventData)
+    {
+        try
+        {
+            var nftOrderInfo = _objectMapper.Map<NftOrderEto, NftOrderIndex>(eventData);
+
+            await _nftOrderRepository.AddOrUpdateAsync(nftOrderInfo);
+
+            _logger.LogInformation(
+                "nft order index add or update success, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
+                eventData.Id, eventData.MerchantName, eventData.MerchantOrderId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                "An error occurred while processing the event, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
+                eventData.Id, eventData.MerchantName, eventData.MerchantOrderId);
         }
     }
 }

@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.ThirdPart.Dtos;
 
@@ -31,18 +34,18 @@ public class CreateNftOrderResponseDto : NftMerchantBaseDto
 public class OrderQueryRequestDto : NftMerchantBaseDto
 {
     public string MerchantOrderId { get; set; }
-    [Required] public string OrderId { get; set; }
+    public string OrderId { get; set; }
 }
 
 public class OrderQueryResponseDto : NftMerchantBaseDto
 {
-    private string NftSymbol { get; set; }
-    private string MerchantOrderId { get; set; }
-    private string WebhookUrl { get; set; }
-    private string NftPicture { get; set; }
-    private string PriceSymbol { get; set; }
-    private string PriceAmount { get; set; }
-    private string Status { get; set; }
+    public string NftSymbol { get; set; }
+    public string MerchantOrderId { get; set; }
+    public string WebhookUrl { get; set; }
+    public string NftPicture { get; set; }
+    public string PriceSymbol { get; set; }
+    public string PriceAmount { get; set; }
+    public string Status { get; set; }
 }
 
 
@@ -54,4 +57,19 @@ public class NftResultRequestDto : NftMerchantBaseDto
     public string MerchantOrderId { get; set; }
 }
 
+
+public class NftOrderQueryConditionDto : PagedResultRequestDto
+{
+    private NftOrderQueryConditionDto() {}
+
+    public NftOrderQueryConditionDto(int skipCount, int maxResultCount)
+    {
+        base.MaxResultCount = maxResultCount;
+        base.SkipCount = skipCount;
+    }
+    
+    public List<Guid> IdIn { get; set; }
+    public string MerchantName { get; set; }
+    public List<string> MerchantOrderIdIn { get; set; }
+}
 

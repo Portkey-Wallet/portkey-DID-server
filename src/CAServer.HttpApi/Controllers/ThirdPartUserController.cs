@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using CAServer.Commons.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -36,7 +37,7 @@ public class ThirdPartUserController : CAServerController
     }
     
     [HttpGet("orders")]
-    public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
+    public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
     }

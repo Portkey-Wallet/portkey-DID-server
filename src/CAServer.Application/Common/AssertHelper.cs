@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using JetBrains.Annotations;
+using Microsoft.IdentityModel.Tokens;
 using Volo.Abp;
 
 namespace CAServer.Common;
@@ -8,25 +10,31 @@ namespace CAServer.Common;
 public static class AssertHelper
 {
     private const string DefaultErrorCode = "50000";
+    private const string DefaultErrorReason = "Assert failed";
 
     
-    public static void IsTrue(bool expression, string reason, params string[] args)
+    public static void IsTrue(bool expression, [CanBeNull] string reason, [ItemCanBeNull] params object[] args)
     {
         IsTrue(expression, DefaultErrorCode, reason, args);
     }
 
 
-    public static void NotEmpty([CanBeNull] string str, string reason, params string[] args)
+    public static void NotEmpty([CanBeNull] string str, [CanBeNull] string reason, [ItemCanBeNull] params object[] args)
     {
         IsTrue(!str.IsNullOrEmpty(), reason, args);
     }
+    
+    public static void NotEmpty<T>([CanBeNull] IEnumerable<T> collection, [CanBeNull] string reason, [ItemCanBeNull] params object[] args)
+    {
+        IsTrue(!collection.IsNullOrEmpty(), reason, args);
+    }
 
-    public static void NotNull(object obj, string reason, params string[] args)
+    public static void NotNull(object obj, [CanBeNull] string reason, [ItemCanBeNull] params object[] args)
     {
         IsTrue(obj != null, reason, args);
     }
 
-    public static void IsTrue(bool expression, string code, string reason, params string[] args)
+    public static void IsTrue(bool expression, [CanBeNull] string code = DefaultErrorCode, [CanBeNull] string reason = DefaultErrorReason, [ItemCanBeNull] params object[] args)
     {
         if (!expression)
         {
@@ -34,7 +42,7 @@ public static class AssertHelper
         }
     }
     
-    private static string Format(string template, params string[] values)
+    private static string Format(string template, params object[] values)
     {
         if (values == null || values.Length == 0)
             return template;
@@ -52,7 +60,7 @@ public static class AssertHelper
             result.Append(template, start, placeholderStart - start);
 
             if (valueIndex < values.Length)
-                result.Append(values[valueIndex++]);
+                result.Append((values[valueIndex++] ?? "null").ToString);
             else
                 result.Append(template, placeholderStart, placeholderEnd - placeholderStart + 1);
 

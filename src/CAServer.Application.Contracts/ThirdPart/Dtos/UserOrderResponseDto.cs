@@ -47,4 +47,6 @@ public class OrderDto
     public string ReceivingMethod { get; set; }
     public string ReceiptTime { get; set; }
     public string TransactionId { get; set; }
+
+    public Dictionary<string, BaseOrderSection> OrderSections { get; set; } = new();
 }
