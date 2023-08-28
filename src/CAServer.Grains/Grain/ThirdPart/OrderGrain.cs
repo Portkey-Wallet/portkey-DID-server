@@ -16,6 +16,17 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
 
     public async Task<GrainResultDto<OrderGrainDto>> CreateUserOrderAsync(OrderGrainDto input)
     {
+        // verify order exits
+        if (!State.TransDirect.IsNullOrEmpty())
+        {
+            return new GrainResultDto<OrderGrainDto>()
+            {
+                Success = false,
+                Message = $"order {input.Id} exists"
+            };
+        }
+        
+        // update as new order
         State = _objectMapper.Map<OrderGrainDto, OrderState>(input);
         if (State.Id == Guid.Empty)
         {

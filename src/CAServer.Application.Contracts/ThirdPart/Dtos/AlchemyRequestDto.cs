@@ -144,3 +144,21 @@ public class QueryAlchemyOrderInfo
     public string PayType { get; set; }
     public string CryptoQuantity { get; set; }
 }
+
+public class AlchemyNftOrderRequestDto : IThirdOrderUpdateRequest
+{
+    public string Amount { get; set; }
+    public string Fiat { get; set; }
+    public string OrderNo { get; set; }
+    public string PayTime { get; set; }
+    public string PayType { get; set; }
+    public string Type { get; set; }
+    public string Name { get; set; }
+    public string Quantity { get; set; }
+    public string UniqueId { get; set; }
+    public string AppId { get; set; }
+    public string MerchantOrderNo { get; set; }
+    public string Message { get; set; }
+    public string Status { get; set; }
+    public string Signature { get; set; }
+}

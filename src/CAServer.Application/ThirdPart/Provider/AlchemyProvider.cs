@@ -30,7 +30,7 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
         ILogger<AlchemyServiceAppService> logger)
     {
         _httpClientFactory = httpClientFactory;
-        _alchemyOptions = merchantOptions.Value.alchemy;
+        _alchemyOptions = merchantOptions.Value.Alchemy;
         _logger = logger;
     }
 

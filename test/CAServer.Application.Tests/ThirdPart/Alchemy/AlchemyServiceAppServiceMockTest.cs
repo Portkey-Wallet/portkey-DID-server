@@ -13,14 +13,14 @@ public partial class AlchemyServiceAppServiceTest
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
-            alchemy = new AlchemyOptions()
+            Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
                 AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
                 SkipCheckSign = true
             },
-            timer = new ThirdPartTimerOptions()
+            Timer = new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,

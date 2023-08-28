@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
@@ -57,7 +58,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     public async Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync()
     {
         const string transDirectSell = "TokenSell";
-        var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.timer.HandleUnCompletedOrderMinuteAgo)
+        var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.Timer.HandleUnCompletedOrderMinuteAgo)
             .ToUnixTimeMilliseconds();
         var unCompletedState = new List<string>
         {
@@ -84,10 +85,20 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         return _objectMapper.Map<List<RampOrderIndex>, List<OrderDto>>(userOrders);
     }
 
-    public async Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, int skipCount, int maxResultCount)
+    public async Task<List<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, Guid orderId, int skipCount,
+        int maxResultCount)
     {
+        AssertHelper.IsTrue(userId != Guid.Empty || orderId != Guid.Empty, "userId or orderId required.");
         var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userId)));
+        if (userId != Guid.Empty)
+        {
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userId)));
+        }
+
+        if (orderId != Guid.Empty)
+        {
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(orderId)));
+        }
 
         QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));

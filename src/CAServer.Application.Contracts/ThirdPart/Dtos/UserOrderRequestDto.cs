@@ -11,12 +11,11 @@ public class CreateUserOrderDto : IValidatableObject
     // UserId Only available in test sessions since we don't' get authorized user. 
     public Guid UserId { get; set; }
     [Required] public string TransDirect { get; set; }
-    [Required] public string MerchantName { get; set; }
+    public string MerchantName { get; set; }
 
-    public IEnumerable<ValidationResult> Validate(
-        ValidationContext validationContext)
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (!ThirdPartHelper.MerchantNameExist(MerchantName))
+        if (MerchantName != null && !ThirdPartHelper.MerchantNameExist(MerchantName))
         {
             yield return new ValidationResult(
                 $"Merchant name {MerchantName} is not exist."
@@ -35,4 +34,5 @@ public class CreateUserOrderDto : IValidatableObject
 public class GetUserOrdersDto : PagedResultRequestDto
 {
     public Guid UserId { get; set; }
+    public Guid OrderId { get; set; }
 }

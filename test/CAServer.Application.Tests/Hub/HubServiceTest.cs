@@ -179,14 +179,14 @@ public class HubServiceTest : CAServerApplicationTestBase
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
-            alchemy = new AlchemyOptions()
+            Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
                 AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
                 SkipCheckSign = true
             },
-            timer =  new ThirdPartTimerOptions()
+            Timer =  new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 100,
                 DelaySeconds = 1,

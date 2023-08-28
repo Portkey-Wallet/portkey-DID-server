@@ -131,7 +131,7 @@ public class HubService : CAServerAppService, IHubService
 
     private async Task RequestConditionOrderAsync(string targetClientId, string orderId, Func<OrderDto, bool> matchCondition, string callbackMethod)
     {
-        var cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
+        var cts = new CancellationTokenSource(_thirdPartOptions.Timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
         {
             try
@@ -157,7 +157,7 @@ public class HubService : CAServerAppService, IHubService
                 {
                     _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
                         orderId, callbackMethod);
-                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.DelaySeconds));
+                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.Timer.DelaySeconds));
                     continue;
                 }
 

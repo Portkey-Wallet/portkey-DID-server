@@ -1,18 +1,19 @@
+using System.Collections.Generic;
 using CAServer.Commons;
 
 namespace CAServer.Options;
 
 public class ThirdPartOptions
 {
-    public AlchemyOptions alchemy { get; set; }
-    public ThirdPartTimerOptions timer { get; set; } = new ThirdPartTimerOptions();
+    public AlchemyOptions Alchemy { get; set; }
+    public ThirdPartTimerOptions Timer { get; set; } = new();
+    public MerchantOptions Merchant { get; set; } = new();
 }
 
 public class ThirdPartTimerOptions
 {
     public int DelaySeconds { get; set; } = 1;
     public int TimeoutMillis { get; set; } = 60000;
-    
     public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
 }
 
@@ -30,4 +31,13 @@ public class AlchemyOptions
     public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
     public string MerchantQueryTradeUri { get; set; }
+}
+
+public class MerchantOptions
+{
+    // merchantName => publicKey, publicKey of merchant
+    public Dictionary<string, string> MerchantPublicKey { get; set; } = new();
+    
+    // merchantName => privateKey, privateKey of Did, diff pk for diff merchant 
+    public Dictionary<string, string> DidPrivateKey { get; set; } = new();
 }

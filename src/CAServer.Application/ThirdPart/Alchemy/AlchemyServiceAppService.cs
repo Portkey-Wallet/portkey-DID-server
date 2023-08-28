@@ -35,7 +35,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         ILogger<AlchemyServiceAppService> logger,IDistributedCache<List<AlchemyFiatDto>> fiatListCache,
         IDistributedCache<AlchemyOrderQuoteDataDto> orderQuoteCache)
     {
-        _alchemyOptions = merchantOptions.Value.alchemy;
+        _alchemyOptions = merchantOptions.Value.Alchemy;
         _alchemyProvider = alchemyProvider;
         _logger = logger;
         _fiatListCache = fiatListCache;

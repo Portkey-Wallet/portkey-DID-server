@@ -113,4 +113,14 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
             }
         });
     }
+
+    public async Task<CAHolderIndex> GetCaHolder(string caHash)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.CaHash).Value(caHash)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
+        return caHolder;
+    }
 }

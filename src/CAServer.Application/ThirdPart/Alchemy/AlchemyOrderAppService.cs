@@ -56,7 +56,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _clusterClient = clusterClient;
         _objectMapper = objectMapper;
         _logger = logger;
-        _alchemyOptions = merchantOptions.Value.alchemy;
+        _alchemyOptions = merchantOptions.Value.Alchemy;
         _alchemyProvider = alchemyProvider;
         _orderStatusProvider = orderStatusProvider;
     }

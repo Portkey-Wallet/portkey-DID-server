@@ -19,7 +19,7 @@ public class ThirdPartOrderProviderTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetThirdPartOrdersByPageAsyncTest()
     {
-        var result = await _orderProvider.GetThirdPartOrdersByPageAsync(Guid.Empty, 0, 10);
+        var result = await _orderProvider.GetThirdPartOrdersByPageAsync(Guid.Empty, Guid.Empty, 0, 10);
         result.Count.ShouldBe(0);
     }
 }

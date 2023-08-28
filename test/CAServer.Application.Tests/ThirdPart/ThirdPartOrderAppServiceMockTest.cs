@@ -16,7 +16,7 @@ public partial class ThirdPartOrderAppServiceTest
     private IThirdPartOrderProvider getMockTokenPriceGrain()
     {
         var mockThirdPartOrderProvider = new Mock<IThirdPartOrderProvider>();
-        mockThirdPartOrderProvider.Setup(o => o.GetThirdPartOrdersByPageAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>()))
+        mockThirdPartOrderProvider.Setup(o => o.GetThirdPartOrdersByPageAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(
                 new List<OrderDto>()
                 {
