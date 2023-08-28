@@ -102,5 +102,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<OrderStatusInfoState, OrderStatusInfoGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkResultDto>();
+        CreateMap<NftOrderGrainDto, NftOrderState>();
+        CreateMap<NftOrderState, NftOrderGrainDto>();
     }
 }
