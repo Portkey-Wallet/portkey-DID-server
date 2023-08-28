@@ -161,8 +161,11 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             CaAddress = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033",
             Symbol = "ELF"
         };
+        
         var result = await _userAssetsAppService.GetTokenBalanceAsync(input);
-        result.Balance.ShouldBe(null);
+        result.Balance.ShouldBe("2000");
+        
+        
     }
     
    

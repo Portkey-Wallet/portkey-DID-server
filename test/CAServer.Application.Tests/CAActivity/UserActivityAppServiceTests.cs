@@ -211,19 +211,18 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
     }
     
     
-    /*
     [Fact]
     public async Task GetUsercreateTimeTest()
     {
         var param = new GetUserCreateTimeRequestDto
         {
-            CaAddress = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+            CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo"
         };
 
         var result = await _userActivityAppService.GetCaHolderCreateTimeAsync(param);
         result.ShouldBe("1000");
        
-    }*/
+    }
     
     
     

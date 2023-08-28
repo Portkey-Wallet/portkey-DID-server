@@ -40,6 +40,19 @@ public partial class UserAssetsTests
                 }
             });
 
+
+        mockUserAssetsProvider.Setup(m => m.GetCaHolderManagerInfoAsync(It.IsAny<List<string>>())).ReturnsAsync(
+            new CAHolderInfo()
+            {
+                CaHolderManagerInfo = new List<Manager>()
+                {
+                    new Manager()
+                    {
+                        CaHash = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+                    }
+                }
+            });
+
         mockUserAssetsProvider.Setup(m =>
                 m.GetUserTokenInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(),
                     It.IsAny<int>()))
@@ -290,27 +303,26 @@ public partial class UserAssetsTests
 
         return mockUserContactProvider.Object;
     }
-    
+
     private IContractProvider GetContractProvider()
     {
         var fromBase58 = Address.FromBase58("NJRa6TYqvAgfDsLnsKXCA2jt3bYLEA8rUgPPzwMAG3YYXviHY");
 
         var mockContractProvider = new Mock<IContractProvider>();
         mockContractProvider.Setup(m =>
-                m.GetHolderInfoAsync(Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"), null, It.IsAny<string>()))
+                m.GetHolderInfoAsync(
+                    Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"), null,
+                    It.IsAny<string>()))
             .ReturnsAsync(new GetHolderInfoOutput
                 {
                     CaAddress = fromBase58,
                     CaHash = Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033")
-                    
                 }
-           );
+            );
 
         return mockContractProvider.Object;
     }
-    
-    
-    
+
 
     private IOptions<TokenInfoOptions> GetMockTokenInfoOptions()
     {
@@ -325,6 +337,22 @@ public partial class UserAssetsTests
         return new OptionsWrapper<TokenInfoOptions>(new TokenInfoOptions
         {
             TokenInfos = dict
+        });
+    }
+
+    private IOptions<ChainOptions> GetMockChainOptions()
+    {
+        var dict = new Dictionary<string, Options.ChainInfo>
+        {
+            ["AELF"] = new()
+            {
+                ChainId = "AELF"
+            }
+        };
+
+        return new OptionsWrapper<ChainOptions>(new ChainOptions
+        {
+            ChainInfos = dict
         });
     }
 }
