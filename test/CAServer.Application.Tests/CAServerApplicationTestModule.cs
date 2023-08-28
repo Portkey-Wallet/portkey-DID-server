@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using CAServer.Bookmark;
+using CAServer.Common;
 using CAServer.EntityEventHandler.Core;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute.Extensions;
@@ -42,6 +46,8 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
+
+        ConfigureGraphQl(context);
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
@@ -115,5 +121,12 @@ public class CAServerApplicationTestModule : AbpModule
             options.Iso = "65";
         });
         base.ConfigureServices(context);
+    }
+
+    private void ConfigureGraphQl(ServiceConfigurationContext context)
+    {
+        context.Services.AddSingleton(new GraphQLHttpClient("http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
+            new NewtonsoftJsonSerializer()));
+        context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
 }
