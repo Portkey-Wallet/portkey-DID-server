@@ -5,5 +5,6 @@ namespace CAServer.Security;
 
 public interface IUserSecurityAppService
 {
-    public Task<UserSecuritySelfTestResultDto> GetUserSecuritySelfTestAsync(GetUserSecuritySelfTestDto input);
+    public Task<TransferLimitListResultDto> GetTransferLimitListByCaHashAsync(
+        GetTransferLimitListByCaHashAsyncDto input);
 }

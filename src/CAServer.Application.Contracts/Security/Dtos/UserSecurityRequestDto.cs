@@ -1,11 +1,18 @@
-using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Security.Dtos;
 
-public class GetUserSecuritySelfTestDto
+public class GetTransferLimitListByCaHashAsyncDto : PagedResultRequestDto, IValidatableObject
 {
-    // UserId Only available in test sessions since we don't' get authorized user. 
-    public Guid UserId { get; set; }
     [Required] public string CaHash { get; set; }
+
+    public override IEnumerable<ValidationResult> Validate(ValidationContext context)
+    {
+        if (string.IsNullOrEmpty(CaHash))
+        {
+            yield return new ValidationResult("Invalid CaHash input.");
+        }
+    }
 }

@@ -11,7 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Security")]
 [Route("api/app/user/security")]
-// [Authorize]
+[Authorize]
 public class UserSecurityController : CAServerController
 {
     private readonly IUserSecurityAppService _userSecurityAppService;
@@ -21,9 +21,10 @@ public class UserSecurityController : CAServerController
         _userSecurityAppService = userSecurityAppService;
     }
 
-    [HttpGet("selfTest")]
-    public async Task<UserSecuritySelfTestResultDto> GetUserSecuritySelfTestAsync(GetUserSecuritySelfTestDto input)
+    [HttpGet("transferLimit")]
+    public async Task<TransferLimitListResultDto> GetTransferLimitListByCaHashAsync(
+        GetTransferLimitListByCaHashAsyncDto input)
     {
-        return await _userSecurityAppService.GetUserSecuritySelfTestAsync(input);
+        return await _userSecurityAppService.GetTransferLimitListByCaHashAsync(input);
     }
 }

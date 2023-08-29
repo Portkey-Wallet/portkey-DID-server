@@ -46,6 +46,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
+        Configure<SecurityOptions>(configuration.GetSection("Security"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
