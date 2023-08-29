@@ -25,14 +25,14 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly IUserAssetsProvider _assetsProvider;
     private readonly IUserSecurityProvider _userSecurityProvider;
 
-    public UserSecurityAppService(SecurityOptions securityOptions, IUserSecurityProvider userSecurityProvider,
-        IOptionsSnapshot<ChainOptions> chainOptions, IContractProvider contractProvider,
+    public UserSecurityAppService(IOptions<SecurityOptions> securityOptions, IUserSecurityProvider userSecurityProvider,
+        IOptions<ChainOptions> chainOptions, IContractProvider contractProvider,
         ILogger<UserSecurityAppService> logger, IUserAssetsProvider assetsProvider)
     {
         _logger = logger;
         _assetsProvider = assetsProvider;
         _chainOptions = chainOptions.Value;
-        _securityOptions = securityOptions;
+        _securityOptions = securityOptions.Value;
         _contractProvider = contractProvider;
         _userSecurityProvider = userSecurityProvider;
     }
