@@ -19,8 +19,13 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
 {
     public CAServerEventHandlerAutoMapperProfile()
     {
-        CreateMap<ContactIndex, ContactCreateEto>().ReverseMap();
-        CreateMap<ContactUpdateEto, ContactIndex>();
+        CreateMap<CAServer.Entities.Es.ImInfo, CAServer.Contacts.ImInfo>().ReverseMap();
+        CreateMap<ContactIndex, ContactCreateEto>();
+        CreateMap<ContactCreateEto, ContactIndex>()
+            .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty));
+        CreateMap<ContactUpdateEto, ContactIndex>()
+            .ForMember(t => t.Name, f => f.MapFrom(m => m.Name ?? string.Empty));
+        CreateMap<ContactIndex, ContactUpdateEto>();
         CreateMap<ContactAddress, ContactAddressEto>().ReverseMap();
         CreateMap<CreateHolderEto, CreateHolderResultGrainDto>();
         CreateMap<RegisterGrainDto, AccountRegisterIndex>();
@@ -53,6 +58,9 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<NotifyEto, NotifyRulesIndex>();
         CreateMap<DeleteNotifyEto, NotifyRulesIndex>();
         CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
+        CreateMap<CAServer.Contacts.CaHolderInfo, CAServer.Entities.Es.CaHolderInfo>().ReverseMap();
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
+        CreateMap<DeleteCAHolderEto, CAHolderIndex>();
+        CreateMap<GuardianDeleteEto, GuardianIndex>();
     }
 }

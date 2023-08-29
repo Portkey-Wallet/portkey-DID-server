@@ -91,9 +91,13 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
         var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
+
+        if (caHolder == null || caHolder.IsDeleted) return null;
+        
         return caHolder?.NickName;
     }
 

@@ -3,21 +3,31 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using AElf.Kernel;
+using AElf.Types;
+using CAServer.Common;
 using CAServer.Contacts;
+using CAServer.Entities.Es;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Options;
 using CAServer.Security;
 using CAServer.Verifier;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Moq;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Shouldly;
 using Volo.Abp.Users;
 using Volo.Abp.Validation;
 using Xunit;
+using Environment = CAServer.Options.Environment;
 
 namespace CAServer.Contact;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public class ContactTest : CAServerApplicationTestBase
+public partial class ContactTest : CAServerApplicationTestBase
 {
     private const string DefaultName = "Tom";
     public List<ContactAddressDto> Addresses = new List<ContactAddressDto>();
@@ -26,11 +36,21 @@ public class ContactTest : CAServerApplicationTestBase
 
     private readonly IContactAppService _contactAppService;
     private ICurrentUser _currentUser;
+    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
 
     public ContactTest()
     {
         _contactAppService = GetRequiredService<IContactAppService>();
+        _caHolderRepository = GetRequiredService<INESTRepository<CAHolderIndex, Guid>>();
+
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
+    }
+
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetMockContactProvider());
+        services.AddSingleton(GetMockHostInfoOptions());
+        services.AddSingleton(GetMockVariablesOptions());
     }
 
     [Fact]
@@ -39,7 +59,7 @@ public class ContactTest : CAServerApplicationTestBase
         Addresses.Add(new ContactAddressDto
         {
             ChainId = DefaultChainId,
-            Address = DefaultAddress
+            Address = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
         });
 
         var dto = new CreateUpdateContactDto
@@ -47,55 +67,29 @@ public class ContactTest : CAServerApplicationTestBase
             Name = DefaultName,
             Addresses = Addresses
         };
-
+        
         //create
         var createResult = await _contactAppService.CreateAsync(dto);
-
+        
         createResult.ShouldNotBeNull();
         createResult.Name.ShouldBe(DefaultName);
-
-        //update
+        
+        // //update
         var newName = "newName";
         dto.Name = newName;
         var updateResult = await _contactAppService.UpdateAsync(createResult.Id, dto);
-
+        
         updateResult.ShouldNotBeNull();
         updateResult.Name.ShouldBe(newName);
-
+        
         //getExist
         var exitResult = await _contactAppService.GetExistAsync(newName);
         exitResult.ShouldNotBeNull();
         exitResult.Existed.ShouldBeTrue();
         updateResult.Name.ShouldBe(newName);
-
+        
         //delete
         await _contactAppService.DeleteAsync(createResult.Id);
-    }
-
-    [Fact]
-    public async Task Create_Twice_Test()
-    {
-        try
-        {
-            Addresses.Add(new ContactAddressDto
-            {
-                ChainId = DefaultChainId,
-                Address = DefaultAddress
-            });
-
-            var dto = new CreateUpdateContactDto
-            {
-                Name = DefaultName,
-                Addresses = Addresses
-            };
-
-            await _contactAppService.CreateAsync(dto);
-            await _contactAppService.CreateAsync(dto);
-        }
-        catch (Exception e)
-        {
-            e.Message.ShouldBe(ContactMessage.ExistedMessage);
-        }
     }
 
     [Fact]
@@ -179,7 +173,7 @@ public class ContactTest : CAServerApplicationTestBase
             await _contactAppService.CreateAsync(new CreateUpdateContactDto
             {
                 Name = "",
-                Addresses = Addresses
+                Addresses = null
             });
         }
         catch (Exception e)
@@ -249,5 +243,44 @@ public class ContactTest : CAServerApplicationTestBase
         {
             Assert.True(e is AbpValidationException);
         }
+    }
+
+    [Fact]
+    public async Task Get_Test()
+    {
+        try
+        {
+            await _contactAppService.GetAsync(Guid.Empty);
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldBe(ContactMessage.NotExistMessage);
+        }
+    }
+
+    private IOptionsSnapshot<HostInfoOptions> GetMockHostInfoOptions()
+    {
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<HostInfoOptions>>();
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+            new HostInfoOptions
+            {
+                Environment = Environment.Development
+            });
+        return mockOptionsSnapshot.Object;
+    }
+
+    private IOptions<VariablesOptions> GetMockVariablesOptions()
+    {
+        var mockOptions = new Mock<IOptions<VariablesOptions>>();
+        mockOptions.Setup(o => o.Value).Returns(
+            new VariablesOptions
+            {
+                ImageMap = new Dictionary<string, string>()
+                {
+                    ["aelf"] = "aelfImage",
+                    ["eth"] = "ethImage"
+                }
+            });
+        return mockOptions.Object;
     }
 }

@@ -21,7 +21,6 @@ public partial class GetVerifierServerProviderTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(GetAdaptableVariableOptions());
         services.AddSingleton(GetMockContractProvider());
     }
