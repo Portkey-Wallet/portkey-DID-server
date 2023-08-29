@@ -10,9 +10,16 @@ namespace CAServer.ThirdPart;
 
 public static class ThirdPartHelper
 {
-    public static bool MerchantNameExist(string merchantName)
+    public static ThirdPartNameType MerchantNameExist(string merchantName)
     {
-        return Enum.TryParse(merchantName, out ThirdPartNameType _);
+        var match = Enum.TryParse(merchantName, out ThirdPartNameType val);
+        return match ? val : ThirdPartNameType.Unknown;
+    }
+
+    public static OrderStatusType ParseOrderStatus(string statusStr)
+    {
+        var match = Enum.TryParse(statusStr, out OrderStatusType val);
+        return match ? val : OrderStatusType.Unknown;
     }
 
     public static bool TransferDirectionTypeExist(string transferDirectionType)
@@ -55,6 +62,9 @@ public static class AlchemyHelper
         { "FINISHED", OrderStatusType.Finish },
         { "PAY_FAIL", OrderStatusType.Failed },
         { "PAY_SUCCESS", OrderStatusType.Pending },
+        { "NEW", OrderStatusType.Created },
+        { "TIMEOUT", OrderStatusType.Expired },
+        
         { "1", OrderStatusType.Created },
         { "2", OrderStatusType.UserCompletesCoinDeposit },
         { "3", OrderStatusType.StartPayment },
