@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
@@ -75,9 +76,17 @@ public class ContactProviderTest : CAServerApplicationTestBase
             CaHolderInfo = new CAServer.Entities.Es.CaHolderInfo()
             {
                 UserId = contactUserId
+            },
+            Addresses = new List<ContactAddress>()
+            {
+                new ContactAddress()
+                {
+                    Address = "AAA",
+                    ChainId = "AELF"
+                }
             }
         });
-        
+
         await _contactRepository.AddOrUpdateAsync(new ContactIndex()
         {
             UserId = userId,
@@ -87,7 +96,7 @@ public class ContactProviderTest : CAServerApplicationTestBase
             IsDeleted = false,
             CaHolderInfo = null
         });
-        
+
         await _contactRepository.AddOrUpdateAsync(new ContactIndex()
         {
             UserId = contactUserId,
@@ -98,6 +107,10 @@ public class ContactProviderTest : CAServerApplicationTestBase
             CaHolderInfo = new CAServer.Entities.Es.CaHolderInfo()
             {
                 UserId = userId
+            },
+            ImInfo = new CAServer.Entities.Es.ImInfo()
+            {
+                RelationId = "test-relationId"
             }
         });
 
@@ -110,6 +123,14 @@ public class ContactProviderTest : CAServerApplicationTestBase
         var contacts = await _contactProvider.GetAddedContactsAsync(userId);
         contacts.ShouldNotBeNull();
         contacts.Count.ShouldBe(1);
+
+        var contactsAddresses = await _contactProvider.GetContactByAddressesAsync(userId, new List<string>() { "AAA" });
+        contactsAddresses.ShouldNotBeNull();
+        contactsAddresses.Count.ShouldBe(1);
+        
+        var relation = await _contactProvider.GetContactByRelationIdAsync(userId, "test-relationId");
+        relation.ShouldNotBeNull();
+        relation.ImInfo.RelationId.ShouldBe("test-relationId");
     }
 
     [Fact]
@@ -132,6 +153,11 @@ public class ContactProviderTest : CAServerApplicationTestBase
 
         holder.ShouldNotBeNull();
         holder.CaHash.ShouldBe(caHash);
+
+        var holders = await _contactProvider.GetCaHoldersAsync(new List<Guid>() { userId });
+        holders.ShouldNotBeNull();
+        holders.Count.ShouldBe(1);
+        holders.First().NickName.ShouldBe("test");
     }
 
     [Fact]
@@ -151,7 +177,7 @@ public class ContactProviderTest : CAServerApplicationTestBase
         await Task.Delay(200);
 
         var holder = await _contactProvider.GetCaHolderAsync(userId, caHash);
-        
+
 
         holder.ShouldNotBeNull();
         holder.CaHash.ShouldBe(caHash);
@@ -162,7 +188,7 @@ public class ContactProviderTest : CAServerApplicationTestBase
     {
         try
         {
-            var caHash = "test"; 
+            var caHash = "test";
             await _contactProvider.GetCaHolderInfoAsync(new List<string>(), caHash);
         }
         catch (Exception e)
@@ -170,7 +196,7 @@ public class ContactProviderTest : CAServerApplicationTestBase
             e.ShouldNotBeNull();
         }
     }
-    
+
     [Fact]
     public async Task GetCaHolderInfoByAddressAsync_GraphQL_Test()
     {
