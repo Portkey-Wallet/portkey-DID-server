@@ -39,7 +39,6 @@ public class ContactTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        services.AddSingleton(GetMockIGraphQLHelper());
     }
 
     [Fact]
@@ -271,12 +270,6 @@ public class ContactTest : CAServerApplicationTestBase
         {
             e.Message.ShouldBe(ContactMessage.NotExistMessage);
         }
-    }
-    
-    private IGraphQLHelper GetMockIGraphQLHelper()
-    {
-        var mockHelper = new Mock<IGraphQLHelper>();
-        return mockHelper.Object;
     }
 
 }
