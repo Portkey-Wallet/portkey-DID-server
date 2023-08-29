@@ -41,7 +41,6 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
     }
 

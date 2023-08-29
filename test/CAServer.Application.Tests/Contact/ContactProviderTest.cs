@@ -9,6 +9,7 @@ using CAServer.Entities.Es;
 using CAServer.Guardian.Provider;
 using CAServer.Security;
 using GraphQL;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Shouldly;
 using Volo.Abp.Users;
@@ -31,6 +32,11 @@ public class ContactProviderTest : CAServerApplicationTestBase
         _contactRepository = GetRequiredService<INESTRepository<ContactIndex, Guid>>();
 
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
+    }
+
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetGraphQlMock());
     }
 
     [Fact]
@@ -124,7 +130,7 @@ public class ContactProviderTest : CAServerApplicationTestBase
     }
 
 
-    private async Task<IGraphQLHelper> GetGraphQl()
+    private async Task<IGraphQLHelper> GetGraphQlMock()
     {
         var helper = new Mock<IGraphQLHelper>();
         helper.Setup(t => t.QueryAsync<CAServer.Guardian.Provider.GuardiansDto>(It.IsAny<GraphQLRequest>()))

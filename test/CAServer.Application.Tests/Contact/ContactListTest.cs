@@ -25,7 +25,6 @@ public class ContactListTest : CAServerApplicationTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(ContactListMock.BuildMockIContactAppService());
     }
     

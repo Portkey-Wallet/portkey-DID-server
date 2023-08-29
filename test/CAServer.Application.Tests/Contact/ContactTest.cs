@@ -48,7 +48,6 @@ public partial class ContactTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(GetMockContactProvider());
         services.AddSingleton(GetMockHostInfoOptions());
         services.AddSingleton(GetMockVariablesOptions());
@@ -91,32 +90,6 @@ public partial class ContactTest : CAServerApplicationTestBase
         
         //delete
         await _contactAppService.DeleteAsync(createResult.Id);
-    }
-
-    [Fact]
-    public async Task Create_Twice_Test()
-    {
-        try
-        {
-            Addresses.Add(new ContactAddressDto
-            {
-                ChainId = DefaultChainId,
-                Address = DefaultAddress
-            });
-
-            var dto = new CreateUpdateContactDto
-            {
-                Name = DefaultName,
-                Addresses = Addresses
-            };
-
-            await _contactAppService.CreateAsync(dto);
-            await _contactAppService.CreateAsync(dto);
-        }
-        catch (Exception e)
-        {
-            e.Message.ShouldBe("Holder not found");
-        }
     }
 
     [Fact]

@@ -44,13 +44,11 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        //base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetMockUserAssetsProvider());
         services.AddSingleton(GetContractProvider());
         services.AddSingleton(GetMockGuardianProvider());
         services.AddSingleton(GetMockCaAccountProvider());
-        base.AfterAddApplication(services);
     }
 
     [Fact]
