@@ -21,6 +21,7 @@ using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 
 namespace CAServer;
 
@@ -49,6 +50,8 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
+        
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
 
         ConfigureGraphQl(context);
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
