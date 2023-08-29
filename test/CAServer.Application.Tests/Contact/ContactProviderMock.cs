@@ -39,6 +39,18 @@ public partial class ContactTest
                 NickName = "test"
             });
 
+        provider.Setup(t => t.GetContactByAddressesAsync(It.IsAny<Guid>(), It.IsAny<List<string>>()))
+            .ReturnsAsync((Guid UserId, List<string> addresses) => new List<ContactIndex>()
+            {
+                new ContactIndex()
+                {
+                    Name = "test",
+                    Addresses = new List<ContactAddress>(),
+                    UserId = Guid.NewGuid(),
+                    ModificationTime = DateTime.UtcNow
+                }
+            });
+
         return provider.Object;
     }
 }

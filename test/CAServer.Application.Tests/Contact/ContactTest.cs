@@ -1,23 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
-using AElf.Kernel;
 using AElf.Types;
-using CAServer.Common;
 using CAServer.Contacts;
 using CAServer.Entities.Es;
+using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Options;
 using CAServer.Security;
-using CAServer.Verifier;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Users;
 using Volo.Abp.Validation;
@@ -37,12 +33,13 @@ public partial class ContactTest : CAServerApplicationTestBase
     private readonly IContactAppService _contactAppService;
     private ICurrentUser _currentUser;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
+    private readonly TestCluster _cluster;
 
     public ContactTest()
     {
         _contactAppService = GetRequiredService<IContactAppService>();
         _caHolderRepository = GetRequiredService<INESTRepository<CAHolderIndex, Guid>>();
-
+        _cluster = GetRequiredService<ClusterFixture>().Cluster;
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
     }
 
@@ -67,27 +64,27 @@ public partial class ContactTest : CAServerApplicationTestBase
             Name = DefaultName,
             Addresses = Addresses
         };
-        
+
         //create
         var createResult = await _contactAppService.CreateAsync(dto);
-        
+
         createResult.ShouldNotBeNull();
         createResult.Name.ShouldBe(DefaultName);
-        
+
         // //update
         var newName = "newName";
         dto.Name = newName;
         var updateResult = await _contactAppService.UpdateAsync(createResult.Id, dto);
-        
+
         updateResult.ShouldNotBeNull();
         updateResult.Name.ShouldBe(newName);
-        
+
         //getExist
         var exitResult = await _contactAppService.GetExistAsync(newName);
         exitResult.ShouldNotBeNull();
         exitResult.Existed.ShouldBeTrue();
         updateResult.Name.ShouldBe(newName);
-        
+
         //delete
         await _contactAppService.DeleteAsync(createResult.Id);
     }
@@ -256,6 +253,57 @@ public partial class ContactTest : CAServerApplicationTestBase
         {
             e.Message.ShouldBe(ContactMessage.NotExistMessage);
         }
+    }
+
+    [Fact]
+    public async Task Merge_Addresses_Empty_Test()
+    {
+        await _contactAppService.MergeAsync(new ContactMergeDto()
+        {
+            Addresses = new List<ContactAddressDto>(),
+            ImInfo = new CAServer.Contacts.ImInfo()
+            {
+                RelationId = "test",
+                PortkeyId = Guid.Empty
+            }
+        });
+    }
+
+    [Fact]
+    public async Task MergeTest()
+    {
+        var userId = _currentUser.GetId();
+        var caHolderGrain = _cluster.Client.GetGrain<ICAHolderGrain>(userId);
+        await caHolderGrain.AddHolderAsync(new CAHolderGrainDto()
+        {
+            UserId = userId,
+            CaHash = "test",
+            CreateTime = DateTime.UtcNow,
+            Id = userId,
+            Nickname = "test"
+        });
+
+        await _contactAppService.MergeAsync(new ContactMergeDto()
+        {
+            Addresses = new List<ContactAddressDto>()
+            {
+                new ContactAddressDto()
+                {
+                    Address = "test",
+                    ChainId = "AELF"
+                },
+                new ContactAddressDto()
+                {
+                    Address = "test",
+                    ChainId = "tDVV"
+                }
+            },
+            ImInfo = new CAServer.Contacts.ImInfo()
+            {
+                RelationId = "test",
+                PortkeyId = Guid.Empty
+            }
+        });
     }
 
     private IOptionsSnapshot<HostInfoOptions> GetMockHostInfoOptions()
