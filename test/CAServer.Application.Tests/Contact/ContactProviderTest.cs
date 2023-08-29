@@ -77,12 +77,39 @@ public class ContactProviderTest : CAServerApplicationTestBase
                 UserId = contactUserId
             }
         });
+        
+        await _contactRepository.AddOrUpdateAsync(new ContactIndex()
+        {
+            UserId = userId,
+            Id = Guid.NewGuid(),
+            Name = "test",
+            Index = "T",
+            IsDeleted = false,
+            CaHolderInfo = null
+        });
+        
+        await _contactRepository.AddOrUpdateAsync(new ContactIndex()
+        {
+            UserId = contactUserId,
+            Id = Guid.NewGuid(),
+            Name = "test",
+            Index = "T",
+            IsDeleted = false,
+            CaHolderInfo = new CAServer.Entities.Es.CaHolderInfo()
+            {
+                UserId = userId
+            }
+        });
 
         await Task.Delay(200);
 
         var contact = await _contactProvider.GetContactAsync(userId, contactUserId);
         contact.ShouldNotBeNull();
         contact.Name.ShouldBe("test");
+
+        var contacts = await _contactProvider.GetAddedContactsAsync(userId);
+        contacts.ShouldNotBeNull();
+        contacts.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -124,6 +151,7 @@ public class ContactProviderTest : CAServerApplicationTestBase
         await Task.Delay(200);
 
         var holder = await _contactProvider.GetCaHolderAsync(userId, caHash);
+        
 
         holder.ShouldNotBeNull();
         holder.CaHash.ShouldBe(caHash);
