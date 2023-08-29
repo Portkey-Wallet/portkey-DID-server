@@ -14,30 +14,15 @@ public static class MerchantSignatureHelper
 
     public static string GetSignature(string primaryKey, object data)
     {
-        var rawData = ConvertObjectToSortedString(data, SignatureField);
+        var rawData = ThirdPartHelper.ConvertObjectToSortedString(data, SignatureField);
         return GetSignature(primaryKey, rawData);
     }
 
     public static bool VerifySignature(string publicKey, string signature, object data)
     {
         if (publicKey.IsNullOrEmpty() || signature.IsNullOrEmpty()) return false; 
-        var rawData = ConvertObjectToSortedString(data, SignatureField);
+        var rawData = ThirdPartHelper.ConvertObjectToSortedString(data, SignatureField);
         return VerifySignature(publicKey, signature, rawData);
-    }
-
-    private static string ConvertObjectToSortedString(object obj, params string[] ignoreParams)
-    {
-        if (obj == null) return string.Empty;
-        var dict = new SortedDictionary<string, object>();
-        foreach (var property in obj.GetType().GetProperties())
-        {
-            if (property.CanRead && !ignoreParams.Contains(property.Name))
-            {
-                var value = property.GetValue(obj);
-                dict[property.Name] = value;
-            }
-        }
-        return string.Join("&", dict.Select(kv => kv.Key + "=" + kv.Value));
     }
     
     public static string GetSignature(string privateKey, string rawData)

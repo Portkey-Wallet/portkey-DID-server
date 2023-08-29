@@ -1,6 +1,4 @@
 using System.Threading.Tasks;
-using AutoResponseWrapper.Response;
-using CAServer.Commons;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Processors;
@@ -35,10 +33,12 @@ public class ThirdPartOrderController : CAServerController
     }
 
     [HttpPost("nftorder/alchemy")]
-    public async Task<ResponseDto> UpdateAlchemyNftOrderAsync(
+    public async Task<string> UpdateAlchemyNftOrderAsync(
         AlchemyNftPartOrderRequestDto input)
     {
-        await _thirdPartOrderProcessorFactory.GetProcessor(ThirdPartNameType.Alchemy.ToString()).UpdateNftOrderAsync(input);
-        return new ResponseDto();
+        var res = await _thirdPartOrderProcessorFactory
+            .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+            .UpdateNftOrderAsync(input);
+        return res.Success ? "success" : "fail";
     }
 }

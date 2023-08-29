@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using CAServer.ThirdPart.Dtos;
+using JetBrains.Annotations;
 
 namespace CAServer.ThirdPart;
 
@@ -27,6 +29,22 @@ public static class ThirdPartHelper
     {
         Guid.TryParse(merchantOrderNo, out Guid orderNo);
         return orderNo;
+    }
+    
+    public static string ConvertObjectToSortedString([CanBeNull] object obj, params string[] ignoreParams)
+    {
+        if (obj == null) return string.Empty;
+        var dict = new SortedDictionary<string, object>();
+        foreach (var property in obj.GetType().GetProperties())
+        {
+            if (!property.CanRead || ignoreParams.Contains(property.Name)) continue;
+            
+            var value = property.GetValue(obj);
+            if (value == null) continue; // ignore null value
+            
+            dict[property.Name] = value;
+        }
+        return string.Join("&", dict.Select(kv => kv.Key + "=" + kv.Value));
     }
 }
 
@@ -88,6 +106,12 @@ public static class AlchemyHelper
         {
             throw e;
         }
+    }
+
+    public static string HmacSign(string source, string key)
+    {
+        using var hmac = new HMACSHA1(Encoding.UTF8.GetBytes(key));
+        return Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(source)));
     }
 
     public static string GetOrderTransDirectForQuery(string orderDataTransDirect)

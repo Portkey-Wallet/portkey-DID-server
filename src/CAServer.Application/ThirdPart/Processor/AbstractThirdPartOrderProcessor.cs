@@ -116,7 +116,7 @@ public abstract class AbstractThirdPartOrderProcessor : IThirdPartOrderProcessor
         }
         catch (Exception e)
         {
-            _logger.LogWarning(e, "NFT order update ERROR, {ThirdPartName}-{OrderId}", ThirdPartName(),
+            _logger.LogError(e, "NFT order update ERROR, {ThirdPartName}-{OrderId}", ThirdPartName(),
                 updateRequest?.Id);
             return new CommonResponseDto<Empty>().Error(e, "INTERNAL ERROR, please try again later.");
         }
