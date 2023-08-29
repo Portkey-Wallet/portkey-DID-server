@@ -15,9 +15,14 @@ public class ImageProcessProviderTests : CAServerApplicationTestBase
     [Fact]
     public async void GetResizeImage()
     {
-        _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1/img/Untitled/5.jpg", -1 ,-1);
-        _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 144 ,144);
-        _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 200 ,200);
-        _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", -1 ,-1);
+        await _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1/img/Untitled/5.jpg", -1 ,-1);
+        await _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 144 ,144);
+        await _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 200 ,200);
+        await _imageProcessProvider.GetResizeImageAsync("https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", -1 ,-1);
+
+        var responseDto = await _imageProcessProvider.GetImResizeImageAsync(
+            "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Untitled/5.jpg", 100,100);
+
+
     }
 }
