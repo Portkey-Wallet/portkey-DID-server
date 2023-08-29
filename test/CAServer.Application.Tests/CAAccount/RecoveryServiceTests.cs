@@ -220,4 +220,11 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
 
         return provider.Object;
     }
+    
+    [Fact]
+    public async Task Revoke_Entrance_Test()
+    {
+        var resultDto = await _caAccountAppService.RevokeEntranceAsync();
+        resultDto.EntranceDisplay.ShouldBeTrue();
+    }
 }
