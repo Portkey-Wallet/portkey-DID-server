@@ -59,14 +59,14 @@ public class ContactListTest : CAServerApplicationTestBase
         {
             new()
             {
-                Id = new Guid("3fe8e56b-e700-123e-8cb4-d014b485c1a9"),
+                Id = Guid.NewGuid(),
                 UserId = _currentUser.GetId(),
                 Name = "Test1",
                 ModificationTime = new DateTime(2023, 8, 25, 0, 0, 0, DateTimeKind.Utc)
             },
             new()
             {
-                Id = new Guid("3fe8e56b-e700-123e-8cb4-d014b485c1a8"),
+                Id = Guid.NewGuid(),
                 UserId = _currentUser.GetId(),
                 Name = "Test2",
                 ModificationTime = new DateTime(2023, 6, 25, 0, 0, 0, DateTimeKind.Utc)
