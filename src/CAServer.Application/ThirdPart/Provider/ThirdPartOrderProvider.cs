@@ -4,15 +4,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.Entities.Es;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
-using Elasticsearch.Net;
+using CAServer.ThirdPart.Etos;
+using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Nest;
-using Org.BouncyCastle.Crypto.Digests;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
@@ -28,7 +30,8 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         TransferDirectionType.NFTSell.ToString()
     };
 
-
+    private readonly ILogger<ThirdPartOrderProvider> _logger;
+    private readonly OrderStatusProvider _orderStatusProvider;
     private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly INESTRepository<NftOrderIndex, Guid> _nftOrderRepository;
     private readonly IObjectMapper _objectMapper;
@@ -40,14 +43,48 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         IObjectMapper objectMapper,
         IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus, IOptions<ThirdPartOptions> thirdPartOptions,
-        INESTRepository<NftOrderIndex, Guid> nftOrderRepository)
+        INESTRepository<NftOrderIndex, Guid> nftOrderRepository, ILogger<ThirdPartOrderProvider> logger, OrderStatusProvider orderStatusProvider)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _nftOrderRepository = nftOrderRepository;
+        _logger = logger;
+        _orderStatusProvider = orderStatusProvider;
         _thirdPartOptions = thirdPartOptions.Value;
+    }
+    
+    // update ramp order
+    public async Task<CommonResponseDto<Empty>> DoUpdateRampOrderAsync(OrderGrainDto dataToBeUpdated)
+    {
+        AssertHelper.NotEmpty(dataToBeUpdated.Id, "Update order id can not be empty");
+        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(dataToBeUpdated.Id);
+        dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
+        _logger.LogInformation("This {ThirdPartName} order {OrderId} will be updated", dataToBeUpdated.MerchantName, dataToBeUpdated.Id);
+
+        var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
+        AssertHelper.IsTrue(result.Success, "Update order error");
+        
+        await _orderStatusProvider.AddOrderStatusInfoAsync(
+            _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+        
+        await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data), false);
+        return new CommonResponseDto<Empty>();
+    }
+
+    // update NFT order
+    public async Task<CommonResponseDto<Empty>> DoUpdateNftOrderAsync(NftOrderGrainDto dataToBeUpdated)
+    {
+        AssertHelper.NotEmpty(dataToBeUpdated.Id, "Update nft order id can not be empty");
+        var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(dataToBeUpdated.Id);
+        _logger.LogInformation("This {MerchantName} nft order {OrderId} will be updated", dataToBeUpdated.MerchantName, dataToBeUpdated.Id);
+
+        var result = await nftOrderGrain.UpdateNftOrder(dataToBeUpdated);
+        AssertHelper.IsTrue(result.Success, "Update nft order error");
+
+        await _distributedEventBus.PublishAsync(_objectMapper.Map<NftOrderGrainDto, NftOrderEto>(result.Data), false);
+        return new CommonResponseDto<Empty>();
     }
 
     public async Task<RampOrderIndex> GetThirdPartOrderIndexAsync(string orderId)
@@ -129,7 +166,8 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         {
             var nftOrderPager = await QueryNftOrderPagerAsync(new NftOrderQueryConditionDto(0, maxResultCount)
             {
-                IdIn = pager.Data.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id).ToList()
+                IdIn = pager.Data.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id)
+                    .ToList()
             });
             FillNftOrderSection(pager, nftOrderPager);
         }
@@ -137,6 +175,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         return pager;
     }
 
+    // query full order with nft-order section
     public async Task<PageResultDto<OrderDto>> GetNftOrdersByPageAsync(NftOrderQueryConditionDto condition)
     {
         var nftOrderPager = await QueryNftOrderPagerAsync(condition);
@@ -146,7 +185,9 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         FillNftOrderSection(orderPager, nftOrderPager);
         return orderPager;
     }
-    
+
+
+    // query nft-order index
     private async Task<PageResultDto<NftOrderIndex>> QueryNftOrderPagerAsync(NftOrderQueryConditionDto condition)
     {
         AssertHelper.IsTrue(!condition.IdIn.IsNullOrEmpty() || !condition.MerchantOrderIdIn.IsNullOrEmpty(),

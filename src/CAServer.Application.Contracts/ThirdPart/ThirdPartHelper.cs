@@ -1,13 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using CAServer.ThirdPart.Dtos;
 using System.Security.Cryptography;
 using System.Text;
-using AElf;
-using AElf.Cryptography;
-using Google.Protobuf;
+using CAServer.ThirdPart.Dtos;
 
 namespace CAServer.ThirdPart;
 
@@ -15,7 +10,7 @@ public static class ThirdPartHelper
 {
     public static bool MerchantNameExist(string merchantName)
     {
-        return Enum.TryParse(merchantName, out MerchantNameType _);
+        return Enum.TryParse(merchantName, out ThirdPartNameType _);
     }
 
     public static bool TransferDirectionTypeExist(string transferDirectionType)

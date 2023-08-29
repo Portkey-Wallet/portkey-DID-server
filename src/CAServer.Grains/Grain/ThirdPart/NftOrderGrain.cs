@@ -16,17 +16,9 @@ public class NftOrderGrain : Grain<NftOrderState>, INftOrderGrain
 
     public async Task<GrainResultDto<NftOrderGrainDto>> CreateNftOrder(NftOrderGrainDto input)
     {
-        // verify exists
-        if (!State.NftSymbol.IsNullOrEmpty())
-        {
-            return new GrainResultDto<NftOrderGrainDto>().Error("NFT Order exists");
-        }
-
-        // update as new order
-        State = _objectMapper.Map<NftOrderGrainDto, NftOrderState>(input);
-        State.Id = State.Id == Guid.Empty ? this.GetPrimaryKey() : State.Id;
-        await WriteStateAsync();
-        return new GrainResultDto<NftOrderGrainDto>(_objectMapper.Map<NftOrderState, NftOrderGrainDto>(State));
+        return State.NftSymbol.IsNullOrEmpty()
+            ? await UpdateNftOrder(input)
+            : new GrainResultDto<NftOrderGrainDto>().Error("NFT Order exists");
     }
 
     public async Task<GrainResultDto<NftOrderGrainDto>> UpdateNftOrder(NftOrderGrainDto input)
@@ -39,8 +31,7 @@ public class NftOrderGrain : Grain<NftOrderState>, INftOrderGrain
 
     public Task<GrainResultDto<NftOrderGrainDto>> GetNftOrder()
     {
-        return Task.FromResult(new GrainResultDto<NftOrderGrainDto>(
-            State.Id == Guid.Empty
+        return Task.FromResult(new GrainResultDto<NftOrderGrainDto>(State.Id == Guid.Empty
                 ? null
                 : _objectMapper.Map<NftOrderState, NftOrderGrainDto>(State)));
     }

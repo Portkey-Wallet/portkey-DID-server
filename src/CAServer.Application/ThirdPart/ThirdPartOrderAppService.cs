@@ -6,13 +6,13 @@ using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
-using CAServer.Entities.Es;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -52,6 +52,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _merchantOptions = thirdPartOptions.Value.Merchant;
     }
 
+
+
     // crate user ramp order
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
@@ -87,7 +89,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     }
 
     // create base order with nft-order section
-    public async Task<ResponseDto> CreateNftOrderAsync(CreateNftOrderRequestDto input)
+    public async Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input)
     {
         try
         {
@@ -109,7 +111,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             nftOrderGrainDto.Id = createResult.Data.Id;
             var createNftResult = await DoCreateNftOrderAsync(nftOrderGrainDto);
 
-            return new ResponseDto().Success(new CreateNftOrderResponseDto
+            return new CommonResponseDto<CreateNftOrderResponseDto>(new CreateNftOrderResponseDto
             {
                 OrderId = createResult.Data.Id.ToString()
             });
@@ -118,13 +120,13 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         {
             Logger.LogWarning(e, "create nftOrder failed, orderId={OrderId}, merchantName={MerchantName}",
                 input.MerchantOrderId, input.MerchantName);
-            return new ResponseDto().Error(e);
+            return new CommonResponseDto<CreateNftOrderResponseDto>().Error(e);
         }
         catch (Exception e)
         {
             Logger.LogError(e, "create nftOrder error, orderId={OrderId}, merchantName={MerchantName}",
                 input.MerchantOrderId, input.MerchantName);
-            return new ResponseDto().Error(e, "Internal error");
+            return new CommonResponseDto<CreateNftOrderResponseDto>().Error(e, "Internal error");
         }
     }
 
@@ -158,33 +160,38 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         return result;
     }
 
-    // query by merchantName & merchantId
-    public async Task<ResponseDto> QueryMerchantNftOrderAsync(OrderQueryRequestDto input)
+    // query by merchantName & merchantId with MerchantSignature
+    public async Task<CommonResponseDto<OrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input)
     {
         VerifyMerchantSignature(input);
-        AssertHelper.IsTrue(!input.MerchantOrderId.IsNullOrEmpty() && !input.MerchantName.IsNullOrEmpty(), 
+        AssertHelper.IsTrue(!input.MerchantOrderId.IsNullOrEmpty() && !input.MerchantName.IsNullOrEmpty(),
             "merchantOrderId and merchantName can not be empty");
-        var orderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(new NftOrderQueryConditionDto(0, 1)
-            {
-                MerchantName = input.MerchantName,
-                MerchantOrderIdIn = new List<string>{input.MerchantOrderId}
-            });
-        if (orderPager.Data.IsNullOrEmpty()) return new ResponseDto().Success(null);
 
+        // query full order with nft-order-section
+        var orderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(new NftOrderQueryConditionDto(0, 1)
+        {
+            MerchantName = input.MerchantName,
+            MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
+        });
+        if (orderPager.Data.IsNullOrEmpty()) return new CommonResponseDto<OrderQueryResponseDto>();
+
+        // get and verify nft-order-section
         var orderDto = orderPager.Data[0];
         var nftOrder = orderDto.OrderSections?.GetValueOrDefault(OrderSectionEnum.NftSection.ToString());
         AssertHelper.NotNull(nftOrder, "invalid nft order data, orderId={OrderId}", orderDto.Id);
         AssertHelper.NotNull(nftOrder is NftOrderSectionDto, "invalid nft order type, orderId={OrderId}", orderDto.Id);
-        
+
+        // convert response
         var nftOrderSection = nftOrder as NftOrderSectionDto;
         var orderQueryResponseDto = _objectMapper.Map<NftOrderSectionDto, OrderQueryResponseDto>(nftOrderSection);
         _objectMapper.Map(orderDto, orderQueryResponseDto);
-        
+
+        // sign response
         SignMerchantDto(orderQueryResponseDto);
-        return new ResponseDto().Success(orderQueryResponseDto);
+        return new CommonResponseDto<OrderQueryResponseDto>(orderQueryResponseDto);
     }
 
-    public Task<ResponseDto> NoticeNftReleaseResultAsync(NftResultRequestDto input)
+    public Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftResultRequestDto input)
     {
         //TODO nzc 
         throw new NotImplementedException();
@@ -194,7 +201,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         // var userId = input.UserId;
         var userId = CurrentUser.GetId();
-        return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, new List<Guid>{input.OrderId}, input.SkipCount,
+        return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, new List<Guid> { input.OrderId },
+            input.SkipCount,
             input.MaxResultCount);
     }
 
@@ -203,7 +211,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         var primaryKey = _merchantOptions.DidPrivateKey.GetValueOrDefault(input.MerchantName);
         input.Signature = MerchantSignatureHelper.GetSignature(primaryKey, input);
     }
-    
+
     private void VerifyMerchantSignature(NftMerchantBaseDto input)
     {
         var publicKey = _merchantOptions.MerchantPublicKey.GetValueOrDefault(input.MerchantName);

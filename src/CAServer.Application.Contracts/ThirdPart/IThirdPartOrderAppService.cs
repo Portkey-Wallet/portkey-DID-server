@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
-using AutoResponseWrapper.Response;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Dtos;
+using Google.Protobuf.WellKnownTypes;
 
 namespace CAServer.ThirdPart;
 
@@ -9,9 +9,7 @@ public interface IThirdPartOrderAppService
 {
     Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input);
     Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input);
-    Task<ResponseDto> CreateNftOrderAsync(CreateNftOrderRequestDto input);
-    Task<ResponseDto> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
-    Task<ResponseDto> NoticeNftReleaseResultAsync(NftResultRequestDto input);
-
+    Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input);
+    Task<CommonResponseDto<OrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
+    Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftResultRequestDto input);
 }
-

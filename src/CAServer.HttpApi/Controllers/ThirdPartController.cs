@@ -36,9 +36,9 @@ public class ThirdPartOrderController : CAServerController
 
     [HttpPost("nftorder/alchemy")]
     public async Task<ResponseDto> UpdateAlchemyNftOrderAsync(
-        AlchemyNftOrderRequestDto input)
+        AlchemyNftPartOrderRequestDto input)
     {
-        await _thirdPartOrderProcessorFactory.GetProcessor(MerchantNameType.Alchemy.ToString()).UpdateOrderAsync(input);
-        return new ResponseDto().Success();
+        await _thirdPartOrderProcessorFactory.GetProcessor(ThirdPartNameType.Alchemy.ToString()).UpdateNftOrderAsync(input);
+        return new ResponseDto();
     }
 }

@@ -1,6 +1,6 @@
 namespace CAServer.ThirdPart.Dtos;
 
-public enum MerchantNameType
+public enum ThirdPartNameType
 {
     Alchemy = 0,
     Unknown

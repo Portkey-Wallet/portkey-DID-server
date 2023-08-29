@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -145,8 +146,11 @@ public class QueryAlchemyOrderInfo
     public string CryptoQuantity { get; set; }
 }
 
-public class AlchemyNftOrderRequestDto : IThirdOrderUpdateRequest
+public class AlchemyNftPartOrderRequestDto : IThirdPartNftOrderUpdateRequest
 {
+    public Guid Id { get; set; }
+    public string Status { get; set; }
+    
     public string Amount { get; set; }
     public string Fiat { get; set; }
     public string OrderNo { get; set; }
@@ -159,6 +163,5 @@ public class AlchemyNftOrderRequestDto : IThirdOrderUpdateRequest
     public string AppId { get; set; }
     public string MerchantOrderNo { get; set; }
     public string Message { get; set; }
-    public string Status { get; set; }
     public string Signature { get; set; }
 }
