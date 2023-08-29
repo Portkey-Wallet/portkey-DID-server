@@ -35,6 +35,8 @@ public interface IContactProvider
     Task<List<ContactIndex>> GetContactByAddressesAsync(Guid userId, List<string> addresses);
 
     Task<List<CAHolderIndex>> GetCaHoldersAsync(List<Guid> userIds);
+    
+    Task<List<ContactIndex>> GetAddedContactsAsync(Guid userId);
 }
 
 public class ContactProvider : IContactProvider, ISingletonDependency
@@ -262,5 +264,21 @@ public class ContactProvider : IContactProvider, ISingletonDependency
         }
 
         return holders.Item2;
+    }
+
+    public async Task<List<ContactIndex>> GetAddedContactsAsync(Guid userId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field("caHolderInfo.userId").Value(userId)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var contact = await _contactRepository.GetListAsync(Filter);
+        if (contact.Item1 <= 0)
+        {
+            return new List<ContactIndex>();
+        }
+
+        return contact.Item2;
     }
 }

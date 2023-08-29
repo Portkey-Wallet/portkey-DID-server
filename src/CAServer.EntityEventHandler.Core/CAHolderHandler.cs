@@ -77,24 +77,27 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         try
         {
             await _caHolderRepository.UpdateAsync(_objectMapper.Map<UpdateCAHolderEto, CAHolderIndex>(eventData));
+            _logger.LogInformation("caHolder wallet name update success, id: {id}", eventData.Id);
 
-            var contacts = await _contactProvider.GetContactsAsync(eventData.UserId);
+            var contacts = await _contactProvider.GetAddedContactsAsync(eventData.UserId);
             if (contacts == null || contacts.Count == 0) return;
 
             foreach (var contact in contacts)
             {
                 if (contact.CaHolderInfo == null) return;
+                var grain = _clusterClient.GetGrain<IContactGrain>(contact.Id);
+                await grain.UpdateWalletName(eventData.Nickname);
 
                 contact.CaHolderInfo.WalletName = eventData.Nickname;
                 contact.ModificationTime = DateTime.UtcNow;
-
                 await _contactRepository.UpdateAsync(contact);
                 _logger.LogInformation("contact wallet name update success, contactId: {id}", contact.Id);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "update nick name error, id:{id}, nickName:{nickName}, userId:{userId}",
+                eventData.Id.ToString(), eventData.Nickname, eventData.UserId.ToString());
         }
     }
 

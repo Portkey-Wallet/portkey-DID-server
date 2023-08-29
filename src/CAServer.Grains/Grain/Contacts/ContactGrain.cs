@@ -124,12 +124,12 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         {
             State.CaHolderInfo = contactDto.CaHolderInfo;
         }
-        
+
         if (State.ImInfo == null && contactDto.ImInfo != null)
         {
             State.ImInfo = contactDto.ImInfo;
         }
-        
+
         SetIndex();
         await WriteStateAsync();
 
@@ -210,6 +210,31 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         State.IsImputation = true;
         result.Success = true;
         State.ModificationTime = DateTime.UtcNow;
+        await WriteStateAsync();
+
+        result.Data = _objectMapper.Map<ContactState, ContactGrainDto>(State);
+        return result;
+    }
+
+    public async Task<GrainResultDto<ContactGrainDto>> UpdateWalletName(string walletName)
+    {
+        var result = new GrainResultDto<ContactGrainDto>();
+        if (State.IsDeleted)
+        {
+            result.Message = ContactMessage.NotExistMessage;
+            return result;
+        }
+
+        if (State.CaHolderInfo == null)
+        {
+            result.Message = ContactMessage.HolderNullMessage;
+            return result;
+        }
+
+        State.CaHolderInfo.WalletName = walletName;
+        State.ModificationTime = DateTime.UtcNow;
+
+        result.Success = true;
         await WriteStateAsync();
 
         result.Data = _objectMapper.Map<ContactState, ContactGrainDto>(State);
