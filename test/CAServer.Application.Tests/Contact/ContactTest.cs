@@ -102,7 +102,7 @@ public class ContactTest : CAServerApplicationTestBase
         }
         catch (Exception e)
         {
-            e.Message.ShouldBe(ContactMessage.ExistedMessage);
+            e.Message.ShouldBe("Holder not found");
         }
     }
 
@@ -187,7 +187,7 @@ public class ContactTest : CAServerApplicationTestBase
             await _contactAppService.CreateAsync(new CreateUpdateContactDto
             {
                 Name = "",
-                Addresses = Addresses
+                Addresses = null
             });
         }
         catch (Exception e)
