@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using AElf.Types;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
+using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -9,6 +11,7 @@ using CAServer.Tokens.Dtos;
 using CAServer.UserAssets;
 using Microsoft.Extensions.Options;
 using Moq;
+using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
 
 namespace CAServer.CAActivity;
@@ -160,6 +163,25 @@ public partial class UserActivityAppServiceTests
             });
 
         return mockUserContactProvider.Object;
+    }
+    
+    
+    private IContractProvider GetContractProvider()
+    {
+        var fromBase58 = Address.FromBase58("NJRa6TYqvAgfDsLnsKXCA2jt3bYLEA8rUgPPzwMAG3YYXviHY");
+
+        var mockContractProvider = new Mock<IContractProvider>();
+        mockContractProvider.Setup(m =>
+                m.GetHolderInfoAsync(Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"), null, It.IsAny<string>()))
+            .ReturnsAsync(new GetHolderInfoOutput
+                {
+                    CaAddress = fromBase58,
+                    CaHash = Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033")
+                    
+                }
+            );
+
+        return mockContractProvider.Object;
     }
 
     private IOptions<ActivitiesIcon> GetActivitiesIcon()

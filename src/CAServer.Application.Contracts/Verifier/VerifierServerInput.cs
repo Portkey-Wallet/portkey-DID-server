@@ -11,6 +11,8 @@ public class VerifierServerInput : VerifierServerBase, IValidatableObject
     [Required] public string ChainId { get; set; }
 
     [Required] public OperationType OperationType { get; set; }
+    
+    public PlatformType PlatformType { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

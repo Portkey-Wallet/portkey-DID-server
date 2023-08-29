@@ -358,7 +358,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<VerifierServer, GetVerifierServerResponse>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToHex()));
 
-
         CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
             .ForMember(des => des.Crypto, opt => opt.MapFrom(src => src.PriceSymbol))
             .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.PriceAmount));
