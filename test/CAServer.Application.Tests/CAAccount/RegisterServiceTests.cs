@@ -6,6 +6,7 @@ using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Orleans.TestingHost;
@@ -30,13 +31,16 @@ public class RegisterServiceTests : CAServerApplicationTestBase
 
     private readonly ICAAccountAppService _caAccountAppService;
     private readonly TestCluster _cluster;
-    private readonly AppleCacheOptions _appleCacheOptions;
-    
+
     public RegisterServiceTests()
     {
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
-          _appleCacheOptions = MockAppleCacheOptions().Value;
+    }
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        base.AfterAddApplication(services);
     }
 
     [Fact]

@@ -120,12 +120,19 @@ public class CAServerApplicationTestModule : AbpModule
             options.Code = "SG";
             options.Iso = "65";
         });
+
+        context.Services.Configure<AppleCacheOptions>(options =>
+        {
+            options.Configuration = "127.0.0.1:6379";
+            options.Db = 2;
+        });
         base.ConfigureServices(context);
     }
 
     private void ConfigureGraphQl(ServiceConfigurationContext context)
     {
-        context.Services.AddSingleton(new GraphQLHttpClient("http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
+        context.Services.AddSingleton(new GraphQLHttpClient(
+            "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
