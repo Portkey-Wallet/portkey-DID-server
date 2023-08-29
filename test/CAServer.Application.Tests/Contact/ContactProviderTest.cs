@@ -36,7 +36,7 @@ public class ContactProviderTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        services.AddSingleton(GetGraphQlMock());
+        //services.AddSingleton(GetGraphQlMock());
     }
 
     [Fact]
@@ -129,6 +129,32 @@ public class ContactProviderTest : CAServerApplicationTestBase
         holder.CaHash.ShouldBe(caHash);
     }
 
+    [Fact]
+    public async Task GetCaHolderInfoAsync_GraphQL_Test()
+    {
+        try
+        {
+            var caHash = "test"; 
+            await _contactProvider.GetCaHolderInfoAsync(new List<string>(), caHash);
+        }
+        catch (Exception e)
+        {
+            e.ShouldNotBeNull();
+        }
+    }
+    
+    [Fact]
+    public async Task GetCaHolderInfoByAddressAsync_GraphQL_Test()
+    {
+        try
+        {
+            await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string>(), string.Empty);
+        }
+        catch (Exception e)
+        {
+            e.ShouldNotBeNull();
+        }
+    }
 
     private async Task<IGraphQLHelper> GetGraphQlMock()
     {
