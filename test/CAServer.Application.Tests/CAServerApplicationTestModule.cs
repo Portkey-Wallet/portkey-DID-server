@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Threading.Tasks;
+using CAServer.AppleAuth.Provider;
 using CAServer.Bookmark;
 using CAServer.Common;
 using CAServer.EntityEventHandler.Core;
@@ -14,6 +16,7 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
@@ -123,7 +126,7 @@ public class CAServerApplicationTestModule : AbpModule
 
         context.Services.Configure<AppleCacheOptions>(options =>
         {
-            options.Configuration = "127.0.0.1:6379";
+            options.Configuration = "";
             options.Db = 2;
         });
         base.ConfigureServices(context);
@@ -136,4 +139,6 @@ public class CAServerApplicationTestModule : AbpModule
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
+    
+
 }

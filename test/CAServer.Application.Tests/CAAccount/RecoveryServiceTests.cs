@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Account;
+using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Orleans.TestingHost;
@@ -37,6 +39,12 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
         _appleCacheOptions = MockAppleCacheOptions().Value;
+    }
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        //base.AfterAddApplication(services);
+        services.AddSingleton(GetMockAppleUserProvider());
     }
 
     [Fact]
@@ -181,5 +189,21 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             {
             });
         return mockOptionsSnapshot.Object;
+    }
+
+    private IAppleUserProvider GetMockAppleUserProvider()
+    {
+        var provider = new Mock<IAppleUserProvider>();
+
+        provider.Setup(t => t.GetUserExtraInfoAsync(It.IsAny<string>())).ReturnsAsync(new AppleUserExtraInfo()
+        {
+            UserId = Guid.NewGuid().ToString("N"),
+            FirstName = "Kui",
+            LastName = "Li"
+        });
+
+        provider.Setup(t => t.SetUserExtraInfoAsync(It.IsAny<AppleUserExtraInfo>())).Returns(Task.CompletedTask);
+
+        return provider.Object;
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CAServer.Account;
+using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
@@ -41,8 +42,25 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
+        services.AddSingleton(GetMockAppleUserProvider());
     }
 
+    private IAppleUserProvider GetMockAppleUserProvider()
+    {
+        var provider = new Mock<IAppleUserProvider>();
+
+        provider.Setup(t => t.GetUserExtraInfoAsync(It.IsAny<string>())).ReturnsAsync(new AppleUserExtraInfo()
+        {
+            UserId = Guid.NewGuid().ToString("N"),
+            FirstName = "Kui",
+            LastName = "Li"
+        });
+
+        provider.Setup(t => t.SetUserExtraInfoAsync(It.IsAny<AppleUserExtraInfo>())).Returns(Task.CompletedTask);
+
+        return provider.Object;
+    }
+    
     [Fact]
     public async Task RegisterRequestAsync_Register_Success_Test()
     {
