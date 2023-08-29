@@ -36,6 +36,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         services.AddSingleton(GetActivitiesIcon());
         services.AddSingleton(GetMockActivityProvider());
         services.AddSingleton(GetContractProvider());
+        services.AddSingleton(GetMockUserAssetsProvider());
     }
 
     private void Login(Guid userId)
@@ -210,9 +211,8 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
     }
     
     
-    /*
     [Fact]
-    public async Task GetUsercreateTimeTest()
+    public async Task GetUserCreateTimeTest()
     {
         var param = new GetUserCreateTimeRequestDto
         {
@@ -222,7 +222,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         var result = await _userActivityAppService.GetCaHolderCreateTimeAsync(param);
         result.ShouldBe("1000");
        
-    }*/
+    }
     
     
     
