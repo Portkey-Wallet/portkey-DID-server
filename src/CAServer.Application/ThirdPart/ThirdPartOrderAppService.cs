@@ -191,8 +191,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         return new CommonResponseDto<OrderQueryResponseDto>(orderQueryResponseDto);
     }
 
-    public Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftResultRequestDto input)
+    public Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftReleaseResultRequestDto input)
     {
+        VerifyMerchantSignature(input);
+        
+        
         //TODO nzc 
         throw new NotImplementedException();
     }
@@ -206,7 +209,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             input.MaxResultCount);
     }
 
-    private void SignMerchantDto(NftMerchantBaseDto input)
+    public void SignMerchantDto(NftMerchantBaseDto input)
     {
         var primaryKey = _merchantOptions.DidPrivateKey.GetValueOrDefault(input.MerchantName);
         input.Signature = MerchantSignatureHelper.GetSignature(primaryKey, input);

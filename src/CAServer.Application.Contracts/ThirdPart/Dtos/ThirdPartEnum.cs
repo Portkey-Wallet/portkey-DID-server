@@ -23,6 +23,13 @@ public enum OrderTransDirect
     SELL
 }
 
+public enum NftOrderWebhookStatus
+{
+    NONE,
+    SUCCESS,
+    FAIL,
+}
+
 public enum OrderStatusType
 {
     Unknown,

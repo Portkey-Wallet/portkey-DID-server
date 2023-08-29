@@ -13,4 +13,6 @@ public class NftOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string WebhookUrl { get; set; }
     [Keyword] public string WebhookResult { get; set; }
     [Keyword] public string WebhookTime { get; set; }
+    [Keyword] public string WebhookStatus { get; set; }
+    public int WebhookCount { get; set; } = 0;
 }

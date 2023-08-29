@@ -8,7 +8,7 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
-namespace CAServer.EntityEventHandler.Core;
+namespace CAServer.EntityEventHandler.Core.ThirdPart;
 
 public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributedEventHandler<OrderStatusInfoEto>,
     ITransientDependency
@@ -68,23 +68,4 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
         }
     }
 
-    public async Task HandleEventAsync(NftOrderEto eventData)
-    {
-        try
-        {
-            var nftOrderInfo = _objectMapper.Map<NftOrderEto, NftOrderIndex>(eventData);
-
-            await _nftOrderRepository.AddOrUpdateAsync(nftOrderInfo);
-
-            _logger.LogInformation(
-                "nft order index add or update success, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
-                eventData.Id, eventData.MerchantName, eventData.MerchantOrderId);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e,
-                "An error occurred while processing the event, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
-                eventData.Id, eventData.MerchantName, eventData.MerchantOrderId);
-        }
-    }
 }

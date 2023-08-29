@@ -48,9 +48,16 @@ public class OrderQueryResponseDto : NftMerchantBaseDto
     public string Status { get; set; }
 }
 
+// (webhook to Merchant) NFT pay result request dto
+public class NftOrderResultRequestDto : NftMerchantBaseDto
+{
+    public string MerchantOrderId { get; set; }
+    public string OrderId { get; set; }
+    public string Status { get; set; }
+}
 
 // NFT release result
-public class NftResultRequestDto : NftMerchantBaseDto
+public class NftReleaseResultRequestDto : NftMerchantBaseDto
 {
     public string ReleaseResult { get; set; }
     public string ReleaseTransactionId { get; set; }
