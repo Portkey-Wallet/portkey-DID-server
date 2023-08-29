@@ -12,13 +12,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Orleans.TestingHost;
+using Shouldly;
 using Volo.Abp.Validation;
 using Xunit;
 
 namespace CAServer.CAAccount;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public class RecoveryServiceTests : CAServerApplicationTestBase
+public partial class RecoveryServiceTests : CAServerApplicationTestBase
 {
     private const string DefaultEmailAddress = "1025289418@qq.com";
     private const string DefaultVerifierId = "DefaultVerifierId";
@@ -45,6 +46,11 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
     {
         //base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
+        services.AddSingleton(GetMockUserAssetsProvider());
+        services.AddSingleton(GetContractProvider());
+        services.AddSingleton(GetMockGuardianProvider());
+        services.AddSingleton(GetMockCaAccountProvider());
+        base.AfterAddApplication(services);
     }
 
     [Fact]
@@ -189,6 +195,16 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             {
             });
         return mockOptionsSnapshot.Object;
+    }
+    
+    [Fact]
+    public async Task Revoke_Check_Test()
+    {
+        var userId = Guid.NewGuid();
+        var resultDto =  await _caAccountAppService.RevokeCheckAsync(userId);
+        resultDto.ValidatedAssets.ShouldBeFalse();
+        resultDto.ValidatedDevice.ShouldBeTrue();
+        resultDto.ValidatedGuardian.ShouldBeFalse();
     }
 
     private IAppleUserProvider GetMockAppleUserProvider()
