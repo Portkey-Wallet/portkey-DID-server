@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AutoResponseWrapper.Response;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
@@ -11,6 +10,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
+using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -33,13 +33,15 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IActivityProvider _activityProvider;
     private readonly MerchantOptions _merchantOptions;
+    private readonly IThirdPartOrderProcessorFactory _thirdPartOrderProcessorFactory;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<ThirdPartOrderAppService> logger,
         IObjectMapper objectMapper, IOptions<ThirdPartOptions> thirdPartOptions,
-        IOrderStatusProvider orderStatusProvider, IActivityProvider activityProvider)
+        IOrderStatusProvider orderStatusProvider, IActivityProvider activityProvider,
+        IThirdPartOrderProcessorFactory thirdPartOrderProcessorFactory)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -49,9 +51,9 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
         _activityProvider = activityProvider;
+        _thirdPartOrderProcessorFactory = thirdPartOrderProcessorFactory;
         _merchantOptions = thirdPartOptions.Value.Merchant;
     }
-
 
 
     // crate user ramp order
@@ -93,7 +95,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         try
         {
-            VerifyMerchantSignature(input);
+            _thirdPartOrderProvider.VerifyMerchantSignature(input);
 
             var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
             AssertHelper.NotNull(caHolder, "caHash {CaHash} not found", input.CaHash);
@@ -163,7 +165,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     // query by merchantName & merchantId with MerchantSignature
     public async Task<CommonResponseDto<OrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input)
     {
-        VerifyMerchantSignature(input);
+        _thirdPartOrderProvider.VerifyMerchantSignature(input);
         AssertHelper.IsTrue(!input.MerchantOrderId.IsNullOrEmpty() && !input.MerchantName.IsNullOrEmpty(),
             "merchantOrderId and merchantName can not be empty");
 
@@ -187,17 +189,25 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _objectMapper.Map(orderDto, orderQueryResponseDto);
 
         // sign response
-        SignMerchantDto(orderQueryResponseDto);
+        _thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
         return new CommonResponseDto<OrderQueryResponseDto>(orderQueryResponseDto);
     }
 
-    public Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftReleaseResultRequestDto input)
+    public async Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftReleaseResultRequestDto input)
     {
-        VerifyMerchantSignature(input);
+        _thirdPartOrderProvider.VerifyMerchantSignature(input);
         
+        var nftOrderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(new NftOrderQueryConditionDto(0, 1)
+        {
+            MerchantName = input.MerchantName,
+            MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
+        });
+        AssertHelper.NotEmpty(nftOrderPager.Data, "Order {OrderId} of {Merchant} not found", input.MerchantOrderId,
+            input.MerchantName);
+        var orderIndex = nftOrderPager.Data[0];
         
-        //TODO nzc 
-        throw new NotImplementedException();
+        // merchantName in order means ThirdPartName (Alchemy etc.)
+        return await _thirdPartOrderProcessorFactory.GetProcessor(orderIndex.MerchantName).NotifyNftReleaseAsync(orderIndex.Id, input);
     }
 
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
@@ -209,17 +219,4 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             input.MaxResultCount);
     }
 
-    public void SignMerchantDto(NftMerchantBaseDto input)
-    {
-        var primaryKey = _merchantOptions.DidPrivateKey.GetValueOrDefault(input.MerchantName);
-        input.Signature = MerchantSignatureHelper.GetSignature(primaryKey, input);
-    }
-
-    private void VerifyMerchantSignature(NftMerchantBaseDto input)
-    {
-        var publicKey = _merchantOptions.MerchantPublicKey.GetValueOrDefault(input.MerchantName);
-        AssertHelper.NotEmpty(publicKey, "Invalid merchantName");
-        AssertHelper.IsTrue(MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, input),
-            "Invalid merchant signature");
-    }
 }

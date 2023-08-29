@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
@@ -16,19 +17,23 @@ public partial class ThirdPartOrderAppServiceTest
     private IThirdPartOrderProvider getMockTokenPriceGrain()
     {
         var mockThirdPartOrderProvider = new Mock<IThirdPartOrderProvider>();
-        mockThirdPartOrderProvider.Setup(o => o.GetThirdPartOrdersByPageAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>()))
+        mockThirdPartOrderProvider.Setup(o => o.GetThirdPartOrdersByPageAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(
-                new List<OrderDto>()
+                new PageResultDto<OrderDto>()
                 {
-                    new OrderDto()
+                    TotalRecordCount = 1,
+                    Data = new List<OrderDto>()
                     {
-                        Address = "Address",
-                        MerchantName = "MerchantName",
-                        Crypto = "Crypto",
-                        CryptoPrice = "CryptoPrice",
-                        Fiat = "Fiat",
-                        FiatAmount = "FiatAmount",
-                        LastModifyTime = "LastModifyTime"
+                        new OrderDto()
+                        {
+                            Address = "Address",
+                            MerchantName = "MerchantName",
+                            Crypto = "Crypto",
+                            CryptoPrice = "CryptoPrice",
+                            Fiat = "Fiat",
+                            FiatAmount = "FiatAmount",
+                            LastModifyTime = "LastModifyTime"
+                        }
                     }
                 }
             );

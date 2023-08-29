@@ -19,4 +19,7 @@ public interface IThirdPartOrderProvider
     public Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync();
     public Task<PageResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(Guid userId, List<Guid> orderIdIn, int skipCount, int maxResultCount, params OrderSectionEnum?[] withSections);
     public Task<PageResultDto<OrderDto>> GetNftOrdersByPageAsync(NftOrderQueryConditionDto condition);
+
+    public void SignMerchantDto(NftMerchantBaseDto input);
+    public void VerifyMerchantSignature(NftMerchantBaseDto input);
 }

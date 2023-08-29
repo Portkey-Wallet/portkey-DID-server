@@ -1,40 +1,47 @@
+using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Common.Dtos;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart.Alchemy;
+using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans.Runtime;
+using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart.Provider;
 
-public interface IAlchemyProvider
+
+public class AlchemyApi
 {
-    Task<string> HttpGetFromAlchemy(string path);
-    Task<string> HttpPost2AlchemyAsync(string path, string inputStr);
+    public static ApiInfo NftResultNotice { get; } = new(HttpMethod.Post, "/nft/openapi/merchant/notice");
 }
 
-public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
+
+public class AlchemyProvider : ISingletonDependency
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<AlchemyServiceAppService> _logger;
+    private readonly ILogger<AlchemyProvider> _logger;
     private readonly AlchemyOptions _alchemyOptions;
+    private readonly HttpProvider _httpProvider;
 
     public AlchemyProvider(IHttpClientFactory httpClientFactory,
         IOptions<ThirdPartOptions> merchantOptions,
-        ILogger<AlchemyServiceAppService> logger)
+        ILogger<AlchemyProvider> logger, HttpProvider httpProvider)
     {
         _httpClientFactory = httpClientFactory;
         _alchemyOptions = merchantOptions.Value.Alchemy;
         _logger = logger;
+        _httpProvider = httpProvider;
     }
 
-
+    [Obsolete("use HttpProvider instead")]
     public async Task<string> HttpGetFromAlchemy(string path)
     {
         var client = _httpClientFactory.CreateClient();
@@ -47,7 +54,8 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
 
         return respStr;
     }
-
+    
+    [Obsolete("use HttpProvider instead")]
     public async Task<string> HttpPost2AlchemyAsync(string path, string inputStr)
     {
         _logger.LogInformation("[ACH]send request body : \n{requestBody}", inputStr);
@@ -66,17 +74,42 @@ public class AlchemyProvider : IAlchemyProvider, ISingletonDependency
         return respStr;
     }
 
+
+    /// <summary>
+    ///     Notice Alchemy NFT release result
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<AlchemyBaseResponseDto> NoticeNftReleaseResult(AlchemyNftReleaseNoticeRequestDto request)
+    {
+        return await _httpProvider.Invoke<AlchemyBaseResponseDto>(_alchemyOptions.NftBaseUrl,
+            AlchemyApi.NftResultNotice,
+            header: GetAlchemyRequestHeader(),
+            body: JsonConvert.SerializeObject(request, HttpProvider.DefaultJsonSettings));
+    }
+    
+
     // Set Alchemy request header with appId timestamp sign.
     private void SetAlchemyRequestHeader(HttpClient client)
     {
-        string timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
+        foreach (var kv in GetAlchemyRequestHeader())
+        {   
+            client.DefaultRequestHeaders.Add(kv.Key, kv.Value);
+        }
+    }
+
+    private Dictionary<string,string> GetAlchemyRequestHeader()
+    {
+        var timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
         var sign = GenerateAlchemyApiSign(timeStamp);
         _logger.LogDebug("appId: {AppId}, timeStamp: {TimeStamp}, signature: {Signature}", _alchemyOptions.AppId,
             timeStamp, sign);
-
-        client.DefaultRequestHeaders.Add("appId", _alchemyOptions.AppId);
-        client.DefaultRequestHeaders.Add("timestamp", timeStamp);
-        client.DefaultRequestHeaders.Add("sign", sign);
+        return new Dictionary<string, string>
+        {
+            ["appId"] =  _alchemyOptions.AppId,
+            ["timestamp"] =  timeStamp,
+            ["sign"] =  sign
+        };
     }
 
     // Generate Alchemy request sigh by "appId + appSecret + timestamp".

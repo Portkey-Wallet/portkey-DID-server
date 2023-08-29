@@ -1,9 +1,13 @@
+using System;
+using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -14,14 +18,17 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
 {
     private const string SignatureField = "signature";
 
+    private readonly AlchemyProvider _alchemyProvider;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly ILogger<AlchemyOrderProcessor> _logger;
 
     public AlchemyOrderProcessor(ILogger<AlchemyOrderProcessor> logger, IClusterClient clusterClient,
-        IThirdPartOrderProvider thirdPartOrderProvider, IOptions<ThirdPartOptions> thirdPartOptions)
+        IThirdPartOrderProvider thirdPartOrderProvider, IOptions<ThirdPartOptions> thirdPartOptions,
+        AlchemyProvider alchemyProvider)
         : base(logger, clusterClient, thirdPartOrderProvider)
     {
         _logger = logger;
+        _alchemyProvider = alchemyProvider;
         _alchemyOptions = thirdPartOptions.Value.Alchemy;
     }
 
@@ -68,5 +75,22 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
     {
         // do nothing
         return false;
+    }
+
+    public override async Task<CommonResponseDto<Empty>> DoNotifyNftReleaseAsync(NftReleaseResultRequestDto nftResult,
+        OrderGrainDto orderGrainDto, NftOrderGrainDto nftOrderGrainDto)
+    {
+        var resp = await _alchemyProvider.NoticeNftReleaseResult(new AlchemyNftReleaseNoticeRequestDto
+        {
+            MerchantOrderNo = orderGrainDto.Id.ToString(),
+            OrderNo = orderGrainDto.ThirdPartOrderNo,
+            ReleaseStatus = nftResult.ReleaseResult,
+            TransactionHash = nftResult.ReleaseTransactionId,
+            ReleaseTime = DateTime.UtcNow.ToUtcString(),
+            PictureNumber = nftOrderGrainDto.NftSymbol,
+        });
+        return resp.Success.ToLower() == "success"
+            ? new CommonResponseDto<Empty>()
+            : new CommonResponseDto<Empty>().Error(resp.ReturnCode, resp.ReturnMsg);
     }
 }

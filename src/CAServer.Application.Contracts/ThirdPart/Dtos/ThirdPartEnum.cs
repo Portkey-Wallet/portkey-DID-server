@@ -23,6 +23,11 @@ public enum OrderTransDirect
     SELL
 }
 
+public enum NftReleaseResult
+{
+    SUCCESS,
+    FAIL,
+}
 public enum NftOrderWebhookStatus
 {
     NONE,
@@ -123,6 +128,10 @@ public class OrderStatusTransitions
         // on-ramp user pay fiat success
         [OrderStatusType.Pending] =  new()
         {
+            OrderStatusType.Canceled,
+            OrderStatusType.Expired,
+            OrderStatusType.Finish,
+            OrderStatusType.Failed,
             OrderStatusType.Refunded,
             OrderStatusType.StartTransfer,
             OrderStatusType.Transferring,
@@ -136,8 +145,13 @@ public class OrderStatusTransitions
         },
         
         // off-ramp order transfer just start
+        // nft-checkout order pay success
         [OrderStatusType.StartTransfer] =  new()
         {
+            OrderStatusType.Expired,
+            OrderStatusType.Finish,
+            OrderStatusType.Failed,
+            OrderStatusType.Refunded,
             OrderStatusType.Transferring,
             OrderStatusType.Transferred,
             OrderStatusType.TransferFailed,
@@ -145,6 +159,7 @@ public class OrderStatusTransitions
             OrderStatusType.StartPayment,
             OrderStatusType.SuccessfulPayment,
             OrderStatusType.PaymentFailed,
+            OrderStatusType.RefundSuccessfully,
         },
         
         // off-ramp, user transferred crypto, waiting for resout 

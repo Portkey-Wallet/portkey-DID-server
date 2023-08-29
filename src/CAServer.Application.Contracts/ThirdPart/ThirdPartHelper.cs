@@ -37,7 +37,7 @@ public static class ThirdPartHelper
         Guid.TryParse(merchantOrderNo, out Guid orderNo);
         return orderNo;
     }
-    
+ 
     public static string ConvertObjectToSortedString([CanBeNull] object obj, params string[] ignoreParams)
     {
         if (obj == null) return string.Empty;

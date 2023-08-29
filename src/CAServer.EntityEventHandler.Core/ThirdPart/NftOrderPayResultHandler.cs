@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
+using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -24,7 +24,7 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
     private static readonly List<string> ResultStatus = new()
     {
         OrderStatusType.Pending.ToString(),
-        OrderStatusType.Failed.ToString(), 
+        OrderStatusType.Failed.ToString(),
         OrderStatusType.Expired.ToString()
     };
 
@@ -32,35 +32,55 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
     private readonly IClusterClient _clusterClient;
     private readonly HttpProvider _httpProvider;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
+    private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
 
-    public NftOrderPayResultHandler(HttpProvider httpProvider, IClusterClient clusterClient, ILogger<NftOrderPayResultHandler> logger, IThirdPartOrderAppService thirdPartOrderAppService)
+    public NftOrderPayResultHandler(HttpProvider httpProvider, IClusterClient clusterClient,
+        ILogger<NftOrderPayResultHandler> logger, IThirdPartOrderAppService thirdPartOrderAppService,
+        IThirdPartOrderProvider thirdPartOrderProvider)
     {
         _httpProvider = httpProvider;
         _clusterClient = clusterClient;
         _logger = logger;
         _thirdPartOrderAppService = thirdPartOrderAppService;
+        _thirdPartOrderProvider = thirdPartOrderProvider;
     }
 
 
     public async Task HandleEventAsync(OrderEto eventData)
     {
-        if (!ResultStatus.Contains(eventData.Status))
+        if (!ResultStatus.Contains(eventData.Status) || eventData.TransDirect != TransferDirectionType.NFTBuy.ToString())
         {
+            // not NFT pay result
             return;
         }
 
         try
         {
+            // query base order grain 
+            var orderGrain = _clusterClient.GetGrain<IOrderGrain>(eventData.Id);
+            var orderGrainDto = (await orderGrain.GetOrder()).Data;
+            AssertHelper.IsTrue(orderGrainDto?.Id == eventData.Id, "Order {OrderId} not exists", eventData.Id);
+
+            if (orderGrainDto?.Status == OrderStatusType.Pending.ToString())
+            {
+                // pay success new status is StartTransfer
+                orderGrainDto.Status = OrderStatusType.StartTransfer.ToString();
+                var orderGrainResult = await _thirdPartOrderProvider.DoUpdateRampOrderAsync(orderGrainDto);
+                AssertHelper.IsTrue(orderGrainResult.Success, 
+                    "Order status update fail, OrderId={OrderId}, Status={Status}", 
+                    orderGrainDto.Id, orderGrainDto.Status);
+            }
+
             // query nft order grain
             var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(eventData.Id);
             var nftOrderGrainDto = await nftOrderGrain.GetNftOrder();
             AssertHelper.IsTrue(nftOrderGrainDto?.Data?.WebhookStatus == NftOrderWebhookStatus.NONE.ToString(),
-                "Webhook status of order {OrderId} exists", eventData.Id);
-            
+                "Webhook status of order {OrderId} exists", orderGrainDto.Id);
+
             // callback and update result
-            var grainDto = await DoCallBack(eventData, nftOrderGrainDto?.Data);
-            var updateResult = await nftOrderGrain.UpdateNftOrder(grainDto);
-            AssertHelper.IsTrue(updateResult.Success, 
+            var grainDto = await DoCallBack(orderGrainDto, nftOrderGrainDto?.Data);
+            var nftOrderResult = await _thirdPartOrderProvider.DoUpdateNftOrderAsync(grainDto);
+            AssertHelper.IsTrue(nftOrderResult.Success,
                 "Webhook result update fail, webhookStatus={WebhookStatus}, webhookResult={WebhookResult}",
                 grainDto.WebhookStatus, grainDto.WebhookResult);
         }
@@ -78,7 +98,7 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
     }
 
 
-    private async Task<NftOrderGrainDto> DoCallBack(OrderEto eventData, NftOrderGrainDto nftOrderGrainDto)
+    private async Task<NftOrderGrainDto> DoCallBack(OrderGrainDto orderGrainDto, NftOrderGrainDto nftOrderGrainDto)
     {
         try
         {
@@ -86,35 +106,34 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
             {
                 MerchantName = nftOrderGrainDto.MerchantName,
                 MerchantOrderId = nftOrderGrainDto.MerchantOrderId,
-                OrderId = eventData.Id.ToString(),
-                Status = eventData.Status == OrderStatusType.Pending.ToString()
+                OrderId = orderGrainDto.Id.ToString(),
+                Status = orderGrainDto.Status == OrderStatusType.Pending.ToString()
                     ? NftOrderWebhookStatus.SUCCESS.ToString()
                     : NftOrderWebhookStatus.FAIL.ToString()
             };
             // sign data
-            _thirdPartOrderAppService.SignMerchantDto(requestDto);
+            _thirdPartOrderProvider.SignMerchantDto(requestDto);
 
             // do callback
             var res = await _httpProvider.Invoke(HttpMethod.Post, nftOrderGrainDto.WebhookUrl,
                 body: JsonConvert.SerializeObject(requestDto, HttpProvider.DefaultJsonSettings));
             nftOrderGrainDto.WebhookResult = res;
-            
+
             var resObj = JsonConvert.DeserializeObject<CommonResponseDto<Empty>>(res);
-            nftOrderGrainDto.WebhookStatus = resObj.Success 
-                ? NftOrderWebhookStatus.SUCCESS.ToString() 
+            nftOrderGrainDto.WebhookStatus = resObj.Success
+                ? NftOrderWebhookStatus.SUCCESS.ToString()
                 : NftOrderWebhookStatus.FAIL.ToString();
         }
         catch (HttpRequestException e)
         {
             _logger.LogWarning(e, "Callback nft order pay result fail, Id={Id}, Status={Status}",
-                nftOrderGrainDto.Id, eventData.Status);
+                nftOrderGrainDto.Id, orderGrainDto.Status);
             nftOrderGrainDto.WebhookStatus = NftOrderWebhookStatus.FAIL.ToString();
             nftOrderGrainDto.WebhookResult = e.Message;
         }
 
-        nftOrderGrainDto.WebhookTime = DateTime.UtcNow.ToString("o");
+        nftOrderGrainDto.WebhookTime = DateTime.UtcNow.ToUtcString();
         nftOrderGrainDto.WebhookCount++;
         return nftOrderGrainDto;
     }
-    
 }

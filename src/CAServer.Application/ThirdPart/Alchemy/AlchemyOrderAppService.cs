@@ -34,7 +34,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
-    private readonly IAlchemyProvider _alchemyProvider;
+    private readonly AlchemyProvider _alchemyProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
     private readonly JsonSerializerSettings _setting = new()
@@ -47,7 +47,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         IDistributedEventBus distributedEventBus,
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
-        IAlchemyProvider alchemyProvider,
+        AlchemyProvider alchemyProvider,
         IObjectMapper objectMapper,
         IOrderStatusProvider orderStatusProvider)
     {

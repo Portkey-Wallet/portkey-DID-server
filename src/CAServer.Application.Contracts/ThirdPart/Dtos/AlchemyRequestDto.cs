@@ -165,3 +165,16 @@ public class AlchemyNftPartOrderRequestDto : IThirdPartNftOrderUpdateRequest
     public string Message { get; set; }
     public string Signature { get; set; }
 }
+
+public class AlchemyNftReleaseNoticeRequestDto
+{
+    public string MerchantOrderNo { get; set; }
+    public string OrderNo { get; set; }
+    public string ReleaseStatus { get; set; }
+    public string TransactionHash { get; set; }
+    public string ReleaseTime { get; set; }
+    public string Contract { get; set; }
+    public string UniqueId { get; set; }
+    public string Picture { get; set; }
+    public string PictureNumber { get; set; }
+}

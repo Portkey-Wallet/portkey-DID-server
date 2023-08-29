@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Dtos;
@@ -11,4 +12,7 @@ public interface IThirdPartOrderProcessor : ISingletonDependency
     public string ThirdPartName();
 
     public Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
+
+    public Task<CommonResponseDto<Empty>> NotifyNftReleaseAsync(Guid orderId, NftReleaseResultRequestDto input);
+    
 }

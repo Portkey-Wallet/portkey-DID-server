@@ -59,6 +59,7 @@ public class NftOrderResultRequestDto : NftMerchantBaseDto
 // NFT release result
 public class NftReleaseResultRequestDto : NftMerchantBaseDto
 {
+    /// <see cref="NftReleaseResult"/>
     public string ReleaseResult { get; set; }
     public string ReleaseTransactionId { get; set; }
     public string MerchantOrderId { get; set; }

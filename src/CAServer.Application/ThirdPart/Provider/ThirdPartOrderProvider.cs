@@ -229,4 +229,19 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             orderDto.OrderSections.Add(nftOrderSection.SectionName, nftOrderSection);
         }
     }
+    
+    
+    public void SignMerchantDto(NftMerchantBaseDto input)
+    {
+        var primaryKey = _thirdPartOptions.Merchant.DidPrivateKey.GetValueOrDefault(input.MerchantName);
+        input.Signature = MerchantSignatureHelper.GetSignature(primaryKey, input);
+    }
+
+    public void VerifyMerchantSignature(NftMerchantBaseDto input)
+    {
+        var publicKey = _thirdPartOptions.Merchant.MerchantPublicKey.GetValueOrDefault(input.MerchantName);
+        AssertHelper.NotEmpty(publicKey, "Invalid merchantName");
+        AssertHelper.IsTrue(MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, input),
+            "Invalid merchant signature");
+    }
 }

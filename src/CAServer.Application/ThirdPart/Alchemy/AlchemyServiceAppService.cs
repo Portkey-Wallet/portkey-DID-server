@@ -22,7 +22,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
 {
     private readonly ILogger<AlchemyServiceAppService> _logger;
     private readonly AlchemyOptions _alchemyOptions;
-    private readonly IAlchemyProvider _alchemyProvider;
+    private readonly AlchemyProvider _alchemyProvider;
     private readonly IDistributedCache<List<AlchemyFiatDto>> _fiatListCache;
     private readonly IDistributedCache<AlchemyOrderQuoteDataDto> _orderQuoteCache;
 
@@ -31,7 +31,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         ContractResolver = new CamelCasePropertyNamesContractResolver()
     };
 
-    public AlchemyServiceAppService(IOptions<ThirdPartOptions> merchantOptions, IAlchemyProvider alchemyProvider,
+    public AlchemyServiceAppService(IOptions<ThirdPartOptions> merchantOptions, AlchemyProvider alchemyProvider,
         ILogger<AlchemyServiceAppService> logger,IDistributedCache<List<AlchemyFiatDto>> fiatListCache,
         IDistributedCache<AlchemyOrderQuoteDataDto> orderQuoteCache)
     {
