@@ -195,19 +195,55 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
     public async Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftReleaseResultRequestDto input)
     {
-        _thirdPartOrderProvider.VerifyMerchantSignature(input);
-        
-        var nftOrderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(new NftOrderQueryConditionDto(0, 1)
+        try
         {
-            MerchantName = input.MerchantName,
-            MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
-        });
-        AssertHelper.NotEmpty(nftOrderPager.Data, "Order {OrderId} of {Merchant} not found", input.MerchantOrderId,
-            input.MerchantName);
-        var orderIndex = nftOrderPager.Data[0];
+            _thirdPartOrderProvider.VerifyMerchantSignature(input);
+            
+            // search ES for orderId
+            var nftOrderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(new NftOrderQueryConditionDto(0, 1)
+            {
+                MerchantName = input.MerchantName,
+                MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
+            });
+            AssertHelper.NotEmpty(nftOrderPager.Data, "Order {OrderId} of {Merchant} not found", input.MerchantOrderId,
+                input.MerchantName);
+            var orderIndex = nftOrderPager.Data[0];
+            var orderId = orderIndex.Id;
+            
+            // query verify order grain
+            var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
+            var orderGrainDto = (await orderGrain.GetOrder()).Data;
+            AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
+            
+            // calculate new status and check
+            var nextStatus = input.ReleaseResult == NftReleaseResult.SUCCESS.ToString()
+                ? OrderStatusType.Finish
+                : OrderStatusType.TransferFailed;
+            var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
+            AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
+                "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
+            
+            // update base-order status 
+            orderGrainDto.Status = nextStatus.ToString();
+            orderGrainDto.TransactionId = input.ReleaseTransactionId;
+            var orderUpdateResult = await _thirdPartOrderProvider.DoUpdateRampOrderAsync(orderGrainDto);
+            AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");
+
+            return new CommonResponseDto<Empty>();
+        }
+        catch (UserFriendlyException e)
+        {
+            Logger.LogWarning(e, "Notice NFT release result failed, orderId={OrderId}, merchantName={MerchantName}",
+                input.MerchantOrderId, input.MerchantName);
+            return new CommonResponseDto<Empty>().Error(e);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Notice NFT release result error, orderId={OrderId}, merchantName={MerchantName}",
+                input.MerchantOrderId, input.MerchantName);
+            return new CommonResponseDto<Empty>().Error(e, "Internal error");
+        }
         
-        // merchantName in orderIndex means ThirdPartName (Alchemy etc.)
-        return await _thirdPartOrderProcessorFactory.GetProcessor(orderIndex.MerchantName).NotifyNftReleaseAsync(orderIndex.Id, input);
     }
 
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)

@@ -13,6 +13,6 @@ public interface IThirdPartOrderProcessor : ISingletonDependency
 
     public Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
 
-    public Task<CommonResponseDto<Empty>> NotifyNftReleaseAsync(Guid orderId, NftReleaseResultRequestDto input);
+    public Task<CommonResponseDto<Empty>> NotifyNftReleaseAsync(Guid orderId);
     
 }

@@ -79,16 +79,18 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
         return false;
     }
 
-    public override async Task<CommonResponseDto<Empty>> DoNotifyNftReleaseAsync(NftReleaseResultRequestDto nftResult,
-        OrderGrainDto orderGrainDto, NftOrderGrainDto nftOrderGrainDto)
+    public override async Task<CommonResponseDto<Empty>> DoNotifyNftReleaseAsync(OrderGrainDto orderGrainDto,
+        NftOrderGrainDto nftOrderGrainDto)
     {
         var resp = await _alchemyProvider.NoticeNftReleaseResult(new AlchemyNftReleaseNoticeRequestDto
         {
             MerchantOrderNo = orderGrainDto.Id.ToString(),
             OrderNo = orderGrainDto.ThirdPartOrderNo,
-            ReleaseStatus = nftResult.ReleaseResult,
-            TransactionHash = nftResult.ReleaseTransactionId,
-            ReleaseTime = DateTime.UtcNow.ToUtcString(),
+            ReleaseStatus = orderGrainDto.Status == OrderStatusType.Finish.ToString()
+                ? NftOrderWebhookStatus.SUCCESS.ToString()
+                : NftOrderWebhookStatus.FAIL.ToString(),
+            TransactionHash = orderGrainDto.TransactionId,
+            ReleaseTime = DateTime.UtcNow.ToUtcMilliSeconds().ToString(),
             PictureNumber = nftOrderGrainDto.NftSymbol,
         });
         return resp.Success.ToLower() == "success"

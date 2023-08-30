@@ -16,7 +16,6 @@ public enum TransferDirectionType
     NFTSell
 }
 
-
 public enum OrderTransDirect
 {
     BUY,
@@ -28,6 +27,7 @@ public enum NftReleaseResult
     SUCCESS,
     FAIL,
 }
+
 public enum NftOrderWebhookStatus
 {
     NONE,
@@ -35,6 +35,19 @@ public enum NftOrderWebhookStatus
     FAIL,
 }
 
+/// <summary>
+/// Order status transitions:
+/// 
+///     on-ramp:   Initialized - Created - Pending - Finish
+///                                     \- Failed
+/// 
+///     off-ramp:  Initialized - Created - Pending - StartTransfer - Transferring - Transferred - UserCompletesCoinDeposit - StartPayment - SuccessfulPayment
+///                                                                              \- TransferFailed                                       \- PaymentFailed
+/// 
+///     nft-buy:   Initialized - Created - Pending - StartTransfer - Transferred - Finish
+///                                    (user pay success)         \- TransferFailed
+/// 
+/// </summary>
 public enum OrderStatusType
 {
     Unknown,
@@ -64,9 +77,9 @@ public class OrderStatusTransitions
     {
         return _reachableDict.GetValueOrDefault(from, Empty).Contains(to);
     }
-    
+
     private static readonly List<OrderStatusType> Empty = new List<OrderStatusType>();
-    
+
     // currentStatus => reachable next status list
     private static Dictionary<OrderStatusType, List<OrderStatusType>> _reachableDict = new()
     {
@@ -78,10 +91,10 @@ public class OrderStatusTransitions
         [OrderStatusType.TransferFailed] = Empty,
         [OrderStatusType.PaymentFailed] = Empty,
         [OrderStatusType.RefundSuccessfully] = Empty,
-        
+
         // by webhook: off-ramp, pay fiat to user success
         [OrderStatusType.SuccessfulPayment] = Empty,
-        
+
         // by local: order create locally
         [OrderStatusType.Initialized] = new()
         {
@@ -103,9 +116,9 @@ public class OrderStatusTransitions
             OrderStatusType.PaymentFailed,
             OrderStatusType.RefundSuccessfully,
         },
-        
+
         // by webhook : on-ramp user pay fiat success
-        [OrderStatusType.Created] =  new()
+        [OrderStatusType.Created] = new()
         {
             OrderStatusType.Invalid,
             OrderStatusType.Canceled,
@@ -124,9 +137,9 @@ public class OrderStatusTransitions
             OrderStatusType.PaymentFailed,
             OrderStatusType.RefundSuccessfully,
         },
-        
+
         // on-ramp user pay fiat success
-        [OrderStatusType.Pending] =  new()
+        [OrderStatusType.Pending] = new()
         {
             OrderStatusType.Canceled,
             OrderStatusType.Expired,
@@ -143,10 +156,10 @@ public class OrderStatusTransitions
             OrderStatusType.PaymentFailed,
             OrderStatusType.RefundSuccessfully,
         },
-        
+
         // off-ramp order transfer just start
         // nft-checkout order pay success
-        [OrderStatusType.StartTransfer] =  new()
+        [OrderStatusType.StartTransfer] = new()
         {
             OrderStatusType.Expired,
             OrderStatusType.Finish,
@@ -161,9 +174,9 @@ public class OrderStatusTransitions
             OrderStatusType.PaymentFailed,
             OrderStatusType.RefundSuccessfully,
         },
-        
+
         // off-ramp, user transferred crypto, waiting for resout 
-        [OrderStatusType.Transferring] =  new()
+        [OrderStatusType.Transferring] = new()
         {
             OrderStatusType.Transferred,
             OrderStatusType.TransferFailed,
@@ -172,31 +185,31 @@ public class OrderStatusTransitions
             OrderStatusType.SuccessfulPayment,
             OrderStatusType.PaymentFailed,
         },
-        
+
         // by local transaction: off-ramp user transfer crypto success
-        [OrderStatusType.Transferred] =  new()
+        [OrderStatusType.Transferred] = new()
         {
             OrderStatusType.UserCompletesCoinDeposit,
             OrderStatusType.StartPayment,
             OrderStatusType.SuccessfulPayment,
             OrderStatusType.PaymentFailed,
         },
-        
+
         // by third webhook : off-ramp user transfer crypto complete
-        [OrderStatusType.UserCompletesCoinDeposit] =  new()
+        [OrderStatusType.UserCompletesCoinDeposit] = new()
         {
             OrderStatusType.StartPayment,
             OrderStatusType.SuccessfulPayment,
             OrderStatusType.PaymentFailed,
         },
-        
+
         // by webhook : off-ramp thirdPart start pay fiat to user
-        [OrderStatusType.StartPayment] =  new()
+        [OrderStatusType.StartPayment] = new()
         {
             OrderStatusType.SuccessfulPayment,
             OrderStatusType.PaymentFailed,
         },
-        [OrderStatusType.Refunded] =  new()
+        [OrderStatusType.Refunded] = new()
         {
             OrderStatusType.RefundSuccessfully,
         },
