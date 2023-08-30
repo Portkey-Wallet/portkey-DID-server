@@ -38,7 +38,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     }
 
     public async Task<TransferLimitListResultDto> GetTransferLimitListByCaHashAsync(
-        GetTransferLimitListByCaHashAsyncDto input)
+        GetTransferLimitListByCaHashDto input)
     {
         try
         {
@@ -97,8 +97,33 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "An exception occurred during GetTransferLimitListByCaHashAsync");
-            throw new UserFriendlyException("An exception occurred during GetTransferLimitListByCaHashAsync");
+            _logger.LogError(e, "An exception occurred during GetTransferLimitListByCaHashAsync, caHash: {caHash}",
+                input.CaHash);
+            throw new UserFriendlyException(
+                $"An exception occurred during GetTransferLimitListByCaHashAsync,caHash: {input.CaHash}");
+        }
+    }
+
+    public async Task<ManagerApprovedListResultDto> GetManagerApprovedListByCaHashAsync(
+        GetManagerApprovedListByCaHashDto input)
+    {
+        try
+        {
+            var res = await _userSecurityProvider.GetManagerApprovedListByCaHash(input.CaHash, input.Spender,
+                input.Symbol, input.SkipCount, input.MaxResultCount);
+            return new ManagerApprovedListResultDto()
+            {
+                TotalRecordCount = res.CaHolderManagerApproved.TotalRecordCount,
+                Data = res.CaHolderManagerApproved.Data
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                "An exception occurred during GetManagerApprovedListByCaHashAsync, chainId: {ChainId} caHash: {caHash}",
+                input.ChainId, input.CaHash);
+            throw new UserFriendlyException(
+                $"An exception occurred during GetManagerApprovedListByCaHashAsync, chainId: {input.ChainId} caHash: {input.CaHash}");
         }
     }
 }

@@ -6,5 +6,8 @@ namespace CAServer.Security;
 public interface IUserSecurityAppService
 {
     public Task<TransferLimitListResultDto> GetTransferLimitListByCaHashAsync(
-        GetTransferLimitListByCaHashAsyncDto input);
+        GetTransferLimitListByCaHashDto input);
+
+    public Task<ManagerApprovedListResultDto> GetManagerApprovedListByCaHashAsync(
+        GetManagerApprovedListByCaHashDto input);
 }

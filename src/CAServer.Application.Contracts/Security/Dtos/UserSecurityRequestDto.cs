@@ -4,7 +4,7 @@ using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Security.Dtos;
 
-public class GetTransferLimitListByCaHashAsyncDto : PagedResultRequestDto, IValidatableObject
+public class GetTransferLimitListByCaHashDto : PagedResultRequestDto, IValidatableObject
 {
     [Required] public string CaHash { get; set; }
 
@@ -15,4 +15,12 @@ public class GetTransferLimitListByCaHashAsyncDto : PagedResultRequestDto, IVali
             yield return new ValidationResult("Invalid CaHash input.");
         }
     }
+}
+
+public class GetManagerApprovedListByCaHashDto : PagedResultRequestDto
+{
+    [Required] public string ChainId { get; set; }
+    [Required] public string CaHash { get; set; }
+    public string Spender { get; set; }
+    public string Symbol { get; set; }
 }

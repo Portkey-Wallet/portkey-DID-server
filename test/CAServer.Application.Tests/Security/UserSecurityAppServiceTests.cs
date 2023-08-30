@@ -1,11 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Types;
 using CAServer.Security.Dtos;
-using CAServer.UserAssets;
 using Microsoft.Extensions.DependencyInjection;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Shouldly;
 using Xunit;
 
@@ -13,6 +12,10 @@ namespace CAServer.Security;
 
 public partial class UserSecurityAppServiceTest : CAServerApplicationTestBase
 {
+    private readonly string defaultSymbol = "ELF";
+    private readonly string defaultChainId = "AELF";
+    private readonly string defaultTestCaHash = HashHelper.ComputeFrom("test@google.com").ToHex();
+
     protected IUserSecurityAppService _userSecurityAppService;
 
     public UserSecurityAppServiceTest()
@@ -31,27 +34,40 @@ public partial class UserSecurityAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetTransferLimitListByCaHashAsyncTest()
     {
-        var param = new GetTokenRequestDto
-        {
-            SkipCount = 0,
-            MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" }
-        };
-
-
         var result = await _userSecurityAppService.GetTransferLimitListByCaHashAsync(
-            new GetTransferLimitListByCaHashAsyncDto
+            new GetTransferLimitListByCaHashDto
             {
                 MaxResultCount = 100,
                 SkipCount = 0,
-                CaHash = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+                CaHash = defaultTestCaHash
             });
         result.TotalRecordCount.ShouldBe(1);
 
         var data = result.Data.First();
-        data.Symbol.ShouldBe("ELF");
-        data.ChainId.ShouldBe("AELF");
+        data.Symbol.ShouldBe(defaultSymbol);
+        data.ChainId.ShouldBe(defaultChainId);
         data.DailyLimit.ShouldBe(10000);
         data.SingleLimit.ShouldBe(10000);
+    }
+
+    [Fact]
+    public async Task GetManagerApprovedListByCaHashAsyncTest()
+    {
+        var result = await _userSecurityAppService.GetManagerApprovedListByCaHashAsync(
+            new GetManagerApprovedListByCaHashDto()
+            {
+                MaxResultCount = 100,
+                SkipCount = 0,
+                ChainId = defaultChainId,
+                CaHash = defaultTestCaHash
+            });
+        result.TotalRecordCount.ShouldBe(1);
+
+        var data = result.Data.First();
+        data.Symbol.ShouldBe(defaultSymbol);
+        data.ChainId.ShouldBe(defaultChainId);
+        data.Amount.ShouldBe(10000);
+        data.CaHash.ShouldBe(defaultTestCaHash);
+        data.Spender.ShouldBe(Address.FromPublicKey("AAA".HexToByteArray()).ToBase58());
     }
 }

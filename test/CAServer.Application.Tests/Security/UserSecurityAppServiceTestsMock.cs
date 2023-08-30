@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AElf;
 using AElf.Types;
 using CAServer.Common;
 using CAServer.Security.Dtos;
@@ -6,6 +7,7 @@ using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
 using CAServer.UserSecurityAppService.Provider;
 using Moq;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Portkey.Contracts.CA;
 using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
 
@@ -64,7 +66,7 @@ public partial class UserSecurityAppServiceTest
                         TotalRecordCount = 1,
                         Data = new List<TransferLimitDto>()
                         {
-                            new TransferLimitDto()
+                            new TransferLimitDto
                             {
                                 ChainId = "AELF",
                                 Symbol = "ELF",
@@ -74,22 +76,42 @@ public partial class UserSecurityAppServiceTest
                         }
                     }
                 });
-
+        mockUserSecurityProvider.Setup(m => m.GetManagerApprovedListByCaHash(It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>(), It.IsAny<long>(), It.IsAny<long>()))
+            .ReturnsAsync(
+                new IndexerManagerApprovedList()
+                {
+                    CaHolderManagerApproved = new CaHolderManagerApproved()
+                    {
+                        TotalRecordCount = 1,
+                        Data = new List<ManagerApprovedDto>()
+                        {
+                            new ManagerApprovedDto
+                            {
+                                ChainId = "AELF",
+                                CaHash = HashHelper.ComputeFrom("test@google.com").ToHex(),
+                                Spender = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                Symbol = "ELF",
+                                Amount = 10000,
+                                External = "test"
+                            }
+                        }
+                    }
+                });
         return mockUserSecurityProvider.Object;
     }
 
     private IContractProvider GetContractProvider()
     {
-        var fromBase58 = Address.FromBase58("NJRa6TYqvAgfDsLnsKXCA2jt3bYLEA8rUgPPzwMAG3YYXviHY");
+        var caAddress = Address.FromPublicKey("AAA".HexToByteArray());
+        var caHash = HashHelper.ComputeFrom("test@google.com");
 
         var mockContractProvider = new Mock<IContractProvider>();
-        mockContractProvider.Setup(m =>
-                m.GetHolderInfoAsync(Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"), null, It.IsAny<string>()))
+        mockContractProvider.Setup(m => m.GetHolderInfoAsync(caHash, null, It.IsAny<string>()))
             .ReturnsAsync(new GetHolderInfoOutput
                 {
-                    CaAddress = fromBase58,
-                    CaHash = Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033")
-
+                    CaAddress = caAddress,
+                    CaHash = caHash
                 }
             );
 

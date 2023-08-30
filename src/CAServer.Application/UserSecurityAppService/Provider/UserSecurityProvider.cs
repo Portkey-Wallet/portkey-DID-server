@@ -29,4 +29,22 @@ public class UserSecurityProvider : IUserSecurityProvider
             }
         });
     }
+
+    public async Task<IndexerManagerApprovedList> GetManagerApprovedListByCaHash(string caHash, string spender,
+        string symbol, long skip, long maxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerManagerApprovedList>(new GraphQLRequest
+        {
+            Query = @"
+        			    query($caHash:String,$spender:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!) {
+                            caHolderSearchTokenNFT(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                                data{chainId,caHash,spender,symbol,amount,external},totalRecordCount}
+                        }",
+            Variables = new
+            {
+                caHash = caHash, spender = spender, symbol = symbol, skipCount = skip,
+                maxResultCount = maxResultCount
+            }
+        });
+    }
 }

@@ -7,3 +7,9 @@ public class TransferLimitListResultDto
     public long TotalRecordCount { get; set; }
     public List<TransferLimitDto> Data { get; set; }
 }
+
+public class ManagerApprovedListResultDto
+{
+    public long TotalRecordCount { get; set; }
+    public List<ManagerApprovedDto> Data { get; set; }
+}
