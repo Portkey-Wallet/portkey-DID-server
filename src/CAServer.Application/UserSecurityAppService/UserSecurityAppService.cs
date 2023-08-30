@@ -63,6 +63,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 return new TransferLimitListResultDto() { Data = new List<TransferLimitDto>() };
             }
 
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} token assert.", input.CaHash,
+                assert.CaHolderSearchTokenNFT.TotalRecordCount);
 
             // Use the default token transferLimit without updating the transferLimit
             var dic = new Dictionary<string, TransferLimitDto>();
@@ -79,6 +81,9 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             // If the transferLimit is updated, the token transferLimit will be overwritten
             var res = await _userSecurityProvider.GetTransferLimitListByCaHash(input.CaHash);
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} transfer limit change history.", input.CaHash,
+                res.CaHolderTransferLimit.TotalRecordCount);
+
             foreach (var transferLimit in res.CaHolderTransferLimit.Data)
             {
                 var tempKey = transferLimit.ChainId + "-" + transferLimit.Symbol;
@@ -88,6 +93,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                     dic[tempKey].SingleLimit = transferLimit.SingleLimit;
                 }
             }
+
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} transfer limit list.", input.CaHash, dic.Count);
 
             return new TransferLimitListResultDto()
             {

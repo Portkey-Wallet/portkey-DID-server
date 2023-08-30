@@ -4,17 +4,9 @@ using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Security.Dtos;
 
-public class GetTransferLimitListByCaHashDto : PagedResultRequestDto, IValidatableObject
+public class GetTransferLimitListByCaHashDto : PagedResultRequestDto
 {
     [Required] public string CaHash { get; set; }
-
-    public override IEnumerable<ValidationResult> Validate(ValidationContext context)
-    {
-        if (string.IsNullOrEmpty(CaHash))
-        {
-            yield return new ValidationResult("Invalid CaHash input.");
-        }
-    }
 }
 
 public class GetManagerApprovedListByCaHashDto : PagedResultRequestDto
