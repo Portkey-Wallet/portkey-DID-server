@@ -33,7 +33,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
     private const int MaxResultCount = 10;
-    public const string DefaultSymbol = "SEED-01";
+    public const string DefaultSymbol = "SEED-0";
     public const string DefaultSuffix = "svg";
     private readonly SeedImageOptions _seedImageOptions;
 
