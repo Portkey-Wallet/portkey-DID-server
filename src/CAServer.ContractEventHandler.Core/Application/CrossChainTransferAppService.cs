@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using AElf;
@@ -16,8 +17,10 @@ using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.DependencyInjection;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
@@ -83,8 +86,13 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
     private async Task<List<CrossChainTransferDto>> GetToReceiveTransactionsAsync(string chainId)
     {
+        _logger.LogDebug("Current chain: {0}", chainId);
         var grain = _clusterClient.GetGrain<ICrossChainTransferGrain>(chainId);
+        
+        _logger.LogDebug("Get grain: {0}", grain);
         var transfers = (await grain.GetUnFinishedTransfersAsync()).Data;
+        
+        _logger.LogDebug("Transfers data is : {0}",JsonConvert.SerializeObject(transfers));
         transfers = transfers.Where(o => o.RetryTimes < MaxRetryTimes).ToList();
 
         if (transfers.Count < MaxTransferQueryCount)
