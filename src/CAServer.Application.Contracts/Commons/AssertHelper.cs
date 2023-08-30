@@ -9,7 +9,7 @@ namespace CAServer.Common;
 
 public static class AssertHelper
 {
-    private const string DefaultErrorCode = "50000";
+    private const int DefaultErrorCode = 50000;
     private const string DefaultErrorReason = "Assert failed";
 
     
@@ -39,11 +39,11 @@ public static class AssertHelper
         IsTrue(obj != null, reason, args);
     }
 
-    public static void IsTrue(bool expression, [CanBeNull] string code = DefaultErrorCode, [CanBeNull] string reason = DefaultErrorReason, [ItemCanBeNull] params object[] args)
+    public static void IsTrue(bool expression, int code = DefaultErrorCode, [CanBeNull] string reason = DefaultErrorReason, [ItemCanBeNull] params object[] args)
     {
         if (!expression)
         {
-            throw new UserFriendlyException(Format(reason, args), code);
+            throw new UserFriendlyException(Format(reason, args), code.ToString());
         }
     }
     

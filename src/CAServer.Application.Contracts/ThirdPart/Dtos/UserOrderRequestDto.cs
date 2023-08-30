@@ -36,3 +36,24 @@ public class GetUserOrdersDto : PagedResultRequestDto
     public Guid UserId { get; set; }
     public Guid OrderId { get; set; }
 }
+
+public class GetThirdPartOrderConditionDto : PagedResultRequestDto
+{
+    public GetThirdPartOrderConditionDto(int skipCount, int maxResultCount)
+    {
+        base.SkipCount = skipCount;
+        base.MaxResultCount = maxResultCount;
+    }
+
+    public Guid UserId { get; set; }
+    
+    // string type of millisecond long value
+    public string LastModifyTimeLt { get; set; }
+    public List<Guid> OrderIdIn { get; set; }
+    
+    /// <see cref="TransferDirectionType"/>
+    public List<string> TransDirectIn { get; set; }
+    
+    /// <see cref="OrderStatusType"/>
+    public List<string> StatusIn { get; set; }
+}

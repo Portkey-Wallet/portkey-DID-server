@@ -226,7 +226,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             // update base-order status 
             orderGrainDto.Status = nextStatus.ToString();
             orderGrainDto.TransactionId = input.ReleaseTransactionId;
-            var orderUpdateResult = await _thirdPartOrderProvider.DoUpdateRampOrderAsync(orderGrainDto);
+            var orderUpdateResult = await _thirdPartOrderProvider.UpdateRampOrderAsync(orderGrainDto);
             AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");
 
             return new CommonResponseDto<Empty>();
@@ -250,9 +250,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         // var userId = input.UserId;
         var userId = CurrentUser.GetId();
-        return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, new List<Guid> { input.OrderId },
-            input.SkipCount,
-            input.MaxResultCount);
+        return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto(input.SkipCount, input.MaxResultCount)
+        {
+            UserId = userId
+        });
     }
-
+    
+    
 }

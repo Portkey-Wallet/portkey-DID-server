@@ -38,5 +38,10 @@ public class NftOrderSectionDto : BaseOrderSection
     public string WebhookUrl { get; set; }
     public string WebhookResult { get; set; }
     public string WebhookTime { get; set; }
+    public int WebhookCount { get; set; } = 0;
+    public string ThirdPartNotifyStatus { get; set; }
+    public string ThirdPartNotifyResult { get; set; }
+    public string ThirdPartNotifyTime { get; set; }
+    public int ThirdPartNotifyCount { get; set; } = 0;
     
 }

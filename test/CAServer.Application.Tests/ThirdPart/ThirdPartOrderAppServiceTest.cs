@@ -155,7 +155,10 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         var skipCount = 1;
         var maxResultCount = 10;
 
-        var orderList = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, null, skipCount, maxResultCount);
+        var orderList = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto( skipCount, maxResultCount)
+        {
+            UserId = userId
+        });
         orderList.TotalRecordCount.ShouldBe(1);
     }
 
