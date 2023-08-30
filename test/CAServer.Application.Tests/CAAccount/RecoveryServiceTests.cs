@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CAServer.Account;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
+using CAServer.Commons;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
@@ -226,5 +227,23 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
     {
         var resultDto = await _caAccountAppService.RevokeEntranceAsync();
         resultDto.EntranceDisplay.ShouldBeTrue();
+    }
+    
+    [Fact]
+    public async Task Revoke_Valid_Fail_Test()
+    {
+        try
+        {
+            await _caAccountAppService.RevokeAsync(new RevokeDto
+            {
+                AppleToken = "aaaa"
+            });
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldBe(ResponseMessage.ValidFail);
+        }
+        
+        
     }
 }

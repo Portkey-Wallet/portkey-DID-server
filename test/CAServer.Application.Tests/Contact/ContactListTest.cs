@@ -5,6 +5,7 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Contacts;
 using CAServer.Entities.Es;
 using CAServer.Security;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Volo.Abp.Users;
 using Xunit;
@@ -26,6 +27,11 @@ public class ContactListTest : CAServerApplicationTestBase
         _contactAppService = GetRequiredService<IContactAppService>();
         _contactRepository = GetRequiredService<INESTRepository<ContactIndex, Guid>>();
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
+    }
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(ContactListMock.GetMockVariablesOptions());
     }
 
     [Fact]
@@ -62,7 +68,14 @@ public class ContactListTest : CAServerApplicationTestBase
                 Id = Guid.NewGuid(),
                 UserId = _currentUser.GetId(),
                 Name = "Test1",
-                ModificationTime = new DateTime(2023, 8, 25, 0, 0, 0, DateTimeKind.Utc)
+                ModificationTime = new DateTime(2023, 8, 25, 0, 0, 0, DateTimeKind.Utc),
+                Addresses = new List<ContactAddress>
+                {
+                    new()
+                    {
+                        ChainName = "aelf"
+                    }
+                }
             },
             new()
             {
