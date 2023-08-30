@@ -25,7 +25,7 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
     public AlchemyOrderProcessor(ILogger<AlchemyOrderProcessor> logger, IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider, IOptions<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider)
-        : base(logger, clusterClient, thirdPartOrderProvider)
+        : base(logger, clusterClient, thirdPartOrderProvider, thirdPartOptions)
     {
         _logger = logger;
         _alchemyProvider = alchemyProvider;
