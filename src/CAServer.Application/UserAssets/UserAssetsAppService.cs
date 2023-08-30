@@ -37,7 +37,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     public const string DefaultSuffix = "svg";
     private readonly SeedImageOptions _seedImageOptions;
 
-
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
@@ -669,6 +668,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
 
         var imageUrlArray = imageUrl.Split(".");
-        return imageUrlArray[^1];
+        return imageUrlArray[^1].ToLower();
     }
 }
