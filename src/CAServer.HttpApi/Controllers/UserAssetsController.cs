@@ -58,14 +58,11 @@ public class UserAssetsController
     {
         return _userAssetsAppService.GetSymbolImagesAsync();
     }
-    
+
+    [AllowAnonymous]
     [HttpGet("tokenBalance")]
     public async Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto)
     {
         return await _userAssetsAppService.GetTokenBalanceAsync(requestDto);
     }
-    
-    
-
-
 }
