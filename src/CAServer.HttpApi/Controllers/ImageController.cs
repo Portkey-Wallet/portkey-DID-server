@@ -14,7 +14,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Image")]
 [Route("api/app/image")]
-//[Authorize]
+[Authorize]
 public class ImageController : CAServerController
 {
     private readonly IImageAppService _imageAppService;

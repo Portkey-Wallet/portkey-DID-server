@@ -336,6 +336,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 dto.NftInfo = new NftDetail
                 {
                     NftId = ht.NftInfo.Symbol.Split("-").Last(),
+                    
                     ImageUrl = await _imageProcessProvider.GetResizeImageAsync(ht.NftInfo.ImageUrl, weidth, height),
                     Alias = ht.NftInfo.TokenName
                 };
