@@ -89,7 +89,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         _logger.LogDebug("Current chain: {0}", chainId);
         var grain = _clusterClient.GetGrain<ICrossChainTransferGrain>(chainId);
         
-        _logger.LogDebug("Get grain: {0}", grain);
+        _logger.LogDebug("Get grain success");
         var transfers = (await grain.GetUnFinishedTransfersAsync()).Data;
         
         _logger.LogDebug("Transfers data is : {0}",JsonConvert.SerializeObject(transfers));
