@@ -42,7 +42,8 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
         // verify input type and data 
         AssertHelper.IsTrue(input is AlchemyNftPartOrderRequestDto, "Invalid alchemy nft-order data");
         var achNftOrderRequest = input as AlchemyNftPartOrderRequestDto;
-        AssertHelper.IsTrue(achNftOrderRequest?.AppId == _alchemyOptions.AppId, "Invalid alchemy appId {AppId}",
+        AssertHelper.NotNull(achNftOrderRequest, "Empty input");
+        AssertHelper.IsTrue(achNftOrderRequest.AppId == _alchemyOptions.AppId, "Invalid alchemy appId {AppId}",
             achNftOrderRequest?.AppId);
 
         // verify signature 
@@ -52,6 +53,7 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
             signSource, signature);
         AssertHelper.IsTrue(signature == achNftOrderRequest?.Signature, "Invalid alchemy signature {InputSign}",
             achNftOrderRequest?.Signature);
+        achNftOrderRequest.Id = Guid.Parse(achNftOrderRequest.MerchantOrderNo);
 
         return achNftOrderRequest;
     }

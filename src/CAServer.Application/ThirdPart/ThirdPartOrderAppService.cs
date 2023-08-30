@@ -206,7 +206,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             input.MerchantName);
         var orderIndex = nftOrderPager.Data[0];
         
-        // merchantName in order means ThirdPartName (Alchemy etc.)
+        // merchantName in orderIndex means ThirdPartName (Alchemy etc.)
         return await _thirdPartOrderProcessorFactory.GetProcessor(orderIndex.MerchantName).NotifyNftReleaseAsync(orderIndex.Id, input);
     }
 

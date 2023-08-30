@@ -58,7 +58,7 @@ public abstract class AbstractThirdPartOrderProcessor : IThirdPartOrderProcessor
     public abstract bool FillNftOrderData(IThirdPartNftOrderUpdateRequest input, NftOrderGrainDto nftOrderGrainDto);
 
     /// <summary>
-    ///     notify thridPart nft release result
+    ///     notify thirdPart nft release result
     /// </summary>
     /// <param name="nftOrderGrainDto"></param>
     /// <param name="orderGrainDto"></param>
@@ -112,6 +112,14 @@ public abstract class AbstractThirdPartOrderProcessor : IThirdPartOrderProcessor
             // fill data value and verify new status
             var orderNeedUpdate = FillOrderData(input, orderGrainDto);
             var nftOrderNeedUpdate = FillNftOrderData(input, nftOrderGrainDto);
+            
+            // update nft order grain first
+            if (nftOrderNeedUpdate)
+            {
+                // update nft order grain
+                var nftOrderUpdateResult = await _thirdPartOrderProvider.DoUpdateNftOrderAsync(nftOrderGrainDto);
+                AssertHelper.IsTrue(nftOrderUpdateResult.Success, "Update nft order fail");
+            }
 
             // update order grain
             if (orderNeedUpdate)
@@ -121,14 +129,6 @@ public abstract class AbstractThirdPartOrderProcessor : IThirdPartOrderProcessor
                     "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
                 var orderUpdateResult = await _thirdPartOrderProvider.DoUpdateRampOrderAsync(orderGrainDto);
                 AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");
-            }
-
-            // update nft order grain
-            if (nftOrderNeedUpdate)
-            {
-                // update nft order grain
-                var nftOrderUpdateResult = await _thirdPartOrderProvider.DoUpdateNftOrderAsync(nftOrderGrainDto);
-                AssertHelper.IsTrue(nftOrderUpdateResult.Success, "Update nft order fail");
             }
 
             return new CommonResponseDto<Empty>();
@@ -179,6 +179,7 @@ public abstract class AbstractThirdPartOrderProcessor : IThirdPartOrderProcessor
             AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");
 
             var notifyThirdPartResp = await DoNotifyNftReleaseAsync(input, orderGrainDto, nftOrderGrainDto);
+            
             nftOrderGrainDto.ThirdPartNotifyCount++;
             nftOrderGrainDto.ThirdPartNotifyTime = DateTime.UtcNow.ToUtcString();
             if (notifyThirdPartResp.Success)

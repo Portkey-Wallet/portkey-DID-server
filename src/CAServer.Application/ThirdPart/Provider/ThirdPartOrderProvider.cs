@@ -169,7 +169,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
                 IdIn = pager.Data.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id)
                     .ToList()
             });
-            FillNftOrderSection(pager, nftOrderPager);
+            MergeNftOrderSection(pager, nftOrderPager);
         }
 
         return pager;
@@ -182,7 +182,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         if (nftOrderPager.Data.IsNullOrEmpty()) return new PageResultDto<OrderDto>();
         var orderIds = nftOrderPager.Data.Select(order => order.Id).ToList();
         var orderPager = await GetThirdPartOrdersByPageAsync(Guid.Empty, orderIds, 0, orderIds.Count);
-        FillNftOrderSection(orderPager, nftOrderPager);
+        MergeNftOrderSection(orderPager, nftOrderPager);
         return orderPager;
     }
 
@@ -217,7 +217,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         return new PageResultDto<NftOrderIndex>(nftOrders, totalCount);
     }
 
-    private void FillNftOrderSection(PageResultDto<OrderDto> orderPager, PageResultDto<NftOrderIndex> nftOrderPager)
+    private void MergeNftOrderSection(PageResultDto<OrderDto> orderPager, PageResultDto<NftOrderIndex> nftOrderPager)
     {
         if (nftOrderPager.Data.IsNullOrEmpty()) return;
         var nftOrderIndices = nftOrderPager.Data.ToDictionary(order => order.Id, order => order);
