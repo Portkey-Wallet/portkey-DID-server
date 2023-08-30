@@ -21,7 +21,15 @@ public class UserSecurityProvider : IUserSecurityProvider
             Query = @"
 			    query($caHash:String) {
                     caHolderTransferLimit(dto: {caHash:$caHash}){
-                        data{chainId,caHash,symbol,singleLimit,dailyLimit},totalRecordCount}
+                        data{
+                            chainId,
+                            caHash,
+                            symbol,
+                            singleLimit,
+                            dailyLimit
+                            },
+                        totalRecordCount
+                        }
                 }",
             Variables = new
             {
@@ -36,10 +44,19 @@ public class UserSecurityProvider : IUserSecurityProvider
         return await _graphQlHelper.QueryAsync<IndexerManagerApprovedList>(new GraphQLRequest
         {
             Query = @"
-        			    query($caHash:String,$spender:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!) {
-                            caHolderSearchTokenNFT(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                                data{chainId,caHash,spender,symbol,amount,external},totalRecordCount}
-                        }",
+        		query($caHash:String,$spender:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderSearchTokenNFT(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                            data{
+                                chainId,
+                                caHash,
+                                spender,
+                                symbol,
+                                amount,
+                                external
+                                },
+                            totalRecordCount
+                            }
+                }",
             Variables = new
             {
                 caHash = caHash, spender = spender, symbol = symbol, skipCount = skip,
