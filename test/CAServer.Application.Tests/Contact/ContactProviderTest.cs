@@ -236,7 +236,7 @@ public class ContactProviderTest : CAServerApplicationTestBase
                         CaHash = "test"
                     }
                 }
-            });
+            }); 
         return helper.Object;
     }
 }
