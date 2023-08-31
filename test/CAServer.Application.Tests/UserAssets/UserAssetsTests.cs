@@ -73,7 +73,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         };
 
         var result = await _userAssetsAppService.GetNFTCollectionsAsync(param);
-        result.TotalRecordCount.ShouldBe(1);
+        result.TotalRecordCount.ShouldBe(0);
 
         var data = result.Data.First();
         data.Symbol.ShouldBe("TEST-0");

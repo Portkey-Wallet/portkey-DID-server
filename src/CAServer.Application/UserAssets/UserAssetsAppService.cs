@@ -236,10 +236,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 }
                 else
                 {
-                    if (_seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var value))
+                    if (_seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var imageUrl))
                     {
                         nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
-                            value, requestDto.Width, requestDto.Height);
+                            imageUrl, requestDto.Width, requestDto.Height);
                         continue;
                     }
 
