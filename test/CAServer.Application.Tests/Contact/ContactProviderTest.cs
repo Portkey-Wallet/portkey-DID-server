@@ -84,6 +84,10 @@ public class ContactProviderTest : CAServerApplicationTestBase
                     Address = "AAA",
                     ChainId = "AELF"
                 }
+            },
+            ImInfo = new Entities.Es.ImInfo()
+            {
+                RelationId = "test-relationId"
             }
         });
 
@@ -107,10 +111,6 @@ public class ContactProviderTest : CAServerApplicationTestBase
             CaHolderInfo = new CAServer.Entities.Es.CaHolderInfo()
             {
                 UserId = userId
-            },
-            ImInfo = new CAServer.Entities.Es.ImInfo()
-            {
-                RelationId = "test-relationId"
             }
         });
 
