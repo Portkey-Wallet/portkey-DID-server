@@ -30,7 +30,7 @@ public class ImUserAppServiceTest : CAServerApplicationTestBase
         {
             var userId = _currentUser.GetId();
 
-            _caHolderRepository.UpdateAsync(new CAHolderIndex()
+           await _caHolderRepository.AddOrUpdateAsync(new CAHolderIndex()
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,

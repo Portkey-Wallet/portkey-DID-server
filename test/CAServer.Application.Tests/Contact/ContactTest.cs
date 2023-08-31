@@ -284,13 +284,25 @@ public partial class ContactTest : CAServerApplicationTestBase
             Nickname = "test"
         });
 
+        var grainId = Guid.NewGuid();
+        var contactGrain = _cluster.Client.GetGrain<IContactGrain>(grainId);
+
+        await contactGrain.AddContactAsync(userId, new ContactGrainDto()
+        {
+            Id = grainId,
+            UserId = userId,
+            IsImputation = false,
+            Addresses = new List<ContactAddressDto>(),
+            Name = "test"
+        });
+
         await _contactAppService.MergeAsync(new ContactMergeDto()
         {
             Addresses = new List<ContactAddressDto>()
             {
                 new ContactAddressDto()
                 {
-                    Address = "test",
+                    Address = grainId.ToString(),
                     ChainId = "AELF"
                 },
                 new ContactAddressDto()
@@ -305,6 +317,11 @@ public partial class ContactTest : CAServerApplicationTestBase
                 PortkeyId = Guid.Empty
             }
         });
+    }
+
+    [Fact]
+    public async Task MergeUpdateTest()
+    {
     }
 
     [Fact]
@@ -370,10 +387,19 @@ public partial class ContactTest : CAServerApplicationTestBase
             Id = userId,
             Nickname = "test"
         });
-        
+
         var contact = await _contactAppService.GetContactAsync(userId);
 
         contact.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task GetNameTest()
+    {
+        var names = await _contactAppService.GetNameAsync(new List<Guid>()
+            { Guid.Empty, Guid.NewGuid(), Guid.Empty, Guid.NewGuid() });
+
+        names.Count.ShouldNotBe(0);
     }
 
     private IOptionsSnapshot<HostInfoOptions> GetMockHostInfoOptions()

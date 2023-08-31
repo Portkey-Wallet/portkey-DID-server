@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Guardian.Provider;
@@ -40,10 +41,11 @@ public partial class ContactTest
             });
 
         provider.Setup(t => t.GetContactByAddressesAsync(It.IsAny<Guid>(), It.IsAny<List<string>>()))
-            .ReturnsAsync((Guid UserId, List<string> addresses) => new List<ContactIndex>()
+            .ReturnsAsync((Guid userId, List<string> addresses) => new List<ContactIndex>()
             {
                 new ContactIndex()
                 {
+                    Id = Guid.Parse(addresses.First()),
                     Name = "test",
                     Addresses = new List<ContactAddress>(),
                     UserId = Guid.NewGuid(),
@@ -53,11 +55,55 @@ public partial class ContactTest
 
         provider.Setup(t => t.GetImputationAsync(It.IsAny<Guid>())).ReturnsAsync(true);
 
+        provider.Setup(t => t.GetContactsAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new List<ContactIndex>()
+            {
+                new()
+                {
+                    Name = "test",
+                    CaHolderInfo = new CaHolderInfo()
+                    {
+                        UserId = Guid.Empty,
+                        WalletName = "test"
+                    },
+                    ImInfo = new ImInfo()
+                    {
+                        PortkeyId = Guid.NewGuid().ToString(),
+                        Name = "test"
+                    }
+                },
+                new()
+                {
+                    Name = "",
+                    CaHolderInfo = new CaHolderInfo()
+                    {
+                        UserId = Guid.Empty,
+                        WalletName = "test"
+                    },
+                    ImInfo = new ImInfo()
+                    {
+                        PortkeyId = Guid.NewGuid().ToString(),
+                        Name = "test"
+                    }
+                }
+            });
+
         // provider.Setup(t => t.GetContactAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
         //     .ReturnsAsync((Guid userId, Guid contactUserId) => new ContactIndex()
         //     {
         //         UserId = userId,
         //     });
+
+        provider.Setup(t => t.GetCaHoldersAsync(It.IsAny<List<Guid>>()))
+            .ReturnsAsync(new List<CAHolderIndex>()
+            {
+                new()
+                {
+                    Id = Guid.Empty,
+                    CaHash = "test",
+                    NickName = "test"
+                }
+            });
 
         return provider.Object;
     }
