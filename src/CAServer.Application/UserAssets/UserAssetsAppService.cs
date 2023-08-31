@@ -241,6 +241,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     {
                         nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
                             imageUrl, requestDto.Width, requestDto.Height);
+                        dto.Data.Add(nftCollection);
                         continue;
                     }
 

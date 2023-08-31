@@ -332,7 +332,7 @@ public partial class UserAssetsTests
     {
         var dict = new Dictionary<string, string>
         {
-            ["MockSymbol"] = "ImageUrl"
+            ["TEST-0"] = "ImageUrl.svg"
         };
 
         return new OptionsWrapper<SeedImageOptions>(new SeedImageOptions
