@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using CAServer.Dtos;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
@@ -22,13 +24,15 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly INESTRepository<CAHolderIndex, Guid> _holderRepository;
+    private readonly IImRequestProvider _imRequestProvider;
 
     public NickNameAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
-        INESTRepository<CAHolderIndex, Guid> holderRepository)
+        INESTRepository<CAHolderIndex, Guid> holderRepository, IImRequestProvider imRequestProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _holderRepository = holderRepository;
+        _imRequestProvider = imRequestProvider;
     }
 
     public async Task<CAHolderResultDto> SetNicknameAsync(UpdateNickNameDto nickNameDto)
@@ -43,7 +47,16 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
+
+        await SetImNameAsync(userId, nickNameDto.NickName);
+        
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
+    }
+
+    private async Task SetImNameAsync(Guid userId, string nickName)
+    {
+        //wait relation one interface
+        await _imRequestProvider.PostAsync<object>(ImConstant.ImReNameUrl, null);
     }
 
     public async Task<CAHolderResultDto> GetCaHolderAsync()
