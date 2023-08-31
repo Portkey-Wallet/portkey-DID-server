@@ -31,6 +31,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(GetUserContactProvider());
         services.AddSingleton(GetMockTokenInfoOptions());
         services.AddSingleton(GetContractProvider());
+        services.AddSingleton(GetMockSeedImageOptions());
     }
 
     private void Login(Guid userId)
@@ -73,7 +74,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         };
 
         var result = await _userAssetsAppService.GetNFTCollectionsAsync(param);
-        result.TotalRecordCount.ShouldBe(0);
+        result.TotalRecordCount.ShouldBe(1);
 
         var data = result.Data.First();
         data.Symbol.ShouldBe("TEST-0");

@@ -327,4 +327,20 @@ public partial class UserAssetsTests
             TokenInfos = dict
         });
     }
+    
+    private IOptions<SeedImageOptions> GetMockSeedImageOptions()
+    {
+        var dict = new Dictionary<string, string>
+        {
+            ["MockSymbol"] = "ImageUrl"
+        };
+
+        return new OptionsWrapper<SeedImageOptions>(new SeedImageOptions
+        {
+            SeedImageDic = dict
+        });
+    }
+    
+    
+    
 }
