@@ -236,6 +236,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 }
                 else
                 {
+                    _logger.LogDebug("GetNFTCollectionsAsync. Current Deal Symbol is {symbol}", nftCollection.Symbol);
                     if (_seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var imageUrl))
                     {
                         nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
@@ -245,6 +246,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                     if (!nftCollectionInfo.NftCollectionInfo.ImageUrl.IsNullOrWhiteSpace())
                     {
+                        _logger.LogDebug("GetNFTCollectionsAsync. Current Deal image is {image}", nftCollectionInfo.NftCollectionInfo.ImageUrl);
                         var suffix = GetImageUrlSuffix(nftCollectionInfo.NftCollectionInfo.ImageUrl);
                         if (suffix.Equals(DefaultSuffix))
                         {
@@ -308,6 +310,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
 
+                _logger.LogDebug("GetNFTItemsAsync. Current Deal image is {image}", nftItem.ImageUrl);
                 if (!string.IsNullOrWhiteSpace(nftItem.ImageUrl))
                 {
                     var suffix = GetImageUrlSuffix(nftItem.ImageUrl);
@@ -549,6 +552,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                     if (!string.IsNullOrWhiteSpace(item.NftInfo.ImageUrl))
                     {
+                        _logger.LogDebug("GetResizeImageAsync. current imageUrl is {imageUrl}", item.NftInfo.ImageUrl);
                         var suffix = GetImageUrlSuffix(item.NftInfo.ImageUrl);
                         if (DefaultSuffix.Equals(suffix))
                         {
