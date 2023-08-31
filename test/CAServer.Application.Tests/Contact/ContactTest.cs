@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
@@ -10,6 +9,7 @@ using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Options;
 using CAServer.Security;
+using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -320,11 +320,6 @@ public partial class ContactTest : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async Task MergeUpdateTest()
-    {
-    }
-
-    [Fact]
     public async Task GetImputationAsyncTest()
     {
         var result = await _contactAppService.GetImputationAsync();
@@ -400,6 +395,57 @@ public partial class ContactTest : CAServerApplicationTestBase
             { Guid.Empty, Guid.NewGuid(), Guid.Empty, Guid.NewGuid() });
 
         names.Count.ShouldNotBe(0);
+    }
+
+    [Fact]
+    public void GetImTest()
+    {
+        var dto = new CaHolderInfoDto
+        {
+            CaHash = "test",
+            UserId = _currentUser.GetId(),
+            WalletName = "test"
+        };
+
+        var holderDto = new CaHolderDto
+        {
+            CaHash = "test",
+            UserId = _currentUser.GetId().ToString(),
+            WalletName = "test"
+        };
+
+        var imInfos = new ImInfos
+        {
+            RelationId = string.Empty,
+            Name = "test",
+            PortkeyId = "test"
+        };
+
+        var imDto = new ImInfoDto
+        {
+            RelationId = string.Empty,
+            Name = "test",
+            PortkeyId = _currentUser.GetId(),
+            AddressWithChain = new List<AddressWithChain>()
+            {
+                new()
+                {
+                    Address = "test",
+                    ChainName = "test"
+                }
+            }
+        };
+
+        var orderInfo = new QueryAlchemyOrderInfo
+        {
+            OrderNo = string.Empty, Address = string.Empty, Account = string.Empty, Amount = string.Empty,
+            AppId = string.Empty, CompleteTime = string.Empty, Crypto = string.Empty, CryptoPrice = string.Empty,
+            CryptoActualAmount = string.Empty, CryptoAmount = string.Empty, PayTime = string.Empty,
+            Network = string.Empty, FiatAmount = string.Empty, Fiat = string.Empty, TxHash = string.Empty,
+            Email = string.Empty, Name = string.Empty, FiatRate = string.Empty, Status = string.Empty,
+            Side = string.Empty, TxTime = string.Empty, Networkfee = string.Empty, PayType = string.Empty,
+            RampFee = string.Empty, CryptoQuantity = string.Empty
+        };
     }
 
     private IOptionsSnapshot<HostInfoOptions> GetMockHostInfoOptions()
