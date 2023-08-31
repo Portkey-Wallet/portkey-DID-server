@@ -50,7 +50,8 @@ public class ContactProviderTest : CAServerApplicationTestBase
             Id = Guid.NewGuid(),
             Name = "test",
             Index = "T",
-            IsDeleted = false
+            IsDeleted = false,
+            IsImputation = true
         });
 
         await Task.Delay(200);
@@ -131,6 +132,16 @@ public class ContactProviderTest : CAServerApplicationTestBase
         var relation = await _contactProvider.GetContactByRelationIdAsync(userId, "test-relationId");
         relation.ShouldNotBeNull();
         relation.ImInfo.RelationId.ShouldBe("test-relationId");
+        
+        var contactsAddress = await _contactProvider.GetContactByAddressAsync(userId, "AAA");
+        contactsAddress.ShouldNotBeNull();
+        contactsAddress.Name.ShouldBe("test");
+        
+        var contactsImputation = await _contactProvider.GetImputationAsync(userId);
+        contactsImputation.ShouldBeTrue();
+        
+        var contactsImputationFalse = await _contactProvider.GetImputationAsync(Guid.NewGuid());
+        contactsImputationFalse.ShouldBeFalse();
     }
 
     [Fact]
