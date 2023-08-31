@@ -21,6 +21,7 @@ namespace CAServer.ThirdPart.Provider;
 public class AlchemyApi
 {
     public static ApiInfo NftResultNotice { get; } = new(HttpMethod.Post, "/nft/openapi/merchant/notice");
+    public static ApiInfo QueryNftTrade { get; } = new(HttpMethod.Get, "/nft/openapi/query/trade");
 }
 
 
@@ -82,7 +83,25 @@ public class AlchemyProvider : ISingletonDependency
     /// <returns></returns>
     public async Task<AlchemyBaseResponseDto> NoticeNftReleaseResult(AlchemyNftReleaseNoticeRequestDto request)
     {
-        return await _httpProvider.Invoke<AlchemyBaseResponseDto>(_alchemyOptions.NftBaseUrl,
+        return await _httpProvider.Invoke<AlchemyNftOrderDto>(_alchemyOptions.NftBaseUrl,
+            AlchemyApi.QueryNftTrade,
+            header: GetAlchemyRequestHeader(),
+            param: new Dictionary<string, string>
+            {
+                ["orderNo"] = request.OrderNo
+            }
+        );
+    }
+    
+
+    /// <summary>
+    ///     Notice Alchemy NFT release result
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<AlchemyNftOrderDto> QueryNftTrade(AlchemyNftReleaseNoticeRequestDto request)
+    {
+        return await _httpProvider.Invoke<AlchemyNftOrderDto>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.NftResultNotice,
             header: GetAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(request, HttpProvider.DefaultJsonSettings));

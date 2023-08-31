@@ -34,11 +34,11 @@ public class ThirdPartOrderController : CAServerController
 
     [HttpPost("nftorder/alchemy")]
     public async Task<string> UpdateAlchemyNftOrderAsync(
-        AlchemyNftPartOrderRequestDto input)
+        AlchemyNftOrderRequestDto input)
     {
         var res = await _thirdPartOrderProcessorFactory
             .GetProcessor(ThirdPartNameType.Alchemy.ToString())
-            .UpdateNftOrderAsync(input);
+            .UpdateThirdPartNftOrderAsync(input);
         return res.Success ? "success" : "fail";
     }
 }

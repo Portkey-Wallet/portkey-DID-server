@@ -49,6 +49,7 @@ public class GetThirdPartOrderConditionDto : PagedResultRequestDto
     
     // string type of millisecond long value
     public string LastModifyTimeLt { get; set; }
+    public string LastModifyTimeGt { get; set; }
     public List<Guid> OrderIdIn { get; set; }
     
     /// <see cref="TransferDirectionType"/>

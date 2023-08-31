@@ -146,7 +146,8 @@ public class QueryAlchemyOrderInfo
     public string CryptoQuantity { get; set; }
 }
 
-public class AlchemyNftPartOrderRequestDto : IThirdPartNftOrderUpdateRequest
+
+public class AlchemyNftOrderDto : AlchemyBaseResponseDto, IThirdPartValidOrderUpdateRequest
 {
     public Guid Id { get; set; }
     public string Status { get; set; }
@@ -163,6 +164,10 @@ public class AlchemyNftPartOrderRequestDto : IThirdPartNftOrderUpdateRequest
     public string AppId { get; set; }
     public string MerchantOrderNo { get; set; }
     public string Message { get; set; }
+}
+
+public class AlchemyNftOrderRequestDto : AlchemyNftOrderDto, IThirdPartNftOrderUpdateRequest
+{
     public string Signature { get; set; }
 }
 

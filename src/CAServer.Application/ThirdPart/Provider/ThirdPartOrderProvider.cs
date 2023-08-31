@@ -189,7 +189,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public async Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync()
     {
-        const string transDirectSell = "TokenSell";
+        var transDirectSell = TransferDirectionType.TokenSell.ToString();
         var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.Timer.HandleUnCompletedOrderMinuteAgo)
             .ToUnixTimeMilliseconds();
         var unCompletedState = new List<string>
@@ -236,6 +236,9 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
         if (!condition.LastModifyTimeLt.IsNullOrEmpty())
             mustQuery.Add(q => q.TermRange(i => i.Field(f => f.LastModifyTime).LessThan(condition.LastModifyTimeLt)));
+
+        if (!condition.LastModifyTimeGt.IsNullOrEmpty())
+            mustQuery.Add(q => q.TermRange(i => i.Field(f => f.LastModifyTime).GreaterThan(condition.LastModifyTimeGt)));
 
         QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));

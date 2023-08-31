@@ -14,15 +14,15 @@ using Orleans;
 
 namespace CAServer.ThirdPart.Processor;
 
-public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
+public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 {
     private const string SignatureField = "signature";
 
     private readonly AlchemyProvider _alchemyProvider;
     private readonly AlchemyOptions _alchemyOptions;
-    private readonly ILogger<AlchemyOrderProcessor> _logger;
+    private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
-    public AlchemyOrderProcessor(ILogger<AlchemyOrderProcessor> logger, IClusterClient clusterClient,
+    public AlchemyNftOrderProcessor(ILogger<AlchemyNftOrderProcessor> logger, IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider, IOptions<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider)
         : base(logger, clusterClient, thirdPartOrderProvider, thirdPartOptions)
@@ -37,11 +37,11 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
         return ThirdPartNameType.Alchemy.ToString();
     }
 
-    public override IThirdPartNftOrderUpdateRequest VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input)
+    public override IThirdPartValidOrderUpdateRequest VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input)
     {
         // verify input type and data 
-        AssertHelper.IsTrue(input is AlchemyNftPartOrderRequestDto, "Invalid alchemy nft-order data");
-        var achNftOrderRequest = input as AlchemyNftPartOrderRequestDto;
+        AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid alchemy nft-order data");
+        var achNftOrderRequest = input as AlchemyNftOrderRequestDto;
         AssertHelper.NotNull(achNftOrderRequest, "Empty input");
         AssertHelper.IsTrue(achNftOrderRequest.AppId == _alchemyOptions.AppId, "Invalid alchemy appId {AppId}",
             achNftOrderRequest?.AppId);
@@ -58,11 +58,19 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
         return achNftOrderRequest;
     }
 
-    public override bool FillOrderData(IThirdPartNftOrderUpdateRequest input, OrderGrainDto orderGrainDto)
+    public override async Task<IThirdPartValidOrderUpdateRequest> QueryNftOrderAsync(Guid orderId)
+    {
+        return await _alchemyProvider.QueryNftTrade(new AlchemyNftReleaseNoticeRequestDto()
+        {
+            OrderNo = orderId.ToString()
+        });
+    }
+
+    public override bool FillOrderData(IThirdPartValidOrderUpdateRequest input, OrderGrainDto orderGrainDto)
     {
         // verify input type and data 
-        AssertHelper.IsTrue(input is AlchemyNftPartOrderRequestDto, "Invalid alchemy nft-order data");
-        var achNftOrderRequest = input as AlchemyNftPartOrderRequestDto;
+        AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid alchemy nft-order data");
+        var achNftOrderRequest = input as AlchemyNftOrderRequestDto;
 
         orderGrainDto.Fiat = orderGrainDto.Fiat.DefaultIfEmpty(achNftOrderRequest?.Fiat);
         orderGrainDto.FiatAmount = orderGrainDto.FiatAmount.DefaultIfEmpty(achNftOrderRequest?.Amount);
@@ -71,12 +79,6 @@ public class AlchemyOrderProcessor : AbstractThirdPartOrderProcessor
         orderGrainDto.TxTime = orderGrainDto.TxTime.DefaultIfEmpty(achNftOrderRequest?.PayTime);
         orderGrainDto.MerchantName = orderGrainDto.MerchantName.DefaultIfEmpty(ThirdPartName());
         return true;
-    }
-
-    public override bool FillNftOrderData(IThirdPartNftOrderUpdateRequest input, NftOrderGrainDto orderGrainDto)
-    {
-        // do nothing
-        return false;
     }
 
     public override async Task<CommonResponseDto<Empty>> DoNotifyNftReleaseAsync(OrderGrainDto orderGrainDto,

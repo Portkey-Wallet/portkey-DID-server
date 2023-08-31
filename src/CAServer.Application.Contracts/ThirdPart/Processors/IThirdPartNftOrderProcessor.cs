@@ -7,12 +7,11 @@ using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart.Processors;
 
-public interface IThirdPartOrderProcessor : ISingletonDependency
+public interface IThirdPartNftOrderProcessor : ISingletonDependency
 {
     public string ThirdPartName();
-
-    public Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
-
+    public Task<CommonResponseDto<Empty>> UpdateThirdPartNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
+    public Task<CommonResponseDto<Empty>> RefreshThirdPartNftOrderAsync(Guid orderId);
     public Task<CommonResponseDto<Empty>> NotifyNftReleaseAsync(Guid orderId);
     
 }
