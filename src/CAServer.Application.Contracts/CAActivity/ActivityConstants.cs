@@ -27,7 +27,7 @@ public static class ActivityConstants
 
     public static readonly List<string> DefaultTypes = new()
     {
-        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
+        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "Bingo", "Play"
     };
 
     public static readonly HashSet<string> AllSupportTypes = new()
