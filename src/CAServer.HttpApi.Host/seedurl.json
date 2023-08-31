@@ -1,11 +1,11 @@
 {
   "SeedSymbolImage": {
     "SeedImageDic": {
-      "SEED-0": "https://forest-dev.s3.ap-northeast-1.amazonaws.com/seedtest.jpeg",
-      "SEED-100000061": "https://forest-dev.s3.ap-northeast-1.amazonaws.com/seedtest.jpeg",
-      "SEED-100000062": "https://forest-dev.s3.ap-northeast-1.amazonaws.com/seedtest.jpeg",
-      "SEED-100000063": "https://forest-dev.s3.ap-northeast-1.amazonaws.com/seedtest.jpeg",
-      "SEED-100000064": "https://forest-dev.s3.ap-northeast-1.amazonaws.com/seedtest.jpeg",
+      "SEED-0": "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/seedtest.jpeg",
+      "SEED-100000061": "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/AELFWSNFTAA-0.png",
+      "SEED-100000062": "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/AELFWSNFTAB-0.png",
+      "SEED-100000063": "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/AELFWSNFTAC-0.png",
+      "SEED-100000064": "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/AELFWSNFTAD-0.png",
       "SEED-100000065": "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/AELFWSNFTAE-0.png",
       "SEED-100000066": "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/AELFWSNFTAF-0.png",
       "SEED-100000067": "https://forest-testnet.s3.ap-northeast-1.amazonaws.com/AELFWSNFTAG-0.png",
