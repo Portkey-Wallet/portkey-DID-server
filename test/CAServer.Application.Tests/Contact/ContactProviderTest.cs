@@ -89,7 +89,8 @@ public class ContactProviderTest : CAServerApplicationTestBase
             ImInfo = new Entities.Es.ImInfo()
             {
                 RelationId = "test-relationId"
-            }
+            },
+            IsImputation = true
         });
 
         await _contactRepository.AddOrUpdateAsync(new ContactIndex()

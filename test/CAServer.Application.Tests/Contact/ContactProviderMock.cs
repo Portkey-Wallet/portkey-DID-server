@@ -51,6 +51,14 @@ public partial class ContactTest
                 }
             });
 
+        provider.Setup(t => t.GetImputationAsync(It.IsAny<Guid>())).ReturnsAsync(true);
+
+        // provider.Setup(t => t.GetContactAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+        //     .ReturnsAsync((Guid userId, Guid contactUserId) => new ContactIndex()
+        //     {
+        //         UserId = userId,
+        //     });
+
         return provider.Object;
     }
 }

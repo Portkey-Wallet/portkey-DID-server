@@ -16,7 +16,7 @@ namespace CAServer.Contact;
 public class ContactListTest : CAServerApplicationTestBase
 {
     private const string DefaultFilter =
-        "modificationTime: [2023-07-28T06:38:53.594Z TO 2023-08-29T03:08:17.947Z]&Sort=modificationTime&sortType=0";
+        "modificationTime: [2023-07-28T06:38:53.594Z TO 2023-08-29T03:08:17.947Z]";
 
     private readonly IContactAppService _contactAppService;
     private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
@@ -41,7 +41,8 @@ public class ContactListTest : CAServerApplicationTestBase
 
         var pagedResultDto = await _contactAppService.GetListAsync(new ContactGetListDto
         {
-            Filter = DefaultFilter
+            Filter = DefaultFilter,
+            Sort = "modificationTime"
         });
 
         pagedResultDto.TotalCount.ShouldBe(1);
@@ -61,31 +62,27 @@ public class ContactListTest : CAServerApplicationTestBase
 
     private async Task MockContactListData()
     {
-        var list = new List<ContactIndex>
+        await _contactRepository.AddAsync(new ContactIndex()
         {
-            new()
+            Id = Guid.NewGuid(),
+            UserId = _currentUser.GetId(),
+            Name = "Test1",
+            ModificationTime = new DateTime(2023, 8, 25, 0, 0, 0, DateTimeKind.Utc),
+            Addresses = new List<ContactAddress>
             {
-                Id = Guid.NewGuid(),
-                UserId = _currentUser.GetId(),
-                Name = "Test1",
-                ModificationTime = new DateTime(2023, 8, 25, 0, 0, 0, DateTimeKind.Utc),
-                Addresses = new List<ContactAddress>
+                new()
                 {
-                    new()
-                    {
-                        ChainName = "aelf"
-                    }
+                    ChainName = "aelf"
                 }
-            },
-            new()
-            {
-                Id = Guid.NewGuid(),
-                UserId = _currentUser.GetId(),
-                Name = "Test2",
-                ModificationTime = new DateTime(2023, 6, 25, 0, 0, 0, DateTimeKind.Utc)
             }
-        };
-
-        await _contactRepository.BulkAddOrUpdateAsync(list);
+        });
+        
+        await _contactRepository.AddAsync(new ContactIndex()
+        {
+            Id = Guid.NewGuid(),
+            UserId = _currentUser.GetId(),
+            Name = "Test2",
+            ModificationTime = new DateTime(2023, 6, 25, 0, 0, 0, DateTimeKind.Utc)
+        });
     }
 }

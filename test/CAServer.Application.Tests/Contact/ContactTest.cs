@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
@@ -304,6 +305,75 @@ public partial class ContactTest : CAServerApplicationTestBase
                 PortkeyId = Guid.Empty
             }
         });
+    }
+
+    [Fact]
+    public async Task GetImputationAsyncTest()
+    {
+        var result = await _contactAppService.GetImputationAsync();
+        result.ShouldNotBeNull();
+        result.IsImputation.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task ReadImputation_Fail_Test()
+    {
+        try
+        {
+            await _contactAppService.ReadImputationAsync(new ReadImputationDto()
+            {
+                ContactId = Guid.Empty
+            });
+        }
+        catch (Exception e)
+        {
+            e.ShouldNotBeNull();
+        }
+    }
+
+    [Fact]
+    public async Task ReadImputation_Test()
+    {
+        var userId = _currentUser.GetId();
+        var grainId = Guid.NewGuid();
+        var contactGrain = _cluster.Client.GetGrain<IContactGrain>(grainId);
+
+        var contact = await contactGrain.AddContactAsync(userId, new ContactGrainDto()
+        {
+            Id = grainId,
+            UserId = userId,
+            IsImputation = false
+        });
+        contact.Data.IsImputation.ShouldBeFalse();
+
+        var contactImputation = await contactGrain.Imputation();
+        contactImputation.Data.IsImputation.ShouldBeTrue();
+
+        await _contactAppService.ReadImputationAsync(new ReadImputationDto()
+        {
+            ContactId = grainId
+        });
+
+        contact.Data.IsImputation.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task GetContactTest()
+    {
+        var userId = _currentUser.GetId();
+        var caHolderGrain = _cluster.Client.GetGrain<ICAHolderGrain>(userId);
+        await caHolderGrain.AddHolderAsync(new CAHolderGrainDto()
+        {
+            UserId = userId,
+            CaHash = "test",
+            CreateTime = DateTime.UtcNow,
+            Id = userId,
+            Nickname = "test"
+        });
+        
+        var contact = await _contactAppService.GetContactAsync(userId);
+
+        contact.ShouldNotBeNull();
     }
 
     private IOptionsSnapshot<HostInfoOptions> GetMockHostInfoOptions()

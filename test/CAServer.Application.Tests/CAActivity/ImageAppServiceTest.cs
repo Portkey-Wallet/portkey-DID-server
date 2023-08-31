@@ -28,7 +28,13 @@ public class ImageAppServiceTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetThumbnailAsyncTest()
     {
-        var result = await _imageAppService.GetThumbnailAsync(new GetThumbnailInput());
+        var result = await _imageAppService.GetThumbnailAsync(new GetThumbnailInput()
+        {
+            ImageUrl = "test",
+            Height = 100,
+            Width = 100
+        });
+        
         result.ShouldNotBeNull();
         result.ThumbnailUrl.ShouldBe("test");
     }
