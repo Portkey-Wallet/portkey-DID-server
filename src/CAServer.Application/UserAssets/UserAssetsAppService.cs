@@ -35,6 +35,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private const int MaxResultCount = 10;
     public const string DefaultSymbol = "SEED-0";
     public const string DefaultSuffix = "svg";
+    public const string ReplaceSuffix = "png";
     private readonly SeedImageOptions _seedImageOptions;
 
     public UserAssetsAppService(
@@ -247,7 +248,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                     if (!nftCollectionInfo.NftCollectionInfo.ImageUrl.IsNullOrWhiteSpace())
                     {
-                        _logger.LogDebug("GetNFTCollectionsAsync. Current Deal image is {image}", nftCollectionInfo.NftCollectionInfo.ImageUrl);
+                        _logger.LogDebug("GetNFTCollectionsAsync. Current Deal image is {image}",
+                            nftCollectionInfo.NftCollectionInfo.ImageUrl);
                         var suffix = GetImageUrlSuffix(nftCollectionInfo.NftCollectionInfo.ImageUrl);
                         if (suffix.Equals(DefaultSuffix))
                         {
@@ -311,14 +313,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
 
-                _logger.LogDebug("GetNFTItemsAsync. Current Deal image is {image}", nftItem.ImageUrl);
+                _logger.LogDebug("GetNFTItemsAsync. Current Deal image is {image}", nftInfo.NftInfo.ImageUrl);
                 if (!string.IsNullOrWhiteSpace(nftItem.ImageUrl))
                 {
                     var suffix = GetImageUrlSuffix(nftItem.ImageUrl);
-                    if (DefaultSuffix.Equals(suffix))
+                    var symbolSuffix = nftInfo.NftInfo.Symbol.Split("-").Last();
+                    var parseInt = int.TryParse(symbolSuffix, out var symbolSuffixInt);
+                    if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
                     {
-                        nftItem.ImageUrl = nftInfo.NftInfo.ImageUrl;
-                        nftItem.ImageLargeUrl = nftInfo.NftInfo.ImageUrl;
+                        nftItem.ImageUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
+                        nftItem.ImageLargeUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSymbol, ReplaceSuffix);
                     }
                     else
                     {

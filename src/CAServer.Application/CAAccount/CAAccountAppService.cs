@@ -17,13 +17,12 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
-using CAServer.UserAssets;
-using CAServer.UserAssets.Provider;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.UserAssets;
+using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -43,9 +42,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly IDeviceAppService _deviceAppService;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
-    private readonly IGuardianAppService _guardianAppService;
     private readonly IGuardianProvider _guardianProvider;
-    private readonly IUserAssetsAppService _userAssetsAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ICAAccountProvider _accountProvider;
     private readonly INickNameAppService _caHolderAppService;
@@ -60,7 +57,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IGuardianAppService guardianAppService,
         IGuardianProvider guardianProvider,
         IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
-        IUserAssetsProvider userAssetsProvider, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
+        IUserAssetsProvider userAssetsProvider,
         ICAAccountProvider accountProvider,
         INickNameAppService caHolderAppService,
         IAppleAuthProvider appleAuthProvider
@@ -71,9 +68,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _logger = logger;
         _deviceAppService = deviceAppService;
         _contractProvider = contractProvider;
-        _guardianAppService = guardianAppService;
         _guardianProvider = guardianProvider;
-        _userAssetsAppService = userAssetsAppService;
         _userAssetsProvider = userAssetsProvider;
         _caHolderAppService = caHolderAppService;
         _accountProvider = accountProvider;
