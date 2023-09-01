@@ -1,29 +1,16 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElf;
-using AElf.Client.Dto;
-using AElf.Client.MultiToken;
-using AElf.Types;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
-using CAServer.Grains.Grain.Chain;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Security;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Bson.IO;
-using Moq;
-using NSubstitute;
-using OpenIddict.Abstractions;
 using Orleans.TestingHost;
-using Portkey.Contracts.CA;
 using Shouldly;
-using Volo.Abp.Security.Claims;
 using Volo.Abp.Users;
 using Xunit;
 using Xunit.Abstractions;
-using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 namespace CAServer.CAAccount;
 
@@ -35,13 +22,13 @@ public class CaHolderTest : CAServerApplicationTestBase
     private readonly TestCluster _cluster;
     protected readonly ITestOutputHelper TestOutputHelper;
     private readonly ITransactionFeeAppService _transactionFeeAppService;
-    
+
     public CaHolderTest(ITestOutputHelper testOutputHelper)
     {
         TestOutputHelper = testOutputHelper;
         _nickNameAppService = GetRequiredService<INickNameAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
-        _transactionFeeAppService = GetRequiredService<ITransactionFeeAppService>();    
+        _transactionFeeAppService = GetRequiredService<ITransactionFeeAppService>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -64,14 +51,21 @@ public class CaHolderTest : CAServerApplicationTestBase
         {
             NickName = "Tom"
         });
-        
+
         result.Nickname.ShouldBe("Tom");
     }
 
     [Fact]
-    public  void  CalculateFee_Test()
+    public async Task GetCaHolderTest()
     {
-        
+        var resultDto = await _nickNameAppService.GetCaHolderAsync();
+        resultDto.ShouldBeNull();
+    }
+
+
+    [Fact]
+    public void CalculateFee_Test()
+    {
         var chainIds = new List<string>
         {
             "AELF",
@@ -81,7 +75,7 @@ public class CaHolderTest : CAServerApplicationTestBase
         {
             ChainIds = chainIds
         };
-        var resultDtos =  _transactionFeeAppService.CalculateFee(dto);
+        var resultDtos = _transactionFeeAppService.CalculateFee(dto);
         resultDtos.Count.ShouldBe(2);
     }
 }
