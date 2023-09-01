@@ -52,15 +52,9 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
     [Fact]
     public async Task RevokeTest()
     {
-        try
-        {
-            var jToken = GetJwtSecurityToken();
-            await _appleAuthProvider.RevokeAsync(jToken.ToString());
-        }
-        catch (Exception e)
-        {
-            e.ShouldNotBeNull();
-        }
+        var jToken = GetJwtSecurityToken();
+        var revokeResult = await _appleAuthProvider.RevokeAsync(jToken.ToString());
+        revokeResult.ShouldBeTrue();
     }
 
     private JwtSecurityTokenHandler GetJwtSecurityTokenHandlerMock()
@@ -139,6 +133,10 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
     private IOptionsSnapshot<AppleAuthOptions> GetMockAppleAuthOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AppleAuthOptions>>();
+
+        var pkcs8PrivateKeyBytes = ECDsa.Create().ExportPkcs8PrivateKey();
+        var pkcs8PrivateKey = Convert.ToBase64String(pkcs8PrivateKeyBytes);
+
         mockOptionsSnapshot.Setup(o => o.Value).Returns(
             new AppleAuthOptions
             {
@@ -146,7 +144,7 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
                 {
                     ClientId = "test",
                     KeyId = "test",
-                    PrivateKey = "test",
+                    PrivateKey = pkcs8PrivateKey,
                     TeamId = "test"
                 }
             });
@@ -156,11 +154,11 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
     private ECDsaSecurityKey GetECDsaSecurityKeyMock()
     {
         var key = new Mock<ECDsaSecurityKey>();
-        
         var byteRead = 1000;
-        key.Setup(t=>t.ECDsa.ImportPkcs8PrivateKey(Convert.FromBase64String("test"), out byteRead));
+        key.Setup(t => t.ECDsa.ImportPkcs8PrivateKey(Convert.FromBase64String("test"), out byteRead));
         return key.Object;
     }
+
     private ECAlgorithm GetMockECDsaSecurityKey()
     {
         var secKey = new Mock<ECAlgorithm>();
