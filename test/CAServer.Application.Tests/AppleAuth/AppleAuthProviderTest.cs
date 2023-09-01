@@ -36,8 +36,8 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
         services.AddSingleton(GetJwtSecurityTokenHandlerMock());
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetMockAppleAuthOptions());
-        services.AddSingleton(GetMockECDsaSecurityKey());
-        services.AddSingleton(GetECDsaSecurityKeyMock());
+        // services.AddSingleton(GetMockECDsaSecurityKey());
+        // services.AddSingleton(GetECDsaSecurityKeyMock());
     }
 
     [Fact]
