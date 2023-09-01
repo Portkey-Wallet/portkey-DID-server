@@ -559,9 +559,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     {
                         _logger.LogDebug("GetResizeImageAsync. current imageUrl is {imageUrl}", item.NftInfo.ImageUrl);
                         var suffix = GetImageUrlSuffix(item.NftInfo.ImageUrl);
-                        if (DefaultSuffix.Equals(suffix))
+                        var symbolSuffix = searchItem.NftInfo.Symbol.Split("-").Last();
+                        var parseInt = int.TryParse(symbolSuffix, out var symbolSuffixInt);
+                        if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
                         {
-                            item.NftInfo.ImageUrl = searchItem.NftInfo.ImageUrl;
+                            item.NftInfo.ImageUrl = searchItem.NftInfo.ImageUrl.Replace(DefaultSuffix,ReplaceSuffix);
                         }
                         else
                         {
