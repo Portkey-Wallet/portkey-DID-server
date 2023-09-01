@@ -31,6 +31,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(GetUserContactProvider());
         services.AddSingleton(GetMockTokenInfoOptions());
         services.AddSingleton(GetContractProvider());
+        services.AddSingleton(GetMockSeedImageOptions());
     }
 
     private void Login(Guid userId)
