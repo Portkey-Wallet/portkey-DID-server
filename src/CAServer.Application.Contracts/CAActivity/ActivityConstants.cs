@@ -21,13 +21,15 @@ public static class ActivityConstants
         { "ClaimToken", "Transfer" },
         { "Register", "Register" },
         { "Approve", "Approve" },
-        { "Bingo", "Bingo" },
-        { "Play", "Play" }
+        { "Bingo", "BingoGame-Bingo" },
+        { "Play", "BingoGame-Play" },
+        { "BeanGoTown-Bingo", "BeanGo Town-Bingo" },
+        { "BeanGoTown-Play", "BeanGo Town-Play" }
     };
 
     public static readonly List<string> DefaultTypes = new()
     {
-        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "Bingo", "Play"
+        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "Bingo", "Play","BeanGoTown-Bingo","BeanGoTown-Play"
     };
 
     public static readonly HashSet<string> AllSupportTypes = new()
