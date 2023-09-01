@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Client.Dto;
 using AElf.Client.MultiToken;
 using AElf.Types;
+using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Chain;
@@ -31,12 +34,14 @@ public class CaHolderTest : CAServerApplicationTestBase
     private ICurrentUser _currentUser;
     private readonly TestCluster _cluster;
     protected readonly ITestOutputHelper TestOutputHelper;
+    private readonly ITransactionFeeAppService _transactionFeeAppService;
     
     public CaHolderTest(ITestOutputHelper testOutputHelper)
     {
         TestOutputHelper = testOutputHelper;
         _nickNameAppService = GetRequiredService<INickNameAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
+        _transactionFeeAppService = GetRequiredService<ITransactionFeeAppService>();    
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -61,5 +66,22 @@ public class CaHolderTest : CAServerApplicationTestBase
         });
         
         result.Nickname.ShouldBe("Tom");
+    }
+
+    [Fact]
+    public  void  CalculateFee_Test()
+    {
+        
+        var chainIds = new List<string>
+        {
+            "AELF",
+            "tDVV"
+        };
+        var dto = new TransactionFeeDto
+        {
+            ChainIds = chainIds
+        };
+        var resultDtos =  _transactionFeeAppService.CalculateFee(dto);
+        resultDtos.Count.ShouldBe(2);
     }
 }
