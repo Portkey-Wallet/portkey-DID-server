@@ -36,7 +36,7 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play","BeanGoTown-Bingo","BeanGoTown-Play"
     };
 
     public static readonly List<string> TransferTypes = new()
@@ -49,7 +49,7 @@ public static class ActivityConstants
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
         "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register",
         "Approve", "Bingo",
-        "Play"
+        "Play","BeanGoTown-Bingo","BeanGoTown-Play"
     };
 
     public static readonly List<string> ShowPriceTypes = new()
