@@ -322,7 +322,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
                     {
                         nftItem.ImageUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
-                        nftItem.ImageLargeUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSymbol, ReplaceSuffix);
+                        nftItem.ImageLargeUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
                     }
                     else
                     {
