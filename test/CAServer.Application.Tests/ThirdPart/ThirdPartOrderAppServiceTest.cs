@@ -41,7 +41,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(getMockTokenPriceGrain());
         services.AddSingleton(getMockOrderGrain());
         services.AddSingleton(getMockDistributedEventBus());
-        services.AddSingleton(base.GetMockeActivityProvider());
+        services.AddSingleton(MockRandomActivityProviderCaHolder());
     }
 
     [Fact]

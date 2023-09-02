@@ -18,15 +18,20 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
         services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
     }
 
-    protected IActivityProvider GetMockeActivityProvider()
+    protected IActivityProvider MockRandomActivityProviderCaHolder()
+    {
+        return GetMockActivityProvider(new CAHolderIndex
+        {
+            UserId = new Guid()
+        });
+    }
+    
+    protected IActivityProvider GetMockActivityProvider(CAHolderIndex result = null)
     {
         var mockActivityProvider = new Mock<IActivityProvider>();
         mockActivityProvider
             .Setup(x => x.GetCaHolder(It.IsAny<string>()))
-            .Returns<string>((_) => Task.FromResult(new CAHolderIndex()
-            {
-                UserId = Guid.NewGuid()
-            }));
+            .Returns<string>((_) => Task.FromResult(result));
         return mockActivityProvider.Object;
     }
 

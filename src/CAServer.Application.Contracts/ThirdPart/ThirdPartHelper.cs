@@ -44,12 +44,13 @@ public static class ThirdPartHelper
         var dict = new SortedDictionary<string, object>();
         foreach (var property in obj.GetType().GetProperties())
         {
-            if (!property.CanRead || ignoreParams.Contains(property.Name)) continue;
+            var key = property.Name.Substring(0, 1).ToLower() + property.Name.Substring(1);
+            if (!property.CanRead || ignoreParams.Contains(key)) continue;
             
             var value = property.GetValue(obj);
             if (value == null) continue; // ignore null value
             
-            dict[property.Name] = value;
+            dict[key] = value;
         }
         return string.Join("&", dict.Select(kv => kv.Key + "=" + kv.Value));
     }

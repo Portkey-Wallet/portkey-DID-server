@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Configuration;
 using CAServer.Bookmark;
 using CAServer.EntityEventHandler.Core;
+using CAServer.EntityEventHandler.Core.ThirdPart;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
+using CAServer.ThirdPart.Processor;
+using CAServer.ThirdPart.Processors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute.Extensions;
@@ -42,6 +45,13 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
+
+        context.Services.AddSingleton<IThirdPartOrderProcessorFactory, ThirdPartNftOrderProcessorFactory>();
+        context.Services.AddSingleton<NftOrderPayResultHandler>();
+        context.Services.AddSingleton<NftOrderUpdateHandler>();
+        context.Services.AddSingleton<NftReleaseResultHandler>();
+        context.Services.AddSingleton<ThirdPartHandler>();
+        
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();

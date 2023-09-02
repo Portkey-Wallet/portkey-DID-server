@@ -17,13 +17,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
 
 namespace CAServer.ThirdPart;
 
-public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppService
+public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppService, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;

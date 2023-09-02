@@ -9,7 +9,7 @@ namespace CAServer.ThirdPart;
 
 public static class MerchantSignatureHelper
 {
-    private const string SignatureField = "signature";
+    public const string SignatureField = "signature";
 
 
     public static string GetSignature(string primaryKey, object data)
@@ -18,13 +18,6 @@ public static class MerchantSignatureHelper
         return GetSignature(primaryKey, rawData);
     }
 
-    public static bool VerifySignature(string publicKey, string signature, object data)
-    {
-        if (publicKey.IsNullOrEmpty() || signature.IsNullOrEmpty()) return false; 
-        var rawData = ThirdPartHelper.ConvertObjectToSortedString(data, SignatureField);
-        return VerifySignature(publicKey, signature, rawData);
-    }
-    
     public static string GetSignature(string privateKey, string rawData)
     {
         var privateKeyByte = ByteArrayHelper.HexStringToByteArray(privateKey);

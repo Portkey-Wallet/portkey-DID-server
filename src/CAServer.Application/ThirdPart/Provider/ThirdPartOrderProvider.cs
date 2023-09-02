@@ -1,26 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
-using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.Entities.Es;
-using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
-using CAServer.ThirdPart.Etos;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
-using Newtonsoft.Json;
-using Orleans;
-using Volo.Abp;
 using Volo.Abp.DependencyInjection;
-using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Provider;
@@ -43,9 +34,9 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         IOptions<ThirdPartOptions> thirdPartOptions,
-        INESTRepository<NftOrderIndex, Guid> nftOrderRepository, 
+        INESTRepository<NftOrderIndex, Guid> nftOrderRepository,
         ILogger<ThirdPartOrderProvider> logger
-        )
+    )
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
@@ -102,8 +93,8 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
         return _objectMapper.Map<List<RampOrderIndex>, List<OrderDto>>(userOrders);
     }
-    
-    
+
+
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(GetThirdPartOrderConditionDto condition,
         params OrderSectionEnum?[] withSections)
     {
@@ -124,7 +115,8 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             mustQuery.Add(q => q.TermRange(i => i.Field(f => f.LastModifyTime).LessThan(condition.LastModifyTimeLt)));
 
         if (!condition.LastModifyTimeGt.IsNullOrEmpty())
-            mustQuery.Add(q => q.TermRange(i => i.Field(f => f.LastModifyTime).GreaterThan(condition.LastModifyTimeGt)));
+            mustQuery.Add(q =>
+                q.TermRange(i => i.Field(f => f.LastModifyTime).GreaterThan(condition.LastModifyTimeGt)));
 
         QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
@@ -156,7 +148,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     {
         var nftOrderPager = await QueryNftOrderPagerAsync(condition);
         if (nftOrderPager.Data.IsNullOrEmpty()) return new PageResultDto<OrderDto>();
-        
+
         var orderIds = nftOrderPager.Data.Select(order => order.Id).ToList();
         var orderPager = await GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto(0, orderIds.Count)
         {
@@ -221,7 +213,12 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     {
         var publicKey = _thirdPartOptions.Merchant.MerchantPublicKey.GetValueOrDefault(input.MerchantName);
         AssertHelper.NotEmpty(publicKey, "Invalid merchantName");
-        AssertHelper.IsTrue(MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, input),
-            "Invalid merchant signature");
+        AssertHelper.NotEmpty(input.Signature, "Empty iput signature");
+        var rawData = ThirdPartHelper.ConvertObjectToSortedString(input, MerchantSignatureHelper.SignatureField);
+        var signatureValid = MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, rawData);
+        if (!signatureValid)
+            _logger.LogWarning("Verify merchant {Name} signature failed, inputSignature={Signature}, rawData={RawData}",
+                input.MerchantName, input.Signature, rawData);
+        AssertHelper.IsTrue(signatureValid, "Invalid merchant signature");
     }
 }
