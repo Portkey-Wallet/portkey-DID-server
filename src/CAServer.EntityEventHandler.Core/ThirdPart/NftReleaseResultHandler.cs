@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CAServer.Common;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processors;
-using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
@@ -21,16 +19,12 @@ public class NftReleaseResultHandler : IDistributedEventHandler<OrderEto>
     };
 
     private readonly ILogger<NftReleaseResultHandler> _logger;
-    private readonly HttpProvider _httpProvider;
-    private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IThirdPartOrderProcessorFactory _thirdPartOrderProcessorFactory;
 
-    public NftReleaseResultHandler(HttpProvider httpProvider, ILogger<NftReleaseResultHandler> logger,
-        IThirdPartOrderProvider thirdPartOrderProvider, IThirdPartOrderProcessorFactory thirdPartOrderProcessorFactory)
+    public NftReleaseResultHandler(ILogger<NftReleaseResultHandler> logger,
+        IThirdPartOrderProcessorFactory thirdPartOrderProcessorFactory)
     {
-        _httpProvider = httpProvider;
         _logger = logger;
-        _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartOrderProcessorFactory = thirdPartOrderProcessorFactory;
     }
 

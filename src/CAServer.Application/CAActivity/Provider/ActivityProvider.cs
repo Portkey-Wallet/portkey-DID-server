@@ -18,15 +18,12 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
-    private readonly ChainOptions _chainOptions;
 
 
-    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
-        IOptions<ChainOptions> chainOptions)
+    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
     {
         _graphQlHelper = graphQlHelper;
         _caHolderIndexRepository = caHolderIndexRepository;
-        _chainOptions = chainOptions.Value;
     }
 
 

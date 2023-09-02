@@ -8,6 +8,7 @@ using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.ThirdPart.Provider;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -46,6 +47,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
+        context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();

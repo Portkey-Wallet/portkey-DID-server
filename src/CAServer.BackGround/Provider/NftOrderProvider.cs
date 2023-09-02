@@ -20,17 +20,19 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
     private readonly ILogger<NftOrderProvider> _logger;
     private readonly IThirdPartOrderProcessorFactory _thirdPartOrderProcessorFactory;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public NftOrderProvider(IThirdPartOrderProvider thirdPartOrderProvider,
-        IThirdPartOrderProcessorFactory thirdPartOrderProcessorFactory, ILogger<NftOrderProvider> logger)
+        IThirdPartOrderProcessorFactory thirdPartOrderProcessorFactory, ILogger<NftOrderProvider> logger,
+        IOrderStatusProvider orderStatusProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartOrderProcessorFactory = thirdPartOrderProcessorFactory;
         _logger = logger;
+        _orderStatusProvider = orderStatusProvider;
     }
 
 
-    
     /// <summary>
     ///     Compensate for NFT-order-pay-result not properly notified to Merchant.
     /// </summary>
@@ -57,7 +59,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
             foreach (var orderDto in pendingData.Data)
             {
                 callbackResults.Add(
-                    _thirdPartOrderProvider.CallBackNftOrderPayResultAsync(orderDto.Id, orderDto.Status));
+                    _orderStatusProvider.CallBackNftOrderPayResultAsync(orderDto.Id, orderDto.Status));
             }
 
             // non data in page was handled, stop
@@ -66,6 +68,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
             total += handleCount;
             if (handleCount == 0) break;
         }
+
         _logger.LogInformation("HandleUnCompletedMerchantCallback finish, total:{Total}", total);
     }
 
@@ -109,8 +112,8 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
             total += handleCount;
             if (handleCount == 0) break;
         }
-        _logger.LogInformation("HandleUnCompletedThirdPartResultNotify finish, total:{Total}", total);
 
+        _logger.LogInformation("HandleUnCompletedThirdPartResultNotify finish, total:{Total}", total);
     }
 
     /// <summary>
@@ -125,7 +128,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
         var total = 0;
         while (true)
         {
-            if (string.Compare(lastModifyTimeLt, modifyTimeGt, StringComparison.Ordinal) <= 0) break; 
+            if (string.Compare(lastModifyTimeLt, modifyTimeGt, StringComparison.Ordinal) <= 0) break;
             var pendingData = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
                 new GetThirdPartOrderConditionDto(0, pageSize)
                 {
@@ -155,7 +158,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
             var handleCount = (await Task.WhenAll(callbackResults.ToArray())).Count(resp => resp.Success);
             total += handleCount;
         }
-        _logger.LogInformation("HandleUnCompletedThirdPartResultNotify finish, total:{Total}", total);
 
+        _logger.LogInformation("HandleUnCompletedThirdPartResultNotify finish, total:{Total}", total);
     }
 }

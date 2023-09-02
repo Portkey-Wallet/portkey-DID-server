@@ -42,14 +42,16 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         ContractResolver = new CamelCasePropertyNamesContractResolver()
     };
 
-    public AlchemyOrderAppService(IClusterClient clusterClient,
+    public AlchemyOrderAppService(
+        IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
         ILogger<AlchemyOrderAppService> logger,
         IOptions<ThirdPartOptions> merchantOptions,
         AlchemyProvider alchemyProvider,
         IObjectMapper objectMapper,
-        IOrderStatusProvider orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider
+        )
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;

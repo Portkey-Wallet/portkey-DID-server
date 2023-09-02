@@ -30,18 +30,18 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     private readonly ILogger<ThirdPartOrderAppService> _logger;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
-    private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IActivityProvider _activityProvider;
-    private readonly MerchantOptions _merchantOptions;
-    private readonly IThirdPartOrderProcessorFactory _thirdPartOrderProcessorFactory;
+    private readonly ThirdPartOptions _thirdPartOptions;
+    private IOrderStatusProvider _orderStatusProvider;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
+        IOptions<ThirdPartOptions> thirdPartOptions,
         IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<ThirdPartOrderAppService> logger,
-        IObjectMapper objectMapper, IOptions<ThirdPartOptions> thirdPartOptions,
-        IOrderStatusProvider orderStatusProvider, IActivityProvider activityProvider,
-        IThirdPartOrderProcessorFactory thirdPartOrderProcessorFactory)
+        IObjectMapper objectMapper,
+        IActivityProvider activityProvider, 
+        IOrderStatusProvider orderStatusProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -49,10 +49,9 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _objectMapper = objectMapper;
         _objectMapper = objectMapper;
         _logger = logger;
-        _orderStatusProvider = orderStatusProvider;
         _activityProvider = activityProvider;
-        _thirdPartOrderProcessorFactory = thirdPartOrderProcessorFactory;
-        _merchantOptions = thirdPartOptions.Value.Merchant;
+        _thirdPartOptions = thirdPartOptions.Value;
+        _orderStatusProvider = orderStatusProvider;
     }
 
 
@@ -226,7 +225,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             // update base-order status 
             orderGrainDto.Status = nextStatus.ToString();
             orderGrainDto.TransactionId = input.ReleaseTransactionId;
-            var orderUpdateResult = await _thirdPartOrderProvider.UpdateRampOrderAsync(orderGrainDto);
+            var orderUpdateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
             AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");
 
             return new CommonResponseDto<Empty>();
@@ -255,6 +254,5 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             UserId = userId
         });
     }
-    
     
 }

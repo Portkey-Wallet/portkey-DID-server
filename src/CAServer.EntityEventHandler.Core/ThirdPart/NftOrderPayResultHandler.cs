@@ -25,14 +25,16 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
     private readonly ILogger<NftOrderPayResultHandler> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public NftOrderPayResultHandler(IClusterClient clusterClient,
         ILogger<NftOrderPayResultHandler> logger,
-        IThirdPartOrderProvider thirdPartOrderProvider)
+        IThirdPartOrderProvider thirdPartOrderProvider, IOrderStatusProvider orderStatusProvider)
     {
         _clusterClient = clusterClient;
         _logger = logger;
         _thirdPartOrderProvider = thirdPartOrderProvider;
+        _orderStatusProvider = orderStatusProvider;
     }
 
     private static bool Match(OrderEto eventData)
@@ -60,7 +62,7 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
             {
                 // order's next status should be StartTransfer
                 orderGrainDto.Status = OrderStatusType.StartTransfer.ToString();
-                var orderGrainResult = await _thirdPartOrderProvider.UpdateRampOrderAsync(orderGrainDto);
+                var orderGrainResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
                 AssertHelper.IsTrue(orderGrainResult.Success,
                     "Order status update fail, OrderId={OrderId}, Status={Status}",
                     orderGrainDto.Id, orderGrainDto.Status);
@@ -73,7 +75,7 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
                 "Webhook status of order {OrderId} exists", orderId);
 
             // callback merchant and update result
-            await _thirdPartOrderProvider.CallBackNftOrderPayResultAsync(orderId, status);
+            await _orderStatusProvider.CallBackNftOrderPayResultAsync(orderId, status);
         }
         catch (UserFriendlyException e)
         {

@@ -11,7 +11,7 @@ using Xunit;
 namespace CAServer.ThirdPart.Alchemy;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
+public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 {
     private readonly IAlchemyOrderAppService _alchemyOrderAppService;
 
@@ -23,7 +23,7 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        services.AddSingleton(getMockThirdPartOptions());
+        services.AddSingleton(GetMockThirdPartOptions());
     }
 
     [Fact]

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.CAActivity.Provider;
+using CAServer.Entities.Es;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Volo.Abp.DistributedLocking;
@@ -14,6 +16,18 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
+    }
+
+    protected IActivityProvider GetMockeActivityProvider()
+    {
+        var mockActivityProvider = new Mock<IActivityProvider>();
+        mockActivityProvider
+            .Setup(x => x.GetCaHolder(It.IsAny<string>()))
+            .Returns<string>((_) => Task.FromResult(new CAHolderIndex()
+            {
+                UserId = Guid.NewGuid()
+            }));
+        return mockActivityProvider.Object;
     }
 
     protected IAbpDistributedLock GetMockAbpDistributedLockAlwaysSuccess()

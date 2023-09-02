@@ -3,9 +3,9 @@ using Microsoft.Extensions.Options;
 
 namespace CAServer.ThirdPart.Alchemy;
 
-public partial class AlchemyOrderAppServiceTest
+public sealed partial class AlchemyOrderAppServiceTest
 {
-    private IOptions<ThirdPartOptions> getMockThirdPartOptions()
+    private static IOptions<ThirdPartOptions> GetMockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {

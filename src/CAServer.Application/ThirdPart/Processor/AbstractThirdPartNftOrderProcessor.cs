@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
@@ -21,17 +20,18 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 {
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<AbstractThirdPartNftOrderProcessor> _logger;
-    private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly ThirdPartOptions _thirdPartOptions;
 
 
     protected AbstractThirdPartNftOrderProcessor(ILogger<AbstractThirdPartNftOrderProcessor> logger,
-        IClusterClient clusterClient, IThirdPartOrderProvider thirdPartOrderProvider,
-        IOptions<ThirdPartOptions> thirdPartOptions)
+        IClusterClient clusterClient,
+        IOptions<ThirdPartOptions> thirdPartOptions, 
+        IOrderStatusProvider orderStatusProvider)
     {
         _logger = logger;
         _clusterClient = clusterClient;
-        _thirdPartOrderProvider = thirdPartOrderProvider;
+        _orderStatusProvider = orderStatusProvider;
         _thirdPartOptions = thirdPartOptions.Value;
     }
 
@@ -52,7 +52,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// <param name="orderId"></param>
     /// <returns></returns>
     public abstract Task<IThirdPartValidOrderUpdateRequest> QueryNftOrderAsync(Guid orderId);
-    
+
     /// <summary>
     ///     fill new param-value of orderGrainDto
     /// </summary>
@@ -102,7 +102,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             updateRequest = VerifyNftOrderAsync(input);
             AssertHelper.NotEmpty(updateRequest.Id, "Order id missing");
             AssertHelper.NotEmpty(updateRequest.Status, "Order status missing");
-            
+
             await DoUpdateNftOrderAsync(updateRequest);
 
             return new CommonResponseDto<Empty>();
@@ -136,7 +136,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var latestValidOrder = await QueryNftOrderAsync(orderId);
             AssertHelper.IsTrue(latestValidOrder.Id != Guid.Empty, "Order id missing");
             AssertHelper.NotEmpty(latestValidOrder.Status, "Order status missing");
-            
+
             await DoUpdateNftOrderAsync(latestValidOrder);
 
             return new CommonResponseDto<Empty>();
@@ -174,7 +174,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
         var orderGrainDto = (await orderGrain.GetOrder()).Data;
         AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
-        AssertHelper.IsTrue(orderGrainDto.Id == updateRequest.Id, "Invalid orderId {ThirdPartOrderId}", updateRequest.Id);
+        AssertHelper.IsTrue(orderGrainDto.Id == updateRequest.Id, "Invalid orderId {ThirdPartOrderId}",
+            updateRequest.Id);
         var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
         if (orderGrainDto.Status == updateRequest.Status)
         {
@@ -197,7 +198,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         if (nftOrderNeedUpdate)
         {
             // update nft order grain
-            var nftOrderUpdateResult = await _thirdPartOrderProvider.UpdateNftOrderAsync(nftOrderGrainDto);
+            var nftOrderUpdateResult = await _orderStatusProvider.UpdateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(nftOrderUpdateResult.Success, "Update nft order fail");
         }
 
@@ -207,7 +208,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var nextStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
             AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
                 "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
-            var orderUpdateResult = await _thirdPartOrderProvider.UpdateRampOrderAsync(orderGrainDto);
+            var orderUpdateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
             AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");
         }
     }
@@ -231,7 +232,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             var notifyThirdPartResp = await DoNotifyNftReleaseAsync(orderGrainDto, nftOrderGrainDto);
 
-            nftOrderGrainDto.ThirdPartNotifyCount ++;
+            nftOrderGrainDto.ThirdPartNotifyCount++;
             nftOrderGrainDto.ThirdPartNotifyTime = DateTime.UtcNow.ToUtcString();
             if (notifyThirdPartResp.Success)
             {
@@ -245,7 +246,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 nftOrderGrainDto.ThirdPartNotifyStatus = NftOrderWebhookStatus.FAIL.ToString();
             }
 
-            var nftOrderUpdateResult = await _thirdPartOrderProvider.UpdateNftOrderAsync(nftOrderGrainDto);
+            var nftOrderUpdateResult = await _orderStatusProvider.UpdateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(nftOrderUpdateResult.Success, "Update nft order fail");
 
             return new CommonResponseDto<Empty>();

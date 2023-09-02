@@ -13,7 +13,30 @@ using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Common;
 
-public class HttpProvider : ISingletonDependency
+
+public interface IHttpProvider : ISingletonDependency
+{
+    Task<T> Invoke<T>(string domain, ApiInfo apiInfo,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null);
+
+    Task<string> Invoke(string domain, ApiInfo apiInfo,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null);
+
+    Task<string> Invoke(HttpMethod method, string url,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null);
+
+}
+
+public class HttpProvider : IHttpProvider
 {
     public static readonly JsonSerializerSettings DefaultJsonSettings = new()
     {
@@ -28,7 +51,6 @@ public class HttpProvider : ISingletonDependency
         _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
-
 
     public async Task<T> Invoke<T>(string domain, ApiInfo apiInfo,
         Dictionary<string, string> pathParams = null,

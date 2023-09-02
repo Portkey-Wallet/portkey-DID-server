@@ -23,9 +23,9 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
     public AlchemyNftOrderProcessor(ILogger<AlchemyNftOrderProcessor> logger, IClusterClient clusterClient,
-        IThirdPartOrderProvider thirdPartOrderProvider, IOptions<ThirdPartOptions> thirdPartOptions,
-        AlchemyProvider alchemyProvider)
-        : base(logger, clusterClient, thirdPartOrderProvider, thirdPartOptions)
+        IOptions<ThirdPartOptions> thirdPartOptions,
+        AlchemyProvider alchemyProvider, IOrderStatusProvider orderStatusProvider)
+        : base(logger, clusterClient, thirdPartOptions, orderStatusProvider)
     {
         _logger = logger;
         _alchemyProvider = alchemyProvider;
