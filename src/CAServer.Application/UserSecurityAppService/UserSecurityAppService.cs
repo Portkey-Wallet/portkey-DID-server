@@ -7,12 +7,14 @@ using CAServer.Common;
 using CAServer.Options;
 using CAServer.Security;
 using CAServer.Security.Dtos;
+using CAServer.Security.Etos;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
 using CAServer.UserSecurityAppService.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
+using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.UserSecurityAppService;
 
@@ -24,13 +26,16 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly ChainOptions _chainOptions;
     private readonly IUserAssetsProvider _assetsProvider;
     private readonly IUserSecurityProvider _userSecurityProvider;
+    private readonly IDistributedEventBus _distributedEventBus;
+
 
     public UserSecurityAppService(IOptions<SecurityOptions> securityOptions, IUserSecurityProvider userSecurityProvider,
         IOptions<ChainOptions> chainOptions, IContractProvider contractProvider, ILogger<UserSecurityAppService> logger,
-        IUserAssetsProvider assetsProvider)
+        IUserAssetsProvider assetsProvider, IDistributedEventBus distributedEventBus)
     {
         _logger = logger;
         _assetsProvider = assetsProvider;
+        _distributedEventBus = distributedEventBus;
         _chainOptions = chainOptions.Value;
         _securityOptions = securityOptions.Value;
         _contractProvider = contractProvider;
@@ -70,7 +75,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var dic = new Dictionary<string, TransferLimitDto>();
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
-                if (token.Balance <= 0) continue;
+                if (!await AddOrUpdateUserTransferLimitHistory(input.CaHash, token)) continue;
 
                 var defaultTokenTransferLimit = _securityOptions.DefaultTokenTransferLimit;
                 if (_securityOptions.TransferLimit.TryGetValue(token.TokenInfo.Symbol, out var limit))
@@ -150,5 +155,22 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             TotalRecordCount = _securityOptions.TokenBalanceTransferThreshold.Count,
             Data = _securityOptions.TokenBalanceTransferThreshold
         };
+    }
+
+    private async Task<bool> AddOrUpdateUserTransferLimitHistory(string caHash, IndexerSearchTokenNft token)
+    {
+        var history =
+            await _userSecurityProvider.GetUserTransferLimitHistory(caHash, token.ChainId, token.TokenInfo.Symbol);
+        if (string.IsNullOrEmpty(history.Symbol) || history.Symbol != token.TokenInfo.Symbol ||
+            history.ChainId != token.ChainId)
+        {
+            if (token.Balance <= 0) return false;
+            await _distributedEventBus.PublishAsync(new UserTransferLimitHistoryEto
+            {
+                Id = GuidGenerator.Create(), CaHash = caHash, ChainId = token.ChainId, Symbol = token.TokenInfo.Symbol
+            });
+        }
+
+        return true;
     }
 }

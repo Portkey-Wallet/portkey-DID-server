@@ -1,17 +1,25 @@
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
+using CAServer.Entities.Es;
 using CAServer.Security.Dtos;
 using GraphQL;
+using Nest;
 
 namespace CAServer.UserSecurityAppService.Provider;
 
 public class UserSecurityProvider : IUserSecurityProvider
 {
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly INESTRepository<UserTransferLimitHistoryIndex, Guid> _userTransferLimitHistoryRepository;
 
-    public UserSecurityProvider(IGraphQLHelper graphQlHelper)
+    public UserSecurityProvider(IGraphQLHelper graphQlHelper,
+        INESTRepository<UserTransferLimitHistoryIndex, Guid> userTransferLimitHistoryRepository)
     {
         _graphQlHelper = graphQlHelper;
+        _userTransferLimitHistoryRepository = userTransferLimitHistoryRepository;
     }
 
     public async Task<IndexerTransferLimitList> GetTransferLimitListByCaHash(string caHash)
@@ -63,5 +71,19 @@ public class UserSecurityProvider : IUserSecurityProvider
                 maxResultCount = maxResultCount
             }
         });
+    }
+
+    public async Task<UserTransferLimitHistoryIndex> GetUserTransferLimitHistory(string caHash, string chainId,
+        string symbol)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<UserTransferLimitHistoryIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.CaHash).Terms(caHash)));
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Symbol).Terms(symbol)));
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.ChainId).Terms(chainId)));
+
+        QueryContainer Filter(QueryContainerDescriptor<UserTransferLimitHistoryIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        return await _userTransferLimitHistoryRepository.GetAsync(Filter);
     }
 }
