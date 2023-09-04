@@ -94,9 +94,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
             
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
-
         _ = FollowAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId);
-        await ImRemarkAsync(contactResultDto?.ImInfo?.RelationId, userId, input.Name);
+        await ImRemarkAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId, input.Name);
 
         return contactResultDto;
     }
@@ -660,8 +659,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             Logger.LogError("{userId} remark fail : {relationId}, {name}", userId.ToString(), relationId, name);
         }
-
-        
     }
 
     private async Task FollowAsync(string address, Guid userId)
