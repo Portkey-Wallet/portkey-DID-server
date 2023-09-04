@@ -8,6 +8,7 @@ using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Notify.Etos;
+using CAServer.Security.Etos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Etos;
 using CAServer.Verifier.Etos;
@@ -54,5 +55,6 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<DeleteNotifyEto, NotifyRulesIndex>();
         CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
+        CreateMap<UserTransferLimitHistoryEto, UserTransferLimitHistoryIndex>();
     }
 }

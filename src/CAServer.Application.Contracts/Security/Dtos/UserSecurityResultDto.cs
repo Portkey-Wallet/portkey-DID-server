@@ -13,3 +13,9 @@ public class ManagerApprovedListResultDto
     public long TotalRecordCount { get; set; }
     public List<ManagerApprovedDto> Data { get; set; }
 }
+
+public class TokenBalanceTransferThresholdResultDto
+{
+    public long TotalRecordCount { get; set; }
+    public Dictionary<string, long> Data { get; set; }
+}
