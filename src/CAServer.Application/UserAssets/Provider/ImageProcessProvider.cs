@@ -64,10 +64,10 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
             
             var produceImage = GetResizeUrl(imageUrl, width, height, true, ImageResizeType.PortKey);
             await SendUrlAsync(produceImage);
-            _logger.LogDebug("Compress image success.produceImage:{0},width:{1},height:{2}", produceImage, width, height);
+            _logger.LogDebug("Compress image success.produceImage:{produceImage},width:{width},height:{height}", produceImage, width, height);
 
             var resImage = GetResizeUrl(imageUrl, width, height, false, ImageResizeType.PortKey);
-            _logger.LogDebug("View image success.resImage:{0},width:{1},height:{2}", resImage, width, height);
+            _logger.LogDebug("View image success.resImage:{resImage},width:{width},height:{height}", resImage, width, height);
             return resImage;
         }
         catch (Exception ex)
