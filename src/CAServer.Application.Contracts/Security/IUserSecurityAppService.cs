@@ -10,4 +10,6 @@ public interface IUserSecurityAppService
 
     public Task<ManagerApprovedListResultDto> GetManagerApprovedListByCaHashAsync(
         GetManagerApprovedListByCaHashDto input);
+
+    public Task<TokenBalanceTransferThresholdResultDto> GetTokenBalanceTransferThresholdAsync();
 }

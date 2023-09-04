@@ -26,8 +26,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly IUserSecurityProvider _userSecurityProvider;
 
     public UserSecurityAppService(IOptions<SecurityOptions> securityOptions, IUserSecurityProvider userSecurityProvider,
-        IOptions<ChainOptions> chainOptions, IContractProvider contractProvider,
-        ILogger<UserSecurityAppService> logger, IUserAssetsProvider assetsProvider)
+        IOptions<ChainOptions> chainOptions, IContractProvider contractProvider, ILogger<UserSecurityAppService> logger,
+        IUserAssetsProvider assetsProvider)
     {
         _logger = logger;
         _assetsProvider = assetsProvider;
@@ -71,7 +71,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
                 if (token.Balance <= 0) continue;
-                
+
                 var defaultTokenTransferLimit = _securityOptions.DefaultTokenTransferLimit;
                 if (_securityOptions.TransferLimit.TryGetValue(token.TokenInfo.Symbol, out var limit))
                 {
@@ -141,5 +141,14 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             throw new UserFriendlyException(
                 $"An exception occurred during GetManagerApprovedListByCaHashAsync, chainId: {input.ChainId} caHash: {input.CaHash}");
         }
+    }
+
+    public async Task<TokenBalanceTransferThresholdResultDto> GetTokenBalanceTransferThresholdAsync()
+    {
+        return new TokenBalanceTransferThresholdResultDto()
+        {
+            TotalRecordCount = _securityOptions.TokenBalanceTransferThreshold.Count,
+            Data = _securityOptions.TokenBalanceTransferThreshold
+        };
     }
 }

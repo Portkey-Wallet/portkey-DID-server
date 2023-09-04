@@ -27,11 +27,17 @@ public class UserSecurityController : CAServerController
     {
         return await _userSecurityAppService.GetTransferLimitListByCaHashAsync(input);
     }
-    
+
     [HttpGet("managerApproved")]
     public async Task<ManagerApprovedListResultDto> GetManagerApprovedListByCaHashAsync(
         GetManagerApprovedListByCaHashDto input)
     {
         return await _userSecurityAppService.GetManagerApprovedListByCaHashAsync(input);
+    }
+
+    [HttpGet("transferThreshold")]
+    public async Task<TokenBalanceTransferThresholdResultDto> GetTokenBalanceTransferThresholdAsync()
+    {
+        return await _userSecurityAppService.GetTokenBalanceTransferThresholdAsync();
     }
 }
