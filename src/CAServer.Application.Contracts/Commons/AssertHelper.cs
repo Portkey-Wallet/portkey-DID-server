@@ -65,7 +65,7 @@ public static class AssertHelper
             result.Append(template, start, placeholderStart - start);
 
             if (valueIndex < values.Length)
-                result.Append((values[valueIndex++] ?? "null").ToString);
+                result.Append((values[valueIndex++] ?? "null"));
             else
                 result.Append(template, placeholderStart, placeholderEnd - placeholderStart + 1);
 
