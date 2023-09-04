@@ -29,8 +29,10 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly IDistributedEventBus _distributedEventBus;
 
 
-    public UserSecurityAppService(IOptions<SecurityOptions> securityOptions, IUserSecurityProvider userSecurityProvider,
-        IOptions<ChainOptions> chainOptions, IContractProvider contractProvider, ILogger<UserSecurityAppService> logger,
+    public UserSecurityAppService(IOptionsSnapshot<SecurityOptions> securityOptions,
+        IUserSecurityProvider userSecurityProvider,
+        IOptionsSnapshot<ChainOptions> chainOptions, IContractProvider contractProvider,
+        ILogger<UserSecurityAppService> logger,
         IUserAssetsProvider assetsProvider, IDistributedEventBus distributedEventBus)
     {
         _logger = logger;
@@ -75,20 +77,32 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var dic = new Dictionary<string, TransferLimitDto>();
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
-                if (!await AddOrUpdateUserTransferLimitHistory(input.CaHash, token)) continue;
+                if (!await AddOrUpdateUserTransferLimitHistoryAsync(input.CaHash, token)) continue;
 
-                var defaultTokenTransferLimit = _securityOptions.DefaultTokenTransferLimit;
-                if (_securityOptions.TransferLimit.TryGetValue(token.TokenInfo.Symbol, out var limit))
+
+                // dic[token.ChainId + "-" + token.TokenInfo.Symbol] = await GeneratorTransferLimitAsync();
+                var singleTransferLimit = _securityOptions.DefaultTokenTransferLimit;
+                var dailyTransferLimit = _securityOptions.DefaultTokenTransferLimit;
+
+                if (_securityOptions.TokenTransferLimitDict[token.ChainId].SingleTransferLimit
+                    .TryGetValue(token.TokenInfo.Symbol, out var singleLimit))
                 {
-                    defaultTokenTransferLimit = limit;
+                    singleTransferLimit = singleLimit;
                 }
+
+                if (_securityOptions.TokenTransferLimitDict[token.ChainId].DailyTransferLimit
+                    .TryGetValue(token.TokenInfo.Symbol, out var dailyLimit))
+                {
+                    dailyTransferLimit = dailyLimit;
+                }
+
 
                 dic[token.ChainId + "-" + token.TokenInfo.Symbol] = new TransferLimitDto()
                 {
                     ChainId = token.ChainId,
                     Symbol = token.TokenInfo.Symbol,
-                    DailyLimit = defaultTokenTransferLimit,
-                    SingleLimit = defaultTokenTransferLimit
+                    DailyLimit = dailyTransferLimit,
+                    SingleLimit = singleTransferLimit
                 };
             }
 
@@ -157,7 +171,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         };
     }
 
-    private async Task<bool> AddOrUpdateUserTransferLimitHistory(string caHash, IndexerSearchTokenNft token)
+    private async Task<bool> AddOrUpdateUserTransferLimitHistoryAsync(string caHash, IndexerSearchTokenNft token)
     {
         var history =
             await _userSecurityProvider.GetUserTransferLimitHistory(caHash, token.ChainId, token.TokenInfo.Symbol);

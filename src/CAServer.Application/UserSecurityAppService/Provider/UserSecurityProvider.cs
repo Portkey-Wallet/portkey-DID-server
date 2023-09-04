@@ -7,10 +7,11 @@ using CAServer.Entities.Es;
 using CAServer.Security.Dtos;
 using GraphQL;
 using Nest;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.UserSecurityAppService.Provider;
 
-public class UserSecurityProvider : IUserSecurityProvider
+public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<UserTransferLimitHistoryIndex, Guid> _userTransferLimitHistoryRepository;

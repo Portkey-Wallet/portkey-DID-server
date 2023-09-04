@@ -11,7 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Security")]
 [Route("api/app/user/security")]
-[Authorize]
+// [Authorize]
 public class UserSecurityController : CAServerController
 {
     private readonly IUserSecurityAppService _userSecurityAppService;
