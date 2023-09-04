@@ -77,8 +77,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var dic = new Dictionary<string, TransferLimitDto>();
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
-                if (!await AddOrUpdateUserTransferLimitHistoryAsync(input.CaHash, token)) continue;
-
+                if (token.TokenInfo == null ||
+                    !await AddOrUpdateUserTransferLimitHistoryAsync(input.CaHash, token)) continue;
 
                 // dic[token.ChainId + "-" + token.TokenInfo.Symbol] = await GeneratorTransferLimitAsync();
                 var singleTransferLimit = _securityOptions.DefaultTokenTransferLimit;
@@ -183,7 +183,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     {
         var history =
             await _userSecurityProvider.GetUserTransferLimitHistory(caHash, token.ChainId, token.TokenInfo.Symbol);
-        if (string.IsNullOrEmpty(history.Symbol) || history.Symbol != token.TokenInfo.Symbol ||
+        if (history == null || string.IsNullOrEmpty(history.Symbol) || history.Symbol != token.TokenInfo.Symbol ||
             history.ChainId != token.ChainId)
         {
             if (token.Balance <= 0) return false;
