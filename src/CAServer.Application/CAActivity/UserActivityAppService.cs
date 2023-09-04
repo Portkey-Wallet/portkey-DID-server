@@ -147,7 +147,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
 
-            if (string.IsNullOrWhiteSpace(activityDto.NftInfo.ImageUrl))
+            if (null == activityDto.NftInfo || string.IsNullOrWhiteSpace(activityDto.NftInfo.ImageUrl))
             {
                 return activityDto;
             }
