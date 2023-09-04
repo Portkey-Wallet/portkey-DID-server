@@ -21,7 +21,6 @@ public class ThirdPartMerchantController : CAServerController
         _thirdPartOrderAppService = thirdPartOrderAppService;
     }
 
-
     [HttpPost("nftOrder")]
     public async Task<ResponseDto> MerchantCreateNftOrder(CreateNftOrderRequestDto input)
     {

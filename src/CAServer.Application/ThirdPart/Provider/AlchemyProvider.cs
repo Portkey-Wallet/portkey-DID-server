@@ -8,8 +8,8 @@ using CAServer.Common;
 using CAServer.Common.Dtos;
 using CAServer.Commons;
 using CAServer.Options;
-using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -17,13 +17,11 @@ using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart.Provider;
 
-
 public class AlchemyApi
 {
     public static ApiInfo NftResultNotice { get; } = new(HttpMethod.Post, "/nft/openapi/merchant/notice");
     public static ApiInfo QueryNftTrade { get; } = new(HttpMethod.Get, "/nft/openapi/query/trade");
 }
-
 
 public class AlchemyProvider : ISingletonDependency
 {
@@ -55,7 +53,7 @@ public class AlchemyProvider : ISingletonDependency
 
         return respStr;
     }
-    
+
     [Obsolete("use HttpProvider instead")]
     public async Task<string> HttpPost2AlchemyAsync(string path, string inputStr)
     {
@@ -81,9 +79,9 @@ public class AlchemyProvider : ISingletonDependency
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    public async Task<AlchemyBaseResponseDto> NoticeNftReleaseResult(AlchemyNftReleaseNoticeRequestDto request)
+    public async Task<AlchemyNftOrderDto> QueryNftTrade(AlchemyNftReleaseNoticeRequestDto request)
     {
-        return await _httpProvider.Invoke<AlchemyNftOrderDto>(_alchemyOptions.NftBaseUrl,
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.QueryNftTrade,
             header: GetAlchemyRequestHeader(),
             param: new Dictionary<string, string>
@@ -91,33 +89,38 @@ public class AlchemyProvider : ISingletonDependency
                 ["orderNo"] = request.OrderNo
             }
         );
+        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            "Query Alchemy NFT trade fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+        return result.Data;
     }
-    
+
 
     /// <summary>
     ///     Notice Alchemy NFT release result
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    public async Task<AlchemyNftOrderDto> QueryNftTrade(AlchemyNftReleaseNoticeRequestDto request)
+    public async Task NoticeNftReleaseResult(AlchemyNftReleaseNoticeRequestDto request)
     {
-        return await _httpProvider.Invoke<AlchemyNftOrderDto>(_alchemyOptions.NftBaseUrl,
+        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<Empty>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.NftResultNotice,
             header: GetAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(request, HttpProvider.DefaultJsonSettings));
+        AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            JsonConvert.SerializeObject(res));
     }
-    
+
 
     // Set Alchemy request header with appId timestamp sign.
     private void SetAlchemyRequestHeader(HttpClient client)
     {
         foreach (var kv in GetAlchemyRequestHeader())
-        {   
+        {
             client.DefaultRequestHeaders.Add(kv.Key, kv.Value);
         }
     }
 
-    private Dictionary<string,string> GetAlchemyRequestHeader()
+    private Dictionary<string, string> GetAlchemyRequestHeader()
     {
         var timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
         var sign = GenerateAlchemyApiSign(timeStamp);
@@ -125,9 +128,9 @@ public class AlchemyProvider : ISingletonDependency
             timeStamp, sign);
         return new Dictionary<string, string>
         {
-            ["appId"] =  _alchemyOptions.AppId,
-            ["timestamp"] =  timeStamp,
-            ["sign"] =  sign
+            ["appId"] = _alchemyOptions.AppId,
+            ["timestamp"] = timeStamp,
+            ["sign"] = sign
         };
     }
 

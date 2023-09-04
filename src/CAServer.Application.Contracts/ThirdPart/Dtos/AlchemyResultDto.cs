@@ -1,31 +1,25 @@
 using System;
-using System.Collections.Generic;
+using Google.Protobuf.WellKnownTypes;
 
 namespace CAServer.ThirdPart.Dtos;
 
-public class AlchemyBaseResponseDto
+public class AlchemyBaseResponseDto<T>
 {
+    public const string SuccessCode = "0000";
+
     public string Success { get; set; } = "Success";
-    public string ReturnCode { get; set; } = "0000";
-    public string ReturnMsg { get; set; } = "";
+    public string ReturnCode { get; set; } = SuccessCode;
+    public string ReturnMsg { get; set; } = "SUCCESS";
     public string Extend { get; set; } = "";
     public string TraceId { get; set; }
-}
 
-public class AlchemyTokenDto : AlchemyBaseResponseDto
-{
-    public AlchemyTokenDataDto Data { get; set; }
+    public T Data { get; set; }
 }
 
 public class AlchemyTokenDataDto
 {
     public string Email { get; set; }
     public string AccessToken { get; set; }
-}
-
-public class AlchemyFiatListDto : AlchemyBaseResponseDto
-{
-    public List<AlchemyFiatDto> Data { get; set; }
 }
 
 public class AlchemyFiatDto
@@ -39,11 +33,6 @@ public class AlchemyFiatDto
     public string PayMin { get; set; }
     public string PayMax { get; set; }
     public string CountryName { get; set; }
-}
-
-public class AlchemyCryptoListDto : AlchemyBaseResponseDto
-{
-    public List<AlchemyCryptoDto> Data { get; set; }
 }
 
 public class AlchemyCryptoDto
@@ -60,11 +49,6 @@ public class AlchemyCryptoDto
     public string MaxSellAmount { get; set; }
 }
 
-public class AlchemyOrderQuoteResultDto : AlchemyBaseResponseDto
-{
-    public AlchemyOrderQuoteDataDto Data { get; set; }
-}
-
 public class AlchemyOrderQuoteDataDto
 {
     public string Crypto { get; set; }
@@ -77,7 +61,7 @@ public class AlchemyOrderQuoteDataDto
     public string PayWayCode { get; set; }
 }
 
-public class AlchemySignatureResultDto : AlchemyBaseResponseDto
+public class AlchemySignatureResultDto : AlchemyBaseResponseDto<Empty>
 {
     public string Signature { get; set; }
 }

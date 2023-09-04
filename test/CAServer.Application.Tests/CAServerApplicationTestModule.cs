@@ -46,7 +46,7 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
 
-        context.Services.AddSingleton<IThirdPartOrderProcessorFactory, ThirdPartNftOrderProcessorFactory>();
+        context.Services.AddSingleton<IThirdPartNftOrderProcessorFactory, ThirdPartNftOrderProcessorFactory>();
         context.Services.AddSingleton<NftOrderPayResultHandler>();
         context.Services.AddSingleton<NftOrderUpdateHandler>();
         context.Services.AddSingleton<NftReleaseResultHandler>();

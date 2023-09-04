@@ -212,7 +212,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             var queryString = string.Join("&", orderQueryDto.GetType().GetProperties()
                 .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(orderQueryDto)}"));
 
-            var queryResult = JsonConvert.DeserializeObject<QueryAlchemyOrderInfoResultDto>(
+            var queryResult = JsonConvert.DeserializeObject<AlchemyBaseResponseDto<QueryAlchemyOrderInfo>>(
                 await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.MerchantQueryTradeUri + "?" + queryString));
 
             return queryResult.Data;
@@ -220,7 +220,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         catch (Exception e)
         {
             _logger.LogError(e,
-                "Error deserializing query alchemy order info. orderId:{orderId}, thirdPartOrderNo:{thirdPartOrderNo}",
+                "Error deserializing query alchemy order info. orderId:{OrderId}, thirdPartOrderNo:{ThirdPartOrderNo}",
                 input.Id.ToString(), input.ThirdPartOrderNo);
             return new QueryAlchemyOrderInfo();
         }

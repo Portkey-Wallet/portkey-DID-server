@@ -208,6 +208,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var nextStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
             AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
                 "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
+            orderGrainDto.MerchantName = orderGrainDto.MerchantName.DefaultIfEmpty(ThirdPartName());
             var orderUpdateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
             AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");
         }

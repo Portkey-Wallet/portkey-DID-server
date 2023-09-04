@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Google.Protobuf.WellKnownTypes;
 
 namespace CAServer.ThirdPart.Dtos;
 
@@ -109,11 +110,6 @@ public class OrderQueryDto
     public string Side { get; set; }
 }
 
-public class QueryAlchemyOrderInfoResultDto : AlchemyBaseResponseDto
-{
-    public QueryAlchemyOrderInfo Data { get; set; }
-}
-
 public class QueryAlchemyOrderInfo
 {
     public string OrderNo { get; set; }
@@ -147,7 +143,7 @@ public class QueryAlchemyOrderInfo
 }
 
 
-public class AlchemyNftOrderDto : AlchemyBaseResponseDto, IThirdPartValidOrderUpdateRequest
+public class AlchemyNftOrderDto : IThirdPartValidOrderUpdateRequest
 {
     public Guid Id { get; set; }
     public string Status { get; set; }

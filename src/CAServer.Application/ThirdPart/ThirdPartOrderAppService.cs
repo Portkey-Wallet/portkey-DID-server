@@ -112,11 +112,16 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var nftOrderGrainDto = _objectMapper.Map<CreateNftOrderRequestDto, NftOrderGrainDto>(input);
             nftOrderGrainDto.Id = createResult.Data.Id;
             var createNftResult = await DoCreateNftOrderAsync(nftOrderGrainDto);
+            AssertHelper.IsTrue(createResult.Success, "Order save failed");
 
-            return new CommonResponseDto<CreateNftOrderResponseDto>(new CreateNftOrderResponseDto
+            var resp = new CreateNftOrderResponseDto
             {
-                OrderId = createResult.Data.Id.ToString()
-            });
+                MerchantName = createNftResult.Data.MerchantName,
+                OrderId = createNftResult.Data.Id.ToString()
+            };
+            _thirdPartOrderProvider.SignMerchantDto(resp);
+            
+            return new CommonResponseDto<CreateNftOrderResponseDto>(resp);
         }
         catch (UserFriendlyException e)
         {

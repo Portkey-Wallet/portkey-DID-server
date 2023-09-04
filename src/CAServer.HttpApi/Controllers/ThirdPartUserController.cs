@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart;
@@ -55,26 +56,26 @@ public class ThirdPartUserController : CAServerController
     }
 
     [HttpPost("token")]
-    public async Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(
+    public async Task<AlchemyBaseResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input);
     }
 
     [HttpGet("fiatList")]
-    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
+    public async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
     }
 
     [HttpGet("cryptoList")]
-    public async Task<AlchemyCryptoListDto> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)
+    public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input);
     }
 
     [HttpPost("order/quote")]
-    public async Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
+    public async Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
     }

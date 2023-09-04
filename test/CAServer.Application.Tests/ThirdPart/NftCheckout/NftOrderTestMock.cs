@@ -1,22 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using AElf;
-using AElf.Cryptography;
-using AElf.Cryptography.ECDSA;
+using System.Net.Http;
+using CAServer.Commons.Dtos;
 using CAServer.Options;
-using CAServer.ThirdPart.Dtos;
-using Microsoft.Extensions.DependencyInjection;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
-using Shouldly;
-using Xunit;
+using Moq;
+using Xunit.Abstractions;
 
 namespace CAServer.ThirdPart.NftCheckout;
 
-public partial class MerchantTest
+public partial class NftOrderTest
 {
-    
-    
     private static IOptions<ThirdPartOptions> MockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
@@ -40,11 +35,15 @@ public partial class MerchantTest
                 },
                 MerchantPublicKey = new Dictionary<string, string>
                 {
-                    ["symbolMarket"] = "042dc50fd7d211f16bf4ad870f7790d4f9d98170f3712038c45830947f7d96c691ef2d1ab4880eeeeafb63ab77571be6cbe6bed89d5f89844b0fb095a7015713c8"
+                    ["symbolMarket"] =
+                        "042dc50fd7d211f16bf4ad870f7790d4f9d98170f3712038c45830947f7d96c691ef2d1ab4880eeeeafb63ab77571be6cbe6bed89d5f89844b0fb095a7015713c8"
                 }
             }
         };
         return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
     }
-    
+
+
+    public static readonly Action<Mock<HttpMessageHandler>, ITestOutputHelper> MockSuccessWebhook =
+        PathMatcher(HttpMethod.Post, "/myWebhook", new CommonResponseDto<Empty>());
 }

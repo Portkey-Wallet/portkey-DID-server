@@ -68,7 +68,6 @@ public class NftReleaseResultRequestDto : NftMerchantBaseDto
 
 public class NftOrderQueryConditionDto : PagedResultRequestDto
 {
-    private NftOrderQueryConditionDto() {}
 
     public NftOrderQueryConditionDto(int skipCount, int maxResultCount)
     {
