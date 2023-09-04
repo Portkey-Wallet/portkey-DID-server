@@ -71,12 +71,19 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
                 if (token.Balance <= 0) continue;
+                
+                var defaultTokenTransferLimit = _securityOptions.DefaultTokenTransferLimit;
+                if (_securityOptions.TransferLimit.TryGetValue(token.TokenInfo.Symbol, out var limit))
+                {
+                    defaultTokenTransferLimit = limit;
+                }
+
                 dic[token.ChainId + "-" + token.TokenInfo.Symbol] = new TransferLimitDto()
                 {
                     ChainId = token.ChainId,
                     Symbol = token.TokenInfo.Symbol,
-                    DailyLimit = _securityOptions.DefaultTokenTransferLimit,
-                    SingleLimit = _securityOptions.DefaultTokenTransferLimit
+                    DailyLimit = defaultTokenTransferLimit,
+                    SingleLimit = defaultTokenTransferLimit
                 };
             }
 
