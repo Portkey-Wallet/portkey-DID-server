@@ -48,6 +48,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
+        Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
