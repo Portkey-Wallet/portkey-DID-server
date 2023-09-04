@@ -16,3 +16,8 @@ public class GetManagerApprovedListByCaHashDto : PagedResultRequestDto
     public string Spender { get; set; }
     public string Symbol { get; set; }
 }
+
+public class GetTokenBalanceTransferCheckDto
+{
+    [Required] public string CaHash { get; set; }
+}

@@ -14,8 +14,7 @@ public class ManagerApprovedListResultDto
     public List<ManagerApprovedDto> Data { get; set; }
 }
 
-public class TokenBalanceTransferThresholdResultDto
+public class TokenBalanceTransferCheckAsyncResultDto
 {
-    public long TotalRecordCount { get; set; }
-    public Dictionary<string, long> Data { get; set; }
+    public bool IsSafe { get; set; } = true;
 }

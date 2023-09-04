@@ -35,9 +35,9 @@ public class UserSecurityController : CAServerController
         return await _userSecurityAppService.GetManagerApprovedListByCaHashAsync(input);
     }
 
-    [HttpGet("transferThreshold")]
-    public async Task<TokenBalanceTransferThresholdResultDto> GetTokenBalanceTransferThresholdAsync()
+    [HttpGet("balanceCheck")]
+    public async Task<TokenBalanceTransferCheckAsyncResultDto> GetTokenBalanceTransferCheckAsync(GetTokenBalanceTransferCheckDto input)
     {
-        return await _userSecurityAppService.GetTokenBalanceTransferThresholdAsync();
+        return await _userSecurityAppService.GetTokenBalanceTransferCheckAsync(input);
     }
 }
