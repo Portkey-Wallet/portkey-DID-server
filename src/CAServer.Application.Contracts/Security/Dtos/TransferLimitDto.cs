@@ -8,6 +8,7 @@ public class TransferLimitDto
     public string Symbol { get; set; }
     public long SingleLimit { get; set; }
     public long DailyLimit { get; set; }
+    public bool Restricted { get; set; }
 }
 
 public class IndexerTransferLimitList

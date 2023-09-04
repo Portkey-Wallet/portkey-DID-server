@@ -28,7 +28,7 @@ public class UserSecurityController : CAServerController
         return await _userSecurityAppService.GetTransferLimitListByCaHashAsync(input);
     }
     
-    [HttpGet("transferLimit")]
+    [HttpGet("managerApproved")]
     public async Task<ManagerApprovedListResultDto> GetManagerApprovedListByCaHashAsync(
         GetManagerApprovedListByCaHashDto input)
     {

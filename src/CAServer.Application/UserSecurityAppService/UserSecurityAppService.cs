@@ -70,6 +70,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var dic = new Dictionary<string, TransferLimitDto>();
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
+                if (token.Balance <= 0) continue;
                 dic[token.ChainId + "-" + token.TokenInfo.Symbol] = new TransferLimitDto()
                 {
                     ChainId = token.ChainId,
@@ -91,6 +92,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 {
                     dic[tempKey].DailyLimit = transferLimit.DailyLimit;
                     dic[tempKey].SingleLimit = transferLimit.SingleLimit;
+                    dic[tempKey].Restricted = !(transferLimit.DailyLimit == -1 && transferLimit.SingleLimit == -1);
                 }
             }
 
