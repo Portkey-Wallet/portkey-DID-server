@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Security;
 using CAServer.Security.Dtos;
@@ -26,6 +27,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly ChainOptions _chainOptions;
     private readonly IUserAssetsProvider _assetsProvider;
     private readonly IUserSecurityProvider _userSecurityProvider;
+    private readonly IGuardianProvider _guardianProvider;
     private readonly IDistributedEventBus _distributedEventBus;
 
 
@@ -33,11 +35,13 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         IUserSecurityProvider userSecurityProvider,
         IOptionsSnapshot<ChainOptions> chainOptions, IContractProvider contractProvider,
         ILogger<UserSecurityAppService> logger,
-        IUserAssetsProvider assetsProvider, IDistributedEventBus distributedEventBus)
+        IUserAssetsProvider assetsProvider, IDistributedEventBus distributedEventBus,
+        IGuardianProvider guardianProvider)
     {
         _logger = logger;
         _assetsProvider = assetsProvider;
         _distributedEventBus = distributedEventBus;
+        _guardianProvider = guardianProvider;
         _chainOptions = chainOptions.Value;
         _securityOptions = securityOptions.Value;
         _contractProvider = contractProvider;
@@ -106,7 +110,16 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             }
 
             // If the transferLimit is updated, the token transferLimit will be overwritten
-            var res = await _userSecurityProvider.GetTransferLimitListByCaHash(input.CaHash);
+            // var res = await _userSecurityProvider.GetTransferLimitListByCaHash(input.CaHash);
+            var res = new IndexerTransferLimitList
+            {
+                CaHolderTransferLimit = new CaHolderTransferLimit
+                {
+                    TotalRecordCount = 0,
+                    Data = new List<TransferLimitDto>()
+                }
+            };
+
             _logger.LogDebug("CaHash: {caHash} have {COUNT} transfer limit change history.", input.CaHash,
                 res.CaHolderTransferLimit.TotalRecordCount);
 
@@ -161,13 +174,56 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         }
     }
 
-    public async Task<TokenBalanceTransferThresholdResultDto> GetTokenBalanceTransferThresholdAsync()
+    public async Task<TokenBalanceTransferCheckAsyncResultDto> GetTokenBalanceTransferCheckAsync(
+        GetTokenBalanceTransferCheckDto input)
     {
-        return new TokenBalanceTransferThresholdResultDto()
+        try
         {
-            TotalRecordCount = _securityOptions.TokenBalanceTransferThreshold.Count,
-            Data = _securityOptions.TokenBalanceTransferThreshold
-        };
+            var guardianCount = 0;
+            foreach (var chainInfo in _chainOptions.ChainInfos)
+            {
+                var holderInfo = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
+                    chainInfo.Value.ChainId);
+                if (holderInfo?.GuardianList?.Guardians?.Count > 0)
+                    guardianCount += holderInfo.GuardianList.Guardians.Count;
+            }
+
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} guardianCount.", input.CaHash, guardianCount);
+            if (guardianCount > 1) return new TokenBalanceTransferCheckAsyncResultDto();
+
+            var caAddrs = new List<CAAddressInfo>();
+            foreach (var chainInfo in _chainOptions.ChainInfos)
+            {
+                var output = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
+                    chainInfo.Value.ChainId);
+                caAddrs.Add(new CAAddressInfo
+                {
+                    ChainId = chainInfo.Key,
+                    CaAddress = output.CaAddress.ToBase58()
+                });
+            }
+
+            // Obtain the balance of all token assets by caHash
+            var assert = await _assetsProvider.SearchUserAssetsAsync(caAddrs, "", 0, 200);
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} token assert.", input.CaHash,
+                assert.CaHolderSearchTokenNFT.TotalRecordCount);
+
+            foreach (var token in assert.CaHolderSearchTokenNFT.Data)
+            {
+                if (token.TokenInfo == null) continue;
+                if (token.Balance > _securityOptions.TokenBalanceTransferThreshold[token.TokenInfo.Symbol])
+                    return new TokenBalanceTransferCheckAsyncResultDto() { IsSafe = false };
+            }
+
+            return new TokenBalanceTransferCheckAsyncResultDto();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                "An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {caHash}", input.CaHash);
+            throw new UserFriendlyException(
+                $"An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {input.CaHash}");
+        }
     }
 
     private async Task<bool> AddUserTransferLimitHistoryAsync(string caHash, IndexerSearchTokenNft token)
