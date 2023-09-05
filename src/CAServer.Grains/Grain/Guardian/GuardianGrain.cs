@@ -30,7 +30,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
     {
         var result = new GrainResultDto<GuardianGrainDto>();
 
-        if (!string.IsNullOrEmpty(State.IdentifierHash))
+        if (!string.IsNullOrEmpty(State.IdentifierHash) && !State.IsDeleted)
         {
             result.Message = "Guardian hash info has already exist.";
             result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
@@ -42,7 +42,8 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         State.OriginalIdentifier = originalIdentifier;
         State.Salt = salt;
         State.IdentifierHash = identifierHash;
-
+        State.IsDeleted = false;
+        
         await WriteStateAsync();
         result.Success = true;
 
@@ -54,7 +55,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
     {
         var result = new GrainResultDto<GuardianGrainDto>();
 
-        if (string.IsNullOrEmpty(State.IdentifierHash))
+        if (string.IsNullOrEmpty(State.IdentifierHash) || State.IsDeleted)
         {
             result.Message = "Guardian not exist.";
             return Task.FromResult(result);
@@ -63,5 +64,23 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         result.Success = true;
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
         return Task.FromResult(result);
+    }
+
+    public async Task<GrainResultDto<GuardianGrainDto>> DeleteGuardian()
+    {
+        var result = new GrainResultDto<GuardianGrainDto>();
+
+        if (string.IsNullOrEmpty(State.IdentifierHash) || State.IsDeleted)
+        {
+            result.Message = "Guardian not exist.";
+            return result;
+        }
+
+        State.IsDeleted = true;
+        await WriteStateAsync();
+        result.Success = true;
+
+        result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        return result;
     }
 }

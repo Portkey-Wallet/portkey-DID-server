@@ -20,4 +20,5 @@ public class DefaultToken
     public string ImageUrl { get; set; }
     public string Symbol { get; set; }
     public string Decimals { get; set; }
+    public long IssueChainId { get; set; }
 }

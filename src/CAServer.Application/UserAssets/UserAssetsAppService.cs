@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
@@ -11,7 +12,6 @@ using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Users;
@@ -30,11 +30,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IUserContactProvider _userContactProvider;
     private readonly TokenInfoOptions _tokenInfoOptions;
     private readonly IImageProcessProvider _imageProcessProvider;
+    private readonly ChainOptions _chainOptions;
+    private readonly IContractProvider _contractProvider;
+    private const int MaxResultCount = 10;
+    public const string DefaultSymbol = "SEED-0";
+    public const string DefaultSuffix = "svg";
+    public const string ReplaceSuffix = "png";
+    private readonly SeedImageOptions _seedImageOptions;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
-        IImageProcessProvider imageProcessProvider)
+        IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
+        IContractProvider contractProvider, IOptions<SeedImageOptions> seedImageOptions)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -42,6 +50,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenInfoOptions = tokenInfoOptions.Value;
         _tokenAppService = tokenAppService;
         _imageProcessProvider = imageProcessProvider;
+        _contractProvider = contractProvider;
+        _seedImageOptions = seedImageOptions.Value;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -180,7 +191,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 token.Price = priceDict[token.Symbol];
                 token.BalanceInUsd = balanceInUsd.ToString();
             }
-            
+
             return dto;
         }
         catch (Exception e)
@@ -226,8 +237,31 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 }
                 else
                 {
-                    nftCollection.ImageUrl = _imageProcessProvider.GetResizeImage(
-                        nftCollectionInfo.NftCollectionInfo.ImageUrl, requestDto.Width, requestDto.Height);
+                    _logger.LogDebug("GetNFTCollectionsAsync. Current Deal Symbol is {symbol}", nftCollection.Symbol);
+                    if (_seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var imageUrl))
+                    {
+                        nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
+                            imageUrl, requestDto.Width, requestDto.Height);
+                        dto.Data.Add(nftCollection);
+                        continue;
+                    }
+
+                    if (!nftCollectionInfo.NftCollectionInfo.ImageUrl.IsNullOrWhiteSpace())
+                    {
+                        _logger.LogDebug("GetNFTCollectionsAsync. Current Deal image is {image}",
+                            nftCollectionInfo.NftCollectionInfo.ImageUrl);
+                        var suffix = GetImageUrlSuffix(nftCollectionInfo.NftCollectionInfo.ImageUrl);
+                        if (suffix.Equals(DefaultSuffix))
+                        {
+                            nftCollectionInfo.NftCollectionInfo.ImageUrl = nftCollectionInfo.NftCollectionInfo.ImageUrl;
+                        }
+                        else
+                        {
+                            nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
+                                nftCollectionInfo.NftCollectionInfo.ImageUrl, requestDto.Width, requestDto.Height);
+                        }
+                    }
+
                     dto.Data.Add(nftCollection);
                 }
             }
@@ -278,10 +312,29 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
-                nftItem.ImageUrl =
-                    _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height);
-                nftItem.ImageLargeUrl = _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl,
-                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO);
+
+                _logger.LogDebug("GetNFTItemsAsync. Current Deal image is {image}", nftInfo.NftInfo.ImageUrl);
+                if (!string.IsNullOrWhiteSpace(nftItem.ImageUrl))
+                {
+                    var suffix = GetImageUrlSuffix(nftItem.ImageUrl);
+                    var symbolSuffix = nftInfo.NftInfo.Symbol.Split("-").Last();
+                    var parseInt = int.TryParse(symbolSuffix, out var symbolSuffixInt);
+                    if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
+                    {
+                        nftItem.ImageUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
+                        nftItem.ImageLargeUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
+                    }
+                    else
+                    {
+                        nftItem.ImageUrl =
+                            await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
+                                requestDto.Height);
+                        nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(
+                            nftInfo.NftInfo.ImageUrl,
+                            (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE,
+                            (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO);
+                    }
+                }
 
                 dto.Data.Add(nftItem);
             }
@@ -502,9 +555,24 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
 
-                    item.NftInfo.ImageUrl =
-                        _imageProcessProvider.GetResizeImage(searchItem.NftInfo.ImageUrl, requestDto.Width,
-                            requestDto.Height);
+                    if (!string.IsNullOrWhiteSpace(item.NftInfo.ImageUrl))
+                    {
+                        _logger.LogDebug("GetResizeImageAsync. current imageUrl is {imageUrl}", item.NftInfo.ImageUrl);
+                        var suffix = GetImageUrlSuffix(item.NftInfo.ImageUrl);
+                        var symbolSuffix = searchItem.NftInfo.Symbol.Split("-").Last();
+                        var parseInt = int.TryParse(symbolSuffix, out var symbolSuffixInt);
+                        if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
+                        {
+                            item.NftInfo.ImageUrl = searchItem.NftInfo.ImageUrl.Replace(DefaultSuffix,ReplaceSuffix);
+                        }
+                        else
+                        {
+                            item.NftInfo.ImageUrl =
+                                await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl,
+                                    requestDto.Width,
+                                    requestDto.Height);
+                        }
+                    }
                 }
 
                 dto.Data.Add(item);
@@ -533,6 +601,51 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         return dto;
     }
 
+    public async Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto)
+    {
+        var caAddress = new List<string>
+        {
+            requestDto.CaAddress
+        };
+        var result = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddress);
+        if (result == null || result.CaHolderManagerInfo.IsNullOrEmpty())
+        {
+            return new TokenInfoDto();
+        }
+
+        var caHash = result.CaHolderManagerInfo.First().CaHash;
+        var caAddressInfos = new List<CAAddressInfo>();
+        try
+        {
+            foreach (var chainInfo in _chainOptions.ChainInfos)
+            {
+                var output =
+                    await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
+                caAddressInfos.Add(new CAAddressInfo
+                {
+                    ChainId = chainInfo.Key,
+                    CaAddress = output.CaAddress.ToBase58()
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetTokenBalanceAsync Error. {dto}", requestDto);
+            throw new UserFriendlyException("Internal service error, please try again later.");
+        }
+
+
+        var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, requestDto.Symbol,
+            0, MaxResultCount);
+        var resCaHolderTokenBalanceInfo = res.CaHolderTokenBalanceInfo.Data;
+        var totalBalance = resCaHolderTokenBalanceInfo.Sum(tokenInfo => tokenInfo.Balance);
+
+        return new TokenInfoDto
+        {
+            Balance = totalBalance.ToString()
+        };
+    }
+
     private async Task<Dictionary<string, decimal>> GetSymbolPrice(List<string> symbols)
     {
         try
@@ -556,5 +669,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "get symbols price failed, symbol={symbols}", symbols);
             return new Dictionary<string, decimal>();
         }
+    }
+
+    private string GetImageUrlSuffix(string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return null;
+        }
+
+        var imageUrlArray = imageUrl.Split(".");
+        return imageUrlArray[^1].ToLower();
     }
 }
