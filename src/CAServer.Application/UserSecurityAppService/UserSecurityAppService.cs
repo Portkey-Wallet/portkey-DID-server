@@ -93,7 +93,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 {
                     dic[tempKey].DailyLimit = transferLimit.DailyLimit;
                     dic[tempKey].SingleLimit = transferLimit.SingleLimit;
-                    dic[tempKey].Restricted = !(transferLimit.DailyLimit == -1 && transferLimit.SingleLimit == -1);
+                    dic[tempKey].Restricted = !(transferLimit.DailyLimit == "-1" && transferLimit.SingleLimit == "-1");
                 }
             }
 
@@ -231,8 +231,11 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         {
             ChainId = token.ChainId,
             Symbol = token.TokenInfo.Symbol,
-            DailyLimit = dailyTransferLimit,
-            SingleLimit = singleTransferLimit,
+            Decimals = _securityOptions.DefaultTokenDecimalDict[token.TokenInfo.Symbol] == 0
+                ? _securityOptions.DefaultTokenDecimals
+                : _securityOptions.DefaultTokenDecimalDict[token.TokenInfo.Symbol],
+            DailyLimit = dailyTransferLimit.ToString(),
+            SingleLimit = singleTransferLimit.ToString(),
             Restricted = true
         };
     }

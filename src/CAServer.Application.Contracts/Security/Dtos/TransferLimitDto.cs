@@ -6,8 +6,9 @@ public class TransferLimitDto
 {
     public string ChainId { get; set; }
     public string Symbol { get; set; }
-    public long SingleLimit { get; set; }
-    public long DailyLimit { get; set; }
+    public long Decimals { get; set; }
+    public string SingleLimit { get; set; }
+    public string DailyLimit { get; set; }
     public bool Restricted { get; set; }
 }
 
