@@ -53,25 +53,12 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     {
         try
         {
-            var caAddrs = new List<CAAddressInfo>();
-            foreach (var chainInfo in _chainOptions.ChainInfos)
-            {
-                var output = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
-                    chainInfo.Value.ChainId);
-                caAddrs.Add(new CAAddressInfo
-                {
-                    ChainId = chainInfo.Key,
-                    CaAddress = output.CaAddress.ToBase58()
-                });
-            }
-
             // Obtain the balance of all token assets by caHash
-            var assert =
-                await _assetsProvider.SearchUserAssetsAsync(caAddrs, "", input.SkipCount, input.MaxResultCount);
+            var assert = await GetUserAssetsAsync(input.CaHash);
             if (assert.CaHolderSearchTokenNFT.TotalRecordCount == 0)
             {
                 _logger.LogDebug("CaHash: {caHash} don't have token assert.", input.CaHash);
-                return new TransferLimitListResultDto() { Data = new List<TransferLimitDto>() };
+                return new TransferLimitListResultDto { Data = new List<TransferLimitDto>() };
             }
 
             _logger.LogDebug("CaHash: {caHash} have {COUNT} token assert.", input.CaHash,
@@ -82,31 +69,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
                 if (token.TokenInfo == null || !await AddUserTransferLimitHistoryAsync(input.CaHash, token)) continue;
-
-                // dic[token.ChainId + "-" + token.TokenInfo.Symbol] = await GeneratorTransferLimitAsync();
-                var singleTransferLimit = _securityOptions.DefaultTokenTransferLimit;
-                var dailyTransferLimit = _securityOptions.DefaultTokenTransferLimit;
-
-                if (_securityOptions.TokenTransferLimitDict[token.ChainId].SingleTransferLimit
-                    .TryGetValue(token.TokenInfo.Symbol, out var singleLimit))
-                {
-                    singleTransferLimit = singleLimit;
-                }
-
-                if (_securityOptions.TokenTransferLimitDict[token.ChainId].DailyTransferLimit
-                    .TryGetValue(token.TokenInfo.Symbol, out var dailyLimit))
-                {
-                    dailyTransferLimit = dailyLimit;
-                }
-
-
-                dic[token.ChainId + "-" + token.TokenInfo.Symbol] = new TransferLimitDto()
-                {
-                    ChainId = token.ChainId,
-                    Symbol = token.TokenInfo.Symbol,
-                    DailyLimit = dailyTransferLimit,
-                    SingleLimit = singleTransferLimit
-                };
+                dic[token.ChainId + "-" + token.TokenInfo.Symbol] = await GeneratorTransferLimitAsync(token);
             }
 
             // If the transferLimit is updated, the token transferLimit will be overwritten
@@ -158,7 +121,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         {
             var res = await _userSecurityProvider.GetManagerApprovedListByCaHash(input.CaHash, input.Spender,
                 input.Symbol, input.SkipCount, input.MaxResultCount);
-            return new ManagerApprovedListResultDto()
+            return new ManagerApprovedListResultDto
             {
                 TotalRecordCount = res.CaHolderManagerApproved.TotalRecordCount,
                 Data = res.CaHolderManagerApproved.Data
@@ -182,29 +145,15 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             var guardianCount = 0;
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
-                var holderInfo = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
+                var info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
                     chainInfo.Value.ChainId);
-                if (holderInfo?.GuardianList?.Guardians?.Count > 0)
-                    guardianCount += holderInfo.GuardianList.Guardians.Count;
+                if (info?.GuardianList?.Guardians?.Count > 0) guardianCount += info.GuardianList.Guardians.Count;
             }
 
             _logger.LogDebug("CaHash: {caHash} have {COUNT} guardianCount.", input.CaHash, guardianCount);
             if (guardianCount > 1) return new TokenBalanceTransferCheckAsyncResultDto();
 
-            var caAddrs = new List<CAAddressInfo>();
-            foreach (var chainInfo in _chainOptions.ChainInfos)
-            {
-                var output = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
-                    chainInfo.Value.ChainId);
-                caAddrs.Add(new CAAddressInfo
-                {
-                    ChainId = chainInfo.Key,
-                    CaAddress = output.CaAddress.ToBase58()
-                });
-            }
-
-            // Obtain the balance of all token assets by caHash
-            var assert = await _assetsProvider.SearchUserAssetsAsync(caAddrs, "", 0, 200);
+            var assert = await GetUserAssetsAsync(input.CaHash);
             _logger.LogDebug("CaHash: {caHash} have {COUNT} token assert.", input.CaHash,
                 assert.CaHolderSearchTokenNFT.TotalRecordCount);
 
@@ -212,7 +161,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             {
                 if (token.TokenInfo == null) continue;
                 if (token.Balance > _securityOptions.TokenBalanceTransferThreshold[token.TokenInfo.Symbol])
-                    return new TokenBalanceTransferCheckAsyncResultDto() { IsSafe = false };
+                    return new TokenBalanceTransferCheckAsyncResultDto { IsSafe = false };
             }
 
             return new TokenBalanceTransferCheckAsyncResultDto();
@@ -241,5 +190,50 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         }
 
         return true;
+    }
+
+    private async Task<IndexerSearchTokenNfts> GetUserAssetsAsync(string caHash)
+    {
+        var caAddrs = new List<CAAddressInfo>();
+        foreach (var chainInfo in _chainOptions.ChainInfos)
+        {
+            var output = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null,
+                chainInfo.Value.ChainId);
+            caAddrs.Add(new CAAddressInfo
+            {
+                ChainId = chainInfo.Key,
+                CaAddress = output.CaAddress.ToBase58()
+            });
+        }
+
+        // Obtain the balance of all token assets by caHash
+        return await _assetsProvider.SearchUserAssetsAsync(caAddrs, "", 0, 200);
+    }
+
+    private async Task<TransferLimitDto> GeneratorTransferLimitAsync(IndexerSearchTokenNft token)
+    {
+        var singleTransferLimit = _securityOptions.DefaultTokenTransferLimit;
+        var dailyTransferLimit = _securityOptions.DefaultTokenTransferLimit;
+
+        if (_securityOptions.TokenTransferLimitDict[token.ChainId].SingleTransferLimit
+            .TryGetValue(token.TokenInfo.Symbol, out var singleLimit))
+        {
+            singleTransferLimit = singleLimit;
+        }
+
+        if (_securityOptions.TokenTransferLimitDict[token.ChainId].DailyTransferLimit
+            .TryGetValue(token.TokenInfo.Symbol, out var dailyLimit))
+        {
+            dailyTransferLimit = dailyLimit;
+        }
+
+        return new TransferLimitDto
+        {
+            ChainId = token.ChainId,
+            Symbol = token.TokenInfo.Symbol,
+            DailyLimit = dailyTransferLimit,
+            SingleLimit = singleTransferLimit,
+            Restricted = true
+        };
     }
 }
