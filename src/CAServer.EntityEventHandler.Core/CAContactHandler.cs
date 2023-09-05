@@ -33,7 +33,6 @@ public class CAContactHandler : IDistributedEventHandler<ContactCreateEto>,
         try
         {
             var contact = _objectMapper.Map<ContactCreateEto, ContactIndex>(eventData);
-            contact.ModificationTime = DateTime.UtcNow;
             
             await _contactRepository.AddAsync(contact);
             _logger.LogDebug("add success");

@@ -15,4 +15,5 @@ public interface IUserAssetsAppService
     SymbolImagesDto GetSymbolImagesAsync();
 
 
+    Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto);
 }

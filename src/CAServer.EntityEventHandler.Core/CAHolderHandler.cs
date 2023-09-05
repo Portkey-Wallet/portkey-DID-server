@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
@@ -16,7 +17,8 @@ using Volo.Abp.ObjectMapping;
 namespace CAServer.EntityEventHandler.Core;
 
 public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
-    IDistributedEventHandler<UpdateCAHolderEto>
+    IDistributedEventHandler<UpdateCAHolderEto>,
+    IDistributedEventHandler<DeleteCAHolderEto>
     , ITransientDependency
 {
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
@@ -24,18 +26,24 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly ILogger<CAHolderHandler> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IUserTokenAppService _userTokenAppService;
+    private readonly IContactProvider _contactProvider;
+    private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
         ILogger<CAHolderHandler> logger,
         IClusterClient clusterClient,
-        IUserTokenAppService userTokenAppService)
+        IUserTokenAppService userTokenAppService,
+        IContactProvider contactProvider,
+        INESTRepository<ContactIndex, Guid> contactRepository)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
         _logger = logger;
         _clusterClient = clusterClient;
         _userTokenAppService = userTokenAppService;
+        _contactProvider = contactProvider;
+        _contactRepository = contactRepository;
     }
 
     public async Task HandleEventAsync(CreateUserEto eventData)
@@ -69,10 +77,46 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         try
         {
             await _caHolderRepository.UpdateAsync(_objectMapper.Map<UpdateCAHolderEto, CAHolderIndex>(eventData));
+            _logger.LogInformation("caHolder wallet name update success, id: {id}", eventData.Id);
+
+            var contacts = await _contactProvider.GetAddedContactsAsync(eventData.UserId);
+            if (contacts == null || contacts.Count == 0) return;
+
+            foreach (var contact in contacts)
+            {
+                if (contact.CaHolderInfo == null) return;
+                var grain = _clusterClient.GetGrain<IContactGrain>(contact.Id);
+                var updateResult = await grain.UpdateWalletName(eventData.Nickname);
+
+                if (!updateResult.Success)
+                {
+                    _logger.LogWarning("contact wallet name update fail, contactId: {id}, message:{message}",
+                        contact.Id, updateResult.Message);
+                    break;
+                }
+
+                contact.CaHolderInfo.WalletName = eventData.Nickname;
+                contact.ModificationTime = DateTime.UtcNow;
+                await _contactRepository.UpdateAsync(contact);
+                _logger.LogInformation("contact wallet name update success, contactId: {id}", contact.Id);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "update nick name error, id:{id}, nickName:{nickName}, userId:{userId}",
+                eventData.Id.ToString(), eventData.Nickname, eventData.UserId.ToString());
+        }
+    }
+
+    public async Task HandleEventAsync(DeleteCAHolderEto eventData)
+    {
+        try
+        {
+            await _caHolderRepository.UpdateAsync(_objectMapper.Map<DeleteCAHolderEto, CAHolderIndex>(eventData));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Delete holder error, userId: {userId}", eventData.UserId.ToString());
         }
     }
 }

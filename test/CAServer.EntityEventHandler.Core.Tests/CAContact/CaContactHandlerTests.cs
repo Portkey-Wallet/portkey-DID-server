@@ -40,8 +40,7 @@ public class CaContactHandlerTests : CAServerEntityEventHandlerTestBase
             Name = "test",
             Addresses = list,
             UserId = Guid.NewGuid(),
-            IsDeleted = true,
-            ModificationTime = new DateTime()
+            IsDeleted = true
         };
         await _eventBus.PublishAsync(chain);
 
@@ -85,8 +84,7 @@ public class CaContactHandlerTests : CAServerEntityEventHandlerTestBase
             Name = "test",
             Addresses = list,
             UserId = Guid.Parse("fde64344-e2b3-485b-8c6d-07954cc76669"),
-            IsDeleted = true,
-            ModificationTime = new DateTime()
+            IsDeleted = true
         };
         await _eventBus.PublishAsync(addEto);
         var addresult = await _searchAppService.GetListByLucenceAsync("contactindex", new GetListInput()
@@ -101,8 +99,7 @@ public class CaContactHandlerTests : CAServerEntityEventHandlerTestBase
             Id = Guid.Parse("f77dd0c8-3af4-4d3b-a739-c80bbd79a322"),
             Index = "2",
             Name = "test2",
-            UserId = Guid.Parse("fde64344-e2b3-485b-8c6d-07954cc76669"),
-            ModificationTime = new DateTime()
+            UserId = Guid.Parse("fde64344-e2b3-485b-8c6d-07954cc76669")
         };
         await _eventBus.PublishAsync(updateEto);
 

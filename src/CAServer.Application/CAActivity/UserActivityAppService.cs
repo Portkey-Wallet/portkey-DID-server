@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
@@ -14,7 +15,6 @@ using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -32,10 +32,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IUserContactProvider _userContactProvider;
     private readonly ActivitiesIcon _activitiesIcon;
     private readonly IImageProcessProvider _imageProcessProvider;
+    private readonly IContractProvider _contractProvider;
+    private readonly ChainOptions _chainOptions;
+    private const int MaxResultCount = 10;
+    private readonly IUserAssetsProvider _userAssetsProvider;
+    public const string DefaultSuffix = "svg";
+    public const string ReplaceSuffix = "png";
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
-        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider)
+        IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
+        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions, IUserAssetsProvider userAssetsProvider)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -43,6 +50,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _userContactProvider = userContactProvider;
         _activitiesIcon = activitiesIconOption?.Value;
         _imageProcessProvider = imageProcessProvider;
+        _contractProvider = contractProvider;
+        _userAssetsProvider = userAssetsProvider;
+        _chainOptions = chainOptions.Value;
     }
 
 
@@ -137,6 +147,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
 
+            if (string.IsNullOrWhiteSpace(activityDto.NftInfo.ImageUrl))
+            {
+                return activityDto;
+            }
+
+            var imageUrl = activityDto.NftInfo.ImageUrl;
+            var imageUrlSuffix = GetImageUrlSuffix(imageUrl);
+            if (!DefaultSuffix.Equals(imageUrlSuffix))
+            {
+                return activityDto;
+            }
+            var imageUrlReplaceSuffix = imageUrl.Replace(DefaultSuffix, ReplaceSuffix);
+            activityDto.NftInfo.ImageUrl = imageUrlReplaceSuffix;
             return activityDto;
         }
         catch (Exception e)
@@ -145,6 +168,53 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return new GetActivityDto();
         }
     }
+
+    public async Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto request)
+    {
+        var result = await _userAssetsProvider.GetCaHolderManagerInfoAsync(new List<string> { request.CaAddress });
+        if (result == null || result.CaHolderManagerInfo.IsNullOrEmpty())
+        {
+            return string.Empty;
+        }
+
+        var caHash = result.CaHolderManagerInfo.First().CaHash;
+        var caAddressInfos = new List<CAAddressInfo>();
+        try
+        {
+            foreach (var chainInfo in _chainOptions.ChainInfos)
+            {
+                var output =
+                    await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
+                caAddressInfos.Add(new CAAddressInfo
+                {
+                    ChainId = chainInfo.Key,
+                    CaAddress = output.CaAddress.ToBase58()
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
+            throw new UserFriendlyException("Internal service error, please try again later.");
+        }
+
+        var filterTypes = new List<string>
+        {
+            "CreateCAHolder"
+        };
+        var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, string.Empty,
+            string.Empty, filterTypes, 0, MaxResultCount);
+
+        if (transactions.CaHolderTransaction.Data.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var date = transactions.CaHolderTransaction.Data[0].Timestamp;
+
+        return date.ToString();
+    }
+
 
     private async Task GetActivityName(List<string> addresses, GetActivityDto dto, IndexerTransaction transaction)
     {
@@ -282,7 +352,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 dto.NftInfo = new NftDetail
                 {
                     NftId = ht.NftInfo.Symbol.Split("-").Last(),
-                    ImageUrl = _imageProcessProvider.GetResizeImage(ht.NftInfo.ImageUrl, weidth, height),
+
+                    ImageUrl = await _imageProcessProvider.GetResizeImageAsync(ht.NftInfo.ImageUrl, weidth, height),
                     Alias = ht.NftInfo.TokenName
                 };
             }
@@ -372,5 +443,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             _logger.LogError(e, "Get transaction fee price failed.");
             return new List<decimal>();
         }
+    }
+
+    private string GetImageUrlSuffix(string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return null;
+        }
+
+        var imageUrlArray = imageUrl.Split(".");
+        return imageUrlArray[^1].ToLower();
     }
 }

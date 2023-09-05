@@ -41,7 +41,6 @@ public class CaHolderTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
         services.AddSingleton(_currentUser);
     }

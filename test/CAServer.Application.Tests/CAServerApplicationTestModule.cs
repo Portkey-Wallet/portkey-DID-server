@@ -1,19 +1,27 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Threading.Tasks;
+using CAServer.AppleAuth.Provider;
 using CAServer.Bookmark;
+using CAServer.Common;
 using CAServer.EntityEventHandler.Core;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 
 namespace CAServer;
 
@@ -28,7 +36,7 @@ public class CAServerApplicationTestModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         // load config from [appsettings.Development.json]
-        var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+        var environmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
         var builder = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
@@ -42,6 +50,10 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
+        
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+
+        ConfigureGraphQl(context);
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
@@ -115,6 +127,22 @@ public class CAServerApplicationTestModule : AbpModule
             options.Iso = "65";
         });
         context.Services.Configure<SecurityOptions>(options => { options.DefaultTokenTransferLimit = 100000; });
+
+        context.Services.Configure<AppleCacheOptions>(options =>
+        {
+            options.Configuration = "";
+            options.Db = 2;
+        });
         base.ConfigureServices(context);
     }
+
+    private void ConfigureGraphQl(ServiceConfigurationContext context)
+    {
+        context.Services.AddSingleton(new GraphQLHttpClient(
+            "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
+            new NewtonsoftJsonSerializer()));
+        context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
+    }
+    
+
 }

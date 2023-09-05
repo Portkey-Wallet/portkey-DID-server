@@ -22,7 +22,6 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(getMockThirdPartOptions());
     }
 

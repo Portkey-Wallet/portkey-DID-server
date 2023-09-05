@@ -22,7 +22,6 @@ public class GuardianProviderTest : CAServerApplicationTestBase
 
     protected override void BeforeAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         var graphQlHelper = Substitute.For<IGraphQLHelper>();
         var graphQlClient = Substitute.For<IGraphQLClient>();
         // var contractProvider = Substitute.For<IContractProvider>();

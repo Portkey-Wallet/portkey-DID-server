@@ -17,12 +17,6 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
     {
         _orderStatusProvider = GetRequiredService<IOrderStatusProvider>();
     }
-    
-    protected override void AfterAddApplication(IServiceCollection services)
-    {
-        base.AfterAddApplication(services);
-        //services.AddSingleton(GetOrderGrain());
-    }
 
     [Fact]
     public async Task AddOrderStatusInfoAsync()

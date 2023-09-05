@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -8,6 +9,7 @@ using CAServer.Hub;
 using CAServer.Options;
 using Microsoft.Extensions.Options;
 using Moq;
+using Scriban.Runtime.Accessors;
 
 namespace CAServer.Google;
 
@@ -28,10 +30,12 @@ public partial class GoogleRecaptchaTests
 
     private IOptions<GoogleRecaptchaOptions> GetGoogleRecaptchaOptions()
     {
+        var dic = new Dictionary<string, string>();
+        dic.Add("IOS","bcd");
         return new OptionsWrapper<GoogleRecaptchaOptions>(
             new GoogleRecaptchaOptions
             {
-                Secret = "*****",
+                SecretMap = dic,
                 VerifyUrl = "https://www.google.com/recaptcha/api/siteverify"
             });
     }

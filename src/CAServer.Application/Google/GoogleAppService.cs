@@ -7,6 +7,7 @@ using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Google;
@@ -57,8 +58,15 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         };
     }
 
-    public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken)
+    public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken, PlatformType platformType)
     {
+        var platformTypeName = platformType.ToString();
+        var getSuccess = _googleRecaptchaOption.SecretMap.TryGetValue(platformTypeName, out var secret);
+        if (!getSuccess)
+        {
+            throw new UserFriendlyException("Google Recaptcha Secret Not Found");
+        }
+
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");
@@ -67,7 +75,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
 
         var content = new FormUrlEncodedContent(new[]
         {
-            new KeyValuePair<string, string>("secret", _googleRecaptchaOption.Secret),
+            new KeyValuePair<string, string>("secret", secret),
             new KeyValuePair<string, string>("response", recaptchaToken)
         });
         _logger.LogDebug("VerifyGoogleRecaptchaToken content is {content}", content.ToString());
