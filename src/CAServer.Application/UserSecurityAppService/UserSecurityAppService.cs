@@ -230,7 +230,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     {
         var history =
             await _userSecurityProvider.GetUserTransferLimitHistory(caHash, token.ChainId, token.TokenInfo.Symbol);
-        if (string.IsNullOrEmpty(history.Symbol) || history.Symbol != token.TokenInfo.Symbol ||
+        if (history == null || string.IsNullOrEmpty(history.Symbol) || history.Symbol != token.TokenInfo.Symbol ||
             history.ChainId != token.ChainId)
         {
             if (token.Balance <= 0) return false;
