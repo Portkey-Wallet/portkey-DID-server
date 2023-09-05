@@ -56,7 +56,8 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "RemoveManagerInfo",
         "AddManagerInfo", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play",
+        "BeanGoTown-Bingo","BeanGoTown-Play"
     };
 
     public static readonly List<string> ShowNftTypes = new()
