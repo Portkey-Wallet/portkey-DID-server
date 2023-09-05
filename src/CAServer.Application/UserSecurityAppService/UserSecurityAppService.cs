@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
@@ -227,15 +228,18 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             dailyTransferLimit = dailyLimit;
         }
 
+        var decimals = _securityOptions.DefaultTokenDecimalDict[token.TokenInfo.Symbol] == 0
+            ? _securityOptions.DefaultTokenDecimals
+            : _securityOptions.DefaultTokenDecimalDict[token.TokenInfo.Symbol];
+
+
         return new TransferLimitDto
         {
             ChainId = token.ChainId,
             Symbol = token.TokenInfo.Symbol,
-            Decimals = _securityOptions.DefaultTokenDecimalDict[token.TokenInfo.Symbol] == 0
-                ? _securityOptions.DefaultTokenDecimals
-                : _securityOptions.DefaultTokenDecimalDict[token.TokenInfo.Symbol],
-            DailyLimit = dailyTransferLimit.ToString(),
-            SingleLimit = singleTransferLimit.ToString(),
+            Decimals = decimals,
+            DailyLimit = (dailyTransferLimit * Math.Pow(10, decimals)).ToString(),
+            SingleLimit = (singleTransferLimit * Math.Pow(10, decimals)).ToString(),
             Restricted = true
         };
     }
