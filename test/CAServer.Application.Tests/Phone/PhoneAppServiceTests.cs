@@ -1,4 +1,5 @@
 using CAServer.IpInfo;
+using ImageMagick;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -34,6 +35,27 @@ public partial class PhoneInfoServiceTests : CAServerApplicationTestBase
     [Fact]
     public async void PhoneInfoSuccessTest()
     {
+        
+        
+        var inputImagePath = "/Users/wangyue/Desktop/SEED-100000001.svg";
+        var  outputImagePath = "/Users/wangyue/Desktop/100000001.png";
+
+        try
+        {
+            using var image = new MagickImage(inputImagePath);
+            image.Format = MagickFormat.Png;
+
+            image.Write(outputImagePath);
+                
+            //_logger.LogDebug("image format convert success！");
+        }
+        catch (MagickException ex)
+        {
+            //_logger.LogError($"image format failed : {ex.Message}");
+        }
+        
+        
+        
         _httpContextAccessor.HttpContext.Request.Headers.Add("X-Forwarded-For", "0.0.0.0");
         var res = await _phoneAppService.GetPhoneInfoAsync();
         
