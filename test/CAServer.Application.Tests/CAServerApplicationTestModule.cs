@@ -132,6 +132,12 @@ public class CAServerApplicationTestModule : AbpModule
             options.Configuration = "";
             options.Db = 2;
         });
+
+        context.Services.Configure<AwsThumbnailOptions>(options =>
+        {
+            options.ImBaseUrl = "https:127.0.0.1";
+            options.PortKeyBaseUrl = "https:127.0.0.1";
+        });
         base.ConfigureServices(context);
     }
 

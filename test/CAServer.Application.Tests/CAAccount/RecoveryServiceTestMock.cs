@@ -1,22 +1,17 @@
 using System;
 using System.Collections.Generic;
 using AElf.Types;
-using CAServer.CAAccount.Dtos;
 using CAServer.CAAccount.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
-using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
-using Microsoft.Extensions.Options;
 using Moq;
 using Portkey.Contracts.CA;
 using GuardianDto = CAServer.Guardian.Provider.GuardianDto;
-using Token = CAServer.UserAssets.Dtos.Token;
-using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
 
 namespace CAServer.CAAccount;
 
