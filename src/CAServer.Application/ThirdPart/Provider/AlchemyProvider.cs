@@ -124,30 +124,13 @@ public class AlchemyProvider : ISingletonDependency
     {
         var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.QueryNftFiatList,
-            header: GetNftAlchemyRequestHeader()
+            header: GetNftAlchemyRequestHeader(),
+            withLog: true
         );
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             JsonConvert.SerializeObject(res));
         return res.Data;
     }
-
-    /// <summary>
-    ///     Notice Alchemy NFT release result
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    public async Task<List<AlchemyFiatDto>> GetFiatList(string type)
-    {
-        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.BaseUrl,
-            AlchemyApi.QueryFiatList,
-            header: GetRampAlchemyRequestHeader(),
-            param: new Dictionary<string, string>{ ["type"] = type }
-        );
-        AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
-            JsonConvert.SerializeObject(res));
-        return res.Data;
-    }
-
 
     // Set Alchemy request header with appId timestamp sign.
     private void SetAlchemyRequestHeader(HttpClient client)
@@ -173,12 +156,13 @@ public class AlchemyProvider : ISingletonDependency
     private Dictionary<string, string> GetAlchemyRequestHeader(string appId, string appSecret)
     {
         var timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
-        var sign = AlchemyHelper.GenerateAlchemyApiSign(appId, appSecret, timeStamp);
-        _logger.LogDebug("appId: {AppId}, timeStamp: {TimeStamp}, signature: {Signature}", _alchemyOptions.AppId,
+        var source = appId + appSecret + timeStamp;
+        var sign = AlchemyHelper.GenerateAlchemyApiSign(source);
+        _logger.LogDebug("appId: {AppId}, timeStamp: {TimeStamp}, signature: {Signature}", appId,
             timeStamp, sign);
         return new Dictionary<string, string>
         {
-            ["appId"] = _alchemyOptions.AppId,
+            ["appId"] = appId,
             ["timestamp"] = timeStamp,
             ["sign"] = sign
         };

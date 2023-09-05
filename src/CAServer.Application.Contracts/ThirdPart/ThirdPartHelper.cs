@@ -136,9 +136,9 @@ public static class AlchemyHelper
     }
     
     // Generate Alchemy request sigh by "appId + appSecret + timestamp".
-    public static string GenerateAlchemyApiSign(string appId, string appSecret, string timeStamp)
+    public static string GenerateAlchemyApiSign(string source)
     {
-        var bytes = Encoding.UTF8.GetBytes(appId + appSecret + timeStamp);
+        var bytes = Encoding.UTF8.GetBytes(source);
         var hashBytes = SHA1.Create().ComputeHash(bytes);
 
         var sb = new StringBuilder();

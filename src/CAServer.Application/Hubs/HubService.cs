@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Entities.Es;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Hub;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -29,11 +32,14 @@ public class HubService : CAServerAppService, IHubService
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<HubService> _logger;
+    private readonly IOrderStatusProvider _orderStatusProvider;
+
+    private readonly Dictionary<string, string> _clientOrderListener = new();
 
     public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IHubProvider caHubProvider,
         IThirdPartOrderProvider thirdPartOrderProvider, IObjectMapper objectMapper,
         IConnectionProvider connectionProvider, IOptions<ThirdPartOptions> merchantOptions,
-        ILogger<HubService> logger)
+        ILogger<HubService> logger, IOrderStatusProvider orderStatusProvider)
     {
         _hubProvider = hubProvider;
         _hubCacheProvider = hubCacheProvider;
@@ -43,6 +49,7 @@ public class HubService : CAServerAppService, IHubService
         _connectionProvider = connectionProvider;
         _thirdPartOptions = merchantOptions.Value;
         _logger = logger;
+        _orderStatusProvider = orderStatusProvider;
     }
 
      public async Task Ping(HubRequestContext context, string content)
@@ -75,7 +82,15 @@ public class HubService : CAServerAppService, IHubService
 
     public string UnRegisterClient(string connectionId)
     {
-        return _connectionProvider.Remove(connectionId);
+        var clientId = _connectionProvider.Remove(connectionId);
+        
+        return clientId;
+    }
+
+    public void UnRegisterOrderListener(string clientId)
+    {
+        if (!_clientOrderListener.TryGetValue(clientId, out var orderId)) return; 
+        _orderStatusProvider.RemoveOrderChangeListener(orderId);
     }
 
     public async Task SendAllUnreadRes(string clientId)
@@ -110,6 +125,25 @@ public class HubService : CAServerAppService, IHubService
     public async Task Ack(string clientId, string requestId)
     {
         await _hubCacheProvider.RemoveResponseByClientId(clientId, requestId);
+    }
+
+    public async Task RequestNFTOrderStatusAsync(string clientId, string orderId)
+    {
+        // notify current order immediately
+        var currentOrder = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(orderId);
+        await NotifyOrderInfo(clientId, _objectMapper.Map<RampOrderIndex, NotifyOrderDto>(currentOrder));
+        
+        // register a listener to OrderStatusProvider, to receive order changed
+        _orderStatusProvider.RegisterOrderChangeListener(orderId, async orderGrainDto =>
+        {
+            await NotifyOrderInfo(clientId, _objectMapper.Map<OrderGrainDto, NotifyOrderDto>(orderGrainDto));
+        });
+    }
+
+    private async Task NotifyOrderInfo(string client, NotifyOrderDto order)
+    {
+        var methodName = order.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
+        await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(order),client, methodName);
     }
     
     public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
@@ -163,7 +197,7 @@ public class HubService : CAServerAppService, IHubService
 
                 // push address to client via ws
                 var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(
-                    new AlchemyTargetAddressDto()
+                    new NotifyOrderDto()
                     {
                         OrderId = esOrderData.Id,
                         MerchantName = esOrderData.MerchantName,

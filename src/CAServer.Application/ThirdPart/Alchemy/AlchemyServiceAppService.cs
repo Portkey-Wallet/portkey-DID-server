@@ -91,7 +91,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         return await _nftFiatListCache.GetOrAddAsync(
             CommonConstant.NftFiatListKey + DateTime.UtcNow.ToUtcSeconds(),
-            async () => await _alchemyProvider.GetFiatList("BUY"),
+            async () => await _alchemyProvider.GetNftFiatList(),
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.NftFiatListExpirationMinutes)

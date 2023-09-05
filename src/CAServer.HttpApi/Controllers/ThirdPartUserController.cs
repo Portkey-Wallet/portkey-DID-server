@@ -67,6 +67,14 @@ public class ThirdPartUserController : CAServerController
     {
         return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
     }
+    
+    [HttpGet("alchemy/nft/fiatList")]
+    public async Task<CommonResponseDto<List<AlchemyFiatDto>>> GetAlchemyNftFiatListAsync()
+    {
+        return new CommonResponseDto<List<AlchemyFiatDto>>(
+            await _alchemyServiceAppService.GetAlchemyNftFiatListAsync()
+        );
+    }
 
     [HttpGet("cryptoList")]
     public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)

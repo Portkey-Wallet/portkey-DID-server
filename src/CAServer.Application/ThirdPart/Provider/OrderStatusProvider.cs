@@ -29,6 +29,8 @@ public interface IOrderStatusProvider
     Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated);
     Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(NftOrderGrainDto dataToBeUpdated);
     Task<int> CallBackNftOrderPayResultAsync(Guid orderId, string callbackStatus);
+    void RegisterOrderChangeListener(string orderId, Func<OrderGrainDto, Task> onOrderChanged);
+    void RemoveOrderChangeListener(string orderId);
 }
 
 public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
@@ -40,6 +42,8 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly IHttpProvider _httpProvider;
+
+    private readonly Dictionary<string, Func<OrderGrainDto, Task>> _orderListeners = new();
 
     public OrderStatusProvider(
         ILogger<OrderStatusProvider> logger, 
@@ -59,6 +63,30 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         _distributedEventBus = distributedEventBus;
     }
 
+    public void RegisterOrderChangeListener(string orderId, Func<OrderGrainDto, Task> onOrderChanged)
+    {
+        _orderListeners[orderId] = onOrderChanged;
+    }
+    
+    public void RemoveOrderChangeListener(string orderId)
+    {
+        _orderListeners.Remove(orderId);
+    }
+
+    private void OnOrderChange(OrderGrainDto orderGrainDto)
+    {
+        if (!_orderListeners.TryGetValue(orderGrainDto.Id.ToString(), out var callbackFuc))
+            return;
+        try
+        {
+            callbackFuc.Invoke(orderGrainDto);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e , "OnOrderChange call back error");
+        }
+    }
+    
     
     // update ramp order
     public async Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated)
@@ -74,7 +102,11 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
 
         await AddOrderStatusInfoAsync(
             _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
-
+        
+        // notify listener
+        OnOrderChange(result.Data);
+        
+        
         await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data), false);
         return new CommonResponseDto<Empty>();
     }
@@ -90,6 +122,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         var result = await nftOrderGrain.UpdateNftOrder(dataToBeUpdated);
         AssertHelper.IsTrue(result.Success, "Update nft order error");
 
+        
         await _distributedEventBus.PublishAsync(_objectMapper.Map<NftOrderGrainDto, NftOrderEto>(result.Data), false);
         return new CommonResponseDto<Empty>();
     }
