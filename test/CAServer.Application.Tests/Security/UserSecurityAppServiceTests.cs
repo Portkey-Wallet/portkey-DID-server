@@ -46,8 +46,8 @@ public partial class UserSecurityAppServiceTest : CAServerApplicationTestBase
         var data = result.Data.First();
         data.Symbol.ShouldBe(defaultSymbol);
         data.ChainId.ShouldBe(defaultChainId);
-        data.DailyLimit.ShouldBe(10000);
-        data.SingleLimit.ShouldBe(10000);
+        data.DailyLimit.ShouldBe("10000");
+        data.SingleLimit.ShouldBe("10000");
     }
 
     [Fact]

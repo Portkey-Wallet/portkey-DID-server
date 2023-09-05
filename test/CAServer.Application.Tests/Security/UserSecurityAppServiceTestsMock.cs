@@ -70,8 +70,8 @@ public partial class UserSecurityAppServiceTest
                             {
                                 ChainId = "AELF",
                                 Symbol = "ELF",
-                                DailyLimit = 10000,
-                                SingleLimit = 10000
+                                DailyLimit = "10000",
+                                SingleLimit = "10000"
                             }
                         }
                     }
