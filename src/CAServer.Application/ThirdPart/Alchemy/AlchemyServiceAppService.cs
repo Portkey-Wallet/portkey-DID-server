@@ -24,6 +24,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     private readonly AlchemyOptions _alchemyOptions;
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IDistributedCache<List<AlchemyFiatDto>> _fiatListCache;
+    private readonly IDistributedCache<List<AlchemyFiatDto>> _nftFiatListCache;
     private readonly IDistributedCache<AlchemyOrderQuoteDataDto> _orderQuoteCache;
 
     private readonly JsonSerializerSettings _setting = new()
@@ -33,13 +34,15 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
 
     public AlchemyServiceAppService(IOptions<ThirdPartOptions> merchantOptions, AlchemyProvider alchemyProvider,
         ILogger<AlchemyServiceAppService> logger, IDistributedCache<List<AlchemyFiatDto>> fiatListCache,
-        IDistributedCache<AlchemyOrderQuoteDataDto> orderQuoteCache)
+        IDistributedCache<AlchemyOrderQuoteDataDto> orderQuoteCache,
+        IDistributedCache<List<AlchemyFiatDto>> nftFiatListCache)
     {
         _alchemyOptions = merchantOptions.Value.Alchemy;
         _alchemyProvider = alchemyProvider;
         _logger = logger;
         _fiatListCache = fiatListCache;
         _orderQuoteCache = orderQuoteCache;
+        _nftFiatListCache = nftFiatListCache;
     }
 
     // get Alchemy login free token
@@ -84,10 +87,21 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
     }
 
+    public async Task<List<AlchemyFiatDto>> GetAlchemyNftFiatListAsync()
+    {
+        return await _nftFiatListCache.GetOrAddAsync(
+            CommonConstant.NftFiatListKey + DateTime.UtcNow.ToUtcSeconds(),
+            async () => await _alchemyProvider.GetFiatList("BUY"),
+            () => new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.NftFiatListExpirationMinutes)
+            }
+        );
+    }
+
     private async Task<List<AlchemyFiatDto>> GetAlchemyFiatListAsync(string key, string queryString)
     {
-        return await _fiatListCache.GetOrAddAsync(
-            key,
+        return await _fiatListCache.GetOrAddAsync(key,
             async () => await GetFiatListDataAsync(queryString),
             () => new DistributedCacheEntryOptions
             {
@@ -109,7 +123,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
     // get Alchemy cryptoList 
-    public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input)
+    public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAlchemyCryptoListAsync(
+        GetAlchemyCryptoListDto input)
     {
         try
         {
@@ -127,7 +142,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
     // post Alchemy cryptoList
-    public async Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
+    public async Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(
+        GetAlchemyOrderQuoteDto input)
     {
         try
         {

@@ -14,7 +14,7 @@ namespace CAServer.ThirdPart;
 
 public partial class ThirdPartOrderAppServiceTest
 {
-    private IThirdPartOrderProvider getMockTokenPriceGrain()
+    private IThirdPartOrderProvider MockThirdPartOrderProvider()
     {
         var mockThirdPartOrderProvider = new Mock<IThirdPartOrderProvider>();
         mockThirdPartOrderProvider.Setup(o => o.GetThirdPartOrdersByPageAsync(It.IsAny<GetThirdPartOrderConditionDto>()))

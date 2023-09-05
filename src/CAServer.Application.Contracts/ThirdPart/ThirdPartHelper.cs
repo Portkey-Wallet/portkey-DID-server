@@ -134,4 +134,18 @@ public static class AlchemyHelper
             default: return OrderTransDirect.SELL.ToString();
         }
     }
+    
+    // Generate Alchemy request sigh by "appId + appSecret + timestamp".
+    public static string GenerateAlchemyApiSign(string appId, string appSecret, string timeStamp)
+    {
+        var bytes = Encoding.UTF8.GetBytes(appId + appSecret + timeStamp);
+        var hashBytes = SHA1.Create().ComputeHash(bytes);
+
+        var sb = new StringBuilder();
+        foreach (var t in hashBytes)
+        {
+            sb.Append(t.ToString("X2"));
+        }
+        return sb.ToString().ToLower();
+    }
 }

@@ -255,9 +255,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         // var userId = input.UserId;
         var userId = CurrentUser.GetId();
+        var orderIdIn = input.OrderId == Guid.Empty ? null : new List<Guid> { input.OrderId };
         return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto(input.SkipCount, input.MaxResultCount)
         {
-            UserId = userId
+            UserId = userId,
+            OrderIdIn = orderIdIn
         });
     }
     

@@ -38,7 +38,7 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        services.AddSingleton(getMockTokenPriceGrain());
+        services.AddSingleton(MockThirdPartOrderProvider());
         services.AddSingleton(getMockOrderGrain());
         services.AddSingleton(getMockDistributedEventBus());
         services.AddSingleton(MockRandomActivityProviderCaHolder());
@@ -63,60 +63,6 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         _testOutputHelper.WriteLine(exception.Result.Message);
         exception.Result.Message.ShouldContain("Convert rawTransaction FAILED");
     }
-
-    // [Fact]
-    public async void MakeManagerForwardCal()
-    {
-        var tokenAddress = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE";
-        var caAddress = "2u6Dd139bHvZJdZ835XnNKL5y6cxqzV9PEWD5fZdQXdFZLgevc";
-
-        var caHash = "ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e";
-        var pk = "191912fcda8996fda0397daf3b0b1eee840b1592c6756a1751723f98cd54812c";
-        var user = new UserWrapper(new AElfClient("http://192.168.67.18:8000"), pk);
-        var orderId = "857569b8-7b73-e65d-36d3-3a0c7f872113";
-        var transferRawTransaction = await user.CreateRawTransactionAsync(
-            tokenAddress,
-            "Transfer",
-            new Dictionary<string, object>()
-            {
-                ["to"] = AelfAddressHelper.ToAddressObj("jj4LacoSa95nFjdFUjsGy8NFk97Ss1RLebee5QnefY7zTYQNT"),
-                ["symbol"] = "ELF",
-                ["amount"] = 1_0000_0000,
-            });
-        var transferTx =
-            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transferRawTransaction.RawTransaction));
-
-        var rawTransaction = await user.CreateRawTransactionAsync(
-            caAddress,
-            "ManagerForwardCall",
-            new Dictionary<string, object>
-            {
-                ["ca_hash"] = new HashObj(caHash),
-                ["contract_address"] = AelfAddressHelper.ToAddressObj(tokenAddress),
-                ["method_name"] = "Transfer",
-                ["args"] = UserWrapper.StringToByteArray(transferTx.Params.ToHex())
-            });
-
-        var transaction =
-            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction.RawTransaction));
-        transaction.Signature = user.GetSignatureWith(transaction.GetHash().ToByteArray());
-        var rawTransactionHex = transaction.ToByteArray().ToHex();
-
-        var data = orderId + rawTransactionHex;
-        var md5 = EncryptionHelper.MD5Encrypt32(data);
-        var text = Encoding.UTF8.GetBytes(md5).ComputeHash();
-        var sign = user.GetSignatureWith(text).ToHex();
-
-        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(new Dictionary<string, object>()
-        {
-            ["merchantName"] = "Alchemy",
-            ["orderId"] = orderId,
-            ["rawTransaction"] = rawTransactionHex,
-            ["publicKey"] = user.PublicKey,
-            ["signature"] = sign
-        }));
-    }
-
 
     [Fact]
     public async Task GetThirdPartOrderListAsyncTest()
