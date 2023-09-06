@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
-using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Security;
 using CAServer.Security.Dtos;
@@ -28,21 +26,17 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly ChainOptions _chainOptions;
     private readonly IUserAssetsProvider _assetsProvider;
     private readonly IUserSecurityProvider _userSecurityProvider;
-    private readonly IGuardianProvider _guardianProvider;
     private readonly IDistributedEventBus _distributedEventBus;
 
 
     public UserSecurityAppService(IOptionsSnapshot<SecurityOptions> securityOptions,
-        IUserSecurityProvider userSecurityProvider,
-        IOptionsSnapshot<ChainOptions> chainOptions, IContractProvider contractProvider,
-        ILogger<UserSecurityAppService> logger,
-        IUserAssetsProvider assetsProvider, IDistributedEventBus distributedEventBus,
-        IGuardianProvider guardianProvider)
+        IUserSecurityProvider userSecurityProvider, IOptionsSnapshot<ChainOptions> chainOptions,
+        IContractProvider contractProvider, ILogger<UserSecurityAppService> logger, IUserAssetsProvider assetsProvider,
+        IDistributedEventBus distributedEventBus)
     {
         _logger = logger;
         _assetsProvider = assetsProvider;
         _distributedEventBus = distributedEventBus;
-        _guardianProvider = guardianProvider;
         _chainOptions = chainOptions.Value;
         _securityOptions = securityOptions.Value;
         _contractProvider = contractProvider;
@@ -110,8 +104,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         {
             _logger.LogError(e, "An exception occurred during GetTransferLimitListByCaHashAsync, caHash: {caHash}",
                 input.CaHash);
-            throw new UserFriendlyException(
-                $"An exception occurred during GetTransferLimitListByCaHashAsync,caHash: {input.CaHash}");
+            throw new UserFriendlyException("An exception occurred during GetTransferLimitListByCaHashAsync");
         }
     }
 
@@ -134,7 +127,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 "An exception occurred during GetManagerApprovedListByCaHashAsync, chainId: {ChainId} caHash: {caHash}",
                 input.ChainId, input.CaHash);
             throw new UserFriendlyException(
-                $"An exception occurred during GetManagerApprovedListByCaHashAsync, chainId: {input.ChainId} caHash: {input.CaHash}");
+                $"An exception occurred during GetManagerApprovedListByCaHashAsync, chainId: {input.ChainId}");
         }
     }
 
@@ -161,8 +154,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
                 if (token.TokenInfo == null) continue;
-                if (token.Balance > _securityOptions.TokenBalanceTransferThreshold[token.TokenInfo.Symbol])
-                    return new TokenBalanceTransferCheckAsyncResultDto { IsSafe = false };
+                if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
+                    token.Balance > t) return new TokenBalanceTransferCheckAsyncResultDto { IsSafe = false };
             }
 
             return new TokenBalanceTransferCheckAsyncResultDto();
@@ -171,8 +164,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         {
             _logger.LogError(e,
                 "An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {caHash}", input.CaHash);
-            throw new UserFriendlyException(
-                $"An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {input.CaHash}");
+            throw new UserFriendlyException("An exception occurred during GetManagerApprovedListByCaHashAsync");
         }
     }
 
