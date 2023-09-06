@@ -22,7 +22,7 @@ public class PrivacyPolicyAppService :CAServerAppService, IPrivacyPolicyAppServi
         {
             CaHash = input.CaHash,
             PolicyId = input.PolicyId,
-            Version = input.Version,
+            PolicyVersion = input.PolicyVersion,
             Scene = input.Scene,
             ManagerAddress = input.ManagerAddress,
         });
@@ -44,7 +44,7 @@ public class PrivacyPolicyAppService :CAServerAppService, IPrivacyPolicyAppServi
     public async Task<PrivacyPolicyDto> GetPrivacyPolicyAsync(PrivacyPolicyInputDto input)
     {
         var queryBuilder = new PrivacyPolicyQueryBuilder()
-            .WithVersion(input.Version)
+            .WithVersion(input.PolicyVersion)
             .WithCaHash(input.CaHash)
             .WithOrigin(input.Origin)
             .WithScene(input.Scene)
