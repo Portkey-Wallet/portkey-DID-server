@@ -221,8 +221,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         }
 
         var decimals = _securityOptions.DefaultTokenDecimalDict.TryGetValue(token.TokenInfo.Symbol, out var d)
-            ? _securityOptions.DefaultTokenDecimals
-            : d;
+            ? d
+            : _securityOptions.DefaultTokenDecimals;
 
         return new TransferLimitDto
         {
