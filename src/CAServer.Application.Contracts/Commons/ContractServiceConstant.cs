@@ -41,4 +41,6 @@ public static class CommonConstant
     public const string AppleRevokeUrl = "https://appleid.apple.com/auth/revoke";
     public const string ImFollowUrl = "api/v1/contacts/follow";
     public const string ImUnFollowUrl = "api/v1/contacts/unfollow";
+
+    public const string ElfSymbol = "ELF";
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -563,7 +564,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                         var parseInt = int.TryParse(symbolSuffix, out var symbolSuffixInt);
                         if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
                         {
-                            item.NftInfo.ImageUrl = searchItem.NftInfo.ImageUrl.Replace(DefaultSuffix,ReplaceSuffix);
+                            item.NftInfo.ImageUrl = searchItem.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
                         }
                         else
                         {
@@ -578,6 +579,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 dto.Data.Add(item);
             }
 
+            dto.Data = dto.Data?.OrderBy(t =>
+            {
+                if (t.Symbol == CommonConstant.ElfSymbol)
+                    return 0;
+                return 1;
+            }).ThenBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
+            
             return dto;
         }
         catch (Exception e)
@@ -681,4 +689,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var imageUrlArray = imageUrl.Split(".");
         return imageUrlArray[^1].ToLower();
     }
+    
+    
 }
