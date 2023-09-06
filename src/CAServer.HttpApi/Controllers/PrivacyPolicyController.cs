@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using CAServer.PrivacyPolicy;
 using CAServer.PrivacyPolicy.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -10,6 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("PrivacyPolicy")]
 [Route("api/app/privacypolicy")]
+[Authorize]
 public class PrivacyPolicyController : CAServerController
 {
     private readonly IPrivacyPolicyAppService _privacyPolicyAppService;
