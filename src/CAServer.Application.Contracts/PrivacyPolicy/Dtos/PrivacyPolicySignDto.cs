@@ -4,7 +4,7 @@ namespace CAServer.PrivacyPolicy.Dtos;
 
 public class PrivacyPolicySignDto
 {
-    public int Version { get; set; }
+    public int PolicyVersion { get; set; }
     [Required]
     public string CaHash { get; set; }
     [Required]

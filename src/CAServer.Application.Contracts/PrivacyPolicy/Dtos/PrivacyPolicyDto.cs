@@ -3,7 +3,7 @@ namespace CAServer.PrivacyPolicy.Dtos;
 public class PrivacyPolicyDto
 {
     public string Id { get; set; }
-    public int Version { get; set; }
+    public int PolicyVersion { get; set; }
     public string CaHash { get; set; }
     public string Origin { get; set; }
     public int Scene { get; set; }

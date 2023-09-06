@@ -6,7 +6,7 @@ namespace CAServer.Entities.Es;
 public class PrivacyPolicyIndex : CAServerEsEntity<string>, IIndexBuild
 {
     [Keyword]
-    public int Version { get; set; }
+    public int PolicyVersion { get; set; }
     [Keyword]
     public string CaHash { get; set; }
     [Keyword]
