@@ -90,5 +90,6 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
+        context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
     }
 }
