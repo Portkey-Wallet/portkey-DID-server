@@ -579,13 +579,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 dto.Data.Add(item);
             }
 
-            dto.Data = dto.Data?.OrderBy(t =>
-            {
-                if (t.Symbol == CommonConstant.ElfSymbol)
-                    return 0;
-                return 1;
-            }).ThenBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
-            
+            dto.Data = dto.Data?.OrderBy(t => t.Symbol != CommonConstant.ElfSymbol).ThenBy(t => t.Symbol)
+                .ThenBy(t => t.ChainId).ToList();
+
             return dto;
         }
         catch (Exception e)
@@ -689,6 +685,4 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var imageUrlArray = imageUrl.Split(".");
         return imageUrlArray[^1].ToLower();
     }
-    
-    
 }
