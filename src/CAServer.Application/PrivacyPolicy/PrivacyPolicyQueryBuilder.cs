@@ -14,11 +14,11 @@ public class PrivacyPolicyQueryBuilder
         _mustQueries = new List<Func<QueryContainerDescriptor<PrivacyPolicyIndex>, QueryContainer>>();
     }
 
-    public PrivacyPolicyQueryBuilder WithVersion(int version)
+    public PrivacyPolicyQueryBuilder WithVersion(int policyVersion)
     {
-        if (version > 0)
+        if (policyVersion > 0)
         {
-            _mustQueries.Add(q => q.Term(i => i.Field(f => f.Version).Value(version)));
+            _mustQueries.Add(q => q.Term(i => i.Field(f => f.PolicyVersion).Value(policyVersion)));
         }
 
         return this;
