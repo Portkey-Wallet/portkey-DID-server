@@ -9,11 +9,12 @@ using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.EntityEventHandler.Core.ThirdPart;
 
-public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
+public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
 {
     private static readonly List<string> ResultStatus = new()
     {
@@ -75,7 +76,7 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>
                 "Webhook status of order {OrderId} exists", orderId);
 
             // callback merchant and update result
-            await _orderStatusProvider.CallBackNftOrderPayResultAsync(orderId, status);
+            await _orderStatusProvider.CallBackNftOrderPayResultAsync(orderId);
         }
         catch (UserFriendlyException e)
         {

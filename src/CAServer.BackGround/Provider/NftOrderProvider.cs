@@ -1,10 +1,13 @@
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
+using CAServer.Entities.Es;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
+using MongoDB.Driver.Linq;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 
@@ -17,19 +20,23 @@ public interface INftOrderProvider
 
 public class NftOrderProvider : INftOrderProvider, ISingletonDependency
 {
+    private const string LockKeyPrefix = "CAServer.BGD:NFT_Order_worker:";
+    
     private readonly ILogger<NftOrderProvider> _logger;
     private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
+    private readonly IAbpDistributedLock _distributedLock;
 
     public NftOrderProvider(IThirdPartOrderProvider thirdPartOrderProvider,
         IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, ILogger<NftOrderProvider> logger,
-        IOrderStatusProvider orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
+        _distributedLock = distributedLock;
     }
 
 
@@ -38,28 +45,39 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
     /// </summary>
     public async Task HandleUnCompletedMerchantCallback()
     {
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + "HandleUnCompletedMerchantCallback");
+        if (handle == null)
+        {
+            _logger.LogError("HandleUnCompletedMerchantCallback running, skip");
+            return;
+        } 
+        
         _logger.LogInformation("HandleUnCompletedMerchantCallback start");
         const int pageSize = 100;
-        var lastModifyTimeLt = DateTime.UtcNow.ToUtcMilliSeconds().ToString();
+        const int minCallbackCount = 1;
+        const int maxCallbackCount = 3;
+
+        // when WebhookCount > 0, WebhookTimeLt mast be exists
+        var lastWebhookTimeLt = DateTime.UtcNow.AddMinutes(-2).ToUtcMilliSeconds().ToString();
         var total = 0;
         while (true)
         {
-            var pendingData = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
-                new GetThirdPartOrderConditionDto(0, pageSize)
+            var pendingData = await _thirdPartOrderProvider.QueryNftOrderPagerAsync(
+                new NftOrderQueryConditionDto(0, pageSize)
                 {
-                    LastModifyTimeLt = lastModifyTimeLt,
-                    StatusIn = new List<string> { OrderStatusType.Pending.ToString() },
-                    TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() }
-                }, OrderSectionEnum.NftSection);
+                    WebhookCountGtEq = minCallbackCount,
+                    WebhookCountLtEq = maxCallbackCount,
+                    WebhookStatus = NftOrderWebhookStatus.FAIL.ToString(),
+                    WebhookTimeLt = lastWebhookTimeLt
+                });
             if (pendingData.Data.IsNullOrEmpty()) break;
 
-            lastModifyTimeLt = pendingData.Data.Min(order => order.LastModifyTime);
+            lastWebhookTimeLt = pendingData.Data.Min(order => order.WebhookTime);
 
             var callbackResults = new List<Task<int>>();
             foreach (var orderDto in pendingData.Data)
             {
-                callbackResults.Add(
-                    _orderStatusProvider.CallBackNftOrderPayResultAsync(orderDto.Id, orderDto.Status));
+                callbackResults.Add(_orderStatusProvider.CallBackNftOrderPayResultAsync(orderDto.Id));
             }
 
             // non data in page was handled, stop
@@ -78,31 +96,49 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
     /// </summary>
     public async Task HandleUnCompletedThirdPartResultNotify()
     {
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + "HandleUnCompletedThirdPartResultNotify");
+        if (handle == null)
+        {
+            _logger.LogError("HandleUnCompletedThirdPartResultNotify running, skip");
+            return;
+        } 
+        
         _logger.LogInformation("HandleUnCompletedThirdPartResultNotify start");
         const int pageSize = 100;
-        var lastModifyTimeLt = DateTime.UtcNow.ToUtcMilliSeconds().ToString();
+        const int minNotifyCount = 1;
+        const int maxNotifyCount = 3;
+
+        // when ThirdPartNotifyCount > 0, WebhookTimeLt mast be exists
+        var lastWebhookTimeLt = DateTime.UtcNow.AddMinutes(-2).ToUtcString();
         var total = 0;
         while (true)
         {
-            var pendingData = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
-                new GetThirdPartOrderConditionDto(0, pageSize)
+            var pendingData = await _thirdPartOrderProvider.QueryNftOrderPagerAsync(
+                new NftOrderQueryConditionDto(0, pageSize)
                 {
-                    LastModifyTimeLt = lastModifyTimeLt,
-                    StatusIn = new List<string>
-                    {
-                        OrderStatusType.Finish.ToString(),
-                        OrderStatusType.TransferFailed.ToString(),
-                    },
-                    TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() }
-                }, OrderSectionEnum.NftSection);
+                    ThirdPartNotifyCountGtEq = minNotifyCount,
+                    ThirdPartNotifyCountLtEq = maxNotifyCount,
+                    ThirdPartNotifyStatus = NftOrderWebhookStatus.FAIL.ToString(),
+                    WebhookTimeLt = lastWebhookTimeLt
+                });
             if (pendingData.Data.IsNullOrEmpty()) break;
 
-            lastModifyTimeLt = pendingData.Data.Min(order => order.LastModifyTime);
+            lastWebhookTimeLt = pendingData.Data.Min(order => order.WebhookTime);
 
+            Dictionary<Guid, RampOrderIndex> baseOrderDict = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(
+                pendingData.Data.Select(nftOrder => nftOrder.Id.ToString()).ToList());
+            
             var callbackResults = new List<Task<CommonResponseDto<Empty>>>();
             foreach (var orderDto in pendingData.Data)
             {
-                callbackResults.Add(_thirdPartNftOrderProcessorFactory.GetProcessor(orderDto.MerchantName)
+                var orderFound = baseOrderDict.TryGetValue(orderDto.Id, out var baseOrder);
+                if (!orderFound || baseOrder == null)
+                {
+                    _logger.LogError("BaseOrder {OrderId} not found ", orderDto.Id);
+                    continue;
+                }
+                callbackResults.Add(_thirdPartNftOrderProcessorFactory
+                    .GetProcessor(baseOrder.MerchantName)
                     .NotifyNftReleaseAsync(orderDto.Id));
             }
 
@@ -121,9 +157,16 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
     /// </summary>
     public async Task HandleUnCompletedNftOrderPayResultNotify()
     {
+        await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + "HandleUnCompletedNftOrderPayResultNotify");
+        if (handle == null)
+        {
+            _logger.LogError("HandleUnCompletedNftOrderPayResultNotify running, skip");
+            return;
+        } 
+        
         _logger.LogInformation("HandleUnCompletedThirdPartResultNotify start");
         const int pageSize = 100;
-        var lastModifyTimeLt = DateTime.UtcNow.ToUtcMilliSeconds().ToString();
+        var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-30).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow.AddHours(-1).ToUtcMilliSeconds().ToString();
         var total = 0;
         while (true)

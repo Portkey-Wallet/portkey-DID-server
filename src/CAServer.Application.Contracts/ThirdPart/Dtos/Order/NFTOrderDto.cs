@@ -21,7 +21,7 @@ public class CreateNftOrderRequestDto : NftMerchantBaseDto
     [Required] public string PriceSymbol { get; set; }
     [Required] public string PriceAmount { get; set; }
     [Required] public string CaHash { get; set; }
-    public string TransDirect = TransferDirectionType.NFTBuy.ToString();
+    public string TransDirect { get; set; } = TransferDirectionType.NFTBuy.ToString();
 }
 
 public class CreateNftOrderResponseDto : NftMerchantBaseDto
@@ -78,5 +78,16 @@ public class NftOrderQueryConditionDto : PagedResultRequestDto
     public List<Guid> IdIn { get; set; }
     public string MerchantName { get; set; }
     public List<string> MerchantOrderIdIn { get; set; }
+    
+    public int? WebhookCountGtEq { get; set; }
+    public int? WebhookCountLtEq { get; set; }
+    public string WebhookStatus { get; set; }
+    
+    public string WebhookTimeLt { get; set; }
+    
+    public int? ThirdPartNotifyCountGtEq { get; set; }
+    public int? ThirdPartNotifyCountLtEq { get; set; }
+    public string ThirdPartNotifyStatus { get; set; }
+    
 }
 

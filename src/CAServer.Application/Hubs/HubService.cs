@@ -134,9 +134,17 @@ public class HubService : CAServerAppService, IHubService
         await NotifyOrderInfo(clientId, _objectMapper.Map<RampOrderIndex, NotifyOrderDto>(currentOrder));
         
         // register a listener to OrderStatusProvider, to receive order changed
-        _orderStatusProvider.RegisterOrderChangeListener(orderId, async orderGrainDto =>
+        _orderStatusProvider.RegisterOrderChangeListener(orderId, async NotifyOrderDto =>
         {
-            await NotifyOrderInfo(clientId, _objectMapper.Map<OrderGrainDto, NotifyOrderDto>(orderGrainDto));
+            try
+            {
+                var methodName = NotifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
+                await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(NotifyOrderDto), clientId, methodName);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "notify orderStatus error");
+            }
         });
     }
 

@@ -177,12 +177,12 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         AssertHelper.IsTrue(orderGrainDto.Id == updateRequest.Id, "Invalid orderId {ThirdPartOrderId}",
             updateRequest.Id);
         var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
-        if (orderGrainDto.Status == updateRequest.Status)
-        {
-            _logger.LogInformation("Status {Status} of order {GrainId} no need to update", updateRequest.Status,
-                updateRequest.Id);
-            return;
-        }
+        // TODO nzc if (orderGrainDto.Status == updateRequest.Status)
+        // {
+        //     _logger.LogInformation("Status {Status} of order {GrainId} no need to update", updateRequest.Status,
+        //         updateRequest.Id);
+        //     return;
+        // }
 
         // query nft-order data and verify
         var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(orderId);
@@ -206,8 +206,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         if (orderNeedUpdate)
         {
             var nextStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
-            AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
-                "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
+            //TODO nzc AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
+                // "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
             orderGrainDto.MerchantName = orderGrainDto.MerchantName.DefaultIfEmpty(ThirdPartName());
             var orderUpdateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
             AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");

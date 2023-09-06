@@ -4,12 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -47,17 +49,27 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public async Task<RampOrderIndex> GetThirdPartOrderIndexAsync(string orderId)
     {
+        var resDict = await GetThirdPartOrderIndexAsync(new List<string>(){orderId});
+        return resDict.IsNullOrEmpty() ? null : resDict.Values.First();
+    }
+
+    public async Task<Dictionary<Guid, RampOrderIndex>> GetThirdPartOrderIndexAsync(List<string> orderIdIn)
+    {
+        if (orderIdIn.IsNullOrEmpty()) return new Dictionary<Guid, RampOrderIndex>();
+        
         var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(orderId)));
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(orderIdIn)));
 
         QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
         var (totalCount, userOrders) = await _orderRepository.GetListAsync(Filter);
 
-        return totalCount < 1 ? null : userOrders.First();
+        return totalCount < 1
+            ? new Dictionary<Guid, RampOrderIndex>()
+            : userOrders.ToDictionary(order => order.Id, order => order);
     }
-
+    
     public async Task<OrderDto> GetThirdPartOrderAsync(string orderId)
     {
         var orderIndex = await GetThirdPartOrderIndexAsync(orderId);
@@ -160,27 +172,41 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
 
     // query nft-order index
-    private async Task<PageResultDto<NftOrderIndex>> QueryNftOrderPagerAsync(NftOrderQueryConditionDto condition)
+    public async Task<PageResultDto<NftOrderIndex>> QueryNftOrderPagerAsync(NftOrderQueryConditionDto condition)
     {
-        AssertHelper.IsTrue(!condition.IdIn.IsNullOrEmpty() || !condition.MerchantOrderIdIn.IsNullOrEmpty(),
-            "IdIn or MerchantOrderIdIn required.");
-        AssertHelper.IsTrue(condition.MerchantOrderIdIn.IsNullOrEmpty() || !condition.MerchantName.IsNullOrEmpty(),
-            "MerchantName required when MerchantOrderIdIn not empty");
-
         var mustQuery = new List<Func<QueryContainerDescriptor<NftOrderIndex>, QueryContainer>> { };
 
         // by id
         if (!condition.IdIn.IsNullOrEmpty())
-        {
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(condition.IdIn)));
-        }
 
         // by merchantOrderId
+        if (condition.MerchantName.NotNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.MerchantName).Terms(condition.MerchantName)));
         if (!condition.MerchantOrderIdIn.IsNullOrEmpty())
         {
-            mustQuery.Add(q => q.Terms(i => i.Field(f => f.MerchantName).Terms(condition.MerchantName)));
+            AssertHelper.NotEmpty(condition.MerchantName, "MerchantName required if MerchantOrderIdIn set.");
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.MerchantOrderId).Terms(condition.MerchantOrderIdIn)));
         }
+
+        // webhook
+        if (condition.WebhookCountGtEq != null)
+            mustQuery.Add(q => q.LongRange(i => i.Field(f => f.WebhookCount).GreaterThanOrEquals(condition.WebhookCountGtEq)));
+        if (condition.WebhookCountLtEq != null)
+            mustQuery.Add(q => q.LongRange(i => i.Field(f => f.WebhookCount).LessThanOrEquals(condition.WebhookCountLtEq)));
+        if (condition.WebhookStatus.NotNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.WebhookStatus).Terms(condition.WebhookStatus)));
+
+        // thirdPartNotify
+        if (condition.ThirdPartNotifyCountGtEq != null)
+            mustQuery.Add(q =>
+                q.LongRange(i => i.Field(f => f.ThirdPartNotifyCount).GreaterThanOrEquals(condition.ThirdPartNotifyCountGtEq)));
+        if (condition.ThirdPartNotifyCountLtEq != null)
+            mustQuery.Add(q =>
+                q.LongRange(i => i.Field(f => f.ThirdPartNotifyCount).LessThanOrEquals(condition.ThirdPartNotifyCountLtEq)));
+        if (condition.ThirdPartNotifyStatus.NotNullOrEmpty())
+            mustQuery.Add(q =>
+                q.Terms(i => i.Field(f => f.ThirdPartNotifyStatus).Terms(condition.ThirdPartNotifyStatus)));
 
         IPromise<IList<ISort>> Sort(SortDescriptor<NftOrderIndex> s) => s.Descending(a => a.Id);
         QueryContainer Filter(QueryContainerDescriptor<NftOrderIndex> f) => f.Bool(b => b.Must(mustQuery));

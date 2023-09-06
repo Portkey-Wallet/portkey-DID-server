@@ -6,11 +6,12 @@ using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processors;
 using Microsoft.Extensions.Logging;
 using Volo.Abp;
+using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.EntityEventHandler.Core.ThirdPart;
 
-public class NftReleaseResultHandler : IDistributedEventHandler<OrderEto>
+public class NftReleaseResultHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
 {
     private static readonly List<string> NftReleaseResultStatus = new()
     {

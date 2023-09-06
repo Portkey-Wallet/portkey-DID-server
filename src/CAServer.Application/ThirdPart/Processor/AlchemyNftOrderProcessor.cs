@@ -45,24 +45,26 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid alchemy nft-order data");
         var achNftOrderRequest = input as AlchemyNftOrderRequestDto;
         AssertHelper.NotNull(achNftOrderRequest, "Empty input");
-        AssertHelper.IsTrue(achNftOrderRequest.AppId == _alchemyOptions.AppId, "Invalid alchemy appId {AppId}",
+        AssertHelper.IsTrue(achNftOrderRequest.AppId == _alchemyOptions.NftAppId, "Invalid alchemy appId {AppId}",
             achNftOrderRequest?.AppId);
 
         // verify signature 
         var signSource = ThirdPartHelper.ConvertObjectToSortedString(achNftOrderRequest, SignatureField, IdField);
-        var signature = AlchemyHelper.HmacSign(signSource, _alchemyOptions.AppSecret);
-        _logger.LogInformation("Verify Alchemy signature, signature={Signature}, signSource={SignSource}",
-            signSource, signature);
-        AssertHelper.IsTrue(signature == achNftOrderRequest?.Signature, "Invalid alchemy signature {InputSign}",
-            achNftOrderRequest?.Signature);
+        var signature = AlchemyHelper.HmacSign(signSource, _alchemyOptions.NftAppSecret);
+        _logger.LogDebug("Verify Alchemy signature, signature={Signature}, signSource={SignSource}",
+            signature, signSource);
+        AssertHelper.IsTrue(signature == achNftOrderRequest?.Signature, "Invalid alchemy signature={InputSign}, signSource={SignSource}",
+            achNftOrderRequest?.Signature, signSource);
+        // fill orderId 
         achNftOrderRequest.Id = Guid.Parse(achNftOrderRequest.MerchantOrderNo);
-
+        // mapping status
+        achNftOrderRequest.Status = AlchemyHelper.GetOrderStatus(achNftOrderRequest.Status);
         return achNftOrderRequest;
     }
 
     public override async Task<IThirdPartValidOrderUpdateRequest> QueryNftOrderAsync(Guid orderId)
     {
-        return await _alchemyProvider.QueryNftTrade(new AlchemyNftReleaseNoticeRequestDto()
+        return await _alchemyProvider.GetNftTrade(new AlchemyNftReleaseNoticeRequestDto()
         {
             OrderNo = orderId.ToString()
         });
@@ -76,7 +78,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 
         orderGrainDto.Fiat = orderGrainDto.Fiat.DefaultIfEmpty(achNftOrderRequest?.Fiat);
         orderGrainDto.FiatAmount = orderGrainDto.FiatAmount.DefaultIfEmpty(achNftOrderRequest?.Amount);
-        orderGrainDto.Status = AlchemyHelper.GetOrderStatus(achNftOrderRequest?.Status);
+        orderGrainDto.Status = achNftOrderRequest?.Status;
         orderGrainDto.PaymentMethod = orderGrainDto.PaymentMethod.DefaultIfEmpty(achNftOrderRequest?.PayType);
         orderGrainDto.TxTime = orderGrainDto.TxTime.DefaultIfEmpty(achNftOrderRequest?.PayTime);
         orderGrainDto.MerchantName = orderGrainDto.MerchantName.DefaultIfEmpty(ThirdPartName());

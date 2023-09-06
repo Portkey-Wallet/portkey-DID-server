@@ -9,6 +9,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -28,8 +29,8 @@ public interface IOrderStatusProvider
     Task UpdateOrderStatusAsync(OrderStatusUpdateDto orderStatusDto);
     Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated);
     Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(NftOrderGrainDto dataToBeUpdated);
-    Task<int> CallBackNftOrderPayResultAsync(Guid orderId, string callbackStatus);
-    void RegisterOrderChangeListener(string orderId, Func<OrderGrainDto, Task> onOrderChanged);
+    Task<int> CallBackNftOrderPayResultAsync(Guid orderId);
+    void RegisterOrderChangeListener(string orderId, Func<NotifyOrderDto, Task> onOrderChanged);
     void RemoveOrderChangeListener(string orderId);
 }
 
@@ -43,7 +44,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly IHttpProvider _httpProvider;
 
-    private readonly Dictionary<string, Func<OrderGrainDto, Task>> _orderListeners = new();
+    private readonly Dictionary<string, Func<NotifyOrderDto, Task>> _orderListeners = new();
 
     public OrderStatusProvider(
         ILogger<OrderStatusProvider> logger, 
@@ -63,7 +64,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         _distributedEventBus = distributedEventBus;
     }
 
-    public void RegisterOrderChangeListener(string orderId, Func<OrderGrainDto, Task> onOrderChanged)
+    public void RegisterOrderChangeListener(string orderId, Func<NotifyOrderDto, Task> onOrderChanged)
     {
         _orderListeners[orderId] = onOrderChanged;
     }
@@ -78,8 +79,9 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         if (!_orderListeners.TryGetValue(orderGrainDto.Id.ToString(), out var callbackFuc))
             return;
         try
-        {
-            callbackFuc.Invoke(orderGrainDto);
+        { 
+            var notifyOrderDto = _objectMapper.Map<OrderGrainDto, NotifyOrderDto>(orderGrainDto);
+            callbackFuc.Invoke(notifyOrderDto);
         }
         catch (Exception e)
         {
@@ -128,20 +130,26 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
     }
 
     // call back NFT order pay result to Merchant webhookUrl
-    public async Task<int> CallBackNftOrderPayResultAsync(Guid orderId, string callbackStatus)
+    public async Task<int> CallBackNftOrderPayResultAsync(Guid orderId)
     {
+        var status = string.Empty;
         try
         {
             // query nft order grain
             var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(orderId);
             var nftOrderGrainDto = await nftOrderGrain.GetNftOrder();
-            AssertHelper.IsTrue(nftOrderGrainDto?.Data?.WebhookStatus == NftOrderWebhookStatus.NONE.ToString(),
+            AssertHelper.IsTrue(nftOrderGrainDto?.Data?.WebhookStatus != NftOrderWebhookStatus.SUCCESS.ToString(),
                 "Webhook status of order {OrderId} exists", orderId);
             if (nftOrderGrainDto?.Data?.WebhookCount >= _thirdPartOptions.Timer.NftCheckoutMerchantCallbackCount)
                 return 0;
 
+            var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
+            var orderGrainDto = await orderGrain.GetOrder();
+            AssertHelper.IsTrue(orderGrainDto.Success, "Order {orderId} not exits.", orderId);
+            status = orderGrainDto.Data.Status;
+            
             // callback merchant and update result
-            var grainDto = await DoCallBackNftOrderPayResultAsync(callbackStatus, nftOrderGrainDto?.Data);
+            var grainDto = await DoCallBackNftOrderPayResultAsync(status, nftOrderGrainDto?.Data);
             
             grainDto.WebhookTime = DateTime.UtcNow.ToUtcString();
             grainDto.WebhookCount++;
@@ -154,16 +162,16 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning(e, "Handle nft order callback fail, Id={Id}, Status={Status}", orderId, callbackStatus);
+            _logger.LogWarning(e, "Handle nft order callback fail, Id={Id}, Status={Status}", orderId, status);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Handle nft order callback error, Id={Id}, Status={Status}", orderId, callbackStatus);
+            _logger.LogError(e, "Handle nft order callback error, Id={Id}, Status={Status}", orderId, status);
         }
         return 0;
     }
 
-    private async Task<NftOrderGrainDto> DoCallBackNftOrderPayResultAsync(string callbackStatus,  NftOrderGrainDto nftOrderGrainDto)
+    private async Task<NftOrderGrainDto> DoCallBackNftOrderPayResultAsync(string orderStatus, NftOrderGrainDto nftOrderGrainDto)
     {
         try
         {
@@ -172,7 +180,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
                 MerchantName = nftOrderGrainDto.MerchantName,
                 MerchantOrderId = nftOrderGrainDto.MerchantOrderId,
                 OrderId = nftOrderGrainDto.Id.ToString(),
-                Status = callbackStatus == OrderStatusType.Pending.ToString()
+                Status = orderStatus == OrderStatusType.Pending.ToString()
                     ? NftOrderWebhookStatus.SUCCESS.ToString()
                     : NftOrderWebhookStatus.FAIL.ToString()
             };
@@ -192,7 +200,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         catch (HttpRequestException e)
         {
             _logger.LogWarning(e, "Do callback nft order fail, Id={Id}, Status={Status}",
-                nftOrderGrainDto.Id, callbackStatus);
+                nftOrderGrainDto.Id, orderStatus);
             nftOrderGrainDto.WebhookStatus = NftOrderWebhookStatus.FAIL.ToString();
             nftOrderGrainDto.WebhookResult = e.Message;
         }

@@ -97,13 +97,15 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         {
             _thirdPartOrderProvider.VerifyMerchantSignature(input);
 
-            var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
-            AssertHelper.NotNull(caHolder, "caHash {CaHash} not found", input.CaHash);
+            // TODO var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
+            // AssertHelper.NotNull(caHolder, "caHash {CaHash} not found", input.CaHash);
+            // var userId = caHolder.UserId;
+            var userId = Guid.NewGuid();
 
             // save ramp order
             var orderGrainData = _objectMapper.Map<CreateNftOrderRequestDto, OrderGrainDto>(input);
             orderGrainData.Id = GuidHelper.UniqId(input.MerchantName, input.MerchantOrderId);
-            orderGrainData.UserId = caHolder.UserId;
+            orderGrainData.UserId = userId;
             orderGrainData.Status = OrderStatusType.Initialized.ToString();
             orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
             var createResult = await DoCreateOrderAsync(orderGrainData);
@@ -145,7 +147,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderGrainDto.Id);
         var result = await orderGrain.CreateUserOrderAsync(orderGrainDto);
-        AssertHelper.IsTrue(result.Success, "Create user order fail");
+        AssertHelper.IsTrue(result.Success, "Create user order fail :" + result.Message);
 
         await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
         await _orderStatusProvider.AddOrderStatusInfoAsync(

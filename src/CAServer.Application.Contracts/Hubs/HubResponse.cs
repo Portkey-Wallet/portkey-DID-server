@@ -12,7 +12,7 @@ public class HubResponseBase<T>
 
     public HubResponseBase(T body)
     {
-        Body = Body;
+        Body = body;
     }
 
     public T Body { get; set; }

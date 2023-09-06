@@ -33,6 +33,7 @@ using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
@@ -371,6 +372,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
         CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
         CreateMap<OrderEto, RampOrderIndex>();
+
+        CreateMap<RampOrderIndex, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
+
+        CreateMap<OrderGrainDto, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
 
         CreateMap<NftOrderIndex, NftOrderSectionDto>();
         CreateMap<NftOrderIndex, OrderQueryResponseDto>();

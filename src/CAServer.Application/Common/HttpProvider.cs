@@ -109,10 +109,14 @@ public class HttpProvider : IHttpProvider
         var content = await response.Content.ReadAsStringAsync();
         
         // log
+        
+        _logger.LogDebug(
+            "Request To {FullUrl}, query={Query}, header={Header}, statusCode={StatusCode}, body={Body}, resp={Content}",
+            fullUrl, builder.Query, request.Headers.ToString(), response.StatusCode, body, content);
         if (withLog)
             _logger.LogInformation(
-            "Request To {FullUrl}, query={Query}, header={Header}, statusCode={StatusCode}, body={Body}, resp={Content}",
-            fullUrl, builder.Query, request.Headers.ToString(), body, response.StatusCode, content);
+            "Request To {FullUrl}, query={Query}, statusCode={StatusCode}, body={Body}, resp={Content}",
+            fullUrl, builder.Query, response.StatusCode, body, content);
 
         if (!response.IsSuccessStatusCode)
         {

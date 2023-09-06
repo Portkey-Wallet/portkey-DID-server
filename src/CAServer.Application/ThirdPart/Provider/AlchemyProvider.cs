@@ -76,6 +76,15 @@ public class AlchemyProvider : ISingletonDependency
 
         return respStr;
     }
+    
+    // Set Alchemy request header with appId timestamp sign.
+    private void SetAlchemyRequestHeader(HttpClient client)
+    {
+        foreach (var kv in GetRampAlchemyRequestHeader())
+        {
+            client.DefaultRequestHeaders.Add(kv.Key, kv.Value);
+        }
+    }
 
 
     /// <summary>
@@ -83,7 +92,7 @@ public class AlchemyProvider : ISingletonDependency
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    public async Task<AlchemyNftOrderDto> QueryNftTrade(AlchemyNftReleaseNoticeRequestDto request)
+    public async Task<AlchemyNftOrderDto> GetNftTrade(AlchemyNftReleaseNoticeRequestDto request)
     {
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.QueryNftTrade,
@@ -97,7 +106,6 @@ public class AlchemyProvider : ISingletonDependency
             "Query Alchemy NFT trade fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
         return result.Data;
     }
-
 
     /// <summary>
     ///     Notice Alchemy NFT release result
@@ -124,22 +132,33 @@ public class AlchemyProvider : ISingletonDependency
     {
         var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.QueryNftFiatList,
-            header: GetNftAlchemyRequestHeader(),
-            withLog: true
+            header: GetNftAlchemyRequestHeader()
         );
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             JsonConvert.SerializeObject(res));
         return res.Data;
     }
 
-    // Set Alchemy request header with appId timestamp sign.
-    private void SetAlchemyRequestHeader(HttpClient client)
+    /// <summary>
+    ///     Notice Alchemy NFT release result
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<List<AlchemyFiatDto>> GetRampFiatList()
     {
-        foreach (var kv in GetRampAlchemyRequestHeader())
-        {
-            client.DefaultRequestHeaders.Add(kv.Key, kv.Value);
-        }
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.BaseUrl,
+            AlchemyApi.QueryFiatList,
+            header: GetRampAlchemyRequestHeader(),
+            param: new Dictionary<string, string>
+            {
+                ["type"] = "BUY"
+            }
+        );
+        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            "Query Alchemy NFT trade fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+        return result.Data;
     }
+
 
     private Dictionary<string, string> GetRampAlchemyRequestHeader()
     {

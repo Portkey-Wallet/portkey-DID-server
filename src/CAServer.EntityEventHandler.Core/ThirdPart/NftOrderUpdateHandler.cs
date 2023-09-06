@@ -4,12 +4,14 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.ThirdPart.Etos;
 using Microsoft.Extensions.Logging;
+using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using Volo.Abp.TenantManagement;
 
 namespace CAServer.EntityEventHandler.Core.ThirdPart;
 
-public class NftOrderUpdateHandler : IDistributedEventHandler<NftOrderEto>
+public class NftOrderUpdateHandler : IDistributedEventHandler<NftOrderEto>, ITransientDependency
 {
     private readonly INESTRepository<NftOrderIndex, Guid> _nftOrderRepository;
     private readonly IObjectMapper _objectMapper;
