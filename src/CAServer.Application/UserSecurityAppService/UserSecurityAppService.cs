@@ -220,9 +220,9 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             dailyTransferLimit = dailyLimit;
         }
 
-        var decimals = _securityOptions.DefaultTokenDecimalDict[token.TokenInfo.Symbol] == 0
+        var decimals = _securityOptions.DefaultTokenDecimalDict.TryGetValue(token.TokenInfo.Symbol, out var d)
             ? _securityOptions.DefaultTokenDecimals
-            : _securityOptions.DefaultTokenDecimalDict[token.TokenInfo.Symbol];
+            : d;
 
 
         return new TransferLimitDto
