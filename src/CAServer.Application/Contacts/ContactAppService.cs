@@ -95,7 +95,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
         _ = FollowAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId);
-        await ImRemarkAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId, input.Name);
+        _ = ImRemarkAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId, input.Name);
 
         return contactResultDto;
     }
