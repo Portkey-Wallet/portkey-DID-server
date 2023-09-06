@@ -2,6 +2,7 @@
 using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
+using CAServer.ContactClean;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Options;
@@ -59,6 +60,7 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        context.Services.AddSingleton<ISearchService, ImUserSearchService>();
 
 
         Configure<ChainOptions>(configuration.GetSection("Chains"));
