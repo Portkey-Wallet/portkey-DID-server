@@ -96,7 +96,7 @@ public class ContactCleanProvider : IContactCleanProvider, ISingletonDependency
             var url = $"{RelationOneConstant.FlushRemarkUrl}?relationId={relationId}";
 
             var result =
-                await PostAsync<RelationOneResponseDto>(url, new { relationId = followRelationId, name = name });
+                await PostAsync<RelationOneResponseDto>(url, new { relationId = followRelationId, remark = name });
             if (result.Code != RelationOneConstant.SuccessCode)
             {
                 _logger.LogError("{relationId} remark {followRelationId} fail, message: {message}", relationId,

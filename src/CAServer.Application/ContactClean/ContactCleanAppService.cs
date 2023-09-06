@@ -111,10 +111,17 @@ public class ContactCleanAppService : CAServerAppService, IContactCleanAppServic
         // follow and modify contact name of be added
         foreach (var contact in contacts)
         {
-            await _contactCleanProvider.FollowAndRemarkAsync(relationId, contact.ImInfo.RelationId,
-                contact.Name ?? string.Empty);
+            try
+            {
+                await _contactCleanProvider.FollowAndRemarkAsync(relationId, contact.ImInfo.RelationId,
+                    contact.Name ?? string.Empty);
 
-            await Task.Delay(100);
+                await Task.Delay(100);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "[FollowAndRemarkAsync] fail, userId: {userId}", userId);
+            }
         }
     }
 
