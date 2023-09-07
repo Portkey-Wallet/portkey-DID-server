@@ -25,7 +25,6 @@ public partial class NotifyTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(GetIpInfo());
         services.AddSingleton(GetNotifyProvider());
     }
