@@ -34,6 +34,10 @@ public class OrderWsNotifyProvider : IOrderWsNotifyProvider
 
     public Task NotifyOrderDataAsync(NotifyOrderDto orderDto)
     {
+        if (orderDto == null)
+        {
+            return Task.CompletedTask;
+        }
         if (_orderNotifyListeners.TryGetValue(orderDto.OrderId.ToString(), out var callback))
         {
             callback.Invoke(orderDto);
