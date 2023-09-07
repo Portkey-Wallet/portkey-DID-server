@@ -124,24 +124,28 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             if (signatureRequestDto.OperationType is OperationType.Approve or OperationType.ModifyTransferLimit)
             {
-                var output = await _guardianProvider.GetHolderInfoFromContractAsync(request.GuardianIdentifierHash, null,
+                var output = await _guardianProvider.GetHolderInfoFromContractAsync(request.GuardianIdentifierHash,
+                    null,
                     request.ChainId);
-                var outputGuardianList = output.GuardianList;
-                var guardians = outputGuardianList.Guardians;
+                var guardians = output.GuardianList.Guardians;
                 var guardianHashByte = Array.Empty<Hash>();
-                foreach (var guardian in guardians)
+                var approvedGuardian = guardians.Where(g => g.VerifierId.ToHex() == signatureRequestDto.VerifierId)
+                    .ToList().FirstOrDefault();
+                var index = 0;
+                for (var i = 0; i >= guardians.Count - 1; i++)
                 {
-                    var guardianBytes = guardian.ToByteArray().ToHex();
-                    /*var byteArray = guardian.ToByteArray();
-                    var base64String = Base64.ToBase64String(byteArray);
-                    */
-                    
+                    var guardianBytes = guardians[i].ToByteArray().ToHex();
                     var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianBytes));
                     var enumerable = guardianHashByte.Append(hash);
+                    if (approvedGuardian != null && guardians[i].VerifierId.ToHex() == signatureRequestDto.VerifierId)
+                    {
+                        index = i;
+                    }
                 }
                 var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte);
-                var root = tree.Root;
+                var path = tree.GenerateMerklePath(index);
             }
+
             var response = await _verifierServerClient.VerifyCodeAsync(request);
             if (!response.Success)
             {
