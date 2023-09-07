@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
@@ -15,12 +16,15 @@ using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Utilities.Encoders;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -44,6 +48,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
+    private readonly IGuardianProvider _guardianProvider;
 
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
@@ -60,7 +65,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider, IGuardianProvider guardianProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -72,6 +77,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
+        _guardianProvider = guardianProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -116,6 +122,26 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             var guardianGrainResult = GetSaltAndHash(request);
 
+            if (signatureRequestDto.OperationType is OperationType.Approve or OperationType.ModifyTransferLimit)
+            {
+                var output = await _guardianProvider.GetHolderInfoFromContractAsync(request.GuardianIdentifierHash, null,
+                    request.ChainId);
+                var outputGuardianList = output.GuardianList;
+                var guardians = outputGuardianList.Guardians;
+                var guardianHashByte = Array.Empty<Hash>();
+                foreach (var guardian in guardians)
+                {
+                    var guardianBytes = guardian.ToByteArray().ToHex();
+                    /*var byteArray = guardian.ToByteArray();
+                    var base64String = Base64.ToBase64String(byteArray);
+                    */
+                    
+                    var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianBytes));
+                    var enumerable = guardianHashByte.Append(hash);
+                }
+                var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte);
+                var root = tree.Root;
+            }
             var response = await _verifierServerClient.VerifyCodeAsync(request);
             if (!response.Success)
             {
