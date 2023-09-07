@@ -97,7 +97,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         {
             _thirdPartOrderProvider.VerifyMerchantSignature(input);
 
-            // TODO var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
+            // TODO nzc var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
             // AssertHelper.NotNull(caHolder, "caHash {CaHash} not found", input.CaHash);
             // var userId = caHolder.UserId;
             var userId = Guid.NewGuid();

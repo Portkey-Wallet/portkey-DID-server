@@ -9,7 +9,6 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
-using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -30,8 +29,6 @@ public interface IOrderStatusProvider
     Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated);
     Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(NftOrderGrainDto dataToBeUpdated);
     Task<int> CallBackNftOrderPayResultAsync(Guid orderId);
-    void RegisterOrderChangeListener(string orderId, Func<NotifyOrderDto, Task> onOrderChanged);
-    void RemoveOrderChangeListener(string orderId);
 }
 
 public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
@@ -44,15 +41,13 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly IHttpProvider _httpProvider;
 
-    private readonly Dictionary<string, Func<NotifyOrderDto, Task>> _orderListeners = new();
-
     public OrderStatusProvider(
-        ILogger<OrderStatusProvider> logger, 
+        ILogger<OrderStatusProvider> logger,
         IThirdPartOrderProvider thirdPartOrderProvider,
-        IObjectMapper objectMapper, 
-        IClusterClient clusterClient, 
-        IOptions<ThirdPartOptions> thirdPartOptions, 
-        IHttpProvider httpProvider, 
+        IObjectMapper objectMapper,
+        IClusterClient clusterClient,
+        IOptions<ThirdPartOptions> thirdPartOptions,
+        IHttpProvider httpProvider,
         IDistributedEventBus distributedEventBus)
     {
         _logger = logger;
@@ -64,32 +59,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         _distributedEventBus = distributedEventBus;
     }
 
-    public void RegisterOrderChangeListener(string orderId, Func<NotifyOrderDto, Task> onOrderChanged)
-    {
-        _orderListeners[orderId] = onOrderChanged;
-    }
-    
-    public void RemoveOrderChangeListener(string orderId)
-    {
-        _orderListeners.Remove(orderId);
-    }
 
-    private void OnOrderChange(OrderGrainDto orderGrainDto)
-    {
-        if (!_orderListeners.TryGetValue(orderGrainDto.Id.ToString(), out var callbackFuc))
-            return;
-        try
-        { 
-            var notifyOrderDto = _objectMapper.Map<OrderGrainDto, NotifyOrderDto>(orderGrainDto);
-            callbackFuc.Invoke(notifyOrderDto);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e , "OnOrderChange call back error");
-        }
-    }
-    
-    
     // update ramp order
     public async Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated)
     {
@@ -102,14 +72,10 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
         AssertHelper.IsTrue(result.Success, "Update order error");
 
-        await AddOrderStatusInfoAsync(
-            _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
-        
-        // notify listener
-        OnOrderChange(result.Data);
-        
-        
+        await AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+
         await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data), false);
+
         return new CommonResponseDto<Empty>();
     }
 
@@ -124,7 +90,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         var result = await nftOrderGrain.UpdateNftOrder(dataToBeUpdated);
         AssertHelper.IsTrue(result.Success, "Update nft order error");
 
-        
+
         await _distributedEventBus.PublishAsync(_objectMapper.Map<NftOrderGrainDto, NftOrderEto>(result.Data), false);
         return new CommonResponseDto<Empty>();
     }
@@ -147,13 +113,13 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             var orderGrainDto = await orderGrain.GetOrder();
             AssertHelper.IsTrue(orderGrainDto.Success, "Order {orderId} not exits.", orderId);
             status = orderGrainDto.Data.Status;
-            
+
             // callback merchant and update result
             var grainDto = await DoCallBackNftOrderPayResultAsync(status, nftOrderGrainDto?.Data);
-            
+
             grainDto.WebhookTime = DateTime.UtcNow.ToUtcString();
             grainDto.WebhookCount++;
-            
+
             var nftOrderResult = await UpdateNftOrderAsync(grainDto);
             AssertHelper.IsTrue(nftOrderResult.Success,
                 "Webhook result update fail, webhookStatus={WebhookStatus}, webhookResult={WebhookResult}",
@@ -168,10 +134,12 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         {
             _logger.LogError(e, "Handle nft order callback error, Id={Id}, Status={Status}", orderId, status);
         }
+
         return 0;
     }
 
-    private async Task<NftOrderGrainDto> DoCallBackNftOrderPayResultAsync(string orderStatus, NftOrderGrainDto nftOrderGrainDto)
+    private async Task<NftOrderGrainDto> DoCallBackNftOrderPayResultAsync(string orderStatus,
+        NftOrderGrainDto nftOrderGrainDto)
     {
         try
         {
@@ -195,7 +163,6 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             nftOrderGrainDto.WebhookStatus = resObj.Success
                 ? NftOrderWebhookStatus.SUCCESS.ToString()
                 : NftOrderWebhookStatus.FAIL.ToString();
-            
         }
         catch (HttpRequestException e)
         {
@@ -204,9 +171,10 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             nftOrderGrainDto.WebhookStatus = NftOrderWebhookStatus.FAIL.ToString();
             nftOrderGrainDto.WebhookResult = e.Message;
         }
+
         return nftOrderGrainDto;
     }
-    
+
     public async Task UpdateOrderStatusAsync(OrderStatusUpdateDto orderStatusDto)
     {
         try
@@ -231,6 +199,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             {
                 grainDto.TransactionId = orderStatusDto.Order.TransactionId;
             }
+
             grainDto.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
             var result = await orderGrain.UpdateOrderAsync(grainDto);
@@ -245,7 +214,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
                 false);
 
             var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
-            statusInfoDto.RawTransaction = orderStatusDto.RawTransaction; 
+            statusInfoDto.RawTransaction = orderStatusDto.RawTransaction;
             statusInfoDto.OrderStatusInfo.Extension =
                 JsonConvert.SerializeObject(orderStatusDto.DicExt ?? new Dictionary<string, object>());
 

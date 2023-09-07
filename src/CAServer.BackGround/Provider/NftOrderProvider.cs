@@ -5,7 +5,7 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
-using MongoDB.Driver.Linq;
+using Hangfire;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 
@@ -43,6 +43,8 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
     /// <summary>
     ///     Compensate for NFT-order-pay-result not properly notified to Merchant.
     /// </summary>
+    ///
+    [AutomaticRetry(Attempts = 0)]
     public async Task HandleUnCompletedMerchantCallback()
     {
         await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + "HandleUnCompletedMerchantCallback");
@@ -94,6 +96,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
     /// <summary>
     ///     Compensate for NFT-release-result not properly notified to ThirdPart.
     /// </summary>
+    [AutomaticRetry(Attempts = 0)]
     public async Task HandleUnCompletedThirdPartResultNotify()
     {
         await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + "HandleUnCompletedThirdPartResultNotify");
@@ -155,6 +158,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
     /// <summary>
     ///     Compensate unprocessed order data from ThirdPart webhook.
     /// </summary>
+    [AutomaticRetry(Attempts = 0)]
     public async Task HandleUnCompletedNftOrderPayResultNotify()
     {
         await using var handle = await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + "HandleUnCompletedNftOrderPayResultNotify");

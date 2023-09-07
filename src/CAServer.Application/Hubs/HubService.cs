@@ -32,14 +32,16 @@ public class HubService : CAServerAppService, IHubService
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<HubService> _logger;
-    private readonly IOrderStatusProvider _orderStatusProvider;
+    private readonly IOrderWsNotifyProvider _orderWsNotifyProvider;
 
     private readonly Dictionary<string, string> _clientOrderListener = new();
+    private readonly Dictionary<string, Func<NotifyOrderDto, Task>> _orderNotifyListeners = new();
+
 
     public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IHubProvider caHubProvider,
         IThirdPartOrderProvider thirdPartOrderProvider, IObjectMapper objectMapper,
         IConnectionProvider connectionProvider, IOptions<ThirdPartOptions> merchantOptions,
-        ILogger<HubService> logger, IOrderStatusProvider orderStatusProvider)
+        ILogger<HubService> logger, IOrderWsNotifyProvider orderWsNotifyProvider)
     {
         _hubProvider = hubProvider;
         _hubCacheProvider = hubCacheProvider;
@@ -49,7 +51,7 @@ public class HubService : CAServerAppService, IHubService
         _connectionProvider = connectionProvider;
         _thirdPartOptions = merchantOptions.Value;
         _logger = logger;
-        _orderStatusProvider = orderStatusProvider;
+        _orderWsNotifyProvider = orderWsNotifyProvider;
     }
 
      public async Task Ping(HubRequestContext context, string content)
@@ -83,14 +85,8 @@ public class HubService : CAServerAppService, IHubService
     public string UnRegisterClient(string connectionId)
     {
         var clientId = _connectionProvider.Remove(connectionId);
-        
+        _orderWsNotifyProvider.UnRegisterOrderListenerAsync(clientId);
         return clientId;
-    }
-
-    public void UnRegisterOrderListener(string clientId)
-    {
-        if (!_clientOrderListener.TryGetValue(clientId, out var orderId)) return; 
-        _orderStatusProvider.RemoveOrderChangeListener(orderId);
     }
 
     public async Task SendAllUnreadRes(string clientId)
@@ -129,31 +125,25 @@ public class HubService : CAServerAppService, IHubService
 
     public async Task RequestNFTOrderStatusAsync(string clientId, string orderId)
     {
-        // notify current order immediately
-        var currentOrder = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(orderId);
-        await NotifyOrderInfo(clientId, _objectMapper.Map<RampOrderIndex, NotifyOrderDto>(currentOrder));
-        
-        // register a listener to OrderStatusProvider, to receive order changed
-        _orderStatusProvider.RegisterOrderChangeListener(orderId, async NotifyOrderDto =>
+        await _orderWsNotifyProvider.RegisterOrderListenerAsync(clientId, orderId, async notifyOrderDto =>
         {
             try
             {
-                var methodName = NotifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
-                await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(NotifyOrderDto), clientId, methodName);
+                var methodName = notifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
+                await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(notifyOrderDto), clientId, methodName);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "notify orderStatus error");
             }
         });
+        
+        // notify current order immediately
+        var currentOrder = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(orderId);
+        var notifyOrderDto = _objectMapper.Map<RampOrderIndex, NotifyOrderDto>(currentOrder);
+        await _orderWsNotifyProvider.NotifyOrderDataAsync(notifyOrderDto);
     }
 
-    private async Task NotifyOrderInfo(string client, NotifyOrderDto order)
-    {
-        var methodName = order.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
-        await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(order),client, methodName);
-    }
-    
     public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
     {
         await RequestConditionOrderAsync(targetClientId, orderId,      

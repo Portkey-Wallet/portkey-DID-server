@@ -371,7 +371,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<NftOrderEto, NftOrderIndex>();
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
         CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
+        
         CreateMap<OrderEto, RampOrderIndex>();
+        CreateMap<OrderEto, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
 
         CreateMap<RampOrderIndex, NotifyOrderDto>()
             .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
