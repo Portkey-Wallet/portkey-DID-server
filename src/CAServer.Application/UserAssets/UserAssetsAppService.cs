@@ -231,7 +231,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 var nftCollection =
                     ObjectMapper.Map<IndexerNftCollectionInfo, NftCollection>(nftCollectionInfo);
-                if (nftCollectionInfo == null || nftCollectionInfo.NftCollectionInfo == null)
+                if (nftCollectionInfo?.NftCollectionInfo == null)
                 {
                     dto.Data.Add(nftCollection);
                 }
@@ -246,7 +246,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                         continue;
                     }
 
-                    if (!nftCollectionInfo.NftCollectionInfo.ImageUrl.IsNullOrWhiteSpace())
+                    if (nftCollectionInfo.NftCollectionInfo != null && !nftCollectionInfo.NftCollectionInfo.ImageUrl.IsNullOrWhiteSpace())
                     {
                         _logger.LogDebug("GetNFTCollectionsAsync. Current Deal image is {image}",
                             nftCollectionInfo.NftCollectionInfo.ImageUrl);
@@ -555,7 +555,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
 
-                    if (!string.IsNullOrWhiteSpace(item.NftInfo.ImageUrl))
+                    if (null != item.NftInfo && !string.IsNullOrWhiteSpace(item.NftInfo.ImageUrl))
                     {
                         _logger.LogDebug("GetResizeImageAsync. current imageUrl is {imageUrl}", item.NftInfo.ImageUrl);
                         var suffix = GetImageUrlSuffix(item.NftInfo.ImageUrl);
