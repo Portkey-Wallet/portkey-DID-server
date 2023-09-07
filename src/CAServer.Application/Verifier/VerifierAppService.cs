@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
@@ -15,12 +16,15 @@ using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Utilities.Encoders;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -44,6 +48,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
+    private readonly IGuardianProvider _guardianProvider;
 
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
@@ -60,7 +65,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider, IGuardianProvider guardianProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -72,6 +77,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
+        _guardianProvider = guardianProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -116,6 +122,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             var guardianGrainResult = GetSaltAndHash(request);
 
+            if (signatureRequestDto.OperationType is OperationType.Approve or OperationType.ModifyTransferLimit)
+            {
+                var merklePathString = await GetMerklePath(request.GuardianIdentifierHash,request.ChainId,request.VerifierId);
+                request.MerklePath = merklePathString;
+            }
+
             var response = await _verifierServerClient.VerifyCodeAsync(request);
             if (!response.Success)
             {
@@ -147,6 +159,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
+            if (requestDto.OperationType is OperationType.Approve or OperationType.ModifyTransferLimit)
+            {
+                var merklePathString = await GetMerklePath(hashInfo.Item1,requestDto.ChainId,requestDto.VerifierId);
+                requestDto.MerklePath = merklePathString;
+            }
+            
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
 
@@ -194,6 +212,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
+            if (requestDto.OperationType is OperationType.Approve or OperationType.ModifyTransferLimit)
+            {
+                var merklePathString = await GetMerklePath(hashInfo.Item1,requestDto.ChainId,requestDto.VerifierId);
+                requestDto.MerklePath = merklePathString;
+            }
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -443,5 +466,48 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             _logger.LogError(e, "{Message}", e.Message);
             throw new Exception("Invalid token");
         }
+    }
+
+    private async Task<string> GetMerklePath(string guardianIdentifierHash, string chainId, string verifierId)
+    {
+        var output = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash,
+            null,
+            chainId);
+        if (output == null)
+        {
+            throw new UserFriendlyException("CAHolder not found");
+        }
+
+        var guardians = output.GuardianList.Guardians;
+        if (output.GuardianList == null || guardians == null || !guardians.Any())
+        {
+            throw new UserFriendlyException("Guardian not found");
+        }
+
+        var guardianHashByte = new List<Hash>();
+
+        var index = 0;
+        for (var i = 0; i < guardians.Count ; i++)
+        {
+            var guardian = new Portkey.Contracts.CA.Guardian
+            {
+                Type = guardians[i].Type,
+                IdentifierHash = guardians[i].IdentifierHash,
+                VerifierId = guardians[i].VerifierId
+            };
+
+            var guardianHashString = HashHelper.ComputeFrom(guardian).ToHex();
+            var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianHashString));
+            guardianHashByte.Add(hash);
+            if (guardians[i].IdentifierHash.ToHex() == guardianIdentifierHash)
+            {
+                index = i;
+            }
+        }
+
+        var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte.ToArray());
+        var merklePath = tree.GenerateMerklePath(index);
+        var merklePathString = merklePath.ToByteString().ToHex();
+        return merklePathString;
     }
 }
