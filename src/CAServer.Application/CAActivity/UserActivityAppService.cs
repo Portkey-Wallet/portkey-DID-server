@@ -210,9 +210,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return string.Empty;
         }
 
-        var date = transactions.CaHolderTransaction.Data[0].Timestamp;
+        var data = transactions.CaHolderTransaction.Data;
+        foreach (var indexerTransaction in data.Where(indexerTransaction => indexerTransaction.Timestamp > 0))
+        {
+            return indexerTransaction.Timestamp.ToString();
+        }
 
-        return date.ToString();
+        return string.Empty;
     }
 
 
