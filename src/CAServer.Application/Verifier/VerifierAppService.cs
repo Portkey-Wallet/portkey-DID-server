@@ -127,15 +127,31 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 var output = await _guardianProvider.GetHolderInfoFromContractAsync(request.GuardianIdentifierHash,
                     null,
                     request.ChainId);
+                if (output == null)
+                {
+                    throw new UserFriendlyException("CAHolder not found");
+                }
                 var guardians = output.GuardianList.Guardians;
+                if (output.GuardianList == null || guardians == null || !guardians.Any())
+                {
+                    throw new UserFriendlyException("Guardian not found");
+                }
+
                 var guardianHashByte = Array.Empty<Hash>();
                 var approvedGuardian = guardians.Where(g => g.VerifierId.ToHex() == signatureRequestDto.VerifierId)
                     .ToList().FirstOrDefault();
                 var index = 0;
                 for (var i = 0; i >= guardians.Count - 1; i++)
                 {
-                    var guardianBytes = guardians[i].ToByteArray().ToHex();
-                    var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianBytes));
+                    var guardian = new Portkey.Contracts.CA.Guardian
+                    {
+                        VerifierId = guardians[i].VerifierId,
+                        Type = guardians[i].Type,
+                        IdentifierHash = guardians[i].IdentifierHash
+                    };
+
+                    var guardianHashString = HashHelper.ComputeFrom(guardian).ToHex();
+                    var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianHashString));
                     var enumerable = guardianHashByte.Append(hash);
                     if (approvedGuardian != null && guardians[i].VerifierId.ToHex() == signatureRequestDto.VerifierId)
                     {
@@ -143,7 +159,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                     }
                 }
                 var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte);
-                var path = tree.GenerateMerklePath(index);
+                var merklePath = tree.GenerateMerklePath(index);
+                var merklePathString = merklePath.ToByteString().ToHex();
+                var fromHexString = ByteStringHelper.FromHexString(merklePathString);
+                
+                
             }
 
             var response = await _verifierServerClient.VerifyCodeAsync(request);

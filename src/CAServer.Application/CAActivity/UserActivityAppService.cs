@@ -158,6 +158,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 return activityDto;
             }
+
             var imageUrlReplaceSuffix = imageUrl.Replace(DefaultSuffix, ReplaceSuffix);
             activityDto.NftInfo.ImageUrl = imageUrlReplaceSuffix;
             return activityDto;
@@ -179,25 +180,29 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         var caHash = result.CaHolderManagerInfo.First().CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        try
+
         {
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
-                var output =
-                    await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
-                caAddressInfos.Add(new CAAddressInfo
+                try
                 {
-                    ChainId = chainInfo.Key,
-                    CaAddress = output.CaAddress.ToBase58()
-                });
+                    var output =
+                        await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null,
+                            chainInfo.Value.ChainId);
+                    caAddressInfos.Add(new CAAddressInfo
+                    {
+                        ChainId = chainInfo.Key,
+                        CaAddress = output.CaAddress.ToBase58()
+                    });
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
+                }
             }
         }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
-            throw new UserFriendlyException("Internal service error, please try again later.");
-        }
-
+        
+        
         var filterTypes = new List<string>
         {
             "CreateCAHolder"

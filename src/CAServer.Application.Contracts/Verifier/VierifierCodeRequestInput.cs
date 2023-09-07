@@ -12,4 +12,7 @@ public class VierifierCodeRequestInput
     public string GuardianIdentifierHash { get; set; }
     
     public OperationType OperationType { get; set; }
+    
+    public string Path { get; set; }
+    
 }
