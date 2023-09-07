@@ -15,6 +15,7 @@ using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -158,6 +159,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 return activityDto;
             }
+
             var imageUrlReplaceSuffix = imageUrl.Replace(DefaultSuffix, ReplaceSuffix);
             activityDto.NftInfo.ImageUrl = imageUrlReplaceSuffix;
             return activityDto;
@@ -179,9 +181,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         var caHash = result.CaHolderManagerInfo.First().CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        try
+
+        foreach (var chainInfo in _chainOptions.ChainInfos)
         {
-            foreach (var chainInfo in _chainOptions.ChainInfos)
+            try
             {
                 var output =
                     await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
@@ -191,12 +194,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     CaAddress = output.CaAddress.ToBase58()
                 });
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
+            }
         }
-        catch (Exception e)
+
+        if (caAddressInfos.Count == 0)
         {
-            _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
-            throw new UserFriendlyException("Internal service error, please try again later.");
+            _logger.LogDebug("No caAddressInfos found. {request}", JsonConvert.SerializeObject(request));
+            return string.Empty;
         }
+
 
         var filterTypes = new List<string>
         {
