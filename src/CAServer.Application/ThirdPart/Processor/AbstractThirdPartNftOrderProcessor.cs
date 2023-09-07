@@ -201,7 +201,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var nftOrderUpdateResult = await _orderStatusProvider.UpdateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(nftOrderUpdateResult.Success, "Update nft order fail");
         }
-
+    
         // update order grain
         if (orderNeedUpdate)
         {
@@ -223,8 +223,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(orderId);
             var nftOrderGrainDto = (await nftOrderGrain.GetNftOrder()).Data;
             AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
-            AssertHelper.IsTrue(nftOrderGrainDto.ThirdPartNotifyCount < maxNotifyCount,
-                "Notify max count reached : " + maxNotifyCount);
+            //TODO nzc AssertHelper.IsTrue(nftOrderGrainDto.ThirdPartNotifyCount < maxNotifyCount,
+                // "Notify max count reached : " + maxNotifyCount);
 
             // query verify order grain
             var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);

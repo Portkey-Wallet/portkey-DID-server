@@ -227,8 +227,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
                 ? OrderStatusType.Finish
                 : OrderStatusType.TransferFailed;
             var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
-            AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
-                "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
+            //TODO nzc AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
+                // "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
             
             // update base-order status 
             orderGrainDto.Status = nextStatus.ToString();

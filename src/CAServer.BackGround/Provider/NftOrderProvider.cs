@@ -60,7 +60,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
         const int maxCallbackCount = 3;
 
         // when WebhookCount > 0, WebhookTimeLt mast be exists
-        var lastWebhookTimeLt = DateTime.UtcNow.AddMinutes(-2).ToUtcMilliSeconds().ToString();
+        var lastWebhookTimeLt = DateTime.UtcNow.AddMinutes(-2).ToUtcString();
         var total = 0;
         while (true)
         {
@@ -68,7 +68,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
                 new NftOrderQueryConditionDto(0, pageSize)
                 {
                     WebhookCountGtEq = minCallbackCount,
-                    WebhookCountLtEq = maxCallbackCount,
+                    WebhookCountLtEq = maxCallbackCount - 1,
                     WebhookStatus = NftOrderWebhookStatus.FAIL.ToString(),
                     WebhookTimeLt = lastWebhookTimeLt
                 });
@@ -120,7 +120,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
                 new NftOrderQueryConditionDto(0, pageSize)
                 {
                     ThirdPartNotifyCountGtEq = minNotifyCount,
-                    ThirdPartNotifyCountLtEq = maxNotifyCount,
+                    ThirdPartNotifyCountLtEq = maxNotifyCount - 1,
                     ThirdPartNotifyStatus = NftOrderWebhookStatus.FAIL.ToString(),
                     WebhookTimeLt = lastWebhookTimeLt
                 });
@@ -144,7 +144,7 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
                     .GetProcessor(baseOrder.MerchantName)
                     .NotifyNftReleaseAsync(orderDto.Id));
             }
-
+            
             // non data in page was handled, stop
             // All data at 'lastModifyTimeLt' may have reached max notify-count.
             var handleCount = (await Task.WhenAll(callbackResults.ToArray())).Count(resp => resp.Success);

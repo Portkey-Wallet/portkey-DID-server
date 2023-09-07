@@ -117,7 +117,8 @@ public class AlchemyProvider : ISingletonDependency
         var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<Empty>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.NftResultNotice,
             header: GetNftAlchemyRequestHeader(),
-            body: JsonConvert.SerializeObject(request, HttpProvider.DefaultJsonSettings));
+            body: JsonConvert.SerializeObject(request, HttpProvider.DefaultJsonSettings), 
+            withLog:true);
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             JsonConvert.SerializeObject(res));
     }
@@ -138,27 +139,6 @@ public class AlchemyProvider : ISingletonDependency
             JsonConvert.SerializeObject(res));
         return res.Data;
     }
-
-    /// <summary>
-    ///     Notice Alchemy NFT release result
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    public async Task<List<AlchemyFiatDto>> GetRampFiatList()
-    {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.BaseUrl,
-            AlchemyApi.QueryFiatList,
-            header: GetRampAlchemyRequestHeader(),
-            param: new Dictionary<string, string>
-            {
-                ["type"] = "BUY"
-            }
-        );
-        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
-            "Query Alchemy NFT trade fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
-        return result.Data;
-    }
-
 
     private Dictionary<string, string> GetRampAlchemyRequestHeader()
     {

@@ -76,6 +76,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid alchemy nft-order data");
         var achNftOrderRequest = input as AlchemyNftOrderRequestDto;
 
+        orderGrainDto.ThirdPartOrderNo = orderGrainDto.ThirdPartOrderNo.DefaultIfEmpty(achNftOrderRequest?.OrderNo);
         orderGrainDto.Fiat = orderGrainDto.Fiat.DefaultIfEmpty(achNftOrderRequest?.Fiat);
         orderGrainDto.FiatAmount = orderGrainDto.FiatAmount.DefaultIfEmpty(achNftOrderRequest?.Amount);
         orderGrainDto.Status = achNftOrderRequest?.Status;

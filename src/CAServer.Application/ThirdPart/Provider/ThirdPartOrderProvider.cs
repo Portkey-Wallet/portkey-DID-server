@@ -196,6 +196,8 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             mustQuery.Add(q => q.LongRange(i => i.Field(f => f.WebhookCount).LessThanOrEquals(condition.WebhookCountLtEq)));
         if (condition.WebhookStatus.NotNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.WebhookStatus).Terms(condition.WebhookStatus)));
+        if (condition.WebhookTimeLt.NotNullOrEmpty())
+            mustQuery.Add(q => q.TermRange(i => i.Field(f => f.WebhookTime).LessThan(condition.WebhookTimeLt)));
 
         // thirdPartNotify
         if (condition.ThirdPartNotifyCountGtEq != null)
