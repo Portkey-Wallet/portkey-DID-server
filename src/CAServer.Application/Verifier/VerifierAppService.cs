@@ -484,11 +484,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new UserFriendlyException("Guardian not found");
         }
 
-        var guardianHashByte = Array.Empty<Hash>();
-        var approvedGuardian = guardians.Where(g => g.VerifierId.ToHex() == verifierId)
-            .ToList().FirstOrDefault();
+        var guardianHashByte = new List<Hash>();
+
         var index = 0;
-        for (var i = 0; i >= guardians.Count - 1; i++)
+        for (var i = 0; i < guardians.Count ; i++)
         {
             var guardian = new Portkey.Contracts.CA.Guardian
             {
@@ -499,14 +498,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             var guardianHashString = HashHelper.ComputeFrom(guardian).ToHex();
             var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianHashString));
-            var enumerable = guardianHashByte.Append(hash);
-            if (approvedGuardian != null && guardians[i].VerifierId.ToHex() == verifierId)
+            guardianHashByte.Add(hash);
+            if (guardians[i].IdentifierHash.ToHex() == guardianIdentifierHash)
             {
                 index = i;
             }
         }
 
-        var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte);
+        var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte.ToArray());
         var merklePath = tree.GenerateMerklePath(index);
         var merklePathString = merklePath.ToByteString().ToHex();
         return merklePathString;
