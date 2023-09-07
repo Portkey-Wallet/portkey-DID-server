@@ -124,46 +124,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
             if (signatureRequestDto.OperationType is OperationType.Approve or OperationType.ModifyTransferLimit)
             {
-                var output = await _guardianProvider.GetHolderInfoFromContractAsync(request.GuardianIdentifierHash,
-                    null,
-                    request.ChainId);
-                if (output == null)
-                {
-                    throw new UserFriendlyException("CAHolder not found");
-                }
-                var guardians = output.GuardianList.Guardians;
-                if (output.GuardianList == null || guardians == null || !guardians.Any())
-                {
-                    throw new UserFriendlyException("Guardian not found");
-                }
-
-                var guardianHashByte = Array.Empty<Hash>();
-                var approvedGuardian = guardians.Where(g => g.VerifierId.ToHex() == signatureRequestDto.VerifierId)
-                    .ToList().FirstOrDefault();
-                var index = 0;
-                for (var i = 0; i >= guardians.Count - 1; i++)
-                {
-                    var guardian = new Portkey.Contracts.CA.Guardian
-                    {
-                        VerifierId = guardians[i].VerifierId,
-                        Type = guardians[i].Type,
-                        IdentifierHash = guardians[i].IdentifierHash
-                    };
-
-                    var guardianHashString = HashHelper.ComputeFrom(guardian).ToHex();
-                    var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianHashString));
-                    var enumerable = guardianHashByte.Append(hash);
-                    if (approvedGuardian != null && guardians[i].VerifierId.ToHex() == signatureRequestDto.VerifierId)
-                    {
-                        index = i;
-                    }
-                }
-                var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte);
-                var merklePath = tree.GenerateMerklePath(index);
-                var merklePathString = merklePath.ToByteString().ToHex();
-                var fromHexString = ByteStringHelper.FromHexString(merklePathString);
-                
-                
+                var merklePathString = await GetMerklePath(request.GuardianIdentifierHash,request.ChainId,request.VerifierId);
+                request.MerklePath = merklePathString;
             }
 
             var response = await _verifierServerClient.VerifyCodeAsync(request);
@@ -197,6 +159,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
+            if (requestDto.OperationType is OperationType.Approve or OperationType.ModifyTransferLimit)
+            {
+                var merklePathString = await GetMerklePath(hashInfo.Item1,requestDto.ChainId,requestDto.VerifierId);
+                requestDto.MerklePath = merklePathString;
+            }
+            
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
 
@@ -244,6 +212,11 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
+            if (requestDto.OperationType is OperationType.Approve or OperationType.ModifyTransferLimit)
+            {
+                var merklePathString = await GetMerklePath(hashInfo.Item1,requestDto.ChainId,requestDto.VerifierId);
+                requestDto.MerklePath = merklePathString;
+            }
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
             if (!response.Success)
@@ -493,5 +466,49 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             _logger.LogError(e, "{Message}", e.Message);
             throw new Exception("Invalid token");
         }
+    }
+
+    private async Task<string> GetMerklePath(string guardianIdentifierHash, string chainId, string verifierId)
+    {
+        var output = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash,
+            null,
+            chainId);
+        if (output == null)
+        {
+            throw new UserFriendlyException("CAHolder not found");
+        }
+
+        var guardians = output.GuardianList.Guardians;
+        if (output.GuardianList == null || guardians == null || !guardians.Any())
+        {
+            throw new UserFriendlyException("Guardian not found");
+        }
+
+        var guardianHashByte = Array.Empty<Hash>();
+        var approvedGuardian = guardians.Where(g => g.VerifierId.ToHex() == verifierId)
+            .ToList().FirstOrDefault();
+        var index = 0;
+        for (var i = 0; i >= guardians.Count - 1; i++)
+        {
+            var guardian = new Portkey.Contracts.CA.Guardian
+            {
+                Type = guardians[i].Type,
+                IdentifierHash = guardians[i].IdentifierHash,
+                VerifierId = guardians[i].VerifierId
+            };
+
+            var guardianHashString = HashHelper.ComputeFrom(guardian).ToHex();
+            var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianHashString));
+            var enumerable = guardianHashByte.Append(hash);
+            if (approvedGuardian != null && guardians[i].VerifierId.ToHex() == verifierId)
+            {
+                index = i;
+            }
+        }
+
+        var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte);
+        var merklePath = tree.GenerateMerklePath(index);
+        var merklePathString = merklePath.ToByteString().ToHex();
+        return merklePathString;
     }
 }

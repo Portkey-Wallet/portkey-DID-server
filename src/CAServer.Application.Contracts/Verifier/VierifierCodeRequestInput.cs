@@ -13,6 +13,6 @@ public class VierifierCodeRequestInput
     
     public OperationType OperationType { get; set; }
     
-    public string Path { get; set; }
+    public string MerklePath { get; set; }
     
 }
