@@ -32,7 +32,7 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
                     caHolderTransferLimit(dto: {caHash:$caHash}){
                         data{
                             chainId,
-                            caHash,
+                            cAHash,
                             symbol,
                             singleLimit,
                             dailyLimit
@@ -54,10 +54,10 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
         {
             Query = @"
         		query($caHash:String,$spender:String,$symbol:String,$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderSearchTokenNFT(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    caHolderManagerApproved(dto: {caHash:$caHash,spender:$spender,symbol:$symbol,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                             data{
                                 chainId,
-                                caHash,
+                                cAHash,
                                 spender,
                                 symbol,
                                 amount,
