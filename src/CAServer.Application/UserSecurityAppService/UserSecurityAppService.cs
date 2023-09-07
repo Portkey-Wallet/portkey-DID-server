@@ -68,16 +68,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             }
 
             // If the transferLimit is updated, the token transferLimit will be overwritten
-            // var res = await _userSecurityProvider.GetTransferLimitListByCaHash(input.CaHash);
-            var res = new IndexerTransferLimitList
-            {
-                CaHolderTransferLimit = new CaHolderTransferLimit
-                {
-                    TotalRecordCount = 0,
-                    Data = new List<TransferLimitDto>()
-                }
-            };
-
+            var res = await _userSecurityProvider.GetTransferLimitListByCaHash(input.CaHash);
             _logger.LogDebug("CaHash: {caHash} have {COUNT} transfer limit change history.", input.CaHash,
                 res.CaHolderTransferLimit.TotalRecordCount);
 
