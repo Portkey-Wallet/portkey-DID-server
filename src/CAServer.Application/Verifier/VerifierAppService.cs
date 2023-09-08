@@ -489,7 +489,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         var index = 0;
         for (var i = 0; i < guardians.Count ; i++)
         {
-            var guardian = new Portkey.Contracts.CA.Guardian
+            var guardian = new GuardianMerkleTreeNode
             {
                 Type = guardians[i].Type,
                 IdentifierHash = guardians[i].IdentifierHash,
