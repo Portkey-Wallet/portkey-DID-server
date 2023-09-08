@@ -11,6 +11,7 @@ using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using Google.Protobuf.WellKnownTypes;
+using MassTransit;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -40,6 +41,8 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly IHttpProvider _httpProvider;
+    private readonly IBus _broadcastBus;
+
 
     public OrderStatusProvider(
         ILogger<OrderStatusProvider> logger,
@@ -48,7 +51,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         IClusterClient clusterClient,
         IOptions<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider,
-        IDistributedEventBus distributedEventBus)
+        IDistributedEventBus distributedEventBus, IBus broadcastBus)
     {
         _logger = logger;
         _thirdPartOrderProvider = thirdPartOrderProvider;
@@ -57,6 +60,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         _thirdPartOptions = thirdPartOptions.Value;
         _httpProvider = httpProvider;
         _distributedEventBus = distributedEventBus;
+        _broadcastBus = broadcastBus;
     }
 
 
@@ -74,8 +78,9 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
 
         await AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
 
-        await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data), false);
-
+        var orderChangeEto = _objectMapper.Map<OrderGrainDto, OrderEto>(result.Data);
+        await _distributedEventBus.PublishAsync(orderChangeEto, false);
+        await _broadcastBus.Publish(orderChangeEto);
         return new CommonResponseDto<Empty>();
     }
 
@@ -90,8 +95,8 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         var result = await nftOrderGrain.UpdateNftOrder(dataToBeUpdated);
         AssertHelper.IsTrue(result.Success, "Update nft order error");
 
-
-        await _distributedEventBus.PublishAsync(_objectMapper.Map<NftOrderGrainDto, NftOrderEto>(result.Data), false);
+        var orderChangeEto = _objectMapper.Map<NftOrderGrainDto, NftOrderEto>(result.Data);
+        await _distributedEventBus.PublishAsync(orderChangeEto, false);
         return new CommonResponseDto<Empty>();
     }
 

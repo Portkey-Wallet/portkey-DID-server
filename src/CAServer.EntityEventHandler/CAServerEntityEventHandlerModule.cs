@@ -6,11 +6,13 @@ using AElf.Indexing.Elasticsearch.Options;
 using CAServer.Commons;
 using CAServer.EntityEventHandler.Core;
 using CAServer.Grains;
+using CAServer.HubsEventHandler;
 using CAServer.MongoDB;
 using CAServer.Options;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using MassTransit;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.Extensions.Caching.Distributed;
@@ -30,6 +32,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
+using Volo.Abp.RabbitMQ;
 using Volo.Abp.Threading;
 
 namespace CAServer;
@@ -52,6 +55,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
+        ConfigureMassTransit(context, configuration);
 
         context.Services.AddSingleton<IClusterClient>(o =>
         {
@@ -110,6 +114,29 @@ public class CAServerEntityEventHandlerModule : AbpModule
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(expirationDays)
             };
+        });
+    }
+    
+    private void ConfigureMassTransit(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddMassTransit(x =>
+        {
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<AbpRabbitMqOptions>();
+            // x.AddConsumer<OrderWsBroadcastConsumer>();
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                    "/", h =>
+                    {
+                        h.Username(rabbitMqConfig.Connections.Default.UserName);
+                        h.Password(rabbitMqConfig.Connections.Default.Password);
+                    });
+                //
+                // cfg.ReceiveEndpoint(rabbitMqConfig.ClientQueueName, e =>
+                // {
+                //     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
+                // });
+            });
         });
     }
 
