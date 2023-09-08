@@ -177,8 +177,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
+        
+        await ImRemarkAsync(result?.Data?.ImInfo?.RelationId, userId, "");
         _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
-        _ = ImRemarkAsync(result?.Data?.ImInfo?.RelationId, userId, "");
     }
 
     public async Task<ContractExistDto> GetExistAsync(string name)

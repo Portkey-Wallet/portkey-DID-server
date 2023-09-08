@@ -11,6 +11,7 @@ public class ChangeRecordDto
 {
     public string CaHash { get; set; }
     public string CaAddress { get; set; }
+    public string GuardiansMerkleTreeRoot { get; set; }
     public string ChangeType { get; set; }
     public string Manager { get; set; }
     public long BlockHeight { get; set; }
@@ -58,4 +59,13 @@ public enum BlockFilterType
     BLOCK,
     TRANSACTION,
     LOG_EVENT
+}
+
+public class GuardianChangeRecords
+{
+    public List<GuardianChangeRecord> GuardianChangeRecordInfo { get; set; }
+}
+
+public class GuardianChangeRecord : ChangeRecordDto
+{
 }

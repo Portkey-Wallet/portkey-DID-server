@@ -245,6 +245,8 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("Recovery state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
+        // _logger.LogInformation("ValidateTransactionAndSyncAsync, holderInfo: {holderInfo}",
+        //     JsonConvert.SerializeObject(outputGetHolderInfo));
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
         _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "");
     }
@@ -518,6 +520,8 @@ public class ContractAppService : IContractAppService
                 queryEvents.AddRange(await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
                     chainId, startIndexHeight, endIndexHeight));
                 queryEvents.AddRange(await _graphQLProvider.GetManagerTransactionInfosAsync(
+                    chainId, startIndexHeight, endIndexHeight));
+                queryEvents.AddRange(await _graphQLProvider.GetGuardianTransactionInfosAsync(
                     chainId, startIndexHeight, endIndexHeight));
 
                 if (endIndexHeight == targetIndexHeight)
