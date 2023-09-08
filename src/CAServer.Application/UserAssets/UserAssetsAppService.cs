@@ -756,11 +756,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             var needValidate = await validateMerkerTreeGrain.NeedValidateAsync();
             _logger.LogInformation("UpdateMerkerTreeAsync,needValidate {needValidate}", needValidate);
-            /*
+            
             if (!needValidate)
             {
                 return;
-            }*/
+            }
             
             var merkleTreeRoot = result.GuardiansMerkleTreeRoot;
             if (string.IsNullOrWhiteSpace(merkleTreeRoot))
@@ -792,6 +792,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     chainId,
                     identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
                     transactionDto.TransactionResultDto.Status);
+                return;
             }
 
             if (transactionDto.TransactionResultDto.Status == TransactionState.NodeValidationFailed ||
@@ -803,6 +804,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     transactionDto.TransactionResultDto.Status, chainId,
                     identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
                     transactionDto.TransactionResultDto.Status);
+                return;
             }
 
             _logger.LogInformation(

@@ -90,7 +90,9 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     { e.GuardianList.Guardians.Where(g => g.IsLoginGuardian).Select(g => g.IdentifierHash).ToList() }))
             .ForMember(d => d.ManagerInfos, opt => opt.MapFrom(g => g.ManagerInfos))
             .ForMember(d => d.CaHash,
-                opt => opt.MapFrom(g => g.CaHash));
+                opt => opt.MapFrom(g => g.CaHash))
+            .ForMember(d => d.GuardiansMerkleTreeRoot,
+                opt => opt.MapFrom(g => g.GuardiansMerkleTreeRoot));
 
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoState>().ReverseMap();
         CreateMap<OrderState, OrderGrainDto>();
