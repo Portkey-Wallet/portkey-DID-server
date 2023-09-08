@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
@@ -27,21 +28,22 @@ public class NftOrderUpdateHandler : IDistributedEventHandler<NftOrderEto>, ITra
     
     public async Task HandleEventAsync(NftOrderEto eventData)
     {
+        var nftOrderGrainDto = eventData.Data;
         try
         {
-            var nftOrderInfo = _objectMapper.Map<NftOrderEto, NftOrderIndex>(eventData);
+            var nftOrderInfo = _objectMapper.Map<NftOrderGrainDto, NftOrderIndex>(nftOrderGrainDto);
 
             await _nftOrderRepository.AddOrUpdateAsync(nftOrderInfo);
 
             _logger.LogInformation(
                 "nft order index add or update success, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
-                eventData.Id, eventData.MerchantName, eventData.MerchantOrderId);
+                nftOrderGrainDto.Id, nftOrderGrainDto.MerchantName, nftOrderGrainDto.MerchantOrderId);
         }
         catch (Exception e)
         {
             _logger.LogError(e,
                 "An error occurred while processing the event, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
-                eventData.Id, eventData.MerchantName, eventData.MerchantOrderId);
+                nftOrderGrainDto.Id, nftOrderGrainDto.MerchantName, nftOrderGrainDto.MerchantOrderId);
         }
     }
 }

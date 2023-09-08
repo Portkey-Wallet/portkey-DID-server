@@ -95,8 +95,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         var result = await nftOrderGrain.UpdateNftOrder(dataToBeUpdated);
         AssertHelper.IsTrue(result.Success, "Update nft order error");
 
-        var orderChangeEto = _objectMapper.Map<NftOrderGrainDto, NftOrderEto>(result.Data);
-        await _distributedEventBus.PublishAsync(orderChangeEto, false);
+        await _distributedEventBus.PublishAsync(new NftOrderEto(result.Data), false);
         return new CommonResponseDto<Empty>();
     }
 

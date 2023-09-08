@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart;
 
 public enum ThirdPartNameType
 {
@@ -75,7 +75,7 @@ public class OrderStatusTransitions
 {
     public static bool Reachable(OrderStatusType from, OrderStatusType to)
     {
-        return _reachableDict.GetValueOrDefault(from, Empty).Contains(to);
+        return from == to || _reachableDict.GetValueOrDefault(from, Empty).Contains(to);
     }
 
     private static readonly List<OrderStatusType> Empty = new List<OrderStatusType>();

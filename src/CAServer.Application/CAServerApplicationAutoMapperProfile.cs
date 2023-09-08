@@ -32,6 +32,7 @@ using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
@@ -366,9 +367,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>();
 
-        CreateMap<NftOrderGrainDto, NftOrderEto>();
-        CreateMap<NftOrderGrainDto, NftOrderEto>();
-        CreateMap<NftOrderEto, NftOrderIndex>();
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
         CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
         
@@ -383,6 +381,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
 
         CreateMap<NftOrderIndex, NftOrderSectionDto>();
+        CreateMap<NftOrderGrainDto, NftOrderIndex>();
         CreateMap<NftOrderIndex, OrderQueryResponseDto>();
         CreateMap<OrderDto, OrderQueryResponseDto>()
             .ForMember(des => des.PriceSymbol, opt => opt.MapFrom(src => src.Crypto))

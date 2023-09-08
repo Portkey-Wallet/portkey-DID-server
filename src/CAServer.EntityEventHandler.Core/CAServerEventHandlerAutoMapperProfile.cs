@@ -54,6 +54,5 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<DeleteNotifyEto, NotifyRulesIndex>();
         CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
-        CreateMap<NftOrderEto, NftOrderIndex>();
     }
 }

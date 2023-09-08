@@ -97,15 +97,12 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         {
             _thirdPartOrderProvider.VerifyMerchantSignature(input);
 
-            // TODO nzc var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
-            // AssertHelper.NotNull(caHolder, "caHash {CaHash} not found", input.CaHash);
-            // var userId = caHolder.UserId;
-            var userId = Guid.NewGuid();
+            var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
 
             // save ramp order
             var orderGrainData = _objectMapper.Map<CreateNftOrderRequestDto, OrderGrainDto>(input);
             orderGrainData.Id = GuidHelper.UniqId(input.MerchantName, input.MerchantOrderId);
-            orderGrainData.UserId = userId;
+            orderGrainData.UserId = caHolder?.UserId ?? Guid.Empty;
             orderGrainData.Status = OrderStatusType.Initialized.ToString();
             orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
             var createResult = await DoCreateOrderAsync(orderGrainData);
@@ -165,7 +162,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         var result = await nftOrderGrain.CreateNftOrder(nftOrderGrainDto);
         AssertHelper.IsTrue(result.Success, "Create merchant nft-order fail");
 
-        await _distributedEventBus.PublishAsync(_objectMapper.Map<NftOrderGrainDto, NftOrderEto>(nftOrderGrainDto));
+        await _distributedEventBus.PublishAsync(new NftOrderEto(nftOrderGrainDto));
         return result;
     }
 
@@ -227,8 +224,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
                 ? OrderStatusType.Finish
                 : OrderStatusType.TransferFailed;
             var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
-            //TODO nzc AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
-                // "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
+            AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
+                "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
             
             // update base-order status 
             orderGrainDto.Status = nextStatus.ToString();

@@ -14,7 +14,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/")]
-// [Authorize]
+// TODO nzc [Authorize]
 public class ThirdPartUserController : CAServerController
 {
     private readonly IAlchemyOrderAppService _alchemyOrderService;

@@ -21,6 +21,7 @@ using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Google.Protobuf.Collections;
 using Portkey.Contracts.CA;
