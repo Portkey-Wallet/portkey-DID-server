@@ -27,7 +27,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly IUserAssetsProvider _assetsProvider;
     private readonly IUserSecurityProvider _userSecurityProvider;
     private readonly IDistributedEventBus _distributedEventBus;
-
+    private const string _defaultSymbol = "ELF";
 
     public UserSecurityAppService(IOptionsSnapshot<SecurityOptions> securityOptions,
         IUserSecurityProvider userSecurityProvider, IOptionsSnapshot<ChainOptions> chainOptions,
@@ -75,7 +75,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             foreach (var transferLimit in res.CaHolderTransferLimit.Data)
             {
                 var tempKey = transferLimit.ChainId + "-" + transferLimit.Symbol;
-                if (dic[tempKey] != null)
+                if (dic.TryGetValue(tempKey, out _))
                 {
                     dic[tempKey].DailyLimit = transferLimit.DailyLimit;
                     dic[tempKey].SingleLimit = transferLimit.SingleLimit;
@@ -88,7 +88,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             return new TransferLimitListResultDto()
             {
                 TotalRecordCount = dic.Count,
-                Data = dic.Values.ToList()
+                Data = dic.Values.ToList().OrderBy(t => t.Symbol != _defaultSymbol).ThenBy(t => t.Symbol)
+                    .ThenBy(t => t.ChainId).ToList()
             };
         }
         catch (Exception e)
