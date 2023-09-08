@@ -615,9 +615,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         var caHash = result.CaHolderManagerInfo.First().CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        try
+        foreach (var chainInfo in _chainOptions.ChainInfos)
         {
-            foreach (var chainInfo in _chainOptions.ChainInfos)
+            try
             {
                 var output =
                     await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
@@ -627,13 +627,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     CaAddress = output.CaAddress.ToBase58()
                 });
             }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetTokenBalanceAsync Error. {dto}", requestDto);
-            throw new UserFriendlyException("Internal service error, please try again later.");
+            catch (Exception e)
+            {
+                _logger.LogError(e, "GetTokenBalanceAsync Error. {dto}", JsonConvert.SerializeObject(requestDto));
+            }
         }
 
+        if (caAddressInfos.IsNullOrEmpty())
+        {
+            _logger.LogDebug("No caAddressInfos. {dto}", JsonConvert.SerializeObject(requestDto));
+            return new TokenInfoDto();
+        }
 
         var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, requestDto.Symbol,
             0, MaxResultCount);
