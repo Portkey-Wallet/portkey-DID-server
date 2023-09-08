@@ -75,7 +75,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             foreach (var transferLimit in res.CaHolderTransferLimit.Data)
             {
                 var tempKey = transferLimit.ChainId + "-" + transferLimit.Symbol;
-                if (dic[tempKey] != null)
+                if (dic.TryGetValue(tempKey, out _))
                 {
                     dic[tempKey].DailyLimit = transferLimit.DailyLimit;
                     dic[tempKey].SingleLimit = transferLimit.SingleLimit;
