@@ -30,5 +30,13 @@ public class ValidateMerkerTreeTest : CAServerGrainTestBase
         dto.Status.ShouldBe(ValidateStatus.Processing);
         result = await grain.NeedValidateAsync();
         result.ShouldBeFalse();
+
+        await grain.SetStatusSuccessAsync();
+        result = await grain.NeedValidateAsync();
+        result.ShouldBeFalse();
+        
+        await grain.SetStatusFailAsync();
+        result = await grain.NeedValidateAsync();
+        result.ShouldBeFalse();
     }
 }

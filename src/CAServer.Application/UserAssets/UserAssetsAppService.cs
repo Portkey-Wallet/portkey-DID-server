@@ -708,11 +708,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         return imageUrlArray[^1].ToLower();
     }
 
-    private async Task CheckChainMerkerTreeStatusAsync(GetTokenRequestDto requestDto)
+    public async Task CheckChainMerkerTreeStatusAsync(GetTokenRequestDto requestDto)
     {
         var originChainId = "";
         var caHash = "";
         var identifierHash = "";
+        
+        if (requestDto.CaAddressInfos.IsNullOrEmpty())
+        {
+            return;
+        }
 
         foreach (var requestDtoCaAddress in requestDto.CaAddressInfos)
         {
@@ -737,8 +742,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             string.IsNullOrWhiteSpace(identifierHash))
         {
             _logger.LogError(
-                "CheckChainMerkerTreeStatusAsync fail,user {id},caHash {caHash},originChainId:{originChainId},identifierHash {identifierHash}",
-                CurrentUser.GetId(), caHash, originChainId, identifierHash);
+                "CheckChainMerkerTreeStatusAsync fail,caHash {caHash},originChainId:{originChainId},identifierHash {identifierHash}",
+                caHash, originChainId, identifierHash);
             return;
         }
 
@@ -749,7 +754,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         await UpdateMerkerTreeAsync(originChainId, identifierHash, outputGetHolderInfo);
     }
 
-    private async Task UpdateMerkerTreeAsync(string chainId, string identifierHash, GetHolderInfoOutput result)
+    public async Task UpdateMerkerTreeAsync(string chainId, string identifierHash, GetHolderInfoOutput result)
     {
         var validateMerkerTreeGrain = _clusterClient.GetGrain<IValidateMerkerTreeGrain>(CurrentUser.GetId());
         try

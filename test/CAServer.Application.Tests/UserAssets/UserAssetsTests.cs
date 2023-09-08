@@ -2,9 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.CAActivity.Provider;
+using CAServer.Common;
+using CAServer.Contacts.Provider;
+using CAServer.Guardian.Provider;
+using CAServer.Options;
+using CAServer.Tokens;
 using CAServer.UserAssets.Dtos;
+using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Moq;
 using NSubstitute;
+using Orleans;
+using Portkey.Contracts.CA;
 using Shouldly;
 using Volo.Abp.Users;
 using Xunit;
@@ -20,6 +32,39 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
     public UserAssetsTests()
     {
         _userAssetsAppService = GetRequiredService<IUserAssetsAppService>();
+    }
+
+    public IUserAssetsAppService GetMock()
+    {
+        var loggerMock = new Mock<ILogger<UserAssetsAppService>>();
+        var tokenAppServiceMock = new Mock<ITokenAppService>();
+        var userAssetsProviderMock = new Mock<IUserAssetsProvider>();
+        var userContactProviderMock = new Mock<IUserContactProvider>();
+        var tokenInfoOptionsMock = new Mock<IOptions<TokenInfoOptions>>();
+        tokenInfoOptionsMock.Setup(o => o.Value).Returns(new TokenInfoOptions());
+        var imageProcessProviderMock = new Mock<IImageProcessProvider>();
+        var chainOptionsMock = new Mock<IOptions<ChainOptions>>();
+        chainOptionsMock.Setup(o => o.Value).Returns(new ChainOptions());
+        var contractProviderMock = new Mock<IContractProvider>();
+        var contactProviderMock = new Mock<IContactProvider>();
+        var clusterClientMock = new Mock<IClusterClient>();
+        var guardianProviderMock = new Mock<IGuardianProvider>();
+        var seedImageOptionsMock = new Mock<IOptions<SeedImageOptions>>();
+        seedImageOptionsMock.Setup(o => o.Value).Returns(new SeedImageOptions());
+        var userAssetsAppService = new UserAssetsAppService(
+            logger: loggerMock.Object,
+            userAssetsProvider: userAssetsProviderMock.Object,
+            tokenAppService: tokenAppServiceMock.Object,
+            userContactProvider: userContactProviderMock.Object,
+            tokenInfoOptions: tokenInfoOptionsMock.Object,
+            imageProcessProvider: imageProcessProviderMock.Object,
+            chainOptions: chainOptionsMock.Object,
+            contractProvider: contractProviderMock.Object,
+            contactProvider: contactProviderMock.Object,
+            clusterClient: clusterClientMock.Object,
+            seedImageOptions: seedImageOptionsMock.Object,
+            guardianProvider: guardianProviderMock.Object);
+        return userAssetsAppService;
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -60,6 +105,47 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         data.Symbol.ShouldBe("ELF");
         data.ChainId.ShouldBe("AELF");
         data.BalanceInUsd.ShouldBe("0.00002");
+    }
+
+    [Fact]
+    public async Task UpdateMerkerTreeTest()
+    {
+        Login(Guid.NewGuid());
+        
+        //var userAssetsAppServiceMock = GetMock();
+        
+        await _userAssetsAppService.UpdateMerkerTreeAsync("AELF", "111", new GetHolderInfoOutput());
+    }
+
+    [Fact]
+    public async Task CheckChainMerkerTreeStatusTest()
+    {
+        Login(Guid.NewGuid());
+        
+        var param = new GetTokenRequestDto
+        {
+            SkipCount = 0,
+            MaxResultCount = 10,
+            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" }
+        };
+        var userAssetsAppServiceMock = GetMock();
+        await userAssetsAppServiceMock.CheckChainMerkerTreeStatusAsync(param);
+        
+        param = new GetTokenRequestDto
+        {
+            SkipCount = 0,
+            MaxResultCount = 10,
+            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>
+            {
+                new CAAddressInfo
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            }
+        };
+        await userAssetsAppServiceMock.CheckChainMerkerTreeStatusAsync(param);
     }
 
     [Fact]
