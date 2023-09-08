@@ -630,13 +630,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "GetTokenBalanceAsync Error. {dto}", JsonConvert.SerializeObject(requestDto));
+                _logger.LogError(e, "GetTokenBalanceAsync Error. CaAddress is {CaAddress}", requestDto.CaAddress);
             }
         }
 
         if (caAddressInfos.IsNullOrEmpty())
         {
-            _logger.LogDebug("No caAddressInfos. {dto}", JsonConvert.SerializeObject(requestDto));
+            _logger.LogDebug("No caAddressInfos. CaAddress is {CaAddress}", requestDto.CaAddress);
             return new TokenInfoDto();
         }
 

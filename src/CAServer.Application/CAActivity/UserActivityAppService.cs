@@ -195,13 +195,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
+                _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {caAddress}", request.CaAddress);
             }
         }
 
         if (caAddressInfos.Count == 0)
         {
-            _logger.LogDebug("No caAddressInfos found. {request}", JsonConvert.SerializeObject(request));
+            _logger.LogDebug("No caAddressInfos found. CaAddress is {CaAddress}", request.CaAddress);
             return string.Empty;
         }
 
