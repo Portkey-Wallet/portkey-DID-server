@@ -9,4 +9,6 @@ public class VerifyTokenRequestDto
     [Required] public string ChainId { get; set; }
     
     [Required] public OperationType OperationType { get; set; }
+    
+    public string MerklePath { get; set; }
 }

@@ -99,7 +99,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", input.GuardianIdentifier },
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
-            { "operationType", type }
+            { "operationType", type },
+            { "merklePath", input.MerklePath }
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
@@ -134,19 +135,18 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var url = endPoint + requestUri;
-
-
         return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
-            input.OperationType);
+            input.OperationType, input.MerklePath);
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
         string accessToken, string identifierHash, string salt,
-        OperationType verifierCodeOperationType)
+        OperationType verifierCodeOperationType, string merklePath)
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType });
+        var tokenParam =
+            JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType, merklePath });
 
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
