@@ -65,7 +65,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
                 return imageUrl;
             }
 
-            return await GetResizeImageUrlAsync(imageUrl, width, height, ImageResizeType.PortKey);
+            return await GetResizeImageUrlAsync(imageUrl, width, height, type);
         }
         catch (Exception ex)
         {
