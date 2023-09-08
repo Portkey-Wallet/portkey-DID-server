@@ -42,6 +42,7 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
         State.TransactionId = transactionId;
         State.MerkleTreeRoot = merkleTreeRoot;
         State.ChainId = chainId;
+        State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         await WriteStateAsync();
     }
     
@@ -66,15 +67,17 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
         
         if (State.Status == ValidateStatus.Processing)
         {
-            if (string.IsNullOrWhiteSpace(State.TransactionId) || string.IsNullOrWhiteSpace(State.ChainId) ||
-                string.IsNullOrWhiteSpace(State.MerkleTreeRoot))
+            if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - State.LastUpdateTime < ValidateConst.ProcessingWaitTimeMs)
             {
                 return false;
             }
             
-            if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - State.LastUpdateTime < ValidateConst.ProcessingWaitTimeMs)
+            if (string.IsNullOrWhiteSpace(State.TransactionId) || string.IsNullOrWhiteSpace(State.ChainId) ||
+                string.IsNullOrWhiteSpace(State.MerkleTreeRoot))
             {
-                return false;
+                //this means some error , we can sync again
+                State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                return true;
             }
             
             if (!_chainOptions.ChainInfos.TryGetValue(State.ChainId, out var chainInfo))
@@ -82,7 +85,6 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
                 return false;
             }
             
-            State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             
@@ -91,10 +93,14 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
             if (txResult.Status == TransactionState.Mined)
             {
                 State.Status = ValidateStatus.Success;
+                await WriteStateAsync();
+                return false;
             }
             
+            State.Status = ValidateStatus.Fail;
+            State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             await WriteStateAsync();
-            return false;
+            return true;
         }
         
         return false;
