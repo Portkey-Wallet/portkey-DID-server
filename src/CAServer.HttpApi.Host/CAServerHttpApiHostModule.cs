@@ -310,7 +310,7 @@ public class CAServerHttpApiHostModule : AbpModule
                         h.Password(rabbitMqConfig.Connections.Default.Password);
                     });
                 
-                cfg.ReceiveEndpoint("BroadcastQueue", e =>
+                cfg.ReceiveEndpoint("DefaultQueue", e =>
                 {
                     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
                 });
