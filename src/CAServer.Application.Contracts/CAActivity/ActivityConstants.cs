@@ -21,20 +21,22 @@ public static class ActivityConstants
         { "ClaimToken", "Transfer" },
         { "Register", "Register" },
         { "Approve", "Approve" },
-        { "Bingo", "Bingo" },
-        { "Play", "Play" }
+        { "Bingo", "BingoGame-Bingo" },
+        { "Play", "BingoGame-Play" },
+        { "BeanGoTown-Bingo", "BeanGo Town-Bingo" },
+        { "BeanGoTown-Play", "BeanGo Town-Play" }
     };
 
     public static readonly List<string> DefaultTypes = new()
     {
-        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo"
+        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "Bingo", "Play","BeanGoTown-Bingo","BeanGoTown-Play"
     };
 
     public static readonly HashSet<string> AllSupportTypes = new()
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play","BeanGoTown-Bingo","BeanGoTown-Play"
     };
 
     public static readonly List<string> TransferTypes = new()
@@ -47,14 +49,15 @@ public static class ActivityConstants
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
         "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register",
         "Approve", "Bingo",
-        "Play"
+        "Play","BeanGoTown-Bingo","BeanGoTown-Play"
     };
 
     public static readonly List<string> ShowPriceTypes = new()
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "RemoveManagerInfo",
         "AddManagerInfo", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play",
+        "BeanGoTown-Bingo","BeanGoTown-Play"
     };
 
     public static readonly List<string> ShowNftTypes = new()

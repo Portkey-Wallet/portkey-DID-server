@@ -147,7 +147,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
 
-            if (string.IsNullOrWhiteSpace(activityDto.NftInfo.ImageUrl))
+            if (null == activityDto.NftInfo || string.IsNullOrWhiteSpace(activityDto.NftInfo.ImageUrl))
             {
                 return activityDto;
             }
@@ -197,12 +197,20 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
+                    _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {CaAddress}", request.CaAddress);
                 }
             }
         }
         
         
+
+        if (caAddressInfos.Count == 0)
+        {
+            _logger.LogDebug("No caAddressInfos found. CaAddress is {CaAddress}", request.CaAddress);
+            return string.Empty;
+        }
+
+
         var filterTypes = new List<string>
         {
             "CreateCAHolder"
@@ -215,9 +223,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return string.Empty;
         }
 
-        var date = transactions.CaHolderTransaction.Data[0].Timestamp;
+        var data = transactions.CaHolderTransaction.Data;
+        foreach (var indexerTransaction in data.Where(indexerTransaction => indexerTransaction.Timestamp > 0))
+        {
+            return indexerTransaction.Timestamp.ToString();
+        }
 
-        return date.ToString();
+        return string.Empty;
     }
 
 
