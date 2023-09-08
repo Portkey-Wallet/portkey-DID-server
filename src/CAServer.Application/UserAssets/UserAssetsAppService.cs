@@ -2,21 +2,31 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
+using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.ValidateMerkerTree;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using MongoDB.Driver.Linq;
+using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Users;
+using ChainOptions = CAServer.Options.ChainOptions;
 using Token = CAServer.UserAssets.Dtos.Token;
 using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
 
@@ -34,6 +44,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IContactProvider _contactProvider;
+    private readonly IClusterClient _clusterClient;
+    private readonly IGuardianProvider _guardianProvider;
     private const int MaxResultCount = 10;
     public const string DefaultSymbol = "SEED-0";
     public const string DefaultSuffix = "svg";
@@ -44,7 +57,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider, IOptions<SeedImageOptions> seedImageOptions)
+        IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
+        IOptions<SeedImageOptions> seedImageOptions,IGuardianProvider guardianProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -53,12 +67,24 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenAppService = tokenAppService;
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
+        _contactProvider = contactProvider;
         _seedImageOptions = seedImageOptions.Value;
         _chainOptions = chainOptions.Value;
+        _clusterClient = clusterClient;
+        _guardianProvider = guardianProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
     {
+        try
+        {
+            await CheckChainMerkerTreeStatusAsync(requestDto);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,"CheckChainMerkerTreeStatus fail,user {id}", CurrentUser.GetId());
+        }
+        
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
@@ -689,5 +715,155 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         var imageUrlArray = imageUrl.Split(".");
         return imageUrlArray[^1].ToLower();
+    }
+
+    private async Task CheckChainMerkerTreeStatusAsync(GetTokenRequestDto requestDto)
+    {
+        var originChainId = "";
+        var caHash = "";
+        var identifierHash = "";
+
+        foreach (var requestDtoCaAddress in requestDto.CaAddressInfos)
+        {
+            var guardians =
+                await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string> { requestDtoCaAddress.CaAddress },
+                    requestDtoCaAddress.ChainId);
+            _logger.LogInformation("CheckChainMerkerTreeStatusAsync,guardians {guardians}", guardians);
+            if (guardians == null || !guardians.CaHolderInfo.Any())
+            {
+                continue;
+            }
+
+            caHash = guardians.CaHolderInfo.First().CaHash;
+            originChainId = guardians.CaHolderInfo.First().OriginChainId;
+            identifierHash = guardians.CaHolderInfo.First()
+                .GuardianList.Guardians.FirstOrDefault(x => x.IsLoginGuardian)?.IdentifierHash;
+            
+            break;
+        }
+
+        if (string.IsNullOrWhiteSpace(caHash) || string.IsNullOrWhiteSpace(originChainId) ||
+            string.IsNullOrWhiteSpace(identifierHash))
+        {
+            _logger.LogError(
+                "CheckChainMerkerTreeStatusAsync fail,user {id},caHash {caHash},originChainId:{originChainId},identifierHash {identifierHash}",
+                CurrentUser.GetId(), caHash, originChainId, identifierHash);
+            return;
+        }
+
+        var outputGetHolderInfo =
+            await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash),
+                Hash.LoadFromHex(identifierHash), originChainId);
+
+        await UpdateMerkerTreeAsync(originChainId, identifierHash, outputGetHolderInfo);
+    }
+
+    private async Task UpdateMerkerTreeAsync(string chainId, string identifierHash, GetHolderInfoOutput result)
+    {
+        var validateMerkerTreeGrain = _clusterClient.GetGrain<IValidateMerkerTreeGrain>(CurrentUser.GetId());
+        try
+        {
+            var needValidate = await validateMerkerTreeGrain.NeedValidateAsync();
+            _logger.LogInformation("UpdateMerkerTreeAsync,needValidate {needValidate}", needValidate);
+            if (!needValidate)
+            {
+                return;
+            }
+
+            var merkleTreeRoot = result.GuardiansMerkleTreeRoot;
+            if (!string.IsNullOrWhiteSpace(merkleTreeRoot))
+            {
+                merkleTreeRoot = await GetMerklePathAsync(identifierHash, chainId);
+            }
+
+            if (string.IsNullOrWhiteSpace(merkleTreeRoot))
+            {
+                _logger.LogError("merkleTreeRoot is null,chainId {chainId},identifierHash {identifierHash}", chainId,
+                    identifierHash);
+                return;
+            }
+
+            result.GuardiansMerkleTreeRoot = merkleTreeRoot;
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var transactionDto =
+                await grain.ValidateTransactionAsync(chainId, result, null);
+
+            await validateMerkerTreeGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,
+                merkleTreeRoot, chainId);
+
+            if (transactionDto.TransactionResultDto.Status == TransactionState.Mined)
+            {
+                await validateMerkerTreeGrain.SetStatusSuccessAsync();
+                _logger.LogInformation(
+                    "UpdateMerkerTreeAsync success,chainId {chainId},identifierHash {identifierHash},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    chainId,
+                    identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                    transactionDto.TransactionResultDto.Status);
+            }
+
+            _logger.LogInformation(
+                "UpdateMerkerTreeAsync success,chainId {chainId},identifierHash {identifierHash},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                chainId,
+                identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                transactionDto.TransactionResultDto.Status);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UpdateMerkerTreeAsync fail,chainId {chainId},identifierHash {identifierHash}", chainId,
+                identifierHash);
+            await validateMerkerTreeGrain.SetStatusFailAsync();
+        }
+    }
+    
+    private async Task<string> GetMerklePathAsync(string guardianIdentifierHash, string chainId)
+    {
+        var caHolderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash,
+            null,
+            chainId);
+        if (caHolderInfo == null)
+        {
+            throw new UserFriendlyException("CAHolder not found.");
+        }
+
+        var guardians = caHolderInfo.GuardianList.Guardians;
+        if (caHolderInfo.GuardianList == null || guardians == null || !guardians.Any())
+        {
+            throw new UserFriendlyException("Guardian not found.");
+        }
+
+        var guardianHashByte = new List<Hash>();
+
+        var index = 0;
+        var hasIndex = false;
+        for (var i = 0; i < guardians.Count; i++)
+        {
+            var guardian = new Portkey.Contracts.CA.Guardian
+            {
+                Type = guardians[i].Type,
+                IdentifierHash = guardians[i].IdentifierHash,
+                VerifierId = guardians[i].VerifierId
+            };
+
+            var guardianHashString = HashHelper.ComputeFrom(guardian).ToHex();
+            var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianHashString));
+            guardianHashByte.Add(hash);
+            if (guardians[i].IdentifierHash.ToHex() != guardianIdentifierHash)
+            {
+                continue;
+            }
+
+            index = i;
+            hasIndex = true;
+        }
+
+        if (!hasIndex)
+        {
+            throw new UserFriendlyException("Guardian not found.");
+        }
+
+        var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte.ToArray());
+        var merklePath = tree.GenerateMerklePath(index);
+        var merklePathString = merklePath.ToByteString().ToHex();
+        return merklePathString;
     }
 }

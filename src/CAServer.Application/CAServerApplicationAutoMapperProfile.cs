@@ -24,6 +24,7 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State.ValidateMerkerTree;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
@@ -41,6 +42,7 @@ using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
+using CAServer.ValidateMerkerTree.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
@@ -397,5 +399,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
+        
+        CreateMap<ValidateMerkerTreeGrainDto, ValidateMerkerTreeState>().ReverseMap();
+        
     }
 }
