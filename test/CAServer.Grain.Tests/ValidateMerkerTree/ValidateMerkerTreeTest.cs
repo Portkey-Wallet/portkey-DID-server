@@ -25,10 +25,10 @@ public class ValidateMerkerTreeTest : CAServerGrainTestBase
         result = await grain.NeedValidateAsync();
         result.ShouldBeFalse();
         
-        await grain.SetInfoAsync("111", "222");
+        await grain.SetInfoAsync("111", "222","tDVW");
         dto = await grain.GetInfoAsync();
-        dto.Status.ShouldBe(ValidateStatus.Success);
+        dto.Status.ShouldBe(ValidateStatus.Processing);
         result = await grain.NeedValidateAsync();
-        result.ShouldBeTrue();
+        result.ShouldBeFalse();
     }
 }
