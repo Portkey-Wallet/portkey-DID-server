@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
 using CAServer.Entities.Es;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Moq.Protected;
@@ -22,6 +23,7 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
+        services.AddSingleton(GetMockInMemoryHarness());
     }
 
     protected IActivityProvider MockRandomActivityProviderCaHolder()
@@ -31,6 +33,34 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
             UserId = Guid.NewGuid()
         });
     }
+    
+    
+    protected IBus GetMockInMemoryHarness(params IConsumer[] consumers)
+    {
+        var busMock = new Mock<IBus>();
+
+        busMock.Setup(bus => bus.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Callback<object, CancellationToken>((message, token) =>
+            {
+                foreach (var consumer in consumers)
+                {
+                    var consumeMethod = consumer.GetType().GetMethod("Consume");
+                    if (consumeMethod == null) continue;
+                
+                    var consumeContextType = typeof(ConsumeContext<>).MakeGenericType(message.GetType());
+                
+                    dynamic contextMock = Activator.CreateInstance(typeof(Mock<>).MakeGenericType(consumeContextType));
+                    contextMock.SetupGet("Message").Returns(message);
+                
+                    consumeMethod.Invoke(consumer, new[] { ((Mock)contextMock).Object });
+                }
+            })
+            .Returns(Task.CompletedTask);
+
+        return busMock.Object;
+    }
+
+
     
     protected IActivityProvider GetMockActivityProvider(CAHolderIndex result = null)
     {

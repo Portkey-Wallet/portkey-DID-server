@@ -18,9 +18,12 @@ public partial class NftOrderTest
         {
             Alchemy = new AlchemyOptions()
             {
-                AppId = "test",
-                AppSecret = "testTest",
+                AppId = "ramp",
+                AppSecret = "rampTest",
                 BaseUrl = "http://localhost:9200/book/_search",
+                NftAppId = "test",
+                NftAppSecret = "testTest",
+                NftBaseUrl = "http://localhost:9200/book/_search",
             },
             Timer = new ThirdPartTimerOptions()
             {
