@@ -765,13 +765,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             var needValidate = await validateMerkerTreeGrain.NeedValidateAsync();
             _logger.LogInformation("UpdateMerkerTreeAsync,needValidate {needValidate}", needValidate);
+            /*
             if (!needValidate)
             {
                 return;
-            }
-
+            }*/
+            
             var merkleTreeRoot = result.GuardiansMerkleTreeRoot;
-            if (!string.IsNullOrWhiteSpace(merkleTreeRoot))
+            if (string.IsNullOrWhiteSpace(merkleTreeRoot))
             {
                 merkleTreeRoot = await GetMerklePathAsync(identifierHash, chainId);
             }
@@ -780,6 +781,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 _logger.LogError("merkleTreeRoot is null,chainId {chainId},identifierHash {identifierHash}", chainId,
                     identifierHash);
+                await validateMerkerTreeGrain.SetStatusFailAsync();
                 return;
             }
 
@@ -801,9 +803,20 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     transactionDto.TransactionResultDto.Status);
             }
 
+            if (transactionDto.TransactionResultDto.Status == TransactionState.NodeValidationFailed ||
+                transactionDto.TransactionResultDto.Status == TransactionState.Failed)
+            {
+                await validateMerkerTreeGrain.SetStatusFailAsync();
+                _logger.LogInformation(
+                    "UpdateMerkerTreeAsync fail status {status} ,chainId {chainId},identifierHash {identifierHash},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    transactionDto.TransactionResultDto.Status, chainId,
+                    identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                    transactionDto.TransactionResultDto.Status);
+            }
+
             _logger.LogInformation(
-                "UpdateMerkerTreeAsync success,chainId {chainId},identifierHash {identifierHash},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
-                chainId,
+                "UpdateMerkerTreeAsync success status {status},chainId {chainId},identifierHash {identifierHash},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                transactionDto.TransactionResultDto.Status, chainId,
                 identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
                 transactionDto.TransactionResultDto.Status);
         }
