@@ -5,16 +5,23 @@ using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
+using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.ValidateMerkerTree;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
+using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Users;
+using ChainOptions = CAServer.Options.ChainOptions;
 using Token = CAServer.UserAssets.Dtos.Token;
 using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
 
@@ -32,6 +39,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IContactProvider _contactProvider;
+    private readonly IClusterClient _clusterClient;
     private const int MaxResultCount = 10;
     public const string DefaultSymbol = "SEED-0";
     public const string DefaultSuffix = "svg";
@@ -42,7 +51,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider, IOptions<SeedImageOptions> seedImageOptions)
+        IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
+        IOptions<SeedImageOptions> seedImageOptions)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -51,12 +61,23 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenAppService = tokenAppService;
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
+        _contactProvider = contactProvider;
         _seedImageOptions = seedImageOptions.Value;
         _chainOptions = chainOptions.Value;
+        _clusterClient = clusterClient;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
     {
+        try
+        {
+            await CheckChainMerkerTreeStatusAsync(requestDto);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,"CheckChainMerkerTreeStatus fail,user {id}", CurrentUser.GetId());
+        }
+        
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
@@ -681,4 +702,65 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var imageUrlArray = imageUrl.Split(".");
         return imageUrlArray[^1].ToLower();
     }
+
+    private async Task CheckChainMerkerTreeStatusAsync(GetTokenRequestDto requestDto)
+    {
+        var originChainId = "";
+        var caHash = "";
+        var identifierHash = "";
+
+        foreach (var requestDtoCaAddress in requestDto.CaAddressInfos)
+        {
+            var guardians =
+                await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string> { requestDtoCaAddress.CaAddress },
+                    requestDtoCaAddress.ChainId);
+            if (guardians == null || !guardians.CaHolderInfo.Any())
+            {
+                continue;
+            }
+
+            caHash = guardians.CaHolderInfo.First().CaHash;
+            originChainId = guardians.CaHolderInfo.First().OriginChainId;
+            identifierHash = guardians.CaHolderInfo.First()
+                .GuardianList.Guardians.FirstOrDefault(x => x.IsLoginGuardian)?.IdentifierHash;
+            break;
+        }
+
+        if (string.IsNullOrWhiteSpace(caHash) || string.IsNullOrWhiteSpace(originChainId) ||
+            string.IsNullOrWhiteSpace(identifierHash))
+        {
+            _logger.LogError(
+                "CheckChainMerkerTreeStatusAsync fail,user {id},caHash {caHash},originChainId:{originChainId},identifierHash {identifierHash}",
+                CurrentUser.GetId(), caHash, originChainId, identifierHash);
+            return;
+        }
+
+        var outputGetHolderInfo =
+            await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash),
+                Hash.LoadFromHex(identifierHash), originChainId);
+
+        await UpdateMerkerTreeAsync(originChainId, outputGetHolderInfo);
+    }
+
+    private async Task UpdateMerkerTreeAsync(string chainId,GetHolderInfoOutput result)
+    {
+        var validateMerkerTreeGrain = _clusterClient.GetGrain<IValidateMerkerTreeGrain>(CurrentUser.GetId());
+        if (!await validateMerkerTreeGrain.NeedValidateAsync())
+        {
+            return;
+        }
+
+        var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+        //todo：如果注册链也没有mertree 需要自己算出来
+        if (GetHolderInfoOutput.GuardiansMerkleTreeRootFieldNumber == 0)
+        {
+            return;
+        }
+        
+        var transactionDto =
+            await grain.ValidateTransactionAsync(chainId, result, null);
+        
+        await validateMerkerTreeGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,"");
+    }
+    
 }
