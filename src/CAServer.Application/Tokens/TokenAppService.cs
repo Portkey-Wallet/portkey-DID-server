@@ -8,6 +8,7 @@ using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
+using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -25,12 +26,14 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     private readonly IClusterClient _clusterClient;
     private readonly ContractAddressOptions _contractAddressOptions;
     private readonly ITokenProvider _tokenProvider;
+    private readonly ITokenImageProvider _tokenImageProvider;
 
     public TokenAppService(IClusterClient clusterClient, IOptions<ContractAddressOptions> contractAddressesOptions,
-        ITokenProvider tokenProvider)
+        ITokenProvider tokenProvider, ITokenImageProvider tokenImageProvider)
     {
         _clusterClient = clusterClient;
         _tokenProvider = tokenProvider;
+        _tokenImageProvider = tokenImageProvider;
         _contractAddressOptions = contractAddressesOptions.Value;
     }
 
@@ -128,7 +131,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var indexerToken =
             await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
 
-        return GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
+        return await GetTokenInfoListAsync(userTokensDto, indexerToken.TokenInfo);
     }
 
     public async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
@@ -150,7 +153,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
     }
 
-    private List<GetTokenListDto> GetTokenInfoList(List<UserTokenIndex> userTokenInfos, List<IndexerToken> tokenInfos)
+    private async Task<List<GetTokenListDto>> GetTokenInfoListAsync(List<UserTokenIndex> userTokenInfos,
+        List<IndexerToken> tokenInfos)
     {
         var result = new List<GetTokenListDto>();
         var tokenList = ObjectMapper.Map<List<IndexerToken>, List<GetTokenListDto>>(tokenInfos);
@@ -176,6 +180,19 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         userTokens.AddRange(tokenList);
         result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
+        await AddImageUrlAsync(result);
+
         return result;
+    }
+
+    private async Task AddImageUrlAsync(List<GetTokenListDto> tokens)
+    {
+        if (tokens == null || tokens.Count == 0) return;
+
+        var imagesDic = await _tokenImageProvider.GetTokenImagesAsync(tokens.Select(t => t.Symbol).Distinct().ToList());
+        tokens.ForEach(t =>
+        {
+            t.ImageUrl = imagesDic.TryGetValue(t.Symbol, out var imageUrl) ? imageUrl : string.Empty;
+        });
     }
 }
