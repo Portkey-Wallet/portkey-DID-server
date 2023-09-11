@@ -48,18 +48,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IClusterClient _clusterClient;
     private readonly IGuardianProvider _guardianProvider;
     private const int MaxResultCount = 10;
-    public const string DefaultSymbol = "SEED-0";
-    public const string DefaultSuffix = "svg";
-    public const string ReplaceSuffix = "png";
-    private readonly SeedImageOptions _seedImageOptions;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider
         IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
-        IOptions<SeedImageOptions> seedImageOptions,IGuardianProvider guardianProvider)
+        IGuardianProvider guardianProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -69,7 +64,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
         _contactProvider = contactProvider;
-        _seedImageOptions = seedImageOptions.Value;
         _chainOptions = chainOptions.Value;
         _clusterClient = clusterClient;
         _guardianProvider = guardianProvider;
@@ -83,9 +77,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e,"CheckChainMerkerTreeStatus fail,user {id}", CurrentUser.GetId());
+            _logger.LogError(e, "CheckChainMerkerTreeStatus fail,user {id}", CurrentUser.GetId());
         }
-        
+
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
@@ -320,10 +314,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
                 nftItem.ImageUrl =
-                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height,
+                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
+                        requestDto.Height,
                         ImageResizeType.Forest);
                 nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
-                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,ImageResizeType.Forest);
+                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
+                    ImageResizeType.Forest);
 
                 dto.Data.Add(nftItem);
             }
@@ -684,7 +680,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             originChainId = guardians.CaHolderInfo.First().OriginChainId;
             identifierHash = guardians.CaHolderInfo.First()
                 .GuardianList.Guardians.FirstOrDefault(x => x.IsLoginGuardian)?.IdentifierHash;
-            
+
             break;
         }
 
@@ -711,12 +707,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             var needValidate = await validateMerkerTreeGrain.NeedValidateAsync();
             _logger.LogInformation("UpdateMerkerTreeAsync,needValidate {needValidate}", needValidate);
-            
+
             if (!needValidate)
             {
                 return;
             }
-            
+
             var merkleTreeRoot = result.GuardiansMerkleTreeRoot;
             if (string.IsNullOrWhiteSpace(merkleTreeRoot))
             {
@@ -775,7 +771,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             await validateMerkerTreeGrain.SetStatusFailAsync();
         }
     }
-    
+
     private async Task<string> GetMerklePathAsync(string guardianIdentifierHash, string chainId)
     {
         var caHolderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash,
