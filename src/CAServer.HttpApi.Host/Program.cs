@@ -16,7 +16,11 @@ public class Program
     public async static Task<int> Main(string[] args)
     {
         var configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
+// #if DEBUG            
+//            .AddJsonFile("appsettings.json")
+// #else  
+            .AddJsonFile("apollosettings.json")
+// #endif
             .Build();
         Log.Logger = new LoggerConfiguration()
 #if DEBUG
@@ -27,20 +31,22 @@ public class Program
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-            
+
 #if DEBUG
             .WriteTo.Async(c => c.Console())
-#endif          
+#endif
             .CreateLogger();
 
         try
         {
             Log.Information("Starting CAServer.HttpApi.Host.");
             var builder = WebApplication.CreateBuilder(args);
-            builder.Configuration.AddJsonFile("phone.json");
+            //builder.Configuration.AddJsonFile("phone.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
+// #if !DEBUG
                 .UseApollo()
+// #endif
                 .UseSerilog();
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
