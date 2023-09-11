@@ -1,9 +1,11 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.CAActivity;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
+using Shouldly;
 using Xunit;
 
 namespace CAServer.ThirdPart.Alchemy;
@@ -12,16 +14,18 @@ namespace CAServer.ThirdPart.Alchemy;
 public partial class OrderStatusProviderTest : CAServerApplicationTestBase
 {
     private readonly IOrderStatusProvider _orderStatusProvider;
+    private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
 
     public OrderStatusProviderTest()
     {
         _orderStatusProvider = GetRequiredService<IOrderStatusProvider>();
+        _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
     }
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        //services.AddSingleton(GetOrderGrain());
+        services.AddSingleton(UserActivityAppServiceTests.GetMockActivityProvider());
     }
 
     [Fact]
@@ -59,7 +63,17 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
     [Fact]
     public async Task UpdateOrderStatusAsync()
     {
-        var orderId = Guid.NewGuid();
+        
+        var orderCreateInput = new CreateUserOrderDto
+        {
+            MerchantName = "123",
+            TransDirect = "123"
+        };
+
+        var orderCreatedDto = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(orderCreateInput);
+        orderCreatedDto.Success.ShouldBe(true);
+        
+        var orderId = Guid.Parse(orderCreatedDto.Id);
         await _orderStatusProvider.AddOrderStatusInfoAsync(new OrderStatusInfoGrainDto()
         {
             Id = orderId.ToString(),

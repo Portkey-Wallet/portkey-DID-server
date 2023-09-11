@@ -13,18 +13,19 @@ public static class ThirdPartHelper
     public static ThirdPartNameType MerchantNameExist(string merchantName)
     {
         var match = Enum.TryParse(merchantName, out ThirdPartNameType val);
-        return match ? val : ThirdPartNameType.Unknown;
+        return match && Enum.IsDefined(typeof(ThirdPartNameType), val) ? val : ThirdPartNameType.Unknown;
     }
 
     public static OrderStatusType ParseOrderStatus(string statusStr)
     {
         var match = Enum.TryParse(statusStr, out OrderStatusType val);
-        return match ? val : OrderStatusType.Unknown;
+        return match && Enum.IsDefined(typeof(OrderStatusType), val)  ? val : OrderStatusType.Unknown;
     }
 
     public static bool TransferDirectionTypeExist(string transferDirectionType)
     {
-        return Enum.TryParse(transferDirectionType, out TransferDirectionType _);
+        var match = Enum.TryParse(transferDirectionType, out TransferDirectionType val);
+        return match && Enum.IsDefined(typeof(TransferDirectionType), val);
     }
 
     public static bool ValidateMerchantOrderNo(string merchantOrderNo)

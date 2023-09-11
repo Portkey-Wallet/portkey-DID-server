@@ -76,11 +76,6 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             resp.Success = true;
             return resp;
         }
-        catch (UserFriendlyException e)
-        {
-            Logger.LogWarning(e, "create ramp order failed, orderId={OrderId}, userId={UserId}",
-                orderId, userId);
-        }
         catch (Exception e)
         {
             Logger.LogWarning(e, "create ramp order error, orderId={OrderId}, userId={UserId}",
@@ -95,6 +90,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         try
         {
+            AssertHelper.NotNull(input, "create Param null");
             _thirdPartOrderProvider.VerifyMerchantSignature(input);
 
             var caHolder = await _activityProvider.GetCaHolder(input.CaHash);

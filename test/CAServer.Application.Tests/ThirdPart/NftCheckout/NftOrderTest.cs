@@ -1,3 +1,4 @@
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
@@ -21,6 +22,9 @@ public partial class NftOrderTest : CAServerApplicationTestBase
     private static readonly string MerchantName = "symbolMarket";
     private static readonly ECKeyPair MerchantAccount = CryptoHelper.FromPrivateKey(ByteArrayHelper
         .HexStringToByteArray("5945c176c4269dc2aa7daf7078bc63b952832e880da66e5f2237cdf79bc59c5f"));
+    
+    private static readonly ECKeyPair AnotherMerchant = CryptoHelper.FromPrivateKey(ByteArrayHelper
+        .HexStringToByteArray("8515ad697d797625cc74d225c8efeab45bb8c267cd3271d3e1d9d44afabe6da7"));
 
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly ITestOutputHelper _testOutputHelper;
@@ -69,6 +73,45 @@ public partial class NftOrderTest : CAServerApplicationTestBase
         res.Success.ShouldBe(true);
     }
 
+    [Fact]
+    public async Task CreateTest_InvalidParam()
+    {
+        var orderId = "00000000-0000-0000-0000-000000000001";
+        var caHash = HashHelper.ComputeFrom(orderId).ToHex();
+        
+        var input = new CreateNftOrderRequestDto
+        {
+            NftSymbol = "LUCK",
+            NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
+            MerchantName = MerchantName,
+            MerchantOrderId = orderId,
+            WebhookUrl = "http://127.0.0.1:9200/myWebhook",
+            PriceSymbol = "ELF",
+            PriceAmount = "100000000",
+            CaHash = caHash
+        };
+        input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
+        
+        var errorPk = AnotherMerchant.PrivateKey.ToHex();
+        input.Signature = MerchantSignatureHelper.GetSignature(errorPk, input);
+        var res2 = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
+        res2.ShouldNotBeNull();
+        res2.Message.ShouldContain("Invalid merchant signature");
+        
+        input.Signature = "ERROR SIGN";
+        var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
+        res.ShouldNotBeNull();
+        res.Message.ShouldContain("Internal error");
+
+    }
+
+    [Fact]
+    public async Task QueryMerchantOrderNo()
+    {
+        await CreateTest();
+        // _thirdPartOrderAppService.
+    }
+    
 
     [Fact]
     public async Task AlchemyOrderUpdateTest()

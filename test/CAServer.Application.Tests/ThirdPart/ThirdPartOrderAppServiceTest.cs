@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Shouldly;
 using Volo.Abp;
+using Volo.Abp.Validation;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -91,8 +92,27 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
             TransDirect = "123"
         };
 
-        var result = _thirdPartOrderAppService.CreateThirdPartOrderAsync(input);
-        result.Result.Success.ShouldBe(true);
+        var result = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(input);
+        result.Success.ShouldBe(true);
+        result.Id.ShouldNotBeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateThirdPartOrderAsyncTest_invalidParam()
+    {
+        var result = await Assert.ThrowsAsync<AbpValidationException>(() =>
+            _thirdPartOrderAppService.CreateThirdPartOrderAsync(new CreateUserOrderDto()));
+        result.ShouldNotBeNull();
+        result.Message.ShouldContain("arguments are not valid");
+
+        result = await Assert.ThrowsAsync<AbpValidationException>(() =>
+            _thirdPartOrderAppService.CreateThirdPartOrderAsync(new CreateUserOrderDto
+            {
+                MerchantName = "111",
+                TransDirect = TransferDirectionType.TokenBuy.ToString()
+            }));
+        result.ShouldNotBeNull();
+        result.Message.ShouldContain("arguments are not valid");
     }
 
     [Fact]
@@ -102,10 +122,11 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         var skipCount = 1;
         var maxResultCount = 10;
 
-        var orderList = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto( skipCount, maxResultCount)
-        {
-            UserId = userId
-        });
+        var orderList = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
+            new GetThirdPartOrderConditionDto(skipCount, maxResultCount)
+            {
+                UserId = userId
+            });
         orderList.TotalRecordCount.ShouldBe(1);
     }
 

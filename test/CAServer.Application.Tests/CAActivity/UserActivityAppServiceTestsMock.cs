@@ -18,7 +18,7 @@ namespace CAServer.CAActivity;
 
 public partial class UserActivityAppServiceTests
 {
-    private IActivityProvider GetMockActivityProvider()
+    public static IActivityProvider GetMockActivityProvider()
     {
         var mockActivityProvider = new Mock<IActivityProvider>();
 

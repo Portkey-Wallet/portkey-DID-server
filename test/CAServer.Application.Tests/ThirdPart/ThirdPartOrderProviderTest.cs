@@ -17,6 +17,14 @@ public class ThirdPartOrderProviderTest : CAServerApplicationTestBase
         _orderProvider = GetRequiredService<IThirdPartOrderProvider>();
     }
 
+
+    [Fact]
+    private async Task AddOrder()
+    {
+        
+    }
+    
+    
     [Fact]
     public async Task GetThirdPartOrdersByPageAsyncTest()
     {
