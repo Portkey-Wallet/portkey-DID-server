@@ -762,7 +762,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var needValidate = await validateMerkerTreeGrain.NeedValidateAsync();
             _logger.LogInformation("UpdateMerkerTreeAsync,needValidate {needValidate}", needValidate);
             
-            if (!needValidate)
+            if (!needValidate.Data)
             {
                 return;
             }

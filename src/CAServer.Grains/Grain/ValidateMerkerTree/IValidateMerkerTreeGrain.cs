@@ -7,7 +7,7 @@ public interface IValidateMerkerTreeGrain : IGrainWithGuidKey
 {
     Task SetStatusSuccessAsync();    
     Task SetStatusFailAsync();
-    Task<ValidateMerkerTreeGrainDto> GetInfoAsync();
-    Task<bool> NeedValidateAsync();
+    Task<GrainResultDto<ValidateMerkerTreeGrainDto>> GetInfoAsync();
+    Task<GrainResultDto<bool>> NeedValidateAsync();
     Task SetInfoAsync(string transactionId, string merkleTreeRoot, string chainId);
 }

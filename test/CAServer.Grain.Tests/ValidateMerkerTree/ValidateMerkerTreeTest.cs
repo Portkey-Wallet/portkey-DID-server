@@ -15,28 +15,28 @@ public class ValidateMerkerTreeTest : CAServerGrainTestBase
         var id = Guid.NewGuid();
         var grain = Cluster.Client.GetGrain<IValidateMerkerTreeGrain>(id);
         var dto = await grain.GetInfoAsync();
-        dto.Status.ShouldBe(ValidateStatus.Init);
+        dto.Data.Status.ShouldBe(ValidateStatus.Init);
 
         var result = await grain.NeedValidateAsync();
-        result.ShouldBeTrue();
+        result.Data.ShouldBeTrue();
         dto = await grain.GetInfoAsync();
-        dto.Status.ShouldBe(ValidateStatus.Processing);
+        dto.Data.Status.ShouldBe(ValidateStatus.Processing);
         
         result = await grain.NeedValidateAsync();
-        result.ShouldBeFalse();
+        result.Data.ShouldBeFalse();
         
         await grain.SetInfoAsync("111", "222","tDVW");
         dto = await grain.GetInfoAsync();
-        dto.Status.ShouldBe(ValidateStatus.Processing);
+        dto.Data.Status.ShouldBe(ValidateStatus.Processing);
         result = await grain.NeedValidateAsync();
-        result.ShouldBeFalse();
+        result.Data.ShouldBeFalse();
 
         await grain.SetStatusSuccessAsync();
         result = await grain.NeedValidateAsync();
-        result.ShouldBeFalse();
+        result.Data.ShouldBeFalse();
         
         await grain.SetStatusFailAsync();
         result = await grain.NeedValidateAsync();
-        result.ShouldBeFalse();
+        result.Data.ShouldBeFalse();
     }
 }

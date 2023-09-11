@@ -32,9 +32,12 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
         await WriteStateAsync();
     }
     
-    public async Task<ValidateMerkerTreeGrainDto> GetInfoAsync()
+    public async Task<GrainResultDto<ValidateMerkerTreeGrainDto>> GetInfoAsync()
     {
-        return _objectMapper.Map<ValidateMerkerTreeState, ValidateMerkerTreeGrainDto>(State);
+        var result = new GrainResultDto<ValidateMerkerTreeGrainDto>();
+        result.Success = true;
+        result.Data = _objectMapper.Map<ValidateMerkerTreeState, ValidateMerkerTreeGrainDto>(State);
+        return result;
     }
 
     public async Task SetInfoAsync(string transactionId, string merkleTreeRoot, string chainId)
@@ -46,30 +49,46 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
         await WriteStateAsync();
     }
     
-    public async Task<bool> NeedValidateAsync()
+    public async Task<GrainResultDto<bool>> NeedValidateAsync()
     {
         if (State.Status == ValidateStatus.Success)
         {
-            return false;
+            return new GrainResultDto<bool>()
+            {
+                Success = true,
+                Data = false
+            };
         }
 
         if (State.Status == ValidateStatus.Init || State.Status == ValidateStatus.Fail)
         {
             if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - State.LastUpdateTime < ValidateConst.DefaultWaitTimeMs)
             {
-                return false;
+                return new GrainResultDto<bool>()
+                {
+                    Success = true,
+                    Data = false
+                };
             }
             State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             State.Status = ValidateStatus.Processing;
             await WriteStateAsync();
-            return true;
+            return new GrainResultDto<bool>()
+            {
+                Success = true,
+                Data = true
+            };
         }
         
         if (State.Status == ValidateStatus.Processing)
         {
             if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - State.LastUpdateTime < ValidateConst.ProcessingWaitTimeMs)
             {
-                return false;
+                return new GrainResultDto<bool>()
+                {
+                    Success = true,
+                    Data = false
+                };
             }
             
             if (string.IsNullOrWhiteSpace(State.TransactionId) || string.IsNullOrWhiteSpace(State.ChainId) ||
@@ -77,12 +96,20 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
             {
                 //this means some error , we can sync again
                 State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                return true;
+                return new GrainResultDto<bool>()
+                {
+                    Success = true,
+                    Data = true
+                };
             }
             
             if (!_chainOptions.ChainInfos.TryGetValue(State.ChainId, out var chainInfo))
             {
-                return false;
+                return new GrainResultDto<bool>()
+                {
+                    Success = true,
+                    Data = false
+                };
             }
             
             var client = new AElfClient(chainInfo.BaseUrl);
@@ -94,15 +121,27 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
             {
                 State.Status = ValidateStatus.Success;
                 await WriteStateAsync();
-                return false;
+                return new GrainResultDto<bool>()
+                {
+                    Success = true,
+                    Data = false
+                };
             }
             
             State.Status = ValidateStatus.Fail;
             State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             await WriteStateAsync();
-            return true;
+            return new GrainResultDto<bool>()
+            {
+                Success = true,
+                Data = true
+            };
         }
         
-        return false;
+        return new GrainResultDto<bool>()
+        {
+            Success = true,
+            Data = false
+        };
     }
 }
