@@ -37,8 +37,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly ChainOptions _chainOptions;
     private const int MaxResultCount = 10;
     private readonly IUserAssetsProvider _userAssetsProvider;
-    public const string DefaultSuffix = "svg";
-    public const string ReplaceSuffix = "png";
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -148,20 +146,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
 
-            if (null == activityDto.NftInfo || string.IsNullOrWhiteSpace(activityDto.NftInfo.ImageUrl))
-            {
-                return activityDto;
-            }
-
-            var imageUrl = activityDto.NftInfo.ImageUrl;
-            var imageUrlSuffix = GetImageUrlSuffix(imageUrl);
-            if (!DefaultSuffix.Equals(imageUrlSuffix))
-            {
-                return activityDto;
-            }
-
-            var imageUrlReplaceSuffix = imageUrl.Replace(DefaultSuffix, ReplaceSuffix);
-            activityDto.NftInfo.ImageUrl = imageUrlReplaceSuffix;
             return activityDto;
         }
         catch (Exception e)
@@ -366,7 +350,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 {
                     NftId = ht.NftInfo.Symbol.Split("-").Last(),
 
-                    ImageUrl = await _imageProcessProvider.GetResizeImageAsync(ht.NftInfo.ImageUrl, weidth, height),
+                    ImageUrl = await _imageProcessProvider.GetResizeImageAsync(ht.NftInfo.ImageUrl, weidth, height,
+                        ImageResizeType.Forest),
                     Alias = ht.NftInfo.TokenName
                 };
             }
@@ -456,16 +441,5 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             _logger.LogError(e, "Get transaction fee price failed.");
             return new List<decimal>();
         }
-    }
-
-    private string GetImageUrlSuffix(string imageUrl)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl))
-        {
-            return null;
-        }
-
-        var imageUrlArray = imageUrl.Split(".");
-        return imageUrlArray[^1].ToLower();
     }
 }

@@ -57,6 +57,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
+        IContractProvider contractProvider
         IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
         IOptions<SeedImageOptions> seedImageOptions,IGuardianProvider guardianProvider)
     {
@@ -265,31 +266,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 }
                 else
                 {
-                    _logger.LogDebug("GetNFTCollectionsAsync. Current Deal Symbol is {symbol}", nftCollection.Symbol);
-                    if (_seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var imageUrl))
-                    {
-                        nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
-                            imageUrl, requestDto.Width, requestDto.Height);
-                        dto.Data.Add(nftCollection);
-                        continue;
-                    }
-
-                    if (!nftCollectionInfo.NftCollectionInfo.ImageUrl.IsNullOrWhiteSpace())
-                    {
-                        _logger.LogDebug("GetNFTCollectionsAsync. Current Deal image is {image}",
-                            nftCollectionInfo.NftCollectionInfo.ImageUrl);
-                        var suffix = GetImageUrlSuffix(nftCollectionInfo.NftCollectionInfo.ImageUrl);
-                        if (suffix.Equals(DefaultSuffix))
-                        {
-                            nftCollectionInfo.NftCollectionInfo.ImageUrl = nftCollectionInfo.NftCollectionInfo.ImageUrl;
-                        }
-                        else
-                        {
-                            nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
-                                nftCollectionInfo.NftCollectionInfo.ImageUrl, requestDto.Width, requestDto.Height);
-                        }
-                    }
-
+                    nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
+                        nftCollectionInfo.NftCollectionInfo.ImageUrl, requestDto.Width, requestDto.Height,
+                        ImageResizeType.Forest);
                     dto.Data.Add(nftCollection);
                 }
             }
@@ -340,29 +319,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
-
-                _logger.LogDebug("GetNFTItemsAsync. Current Deal image is {image}", nftInfo.NftInfo.ImageUrl);
-                if (!string.IsNullOrWhiteSpace(nftItem.ImageUrl))
-                {
-                    var suffix = GetImageUrlSuffix(nftItem.ImageUrl);
-                    var symbolSuffix = nftInfo.NftInfo.Symbol.Split("-").Last();
-                    var parseInt = int.TryParse(symbolSuffix, out var symbolSuffixInt);
-                    if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
-                    {
-                        nftItem.ImageUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
-                        nftItem.ImageLargeUrl = nftInfo.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
-                    }
-                    else
-                    {
-                        nftItem.ImageUrl =
-                            await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
-                                requestDto.Height);
-                        nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(
-                            nftInfo.NftInfo.ImageUrl,
-                            (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE,
-                            (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO);
-                    }
-                }
+                nftItem.ImageUrl =
+                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height,
+                        ImageResizeType.Forest);
+                nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
+                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,ImageResizeType.Forest);
 
                 dto.Data.Add(nftItem);
             }
@@ -583,24 +544,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
 
-                    if (!string.IsNullOrWhiteSpace(item.NftInfo.ImageUrl))
-                    {
-                        _logger.LogDebug("GetResizeImageAsync. current imageUrl is {imageUrl}", item.NftInfo.ImageUrl);
-                        var suffix = GetImageUrlSuffix(item.NftInfo.ImageUrl);
-                        var symbolSuffix = searchItem.NftInfo.Symbol.Split("-").Last();
-                        var parseInt = int.TryParse(symbolSuffix, out var symbolSuffixInt);
-                        if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
-                        {
-                            item.NftInfo.ImageUrl = searchItem.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
-                        }
-                        else
-                        {
-                            item.NftInfo.ImageUrl =
-                                await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl,
-                                    requestDto.Width,
-                                    requestDto.Height);
-                        }
-                    }
+                    item.NftInfo.ImageUrl =
+                        await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl, requestDto.Width,
+                            requestDto.Height, ImageResizeType.Forest);
                 }
 
                 dto.Data.Add(item);
