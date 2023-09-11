@@ -15,21 +15,17 @@ namespace CAServer.Phone;
 [RemoteService(false), DisableAuditing]
 public class PhoneAppService : CAServerAppService, IPhoneAppService
 {
-    private readonly IClusterClient _clusterClient;
 
-    private readonly ILogger<PhoneAppService> _logger;
 
     private readonly PhoneInfoOptions _phoneInfoOptions;
 
     private readonly IIpInfoAppService _ipInfoAppService;
 
-    public PhoneAppService(IIpInfoAppService ipInfoAppService, IClusterClient clusterClient,
-        ILogger<PhoneAppService> logger,
-        IOptions<PhoneInfoOptions> phoneInfoOptions)
+    public PhoneAppService(IIpInfoAppService ipInfoAppService, 
+        IOptionsSnapshot<PhoneInfoOptions> phoneInfoOptions)
     {
         _ipInfoAppService = ipInfoAppService;
-        _clusterClient = clusterClient;
-        _logger = logger;
+   
         _phoneInfoOptions = phoneInfoOptions.Value;
     }
 
@@ -37,15 +33,15 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
     {
         var phoneInfo = new List<Dictionary<string, string>>();
         var allPhoneCode = new Dictionary<string, Dictionary<string, string>>();
-        for (int i = 0; i < _phoneInfoOptions.PhoneInfo.Count; i++)
+        foreach (var phone in _phoneInfoOptions.PhoneInfo)
         {
             var phoneInfoDict = new Dictionary<string, string>();
-            phoneInfoDict.Add("country", _phoneInfoOptions.PhoneInfo[i].Country);
-            phoneInfoDict.Add("code", _phoneInfoOptions.PhoneInfo[i].Code);
-            phoneInfoDict.Add("iso", _phoneInfoOptions.PhoneInfo[i].Iso);
+            phoneInfoDict.Add("country", phone.Country);
+            phoneInfoDict.Add("code", phone.Code);
+            phoneInfoDict.Add("iso", phone.Iso);
             phoneInfo.Add(phoneInfoDict);
 
-            allPhoneCode.Add(_phoneInfoOptions.PhoneInfo[i].Code, phoneInfoDict);
+            allPhoneCode.Add(phone.Code, phoneInfoDict);
         }
 
         // default value

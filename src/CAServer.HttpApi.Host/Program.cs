@@ -16,11 +16,7 @@ public class Program
     public async static Task<int> Main(string[] args)
     {
         var configuration = new ConfigurationBuilder()
-// #if DEBUG            
-//            .AddJsonFile("appsettings.json")
-// #else  
-            .AddJsonFile("apollosettings.json")
-// #endif
+            .AddJsonFile("appsettings.json")
             .Build();
         Log.Logger = new LoggerConfiguration()
 #if DEBUG
@@ -41,12 +37,13 @@ public class Program
         {
             Log.Information("Starting CAServer.HttpApi.Host.");
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("apollosettings.json");
             //builder.Configuration.AddJsonFile("phone.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
-// #if !DEBUG
+//#if !DEBUG
                 .UseApollo()
-// #endif
+//#endif
                 .UseSerilog();
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();

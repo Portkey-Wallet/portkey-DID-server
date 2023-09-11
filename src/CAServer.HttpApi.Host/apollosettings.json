@@ -5,8 +5,11 @@
       "http://localhost:8080"
     ],
     "Namespaces": [
-      "default.appsettings.json",
-      "phone.json"
-    ]
+      "Test1.default.appsettings.json",
+      "Test1.phone.json"
+    ],
+    "Env": "DEV"
   }
 }
+
+
