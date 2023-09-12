@@ -8,6 +8,7 @@ using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Tokens;
+using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
@@ -32,13 +33,15 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IUserTokenAppService _userTokenAppService;
+    private readonly ITokenProvider _tokenProvider;
     private const int MaxResultCount = 10;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider)
+        IContractProvider contractProvider, IUserTokenAppService userTokenAppService, ITokenProvider tokenProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -47,6 +50,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenAppService = tokenAppService;
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
+        _userTokenAppService = userTokenAppService;
+        _tokenProvider = tokenProvider;
         _chainOptions = chainOptions.Value;
     }
 
@@ -66,6 +71,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             res.CaHolderTokenBalanceInfo.Data =
                 res.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
+
+            await CheckNeedAddTokenAsync(CurrentUser.GetId(), res);
 
             var chainInfos = await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddresses);
             var chainIds = chainInfos.CaHolderManagerInfo.Select(c => c.ChainId).Distinct().ToList();
@@ -286,10 +293,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
                 nftItem.ImageUrl =
-                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height,
+                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
+                        requestDto.Height,
                         ImageResizeType.Forest);
                 nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
-                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,ImageResizeType.Forest);
+                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
+                    ImageResizeType.Forest);
 
                 dto.Data.Add(nftItem);
             }
@@ -608,6 +617,54 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             _logger.LogError(e, "get symbols price failed, symbol={symbols}", symbols);
             return new Dictionary<string, decimal>();
+        }
+    }
+
+    private async Task CheckNeedAddTokenAsync(Guid userId, IndexerTokenInfos tokenInfos)
+    {
+        try
+        {
+            var tokens = tokenInfos?.CaHolderTokenBalanceInfo?.Data?.Where(t => t.TokenInfo != null && t.Balance > 0)
+                .Select(f => f.TokenInfo)
+                .ToList();
+
+            if (tokens.IsNullOrEmpty()) return;
+
+            var userTokens =
+                await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
+
+            var tokenIds = new List<string>();
+            foreach (var token in tokens)
+            {
+                var userToken =
+                    userTokens.FirstOrDefault(f => f.Token.Symbol == token.Symbol && f.Token.ChainId == token.ChainId);
+
+                if (userToken == null)
+                {
+                    tokenIds.Add(token.Id);
+                }
+            }
+            
+            await AddDisplayAsync(tokenIds);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "check need add token failed, userId: {userId}", userId);
+        }
+    }
+
+    private async Task AddDisplayAsync(List<string> tokenIds)
+    {
+        foreach (var tokenId in tokenIds)
+        {
+            try
+            {
+                await _userTokenAppService.ChangeTokenDisplayAsync(true, tokenId);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "add token failed, tokenId: {tokenId}", tokenId);
+            }
         }
     }
 }
