@@ -26,6 +26,8 @@ public class GuardianInfoBase
     public string Salt { get; set; }
     public string GuardianIdentifier { get; set; }
     public string VerifierId { get; set; }
+    public string Name { get; set; }
+    public string ImageUrl { get; set; }
     public bool IsLoginGuardian { get; set; }
     public string Type { get; set; }
 }
