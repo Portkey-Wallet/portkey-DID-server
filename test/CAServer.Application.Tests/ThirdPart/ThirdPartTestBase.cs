@@ -19,11 +19,20 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 NftAppId = "test",
                 NftAppSecret = "testTest",
                 NftBaseUrl = "http://localhost:9200/book/_search",
+                UpdateSellOrderUri = "/webhooks/off/merchant",
+                FiatListUri = "/merchant/fiat/list",
+                CryptoListUri = "/merchant/crypto/list",
+                OrderQuoteUri = "/merchant/order/quote",
+                GetTokenUri = "/merchant/getToken",
+                MerchantQueryTradeUri = "/merchant/query/trade"
             },
             Timer = new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,
+                HandleUnCompletedOrderMinuteAgo = 0,
+                NftCheckoutResultThirdPartNotifyCount = 0,
+                NftUnCompletedMerchantCallbackMinuteAgo = 0
             },
             Merchant = new MerchantOptions
             {

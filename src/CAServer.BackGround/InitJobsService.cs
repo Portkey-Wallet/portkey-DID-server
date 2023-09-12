@@ -28,8 +28,8 @@ public class InitJobsService : BackgroundService
                 x => x.HandleUnCompletedMerchantCallback(), _transactionOptions.NftOrderMerchantCallbackPeriod);
             _recurringJobs.AddOrUpdate<INftOrderProvider>("HandleNftThirdPartResultNotifyAsync",
                 x => x.HandleUnCompletedThirdPartResultNotify(), _transactionOptions.NftOrderThirdPartResultPeriod);
-            _recurringJobs.AddOrUpdate<INftOrderProvider>("HandleUnCompletedNftOrderPayResultNotify",
-                x => x.HandleUnCompletedNftOrderPayResultNotify(), _transactionOptions.HandleUnCompletedNftOrderPayResultPeriod);
+            _recurringJobs.AddOrUpdate<INftOrderProvider>("HandleUnCompletedNftOrderPayResultRefresh",
+                x => x.HandleUnCompletedNftOrderPayResultRefresh(), _transactionOptions.HandleUnCompletedNftOrderPayResultPeriod);
         }
         catch (Exception e)
         {

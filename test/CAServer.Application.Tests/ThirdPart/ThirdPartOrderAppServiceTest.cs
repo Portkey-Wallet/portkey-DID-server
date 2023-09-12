@@ -40,9 +40,9 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(MockThirdPartOptions());
-        services.AddSingleton(MockThirdPartOrderProvider());
-        services.AddSingleton(getMockOrderGrain());
-        services.AddSingleton(getMockDistributedEventBus());
+        // services.AddSingleton(MockThirdPartOrderProvider());
+        // services.AddSingleton(getMockOrderGrain());
+        // services.AddSingleton(getMockDistributedEventBus());
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
     }
 
@@ -69,19 +69,16 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     [Fact]
     public async Task GetThirdPartOrderListAsyncTest()
     {
+        await CreateThirdPartOrderAsyncTest();
         var result = await _thirdPartOrderAppService.GetThirdPartOrdersAsync(new GetUserOrdersDto()
         {
-            SkipCount = 1,
+            SkipCount = 0,
             MaxResultCount = 10
         });
         var data = result.Data.First();
-        data.Address.ShouldBe("Address");
-        data.MerchantName.ShouldBe("MerchantName");
-        data.Crypto.ShouldBe("Crypto");
-        data.CryptoPrice.ShouldBe("CryptoPrice");
-        data.Fiat.ShouldBe("Fiat");
-        data.FiatAmount.ShouldBe("FiatAmount");
-        data.LastModifyTime.ShouldBe("LastModifyTime");
+        // data.Address.ShouldBe("Address");
+        data.MerchantName.ShouldBe(ThirdPartNameType.Alchemy.ToString());
+        data.TransDirect.ShouldBe(TransferDirectionType.TokenBuy.ToString());
     }
 
     [Fact]
@@ -89,8 +86,8 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     {
         var input = new CreateUserOrderDto
         {
-            MerchantName = "123",
-            TransDirect = "123"
+            MerchantName = ThirdPartNameType.Alchemy.ToString(),
+            TransDirect = TransferDirectionType.TokenBuy.ToString()
         };
 
         var result = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(input);

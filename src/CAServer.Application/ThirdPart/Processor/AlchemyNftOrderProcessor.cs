@@ -70,10 +70,13 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 
     public override async Task<IThirdPartValidOrderUpdateRequest> QueryNftOrderAsync(Guid orderId)
     {
-        return await _alchemyProvider.GetNftTrade(new AlchemyNftReleaseNoticeRequestDto()
+        var alchemyOrder = await _alchemyProvider.GetNftTrade(new AlchemyNftReleaseNoticeRequestDto()
         {
             OrderNo = orderId.ToString()
         });
+        alchemyOrder.Id = Guid.Parse(alchemyOrder.MerchantOrderNo);
+        alchemyOrder.Status = AlchemyHelper.GetOrderStatus(alchemyOrder.Status);
+        return alchemyOrder;
     }
 
     public override bool FillOrderData(IThirdPartValidOrderUpdateRequest input, OrderGrainDto orderGrainDto)

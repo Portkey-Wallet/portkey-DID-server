@@ -90,8 +90,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
 
     public async Task<List<AlchemyFiatDto>> GetAlchemyNftFiatListAsync()
     {
-        return await _nftFiatListCache.GetOrAddAsync(
-            CommonConstant.NftFiatListKey + DateTime.UtcNow.ToUtcSeconds(),
+        return await _nftFiatListCache.GetOrAddAsync(CommonConstant.NftFiatListKey,
             async () => await _alchemyProvider.GetNftFiatList(),
             () => new DistributedCacheEntryOptions
             {

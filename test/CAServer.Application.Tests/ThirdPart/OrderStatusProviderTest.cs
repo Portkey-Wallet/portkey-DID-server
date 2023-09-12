@@ -66,8 +66,8 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
         
         var orderCreateInput = new CreateUserOrderDto
         {
-            MerchantName = "123",
-            TransDirect = "123"
+            MerchantName = ThirdPartNameType.Alchemy.ToString(),
+            TransDirect = TransferDirectionType.TokenBuy.ToString()
         };
 
         var orderCreatedDto = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(orderCreateInput);

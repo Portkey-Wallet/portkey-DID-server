@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using CAServer.BackGround;
+using CAServer.BackGround.Provider;
 using CAServer.Bookmark;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.ThirdPart;
@@ -47,12 +49,14 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<BookmarkHandler>();
 
         context.Services.AddSingleton<IThirdPartNftOrderProcessorFactory, ThirdPartNftOrderProcessorFactory>();
+        context.Services.AddSingleton<INftOrderProvider, NftOrderProvider>();
         context.Services.AddSingleton<NftOrderPayResultHandler>();
         context.Services.AddSingleton<NftOrderUpdateHandler>();
         context.Services.AddSingleton<NftReleaseResultHandler>();
         context.Services.AddSingleton<ThirdPartHandler>();
         
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem

@@ -118,7 +118,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             AssertHelper.IsTrue(orderGrainDto.Success, "Order {orderId} not exits.", orderId);
             status = orderGrainDto.Data.Status;
 
-            // callback merchant and update result
+            // callback merchant webhook API and fill raw result
             var grainDto = await DoCallBackNftOrderPayResultAsync(status, nftOrderGrainDto?.Data);
 
             grainDto.WebhookTime = DateTime.UtcNow.ToUtcString();

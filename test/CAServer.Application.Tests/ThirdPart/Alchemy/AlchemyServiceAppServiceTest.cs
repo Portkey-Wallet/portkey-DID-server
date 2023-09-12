@@ -1,9 +1,12 @@
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -11,18 +14,48 @@ namespace CAServer.ThirdPart.Alchemy;
 public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
+    private readonly ITestOutputHelper _testOutputHelper;
 
-    public AlchemyServiceAppServiceTest()
+    public AlchemyServiceAppServiceTest(ITestOutputHelper testOutputHelper)
     {
+        _testOutputHelper = testOutputHelper;
         _alchemyServiceAppService = GetRequiredService<IAlchemyServiceAppService>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
+        var mockOptions = MockThirdPartOptions();
         services.AddSingleton(MockThirdPartOptions());
-        services.AddSingleton(GetMockAlchemyFiatDto());
         services.AddSingleton(GetMockAlchemyOrderQuoteDto());
+
+        // mock http
+        services.AddSingleton(MockHttpFactory(_testOutputHelper,
+            PathMatcher(HttpMethod.Get, AlchemyApi.QueryNftFiatList.Path,
+                new AlchemyBaseResponseDto<List<AlchemyFiatDto>>(
+                    new() { new AlchemyFiatDto { Country = "USA", Currency = "USD"} })),
+            PathMatcher(HttpMethod.Get, AlchemyApi.QueryFiatList.Path,
+                new AlchemyBaseResponseDto<List<AlchemyFiatDto>>(
+                    new() { new AlchemyFiatDto { Country = "USA", Currency = "USD" } })),
+            PathMatcher(HttpMethod.Get, mockOptions.Value.Alchemy.CryptoListUri,
+                new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>(
+                    new() { new AlchemyCryptoDto { Crypto = "ELF" } })),
+            PathMatcher(HttpMethod.Post, mockOptions.Value.Alchemy.GetTokenUri,
+                new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
+                    new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
+            PathMatcher(HttpMethod.Post, mockOptions.Value.Alchemy.OrderQuoteUri,
+                new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>(
+                    new AlchemyOrderQuoteDataDto
+                    {
+                        Crypto = "ELF",
+                        CryptoPrice = "1",
+                        CryptoQuantity = "1",
+                        Fiat = "USD",
+                        FiatQuantity = "1",
+                        RampFee = "0.2",
+                        NetworkFee = "0.1"
+                    }))
+        ));
     }
 
     [Fact]
@@ -135,5 +168,13 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             ["message"] = "",
         });
         result.Data.ShouldBe("rd60vvnWPiE8LgsIY9lKbYbYBuQ=");
+    }
+
+    [Fact]
+    public async Task QueryNftFiatList()
+    {
+        var list = await _alchemyServiceAppService.GetAlchemyNftFiatListAsync();
+        list.ShouldNotBeEmpty();
+        list[0].Country.ShouldBe("USA");
     }
 }

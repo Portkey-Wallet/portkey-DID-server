@@ -29,21 +29,6 @@ public partial class AlchemyServiceAppServiceTest
         return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
     }
 
-    private IDistributedCache<List<AlchemyFiatDto>> GetMockAlchemyFiatDto()
-    {
-        var mockCache = new Mock<IDistributedCache<List<AlchemyFiatDto>>>();
-
-        mockCache.Setup(t => t.GetAsync(It.IsAny<string>(), default, default, default))
-            .ReturnsAsync(new List<AlchemyFiatDto>()
-            {
-                new AlchemyFiatDto()
-                {
-                    Currency = "USD"
-                }
-            });
-        return mockCache.Object;
-    }
-
     private IDistributedCache<AlchemyOrderQuoteDataDto> GetMockAlchemyOrderQuoteDto()
     {
         var mockCache = new Mock<IDistributedCache<AlchemyOrderQuoteDataDto>>();
