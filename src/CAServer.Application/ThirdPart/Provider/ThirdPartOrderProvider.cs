@@ -223,7 +223,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         var nftOrderIndices = nftOrderPager.Data.ToDictionary(order => order.Id, order => order);
         foreach (var orderDto in orderPager.Data)
         {
-            if (nftOrderIndices.ContainsKey(orderDto.Id)) continue;
+            if (!nftOrderIndices.ContainsKey(orderDto.Id)) continue;
             var nftOrderIndex = nftOrderIndices[orderDto.Id];
             var nftOrderSection = _objectMapper.Map<NftOrderIndex, NftOrderSectionDto>(nftOrderIndex);
             orderDto.OrderSections.Add(nftOrderSection.SectionName, nftOrderSection);

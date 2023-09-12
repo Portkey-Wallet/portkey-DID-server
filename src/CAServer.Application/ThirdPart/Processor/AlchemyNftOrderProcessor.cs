@@ -16,10 +16,6 @@ namespace CAServer.ThirdPart.Processor;
 
 public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 {
-    private const string SignatureField = "signature";
-    private const string IdField = "id";
-
-
     private readonly AlchemyProvider _alchemyProvider;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
@@ -49,11 +45,13 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
             achNftOrderRequest?.AppId);
 
         // verify signature 
-        var signSource = ThirdPartHelper.ConvertObjectToSortedString(achNftOrderRequest, SignatureField, IdField);
+        var signSource = ThirdPartHelper.ConvertObjectToSortedString(achNftOrderRequest, 
+            AlchemyHelper.SignatureField, AlchemyHelper.IdField);
         var signature = AlchemyHelper.HmacSign(signSource, _alchemyOptions.NftAppSecret);
         _logger.LogDebug("Verify Alchemy signature, signature={Signature}, signSource={SignSource}",
             signature, signSource);
-        AssertHelper.IsTrue(signature == achNftOrderRequest?.Signature, "Invalid alchemy signature={InputSign}, signSource={SignSource}",
+        AssertHelper.IsTrue(signature == achNftOrderRequest?.Signature,
+            "Invalid alchemy signature={InputSign}, signSource={SignSource}",
             achNftOrderRequest?.Signature, signSource);
         // fill orderId 
         achNftOrderRequest.Id = Guid.Parse(achNftOrderRequest.MerchantOrderNo);

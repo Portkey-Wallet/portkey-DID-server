@@ -255,7 +255,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         {
             UserId = userId,
             OrderIdIn = orderIdIn
-        });
+        }, OrderSectionEnum.NftSection);
     }
     
 }

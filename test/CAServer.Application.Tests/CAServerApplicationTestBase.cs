@@ -9,6 +9,7 @@ using CAServer.CAActivity.Provider;
 using CAServer.Entities.Es;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
@@ -26,11 +27,11 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
         services.AddSingleton(GetMockInMemoryHarness());
     }
 
-    protected IActivityProvider MockRandomActivityProviderCaHolder()
+    protected IActivityProvider MockActivityProviderCaHolder(string guidVal = null)
     {
         return GetMockActivityProvider(new CAHolderIndex
         {
-            UserId = Guid.NewGuid()
+            UserId = guidVal.IsNullOrEmpty() ? Guid.NewGuid() : Guid.Parse(guidVal)
         });
     }
     

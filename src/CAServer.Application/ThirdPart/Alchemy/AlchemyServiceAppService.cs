@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
@@ -242,6 +243,28 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
                 Success = "Fail",
                 ReturnMsg = $"Error AES encrypting, error msg is {e.Message}"
             };
+        }
+    }
+
+    public Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, object> input)
+    {
+        try
+        {
+            // Ensure input isn't fake webhook data.
+            AssertHelper.IsTrue(!input.ContainsKey("status"), "invalid param keys");
+            AssertHelper.IsTrue(input.TryGetValue("appId", out var appId), "appId missing");
+            var appSecret = _alchemyOptions.NftAppId == appId
+                ? _alchemyOptions.NftAppSecret
+                : _alchemyOptions.AppSecret;
+            
+            var src = ThirdPartHelper.ConvertObjectToSortedString(input, AlchemyHelper.SignatureField);
+            var sign = AlchemyHelper.HmacSign(src, appSecret);
+            return Task.FromResult(new AlchemyBaseResponseDto<string>(sign));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Get Alchemy API signature error");
+            return Task.FromResult(AlchemyBaseResponseDto<string>.Fail(e.Message));
         }
     }
 }

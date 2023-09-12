@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +8,7 @@ using Xunit;
 namespace CAServer.ThirdPart.Alchemy;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
+public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
 
@@ -19,7 +20,7 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        services.AddSingleton(getMockThirdPartOptions());
+        services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(GetMockAlchemyFiatDto());
         services.AddSingleton(GetMockAlchemyOrderQuoteDto());
     }
@@ -87,7 +88,7 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
         var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
         result.Success.ShouldBe("Success");
     }
-    
+
     [Fact]
     public async Task GetAlchemyFiatListAsync_Sell_Test()
     {
@@ -113,5 +114,26 @@ public partial class AlchemyServiceAppServiceTest : CAServerApplicationTestBase
         {
             Address = "Test"
         });
+    }
+
+    [Fact]
+    public async Task GetAlchemyApiSignatureAsyncTest()
+    {
+        var result = await _alchemyServiceAppService.GetAlchemyApiSignatureAsync(new Dictionary<string, object>
+        {
+            ["orderNo"] = "994864610797428736",
+            ["merchantOrderNo"] = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4",
+            ["amount"] = "100",
+            ["fiat"] = "USD",
+            ["payTime"] = "2022-07-08 15:18:43",
+            ["payType"] = "CREDIT_CARD",
+            ["type"] = "MARKET",
+            ["name"] = "LUCK",
+            ["quantity"] = "1",
+            ["uniqueId"] = "LUCK",
+            ["appId"] = "test",
+            ["message"] = "",
+        });
+        result.Data.ShouldBe("rd60vvnWPiE8LgsIY9lKbYbYBuQ=");
     }
 }

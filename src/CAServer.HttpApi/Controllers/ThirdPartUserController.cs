@@ -14,7 +14,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/")]
-// TODO nzc [Authorize]
+[Authorize]
 public class ThirdPartUserController : CAServerController
 {
     private readonly IAlchemyOrderAppService _alchemyOrderService;
@@ -92,6 +92,12 @@ public class ThirdPartUserController : CAServerController
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+    }
+    
+    [HttpGet("alchemy/signature/api")]
+    public async Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, object> input)
+    {
+        return await _alchemyServiceAppService.GetAlchemyApiSignatureAsync(input);
     }
     
 }

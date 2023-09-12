@@ -1,15 +1,18 @@
 using System;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
 using AElf.Cryptography.ECDSA;
+using CAServer.Common;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using Shouldly;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,7 +20,7 @@ using Xunit.Abstractions;
 namespace CAServer.ThirdPart.NftCheckout;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public partial class NftOrderTest : CAServerApplicationTestBase
+public partial class NftOrderTest : ThirdPartTestBase
 {
     private static readonly string MerchantName = "symbolMarket";
     private static readonly ECKeyPair MerchantAccount = CryptoHelper.FromPrivateKey(ByteArrayHelper
@@ -41,7 +44,7 @@ public partial class NftOrderTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
-        services.AddSingleton(MockRandomActivityProviderCaHolder());
+        services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
         services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(MockHttpFactory(_testOutputHelper, 
             PathMatcher(HttpMethod.Post, "/myWebhook", new CommonResponseDto<Empty>()),
@@ -71,6 +74,16 @@ public partial class NftOrderTest : CAServerApplicationTestBase
         var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
         res.ShouldNotBeNull();
         res.Success.ShouldBe(true);
+        
+        
+        var result = await _thirdPartOrderAppService.GetThirdPartOrdersAsync(new GetUserOrdersDto()
+        {
+            SkipCount = 0,
+            MaxResultCount = 10
+        });
+        result.Data.Count.ShouldBe(1);
+        result.Data[0].OrderSections.ShouldContainKey(OrderSectionEnum.NftSection.ToString());
+        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(result, HttpProvider.DefaultJsonSettings));
     }
 
     [Fact]

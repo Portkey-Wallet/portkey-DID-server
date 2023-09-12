@@ -22,7 +22,7 @@ using Xunit.Abstractions;
 namespace CAServer.ThirdPart;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
+public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
 {
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
@@ -39,10 +39,11 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
+        services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(MockThirdPartOrderProvider());
         services.AddSingleton(getMockOrderGrain());
         services.AddSingleton(getMockDistributedEventBus());
-        services.AddSingleton(MockRandomActivityProviderCaHolder());
+        services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
     }
 
     [Fact]
@@ -140,4 +141,5 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         var defaultVal = AlchemyHelper.GetOrderTransDirectForQuery("test");
         defaultVal.ShouldBe(OrderTransDirect.SELL.ToString());
     }
+    
 }

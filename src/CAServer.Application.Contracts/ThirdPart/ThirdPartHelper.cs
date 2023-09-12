@@ -43,22 +43,39 @@ public static class ThirdPartHelper
     {
         if (obj == null) return string.Empty;
         var dict = new SortedDictionary<string, object>();
-        foreach (var property in obj.GetType().GetProperties())
+
+        if (obj is IDictionary<string, object> inputDict)
         {
-            var key = property.Name.Substring(0, 1).ToLower() + property.Name.Substring(1);
-            if (!property.CanRead || ignoreParams.Contains(key)) continue;
-            
-            var value = property.GetValue(obj);
-            if (value == null) continue; // ignore null value
-            
-            dict[key] = value;
+            foreach (var kvp in inputDict)
+            {
+                if (ignoreParams.Contains(kvp.Key)) continue;
+                if (kvp.Value == null) continue; // ignore null value
+                dict[kvp.Key] = kvp.Value;
+            }
         }
+        else
+        {
+            foreach (var property in obj.GetType().GetProperties())
+            {
+                var key = property.Name.Substring(0, 1).ToLower() + property.Name.Substring(1);
+                if (!property.CanRead || ignoreParams.Contains(key)) continue;
+
+                var value = property.GetValue(obj);
+                if (value == null) continue; // ignore null value
+
+                dict[key] = value;
+            }
+        }
+
         return string.Join("&", dict.Select(kv => kv.Key + "=" + kv.Value));
     }
 }
 
 public static class AlchemyHelper
 {
+    public const string SignatureField = "signature";
+    public const string IdField = "id";
+    
     private static Dictionary<string, OrderStatusType> _orderStatusDict = new()
     {
         { "FINISHED", OrderStatusType.Finish },
@@ -75,7 +92,7 @@ public static class AlchemyHelper
         { "6", OrderStatusType.RefundSuccessfully },
         { "7", OrderStatusType.Expired },
     };
-
+    
     public static bool OrderStatusExist(string orderStatus)
     {
         return GetOrderStatus(orderStatus) != OrderStatusType.Unknown.ToString();

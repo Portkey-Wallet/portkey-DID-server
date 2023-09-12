@@ -1,5 +1,6 @@
 using System;
 using Google.Protobuf.WellKnownTypes;
+using Nest;
 
 namespace CAServer.ThirdPart.Dtos;
 
@@ -14,6 +15,28 @@ public class AlchemyBaseResponseDto<T>
     public string TraceId { get; set; }
 
     public T Data { get; set; }
+
+    public AlchemyBaseResponseDto()
+    {
+        
+    }
+    
+    public AlchemyBaseResponseDto(T data)
+    {
+        Data = data;
+    }
+    
+    public static AlchemyBaseResponseDto<T> Fail(string msg, int code = 50000)
+    {
+        return new AlchemyBaseResponseDto<T>
+        {
+
+            Success = "Fail",
+            ReturnMsg = msg,
+            ReturnCode = code.ToString()
+        };
+    }
+
 }
 
 public class AlchemyTokenDataDto
