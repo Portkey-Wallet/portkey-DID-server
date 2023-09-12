@@ -40,11 +40,11 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     public override IThirdPartValidOrderUpdateRequest VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input)
     {
         // verify input type and data 
-        AssertHelper.IsTrue(input is Dictionary<string, object>, "Invalid input");
+        AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid input");
 
-        var ipnutDict = input as Dictionary<string, object>;
-        var hasAppId = ipnutDict.TryGetValue(AlchemyHelper.AppIdField, out var appId);
-        var hasSignature = ipnutDict.TryGetValue(AlchemyHelper.SignatureField, out var inputSignature);
+        var inputDict = input as AlchemyNftOrderRequestDto;
+        var hasAppId = inputDict.TryGetValue(AlchemyHelper.AppIdField, out var appId);
+        var hasSignature = inputDict.TryGetValue(AlchemyHelper.SignatureField, out var inputSignature);
 
         AssertHelper.IsTrue(hasAppId && hasSignature && appId is string && inputSignature is string,
             "Invalid alchemy order input {appId} - {sign}", appId, inputSignature);
