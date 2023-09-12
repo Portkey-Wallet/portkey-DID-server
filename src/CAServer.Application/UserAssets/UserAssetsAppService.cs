@@ -14,6 +14,7 @@ using CAServer.Grains.Grain.ValidateMerkerTree;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
+using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Google.Protobuf;
@@ -44,6 +45,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IUserTokenAppService _userTokenAppService;
+    private readonly ITokenProvider _tokenProvider;
     private readonly IContactProvider _contactProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IGuardianProvider _guardianProvider;
@@ -54,7 +57,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
         IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
-        IGuardianProvider guardianProvider)
+        IGuardianProvider guardianProvider,
+        IContractProvider contractProvider, IUserTokenAppService userTokenAppService, ITokenProvider tokenProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -64,6 +68,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
         _contactProvider = contactProvider;
+        _userTokenAppService = userTokenAppService;
+        _tokenProvider = tokenProvider;
         _chainOptions = chainOptions.Value;
         _clusterClient = clusterClient;
         _guardianProvider = guardianProvider;
@@ -94,6 +100,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             res.CaHolderTokenBalanceInfo.Data =
                 res.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
+
+            await CheckNeedAddTokenAsync(CurrentUser.GetId(), res);
 
             var chainInfos = await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddresses);
             var chainIds = chainInfos.CaHolderManagerInfo.Select(c => c.ChainId).Distinct().ToList();
@@ -822,5 +830,53 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var merklePath = tree.GenerateMerklePath(index);
         var merklePathString = merklePath.ToByteString().ToHex();
         return merklePathString;
+    }
+    
+    private async Task CheckNeedAddTokenAsync(Guid userId, IndexerTokenInfos tokenInfos)
+    {
+        try
+        {
+            var tokens = tokenInfos?.CaHolderTokenBalanceInfo?.Data?.Where(t => t.TokenInfo != null && t.Balance > 0)
+                .Select(f => f.TokenInfo)
+                .ToList();
+
+            if (tokens.IsNullOrEmpty()) return;
+
+            var userTokens =
+                await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
+
+            var tokenIds = new List<string>();
+            foreach (var token in tokens)
+            {
+                var userToken =
+                    userTokens.FirstOrDefault(f => f.Token.Symbol == token.Symbol && f.Token.ChainId == token.ChainId);
+
+                if (userToken == null)
+                {
+                    tokenIds.Add(token.Id);
+                }
+            }
+            
+            await AddDisplayAsync(tokenIds);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "check need add token failed, userId: {userId}", userId);
+        }
+    }
+
+    private async Task AddDisplayAsync(List<string> tokenIds)
+    {
+        foreach (var tokenId in tokenIds)
+        {
+            try
+            {
+                await _userTokenAppService.ChangeTokenDisplayAsync(true, tokenId);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "add token failed, tokenId: {tokenId}", tokenId);
+            }
+        }
     }
 }
