@@ -718,7 +718,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             return;
         }
-
+        
+        //check user register time
+        
+        
         foreach (var requestDtoCaAddress in requestDto.CaAddressInfos)
         {
             var guardians =
