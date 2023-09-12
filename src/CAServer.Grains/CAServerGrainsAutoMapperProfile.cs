@@ -21,7 +21,9 @@ using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
+using CAServer.Grains.State.ValidateMerkerTree;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ValidateMerkerTree.Dtos;
 using Google.Protobuf.Collections;
 using Portkey.Contracts.CA;
 
@@ -88,7 +90,9 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     { e.GuardianList.Guardians.Where(g => g.IsLoginGuardian).Select(g => g.IdentifierHash).ToList() }))
             .ForMember(d => d.ManagerInfos, opt => opt.MapFrom(g => g.ManagerInfos))
             .ForMember(d => d.CaHash,
-                opt => opt.MapFrom(g => g.CaHash));
+                opt => opt.MapFrom(g => g.CaHash))
+            .ForMember(d => d.GuardiansMerkleTreeRoot,
+                opt => opt.MapFrom(g => g.GuardiansMerkleTreeRoot));
 
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoState>().ReverseMap();
         CreateMap<OrderState, OrderGrainDto>();
@@ -102,5 +106,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<OrderStatusInfoState, OrderStatusInfoGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkResultDto>();
+        CreateMap<ValidateOriginChainIdState, ValidateOriginChainIdGrainDto>().ReverseMap();
     }
 }

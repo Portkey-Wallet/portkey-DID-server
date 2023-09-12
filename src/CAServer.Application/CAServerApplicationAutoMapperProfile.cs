@@ -24,6 +24,7 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State.ValidateMerkerTree;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
@@ -40,6 +41,7 @@ using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
+using CAServer.ValidateMerkerTree.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
@@ -393,6 +395,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
             .ReverseMap()
             ;
+        
+        CreateMap<ValidateOriginChainIdGrainDto, ValidateOriginChainIdState>().ReverseMap();
         
     }
 }
