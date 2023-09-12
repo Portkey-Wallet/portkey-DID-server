@@ -733,12 +733,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var guardians = await _guardianProvider.GetGuardiansAsync("", userLoginEto.CaHash);
         if (guardians == null || !guardians.CaHolderInfo.Any())
         {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,guardians is null or empty,userId {uid}",
+                userLoginEto.UserId);
             return;
         }
 
         originChainId = guardians.CaHolderInfo?.FirstOrDefault()?.OriginChainId;
         if (string.IsNullOrWhiteSpace(originChainId))
         {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,originChainId is null or empty,userId {uid}",
+                userLoginEto.UserId);
             return;
         }
         
@@ -755,7 +759,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         try
         {
             var needValidate = await validateOriginChainIdGrain.NeedValidateAsync();
-            _logger.LogInformation("UpdateMerkerTreeAsync,needValidate {needValidate}", needValidate);
+            _logger.LogInformation("UpdateOriginChainIdAsync,needValidate {needValidate}", needValidate);
             
             if (!needValidate.Data)
             {
@@ -773,9 +777,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 await validateOriginChainIdGrain.SetStatusSuccessAsync();
                 _logger.LogInformation(
-                    "UpdateMerkerTreeAsync success,chainId {chainId},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    "UpdateOriginChainIdAsync success,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
                     chainId,
-                     merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                    transactionDto.TransactionResultDto.TransactionId,
                     transactionDto.TransactionResultDto.Status);
                 return;
             }
@@ -785,22 +789,22 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 await validateOriginChainIdGrain.SetStatusFailAsync();
                 _logger.LogInformation(
-                    "UpdateMerkerTreeAsync fail status {status} ,chainId {chainId},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    "UpdateOriginChainIdAsync fail status {status} ,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
                     transactionDto.TransactionResultDto.Status, chainId,
-                     merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                    transactionDto.TransactionResultDto.TransactionId,
                     transactionDto.TransactionResultDto.Status);
                 return;
             }
 
             _logger.LogInformation(
-                "UpdateMerkerTreeAsync success status {status},chainId {chainId},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                "UpdateOriginChainIdAsync success status {status},chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
                 transactionDto.TransactionResultDto.Status, chainId,
-                merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                transactionDto.TransactionResultDto.TransactionId,
                 transactionDto.TransactionResultDto.Status);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdateMerkerTreeAsync fail,chainId {chainId},userId {uid}", chainId,
+            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid}", chainId,
                 userLoginEto.UserId);
             await validateOriginChainIdGrain.SetStatusFailAsync();
         }
@@ -814,7 +818,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             return false;
         }
-        
 
         return false;
     }

@@ -90,8 +90,7 @@ public class ValidateOriginChainIdGrain : Orleans.Grain<ValidateOriginChainIdSta
                 };
             }
             
-            if (string.IsNullOrWhiteSpace(State.TransactionId) || string.IsNullOrWhiteSpace(State.ChainId) ||
-                string.IsNullOrWhiteSpace(State.MerkleTreeRoot))
+            if (string.IsNullOrWhiteSpace(State.TransactionId) || string.IsNullOrWhiteSpace(State.ChainId))
             {
                 //this means some error , we can sync again
                 State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
