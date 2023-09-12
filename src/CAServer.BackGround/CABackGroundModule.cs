@@ -12,6 +12,7 @@ using Hangfire.Dashboard;
 using Hangfire.Mongo;
 using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
+using MassTransit;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Orleans;
@@ -31,6 +32,7 @@ using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.PermissionManagement;
+using Volo.Abp.RabbitMQ;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.Threading;
@@ -74,8 +76,32 @@ public class CABackGroundModule : AbpModule
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         ConfigureTokenCleanupService();
         ConfigureDistributedLocking(context, configuration);
+        ConfigureMassTransit(context, configuration);
     }
 
+    private void ConfigureMassTransit(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddMassTransit(x =>
+        {
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<AbpRabbitMqOptions>();
+            // x.AddConsumer<OrderWsBroadcastConsumer>();
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                    "/", h =>
+                    {
+                        h.Username(rabbitMqConfig.Connections.Default.UserName);
+                        h.Password(rabbitMqConfig.Connections.Default.Password);
+                    });
+                //
+                // cfg.ReceiveEndpoint(rabbitMqConfig.ClientQueueName, e =>
+                // {
+                //     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
+                // });
+            });
+        });
+    }
+    
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
         context.Services.AddHangfire(x =>
