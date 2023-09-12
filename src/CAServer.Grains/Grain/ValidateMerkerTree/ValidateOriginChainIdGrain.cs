@@ -9,12 +9,12 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.ValidateMerkerTree;
 
-public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, IValidateMerkerTreeGrain
+public class ValidateOriginChainIdGrain : Orleans.Grain<ValidateOriginChainIdState>, IValidateOriginChainIdGrain
 {
     private readonly IObjectMapper _objectMapper;
     private readonly ChainOptions _chainOptions;
     
-    public ValidateMerkerTreeGrain(IObjectMapper objectMapper, IOptions<ChainOptions> chainOptions)
+    public ValidateOriginChainIdGrain(IObjectMapper objectMapper, IOptions<ChainOptions> chainOptions)
     {
         _objectMapper = objectMapper;
         _chainOptions = chainOptions.Value;
@@ -32,18 +32,17 @@ public class ValidateMerkerTreeGrain : Orleans.Grain<ValidateMerkerTreeState>, I
         await WriteStateAsync();
     }
     
-    public async Task<GrainResultDto<ValidateMerkerTreeGrainDto>> GetInfoAsync()
+    public async Task<GrainResultDto<ValidateOriginChainIdGrainDto>> GetInfoAsync()
     {
-        var result = new GrainResultDto<ValidateMerkerTreeGrainDto>();
+        var result = new GrainResultDto<ValidateOriginChainIdGrainDto>();
         result.Success = true;
-        result.Data = _objectMapper.Map<ValidateMerkerTreeState, ValidateMerkerTreeGrainDto>(State);
+        result.Data = _objectMapper.Map<ValidateOriginChainIdState, ValidateOriginChainIdGrainDto>(State);
         return result;
     }
 
-    public async Task SetInfoAsync(string transactionId, string merkleTreeRoot, string chainId)
+    public async Task SetInfoAsync(string transactionId, string chainId)
     {
         State.TransactionId = transactionId;
-        State.MerkleTreeRoot = merkleTreeRoot;
         State.ChainId = chainId;
         State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         await WriteStateAsync();

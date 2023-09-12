@@ -8,6 +8,7 @@ using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
+using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ValidateMerkerTree;
 using CAServer.Guardian.Provider;
@@ -23,6 +24,7 @@ using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using ChainOptions = CAServer.Options.ChainOptions;
 using Token = CAServer.UserAssets.Dtos.Token;
@@ -50,13 +52,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     public const string DefaultSuffix = "svg";
     public const string ReplaceSuffix = "png";
     private readonly SeedImageOptions _seedImageOptions;
+    private readonly IDistributedEventBus _distributedEventBus;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
         IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
-        IOptions<SeedImageOptions> seedImageOptions,IGuardianProvider guardianProvider)
+        IOptions<SeedImageOptions> seedImageOptions, IGuardianProvider guardianProvider, IDistributedEventBus distributedEventBus)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -70,19 +73,30 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _chainOptions = chainOptions.Value;
         _clusterClient = clusterClient;
         _guardianProvider = guardianProvider;
+        _distributedEventBus = distributedEventBus;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
     {
         try
         {
-            await CheckChainMerkerTreeStatusAsync(requestDto);
+            if (await NeedSyncStatusAsync(CurrentUser.GetId()))
+            {
+                var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+                await _distributedEventBus.PublishAsync(new UserLoginEto()
+                {
+                    Id = CurrentUser.GetId(),
+                    UserId = CurrentUser.GetId(),
+                    CaHash = caHolderIndex.CaHash,
+                    CreateTime = DateTime.UtcNow
+                });
+            }
         }
         catch (Exception e)
         {
-            _logger.LogError(e,"CheckChainMerkerTreeStatus fail,user {id}", CurrentUser.GetId());
+            _logger.LogError(e, "send UserLoginEto fail,user {id}", CurrentUser.GetId());
         }
-        
+
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
@@ -589,7 +603,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                         var parseInt = int.TryParse(symbolSuffix, out var symbolSuffixInt);
                         if (DefaultSuffix.Equals(suffix) && parseInt && symbolSuffixInt > 0)
                         {
-                            item.NftInfo.ImageUrl = searchItem.NftInfo.ImageUrl.Replace(DefaultSuffix,ReplaceSuffix);
+                            item.NftInfo.ImageUrl = searchItem.NftInfo.ImageUrl.Replace(DefaultSuffix, ReplaceSuffix);
                         }
                         else
                         {
@@ -708,97 +722,60 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         return imageUrlArray[^1].ToLower();
     }
 
-    public async Task CheckChainMerkerTreeStatusAsync(GetTokenRequestDto requestDto)
+    public async Task CheckOriginChainIdStatusAsync(UserLoginEto userLoginEto)
     {
+        if (!await NeedSyncStatusAsync(userLoginEto.UserId))
+        {
+            return;
+        }
+        
         var originChainId = "";
-        var caHash = "";
-        var identifierHash = "";
-        
-        if (requestDto.CaAddressInfos.IsNullOrEmpty())
+        var guardians = await _guardianProvider.GetGuardiansAsync("", userLoginEto.CaHash);
+        if (guardians == null || !guardians.CaHolderInfo.Any())
+        {
+            return;
+        }
+
+        originChainId = guardians.CaHolderInfo?.FirstOrDefault()?.OriginChainId;
+        if (string.IsNullOrWhiteSpace(originChainId))
         {
             return;
         }
         
-        //check user register time
-        
-        
-        foreach (var requestDtoCaAddress in requestDto.CaAddressInfos)
-        {
-            var guardians =
-                await _contactProvider.GetCaHolderInfoByAddressAsync(new List<string> { requestDtoCaAddress.CaAddress },
-                    requestDtoCaAddress.ChainId);
-            _logger.LogInformation("CheckChainMerkerTreeStatusAsync,guardians {guardians}", guardians);
-            if (guardians == null || !guardians.CaHolderInfo.Any())
-            {
-                continue;
-            }
-
-            caHash = guardians.CaHolderInfo.First().CaHash;
-            originChainId = guardians.CaHolderInfo.First().OriginChainId;
-            identifierHash = guardians.CaHolderInfo.First()
-                .GuardianList.Guardians.FirstOrDefault(x => x.IsLoginGuardian)?.IdentifierHash;
-            
-            break;
-        }
-
-        if (string.IsNullOrWhiteSpace(caHash) || string.IsNullOrWhiteSpace(originChainId) ||
-            string.IsNullOrWhiteSpace(identifierHash))
-        {
-            _logger.LogError(
-                "CheckChainMerkerTreeStatusAsync fail,caHash {caHash},originChainId:{originChainId},identifierHash {identifierHash}",
-                caHash, originChainId, identifierHash);
-            return;
-        }
-
         var outputGetHolderInfo =
-            await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash),
-                Hash.LoadFromHex(identifierHash), originChainId);
+            await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
+                null, originChainId);
 
-        await UpdateMerkerTreeAsync(originChainId, identifierHash, outputGetHolderInfo);
+        await UpdateOriginChainIdAsync(originChainId, outputGetHolderInfo,userLoginEto);
     }
 
-    public async Task UpdateMerkerTreeAsync(string chainId, string identifierHash, GetHolderInfoOutput result)
+    public async Task UpdateOriginChainIdAsync(string chainId, GetHolderInfoOutput holderInfoOutput,UserLoginEto userLoginEto)
     {
-        var validateMerkerTreeGrain = _clusterClient.GetGrain<IValidateMerkerTreeGrain>(CurrentUser.GetId());
+        var validateOriginChainIdGrain = _clusterClient.GetGrain<IValidateOriginChainIdGrain>(userLoginEto.UserId);
         try
         {
-            var needValidate = await validateMerkerTreeGrain.NeedValidateAsync();
+            var needValidate = await validateOriginChainIdGrain.NeedValidateAsync();
             _logger.LogInformation("UpdateMerkerTreeAsync,needValidate {needValidate}", needValidate);
             
             if (!needValidate.Data)
             {
                 return;
             }
-            
-            var merkleTreeRoot = result.GuardiansMerkleTreeRoot;
-            if (string.IsNullOrWhiteSpace(merkleTreeRoot))
-            {
-                merkleTreeRoot = await GetMerklePathAsync(identifierHash, chainId);
-            }
 
-            if (string.IsNullOrWhiteSpace(merkleTreeRoot))
-            {
-                _logger.LogError("merkleTreeRoot is null,chainId {chainId},identifierHash {identifierHash}", chainId,
-                    identifierHash);
-                await validateMerkerTreeGrain.SetStatusFailAsync();
-                return;
-            }
-
-            result.GuardiansMerkleTreeRoot = merkleTreeRoot;
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
             var transactionDto =
-                await grain.ValidateTransactionAsync(chainId, result, null);
+                await grain.ValidateTransactionAsync(chainId, holderInfoOutput, null);
 
-            await validateMerkerTreeGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,
-                merkleTreeRoot, chainId);
+            await validateOriginChainIdGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,
+                 chainId);
 
             if (transactionDto.TransactionResultDto.Status == TransactionState.Mined)
             {
-                await validateMerkerTreeGrain.SetStatusSuccessAsync();
+                await validateOriginChainIdGrain.SetStatusSuccessAsync();
                 _logger.LogInformation(
-                    "UpdateMerkerTreeAsync success,chainId {chainId},identifierHash {identifierHash},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    "UpdateMerkerTreeAsync success,chainId {chainId},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
                     chainId,
-                    identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                     merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
                     transactionDto.TransactionResultDto.Status);
                 return;
             }
@@ -806,78 +783,39 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (transactionDto.TransactionResultDto.Status == TransactionState.NodeValidationFailed ||
                 transactionDto.TransactionResultDto.Status == TransactionState.Failed)
             {
-                await validateMerkerTreeGrain.SetStatusFailAsync();
+                await validateOriginChainIdGrain.SetStatusFailAsync();
                 _logger.LogInformation(
-                    "UpdateMerkerTreeAsync fail status {status} ,chainId {chainId},identifierHash {identifierHash},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    "UpdateMerkerTreeAsync fail status {status} ,chainId {chainId},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
                     transactionDto.TransactionResultDto.Status, chainId,
-                    identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                     merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
                     transactionDto.TransactionResultDto.Status);
                 return;
             }
 
             _logger.LogInformation(
-                "UpdateMerkerTreeAsync success status {status},chainId {chainId},identifierHash {identifierHash},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
+                "UpdateMerkerTreeAsync success status {status},chainId {chainId},merkleTreeRoot {merkleTreeRoot},transactionId {transactionId},transactionStatus {transactionStatus}",
                 transactionDto.TransactionResultDto.Status, chainId,
-                identifierHash, merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
+                merkleTreeRoot, transactionDto.TransactionResultDto.TransactionId,
                 transactionDto.TransactionResultDto.Status);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdateMerkerTreeAsync fail,chainId {chainId},identifierHash {identifierHash}", chainId,
-                identifierHash);
-            await validateMerkerTreeGrain.SetStatusFailAsync();
+            _logger.LogError(e, "UpdateMerkerTreeAsync fail,chainId {chainId},userId {uid}", chainId,
+                userLoginEto.UserId);
+            await validateOriginChainIdGrain.SetStatusFailAsync();
         }
     }
     
-    private async Task<string> GetMerklePathAsync(string guardianIdentifierHash, string chainId)
+    public async Task<bool> NeedSyncStatusAsync(Guid userId)
     {
-        var caHolderInfo = await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash,
-            null,
-            chainId);
-        if (caHolderInfo == null)
+        //todo:check user register time
+        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
+        if (caHolderIndex == null || caHolderIndex.IsDeleted)
         {
-            throw new UserFriendlyException("CAHolder not found.");
+            return false;
         }
+        
 
-        var guardians = caHolderInfo.GuardianList.Guardians;
-        if (caHolderInfo.GuardianList == null || guardians == null || !guardians.Any())
-        {
-            throw new UserFriendlyException("Guardian not found.");
-        }
-
-        var guardianHashByte = new List<Hash>();
-
-        var index = 0;
-        var hasIndex = false;
-        for (var i = 0; i < guardians.Count; i++)
-        {
-            var guardian = new Portkey.Contracts.CA.Guardian
-            {
-                Type = guardians[i].Type,
-                IdentifierHash = guardians[i].IdentifierHash,
-                VerifierId = guardians[i].VerifierId
-            };
-
-            var guardianHashString = HashHelper.ComputeFrom(guardian).ToHex();
-            var hash = Hash.LoadFromByteArray(ByteArrayHelper.HexStringToByteArray(guardianHashString));
-            guardianHashByte.Add(hash);
-            if (guardians[i].IdentifierHash.ToHex() != guardianIdentifierHash)
-            {
-                continue;
-            }
-
-            index = i;
-            hasIndex = true;
-        }
-
-        if (!hasIndex)
-        {
-            throw new UserFriendlyException("Guardian not found.");
-        }
-
-        var tree = BinaryMerkleTree.FromLeafNodes(guardianHashByte.ToArray());
-        var merklePath = tree.GenerateMerklePath(index);
-        var merklePathString = merklePath.ToByteString().ToHex();
-        return merklePathString;
+        return false;
     }
 }

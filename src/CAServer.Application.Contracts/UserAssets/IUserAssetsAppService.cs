@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using CAServer.Etos;
 using CAServer.UserAssets.Dtos;
 using Portkey.Contracts.CA;
 
@@ -18,6 +19,6 @@ public interface IUserAssetsAppService
 
     Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto);
     
-    Task CheckChainMerkerTreeStatusAsync(GetTokenRequestDto requestDto);
-    Task UpdateMerkerTreeAsync(string chainId, string identifierHash, GetHolderInfoOutput result);
+    Task CheckOriginChainIdStatusAsync(UserLoginEto userLoginEto);
+    Task UpdateOriginChainIdAsync(string chainId, GetHolderInfoOutput holderInfoOutput, UserLoginEto userLoginEto);
 }

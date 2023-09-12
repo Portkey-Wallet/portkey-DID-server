@@ -106,6 +106,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<OrderStatusInfoState, OrderStatusInfoGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkResultDto>();
-        CreateMap<ValidateMerkerTreeState, ValidateMerkerTreeGrainDto>().ReverseMap();
+        CreateMap<ValidateOriginChainIdState, ValidateOriginChainIdGrainDto>().ReverseMap();
     }
 }

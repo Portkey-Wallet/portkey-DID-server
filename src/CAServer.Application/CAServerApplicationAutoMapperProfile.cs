@@ -396,7 +396,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ReverseMap()
             ;
         
-        CreateMap<ValidateMerkerTreeGrainDto, ValidateMerkerTreeState>().ReverseMap();
+        CreateMap<ValidateOriginChainIdGrainDto, ValidateOriginChainIdState>().ReverseMap();
         
     }
 }

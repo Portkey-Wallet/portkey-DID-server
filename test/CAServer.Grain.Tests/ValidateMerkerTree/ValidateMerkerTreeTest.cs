@@ -13,7 +13,7 @@ public class ValidateMerkerTreeTest : CAServerGrainTestBase
     public async Task StatusTest()
     {
         var id = Guid.NewGuid();
-        var grain = Cluster.Client.GetGrain<IValidateMerkerTreeGrain>(id);
+        var grain = Cluster.Client.GetGrain<IValidateOriginChainIdGrain>(id);
         var dto = await grain.GetInfoAsync();
         dto.Data.Status.ShouldBe(ValidateStatus.Init);
 

@@ -114,7 +114,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         
         //var userAssetsAppServiceMock = GetMock();
         
-        await _userAssetsAppService.UpdateMerkerTreeAsync("AELF", "111", new GetHolderInfoOutput());
+        await _userAssetsAppService.UpdateMerkerTreeAsync("AELF", new GetHolderInfoOutput());
     }
 
     [Fact]
