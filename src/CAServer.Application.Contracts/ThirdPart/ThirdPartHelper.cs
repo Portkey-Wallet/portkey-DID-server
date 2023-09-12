@@ -75,6 +75,8 @@ public static class AlchemyHelper
 {
     public const string SignatureField = "signature";
     public const string IdField = "id";
+    public const string AppIdField = "appId";
+    public const string StatusField = "status";
     
     private static Dictionary<string, OrderStatusType> _orderStatusDict = new()
     {

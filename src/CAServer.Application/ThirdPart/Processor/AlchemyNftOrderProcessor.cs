@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
@@ -10,6 +11,7 @@ using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 
 namespace CAServer.ThirdPart.Processor;
@@ -38,21 +40,27 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     public override IThirdPartValidOrderUpdateRequest VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input)
     {
         // verify input type and data 
-        AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid alchemy nft-order data");
-        var achNftOrderRequest = input as AlchemyNftOrderRequestDto;
-        AssertHelper.NotNull(achNftOrderRequest, "Empty input");
-        AssertHelper.IsTrue(achNftOrderRequest.AppId == _alchemyOptions.NftAppId, "Invalid alchemy appId {AppId}",
-            achNftOrderRequest?.AppId);
+        AssertHelper.IsTrue(input is Dictionary<string, object>, "Invalid input");
+
+        var ipnutDict = input as Dictionary<string, object>;
+        var hasAppId = ipnutDict.TryGetValue(AlchemyHelper.AppIdField, out var appId);
+        var hasSignature = ipnutDict.TryGetValue(AlchemyHelper.SignatureField, out var inputSignature);
+
+        AssertHelper.IsTrue(hasAppId && hasSignature && appId is string && inputSignature is string,
+            "Invalid alchemy order input {appId} - {sign}", appId, inputSignature);
 
         // verify signature 
-        var signSource = ThirdPartHelper.ConvertObjectToSortedString(achNftOrderRequest, 
+        var signSource = ThirdPartHelper.ConvertObjectToSortedString(input,
             AlchemyHelper.SignatureField, AlchemyHelper.IdField);
         var signature = AlchemyHelper.HmacSign(signSource, _alchemyOptions.NftAppSecret);
         _logger.LogDebug("Verify Alchemy signature, signature={Signature}, signSource={SignSource}",
             signature, signSource);
-        AssertHelper.IsTrue(signature == achNftOrderRequest?.Signature,
+        AssertHelper.IsTrue(signature == (string)inputSignature,
             "Invalid alchemy signature={InputSign}, signSource={SignSource}",
-            achNftOrderRequest?.Signature, signSource);
+            inputSignature, signSource);
+
+        var achNftOrderRequest = JsonConvert.DeserializeObject<AlchemyNftOrderDto>(
+            JsonConvert.SerializeObject(input), HttpProvider.DefaultJsonSettings);
         // fill orderId 
         achNftOrderRequest.Id = Guid.Parse(achNftOrderRequest.MerchantOrderNo);
         // mapping status
@@ -71,8 +79,8 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     public override bool FillOrderData(IThirdPartValidOrderUpdateRequest input, OrderGrainDto orderGrainDto)
     {
         // verify input type and data 
-        AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid alchemy nft-order data");
-        var achNftOrderRequest = input as AlchemyNftOrderRequestDto;
+        AssertHelper.IsTrue(input is AlchemyNftOrderDto, "Invalid alchemy nft-order data");
+        var achNftOrderRequest = input as AlchemyNftOrderDto;
 
         orderGrainDto.ThirdPartOrderNo = orderGrainDto.ThirdPartOrderNo.DefaultIfEmpty(achNftOrderRequest?.OrderNo);
         orderGrainDto.Fiat = orderGrainDto.Fiat.DefaultIfEmpty(achNftOrderRequest?.Fiat);

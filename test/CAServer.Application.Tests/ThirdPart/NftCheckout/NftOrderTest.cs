@@ -136,20 +136,20 @@ public partial class NftOrderTest : ThirdPartTestBase
 
         var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
         {
-            OrderNo = orderId,
-            MerchantOrderNo = merchantOrderId,
-            Amount = "100",
-            Fiat = "USD",
-            PayTime = "2022-07-08 15:18:43",
-            PayType  = "CREDIT_CARD",
-            Type = "MARKET",
-            Name = "LUCK",
-            Quantity = "1",
-            UniqueId = "LUCK",
-            AppId = "test",
-            Message = "",
-            Status = "PAY_SUCCESS",
-            Signature = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
+            ["orderNo"] = orderId,
+            ["merchantOrderNo"] = merchantOrderId,
+            ["amount"] = "100",
+            ["fiat"] = "USD",
+            ["payTime"] = "2022-07-08 15:18:43",
+            ["payType"] = "CREDIT_CARD",
+            ["type"] = "MARKET",
+            ["name"] = "LUCK",
+            ["quantity"] = "1",
+            ["uniqueId"] = "LUCK",
+            ["appId"] = "test",
+            ["message"] = "",
+            ["status"] = "PAY_SUCCESS",
+            ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
         };
         var result = await _thirdPartNftOrderProcessorFactory
             .GetProcessor(ThirdPartNameType.Alchemy.ToString())
