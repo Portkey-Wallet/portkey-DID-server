@@ -57,8 +57,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
         IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
-        IGuardianProvider guardianProvider,
-        IContractProvider contractProvider, IUserTokenAppService userTokenAppService, ITokenProvider tokenProvider)
+        IGuardianProvider guardianProvider, IUserTokenAppService userTokenAppService, ITokenProvider tokenProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -831,7 +830,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var merklePathString = merklePath.ToByteString().ToHex();
         return merklePathString;
     }
-    
+
     private async Task CheckNeedAddTokenAsync(Guid userId, IndexerTokenInfos tokenInfos)
     {
         try
@@ -856,7 +855,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     tokenIds.Add(token.Id);
                 }
             }
-            
+
             await AddDisplayAsync(tokenIds);
         }
         catch (Exception e)
