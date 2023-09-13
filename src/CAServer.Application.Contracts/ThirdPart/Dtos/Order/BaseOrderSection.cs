@@ -2,7 +2,10 @@ using System;
 
 namespace CAServer.ThirdPart.Dtos;
 
-public class BaseOrderSection
+public interface IOrderSection{}
+
+
+public class BaseOrderSection : IOrderSection
 {
 
     public string SectionName { get;}

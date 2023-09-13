@@ -9,6 +9,7 @@ using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
@@ -182,13 +183,10 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
             // get and verify nft-order-section
             var orderDto = orderPager.Data[0];
-            var nftOrder = orderDto.OrderSections?.GetValueOrDefault(OrderSectionEnum.NftSection.ToString());
-            AssertHelper.NotNull(nftOrder, "invalid nft order data, orderId={OrderId}", orderDto.Id);
-            AssertHelper.NotNull(nftOrder is NftOrderSectionDto, "invalid nft order type, orderId={OrderId}",
-                orderDto.Id);
+            var nftOrderSection = orderDto.NftOrderSection;
+            AssertHelper.NotNull(nftOrderSection, "invalid nft order data, orderId={OrderId}", orderDto.Id);
 
             // convert response
-            var nftOrderSection = nftOrder as NftOrderSectionDto;
             var orderQueryResponseDto =
                 _objectMapper.Map<NftOrderSectionDto, NftOrderQueryResponseDto>(nftOrderSection);
             orderQueryResponseDto.Status = orderDto.Status;

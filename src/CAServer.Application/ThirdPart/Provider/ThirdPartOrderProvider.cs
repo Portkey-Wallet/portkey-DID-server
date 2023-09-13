@@ -9,6 +9,7 @@ using CAServer.Commons.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -226,7 +227,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             if (!nftOrderIndices.ContainsKey(orderDto.Id)) continue;
             var nftOrderIndex = nftOrderIndices[orderDto.Id];
             var nftOrderSection = _objectMapper.Map<NftOrderIndex, NftOrderSectionDto>(nftOrderIndex);
-            orderDto.OrderSections.Add(nftOrderSection.SectionName, nftOrderSection);
+            orderDto.NftOrderSection = nftOrderSection;
         }
     }
 

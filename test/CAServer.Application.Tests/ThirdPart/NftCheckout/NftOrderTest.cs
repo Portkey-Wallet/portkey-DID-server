@@ -10,6 +10,7 @@ using CAServer.BackGround.Provider;
 using CAServer.Common;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
@@ -102,7 +103,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             MaxResultCount = 10
         });
         result.Data.Count.ShouldBe(1);
-        result.Data[0].OrderSections.ShouldContainKey(OrderSectionEnum.NftSection.ToString());
+        result.Data[0].NftOrderSection.ShouldNotBeNull();
         _testOutputHelper.WriteLine(JsonConvert.SerializeObject(result, HttpProvider.DefaultJsonSettings));
     }
 

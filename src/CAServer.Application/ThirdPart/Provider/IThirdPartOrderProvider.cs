@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CAServer.Commons.Dtos;
 using CAServer.Entities.Es;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using JetBrains.Annotations;
 
 namespace CAServer.ThirdPart.Provider;
