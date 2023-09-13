@@ -9,8 +9,10 @@ public class NftOrderGrainDto
     public string NftSymbol { get; set; }
     public string MerchantName { get; set; }
     public string MerchantOrderId { get; set; }
-    
     public string NftPicture { get; set; }
+    public DateTime CreateTime { get; set; }
+    public DateTime ExpireTime { get; set; }
+    
     public string WebhookUrl { get; set; }
     public string WebhookStatus { get; set; } = NftOrderWebhookStatus.NONE.ToString();
     public string WebhookResult { get; set; }

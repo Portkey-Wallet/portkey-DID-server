@@ -19,6 +19,7 @@ public class ThirdPartTimerOptions
     public int NftCheckoutResultThirdPartNotifyCount = 3;
     public int NftUnCompletedMerchantCallbackMinuteAgo = 2;
     public int NftUnCompletedThirdPartCallbackMinuteAgo = 2;
+    public int NftOrderExpireSeconds = 60 * 30;
 }
 
 public class AlchemyOptions

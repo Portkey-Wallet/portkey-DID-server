@@ -380,7 +380,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderGrainDto, NotifyOrderDto>()
             .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
 
-        CreateMap<NftOrderIndex, NftOrderSectionDto>();
+        CreateMap<NftOrderIndex, NftOrderSectionDto>()
+            .ForMember(des => des.ExpireTime, opt => opt.MapFrom(src => src.ExpireTime.ToUtcMilliSeconds()))
+            .ForMember(des => des.CreateTime, opt => opt.MapFrom(src => src.CreateTime.ToUtcMilliSeconds()));
+
         CreateMap<NftOrderGrainDto, NftOrderIndex>();
         CreateMap<NftOrderIndex, NftOrderQueryResponseDto>();
         CreateMap<NftOrderSectionDto, NftOrderQueryResponseDto>();

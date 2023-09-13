@@ -9,15 +9,20 @@ public class NftOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string NftSymbol { get; set; }
     [Keyword] public string MerchantName { get; set; }
     [Keyword] public string MerchantOrderId { get; set; }
-    [Keyword] public string NftPicture { get; set; }
-    [Keyword] public string WebhookUrl { get; set; }
-    [Keyword] public string WebhookResult { get; set; }
+    public string NftPicture { get; set; }
+    
     [Keyword] public string WebhookTime { get; set; }
     [Keyword] public string WebhookStatus { get; set; }
+    public string WebhookUrl { get; set; }
+    public string WebhookResult { get; set; }
     public int WebhookCount { get; set; } = 0;
+    
     [Keyword] public string ThirdPartNotifyStatus { get; set; }
-    [Keyword] public string ThirdPartNotifyResult { get; set; }
     [Keyword] public string ThirdPartNotifyTime { get; set; }
+    public string ThirdPartNotifyResult { get; set; }
     public int ThirdPartNotifyCount { get; set; } = 0;
+    
+    public DateTime CreateTime { get; set; }
+    public DateTime ExpireTime { get; set; }
 
 }

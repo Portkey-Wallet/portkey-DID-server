@@ -154,7 +154,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         _logger.LogInformation("This nft-order {OrderId} of merchant:{MerchantName} will be created",
             nftOrderGrainDto.MerchantOrderId, nftOrderGrainDto.MerchantName);
-
+        nftOrderGrainDto.CreateTime = DateTime.UtcNow;
+        nftOrderGrainDto.ExpireTime = DateTime.UtcNow.AddSeconds(_thirdPartOptions.Timer.NftOrderExpireSeconds);
         var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(nftOrderGrainDto.Id);
         var result = await nftOrderGrain.CreateNftOrder(nftOrderGrainDto);
         AssertHelper.IsTrue(result.Success, "Create merchant nft-order fail");
