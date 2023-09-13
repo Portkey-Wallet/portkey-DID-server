@@ -37,13 +37,14 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IClusterClient _clusterClient;
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly AppleTransferOptions _appleTransferOptions;
+    private readonly VerifierIdMappingOptions _verifierIdMappingOptions;
 
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
-        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions)
+        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions, IOptionsSnapshot<VerifierIdMappingOptions> verifierIdMappingOptions)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -51,6 +52,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _chainOptions = chainOptions.Value;
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
+        _verifierIdMappingOptions = verifierIdMappingOptions.Value;
         _appleUserProvider = appleUserProvider;
         _appleTransferOptions = appleTransferOptions.Value;
     }
@@ -68,7 +70,15 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             guardianIdentifierDto.GuardianIdentifier);
         var guardianResult =
             ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
-
+        var guardianDtos = guardianResult.GuardianList.Guardians;
+        var chainIds = _chainOptions.ChainInfos.Where(t=>t.Value.IsMainChain = true).Select(o=>o.Key).ToList();
+        if (!chainIds.Contains(guardianIdentifierDto.ChainId))
+        {
+            foreach (var dto in guardianDtos)
+            {
+                dto.VerifierId = _verifierIdMappingOptions.VerifierIdMap[dto.VerifierId];
+            }
+        }
         var identifierHashList = holderInfo.GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex()).ToList();
         var hashDic = await GetIdentifiersAsync(identifierHashList);
         var identifiers = hashDic?.Values?.ToList();
@@ -81,7 +91,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
 
         await AddGuardianInfoAsync(guardianResult?.GuardianList?.Guardians, hashDic, userExtraInfos);
-
+        
         return guardianResult;
     }
 
