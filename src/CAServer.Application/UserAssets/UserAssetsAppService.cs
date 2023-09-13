@@ -6,11 +6,12 @@ using AElf;
 using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
-using CAServer.Grains.Grain.ValidateMerkerTree;
+using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -53,12 +54,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     public const string DefaultSuffix = "svg";
     public const string ReplaceSuffix = "png";
     private readonly SeedImageOptions _seedImageOptions;
+    private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IDistributedEventBus _distributedEventBus;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
-        IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
+        IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,IOptions<SyncOriginChainIdOptions> syncOriginChainIdOptions,
         IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
         IOptions<SeedImageOptions> seedImageOptions, IGuardianProvider guardianProvider, IDistributedEventBus distributedEventBus)
     {
@@ -75,6 +77,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _clusterClient = clusterClient;
         _guardianProvider = guardianProvider;
         _distributedEventBus = distributedEventBus;
+        _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -834,13 +837,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     
     public async Task<bool> NeedSyncStatusAsync(Guid userId)
     {
-        //todo:check user register time
         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
         if (caHolderIndex == null || caHolderIndex.IsDeleted)
         {
             return false;
         }
 
-        return false;
+        if (TimeHelper.GetTimeStampFromDateTime(caHolderIndex.CreateTime) > _syncOriginChainIdOptions.CheckUserRegistrationTimestamp)
+        {
+            return false;
+        }
+        
+        return true;
     }
 }

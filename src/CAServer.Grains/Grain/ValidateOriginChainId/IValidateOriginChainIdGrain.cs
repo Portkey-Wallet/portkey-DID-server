@@ -1,7 +1,7 @@
-using CAServer.ValidateMerkerTree.Dtos;
+using CAServer.ValidateOriginChainId.Dtos;
 using Orleans;
 
-namespace CAServer.Grains.Grain.ValidateMerkerTree;
+namespace CAServer.Grains.Grain.ValidateOriginChainId;
 
 public interface IValidateOriginChainIdGrain : IGrainWithGuidKey
 {

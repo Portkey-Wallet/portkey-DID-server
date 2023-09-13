@@ -2,12 +2,12 @@ using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ValidateMerkerTree;
-using CAServer.ValidateMerkerTree;
-using CAServer.ValidateMerkerTree.Dtos;
+using CAServer.ValidateOriginChainId;
+using CAServer.ValidateOriginChainId.Dtos;
 using Microsoft.Extensions.Options;
 using Volo.Abp.ObjectMapping;
 
-namespace CAServer.Grains.Grain.ValidateMerkerTree;
+namespace CAServer.Grains.Grain.ValidateOriginChainId;
 
 public class ValidateOriginChainIdGrain : Orleans.Grain<ValidateOriginChainIdState>, IValidateOriginChainIdGrain
 {
