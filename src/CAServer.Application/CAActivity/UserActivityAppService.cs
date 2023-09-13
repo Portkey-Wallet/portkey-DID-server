@@ -15,6 +15,7 @@ using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -147,7 +148,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
 
-            if (string.IsNullOrWhiteSpace(activityDto.NftInfo.ImageUrl))
+            if (null == activityDto.NftInfo || string.IsNullOrWhiteSpace(activityDto.NftInfo.ImageUrl))
             {
                 return activityDto;
             }
@@ -179,9 +180,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         var caHash = result.CaHolderManagerInfo.First().CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
-        try
+
+        foreach (var chainInfo in _chainOptions.ChainInfos)
         {
-            foreach (var chainInfo in _chainOptions.ChainInfos)
+            try
             {
                 var output =
                     await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
@@ -191,12 +193,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     CaAddress = output.CaAddress.ToBase58()
                 });
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {caAddress}", request.CaAddress);
+            }
         }
-        catch (Exception e)
+
+        if (caAddressInfos.Count == 0)
         {
-            _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
-            throw new UserFriendlyException("Internal service error, please try again later.");
+            _logger.LogDebug("No caAddressInfos found. CaAddress is {CaAddress}", request.CaAddress);
+            return string.Empty;
         }
+
 
         var filterTypes = new List<string>
         {
@@ -210,9 +218,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return string.Empty;
         }
 
-        var date = transactions.CaHolderTransaction.Data[0].Timestamp;
+        var data = transactions.CaHolderTransaction.Data;
+        foreach (var indexerTransaction in data.Where(indexerTransaction => indexerTransaction.Timestamp > 0))
+        {
+            return indexerTransaction.Timestamp.ToString();
+        }
 
-        return date.ToString();
+        return string.Empty;
     }
 
 

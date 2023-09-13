@@ -57,7 +57,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         };
 
         var result = await _userActivityAppService.GetActivityAsync(param);
-        result.TransactionType.ShouldBe(null);
+        result.TransactionType.ShouldNotBeNull();
         //result.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         //result.TransactionFees.First().Decimals.ShouldBe("8");
     }
