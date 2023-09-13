@@ -28,26 +28,28 @@ namespace CAServer.UserAssets.Provider;
 public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
 {
     private readonly ILogger<ImageProcessProvider> _logger;
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly AwsThumbnailOptions _awsThumbnailOptions;
+
     private HttpClient? Client { get; set; }
 
     public ImageProcessProvider(ILogger<ImageProcessProvider> logger,
-        IHttpClientFactory httpClientFactory, IOptions<AwsThumbnailOptions> awsThumbnailOptions)
+        IOptions<AwsThumbnailOptions> awsThumbnailOptions)
     {
         _logger = logger;
-        _httpClientFactory = httpClientFactory;
         _awsThumbnailOptions = awsThumbnailOptions.Value;
     }
 
-    public async Task<string> GetResizeImageAsync(string imageUrl, int width, int height)
+    public async Task<string> GetResizeImageAsync(string imageUrl, int width, int height, ImageResizeType type)
     {
-        _logger.LogDebug("Received GetResizeImageAsync request.ImgUrl:{imageUrl},width:{width},height:{height}",
-            imageUrl, width,
-            height);
         try
         {
-            if (!imageUrl.Contains(UserAssetsServiceConstant.AwsDomain))
+            if (!_awsThumbnailOptions.ExcludedSuffixes.Contains(GetImageUrlSuffix(imageUrl)))
+            {
+                return imageUrl;
+            }
+
+            var bucket = imageUrl.Split("/")[2];
+            if (!_awsThumbnailOptions.BucketList.Contains(bucket))
             {
                 return imageUrl;
             }
@@ -63,15 +65,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
                 return imageUrl;
             }
 
-            var produceImage = GetResizeUrl(imageUrl, width, height, true, ImageResizeType.PortKey);
-            await SendUrlAsync(produceImage);
-            _logger.LogDebug("Compress image success.produceImage:{produceImage},width:{width},height:{height}",
-                produceImage, width, height);
-
-            var resImage = GetResizeUrl(imageUrl, width, height, false, ImageResizeType.PortKey);
-            _logger.LogDebug("View image success.resImage:{resImage},width:{width},height:{height}", resImage, width,
-                height);
-            return resImage;
+            return await GetResizeImageUrlAsync(imageUrl, width, height, type);
         }
         catch (Exception ex)
         {
@@ -89,10 +83,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
                 return new ThumbnailResponseDto();
             }
 
-            var produceImage = GetResizeUrl(imageUrl, width, height, true, ImageResizeType.Im);
-            await SendUrlAsync(produceImage);
-
-            var resImage = GetResizeUrl(imageUrl, width, height, false, ImageResizeType.Im);
+            var resImage = await GetResizeImageUrlAsync(imageUrl, width, height, ImageResizeType.Im);
             return new ThumbnailResponseDto
             {
                 ThumbnailUrl = resImage
@@ -116,6 +107,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
             {
                 ImageResizeType.PortKey => _awsThumbnailOptions.PortKeyBaseUrl + urlSplit[1],
                 ImageResizeType.Im => _awsThumbnailOptions.ImBaseUrl + urlSplit[1],
+                ImageResizeType.Forest => _awsThumbnailOptions.ForestBaseUrl + urlSplit[1],
                 _ => imageUrl
             };
         }
@@ -130,11 +122,30 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
     private async Task SendUrlAsync(string url, string? version = null)
     {
         Client ??= new HttpClient();
-
         Client.DefaultRequestHeaders.Accept.Clear();
         Client.DefaultRequestHeaders.Accept.Add(
             MediaTypeWithQualityHeaderValue.Parse($"application/json{version}"));
         Client.DefaultRequestHeaders.Add("Connection", "close");
         await Client.GetAsync(url);
+    }
+
+    private async Task<string> GetResizeImageUrlAsync(string imageUrl, int width, int height, ImageResizeType type)
+    {
+        var produceImage = GetResizeUrl(imageUrl, width, height, true, type);
+        await SendUrlAsync(produceImage);
+
+        var resImage = GetResizeUrl(imageUrl, width, height, false, type);
+        return resImage;
+    }
+
+    private string GetImageUrlSuffix(string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return null;
+        }
+
+        var imageUrlArray = imageUrl.Split(".");
+        return imageUrlArray[^1].ToLower();
     }
 }
