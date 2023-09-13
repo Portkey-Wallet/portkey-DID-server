@@ -32,7 +32,7 @@ public class ContactProfileTest : CAServerApplicationTestBase
     [Fact]
     public async Task Get_Contact_Test()
     {
-        var guid = new Guid("3fe8e56b-e733-123e-8cb4-d014b485c1a9");
+        var guid = Guid.NewGuid();
         var contactGrain = _cluster.Client.GetGrain<IContactGrain>(guid);
         var contactGrainDto = new ContactGrainDto
         {
