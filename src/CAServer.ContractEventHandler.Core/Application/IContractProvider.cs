@@ -434,6 +434,6 @@ public class ContractProvider : IContractProvider
         var holderInfo = holderInfos?.CaHolderInfo?.FirstOrDefault();
         if (holderInfo == null) return;
 
-        holderInfoOutput.CreateChainId = await GetChainIdAsync(holderInfo.OriginChainId);
+        holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(holderInfo.OriginChainId);
     }
 }
