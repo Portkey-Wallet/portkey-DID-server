@@ -33,6 +33,7 @@ using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
+using CAServer.PrivacyPolicy.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
@@ -398,5 +399,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
         
         CreateMap<ValidateOriginChainIdGrainDto, ValidateOriginChainIdState>().ReverseMap();
         
+
+        CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
+        CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
     }
 }
