@@ -38,6 +38,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly IHttpClientService _httpClientService;
     private readonly VariablesOptions _variablesOptions;
     private readonly HostInfoOptions _hostInfoOptions;
+    private readonly IImRequestProvider _imRequestProvider;
 
     public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         IHttpContextAccessor httpContextAccessor,
@@ -45,7 +46,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         IOptionsSnapshot<ImServerOptions> imServerOptions,
         IHttpClientService httpClientService,
         IOptions<VariablesOptions> variablesOptions,
-        IOptionsSnapshot<HostInfoOptions> hostInfoOptions)
+        IOptionsSnapshot<HostInfoOptions> hostInfoOptions,
+        IImRequestProvider imRequestProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -55,6 +57,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _imServerOptions = imServerOptions.Value;
         _hostInfoOptions = hostInfoOptions.Value;
         _httpClientService = httpClientService;
+        _imRequestProvider = imRequestProvider;
     }
 
     public async Task<ContactResultDto> CreateAsync(CreateUpdateContactDto input)
@@ -91,8 +94,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
             
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
-
         _ = FollowAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId);
+        _ = ImRemarkAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId, input.Name);
 
         return contactResultDto;
     }
@@ -154,6 +157,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
 
+        if (contact.Name != input.Name)
+        {
+            await ImRemarkAsync(contactResultDto?.ImInfo?.RelationId, userId, input.Name);
+        }
+
         return contactResultDto;
     }
 
@@ -169,6 +177,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
+        
+        await ImRemarkAsync(result?.Data?.ImInfo?.RelationId, userId, "");
         _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
     }
 
@@ -627,6 +637,33 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return responseDto.Data;
     }
 
+    
+    
+    private async Task ImRemarkAsync(string relationId, Guid userId, string name)
+    {
+        if (_hostInfoOptions.Environment == Environment.Development)
+        {
+            return;
+        }
+
+        var imRemarkDto = new ImRemarkDto
+        {
+            Remark = name,
+            RelationId = relationId
+        };
+
+        try
+        {
+            await _imRequestProvider.PostAsync<object>(ImConstant.ImRemarkUrl, imRemarkDto);
+            Logger.LogInformation("{userId} remark : {relationId}, {name}", userId.ToString(), relationId, name);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e,ImConstant.ImServerErrorPrefix + " remark fail : {userId}, {relationId}, {name}, {imToken}", 
+                userId.ToString(), relationId, name, 
+                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
+        }
+    }
 
     private async Task FollowAsync(string address, Guid userId)
     {
@@ -644,7 +681,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{userId} follow error, address: {address}", address, userId.ToString());
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " follow fail : {userId}, {address}, {imToken}", 
+                userId.ToString(), address, 
+                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
     }
 
@@ -664,7 +703,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{userId} unfollow error, address: {address}", address, userId.ToString());
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " unfollow fail : {userId}, {address}, {imToken}", 
+                userId.ToString(), address, 
+                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
     }
 
