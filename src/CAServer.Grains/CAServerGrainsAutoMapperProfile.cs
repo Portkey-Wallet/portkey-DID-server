@@ -21,9 +21,9 @@ using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
-using CAServer.Grains.State.ValidateMerkerTree;
+using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.ThirdPart.Dtos;
-using CAServer.ValidateMerkerTree.Dtos;
+using CAServer.ValidateOriginChainId.Dtos;
 using Google.Protobuf.Collections;
 using Portkey.Contracts.CA;
 

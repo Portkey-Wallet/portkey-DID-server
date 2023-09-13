@@ -1053,6 +1053,7 @@ namespace Portkey.Contracts.CA {
     }
     #endregion
 
+    /*
     /// <summary>Base class for the contract of CAContract</summary>
     public abstract partial class CAContractBase : AElf.Sdk.CSharp.CSharpSmartContract<Portkey.Contracts.CA.CAContractState>
     {
@@ -1345,7 +1346,7 @@ namespace Portkey.Contracts.CA {
           .AddMethod(__Method_SetForbiddenForwardCallContractMethod, serviceImpl.SetForbiddenForwardCallContractMethod)
           .AddMethod(__Method_ChangeManagerApproveForbiddenEnabled, serviceImpl.ChangeManagerApproveForbiddenEnabled).Build();
     }
-
+*/
   }
 }
 #endregion

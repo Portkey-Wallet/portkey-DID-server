@@ -1,6 +1,6 @@
-using CAServer.ValidateMerkerTree;
+using CAServer.ValidateOriginChainId;
 
-namespace CAServer.Grains.State.ValidateMerkerTree;
+namespace CAServer.Grains.State.ValidateOriginChainId;
 
 public class ValidateOriginChainIdState
 {
