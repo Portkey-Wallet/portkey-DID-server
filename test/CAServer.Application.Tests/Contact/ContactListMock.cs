@@ -1,31 +1,24 @@
-using CAServer.Contacts;
+using System.Collections.Generic;
+using CAServer.Options;
+using Microsoft.Extensions.Options;
 using Moq;
-using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Contact;
 
 public class ContactListMock
 {
-    public static IContactAppService BuildMockIContactAppService()
+    public static IOptions<VariablesOptions> GetMockVariablesOptions()
     {
-        var result = "";
-        var mockIContactAppService = new Mock<IContactAppService>();
-        mockIContactAppService.Setup(calc => calc.GetListAsync(It.IsAny<ContactGetListDto>()))
-            .ReturnsAsync(new PagedResultDto<ContactListDto>
+        var mockOptions = new Mock<IOptions<VariablesOptions>>();
+        mockOptions.Setup(o => o.Value).Returns(
+            new VariablesOptions
             {
-                TotalCount = 2,
-                Items = new []{
-                    new ContactListDto
-                    {
-                        Name = "Test1"
-                    },
-                    new ContactListDto
-                    {
-                        Name = "Test2"
-                    }
+                ImageMap = new Dictionary<string, string>()
+                {
+                    ["aelf"] = "aelfImage",
+                    ["eth"] = "ethImage"
                 }
             });
-
-        return mockIContactAppService.Object;
+        return mockOptions.Object;
     }
 }

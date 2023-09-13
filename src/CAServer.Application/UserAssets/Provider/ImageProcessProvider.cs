@@ -42,6 +42,9 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
 
     public async Task<string> GetResizeImageAsync(string imageUrl, int width, int height)
     {
+        _logger.LogDebug("Received GetResizeImageAsync request.ImgUrl:{imageUrl},width:{width},height:{height}",
+            imageUrl, width,
+            height);
         try
         {
             if (!imageUrl.Contains(UserAssetsServiceConstant.AwsDomain))
@@ -62,8 +65,12 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
 
             var produceImage = GetResizeUrl(imageUrl, width, height, true, ImageResizeType.PortKey);
             await SendUrlAsync(produceImage);
+            _logger.LogDebug("Compress image success.produceImage:{produceImage},width:{width},height:{height}",
+                produceImage, width, height);
 
             var resImage = GetResizeUrl(imageUrl, width, height, false, ImageResizeType.PortKey);
+            _logger.LogDebug("View image success.resImage:{resImage},width:{width},height:{height}", resImage, width,
+                height);
             return resImage;
         }
         catch (Exception ex)
