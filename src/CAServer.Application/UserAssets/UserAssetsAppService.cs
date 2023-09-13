@@ -2,20 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
+using CAServer.Etos;
+using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.ValidateOriginChainId;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using MongoDB.Driver.Linq;
+using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
+using ChainOptions = CAServer.Options.ChainOptions;
 using Token = CAServer.UserAssets.Dtos.Token;
 using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
 
@@ -33,13 +46,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IContactProvider _contactProvider;
+    private readonly IClusterClient _clusterClient;
+    private readonly IGuardianProvider _guardianProvider;
     private const int MaxResultCount = 10;
+    private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
+    private readonly IDistributedEventBus _distributedEventBus;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
-        IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider)
+        IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,IOptions<SyncOriginChainIdOptions> syncOriginChainIdOptions,
+        IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
+        IGuardianProvider guardianProvider, IDistributedEventBus distributedEventBus)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -48,11 +67,35 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenAppService = tokenAppService;
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
+        _contactProvider = contactProvider;
         _chainOptions = chainOptions.Value;
+        _clusterClient = clusterClient;
+        _guardianProvider = guardianProvider;
+        _distributedEventBus = distributedEventBus;
+        _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
     {
+        try
+        {
+            if (await NeedSyncStatusAsync(CurrentUser.GetId()))
+            {
+                var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+                await _distributedEventBus.PublishAsync(new UserLoginEto()
+                {
+                    Id = CurrentUser.GetId(),
+                    UserId = CurrentUser.GetId(),
+                    CaHash = caHolderIndex.CaHash,
+                    CreateTime = DateTime.UtcNow
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "send UserLoginEto fail,user {id}", CurrentUser.GetId());
+        }
+
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
@@ -614,5 +657,134 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "get symbols price failed, symbol={symbols}", symbols);
             return new Dictionary<string, decimal>();
         }
+    }
+
+    public async Task CheckOriginChainIdStatusAsync(UserLoginEto userLoginEto)
+    {
+        if (!await NeedSyncStatusAsync(userLoginEto.UserId))
+        {
+            return;
+        }
+        
+        var originChainId = "";
+        var syncChainId = "";
+        var guardians = await _guardianProvider.GetGuardiansAsync("", userLoginEto.CaHash);
+        if (guardians == null || !guardians.CaHolderInfo.Any())
+        {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,guardians is null or empty,userId {uid}",
+                userLoginEto.UserId);
+            return;
+        }
+
+        originChainId = guardians.CaHolderInfo?.FirstOrDefault()?.OriginChainId;
+        if (string.IsNullOrWhiteSpace(originChainId))
+        {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,originChainId is null or empty,userId {uid}",
+                userLoginEto.UserId);
+            return;
+        }
+
+        syncChainId = _chainOptions.ChainInfos.Where(kvp => kvp.Key != originChainId).Select(kvp => kvp.Key)
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(syncChainId))
+        {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,syncChainId is null or empty,userId {uid}",
+                userLoginEto.UserId);
+            return;
+        }
+
+        await UpdateOriginChainIdAsync(originChainId, syncChainId, userLoginEto);
+    }
+
+    public async Task UpdateOriginChainIdAsync(string originChainId, string syncChainId, UserLoginEto userLoginEto)
+    {
+        var validateOriginChainIdGrain = _clusterClient.GetGrain<IValidateOriginChainIdGrain>(userLoginEto.UserId);
+        try
+        {
+            var needValidate = await validateOriginChainIdGrain.NeedValidateAsync();
+            _logger.LogInformation("UpdateOriginChainIdAsync,needValidate {needValidate}", needValidate);
+            
+            if (!needValidate.Data)
+            {
+                return;
+            }
+            
+            var holderInfoOutput =
+                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
+                    null, originChainId);
+
+            var syncHolderInfoOutput =
+                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
+                    null, syncChainId);
+            
+            if (holderInfoOutput.CreateChainId > 0 && syncHolderInfoOutput.CreateChainId > 0)
+            {
+                await validateOriginChainIdGrain.SetStatusSuccessAsync();
+                _logger.LogInformation(
+                    "UpdateOriginChainIdAsync success,chainId {chainId},userId {uid}", originChainId,
+                    userLoginEto.UserId);
+                return;
+            }
+
+            holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
+            
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var transactionDto =
+                await grain.ValidateTransactionAsync(originChainId, holderInfoOutput, null);
+
+            await validateOriginChainIdGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,
+                originChainId);
+
+            if (transactionDto.TransactionResultDto.Status == TransactionState.Mined)
+            {
+                await validateOriginChainIdGrain.SetStatusSuccessAsync();
+                _logger.LogInformation(
+                    "UpdateOriginChainIdAsync success,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    originChainId,
+                    transactionDto.TransactionResultDto.TransactionId,
+                    transactionDto.TransactionResultDto.Status);
+                return;
+            }
+
+            if (transactionDto.TransactionResultDto.Status == TransactionState.NodeValidationFailed ||
+                transactionDto.TransactionResultDto.Status == TransactionState.Failed)
+            {
+                await validateOriginChainIdGrain.SetStatusFailAsync();
+                _logger.LogInformation(
+                    "UpdateOriginChainIdAsync fail status {status} ,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    transactionDto.TransactionResultDto.Status, originChainId,
+                    transactionDto.TransactionResultDto.TransactionId,
+                    transactionDto.TransactionResultDto.Status);
+                return;
+            }
+
+            _logger.LogInformation(
+                "UpdateOriginChainIdAsync success status {status},chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
+                transactionDto.TransactionResultDto.Status, originChainId,
+                transactionDto.TransactionResultDto.TransactionId,
+                transactionDto.TransactionResultDto.Status);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid}", originChainId,
+                userLoginEto.UserId);
+            await validateOriginChainIdGrain.SetStatusFailAsync();
+        }
+    }
+    
+    public async Task<bool> NeedSyncStatusAsync(Guid userId)
+    {
+        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
+        if (caHolderIndex == null || caHolderIndex.IsDeleted)
+        {
+            return false;
+        }
+
+        if (TimeHelper.GetTimeStampFromDateTime(caHolderIndex.CreateTime) > _syncOriginChainIdOptions.CheckUserRegistrationTimestamp)
+        {
+            return false;
+        }
+        
+        return true;
     }
 }
