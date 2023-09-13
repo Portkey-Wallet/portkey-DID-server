@@ -99,8 +99,10 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", input.GuardianIdentifier },
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
-            { "operationType", type }
+            { "operationType", type },
+            { "chainId", string.IsNullOrWhiteSpace(input.TargetChainId) ? input.ChainId : input.TargetChainId }
         };
+
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
 
@@ -137,16 +139,16 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
 
         return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
-            input.OperationType);
+            input.OperationType, string.IsNullOrWhiteSpace(input.TargetChainId) ? input.ChainId : input.TargetChainId);
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
         string accessToken, string identifierHash, string salt,
-        OperationType verifierCodeOperationType)
+        OperationType verifierCodeOperationType, string chainId)
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType });
+        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType, chainId });
 
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
