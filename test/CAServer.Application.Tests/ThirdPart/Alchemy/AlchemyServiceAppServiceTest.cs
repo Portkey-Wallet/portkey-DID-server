@@ -27,7 +27,6 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         base.AfterAddApplication(services);
         var mockOptions = MockThirdPartOptions();
         services.AddSingleton(MockThirdPartOptions());
-        services.AddSingleton(GetMockAlchemyOrderQuoteDto());
 
         // mock http
         services.AddSingleton(MockHttpFactory(_testOutputHelper,
@@ -41,6 +40,9 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
                 new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>(
                     new() { new AlchemyCryptoDto { Crypto = "ELF" } })),
             PathMatcher(HttpMethod.Post, mockOptions.Value.Alchemy.GetTokenUri,
+                new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
+                    new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
+            PathMatcher(HttpMethod.Post, AlchemyApi.GetFreeLoginToken.Path,
                 new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
                     new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
             PathMatcher(HttpMethod.Post, mockOptions.Value.Alchemy.OrderQuoteUri,
@@ -88,18 +90,20 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Side = "BUY",
             Type = "ONE"
         };
+        
+        // from mock http
         var result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
         result.Success.ShouldBe("Success");
-    }
+        
+        // from cache
+        result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
+        result.Success.ShouldBe("Success");
 
-    /**
-     *
-        Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input);
-        Task<AlchemyFiatListDto> GetAlchemyFiatListAsync();
-        Task<AlchemyCryptoListDto> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input);
-        Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
-        Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input);
-     */
+        input.Side = "SELL";
+        result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
+        result.Success.ShouldBe("Success");
+    }
+    
     [Fact]
     public async Task GetAlchemyFreeLoginTokenAsyncTest()
     {
@@ -108,6 +112,17 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Email = "test@portkey.finance"
         };
         var result = await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input);
+        result.Success.ShouldBe("Success");
+    }
+    
+    [Fact]
+    public async Task GetAlchemyNftFreeLoginTokenAsyncTest()
+    {
+        var input = new GetAlchemyFreeLoginTokenDto
+        {
+            Email = "test@portkey.finance"
+        };
+        var result = await _alchemyServiceAppService.GetAlchemyNftFreeLoginTokenAsync(input);
         result.Success.ShouldBe("Success");
     }
 

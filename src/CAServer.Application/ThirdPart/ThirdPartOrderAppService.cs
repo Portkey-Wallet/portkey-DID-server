@@ -41,7 +41,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<ThirdPartOrderAppService> logger,
         IObjectMapper objectMapper,
-        IActivityProvider activityProvider, 
+        IActivityProvider activityProvider,
         IOrderStatusProvider orderStatusProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
@@ -115,7 +115,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
                 OrderId = createNftResult.Data.Id.ToString()
             };
             _thirdPartOrderProvider.SignMerchantDto(resp);
-            
+
             return new CommonResponseDto<CreateNftOrderResponseDto>(resp);
         }
         catch (UserFriendlyException e)
@@ -163,34 +163,50 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     }
 
     // query by merchantName & merchantId with MerchantSignature
-    public async Task<CommonResponseDto<OrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input)
+    public async Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(
+        OrderQueryRequestDto input)
     {
-        _thirdPartOrderProvider.VerifyMerchantSignature(input);
-        AssertHelper.IsTrue(!input.MerchantOrderId.IsNullOrEmpty() && !input.MerchantName.IsNullOrEmpty(),
-            "merchantOrderId and merchantName can not be empty");
-
-        // query full order with nft-order-section
-        var orderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(new NftOrderQueryConditionDto(0, 1)
+        try
         {
-            MerchantName = input.MerchantName,
-            MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
-        });
-        if (orderPager.Data.IsNullOrEmpty()) return new CommonResponseDto<OrderQueryResponseDto>();
+            _thirdPartOrderProvider.VerifyMerchantSignature(input);
+            AssertHelper.IsTrue(!input.MerchantOrderId.IsNullOrEmpty() && !input.MerchantName.IsNullOrEmpty(),
+                "merchantOrderId and merchantName can not be empty");
 
-        // get and verify nft-order-section
-        var orderDto = orderPager.Data[0];
-        var nftOrder = orderDto.OrderSections?.GetValueOrDefault(OrderSectionEnum.NftSection.ToString());
-        AssertHelper.NotNull(nftOrder, "invalid nft order data, orderId={OrderId}", orderDto.Id);
-        AssertHelper.NotNull(nftOrder is NftOrderSectionDto, "invalid nft order type, orderId={OrderId}", orderDto.Id);
+            // query full order with nft-order-section
+            var orderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(new NftOrderQueryConditionDto(0, 1)
+            {
+                MerchantName = input.MerchantName,
+                MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
+            });
+            if (orderPager.Data.IsNullOrEmpty()) return new CommonResponseDto<NftOrderQueryResponseDto>();
 
-        // convert response
-        var nftOrderSection = nftOrder as NftOrderSectionDto;
-        var orderQueryResponseDto = _objectMapper.Map<NftOrderSectionDto, OrderQueryResponseDto>(nftOrderSection);
-        _objectMapper.Map(orderDto, orderQueryResponseDto);
+            // get and verify nft-order-section
+            var orderDto = orderPager.Data[0];
+            var nftOrder = orderDto.OrderSections?.GetValueOrDefault(OrderSectionEnum.NftSection.ToString());
+            AssertHelper.NotNull(nftOrder, "invalid nft order data, orderId={OrderId}", orderDto.Id);
+            AssertHelper.NotNull(nftOrder is NftOrderSectionDto, "invalid nft order type, orderId={OrderId}",
+                orderDto.Id);
 
-        // sign response
-        _thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
-        return new CommonResponseDto<OrderQueryResponseDto>(orderQueryResponseDto);
+            // convert response
+            var nftOrderSection = nftOrder as NftOrderSectionDto;
+            var orderQueryResponseDto =
+                _objectMapper.Map<NftOrderSectionDto, NftOrderQueryResponseDto>(nftOrderSection);
+            orderQueryResponseDto.Status = orderDto.Status;
+
+            // sign response
+            _thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
+            return new CommonResponseDto<NftOrderQueryResponseDto>(orderQueryResponseDto);
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(e, "QueryMerchantNftOrderAsync fail");
+            return new CommonResponseDto<NftOrderQueryResponseDto>().Error(e);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "QueryMerchantNftOrderAsync fail");
+            return new CommonResponseDto<NftOrderQueryResponseDto>().Error(e, "Internal error please try again later.");
+        }
     }
 
     public async Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftReleaseResultRequestDto input)
@@ -198,23 +214,24 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         try
         {
             _thirdPartOrderProvider.VerifyMerchantSignature(input);
-            
+
             // search ES for orderId
-            var nftOrderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(new NftOrderQueryConditionDto(0, 1)
-            {
-                MerchantName = input.MerchantName,
-                MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
-            });
+            var nftOrderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(
+                new NftOrderQueryConditionDto(0, 1)
+                {
+                    MerchantName = input.MerchantName,
+                    MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
+                });
             AssertHelper.NotEmpty(nftOrderPager.Data, "Order {OrderId} of {Merchant} not found", input.MerchantOrderId,
                 input.MerchantName);
             var orderIndex = nftOrderPager.Data[0];
             var orderId = orderIndex.Id;
-            
+
             // query verify order grain
             var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
             var orderGrainDto = (await orderGrain.GetOrder()).Data;
             AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
-            
+
             // calculate new status and check
             var nextStatus = input.ReleaseResult == NftReleaseResult.SUCCESS.ToString()
                 ? OrderStatusType.Finish
@@ -222,7 +239,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
             AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
                 "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
-            
+
             // update base-order status 
             orderGrainDto.Status = nextStatus.ToString();
             orderGrainDto.TransactionId = input.ReleaseTransactionId;
@@ -243,7 +260,6 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
                 input.MerchantOrderId, input.MerchantName);
             return new CommonResponseDto<Empty>().Error(e, "Internal error");
         }
-        
     }
 
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
@@ -251,11 +267,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         // var userId = input.UserId;
         var userId = CurrentUser.GetId();
         var orderIdIn = input.OrderId == Guid.Empty ? null : new List<Guid> { input.OrderId };
-        return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto(input.SkipCount, input.MaxResultCount)
-        {
-            UserId = userId,
-            OrderIdIn = orderIdIn
-        }, OrderSectionEnum.NftSection);
+        return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
+            new GetThirdPartOrderConditionDto(input.SkipCount, input.MaxResultCount)
+            {
+                UserId = userId,
+                OrderIdIn = orderIdIn
+            }, OrderSectionEnum.NftSection);
     }
-    
 }

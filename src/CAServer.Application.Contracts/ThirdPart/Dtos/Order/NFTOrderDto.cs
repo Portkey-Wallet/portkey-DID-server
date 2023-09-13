@@ -37,7 +37,7 @@ public class OrderQueryRequestDto : NftMerchantBaseDto
     public string OrderId { get; set; }
 }
 
-public class OrderQueryResponseDto : NftMerchantBaseDto
+public class NftOrderQueryResponseDto : NftMerchantBaseDto
 {
     public string NftSymbol { get; set; }
     public string MerchantOrderId { get; set; }

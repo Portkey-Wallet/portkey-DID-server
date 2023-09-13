@@ -63,6 +63,23 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
     }
 
+    public async Task<AlchemyBaseResponseDto<AlchemyTokenDataDto>> GetAlchemyNftFreeLoginTokenAsync(
+        GetAlchemyFreeLoginTokenDto input)
+    {
+        try
+        { 
+            var resp = await _alchemyProvider.GetNftFreeLoginToken(input);
+            AssertHelper.NotEmpty(resp.AccessToken, "AccessToken empty");
+            return new AlchemyBaseResponseDto<AlchemyTokenDataDto>(resp);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Get alchemy nft free login token failed");
+            throw new UserFriendlyException("Get token failed, please try again later");
+        } 
+    }
+    
+
     // get Alchemy fiat list
     public async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
