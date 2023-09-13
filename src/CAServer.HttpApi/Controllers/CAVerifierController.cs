@@ -57,6 +57,7 @@ public class CAVerifierController : CAServerController
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
 
+        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         return type switch
         {
             OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
