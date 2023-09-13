@@ -788,8 +788,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
                     null, syncChainId);
             
-            //todo:check chainId here
-            
+            if (holderInfoOutput.CreateChainId > 0 && syncHolderInfoOutput.CreateChainId > 0)
+            {
+                await validateOriginChainIdGrain.SetStatusSuccessAsync();
+                _logger.LogInformation(
+                    "UpdateOriginChainIdAsync success,chainId {chainId},userId {uid}", originChainId,
+                    userLoginEto.UserId);
+                return;
+            }
+
+            holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
             
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
             var transactionDto =

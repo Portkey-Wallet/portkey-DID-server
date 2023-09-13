@@ -91,8 +91,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
             .ForMember(d => d.ManagerInfos, opt => opt.MapFrom(g => g.ManagerInfos))
             .ForMember(d => d.CaHash,
                 opt => opt.MapFrom(g => g.CaHash))
-            .ForMember(d => d.GuardiansMerkleTreeRoot,
-                opt => opt.MapFrom(g => g.GuardiansMerkleTreeRoot));
+            .ForMember(d => d.CreateChainId,
+                opt => opt.MapFrom(g => g.CreateChainId));
 
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoState>().ReverseMap();
         CreateMap<OrderState, OrderGrainDto>();

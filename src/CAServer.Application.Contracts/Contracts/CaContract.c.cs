@@ -67,7 +67,6 @@ namespace Portkey.Contracts.CA {
       {
         CaAddress = CaAddress,
         GuardianAdded_ = GuardianAdded_,
-        GuardiansMerkleTreeRoot = GuardiansMerkleTreeRoot,
       };
     }
   }
@@ -91,7 +90,6 @@ namespace Portkey.Contracts.CA {
       {
         CaAddress = CaAddress,
         GuardianRemoved_ = GuardianRemoved_,
-        GuardiansMerkleTreeRoot = GuardiansMerkleTreeRoot,
       };
     }
   }
@@ -116,7 +114,6 @@ namespace Portkey.Contracts.CA {
         CaAddress = CaAddress,
         GuardianUpdatedPre = GuardianUpdatedPre,
         GuardianUpdatedNew = GuardianUpdatedNew,
-        GuardiansMerkleTreeRoot = GuardiansMerkleTreeRoot,
       };
     }
   }
@@ -464,6 +461,18 @@ namespace Portkey.Contracts.CA {
       {
         LoginGuardiansUnbound = LoginGuardiansUnbound
       },
+      new CAHolderSynced
+      {
+        GuardiansAdded = GuardiansAdded
+      },
+      new CAHolderSynced
+      {
+        GuardiansRemoved = GuardiansRemoved
+      },
+      new CAHolderSynced
+      {
+        GuardiansUpdate = GuardiansUpdate
+      },
       };
     }
 
@@ -665,6 +674,8 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetHolderInfoInput> __Marshaller_ca_GetHolderInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetHolderInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetHolderInfoOutput> __Marshaller_ca_GetHolderInfoOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetHolderInfoOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetVerifierServersOutput> __Marshaller_ca_GetVerifierServersOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetVerifierServersOutput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::AElf.Types.Hash> __Marshaller_aelf_Hash = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Hash.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetVerifierIdMapperOutput> __Marshaller_ca_GetVerifierIdMapperOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetVerifierIdMapperOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetCAServersOutput> __Marshaller_ca_GetCAServersOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetCAServersOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput> __Marshaller_ca_ValidateCAHolderInfoWithManagerInfosExistsInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SyncHolderInfoInput> __Marshaller_ca_SyncHolderInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SyncHolderInfoInput.Parser.ParseFrom);
@@ -844,6 +855,13 @@ namespace Portkey.Contracts.CA {
         "GetVerifierServers",
         __Marshaller_google_protobuf_Empty,
         __Marshaller_ca_GetVerifierServersOutput);
+
+    static readonly aelf::Method<global::AElf.Types.Hash, global::Portkey.Contracts.CA.GetVerifierIdMapperOutput> __Method_GetVerifierIdMapper = new aelf::Method<global::AElf.Types.Hash, global::Portkey.Contracts.CA.GetVerifierIdMapperOutput>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetVerifierIdMapper",
+        __Marshaller_aelf_Hash,
+        __Marshaller_ca_GetVerifierIdMapperOutput);
 
     static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.GetCAServersOutput> __Method_GetCAServers = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.GetCAServersOutput>(
         aelf::MethodType.View,
@@ -1034,6 +1052,300 @@ namespace Portkey.Contracts.CA {
       }
     }
     #endregion
+
+    /// <summary>Base class for the contract of CAContract</summary>
+    public abstract partial class CAContractBase : AElf.Sdk.CSharp.CSharpSmartContract<Portkey.Contracts.CA.CAContractState>
+    {
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::Portkey.Contracts.CA.InitializeInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty CreateCAHolder(global::Portkey.Contracts.CA.CreateCAHolderInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddGuardian(global::Portkey.Contracts.CA.AddGuardianInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveGuardian(global::Portkey.Contracts.CA.RemoveGuardianInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty UpdateGuardian(global::Portkey.Contracts.CA.UpdateGuardianInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetGuardianForLogin(global::Portkey.Contracts.CA.SetGuardianForLoginInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty UnsetGuardianForLogin(global::Portkey.Contracts.CA.UnsetGuardianForLoginInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty ManagerForwardCall(global::Portkey.Contracts.CA.ManagerForwardCallInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty ManagerTransfer(global::Portkey.Contracts.CA.ManagerTransferInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty ManagerTransferFrom(global::Portkey.Contracts.CA.ManagerTransferFromInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SocialRecovery(global::Portkey.Contracts.CA.SocialRecoveryInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddManagerInfo(global::Portkey.Contracts.CA.AddManagerInfoInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveManagerInfo(global::Portkey.Contracts.CA.RemoveManagerInfoInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveOtherManagerInfo(global::Portkey.Contracts.CA.RemoveOtherManagerInfoInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty UpdateManagerInfos(global::Portkey.Contracts.CA.UpdateManagerInfosInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddVerifierServerEndPoints(global::Portkey.Contracts.CA.AddVerifierServerEndPointsInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveVerifierServerEndPoints(global::Portkey.Contracts.CA.RemoveVerifierServerEndPointsInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveVerifierServer(global::Portkey.Contracts.CA.RemoveVerifierServerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddCAServer(global::Portkey.Contracts.CA.AddCAServerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveCAServer(global::Portkey.Contracts.CA.RemoveCAServerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.GetHolderInfoOutput GetHolderInfo(global::Portkey.Contracts.CA.GetHolderInfoInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.GetVerifierServersOutput GetVerifierServers(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.GetVerifierIdMapperOutput GetVerifierIdMapper(global::AElf.Types.Hash input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.GetCAServersOutput GetCAServers(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty ValidateCAHolderInfoWithManagerInfosExists(global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SyncHolderInfo(global::Portkey.Contracts.CA.SyncHolderInfoInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.ValidateStrategyOutput ValidateStrategy(global::Portkey.Contracts.CA.ValidateStrategyInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetContractDelegationFee(global::Portkey.Contracts.CA.SetContractDelegationFeeInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.GetContractDelegationFeeOutput GetContractDelegationFee(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddCreatorController(global::Portkey.Contracts.CA.ControllerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveCreatorController(global::Portkey.Contracts.CA.ControllerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.ControllerOutput GetCreatorControllers(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddServerController(global::Portkey.Contracts.CA.ControllerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveServerController(global::Portkey.Contracts.CA.ControllerInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.ControllerOutput GetServerControllers(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty ChangeAdmin(global::Portkey.Contracts.CA.AdminInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.AdminOutput GetAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty ChangeOperationTypeInSignatureEnabled(global::Portkey.Contracts.CA.OperationTypeInSignatureEnabledInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetCAContractAddresses(global::Portkey.Contracts.CA.SetCAContractAddressesInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty AddVerifierIdMapper(global::Portkey.Contracts.CA.AddVerifierIdMapperInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty ManagerApprove(global::Portkey.Contracts.CA.ManagerApproveInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetTransferLimit(global::Portkey.Contracts.CA.SetTransferLimitInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.GetTransferLimitOutput GetTransferLimit(global::Portkey.Contracts.CA.GetTransferLimitInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetDefaultTokenTransferLimit(global::Portkey.Contracts.CA.SetDefaultTokenTransferLimitInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Portkey.Contracts.CA.GetDefaultTokenTransferLimitOutput GetDefaultTokenTransferLimit(global::Portkey.Contracts.CA.GetDefaultTokenTransferLimitInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetForbiddenForwardCallContractMethod(global::Portkey.Contracts.CA.SetForbiddenForwardCallContractMethodInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+      public virtual global::Google.Protobuf.WellKnownTypes.Empty ChangeManagerApproveForbiddenEnabled(global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput input)
+      {
+        throw new global::System.NotImplementedException();
+      }
+
+    }
+
+    public static aelf::ServerServiceDefinition BindService(CAContractBase serviceImpl)
+    {
+      return aelf::ServerServiceDefinition.CreateBuilder()
+          .AddDescriptors(Descriptors)
+          .AddMethod(__Method_Initialize, serviceImpl.Initialize)
+          .AddMethod(__Method_CreateCAHolder, serviceImpl.CreateCAHolder)
+          .AddMethod(__Method_AddGuardian, serviceImpl.AddGuardian)
+          .AddMethod(__Method_RemoveGuardian, serviceImpl.RemoveGuardian)
+          .AddMethod(__Method_UpdateGuardian, serviceImpl.UpdateGuardian)
+          .AddMethod(__Method_SetGuardianForLogin, serviceImpl.SetGuardianForLogin)
+          .AddMethod(__Method_UnsetGuardianForLogin, serviceImpl.UnsetGuardianForLogin)
+          .AddMethod(__Method_ManagerForwardCall, serviceImpl.ManagerForwardCall)
+          .AddMethod(__Method_ManagerTransfer, serviceImpl.ManagerTransfer)
+          .AddMethod(__Method_ManagerTransferFrom, serviceImpl.ManagerTransferFrom)
+          .AddMethod(__Method_SocialRecovery, serviceImpl.SocialRecovery)
+          .AddMethod(__Method_AddManagerInfo, serviceImpl.AddManagerInfo)
+          .AddMethod(__Method_RemoveManagerInfo, serviceImpl.RemoveManagerInfo)
+          .AddMethod(__Method_RemoveOtherManagerInfo, serviceImpl.RemoveOtherManagerInfo)
+          .AddMethod(__Method_UpdateManagerInfos, serviceImpl.UpdateManagerInfos)
+          .AddMethod(__Method_AddVerifierServerEndPoints, serviceImpl.AddVerifierServerEndPoints)
+          .AddMethod(__Method_RemoveVerifierServerEndPoints, serviceImpl.RemoveVerifierServerEndPoints)
+          .AddMethod(__Method_RemoveVerifierServer, serviceImpl.RemoveVerifierServer)
+          .AddMethod(__Method_AddCAServer, serviceImpl.AddCAServer)
+          .AddMethod(__Method_RemoveCAServer, serviceImpl.RemoveCAServer)
+          .AddMethod(__Method_GetHolderInfo, serviceImpl.GetHolderInfo)
+          .AddMethod(__Method_GetVerifierServers, serviceImpl.GetVerifierServers)
+          .AddMethod(__Method_GetVerifierIdMapper, serviceImpl.GetVerifierIdMapper)
+          .AddMethod(__Method_GetCAServers, serviceImpl.GetCAServers)
+          .AddMethod(__Method_ValidateCAHolderInfoWithManagerInfosExists, serviceImpl.ValidateCAHolderInfoWithManagerInfosExists)
+          .AddMethod(__Method_SyncHolderInfo, serviceImpl.SyncHolderInfo)
+          .AddMethod(__Method_ValidateStrategy, serviceImpl.ValidateStrategy)
+          .AddMethod(__Method_SetContractDelegationFee, serviceImpl.SetContractDelegationFee)
+          .AddMethod(__Method_GetContractDelegationFee, serviceImpl.GetContractDelegationFee)
+          .AddMethod(__Method_AddCreatorController, serviceImpl.AddCreatorController)
+          .AddMethod(__Method_RemoveCreatorController, serviceImpl.RemoveCreatorController)
+          .AddMethod(__Method_GetCreatorControllers, serviceImpl.GetCreatorControllers)
+          .AddMethod(__Method_AddServerController, serviceImpl.AddServerController)
+          .AddMethod(__Method_RemoveServerController, serviceImpl.RemoveServerController)
+          .AddMethod(__Method_GetServerControllers, serviceImpl.GetServerControllers)
+          .AddMethod(__Method_ChangeAdmin, serviceImpl.ChangeAdmin)
+          .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin)
+          .AddMethod(__Method_ChangeOperationTypeInSignatureEnabled, serviceImpl.ChangeOperationTypeInSignatureEnabled)
+          .AddMethod(__Method_SetCAContractAddresses, serviceImpl.SetCAContractAddresses)
+          .AddMethod(__Method_AddVerifierIdMapper, serviceImpl.AddVerifierIdMapper)
+          .AddMethod(__Method_ManagerApprove, serviceImpl.ManagerApprove)
+          .AddMethod(__Method_SetTransferLimit, serviceImpl.SetTransferLimit)
+          .AddMethod(__Method_GetTransferLimit, serviceImpl.GetTransferLimit)
+          .AddMethod(__Method_SetDefaultTokenTransferLimit, serviceImpl.SetDefaultTokenTransferLimit)
+          .AddMethod(__Method_GetDefaultTokenTransferLimit, serviceImpl.GetDefaultTokenTransferLimit)
+          .AddMethod(__Method_SetForbiddenForwardCallContractMethod, serviceImpl.SetForbiddenForwardCallContractMethod)
+          .AddMethod(__Method_ChangeManagerApproveForbiddenEnabled, serviceImpl.ChangeManagerApproveForbiddenEnabled).Build();
+    }
+
   }
 }
 #endregion
