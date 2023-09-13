@@ -265,7 +265,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         // var userId = input.UserId;
-        var userId = CurrentUser.GetId();
+        var userId = CurrentUser.Id == null ? Guid.Empty : CurrentUser.GetId();
         var orderIdIn = input.OrderId == Guid.Empty ? null : new List<Guid> { input.OrderId };
         return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
             new GetThirdPartOrderConditionDto(input.SkipCount, input.MaxResultCount)
