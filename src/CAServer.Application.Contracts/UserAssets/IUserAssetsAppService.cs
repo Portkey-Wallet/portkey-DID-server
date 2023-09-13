@@ -20,5 +20,5 @@ public interface IUserAssetsAppService
     Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto);
     
     Task CheckOriginChainIdStatusAsync(UserLoginEto userLoginEto);
-    Task UpdateOriginChainIdAsync(string chainId, GetHolderInfoOutput holderInfoOutput, UserLoginEto userLoginEto);
+    Task UpdateOriginChainIdAsync(string originChainId, string syncChainId ,UserLoginEto userLoginEto);
 }

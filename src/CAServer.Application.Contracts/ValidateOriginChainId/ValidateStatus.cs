@@ -1,4 +1,4 @@
-namespace CAServer.ValidateMerkerTree;
+namespace CAServer.ValidateOriginChainId;
 
 public enum ValidateStatus
 {

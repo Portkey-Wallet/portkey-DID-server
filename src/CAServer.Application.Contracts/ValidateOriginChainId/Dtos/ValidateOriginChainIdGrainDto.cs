@@ -1,4 +1,4 @@
-namespace CAServer.ValidateMerkerTree.Dtos;
+namespace CAServer.ValidateOriginChainId.Dtos;
 
 public class ValidateOriginChainIdGrainDto
 {

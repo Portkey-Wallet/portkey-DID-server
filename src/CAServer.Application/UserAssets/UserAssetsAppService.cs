@@ -735,6 +735,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
         
         var originChainId = "";
+        var syncChainId = "";
         var guardians = await _guardianProvider.GetGuardiansAsync("", userLoginEto.CaHash);
         if (guardians == null || !guardians.CaHolderInfo.Any())
         {
@@ -750,15 +751,20 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 userLoginEto.UserId);
             return;
         }
-        
-        var outputGetHolderInfo =
-            await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
-                null, originChainId);
 
-        await UpdateOriginChainIdAsync(originChainId, outputGetHolderInfo,userLoginEto);
+        syncChainId = _chainOptions.ChainInfos.Where(kvp => kvp.Key != originChainId).Select(kvp => kvp.Key)
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(syncChainId))
+        {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,syncChainId is null or empty,userId {uid}",
+                userLoginEto.UserId);
+            return;
+        }
+
+        await UpdateOriginChainIdAsync(originChainId, syncChainId, userLoginEto);
     }
 
-    public async Task UpdateOriginChainIdAsync(string chainId, GetHolderInfoOutput holderInfoOutput,UserLoginEto userLoginEto)
+    public async Task UpdateOriginChainIdAsync(string originChainId, string syncChainId, UserLoginEto userLoginEto)
     {
         var validateOriginChainIdGrain = _clusterClient.GetGrain<IValidateOriginChainIdGrain>(userLoginEto.UserId);
         try
@@ -770,20 +776,31 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 return;
             }
+            
+            var holderInfoOutput =
+                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
+                    null, originChainId);
 
+            var syncHolderInfoOutput =
+                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
+                    null, syncChainId);
+            
+            //todo:check chainId here
+            
+            
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
             var transactionDto =
-                await grain.ValidateTransactionAsync(chainId, holderInfoOutput, null);
+                await grain.ValidateTransactionAsync(originChainId, holderInfoOutput, null);
 
             await validateOriginChainIdGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,
-                 chainId);
+                originChainId);
 
             if (transactionDto.TransactionResultDto.Status == TransactionState.Mined)
             {
                 await validateOriginChainIdGrain.SetStatusSuccessAsync();
                 _logger.LogInformation(
                     "UpdateOriginChainIdAsync success,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
-                    chainId,
+                    originChainId,
                     transactionDto.TransactionResultDto.TransactionId,
                     transactionDto.TransactionResultDto.Status);
                 return;
@@ -795,7 +812,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 await validateOriginChainIdGrain.SetStatusFailAsync();
                 _logger.LogInformation(
                     "UpdateOriginChainIdAsync fail status {status} ,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
-                    transactionDto.TransactionResultDto.Status, chainId,
+                    transactionDto.TransactionResultDto.Status, originChainId,
                     transactionDto.TransactionResultDto.TransactionId,
                     transactionDto.TransactionResultDto.Status);
                 return;
@@ -803,13 +820,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             _logger.LogInformation(
                 "UpdateOriginChainIdAsync success status {status},chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
-                transactionDto.TransactionResultDto.Status, chainId,
+                transactionDto.TransactionResultDto.Status, originChainId,
                 transactionDto.TransactionResultDto.TransactionId,
                 transactionDto.TransactionResultDto.Status);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid}", chainId,
+            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid}", originChainId,
                 userLoginEto.UserId);
             await validateOriginChainIdGrain.SetStatusFailAsync();
         }
