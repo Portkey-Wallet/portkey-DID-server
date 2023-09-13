@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -55,15 +56,18 @@ public class ContractProvider : IContractProvider
     private readonly ChainOptions _chainOptions;
     private readonly IndexOptions _indexOptions;
     private readonly ISignatureProvider _signatureProvider;
+    private readonly IGraphQLProvider _graphQlProvider;
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
-        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider)
+        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
+        IGraphQLProvider graphQlProvider)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
         _signatureProvider = signatureProvider;
+        _graphQlProvider = graphQlProvider;
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,
@@ -274,6 +278,7 @@ public class ContractProvider : IContractProvider
     {
         try
         {
+            await CheckCreateChainIdAsync(result);
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
             var transactionDto =
                 await grain.ValidateTransactionAsync(chainId, result, unsetLoginGuardians);
@@ -419,5 +424,16 @@ public class ContractProvider : IContractProvider
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
         return await client.GetBlockByHeightAsync(height, includeTransactions);
+    }
+
+    private async Task CheckCreateChainIdAsync(GetHolderInfoOutput holderInfoOutput)
+    {
+        if (holderInfoOutput.CreateChainId > 0) return;
+
+        var holderInfos = await _graphQlProvider.GetCaHolderInfoAsync(holderInfoOutput.CaHash.ToHex());
+        var holderInfo = holderInfos?.CaHolderInfo?.FirstOrDefault();
+        if (holderInfo == null) return;
+
+        holderInfoOutput.CreateChainId = await GetChainIdAsync(holderInfo.OriginChainId);
     }
 }
