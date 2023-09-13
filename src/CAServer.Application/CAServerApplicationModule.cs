@@ -51,6 +51,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SyncOriginChainIdOptions>(configuration.GetSection("SyncOriginChainId"));
+        Configure<SecurityOptions>(configuration.GetSection("Security"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
