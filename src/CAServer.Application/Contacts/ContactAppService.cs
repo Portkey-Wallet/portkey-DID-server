@@ -659,7 +659,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
         catch (Exception e)
         {
-            Logger.LogError("{userId} remark fail : {relationId}, {name}", userId.ToString(), relationId, name);
+            Logger.LogError(e,ImConstant.ImServerErrorPrefix + " remark fail : {userId}, {relationId}, {name}, {imToken}", 
+                userId.ToString(), relationId, name, 
+                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
     }
 
@@ -679,7 +681,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{userId} follow error, address: {address}", address, userId.ToString());
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " follow fail : {userId}, {address}, {imToken}", 
+                userId.ToString(), address, 
+                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
     }
 
@@ -699,7 +703,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{userId} unfollow error, address: {address}", address, userId.ToString());
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " unfollow fail : {userId}, {address}, {imToken}", 
+                userId.ToString(), address, 
+                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
     }
 

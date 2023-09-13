@@ -11,6 +11,7 @@ using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Options;
 using DnsClient.Internal;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -32,16 +33,18 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly INESTRepository<CAHolderIndex, Guid> _holderRepository;
     private readonly IImRequestProvider _imRequestProvider;
     private readonly HostInfoOptions _hostInfoOptions;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public NickNameAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         INESTRepository<CAHolderIndex, Guid> holderRepository, IImRequestProvider imRequestProvider,
-        IOptionsSnapshot<HostInfoOptions> hostInfoOptions)
+        IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IHttpContextAccessor httpContextAccessor)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _holderRepository = holderRepository;
         _imRequestProvider = imRequestProvider;
         _hostInfoOptions = hostInfoOptions.Value;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<CAHolderResultDto> SetNicknameAsync(UpdateNickNameDto nickNameDto)
@@ -81,7 +84,9 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
         catch (Exception e)
         {
-            Logger.LogError("{userId} update im user fail :  {name}", userId.ToString() , nickName);
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}, {imToken}", 
+                userId.ToString(), nickName, 
+                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
         
     }
