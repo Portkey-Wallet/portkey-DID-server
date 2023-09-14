@@ -704,8 +704,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var needValidate = await validateOriginChainIdGrain.NeedValidateAsync();
             _logger.LogInformation(
                 "UpdateOriginChainIdAsync,needValidate {needValidate},cahash:{cahash},originChainId:{originChainId}",
-                needValidate, userLoginEto.CaHash, originChainId);
-            
+                needValidate.Data, userLoginEto.CaHash, originChainId);
+
             if (!needValidate.Data)
             {
                 return;
@@ -773,8 +773,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid}", originChainId,
-                userLoginEto.UserId);
+            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid},cahash:{cahash}", originChainId,
+                userLoginEto.UserId,userLoginEto.CaHash);
             await validateOriginChainIdGrain.SetStatusFailAsync();
         }
     }
