@@ -340,7 +340,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
 
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
-                                                                       && g.GuardianList.Guardians.Count > 0);
+                                                                       && g.GuardianList.Guardians.Count > 0
+                                                                       && g.OriginChainId == g.ChainId);
 
         return guardianInfo?.GuardianList.Guardians
             .Where(t => t.Type.Equals(((int)GuardianIdentifierType.Apple).ToString()) && t.IsLoginGuardian).ToList();
