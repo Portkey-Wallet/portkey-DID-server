@@ -703,8 +703,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             var needValidate = await validateOriginChainIdGrain.NeedValidateAsync();
             _logger.LogInformation(
-                "UpdateOriginChainIdAsync,needValidate {needValidate},cahash:{cahash},originChainId:{originChainId}",
-                needValidate.Data, userLoginEto.CaHash, originChainId);
+                "UpdateOriginChainIdAsync,needValidate {needValidate},cahash:{cahash},uid:{uid} ,originChainId:{originChainId}",
+                needValidate.Data, userLoginEto.CaHash, userLoginEto.UserId, originChainId);
 
             if (!needValidate.Data)
             {
