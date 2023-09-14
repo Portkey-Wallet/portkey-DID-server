@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.AppleAuth.Provider;
@@ -85,7 +86,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
 
-        if (guardianResult?.GuardianList?.Guardians?.Count == 0)
+        if (guardianResult?.GuardianList?.Guardians?.Count == 0 ||
+            guardianResult.CreateChainId != guardianIdentifierDto.ChainId)
         {
             throw new UserFriendlyException("This address is already registered on another chain.", "20004");
         }
@@ -139,7 +141,15 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             {
                 var holderInfo =
                     await _guardianProvider.GetHolderInfoFromContractAsync(guardianIdentifierHash, caHash, chainId);
-                if (holderInfo?.GuardianList?.Guardians?.Count > 0) return chainId;
+                if (holderInfo.CreateChainId > 0)
+                {
+                    return ChainHelper.ConvertChainIdToBase58(holderInfo.CreateChainId);
+                }
+
+                if (holderInfo?.GuardianList?.Guardians?.Count > 0)
+                {
+                    return chainId;
+                }
             }
             catch (Exception e)
             {
@@ -197,7 +207,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         var guardianGrainDto = await _guardianRepository.GetAsync(Filter);
         if (guardianGrainDto == null || guardianGrainDto.IsDeleted) return null;
-        
+
         return guardianGrainDto?.IdentifierHash;
     }
 

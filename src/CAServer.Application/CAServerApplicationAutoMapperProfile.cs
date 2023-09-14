@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AElf;
 using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
@@ -213,7 +214,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<GetHolderInfoOutput, GuardianResultDto>()
             .ForMember(t => t.CaHash, m => m.MapFrom(f => f.CaHash.ToHex()))
-            .ForMember(t => t.CaAddress, m => m.MapFrom(f => f.CaAddress.ToBase58()));
+            .ForMember(t => t.CaAddress, m => m.MapFrom(f => f.CaAddress.ToBase58()))
+            .ForMember(t => t.CreateChainId,
+                m => m.MapFrom(f =>
+                    f.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(f.CreateChainId) : string.Empty));
         // .ForPath(t => t.GuardianList, m => m.MapFrom(f => f.GuardianList.Guardians));
 
         CreateMap<RegisterRequestDto, RegisterDto>().BeforeMap((src, dest) =>
@@ -389,7 +393,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
             ;
         CreateMap<ImInfo, ImInfos>()
-            .ForMember(t => t.PortkeyId, m => m.MapFrom(f => f.PortkeyId == Guid.Empty ? string.Empty : f.PortkeyId.ToString()))
+            .ForMember(t => t.PortkeyId,
+                m => m.MapFrom(f => f.PortkeyId == Guid.Empty ? string.Empty : f.PortkeyId.ToString()))
             ;
         CreateMap<ContactResultDto, ContactListDto>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id == Guid.Empty ? string.Empty : f.Id.ToString()))
