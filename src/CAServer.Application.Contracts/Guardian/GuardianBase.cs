@@ -4,6 +4,7 @@ namespace CAServer.Guardian;
 
 public class GuardianBase
 {
+    public string CreateChainId { get; set; }
     public string CaHash { get; set; }
     public string CaAddress { get; set; }
     public string ChainId { get; set; }
