@@ -723,7 +723,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 await validateOriginChainIdGrain.SetStatusSuccessAsync();
                 _logger.LogInformation(
-                    "UpdateOriginChainIdAsync success,chainId {chainId},userId {uid}", originChainId,
+                    "UpdateOriginChainIdAsync already success,chainId {chainId},userId {uid}", originChainId,
                     userLoginEto.UserId);
                 return;
             }
