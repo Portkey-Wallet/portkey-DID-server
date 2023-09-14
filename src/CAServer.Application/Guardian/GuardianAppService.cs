@@ -45,7 +45,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
-        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions, IOptionsSnapshot<VerifierIdMappingOptions> verifierIdMappingOptions)
+        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
+        IOptionsSnapshot<VerifierIdMappingOptions> verifierIdMappingOptions)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -72,7 +73,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var guardianResult =
             ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
         var guardianDtos = guardianResult.GuardianList.Guardians;
-        var chainIds = _chainOptions.ChainInfos.Where(t=>t.Value.IsMainChain = true).Select(o=>o.Key).ToList();
+        var chainIds = _chainOptions.ChainInfos.Where(t => t.Value.IsMainChain = true).Select(o => o.Key).ToList();
         if (!chainIds.Contains(guardianIdentifierDto.ChainId))
         {
             foreach (var dto in guardianDtos)
@@ -80,6 +81,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                 dto.VerifierId = _verifierIdMappingOptions.VerifierIdMap[dto.VerifierId];
             }
         }
+
         var identifierHashList = holderInfo.GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex()).ToList();
         var hashDic = await GetIdentifiersAsync(identifierHashList);
         var identifiers = hashDic?.Values?.ToList();
@@ -87,13 +89,14 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
 
         if (guardianResult?.GuardianList?.Guardians?.Count == 0 ||
-            guardianResult.CreateChainId != guardianIdentifierDto.ChainId)
+            (!guardianResult.CreateChainId.IsNullOrWhiteSpace() &&
+             guardianResult.CreateChainId != guardianIdentifierDto.ChainId))
         {
             throw new UserFriendlyException("This address is already registered on another chain.", "20004");
         }
 
         await AddGuardianInfoAsync(guardianResult?.GuardianList?.Guardians, hashDic, userExtraInfos);
-        
+
         return guardianResult;
     }
 
