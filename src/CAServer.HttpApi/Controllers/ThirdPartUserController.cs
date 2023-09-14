@@ -102,7 +102,7 @@ public class ThirdPartUserController : CAServerController
     }
     
     [HttpGet("alchemy/signature/api")]
-    public async Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, object> input)
+    public async Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, string> input)
     {
         return await _alchemyServiceAppService.GetAlchemyApiSignatureAsync(input);
     }

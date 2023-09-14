@@ -44,7 +44,7 @@ public static class ThirdPartHelper
         if (obj == null) return string.Empty;
         var dict = new SortedDictionary<string, object>();
 
-        if (obj is IDictionary<string, object> inputDict)
+        if (obj is IDictionary<string, string> inputDict)
         {
             foreach (var kvp in inputDict)
             {

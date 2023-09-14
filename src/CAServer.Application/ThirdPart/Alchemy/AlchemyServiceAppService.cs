@@ -262,7 +262,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
     }
 
-    public Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, object> input)
+    public Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, string> input)
     {
         try
         {
