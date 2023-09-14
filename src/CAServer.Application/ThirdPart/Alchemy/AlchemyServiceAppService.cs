@@ -275,11 +275,12 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             
             var src = ThirdPartHelper.ConvertObjectToSortedString(input, AlchemyHelper.SignatureField);
             var sign = AlchemyHelper.HmacSign(src, appSecret);
+            _logger.LogInformation("GetAlchemyApiSignatureAsync, sourceStr={Source}, signature={Sign}", src, sign);
             return Task.FromResult(new AlchemyBaseResponseDto<string>(sign));
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Get Alchemy API signature error");
+            _logger.LogError(e, "GetAlchemyApiSignatureAsync error");
             return Task.FromResult(AlchemyBaseResponseDto<string>.Fail(e.Message));
         }
     }
