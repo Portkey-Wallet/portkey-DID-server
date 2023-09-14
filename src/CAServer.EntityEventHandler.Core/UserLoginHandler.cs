@@ -21,6 +21,13 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     
     public async Task HandleEventAsync(UserLoginEto eventData)
     {
-        await _userAssetsAppService.CheckOriginChainIdStatusAsync(eventData);
+        try 
+        {
+            await _userAssetsAppService.CheckOriginChainIdStatusAsync(eventData);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UserLoginHandler HandleEventAsync error");
+        }
     }
 }
