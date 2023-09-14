@@ -669,7 +669,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var originChainId = "";
         var syncChainId = "";
         var guardians = await _guardianProvider.GetGuardiansAsync("", userLoginEto.CaHash);
-        if (guardians == null || !guardians.CaHolderInfo.Any())
+        if (guardians == null || guardians.CaHolderInfo == null || guardians.CaHolderInfo.Count == 0)
         {
             _logger.LogInformation("CheckOriginChainIdStatusAsync fail,guardians is null or empty,userId {uid}",
                 userLoginEto.UserId);
