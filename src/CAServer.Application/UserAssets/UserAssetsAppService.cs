@@ -726,6 +726,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return;
             }
 
+            _logger.LogInformation(
+                "UpdateOriginChainIdAsync success,originChainId {originChainId}:{holderInfoOutput.CreateChainId}, syncChainId:{syncChainId}:{syncHolderInfoOutput.CreateChainId},userId {uid}",
+                originChainId, holderInfoOutput.CreateChainId, syncChainId, syncHolderInfoOutput.CreateChainId,
+                userLoginEto.UserId);
+
             holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
             
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
