@@ -87,7 +87,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var userExtraInfos = await GetUserExtraInfoAsync(identifiers);
 
         if (guardianResult?.GuardianList?.Guardians?.Count == 0 ||
-            guardianResult.CreateChainId != guardianResult.ChainId)
+            guardianResult.CreateChainId != guardianIdentifierDto.ChainId)
         {
             throw new UserFriendlyException("This address is already registered on another chain.", "20004");
         }
