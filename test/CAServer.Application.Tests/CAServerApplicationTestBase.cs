@@ -9,7 +9,6 @@ using CAServer.CAActivity.Provider;
 using CAServer.Entities.Es;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Bson;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
@@ -34,7 +33,6 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
             UserId = guidVal.IsNullOrEmpty() ? Guid.NewGuid() : Guid.Parse(guidVal)
         });
     }
-    
     
     protected IBus GetMockInMemoryHarness(params IConsumer[] consumers)
     {
@@ -69,6 +67,17 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
         mockActivityProvider
             .Setup(x => x.GetCaHolder(It.IsAny<string>()))
             .Returns<string>((_) => Task.FromResult(result));
+        
+        mockActivityProvider.Setup(m => m.GetTokenDecimalsAsync(It.IsAny<string>())).ReturnsAsync(new IndexerSymbols
+        {
+            TokenInfo = new List<SymbolInfo>
+            {
+                new()
+                {
+                    Decimals = 8
+                }
+            }
+        });
         return mockActivityProvider.Object;
     }
 

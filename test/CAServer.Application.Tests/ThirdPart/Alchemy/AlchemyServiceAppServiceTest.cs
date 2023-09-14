@@ -167,7 +167,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     [Fact]
     public async Task GetAlchemyApiSignatureAsyncTest()
     {
-        var result = await _alchemyServiceAppService.GetAlchemyApiSignatureAsync(new Dictionary<string, object>
+        var result = await _alchemyServiceAppService.GetAlchemyApiSignatureAsync(new Dictionary<string, string>
         {
             ["orderNo"] = "994864610797428736",
             ["merchantOrderNo"] = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4",

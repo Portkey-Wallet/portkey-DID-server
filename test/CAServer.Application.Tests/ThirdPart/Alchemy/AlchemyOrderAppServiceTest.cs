@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Contracts.MultiToken;
+using AElf.Types;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
+using Portkey.Contracts.CA;
 using Shouldly;
 using Volo.Abp;
 using Volo.Abp.Validation;
 using Xunit;
+using TransferInput = AElf.Client.MultiToken.TransferInput;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -188,16 +193,22 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
     [Fact]
     public async Task SignatureTest()
     {
+        var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(
+                "0a220a20b0bbbde38f07b2c27294d725f514bb0b9d655e5aaf91d5db32e99696693d32f512220a209479bf7e3de88e68e8be95938909a69331d38f673816e27e6dd98bc5b813593718e8e289512204bc16e05d2a124d616e61676572466f727761726443616c6c32520a220a2004bebca8a858d6dab11f4bef1817b45bf342bacef7b0f6cf7a5c8877d33e17ae12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e7366657282f10441c01ea35e4ead8d148e2475cc3d3da187567340eaf46bad3283b794e2cce4e95b44138202420a65d1a859e01b31760ea04e3c045864bd1c1b3b3893fb23b4007201"));
+        var forwardCall = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
+        var transfer = TransferInput.Parser.ParseFrom(forwardCall.Args);
+        
+        
         await _alchemyOrderAppService.TransactionAsync(new TransactionDto()
         {
             MerchantName = "Alchemy",
-            OrderId = Guid.Parse("5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e"),
+            OrderId = Guid.Parse("a4610e8a-a60b-1fca-d53f-3a0da17ce0f0"),
             RawTransaction =
-                "0a220a20e53eff822ad4b33e8ed0356a55e5b8ea83a88afdb15bdedcf52646d8c13209c812220a20f9f90416670ec1a0f2d302c9474d1bc7a475cb08caa366bcca16e2f3d7e549f518f7c6800922041a18bf592a124d616e61676572466f727761726443616c6c3283010a220a20ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e73666572222f0a220a2061033c0453282232747683ffa571455f5511b5274f2125e2ee226b7fb2ebc9c11203454c461880d88ee16f82f1044170041357071da3ad12a1df406db869a94d910cd03f2dbfd3b1176de74ba0406b5e44425e611f504b6d065ad3d3b9dfe4e699e61ab584fdd0e9deb972cb05cd2700",
+                "0a220a20b0bbbde38f07b2c27294d725f514bb0b9d655e5aaf91d5db32e99696693d32f512220a209479bf7e3de88e68e8be95938909a69331d38f673816e27e6dd98bc5b813593718e8e289512204bc16e05d2a124d616e61676572466f727761726443616c6c32520a220a2004bebca8a858d6dab11f4bef1817b45bf342bacef7b0f6cf7a5c8877d33e17ae12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e7366657282f10441c01ea35e4ead8d148e2475cc3d3da187567340eaf46bad3283b794e2cce4e95b44138202420a65d1a859e01b31760ea04e3c045864bd1c1b3b3893fb23b4007201",
             PublicKey =
-                "04bc680e9f8ea189fb510f3f9758587731a9a64864f9edbc706cea6e8bf85cf6e56f236ba58d8840f3fce34cbf16a97f69dc784183d2eef770b367f6e8a90151af",
+                "042d63cbefc37ddbf9202c9e32fd6abd55c2df828b21077e77687185d94657f88a6020699db5e1a49726122ed58c4d96c25244621fbd75c621037fc3c866fbc230",
             Signature =
-                "af2b9305e9d85404f8c67630bc410e58d6d30dc2f0cf5a021f8bbfd4237663fb7dfa51f978179a001394b23f32f464e5be856b3298063d5bf11d0c6fd8f35ca400"
+                "1ba3e1dbc2f2d155a1c22d1881bb20b676b02fdfda60c8b9b91f776e9efc136629c35ca99bf284723a36a2ff195ed5a290051c34658911969ba9f029df7c231300"
         });
     }
 

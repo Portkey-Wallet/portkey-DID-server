@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
@@ -10,7 +9,6 @@ using CAServer.BackGround.Provider;
 using CAServer.Common;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Dtos;
-using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
@@ -151,8 +149,6 @@ public partial class NftOrderTest : ThirdPartTestBase
         var list = await _thirdPartOrderAppService.QueryMerchantNftOrderAsync(input);
         list.Success.ShouldBe(true);
         list.Data.ShouldNotBeNull();
-
-
     }
 
 
@@ -194,6 +190,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         await CreateTest();
 
         #region alchemy callback PAY_SUCCESS
+
         {
             var orderId = "994864610797428736";
             var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
@@ -221,6 +218,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             result.ShouldNotBeNull();
             result.Success.ShouldBe(true);
         }
+
         #endregion
 
         #region Alchemy callback NEW order status back

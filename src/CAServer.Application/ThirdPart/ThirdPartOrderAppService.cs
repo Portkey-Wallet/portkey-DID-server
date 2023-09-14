@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
@@ -11,7 +12,6 @@ using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
-using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -102,6 +102,14 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             orderGrainData.UserId = caHolder?.UserId ?? Guid.Empty;
             orderGrainData.Status = OrderStatusType.Initialized.ToString();
             orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
+
+            var decimalsList = await _activityProvider.GetTokenDecimalsAsync(input.PriceSymbol);
+            AssertHelper.NotEmpty(decimalsList?.TokenInfo, "Price symbol of {PriceSymbol} decimal not found",
+                input.PriceSymbol);
+            AssertHelper.IsTrue(double.TryParse(input.PriceAmount, out var priceAmount), "Invalid priceAmount");
+            orderGrainData.CryptoPrice =
+                (priceAmount / Math.Pow(10, decimalsList.TokenInfo[0].Decimals)).ToString(CultureInfo.InvariantCulture);
+
             var createResult = await DoCreateOrderAsync(orderGrainData);
 
             // save nft order section
