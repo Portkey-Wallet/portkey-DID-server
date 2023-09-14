@@ -782,9 +782,15 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
         if (caHolderIndex == null || caHolderIndex.IsDeleted)
         {
+            _logger.LogInformation("UpdateOriginChainIdAsync caHolderIndex is null or deleted,userId {uid}", userId);
             return false;
         }
 
+        _logger.LogInformation(
+            "UpdateOriginChainIdAsync caHolderIndex.CreateTime:{caHolderIndex.CreateTime},checkTime:{time}",
+            (TimeHelper.GetTimeStampFromDateTime(caHolderIndex.CreateTime),
+                _syncOriginChainIdOptions.CheckUserRegistrationTimestamp));
+        
         if (TimeHelper.GetTimeStampFromDateTime(caHolderIndex.CreateTime) > _syncOriginChainIdOptions.CheckUserRegistrationTimestamp)
         {
             return false;
