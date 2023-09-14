@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
+using AElf;
 using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Settings;
@@ -100,7 +101,12 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
             { "operationType", type },
-            { "chainId", string.IsNullOrWhiteSpace(input.TargetChainId) ? input.ChainId : input.TargetChainId }
+            {
+                "chainId",
+                string.IsNullOrWhiteSpace(input.TargetChainId)
+                    ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
+                    : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString()
+            }
         };
 
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
@@ -139,7 +145,10 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
 
         return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
-            input.OperationType, string.IsNullOrWhiteSpace(input.TargetChainId) ? input.ChainId : input.TargetChainId);
+            input.OperationType,
+            string.IsNullOrWhiteSpace(input.TargetChainId)
+                ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
+                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString());
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
