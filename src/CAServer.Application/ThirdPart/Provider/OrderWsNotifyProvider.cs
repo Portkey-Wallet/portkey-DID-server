@@ -25,7 +25,7 @@ public class OrderWsNotifyProvider : IOrderWsNotifyProvider
     
     public Task UnRegisterOrderListenerAsync(string clientId)
     {
-        if (_clientOrderListener.TryGetValue(clientId, out var orderId))
+        if (_clientOrderListener.TryGetValue(clientId ?? string.Empty, out var orderId))
         {
             _orderNotifyListeners.Remove(orderId);
         }
