@@ -137,10 +137,10 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         if (transferInput.Symbol != order.Crypto)
             throw new UserFriendlyException("Transfer symbol not match");
 
-        var decimalsList = await _activityProvider.GetTokenDecimalsAsync(transferInput.Symbol);
-        if (decimalsList == null || decimalsList.TokenInfo.IsNullOrEmpty())
-            throw new UserFriendlyException("Decimal of Symbol [{}] NOT found", transferInput.Symbol);
-        var decimals = decimalsList.TokenInfo.First().Decimals;
+        // var decimalsList = await _activityProvider.GetTokenDecimalsAsync(transferInput.Symbol);
+        // if (decimalsList == null || decimalsList.TokenInfo.IsNullOrEmpty())
+        //     throw new UserFriendlyException("Decimal of Symbol [{}] NOT found", transferInput.Symbol);
+        var decimals = 8;//decimalsList.TokenInfo.First().Decimals;
 
         var amount = transferInput.Amount / Math.Pow(10, decimals);
         if (amount - double.Parse(order.CryptoAmount) != 0)
