@@ -669,7 +669,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var originChainId = "";
         var syncChainId = "";
         var guardians = await _guardianProvider.GetGuardiansAsync("", userLoginEto.CaHash);
-        if (guardians == null || !guardians.CaHolderInfo.Any())
+        if (guardians == null || guardians.CaHolderInfo == null || guardians.CaHolderInfo.Count == 0)
         {
             _logger.LogInformation("CheckOriginChainIdStatusAsync fail,guardians is null or empty,userId {uid}",
                 userLoginEto.UserId);
@@ -702,8 +702,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         try
         {
             var needValidate = await validateOriginChainIdGrain.NeedValidateAsync();
-            _logger.LogInformation("UpdateOriginChainIdAsync,needValidate {needValidate}", needValidate);
-            
+            _logger.LogInformation(
+                "UpdateOriginChainIdAsync,needValidate {needValidate},cahash:{cahash},uid:{uid} ,originChainId:{originChainId}",
+                needValidate.Data, userLoginEto.CaHash, userLoginEto.UserId, originChainId);
+
             if (!needValidate.Data)
             {
                 return;
@@ -721,7 +723,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 await validateOriginChainIdGrain.SetStatusSuccessAsync();
                 _logger.LogInformation(
-                    "UpdateOriginChainIdAsync success,chainId {chainId},userId {uid}", originChainId,
+                    "UpdateOriginChainIdAsync already success,chainId {chainId},userId {uid}", originChainId,
                     userLoginEto.UserId);
                 return;
             }
@@ -771,8 +773,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid}", originChainId,
-                userLoginEto.UserId);
+            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid},cahash:{cahash}", originChainId,
+                userLoginEto.UserId,userLoginEto.CaHash);
             await validateOriginChainIdGrain.SetStatusFailAsync();
         }
     }
