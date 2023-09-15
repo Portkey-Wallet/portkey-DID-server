@@ -250,6 +250,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
 
     private string GetIndex(string name)
     {
+        _logger.LogInformation("set index name: {name}", name);
         var firstChar = char.ToUpperInvariant(name[0]);
         if (firstChar >= 'A' && firstChar <= 'Z')
         {
