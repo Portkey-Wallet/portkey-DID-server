@@ -194,10 +194,10 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
     public async Task SignatureTest()
     {
         var transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(
-                "0a220a20b0bbbde38f07b2c27294d725f514bb0b9d655e5aaf91d5db32e99696693d32f512220a209479bf7e3de88e68e8be95938909a69331d38f673816e27e6dd98bc5b813593718e8e289512204bc16e05d2a124d616e61676572466f727761726443616c6c32520a220a2004bebca8a858d6dab11f4bef1817b45bf342bacef7b0f6cf7a5c8877d33e17ae12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e7366657282f10441c01ea35e4ead8d148e2475cc3d3da187567340eaf46bad3283b794e2cce4e95b44138202420a65d1a859e01b31760ea04e3c045864bd1c1b3b3893fb23b4007201"));
+                "0a220a20d1b17d6b133fe2eb499e0ddf5d67789704e1ac17534898b7aae54ffb0dc2c2f012220a20f9f90416670ec1a0f2d302c9474d1bc7a475cb08caa366bcca16e2f3d7e549f518c5f8f20c2204646353af2a124d616e61676572466f727761726443616c6c3283010a220a20092ce389906b6ae0328cff5aefee3ff3c3067e97d7600a849bc2f42cf0c5493d12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e73666572222f0a220a20a7376d782cdf1b1caa2f8b5f56716209045cd5720b912e8441b4404427656cb91203454c461880f4f6905d82f10441edcb9051cd47ff7015175715b32bf001a570e365b6bc869502107372f5a691080aa97ee5d1e91a966c2f44aafb860f0a0fe204530b65fed7fba190d58ee4881a00"));
         var forwardCall = ManagerForwardCallInput.Parser.ParseFrom(transaction.Params);
         var transfer = TransferInput.Parser.ParseFrom(forwardCall.Args);
-        
+        transfer.Symbol.ShouldNotBeNull();
         
         await _alchemyOrderAppService.TransactionAsync(new TransactionDto()
         {
