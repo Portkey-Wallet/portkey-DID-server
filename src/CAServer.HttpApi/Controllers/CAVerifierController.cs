@@ -267,4 +267,13 @@ public class CAVerifierController : CAServerController
             throw new UserFriendlyException("OperationType is invalid");
         }
     }
+    
+    [HttpPost("mockVerifyCodeRequest")]
+    public async Task<VerificationCodeResponse> MockVerifyCode(MockVerifyCodeRequestInput input)
+    {
+        ValidateOperationType(input.OperationType);
+        return await _verifierAppService.MockVerifyCodeAsync(input);
+    }
+  
+    
 }
