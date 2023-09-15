@@ -237,11 +237,11 @@ public class SignatureGrantHandler : ITokenExtensionGrant
     }
 
     private async Task<bool?> CheckAddressFromGraphQlAsync(string url, string caHash,
-        string manager)
+        string managerAddress)
     {
         var caHolderManagerInfo = await GetManagerList(url, caHash);
         var caHolderManager = caHolderManagerInfo?.CaHolderManagerInfo.FirstOrDefault();
-        return caHolderManager?.Managers.Any(t => t.Manager == manager);
+        return caHolderManager?.ManagerInfos.Any(t => t.Address == managerAddress);
     }
 
     private async Task<bool?> CheckAddressFromContractAsync(string chainId, string caHash, string manager,
@@ -312,7 +312,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         {
             Query =
                 "query{caHolderManagerInfo(dto: {skipCount:0,maxResultCount:10,caHash:\"" + caHash +
-                "\"}){chainId,caHash,caAddress,managers{manager,deviceString}}}"
+                "\"}){chainId,caHash,caAddress,managerInfos{address,extraData}}}"
         };
 
         var graphQLResponse = await graphQLClient.SendQueryAsync<CAHolderManagerInfo>(testBlockRequest);
