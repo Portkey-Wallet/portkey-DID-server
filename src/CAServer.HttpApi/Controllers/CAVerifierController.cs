@@ -29,6 +29,7 @@ public class CAVerifierController : CAServerController
     private readonly ISwitchAppService _switchAppService;
     private readonly IGoogleAppService _googleAppService;
     private const string GoogleRecaptcha = "GoogleRecaptcha";
+    private const string CheckSwitch = "CheckSwitch";
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
@@ -56,15 +57,21 @@ public class CAVerifierController : CAServerController
         ValidateOperationType(type);
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        return type switch
+
+        if (_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
         {
-            OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
-            OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
-            _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
-                type)
-        };
+            return type switch
+            {
+                OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
+                    sendVerificationRequestInput, type),
+                OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
+                    sendVerificationRequestInput, type),
+                _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
+                    type)
+            };
+        }
+
+        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
     }
 
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
@@ -217,6 +224,11 @@ public class CAVerifierController : CAServerController
     {
         var type = operationTypeRequestInput.OperationType;
         ValidateOperationType(type);
+        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        {
+            return false;
+        }
+
         var userIpAddress = UserIpAddress(HttpContext);
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
 
@@ -228,6 +240,7 @@ public class CAVerifierController : CAServerController
 
         return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,
             type);
+
     }
 
     [HttpPost("getVerifierServer")]
@@ -267,13 +280,11 @@ public class CAVerifierController : CAServerController
             throw new UserFriendlyException("OperationType is invalid");
         }
     }
-    
+
     [HttpPost("mockVerifyCodeRequest")]
     public async Task<VerificationCodeResponse> MockVerifyCode(MockVerifyCodeRequestInput input)
     {
         ValidateOperationType(input.OperationType);
         return await _verifierAppService.MockVerifyCodeAsync(input);
     }
-  
-    
 }
