@@ -54,8 +54,5 @@
     <Compile Remove="Hubs\ICAHubProvider.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="ThirdPart\Handler\" />
-  </ItemGroup>
 
 </Project>

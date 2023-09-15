@@ -121,7 +121,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
     {
         context.Services.AddMassTransit(x =>
         {
-            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<AbpRabbitMqOptions>();
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
             // x.AddConsumer<OrderWsBroadcastConsumer>();
             x.UsingRabbitMq((ctx, cfg) =>
             {
@@ -132,7 +132,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
                         h.Password(rabbitMqConfig.Connections.Default.Password);
                     });
                 //
-                // cfg.ReceiveEndpoint(rabbitMqConfig.ClientQueueName, e =>
+                // cfg.ReceiveEndpoint("SubscribeQueue_" + rabbitMqConfig.ClientId, e =>
                 // {
                 //     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
                 // });

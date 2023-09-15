@@ -299,7 +299,7 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         context.Services.AddMassTransit(x =>
         {
-            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<AbpRabbitMqOptions>();
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
             x.AddConsumer<OrderWsBroadcastConsumer>();
             x.UsingRabbitMq((ctx, cfg) =>
             {
@@ -310,7 +310,7 @@ public class CAServerHttpApiHostModule : AbpModule
                         h.Password(rabbitMqConfig.Connections.Default.Password);
                     });
                 
-                cfg.ReceiveEndpoint("DefaultQueue", e =>
+                cfg.ReceiveEndpoint("SubscribeQueue_" + rabbitMqConfig.ClientId, e =>
                 {
                     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
                 });

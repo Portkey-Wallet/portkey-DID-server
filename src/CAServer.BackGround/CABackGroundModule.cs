@@ -1,8 +1,8 @@
 ﻿using CAServer.BackGround.Options;
 using CAServer.CAActivity.Provider;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.MongoDB;
+using CAServer.Options;
 using CAServer.ThirdPart.Provider;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -36,6 +36,7 @@ using Volo.Abp.RabbitMQ;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.Threading;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer.BackGround;
 
@@ -83,7 +84,7 @@ public class CABackGroundModule : AbpModule
     {
         context.Services.AddMassTransit(x =>
         {
-            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<AbpRabbitMqOptions>();
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
             // x.AddConsumer<OrderWsBroadcastConsumer>();
             x.UsingRabbitMq((ctx, cfg) =>
             {
@@ -94,7 +95,7 @@ public class CABackGroundModule : AbpModule
                         h.Password(rabbitMqConfig.Connections.Default.Password);
                     });
                 //
-                // cfg.ReceiveEndpoint(rabbitMqConfig.ClientQueueName, e =>
+                // cfg.ReceiveEndpoint("SubscribeQueue_" + rabbitMqConfig.ClientId, , e =>
                 // {
                 //     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
                 // });

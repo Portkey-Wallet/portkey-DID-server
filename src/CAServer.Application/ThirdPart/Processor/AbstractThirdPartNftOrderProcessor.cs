@@ -109,7 +109,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning("NFT order update FAILED, {ThirdPartName}-{OrderId}", ThirdPartName(),
+            _logger.LogWarning(e, "NFT order update FAILED, {ThirdPartName}-{OrderId}", ThirdPartName(),
                 updateRequest?.Id);
             return new CommonResponseDto<Empty>().Error(e);
         }

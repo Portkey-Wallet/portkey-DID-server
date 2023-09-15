@@ -45,9 +45,9 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         var inputDict = input as AlchemyNftOrderRequestDto;
         var hasAppId = inputDict.TryGetValue(AlchemyHelper.AppIdField, out var appId);
         var hasSignature = inputDict.TryGetValue(AlchemyHelper.SignatureField, out var inputSignature);
-
-        AssertHelper.IsTrue(hasAppId && hasSignature && appId is string && inputSignature is string,
-            "Invalid alchemy order input {appId} - {sign}", appId, inputSignature);
+        
+        AssertHelper.NotEmpty(appId, "Empty appId");
+        AssertHelper.NotEmpty(inputSignature, "Empty signature");
 
         // verify signature 
         var signSource = ThirdPartHelper.ConvertObjectToSortedString(input,

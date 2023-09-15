@@ -162,7 +162,7 @@ public class AlchemyNftOrderDto : IThirdPartValidOrderUpdateRequest
     public string Message { get; set; }
 }
 
-public class AlchemyNftOrderRequestDto : Dictionary<string, object>, IThirdPartNftOrderUpdateRequest
+public class AlchemyNftOrderRequestDto : Dictionary<string, string>, IThirdPartNftOrderUpdateRequest
 {
 }
 
