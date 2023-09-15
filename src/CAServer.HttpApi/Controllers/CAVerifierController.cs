@@ -56,7 +56,6 @@ public class CAVerifierController : CAServerController
         ValidateOperationType(type);
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         return type switch
         {
             OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
@@ -218,7 +217,6 @@ public class CAVerifierController : CAServerController
     {
         var type = operationTypeRequestInput.OperationType;
         ValidateOperationType(type);
-        return false;
         var userIpAddress = UserIpAddress(HttpContext);
         _logger.LogDebug("UserIp is {userIp},version is {version}", userIpAddress, version);
 
