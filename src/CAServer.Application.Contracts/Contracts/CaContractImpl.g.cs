@@ -48,8 +48,12 @@ namespace Portkey.Contracts.CA {
             "ZRgBIAMoCzIbLmNhaW1wbC5FeHRlcm5hbC5WYWx1ZUVudHJ5GiwKClZhbHVl",
             "RW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJQCiNNYW5h",
             "Z2VyQXBwcm92ZUZvcmJpZGRlbkVuYWJsZWRJbnB1dBIpCiFtYW5hZ2VyX2Fw",
-            "cHJvdmVfZm9yYmlkZGVuX2VuYWJsZWQYASABKAgyEAoOQ0FDb250cmFjdElt",
-            "cGxCF6oCFFBvcnRrZXkuQ29udHJhY3RzLkNBYgZwcm90bzM="));
+            "cHJvdmVfZm9yYmlkZGVuX2VuYWJsZWQYASABKAgikAEKFFRyYW5zZmVyTGlt",
+            "aXRDaGFuZ2VkEiIKB2NhX2hhc2gYASABKAsyCi5hZWxmLkhhc2hCBYiP9QEB",
+            "EhUKBnN5bWJvbBgCIAEoCUIFiI/1AQESGwoMc2luZ2xlX2xpbWl0GAMgASgD",
+            "QgWIj/UBARIaCgtkYWlseV9saW1pdBgEIAEoA0IFiI/1AQE6BKC7GAEyEAoO",
+            "Q0FDb250cmFjdEltcGxCF6oCFFBvcnRrZXkuQ29udHJhY3RzLkNBYgZwcm90",
+            "bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -64,7 +68,8 @@ namespace Portkey.Contracts.CA {
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.TransferLimit), global::Portkey.Contracts.CA.TransferLimit.Parser, new[]{ "SingleLimit", "DayLimit" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.TransferredAmount), global::Portkey.Contracts.CA.TransferredAmount.Parser, new[]{ "DailyTransfered", "UpdateTime" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.External), global::Portkey.Contracts.CA.External.Parser, new[]{ "Value" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput), global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput.Parser, new[]{ "ManagerApproveForbiddenEnabled" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput), global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput.Parser, new[]{ "ManagerApproveForbiddenEnabled" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.CA.TransferLimitChanged), global::Portkey.Contracts.CA.TransferLimitChanged.Parser, new[]{ "CaHash", "Symbol", "SingleLimit", "DailyLimit" }, null, null, null, null)
           }));
     }
     #endregion
@@ -2790,6 +2795,315 @@ namespace Portkey.Contracts.CA {
             break;
           case 8: {
             ManagerApproveForbiddenEnabled = input.ReadBool();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  public sealed partial class TransferLimitChanged : pb::IMessage<TransferLimitChanged>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<TransferLimitChanged> _parser = new pb::MessageParser<TransferLimitChanged>(() => new TransferLimitChanged());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<TransferLimitChanged> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Portkey.Contracts.CA.CaContractImplReflection.Descriptor.MessageTypes[12]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public TransferLimitChanged() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public TransferLimitChanged(TransferLimitChanged other) : this() {
+      caHash_ = other.caHash_ != null ? other.caHash_.Clone() : null;
+      symbol_ = other.symbol_;
+      singleLimit_ = other.singleLimit_;
+      dailyLimit_ = other.dailyLimit_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public TransferLimitChanged Clone() {
+      return new TransferLimitChanged(this);
+    }
+
+    /// <summary>Field number for the "ca_hash" field.</summary>
+    public const int CaHashFieldNumber = 1;
+    private global::AElf.Types.Hash caHash_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::AElf.Types.Hash CaHash {
+      get { return caHash_; }
+      set {
+        caHash_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "symbol" field.</summary>
+    public const int SymbolFieldNumber = 2;
+    private string symbol_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Symbol {
+      get { return symbol_; }
+      set {
+        symbol_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "single_limit" field.</summary>
+    public const int SingleLimitFieldNumber = 3;
+    private long singleLimit_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long SingleLimit {
+      get { return singleLimit_; }
+      set {
+        singleLimit_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "daily_limit" field.</summary>
+    public const int DailyLimitFieldNumber = 4;
+    private long dailyLimit_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long DailyLimit {
+      get { return dailyLimit_; }
+      set {
+        dailyLimit_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as TransferLimitChanged);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(TransferLimitChanged other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (!object.Equals(CaHash, other.CaHash)) return false;
+      if (Symbol != other.Symbol) return false;
+      if (SingleLimit != other.SingleLimit) return false;
+      if (DailyLimit != other.DailyLimit) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (caHash_ != null) hash ^= CaHash.GetHashCode();
+      if (Symbol.Length != 0) hash ^= Symbol.GetHashCode();
+      if (SingleLimit != 0L) hash ^= SingleLimit.GetHashCode();
+      if (DailyLimit != 0L) hash ^= DailyLimit.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (caHash_ != null) {
+        output.WriteRawTag(10);
+        output.WriteMessage(CaHash);
+      }
+      if (Symbol.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Symbol);
+      }
+      if (SingleLimit != 0L) {
+        output.WriteRawTag(24);
+        output.WriteInt64(SingleLimit);
+      }
+      if (DailyLimit != 0L) {
+        output.WriteRawTag(32);
+        output.WriteInt64(DailyLimit);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (caHash_ != null) {
+        output.WriteRawTag(10);
+        output.WriteMessage(CaHash);
+      }
+      if (Symbol.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Symbol);
+      }
+      if (SingleLimit != 0L) {
+        output.WriteRawTag(24);
+        output.WriteInt64(SingleLimit);
+      }
+      if (DailyLimit != 0L) {
+        output.WriteRawTag(32);
+        output.WriteInt64(DailyLimit);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (caHash_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(CaHash);
+      }
+      if (Symbol.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Symbol);
+      }
+      if (SingleLimit != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(SingleLimit);
+      }
+      if (DailyLimit != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(DailyLimit);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(TransferLimitChanged other) {
+      if (other == null) {
+        return;
+      }
+      if (other.caHash_ != null) {
+        if (caHash_ == null) {
+          CaHash = new global::AElf.Types.Hash();
+        }
+        CaHash.MergeFrom(other.CaHash);
+      }
+      if (other.Symbol.Length != 0) {
+        Symbol = other.Symbol;
+      }
+      if (other.SingleLimit != 0L) {
+        SingleLimit = other.SingleLimit;
+      }
+      if (other.DailyLimit != 0L) {
+        DailyLimit = other.DailyLimit;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            if (caHash_ == null) {
+              CaHash = new global::AElf.Types.Hash();
+            }
+            input.ReadMessage(CaHash);
+            break;
+          }
+          case 18: {
+            Symbol = input.ReadString();
+            break;
+          }
+          case 24: {
+            SingleLimit = input.ReadInt64();
+            break;
+          }
+          case 32: {
+            DailyLimit = input.ReadInt64();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            if (caHash_ == null) {
+              CaHash = new global::AElf.Types.Hash();
+            }
+            input.ReadMessage(CaHash);
+            break;
+          }
+          case 18: {
+            Symbol = input.ReadString();
+            break;
+          }
+          case 24: {
+            SingleLimit = input.ReadInt64();
+            break;
+          }
+          case 32: {
+            DailyLimit = input.ReadInt64();
             break;
           }
         }

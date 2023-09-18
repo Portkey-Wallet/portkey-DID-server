@@ -461,6 +461,18 @@ namespace Portkey.Contracts.CA {
       {
         LoginGuardiansUnbound = LoginGuardiansUnbound
       },
+      new CAHolderSynced
+      {
+        GuardiansAdded = GuardiansAdded
+      },
+      new CAHolderSynced
+      {
+        GuardiansRemoved = GuardiansRemoved
+      },
+      new CAHolderSynced
+      {
+        GuardiansUpdate = GuardiansUpdate
+      },
       };
     }
 
@@ -599,39 +611,6 @@ namespace Portkey.Contracts.CA {
     }
   }
 
-  public partial class TransferLimitChanged : aelf::IEvent<TransferLimitChanged>
-  {
-    public global::System.Collections.Generic.IEnumerable<TransferLimitChanged> GetIndexed()
-    {
-      return new List<TransferLimitChanged>
-      {
-      new TransferLimitChanged
-      {
-        CaHash = CaHash
-      },
-      new TransferLimitChanged
-      {
-        Symbol = Symbol
-      },
-      new TransferLimitChanged
-      {
-        SingleLimit = SingleLimit
-      },
-      new TransferLimitChanged
-      {
-        DailyLimit = DailyLimit
-      },
-      };
-    }
-
-    public TransferLimitChanged GetNonIndexed()
-    {
-      return new TransferLimitChanged
-      {
-      };
-    }
-  }
-
   #endregion
   public static partial class CAContractContainer
   {
@@ -662,6 +641,8 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetHolderInfoInput> __Marshaller_ca_GetHolderInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetHolderInfoInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetHolderInfoOutput> __Marshaller_ca_GetHolderInfoOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetHolderInfoOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetVerifierServersOutput> __Marshaller_ca_GetVerifierServersOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetVerifierServersOutput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::AElf.Types.Hash> __Marshaller_aelf_Hash = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AElf.Types.Hash.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetVerifierIdMapperOutput> __Marshaller_ca_GetVerifierIdMapperOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetVerifierIdMapperOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.GetCAServersOutput> __Marshaller_ca_GetCAServersOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.GetCAServersOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput> __Marshaller_ca_ValidateCAHolderInfoWithManagerInfosExistsInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ValidateCAHolderInfoWithManagerInfosExistsInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SyncHolderInfoInput> __Marshaller_ca_SyncHolderInfoInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SyncHolderInfoInput.Parser.ParseFrom);
@@ -674,6 +655,7 @@ namespace Portkey.Contracts.CA {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AdminInput> __Marshaller_ca_AdminInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AdminInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AdminOutput> __Marshaller_ca_AdminOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AdminOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.OperationTypeInSignatureEnabledInput> __Marshaller_ca_OperationTypeInSignatureEnabledInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.OperationTypeInSignatureEnabledInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CA.OperationTypeInSignatureEnabledOutput> __Marshaller_ca_OperationTypeInSignatureEnabledOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.OperationTypeInSignatureEnabledOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.SetCAContractAddressesInput> __Marshaller_ca_SetCAContractAddressesInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.SetCAContractAddressesInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.AddVerifierIdMapperInput> __Marshaller_ca_AddVerifierIdMapperInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.AddVerifierIdMapperInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CA.ManagerApproveInput> __Marshaller_ca_ManagerApproveInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CA.ManagerApproveInput.Parser.ParseFrom);
@@ -842,6 +824,13 @@ namespace Portkey.Contracts.CA {
         __Marshaller_google_protobuf_Empty,
         __Marshaller_ca_GetVerifierServersOutput);
 
+    static readonly aelf::Method<global::AElf.Types.Hash, global::Portkey.Contracts.CA.GetVerifierIdMapperOutput> __Method_GetVerifierIdMapper = new aelf::Method<global::AElf.Types.Hash, global::Portkey.Contracts.CA.GetVerifierIdMapperOutput>(
+        aelf::MethodType.View,
+        __ServiceName,
+        "GetVerifierIdMapper",
+        __Marshaller_aelf_Hash,
+        __Marshaller_ca_GetVerifierIdMapperOutput);
+
     static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.GetCAServersOutput> __Method_GetCAServers = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.GetCAServersOutput>(
         aelf::MethodType.View,
         __ServiceName,
@@ -947,6 +936,13 @@ namespace Portkey.Contracts.CA {
         __Marshaller_ca_OperationTypeInSignatureEnabledInput,
         __Marshaller_google_protobuf_Empty);
 
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.OperationTypeInSignatureEnabledOutput> __Method_GetOperationTypeInSignatureEnabled = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CA.OperationTypeInSignatureEnabledOutput>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "GetOperationTypeInSignatureEnabled",
+        __Marshaller_google_protobuf_Empty,
+        __Marshaller_ca_OperationTypeInSignatureEnabledOutput);
+
     static readonly aelf::Method<global::Portkey.Contracts.CA.SetCAContractAddressesInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetCAContractAddresses = new aelf::Method<global::Portkey.Contracts.CA.SetCAContractAddressesInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
@@ -1003,10 +999,10 @@ namespace Portkey.Contracts.CA {
         __Marshaller_caimpl_SetForbiddenForwardCallContractMethodInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_ChangeManagerApproveForbiddenEnabled = new aelf::Method<global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_SetManagerApproveForbiddenEnabled = new aelf::Method<global::Portkey.Contracts.CA.ManagerApproveForbiddenEnabledInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
-        "ChangeManagerApproveForbiddenEnabled",
+        "SetManagerApproveForbiddenEnabled",
         __Marshaller_caimpl_ManagerApproveForbiddenEnabledInput,
         __Marshaller_google_protobuf_Empty);
 
@@ -1031,7 +1027,6 @@ namespace Portkey.Contracts.CA {
       }
     }
     #endregion
-
 
   }
 }
