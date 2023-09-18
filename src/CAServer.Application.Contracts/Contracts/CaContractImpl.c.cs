@@ -53,6 +53,39 @@ namespace Portkey.Contracts.CA {
     }
   }
 
+  public partial class TransferLimitChanged : aelf::IEvent<TransferLimitChanged>
+  {
+    public global::System.Collections.Generic.IEnumerable<TransferLimitChanged> GetIndexed()
+    {
+      return new List<TransferLimitChanged>
+      {
+      new TransferLimitChanged
+      {
+        CaHash = CaHash
+      },
+      new TransferLimitChanged
+      {
+        Symbol = Symbol
+      },
+      new TransferLimitChanged
+      {
+        SingleLimit = SingleLimit
+      },
+      new TransferLimitChanged
+      {
+        DailyLimit = DailyLimit
+      },
+      };
+    }
+
+    public TransferLimitChanged GetNonIndexed()
+    {
+      return new TransferLimitChanged
+      {
+      };
+    }
+  }
+
   #endregion
 }
 #endregion
