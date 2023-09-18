@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Contacts.Provider;
+using CAServer.Etos;
+using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -18,6 +21,7 @@ using NSubstitute;
 using Orleans;
 using Portkey.Contracts.CA;
 using Shouldly;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using Xunit;
 
@@ -45,12 +49,12 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var imageProcessProviderMock = new Mock<IImageProcessProvider>();
         var chainOptionsMock = new Mock<IOptions<ChainOptions>>();
         chainOptionsMock.Setup(o => o.Value).Returns(new ChainOptions());
+        var syncOriginChainIdOptionsMock =  new Mock<IOptions<SyncOriginChainIdOptions>>();
+        syncOriginChainIdOptionsMock.Setup(o => o.Value).Returns(new SyncOriginChainIdOptions());
         var contractProviderMock = new Mock<IContractProvider>();
         var contactProviderMock = new Mock<IContactProvider>();
         var clusterClientMock = new Mock<IClusterClient>();
         var guardianProviderMock = new Mock<IGuardianProvider>();
-        var seedImageOptionsMock = new Mock<IOptions<SeedImageOptions>>();
-        seedImageOptionsMock.Setup(o => o.Value).Returns(new SeedImageOptions());
         var userAssetsAppService = new UserAssetsAppService(
             logger: loggerMock.Object,
             userAssetsProvider: userAssetsProviderMock.Object,
@@ -62,7 +66,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             contractProvider: contractProviderMock.Object,
             contactProvider: contactProviderMock.Object,
             clusterClient: clusterClientMock.Object,
-            seedImageOptions: seedImageOptionsMock.Object,
+            distributedEventBus: GetRequiredService<IDistributedEventBus>(),
+            syncOriginChainIdOptions: syncOriginChainIdOptionsMock.Object,
             guardianProvider: guardianProviderMock.Object);
         return userAssetsAppService;
     }
@@ -114,7 +119,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         
         //var userAssetsAppServiceMock = GetMock();
         
-        await _userAssetsAppService.UpdateMerkerTreeAsync("AELF", new GetHolderInfoOutput());
+        await _userAssetsAppService.UpdateOriginChainIdAsync("AELF", "tDVW",new UserLoginEto());
     }
 
     [Fact]
@@ -122,30 +127,18 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
     {
         Login(Guid.NewGuid());
         
-        var param = new GetTokenRequestDto
+        var param = new UserLoginEto
         {
-            SkipCount = 0,
-            MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" }
+            CaHash  = "bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf",
         };
         var userAssetsAppServiceMock = GetMock();
-        await userAssetsAppServiceMock.CheckChainMerkerTreeStatusAsync(param);
+        await userAssetsAppServiceMock.CheckOriginChainIdStatusAsync(param);
         
-        param = new GetTokenRequestDto
+        param = new UserLoginEto
         {
-            SkipCount = 0,
-            MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
-            CaAddressInfos = new List<CAAddressInfo>
-            {
-                new CAAddressInfo
-                {
-                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
-                    ChainId = "AELF"
-                }
-            }
+            CaHash  = "bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf",
         };
-        await userAssetsAppServiceMock.CheckChainMerkerTreeStatusAsync(param);
+        await userAssetsAppServiceMock.CheckOriginChainIdStatusAsync(param);
     }
 
     [Fact]

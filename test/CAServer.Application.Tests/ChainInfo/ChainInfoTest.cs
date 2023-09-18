@@ -49,8 +49,8 @@ public class ChainInfoTest : CAServerApplicationTestBase
         var mainChain = await _contractProvider.GetHolderInfoAsync(hash, null, "AELF");
         var sideChain = await _contractProvider.GetHolderInfoAsync(hash, null, "tDVV");
 
-        var m_root = mainChain.GuardiansMerkleTreeRoot;
-        var s_root = sideChain.GuardiansMerkleTreeRoot;
+        var m_root = mainChain.CreateChainId;
+        var s_root = sideChain.CreateChainId;
 
         var sss = "sss";
     }

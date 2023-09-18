@@ -1,12 +1,12 @@
-using CAServer.Grains.Grain.ValidateMerkerTree;
-using CAServer.ValidateMerkerTree;
+using CAServer.Grains.Grain.ValidateOriginChainId;
+using CAServer.ValidateOriginChainId;
 using Shouldly;
 using Xunit;
 
-namespace CAServer.Grain.Tests.ValidateMerkerTree;
+namespace CAServer.Grain.Tests.ValidateOriginChainId;
 
 [Collection(ClusterCollection.Name)]
-public class ValidateMerkerTreeTest : CAServerGrainTestBase
+public class ValidateOriginChainIdTest : CAServerGrainTestBase
 {
     
     [Fact]
@@ -25,7 +25,7 @@ public class ValidateMerkerTreeTest : CAServerGrainTestBase
         result = await grain.NeedValidateAsync();
         result.Data.ShouldBeFalse();
         
-        await grain.SetInfoAsync("111", "222","tDVW");
+        await grain.SetInfoAsync("111", "tDVW");
         dto = await grain.GetInfoAsync();
         dto.Data.Status.ShouldBe(ValidateStatus.Processing);
         result = await grain.NeedValidateAsync();
