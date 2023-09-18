@@ -245,7 +245,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         {
             var publicKey = _thirdPartOptions.Merchant.MerchantPublicKey.GetValueOrDefault(input.MerchantName);
             AssertHelper.NotEmpty(publicKey, "Invalid merchantName");
-            AssertHelper.NotEmpty(input.Signature, "Empty iput signature");
+            AssertHelper.NotEmpty(input.Signature, "Empty input signature");
             var rawData = ThirdPartHelper.ConvertObjectToSortedString(input, MerchantSignatureHelper.SignatureField);
             var signatureValid = MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, rawData);
             if (!signatureValid)
