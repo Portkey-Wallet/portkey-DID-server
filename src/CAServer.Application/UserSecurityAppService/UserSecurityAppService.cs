@@ -128,16 +128,22 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     {
         try
         {
-            var guardianCount = 0;
+            var guardianSet = new HashSet<string>();
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
                 var info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
                     chainInfo.Value.ChainId);
-                if (info?.GuardianList?.Guardians?.Count > 0) guardianCount += info.GuardianList.Guardians.Count;
+                if (info?.GuardianList?.Guardians?.Count > 0)
+                {
+                    foreach (var guardian in info.GuardianList.Guardians)
+                    {
+                        guardianSet.AddIfNotContains(guardian.VerifierId.ToHex());
+                    }
+                }
             }
 
-            _logger.LogDebug("CaHash: {caHash} have {COUNT} guardianCount.", input.CaHash, guardianCount);
-            if (guardianCount > 1) return new TokenBalanceTransferCheckAsyncResultDto();
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} guardianCount.", input.CaHash, guardianSet.Count);
+            if (guardianSet.Count > 1) return new TokenBalanceTransferCheckAsyncResultDto();
 
             var assert = await GetUserAssetsAsync(input.CaHash);
             _logger.LogDebug("CaHash: {caHash} have {COUNT} token assert.", input.CaHash,
