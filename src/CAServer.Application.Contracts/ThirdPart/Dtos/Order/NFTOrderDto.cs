@@ -41,7 +41,6 @@ public class NftOrderQueryResponseDto : NftMerchantBaseDto
 {
     public string NftSymbol { get; set; }
     public string MerchantOrderId { get; set; }
-    public string WebhookUrl { get; set; }
     public string NftPicture { get; set; }
     public string PriceSymbol { get; set; }
     public string PriceAmount { get; set; }

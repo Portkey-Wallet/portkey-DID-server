@@ -45,8 +45,8 @@ public enum NftOrderWebhookStatus
 ///                                                                              \- TransferFailed                                       \- PaymentFailed
 /// 
 ///     nft-buy:   Initialized - Created - Pending - StartTransfer - Transferred - Finish
-///                                    (user pay success)         \- TransferFailed - Failed
-/// 
+///                                   \    (user pay success)     \- TransferFailed - Failed
+///                                    \-  Failed,Expired
 /// </summary>
 public enum OrderStatusType
 {

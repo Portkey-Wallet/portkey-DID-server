@@ -199,6 +199,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var orderQueryResponseDto =
                 _objectMapper.Map<NftOrderSectionDto, NftOrderQueryResponseDto>(nftOrderSection);
             orderQueryResponseDto.Status = orderDto.Status;
+            orderQueryResponseDto.PriceSymbol = orderDto.Crypto;
+            orderQueryResponseDto.PriceAmount = orderDto.CryptoAmount;
 
             // sign response
             _thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
