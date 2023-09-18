@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nest;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -240,14 +241,26 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public void VerifyMerchantSignature(NftMerchantBaseDto input)
     {
-        var publicKey = _thirdPartOptions.Merchant.MerchantPublicKey.GetValueOrDefault(input.MerchantName);
-        AssertHelper.NotEmpty(publicKey, "Invalid merchantName");
-        AssertHelper.NotEmpty(input.Signature, "Empty iput signature");
-        var rawData = ThirdPartHelper.ConvertObjectToSortedString(input, MerchantSignatureHelper.SignatureField);
-        var signatureValid = MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, rawData);
-        if (!signatureValid)
-            _logger.LogWarning("Verify merchant {Name} signature failed, inputSignature={Signature}, rawData={RawData}",
-                input.MerchantName, input.Signature, rawData);
-        AssertHelper.IsTrue(signatureValid, "Invalid merchant signature");
+        try
+        {
+            var publicKey = _thirdPartOptions.Merchant.MerchantPublicKey.GetValueOrDefault(input.MerchantName);
+            AssertHelper.NotEmpty(publicKey, "Invalid merchantName");
+            AssertHelper.NotEmpty(input.Signature, "Empty iput signature");
+            var rawData = ThirdPartHelper.ConvertObjectToSortedString(input, MerchantSignatureHelper.SignatureField);
+            var signatureValid = MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, rawData);
+            if (!signatureValid)
+                _logger.LogWarning("Verify merchant {Name} signature failed, inputSignature={Signature}, rawData={RawData}",
+                    input.MerchantName, input.Signature, rawData);
+            AssertHelper.IsTrue(signatureValid, "Invalid merchant signature");
+        }
+        catch (UserFriendlyException e)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Verify merchant signature failed");
+            throw new UserFriendlyException("Verify merchant signature failed");
+        }
     }
 }
