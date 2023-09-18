@@ -31,6 +31,10 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         var caAddressListMain = new List<string>();
         var caHashListSide = new List<string>();
         var caHashListBoth = new List<string>();
+        var balanceAll = new List<BalanceInfo>();
+        var balanceBoth = new List<BalanceInfo>();
+        var balanceMain = new List<BalanceInfo>();
+        var balanceSide = new List<BalanceInfo>();
 
         var tokenInfoMain = await GetUserTokenInfoAsync("AELF", "ELF", 0, 10000);
         var mainList = tokenInfoMain.CaHolderTokenBalanceInfo.Data;
@@ -46,6 +50,12 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
             if (data.Balance <= 0) continue;
 
             caAddressListMain.Add(data.CaAddress);
+            balanceAll.Add(new BalanceInfo()
+            {
+                ChainId = data.ChainId,
+                CaAddress = data.CaAddress,
+                Balance = data.Balance
+            });
         }
 
         foreach (var data in sideList)
@@ -53,6 +63,12 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
             if (data.Balance <= 0) continue;
 
             caHashListSide.Add(data.CaAddress);
+            balanceAll.Add(new BalanceInfo()
+            {
+                ChainId = data.ChainId,
+                CaAddress = data.CaAddress,
+                Balance = data.Balance
+            });
         }
 
         Logger.LogInformation("main chain total count: {count}", caAddressListMain.Distinct().ToList().Count);
@@ -66,6 +82,11 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
             foreach (var holder in mainHolders.CaHolderInfo)
             {
                 caHashListMain.Add(holder.CaHash);
+                var bal = balanceAll.FirstOrDefault(t => t.CaAddress == holder.CaAddress);
+                if (bal != null)
+                {
+                    bal.CaHash = holder.CaHash;
+                }
             }
         }
 
@@ -78,36 +99,52 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         foreach (var holder in sideHolders.CaHolderInfo)
         {
             caHashListSide.Add(holder.CaHash);
+
+            var bal = balanceAll.FirstOrDefault(t => t.CaAddress == holder.CaAddress);
+            if (bal != null)
+            {
+                bal.CaHash = holder.CaHash;
+            }
         }
 
         Logger.LogInformation("main chain caHash count: {count}", caHashListMain.Distinct().ToList().Count);
         Logger.LogInformation("side chain caHash count: {count}", caHashListSide.Distinct().ToList().Count);
-        
+
         caHashListBoth = caHashListMain.Intersect(caHashListSide).ToList();
         caHashListMain.RemoveAll(caHashListBoth);
         caHashListSide.RemoveAll(caHashListBoth);
-        
+
         Logger.LogInformation("both chain count: {count}", caHashListBoth.Distinct().ToList().Count);
         Logger.LogInformation("main chain count: {count}", caHashListMain.Distinct().ToList().Count);
         Logger.LogInformation("side chain count: {count}", caHashListSide.Distinct().ToList().Count);
         
-         Logger.LogInformation("======both=====");
-         foreach (var hash in caHashListBoth.Distinct().ToList())
-         {
-             Console.WriteLine(hash);
-         }
+        Logger.LogInformation("======both=====");
+        foreach (var hash in caHashListBoth.Distinct().ToList())
+        {
+            var both = balanceAll.Where(t => t.CaHash == hash).ToList().OrderBy(t => t.ChainId);
         
+            var builder = new StringBuilder($"{hash}");
+            foreach (var bal in both)
+            {
+                builder.Append($"\t\t{bal.ChainId}\t\t{Math.Round(GetBalanceInUsd(bal.Balance, 8), 6).ToString()}");
+            }
+        
+            Console.WriteLine(builder.ToString());
+        }
+
         Logger.LogInformation("======main=====");
-         foreach (var hash in caHashListMain.Distinct().ToList())
-         {
-             Console.WriteLine(hash);
-         }
+        foreach (var hash in caHashListMain.Distinct().ToList())
+        {
+            var bal = balanceAll.FirstOrDefault(t => t.CaHash == hash && t.ChainId == "AELF");
+            Console.WriteLine($"{hash}\t{Math.Round(GetBalanceInUsd(bal.Balance, 8), 6).ToString()}");
+        }
         
-         Logger.LogInformation("======side=====");
-         foreach (var hash in caHashListSide.Distinct().ToList())
-         {
-             Console.WriteLine(hash);
-         }
+        Logger.LogInformation("======side=====");
+        foreach (var hash in caHashListSide.Distinct().ToList())
+        {
+            var bal = balanceAll.FirstOrDefault(t => t.CaHash == hash && t.ChainId == "tDVV");
+            Console.WriteLine($"{hash}\t{Math.Round(GetBalanceInUsd(bal.Balance, 8), 6).ToString()}");
+        }
     }
 
     private async Task<IndexerTokenInfos> GetUserTokenInfoAsync(string chainId, string symbol,
@@ -144,4 +181,7 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
             }
         });
     }
+
+    public static decimal GetBalanceInUsd(long balance, int decimals) =>
+        (decimal)(balance / Math.Pow(10, decimals));
 }
