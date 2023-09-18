@@ -174,10 +174,10 @@ public class NftOrderProvider : INftOrderProvider, ISingletonDependency
     public async Task HandleUnCompletedNftOrderPayResultRefresh()
     {
         await using var handle =
-            await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + "HandleUnCompletedNftOrderPayResultNotify");
+            await _distributedLock.TryAcquireAsync(name: LockKeyPrefix + "HandleUnCompletedNftOrderPayResultRefresh");
         if (handle == null)
         {
-            _logger.LogError("HandleUnCompletedNftOrderPayResultNotify running, skip");
+            _logger.LogError("HandleUnCompletedNftOrderPayResultRefresh running, skip");
             return;
         }
 
