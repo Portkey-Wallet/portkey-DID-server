@@ -45,12 +45,12 @@ public class ChainInfoTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetHolder()
     {
-        var hash = Hash.LoadFromHex("bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf");
+        var hash = Hash.LoadFromHex("a0a96f0c4b45719091ede2634dc05b277df4c68c39e2a3465c0c38f61a7b67fa");
         var mainChain = await _contractProvider.GetHolderInfoAsync(hash, null, "AELF");
-        var sideChain = await _contractProvider.GetHolderInfoAsync(hash, null, "tDVV");
+        var sideChain = await _contractProvider.GetHolderInfoAsync(hash, null, "tDVW");
 
-        var m_root = mainChain.GuardiansMerkleTreeRoot;
-        var s_root = sideChain.GuardiansMerkleTreeRoot;
+        var m_root = mainChain.GuardianList;
+        var s_root = sideChain.GuardianList;
 
         var sss = "sss";
     }
@@ -66,17 +66,17 @@ public class ChainInfoTest : CAServerApplicationTestBase
                     ["AELF"] = new Grains.Grain.ApplicationHandler.ChainInfo()
                     {
                         ChainId = "AELF",
-                        BaseUrl = "http://192.168.66.61:8000",
-                        ContractAddress = "2imqjpkCwnvYzfnr61Lp2XQVN2JU17LPkA9AZzmRZzV5LRRWmR",
+                        BaseUrl = "http://192.168.67.18:8000",
+                        ContractAddress = "2u6Dd139bHvZJdZ835XnNKL5y6cxqzV9PEWD5fZdQXdFZLgevc",
                         PublicKey =
                             "0438ad713d76220ddfdac35e2b978f645cf254946d310b0e891201a7d8d36ef3341077d8a40b2fd79b1cfa91b3f3d675933d2ef761af9fa693cf2e36903404a32e",
                         IsMainChain = true
                     },
-                    ["tDVV"] = new Grains.Grain.ApplicationHandler.ChainInfo()
+                    ["tDVW"] = new Grains.Grain.ApplicationHandler.ChainInfo()
                     {
-                        ChainId = "tDVV",
-                        BaseUrl = "http://192.168.66.100:8000",
-                        ContractAddress = "UYdd84gLMsVdHrgkr3ogqe1ukhKwen8oj32Ks4J1dg6KH9PYC",
+                        ChainId = "tDVW",
+                        BaseUrl = "http://192.168.66.106:8000",
+                        ContractAddress = "2ptQUF1mm1cmF3v8uwB83iFCD46ynHLt4fxYoPNpCWRSBXwAEJ",
                         PublicKey =
                             "0438ad713d76220ddfdac35e2b978f645cf254946d310b0e891201a7d8d36ef3341077d8a40b2fd79b1cfa91b3f3d675933d2ef761af9fa693cf2e36903404a32e"
                     }
