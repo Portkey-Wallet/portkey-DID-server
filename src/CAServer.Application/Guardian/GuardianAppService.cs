@@ -104,6 +104,22 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 
+    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(List<string> identifierHashList)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardians = await _guardianRepository.GetListAsync(Filter);
+
+        var result = guardians.Item2.Where(t => t.IsDeleted == false).ToList();
+
+        return ObjectMapper.Map<List<GuardianIndex>, List<GuardianIndexDto>>(result);
+    }
+
     private string GetHash(string guardianIdentifier)
     {
         if (string.IsNullOrWhiteSpace(guardianIdentifier)) return string.Empty;

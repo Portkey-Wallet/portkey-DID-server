@@ -1,0 +1,48 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CAServer.PrivacyPermission;
+using CAServer.PrivacyPermission.Dtos;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Volo.Abp;
+using Volo.Abp.Users;
+
+namespace CAServer.Controllers;
+
+[RemoteService]
+[Area("app")]
+[ControllerName("PrivacyPermission")]
+[Microsoft.AspNetCore.Components.Route("api/app/privacypermission")]
+[Authorize]
+public class PrivacyPermissionController
+{
+    private readonly IPrivacyPermissionAppService _privacyPermissionAppService;
+    
+    public PrivacyPermissionController(IPrivacyPermissionAppService privacyPermissionAppService)
+    {
+        _privacyPermissionAppService = privacyPermissionAppService;
+    }
+    
+    [HttpGet]
+    public async Task<GetPrivacyPermissionAsyncResponseDto> GetPrivacyPermissionAsync()
+    {
+        var  privacyPermissionDto = await _privacyPermissionAppService.GetPrivacyPermissionAsync();
+        var permissions = new List<PermissionSetting>();
+        permissions.AddRange(privacyPermissionDto.PhoneList);
+        permissions.AddRange(privacyPermissionDto.EmailList);
+        permissions.AddRange(privacyPermissionDto.AppleList);
+        permissions.AddRange(privacyPermissionDto.GoogleList);
+        return new GetPrivacyPermissionAsyncResponseDto
+        {
+            Permissions =  permissions,
+            UserId = privacyPermissionDto.UserId,
+            Id = privacyPermissionDto.Id
+        };
+    }
+
+    [HttpPost]
+    public async Task SetPrivacyPermissionAsync(SetPrivacyPermissionInput input)
+    {
+        await _privacyPermissionAppService.SetPrivacyPermissionAsync(input);
+    }
+}
