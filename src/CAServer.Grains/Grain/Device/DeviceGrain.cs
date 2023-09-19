@@ -1,11 +1,20 @@
 using System.Security.Cryptography;
+using CAServer.Grains.Grain.Account;
 using CAServer.Grains.State.Device;
+using Microsoft.Extensions.Options;
 using Orleans;
 
 namespace CAServer.Grains.Grain.Device;
 
 public class DeviceGrain : Grain<DeviceState>, IDeviceGrain
 {
+    private readonly CAAccountOption _caAccountOption;
+
+    public DeviceGrain(IOptionsSnapshot<CAAccountOption> caAccountOption)
+    {
+        _caAccountOption = caAccountOption.Value;
+    }
+
     public override async Task OnActivateAsync()
     {
         await ReadStateAsync();
@@ -20,6 +29,10 @@ public class DeviceGrain : Grain<DeviceState>, IDeviceGrain
 
     public async Task<string> GetOrGenerateSaltAsync()
     {
+        var caAccountRequestInfoMaxLength = _caAccountOption.CAAccountRequestInfoMaxLength;
+        var caAccountRequestInfoExpirationTime = _caAccountOption.CAAccountRequestInfoExpirationTime;
+        await Console.Out.WriteAsync(caAccountRequestInfoExpirationTime+"<__>"+caAccountRequestInfoMaxLength);
+        
         if (State.Salt.IsNullOrWhiteSpace())
         {
             State.Salt = GenerateSalt(DeviceGrainConstants.RandomSaltSize);
