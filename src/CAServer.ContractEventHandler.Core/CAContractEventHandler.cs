@@ -25,7 +25,10 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
     {
         try
         {
+<<<<<<< HEAD
             // CreateHolderInfo can take a long time
+=======
+>>>>>>> 16821207081f029610be158d90b833afd018b9a4
             _ = _contractAppService.CreateHolderInfoAsync(eventData);
         }
         catch (Exception e)
@@ -39,8 +42,12 @@ public class CAContractEventHandler : IDistributedEventHandler<AccountRegisterCr
     {
         try
         {
+<<<<<<< HEAD
             // SocialRecovery can take a long time
             _ = _contractAppService.SocialRecoveryAsync(eventData);
+=======
+            _ =  _contractAppService.SocialRecoveryAsync(eventData);
+>>>>>>> 16821207081f029610be158d90b833afd018b9a4
         }
         catch (Exception e)
         {

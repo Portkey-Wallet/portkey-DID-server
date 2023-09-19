@@ -245,7 +245,10 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("Recovery state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
+<<<<<<< HEAD
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
+=======
+>>>>>>> 16821207081f029610be158d90b833afd018b9a4
         _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "");
     }
 
