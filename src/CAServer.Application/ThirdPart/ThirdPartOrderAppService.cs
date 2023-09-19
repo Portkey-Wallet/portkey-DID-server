@@ -103,10 +103,10 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             orderGrainData.Status = OrderStatusType.Initialized.ToString();
             orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
-            var decimalsList = await _activityProvider.GetTokenDecimalsAsync(input.PriceSymbol);
+            var decimalsList = await _activityProvider.GetTokenDecimalsAsync(input.PaymentSymbol);
             AssertHelper.NotEmpty(decimalsList?.TokenInfo, "Price symbol of {PriceSymbol} decimal not found",
-                input.PriceSymbol);
-            AssertHelper.IsTrue(double.TryParse(input.PriceAmount, out var priceAmount), "Invalid priceAmount");
+                input.PaymentSymbol);
+            AssertHelper.IsTrue(double.TryParse(input.PaymentAmount, out var priceAmount), "Invalid priceAmount");
             orderGrainData.CryptoPrice =
                 (priceAmount / Math.Pow(10, decimalsList.TokenInfo[0].Decimals)).ToString(CultureInfo.InvariantCulture);
 
@@ -199,8 +199,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var orderQueryResponseDto =
                 _objectMapper.Map<NftOrderSectionDto, NftOrderQueryResponseDto>(nftOrderSection);
             orderQueryResponseDto.Status = orderDto.Status;
-            orderQueryResponseDto.PriceSymbol = orderDto.Crypto;
-            orderQueryResponseDto.PriceAmount = orderDto.CryptoAmount;
+            orderQueryResponseDto.PaymentSymbol = orderDto.Crypto;
+            orderQueryResponseDto.PaymentAmount = orderDto.CryptoAmount;
 
             // sign response
             _thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);

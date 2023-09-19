@@ -84,8 +84,8 @@ public partial class NftOrderTest : ThirdPartTestBase
             MerchantName = MerchantName,
             MerchantOrderId = orderId,
             WebhookUrl = "http://127.0.0.1:9200/myWebhook",
-            PriceSymbol = "ELF",
-            PriceAmount = "100000000",
+            PaymentSymbol = "ELF",
+            PaymentAmount = "100000000",
             CaHash = caHash
         };
         input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
@@ -118,8 +118,8 @@ public partial class NftOrderTest : ThirdPartTestBase
             MerchantName = MerchantName,
             MerchantOrderId = orderId,
             WebhookUrl = "http://127.0.0.1:9200/myWebhook",
-            PriceSymbol = "ELF",
-            PriceAmount = "100000000",
+            PaymentSymbol = "ELF",
+            PaymentAmount = "100000000",
             CaHash = caHash
         };
         input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
@@ -287,8 +287,8 @@ public partial class NftOrderTest : ThirdPartTestBase
             MerchantName = MerchantName,
             MerchantOrderId = orderId,
             WebhookUrl = "http://127.0.0.1:9200/myWebhookFail",
-            PriceSymbol = "ELF",
-            PriceAmount = "100000000",
+            PaymentSymbol = "ELF",
+            PaymentAmount = "100000000",
             CaHash = caHash
         };
         input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
