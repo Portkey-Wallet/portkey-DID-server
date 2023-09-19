@@ -2,16 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Grain.Tests;
-using CAServer.Grains;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
-using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Security;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.Provider;
+using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
-using Mongo2Go;
-using Moq;
-using Orleans;
+using NSubstitute;
 using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Users;
@@ -44,7 +42,11 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockTokenPriceExpirationTimeOptions());
         services.AddSingleton(GetMockClusterClient());
         services.AddSingleton(GetMockTokenPriceGrain());
-
+        var graphQlHelper = Substitute.For<IGraphQLHelper>();
+        var graphQlClient = Substitute.For<IGraphQLClient>();
+        services.AddSingleton(graphQlClient);
+        services.AddSingleton(graphQlHelper);
+        services.AddSingleton(GetMockITokenProvider());
     }
 
     [Fact]
@@ -53,13 +55,13 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         var symbols = new List<string>();
         var resultNullParam = await _tokenAppService.GetTokenPriceListAsync(symbols);
         resultNullParam.Items.Count.ShouldBe(0);
-        
+
         symbols.Add(Symbol);
         var result = await _tokenAppService.GetTokenPriceListAsync(symbols);
         result.Items.Count.ShouldBe(1);
         result.Items.First().Symbol.ShouldBe(Symbol);
     }
-    
+
     [Fact]
     public async Task GetContractAddressAsync()
     {
@@ -68,6 +70,47 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         data.ContractName.ShouldBe("test");
         data.MainChainAddress.ShouldBe("test");
         data.SideChainAddress.ShouldBe("test");
+    }
 
+    [Fact]
+    public async Task GetTokenListAsyncAsyncTest()
+    {
+        var tokenInfo = await _tokenAppService.GetTokenListAsync(new GetTokenListRequestDto()
+        {
+            Symbol = "C",
+            ChainIds = new List<string>() { "AELF", "tDVV" }
+        });
+
+        tokenInfo.Count.ShouldNotBe(0);
+        tokenInfo?.Where(t=>t.Symbol.Contains("C")).Count().ShouldNotBe(0);
+    }
+
+    [Fact]
+    public async Task GetTokenInfoAsyncTest()
+    {
+        var tokenInfo = await _tokenAppService.GetTokenInfoAsync("AELF", "CPU");
+        tokenInfo.Symbol.ShouldBe("CPU");
+    }
+
+    [Fact]
+    public async Task GetTokenInfoAsync_Search_From_GraphQL_Test()
+    {
+        var token = new IndexerToken()
+        {
+            Id = "AELF-CPU",
+            Symbol = "CPU",
+            ChainId = "AELF",
+            Decimals = 8,
+            BlockHash = string.Empty,
+            BlockHeight = 0,
+            Type = string.Empty,
+            TokenContractAddress = string.Empty,
+            TokenName = "CPU",
+            TotalSupply = 100000,
+            Issuer = string.Empty,
+            IsBurnable = false,
+            IssueChainId = 1264323
+        };
+        var tokenInfo = await _tokenAppService.GetTokenInfoAsync("AELF", "VOTE");
     }
 }

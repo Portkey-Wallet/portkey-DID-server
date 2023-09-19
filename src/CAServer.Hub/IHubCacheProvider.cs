@@ -86,8 +86,8 @@ public class HubCacheProvider : IHubCacheProvider, ISingletonDependency
     {
         var requestCacheKey = MakeResponseCacheKey(requestId);
         var clientCacheKey = MakeClientCacheKey(clientId);
-        _cacheProvider.HashDelete(clientCacheKey, requestId);
-        _cacheProvider.Delete(requestCacheKey);
+        await _cacheProvider.HashDeleteAsync(clientCacheKey, requestId);
+        await _cacheProvider.Delete(requestCacheKey);
     }
 
     private string MakeResponseCacheKey(string requestId)

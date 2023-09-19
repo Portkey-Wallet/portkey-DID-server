@@ -7,6 +7,7 @@ public class ActivityBase
     public string TransactionId { get; set; }
     public string BlockHash { get; set; }
     public string TransactionType { get; set; }
+    public string TransactionName { get; set; }
     public string Amount { get; set; }
     public string Symbol { get; set; }
     public string Decimals { get; set; }

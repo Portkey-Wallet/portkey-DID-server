@@ -9,9 +9,6 @@ using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Security;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.DependencyInjection;
-using Mongo2Go;
-using Moq;
-using Orleans;
 using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Users;
@@ -44,7 +41,7 @@ public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockTokenPriceExpirationTimeOptions());
         services.AddSingleton(GetMockTokenPriceSnapshotClusterClient());
         services.AddSingleton(GetMockTokenPriceSnapshotGrain());
-
+        services.AddSingleton(GetMockIGraphQLHelper());
     }
     
     [Fact]

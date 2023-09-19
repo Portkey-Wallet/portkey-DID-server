@@ -30,7 +30,7 @@ public class MockCacheProvider : ICacheProvider
         return Task.CompletedTask;
     }
 
-    public Task<bool> HashDelete(string key, string member)
+    public Task<bool> HashDeleteAsync(string key, string member)
     {
         if (_localHashMapCache.TryGetValue(key, out var m))
         {

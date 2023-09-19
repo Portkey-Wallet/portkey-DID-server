@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch.Options;
+using CAServer.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -17,27 +19,32 @@ public class SearchAppService : CAServerAppService, ISearchAppService
 {
     private readonly IEnumerable<ISearchService> _esServices;
     private readonly IndexSettingOptions _indexSettingOptions;
+    private readonly EsIndexBlacklistOptions _esIndexBlacklistOptions;
 
     public SearchAppService(IEnumerable<ISearchService> esServices,
-        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions)
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions,
+        IOptionsSnapshot<EsIndexBlacklistOptions> esIndexBlacklistOptions)
     {
         _esServices = esServices;
         _indexSettingOptions = indexSettingOptions.Value;
+        _esIndexBlacklistOptions = esIndexBlacklistOptions.Value;
     }
 
     public async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
     {
         try
         {
+            CheckBlacklist(indexName);
             var indexPrefix = _indexSettingOptions.IndexPrefix.ToLower();
             var index = $"{indexPrefix}.{indexName}";
+            
             var esService = _esServices.FirstOrDefault(e => e.IndexName == index);
             if (input.MaxResultCount > 1000)
             {
                 input.MaxResultCount = 1000;
             }
 
-            if (index.Equals($"{indexPrefix}.usertokenindex") || 
+            if (index.Equals($"{indexPrefix}.usertokenindex") ||
                 index.Equals($"{indexPrefix}.contactindex") ||
                 index.Equals($"{indexPrefix}.caholderindex"))
             {
@@ -48,7 +55,7 @@ public class SearchAppService : CAServerAppService, ISearchAppService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            Logger.LogError("Search from es error.", e);
             throw;
         }
     }
@@ -63,5 +70,13 @@ public class SearchAppService : CAServerAppService, ISearchAppService
         var userId = CurrentUser.GetId();
         filter = filter.IsNullOrEmpty() ? $"userId:{userId.ToString()}" : $"{filter} && userId:{userId.ToString()}";
         return Task.FromResult(filter);
+    }
+
+    private void CheckBlacklist(string indexName)
+    {
+        if (_esIndexBlacklistOptions.Indexes.Contains(indexName))
+        {
+            throw new UserFriendlyException("Not allowed.");
+        }
     }
 }

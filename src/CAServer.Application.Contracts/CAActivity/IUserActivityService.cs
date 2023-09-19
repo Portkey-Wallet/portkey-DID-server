@@ -8,6 +8,8 @@ namespace CAServer.CAActivity;
 
 public interface IUserActivityAppService:IApplicationService
 {
+    Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetTwoCaTransactionRequestDto request);
     Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto request);
     Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request);
+    Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto requestDto);
 }

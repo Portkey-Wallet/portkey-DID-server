@@ -22,6 +22,12 @@ public class UserActivityController
         _userActivityAppService = userActivityAppService;
     }
 
+    [HttpPost("transactions")]
+    public async Task<GetActivitiesDto> GetTransactionsAsync(GetTwoCaTransactionRequestDto requestDto)
+    {
+        return await _userActivityAppService.GetTwoCaTransactionsAsync(requestDto);
+    }
+
     [HttpPost("activities")]
     public async Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto requestDto)
     {
@@ -33,4 +39,14 @@ public class UserActivityController
     {
         return await _userActivityAppService.GetActivityAsync(requestDto);
     }
-}
+    
+    [AllowAnonymous]
+    [HttpGet("getCaHolderCreateTime")]
+    public async Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto requestDto)
+    {
+        return await _userActivityAppService.GetCaHolderCreateTimeAsync(requestDto);
+    }
+    
+    
+    
+}   

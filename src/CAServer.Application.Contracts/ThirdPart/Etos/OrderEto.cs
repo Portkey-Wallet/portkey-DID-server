@@ -13,6 +13,9 @@ public class OrderEto
     public string Address { get; set; }
     public string Crypto { get; set; }
     public string CryptoPrice { get; set; }
+    public string ThirdPartOrderNo { get; set; }
+    public string Network { get; set; }
+    public string CryptoAmount { get; set; }
     public string Fiat { get; set; }
     public string FiatAmount { get; set; }
     public string Status { get; set; }
@@ -27,4 +30,6 @@ public class OrderEto
     // sell order
     public string ReceivingMethod { get; set; }
     public string ReceiptTime { get; set; }
+    
+    public string TransactionId { get; set; }
 }

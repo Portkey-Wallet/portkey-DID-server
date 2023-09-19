@@ -2,6 +2,7 @@
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Signature;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans;
 using Volo.Abp.AutoMapper;
@@ -18,13 +19,15 @@ namespace CAServer.Grain.Tests;
     typeof(CAServerCoinGeckoApiModule),
     typeof(AbpCachingModule),
     typeof(AbpAutoMapperModule),
-    typeof(AbpObjectMappingModule)
+    typeof(AbpObjectMappingModule),
+    typeof(CAServerSignatureModule)
 )]
 public class CAServerGrainTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         context.Services.AddSingleton<IClusterClient>(sp => sp.GetService<ClusterFixture>().Cluster.Client);
+        context.Services.AddHttpClient();
         context.Services.Configure<CoinGeckoOptions>(o => { o.CoinIdMapping["ELF"] = "aelf"; });
         context.Services.Configure<CAAccountOption>(o =>
         {
@@ -32,5 +35,4 @@ public class CAServerGrainTestModule : AbpModule
             o.CAAccountRequestInfoExpirationTime = 1;
         });
     }
-
 }

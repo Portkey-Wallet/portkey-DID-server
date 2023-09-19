@@ -3,10 +3,12 @@ using System.IO;
 using System.Linq;
 using CAServer.Grains;
 using CAServer.Hub;
+using CAServer.Hubs;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
+using CAServer.Signature;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -63,8 +65,11 @@ public class CAServerHttpApiHostModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<RealIpOptions>(configuration.GetSection("RealIp"));
+        Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
-
+        Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
+        Configure<ContactOptions>(configuration.GetSection("Contact"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -88,24 +93,24 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
-        if (hostingEnvironment.IsDevelopment())
-        {
-            Configure<AbpVirtualFileSystemOptions>(options =>
-            {
-                options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainSharedModule>(
-                    Path.Combine(hostingEnvironment.ContentRootPath,
-                        $"..{Path.DirectorySeparatorChar}CAServer.Domain.Shared"));
-                options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainModule>(
-                    Path.Combine(hostingEnvironment.ContentRootPath,
-                        $"..{Path.DirectorySeparatorChar}CAServer.Domain"));
-                options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationContractsModule>(
-                    Path.Combine(hostingEnvironment.ContentRootPath,
-                        $"..{Path.DirectorySeparatorChar}CAServer.Application.Contracts"));
-                options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationModule>(
-                    Path.Combine(hostingEnvironment.ContentRootPath,
-                        $"..{Path.DirectorySeparatorChar}CAServer.Application"));
-            });
-        }
+        // if (hostingEnvironment.IsDevelopment())
+        // {
+        //     Configure<AbpVirtualFileSystemOptions>(options =>
+        //     {
+        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainSharedModule>(
+        //             Path.Combine(hostingEnvironment.ContentRootPath,
+        //                 $"..{Path.DirectorySeparatorChar}CAServer.Domain.Shared"));
+        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainModule>(
+        //             Path.Combine(hostingEnvironment.ContentRootPath,
+        //                 $"..{Path.DirectorySeparatorChar}CAServer.Domain"));
+        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationContractsModule>(
+        //             Path.Combine(hostingEnvironment.ContentRootPath,
+        //                 $"..{Path.DirectorySeparatorChar}CAServer.Application.Contracts"));
+        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationModule>(
+        //             Path.Combine(hostingEnvironment.ContentRootPath,
+        //                 $"..{Path.DirectorySeparatorChar}CAServer.Application"));
+        //     });
+        // }
     }
 
     private void ConfigureConventionalControllers()
@@ -197,26 +202,7 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         Configure<AbpLocalizationOptions>(options =>
         {
-            options.Languages.Add(new LanguageInfo("ar", "ar", "العربية"));
-            options.Languages.Add(new LanguageInfo("cs", "cs", "Čeština"));
             options.Languages.Add(new LanguageInfo("en", "en", "English"));
-            options.Languages.Add(new LanguageInfo("en-GB", "en-GB", "English (UK)"));
-            options.Languages.Add(new LanguageInfo("fi", "fi", "Finnish"));
-            options.Languages.Add(new LanguageInfo("fr", "fr", "Français"));
-            options.Languages.Add(new LanguageInfo("hi", "hi", "Hindi", "in"));
-            options.Languages.Add(new LanguageInfo("is", "is", "Icelandic", "is"));
-            options.Languages.Add(new LanguageInfo("it", "it", "Italiano", "it"));
-            options.Languages.Add(new LanguageInfo("ro-RO", "ro-RO", "Română"));
-            options.Languages.Add(new LanguageInfo("hu", "hu", "Magyar"));
-            options.Languages.Add(new LanguageInfo("pt-BR", "pt-BR", "Português"));
-            options.Languages.Add(new LanguageInfo("ru", "ru", "Русский"));
-            options.Languages.Add(new LanguageInfo("sk", "sk", "Slovak"));
-            options.Languages.Add(new LanguageInfo("tr", "tr", "Türkçe"));
-            options.Languages.Add(new LanguageInfo("zh-Hans", "zh-Hans", "简体中文"));
-            options.Languages.Add(new LanguageInfo("zh-Hant", "zh-Hant", "繁體中文"));
-            options.Languages.Add(new LanguageInfo("de-DE", "de-DE", "Deutsch", "de"));
-            options.Languages.Add(new LanguageInfo("es", "es", "Español", "es"));
-            options.Languages.Add(new LanguageInfo("el", "el", "Ελληνικά"));
         });
     }
 
@@ -308,7 +294,10 @@ public class CAServerHttpApiHostModule : AbpModule
         }
 
         app.UseAuthorization();
-
+        if (!env.IsDevelopment())
+        {
+            app.UseMiddleware<RealIpMiddleware>();
+        }
         if (env.IsDevelopment())
         {
             app.UseSwagger();

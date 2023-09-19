@@ -5,8 +5,6 @@ namespace CAServer.Contacts;
 
 public class ValidAddressesAttribute : ValidationAttribute
 {
-    private static int MaxAddressesCount { get; set; } = 5;
-
     protected override ValidationResult IsValid(
         object value, ValidationContext validationContext)
     {
@@ -21,13 +19,6 @@ public class ValidAddressesAttribute : ValidationAttribute
         {
             return new ValidationResult(
                 $"{validationContext.DisplayName} can not be null or empty!",
-                new[] { validationContext.DisplayName });
-        }
-
-        if (asddresses.Count > MaxAddressesCount)
-        {
-            return new ValidationResult(
-                "Too many addresses!",
                 new[] { validationContext.DisplayName });
         }
 

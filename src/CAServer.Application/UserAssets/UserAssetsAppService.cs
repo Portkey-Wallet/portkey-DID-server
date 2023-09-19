@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
@@ -11,7 +12,7 @@ using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans.Runtime;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Users;
@@ -30,11 +31,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IUserContactProvider _userContactProvider;
     private readonly TokenInfoOptions _tokenInfoOptions;
     private readonly IImageProcessProvider _imageProcessProvider;
+    private readonly ChainOptions _chainOptions;
+    private readonly IContractProvider _contractProvider;
+    private const int MaxResultCount = 10;
+    private readonly SeedImageOptions _seedImageOptions;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
-        IImageProcessProvider imageProcessProvider)
+        IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
+        IContractProvider contractProvider, IOptionsSnapshot<SeedImageOptions> seedImageOptions)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -42,6 +48,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenInfoOptions = tokenInfoOptions.Value;
         _tokenAppService = tokenAppService;
         _imageProcessProvider = imageProcessProvider;
+        _contractProvider = contractProvider;
+        _seedImageOptions = seedImageOptions.Value;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -220,14 +229,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 var nftCollection =
                     ObjectMapper.Map<IndexerNftCollectionInfo, NftCollection>(nftCollectionInfo);
-                if (nftCollectionInfo == null || nftCollectionInfo.NftCollectionInfo == null)
+                if (nftCollectionInfo?.NftCollectionInfo == null)
                 {
                     dto.Data.Add(nftCollection);
                 }
                 else
                 {
-                    nftCollection.ImageUrl = _imageProcessProvider.GetResizeImage(
-                        nftCollectionInfo.NftCollectionInfo.ImageUrl, requestDto.Width, requestDto.Height);
+                    var isInSeedOption = _seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var imageUrl);
+                    var image = isInSeedOption ? imageUrl : nftCollectionInfo.NftCollectionInfo.ImageUrl;
+                    nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
+                        image, requestDto.Width, requestDto.Height,
+                        ImageResizeType.Forest);
                     dto.Data.Add(nftCollection);
                 }
             }
@@ -279,9 +291,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
                 nftItem.ImageUrl =
-                    _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height);
-                nftItem.ImageLargeUrl = _imageProcessProvider.GetResizeImage(nftInfo.NftInfo.ImageUrl,
-                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO);
+                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
+                        requestDto.Height,
+                        ImageResizeType.Forest);
+                nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
+                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
+                    ImageResizeType.Forest);
 
                 dto.Data.Add(nftItem);
             }
@@ -503,8 +518,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
 
                     item.NftInfo.ImageUrl =
-                        _imageProcessProvider.GetResizeImage(searchItem.NftInfo.ImageUrl, requestDto.Width,
-                            requestDto.Height);
+                        await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl, requestDto.Width,
+                            requestDto.Height, ImageResizeType.Forest);
                 }
 
                 dto.Data.Add(item);
@@ -533,6 +548,55 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         return dto;
     }
 
+    public async Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto)
+    {
+        var caAddress = new List<string>
+        {
+            requestDto.CaAddress
+        };
+        var result = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddress);
+        if (result == null || result.CaHolderManagerInfo.IsNullOrEmpty())
+        {
+            return new TokenInfoDto();
+        }
+
+        var caHash = result.CaHolderManagerInfo.First().CaHash;
+        var caAddressInfos = new List<CAAddressInfo>();
+        foreach (var chainInfo in _chainOptions.ChainInfos)
+        {
+            try
+            {
+                var output =
+                    await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
+                caAddressInfos.Add(new CAAddressInfo
+                {
+                    ChainId = chainInfo.Key,
+                    CaAddress = output.CaAddress.ToBase58()
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "GetTokenBalanceAsync Error. CaAddress is {CaAddress}", requestDto.CaAddress);
+            }
+        }
+
+        if (caAddressInfos.IsNullOrEmpty())
+        {
+            _logger.LogDebug("No caAddressInfos. CaAddress is {CaAddress}", requestDto.CaAddress);
+            return new TokenInfoDto();
+        }
+
+        var res = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, requestDto.Symbol,
+            0, MaxResultCount);
+        var resCaHolderTokenBalanceInfo = res.CaHolderTokenBalanceInfo.Data;
+        var totalBalance = resCaHolderTokenBalanceInfo.Sum(tokenInfo => tokenInfo.Balance);
+
+        return new TokenInfoDto
+        {
+            Balance = totalBalance.ToString()
+        };
+    }
+
     private async Task<Dictionary<string, decimal>> GetSymbolPrice(List<string> symbols)
     {
         try
@@ -556,5 +620,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "get symbols price failed, symbol={symbols}", symbols);
             return new Dictionary<string, decimal>();
         }
+    }
+
+    private string GetImageUrlSuffix(string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return null;
+        }
+
+        var imageUrlArray = imageUrl.Split(".");
+        return imageUrlArray[^1].ToLower();
     }
 }

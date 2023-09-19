@@ -12,4 +12,6 @@ public interface IVerifierAppService
     public Task<VerificationCodeResponse> VerifyGoogleTokenAsync(VerifyTokenRequestDto requestDto);
     public Task<VerificationCodeResponse> VerifyAppleTokenAsync(VerifyTokenRequestDto requestDto);
     public Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress);
+    public Task<bool> GuardianExistsAsync(string guardianIdentifier);
+    public Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId);
 }

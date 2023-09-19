@@ -11,6 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/")]
+[IgnoreAntiforgeryToken]
 public class ThirdPartOrderController : CAServerController
 {
     private readonly IAlchemyOrderAppService _alchemyOrderService;
@@ -26,8 +27,7 @@ public class ThirdPartOrderController : CAServerController
 
     [Authorize]
     [HttpGet("orders")]
-    public async Task<OrdersDto> GetThirdPartOrdersAsync(
-        GetUserOrdersDto input)
+    public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
     }
@@ -45,6 +45,20 @@ public class ThirdPartOrderController : CAServerController
         AlchemyOrderUpdateDto input)
     {
         return await _alchemyOrderService.UpdateAlchemyOrderAsync(input);
+    }
+
+    [Authorize]
+    [HttpPost("alchemy/txHash")]
+    public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
+    {
+        await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
+    }
+    
+    [Authorize]
+    [HttpPost("alchemy/transaction")]
+    public async Task TransactionAsync(TransactionDto input)
+    {
+        await _alchemyOrderService.TransactionAsync(input);
     }
 }
 
@@ -70,14 +84,13 @@ public class AlchemyController : CAServerController
     }
 
     [HttpGet("fiatList")]
-    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync()
+    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemyFiatListAsync();
+        return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
     }
 
     [HttpGet("cryptoList")]
-    public async Task<AlchemyCryptoListDto> GetAchCryptoListAsync(
-        GetAlchemyCryptoListDto input)
+    public async Task<AlchemyCryptoListDto> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input);
     }

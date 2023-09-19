@@ -6,11 +6,13 @@ using CAServer.Orleans.TestBase;
 using CAServer.Search;
 using CAServer.Tokens;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 
 namespace CAServer.EntityEventHandler.Tests;
-
 
 [DependsOn(
     typeof(CAServerEntityEventHandlerCoreModule),
@@ -21,6 +23,7 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
         Configure<AbpAutoMapperOptions>(options =>
         {
             //Add all mappings defined in the assembly of the MyModule class
@@ -58,13 +61,7 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
         };
         tokenList.Add(token1);
         tokenList.Add(token2);
-        context.Services.Configure<TokenListOptions>(o =>
-        {
-            o.UserToken = tokenList;
-        });
-        context.Services.Configure<IndexSettingOptions>(o =>
-        {
-            o.IndexPrefix = "caserver";
-        });
+        context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
+        context.Services.Configure<IndexSettingOptions>(o => { o.IndexPrefix = "caservertest"; });
     }
 }

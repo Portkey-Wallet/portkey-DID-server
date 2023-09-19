@@ -6,14 +6,15 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
-using CAServer.Guardian;
 using CAServer.AccountValidator;
 using CAServer.Cache;
+using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Guardian;
 using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
@@ -21,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -41,6 +43,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
+    private readonly IContractProvider _contractProvider;
+
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -56,7 +60,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -67,6 +71,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _httpClientFactory = httpClientFactory;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
+        _contractProvider = contractProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -232,7 +237,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {
         var expire = TimeSpan.FromHours(_sendVerifierCodeRequestLimitOption.ExpireHours);
-        var countCacheItem = await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
+        var countCacheItem =
+            await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
         if (countCacheItem.HasValue)
         {
             return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
@@ -241,6 +247,43 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
         return await _cacheProvider.Increase(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress, 1,
             expire);
+    }
+
+    public async Task<bool> GuardianExistsAsync(string guardianIdentifier)
+    {
+        try
+        {
+            var resultDto = GetGuardian(guardianIdentifier);
+            return resultDto.Success;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetGuardian failed");
+            throw new UserFriendlyException(e.Message);
+        }
+    }
+
+    public async Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId)
+    {
+        GetVerifierServersOutput result;
+        try
+        {
+            result = await _contractProvider.GetVerifierServersListAsync(chainId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Get verifier server failed");
+            throw new UserFriendlyException(CAServerApplicationConsts.ChooseVerifierServerErrorMsg);
+        }
+
+        if (null == result || result.VerifierServers.Count == 0)
+        {
+            _logger.LogError("Get verifier server failed, result is null or empty");
+            throw new UserFriendlyException(CAServerApplicationConsts.ChooseVerifierServerErrorMsg);
+        }
+
+        var verifierServer = RandomHelper.GetRandomOfList(result.VerifierServers);
+        return _objectMapper.Map<VerifierServer, GetVerifierServerResponse>(verifierServer);
     }
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)

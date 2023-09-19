@@ -3,9 +3,11 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Cache;
 using CAServer.Options;
+using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Google;
@@ -17,6 +19,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private readonly ILogger<GoogleAppService> _logger;
     private readonly GoogleRecaptchaOptions _googleRecaptchaOption;
     private readonly IHttpClientFactory _httpClientFactory;
+    private const string CurrentVersion = "v1.3.0";
 
     public GoogleAppService(
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
@@ -33,26 +36,37 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
 
-    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress)
+    public async Task<bool> IsGoogleRecaptchaOpenAsync(string userIpAddress, OperationType type)
     {
         var cacheCount =
             await _cacheProvider.Get(SendVerifierCodeInterfaceRequestCountCacheKey + ":" + userIpAddress);
         if (cacheCount.IsNullOrEmpty)
         {
-            return false;
+            cacheCount = 0;
         }
+
         _logger.LogDebug("cacheItem is {item}, limit is {limit}", JsonConvert.SerializeObject(cacheCount),
             _sendVerifierCodeRequestLimitOptions.Limit);
-        if (int.TryParse(cacheCount, out var count))
+        if (!int.TryParse(cacheCount, out var count))
         {
-            return count >= _sendVerifierCodeRequestLimitOptions.Limit;
+            return false;
         }
-
-        return false;
+        return type switch
+        {
+            OperationType.CreateCAHolder => true,
+            _ => count >= _sendVerifierCodeRequestLimitOptions.Limit
+        };
     }
 
-    public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken)
+    public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken, PlatformType platformType)
     {
+        var platformTypeName = platformType.ToString();
+        var getSuccess = _googleRecaptchaOption.SecretMap.TryGetValue(platformTypeName, out var secret);
+        if (!getSuccess)
+        {
+            throw new UserFriendlyException("Google Recaptcha Secret Not Found");
+        }
+
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");
@@ -61,7 +75,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
 
         var content = new FormUrlEncodedContent(new[]
         {
-            new KeyValuePair<string, string>("secret", _googleRecaptchaOption.Secret),
+            new KeyValuePair<string, string>("secret", secret),
             new KeyValuePair<string, string>("response", recaptchaToken)
         });
         _logger.LogDebug("VerifyGoogleRecaptchaToken content is {content}", content.ToString());

@@ -1,14 +1,13 @@
-using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using CAServer.Entities.Es;
-using CAServer.UserAssets.Dtos;
+using CAServer.Image.Dto;
 
 namespace CAServer.UserAssets.Provider;
 
 public interface IImageProcessProvider
 {
     
-    string GetResizeImage(string imageUrl, int width, int height);
+    Task<string> GetResizeImageAsync(string imageUrl, int width, int height,ImageResizeType type);
+    
+    Task<ThumbnailResponseDto> GetImResizeImageAsync(string imageUrl, int width, int height);
 
 }

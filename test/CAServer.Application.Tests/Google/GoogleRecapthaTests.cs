@@ -1,15 +1,17 @@
 using System.Threading.Tasks;
+using CAServer.Verifier;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
 namespace CAServer.Google;
 
-public partial class GoogleRecapthaTests : CAServerApplicationTestBase
+[Collection(CAServerTestConsts.CollectionDefinitionName)]
+public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
 {
     private readonly IGoogleAppService _googleAppService;
 
-    public GoogleRecapthaTests()
+    public GoogleRecaptchaTests()
     {
         _googleAppService = GetRequiredService<IGoogleAppService>();
     }
@@ -19,7 +21,6 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetGoogleRecaptchaOptions());
         services.AddSingleton(GetMockCacheProvider());
-        base.AfterAddApplication(services);
     }
 
 
@@ -27,26 +28,24 @@ public partial class GoogleRecapthaTests : CAServerApplicationTestBase
     public async Task VerifierGoogleReCaptcha_Test()
     {
         var token = "1234567890";
-        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token);
+        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token, PlatformType.IOS);
         result.ShouldBeTrue();
     }
-    
+
     [Fact]
     public async Task VerifierGoogleReCaptcha_InvalidateToken_Test()
     {
         var token = "";
-        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token);
+        var result = await _googleAppService.IsGoogleRecaptchaTokenValidAsync(token, PlatformType.IOS);
         result.ShouldBeFalse();
     }
 
     [Fact]
     public async Task IsGoogleRecaptchaOpen_Test()
     {
+        var version = "v12345";
         var userIpAddress = "127.0.0.1";
-        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress);
-        result.ShouldBeFalse();
+        var result = await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress, OperationType.AddGuardian);
+        result.ShouldBeTrue();
     }
-
-
-
 }

@@ -1,6 +1,7 @@
 using CAServer.Entities.Es;
 using CAServer.Search;
 using CAServer.Verifier.Etos;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Shouldly;
 using Volo.Abp.Application.Dtos;
@@ -9,7 +10,7 @@ using Xunit;
 
 namespace CAServer.EntityEventHandler.Tests.CAVerifier;
 
-public class    CaVerifierHandlerTests : CAServerEntityEventHandlerTestBase
+public partial class CaVerifierHandlerTests : CAServerEntityEventHandlerTestBase
 {
     private readonly ISearchAppService _searchAppService;
     private readonly IDistributedEventBus _eventBus;
@@ -19,29 +20,23 @@ public class    CaVerifierHandlerTests : CAServerEntityEventHandlerTestBase
         _searchAppService = GetRequiredService<ISearchAppService>();
         _eventBus = GetRequiredService<IDistributedEventBus>();
     }
-
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetClient());
+        services.AddSingleton(GetMockAbpDistributedLock());
+    }
+    
     [Fact]
     public async Task HandlerEvent_NewNotity()
     {
         var verifer = new VerifierCodeEto
         {
             VerifierSessionId = Guid.NewGuid(),
-            Type ="1" ,
-            GuardianAccount  ="test00001" ,
-            VerifierId  ="test0000322342" ,
-            ChainId  ="test0032351" ,
+            Type = "1",
+            GuardianAccount = "test",
+            VerifierId = "test0000322342",
+            ChainId = "test0032351",
         };
-        // await _eventBus.PublishAsync(verifer);
-        //
-        // var result = await _searchAppService.GetListByLucenceAsync("guardianindex", new GetListInput()
-        // {
-        //     MaxResultCount = 1
-        // });
-        //
-        // result.ShouldNotBeNull();
-        // var info = JsonConvert.DeserializeObject<PagedResultDto<GuardianIndex>>(result);
-        // info.ShouldNotBeNull();
-        // info.Items[0].Identifier.ShouldBe("test");
-
+        await _eventBus.PublishAsync(verifer);
     }
 }

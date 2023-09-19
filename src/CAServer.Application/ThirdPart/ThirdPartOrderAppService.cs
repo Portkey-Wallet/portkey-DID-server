@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
@@ -19,12 +21,14 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     private readonly ILogger<ThirdPartOrderAppService> _logger;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
         IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<ThirdPartOrderAppService> logger,
-        IObjectMapper objectMapper)
+        IObjectMapper objectMapper,
+        IOrderStatusProvider orderStatusProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -32,27 +36,34 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _objectMapper = objectMapper;
         _objectMapper = objectMapper;
         _logger = logger;
+        _orderStatusProvider = orderStatusProvider;
     }
 
 
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
+        // var userId = input.UserId;
+        var userId = CurrentUser.GetId();
+
         var orderId = GuidGenerator.Create();
         var orderGrainData = _objectMapper.Map<CreateUserOrderDto, OrderGrainDto>(input);
-        orderGrainData.UserId = CurrentUser.GetId();
-        _logger.LogInformation($"This third part order {orderId} will be created.");
-        orderGrainData.Status = OrderStatusType.Created.ToString();
-        orderGrainData.LastModifyTime = TimeStampHelper.GetTimeStampInMilliseconds();
+        orderGrainData.UserId = userId;
+        _logger.LogInformation("This third part order {orderId} will be created.", orderId);
+        orderGrainData.Status = OrderStatusType.Initialized.ToString();
+        orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
         var result = await orderGrain.CreateUserOrderAsync(orderGrainData);
         if (!result.Success)
         {
-            _logger.LogError($"Create user order fail, order id: {orderId} user id: {orderGrainData.UserId}");
+            _logger.LogError("Create user order fail, order id: {orderId} user id: {userId}", orderId,
+                orderGrainData.UserId);
             return new OrderCreatedDto();
         }
 
         await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
+
+        await _orderStatusProvider.AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
 
         var resp = _objectMapper.Map<OrderGrainDto, OrderCreatedDto>(result.Data);
         resp.Success = true;
@@ -61,8 +72,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
     public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
+        // var userId = input.UserId;
+        var userId = CurrentUser.GetId();
+
         var orderList =
-            await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(CurrentUser.GetId(), input.SkipCount,
+            await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, input.SkipCount,
                 input.MaxResultCount);
         return new OrdersDto
         {
@@ -70,4 +84,6 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             Data = orderList
         };
     }
+    
+    
 }

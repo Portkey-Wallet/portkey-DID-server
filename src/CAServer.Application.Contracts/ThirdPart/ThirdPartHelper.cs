@@ -37,12 +37,12 @@ public static class AlchemyHelper
         { "FINISHED", OrderStatusType.Finish },
         { "PAY_FAIL", OrderStatusType.Failed },
         { "PAY_SUCCESS", OrderStatusType.Pending },
-        { "1", OrderStatusType.Finish },
-        { "2", OrderStatusType.Pending },
-        { "3", OrderStatusType.Pending },
-        { "4", OrderStatusType.Pending },
-        { "5", OrderStatusType.Failed },
-        { "6", OrderStatusType.Refunded },
+        { "1", OrderStatusType.Created },
+        { "2", OrderStatusType.UserCompletesCoinDeposit },
+        { "3", OrderStatusType.StartPayment },
+        { "4", OrderStatusType.SuccessfulPayment },
+        { "5", OrderStatusType.PaymentFailed },
+        { "6", OrderStatusType.RefundSuccessfully },
         { "7", OrderStatusType.Expired },
     };
 
@@ -57,13 +57,11 @@ public static class AlchemyHelper
         {
             return _orderStatusDict[status].ToString();
         }
-        else
-        {
-            return "Unknown";
-        }
+
+        return "Unknown";
     }
 
-    public static string AESEncrypt(string plainText, string secretKeyData)
+    public static string AesEncrypt(string plainText, string secretKeyData)
     {
         try
         {
@@ -89,6 +87,16 @@ public static class AlchemyHelper
         catch (Exception e)
         {
             throw e;
+        }
+    }
+
+    public static string GetOrderTransDirectForQuery(string orderDataTransDirect)
+    {
+        switch (orderDataTransDirect)
+        {
+            case string s when s.ToLower().Contains("sell"): return OrderTransDirect.SELL.ToString();
+            case string s when s.ToLower().Contains("buy"): return OrderTransDirect.BUY.ToString();
+            default: return OrderTransDirect.SELL.ToString();
         }
     }
 }

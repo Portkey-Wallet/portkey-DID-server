@@ -15,24 +15,24 @@ public partial class GuardianTest
         provider.Setup(t => t.GetGuardiansAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new GuardiansDto()
             {
-                CaHolderInfo = new List<Provider.GuardianDto>()
-                {
-                    new Provider.GuardianDto()
-                    {
-                        OriginChainId = "TEST",
-                        CaAddress = "",
-                        CaHash = "",
-                        GuardianList = new GuardianBaseListDto()
-                        {
-                            Guardians = new List<GuardianInfoBase>
-                                { new GuardianDto { IdentifierHash = _identifierHash } }
-                        }
-                    }
-                }
+                // CaHolderInfo = new List<Provider.GuardianDto>()
+                // {
+                //     new Provider.GuardianDto()
+                //     {
+                //         OriginChainId = "TEST",
+                //         CaAddress = "",
+                //         CaHash = "",
+                //         GuardianList = new GuardianBaseListDto()
+                //         {
+                //             Guardians = new List<GuardianInfoBase>
+                //                 { new GuardianDto { IdentifierHash = _identifierHash } }
+                //         }
+                //     }
+                // }
             });
 
-        provider.Setup(t => t.GetHolderInfoFromContractAsync(It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<Grains.Grain.ApplicationHandler.ChainInfo>())).ReturnsAsync(new GetHolderInfoOutput()
+        provider.Setup(t => t.GetHolderInfoFromContractAsync(It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(new GetHolderInfoOutput()
         {
             GuardianList = new GuardianList()
             {

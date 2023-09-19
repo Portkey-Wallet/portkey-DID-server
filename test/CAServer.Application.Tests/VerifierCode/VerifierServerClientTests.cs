@@ -31,7 +31,6 @@ public partial class VerifierServerClientTests : CAServerApplicationTestBase
         services.AddSingleton(GetAdaptableVariableOptions());
         // services.AddSingleton(GetMockHttpClient());
         services.AddSingleton(GetMockHttpClientFactory());
-        base.AfterAddApplication(services);
     }
 
 

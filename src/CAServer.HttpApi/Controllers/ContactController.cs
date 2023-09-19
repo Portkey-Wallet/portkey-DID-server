@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Contacts;
+using CAServer.ImUser.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Controllers;
 
@@ -11,6 +14,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Contact")]
 [Route("api/app/contacts")]
+[IgnoreAntiforgeryToken]
 [Authorize]
 public class ContactController : CAServerController
 {
@@ -43,5 +47,41 @@ public class ContactController : CAServerController
     public async Task<ContractExistDto> GetExistAsync(string name)
     {
         return await _contactAppService.GetExistAsync(name);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ContactResultDto> GetAsync(Guid id)
+    {
+        return await _contactAppService.GetAsync(id);
+    }
+
+    [HttpGet("list")]
+    public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
+    {
+        return await _contactAppService.GetListAsync(input);
+    }
+
+    [HttpPost("merge")]
+    public async Task MergeAsync(ContactMergeDto input)
+    {
+        await _contactAppService.MergeAsync(input);
+    }
+
+    [HttpGet("isImputation")]
+    public async Task<ContactImputationDto> GetImputationAsync()
+    {
+        return await _contactAppService.GetImputationAsync();
+    }
+
+    [HttpPost("read")]
+    public async Task ReadImputationAsync(ReadImputationDto input)
+    {
+        await _contactAppService.ReadImputationAsync(input);
+    }
+
+    [HttpGet("getContact")]
+    public async Task<ContactResultDto> GetContactAsync(Guid contactUserId)
+    {
+        return await _contactAppService.GetContactAsync(contactUserId);
     }
 }

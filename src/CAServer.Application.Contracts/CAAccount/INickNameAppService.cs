@@ -7,4 +7,6 @@ namespace CAServer.CAAccount;
 public interface INickNameAppService
 {
     Task<CAHolderResultDto> SetNicknameAsync(UpdateNickNameDto nickNameDto);
+    Task<CAHolderResultDto> GetCaHolderAsync();
+    Task<CAHolderResultDto> DeleteAsync();
 }
