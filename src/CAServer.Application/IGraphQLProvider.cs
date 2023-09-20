@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
+using CAServer.Common;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Options;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -12,7 +14,7 @@ using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.ContractEventHandler.Core.Application;
+namespace CAServer;
 
 public interface IGraphQLProvider
 {

@@ -68,14 +68,20 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         await privacyPermissionGrain.DeletePermissionAsync(guardianListDto.First().Identifier, type);
     }
     
-    public async Task<PrivacyPermissionDto> GetPrivacyPermissionAsync()
+    public async Task<PrivacyPermissionDto> GetPrivacyPermissionAsync(Guid id)
     {
-        var userId = CurrentUser.GetId();
+        var userId = id;
+        if (userId == Guid.Empty)
+        {
+            userId = CurrentUser.GetId();
+        }
+        
         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
         if (caHolderIndex == null)
         {
             return new PrivacyPermissionDto();
         }
+        
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHolderIndex.CaHash);
         var originChainId = holderInfo.CaHolderInfo?.FirstOrDefault()?.OriginChainId;
         if (string.IsNullOrWhiteSpace(originChainId))

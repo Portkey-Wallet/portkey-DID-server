@@ -5,7 +5,7 @@ using Volo.Abp.Modularity;
 namespace CAServer.EntityEventHandler.Core
 {
     [DependsOn(typeof(AbpAutoMapperModule), typeof(CAServerApplicationModule),
-        typeof(CAServerApplicationContractsModule), typeof(CAServerContractEventHandlerCoreModule))]
+        typeof(CAServerApplicationContractsModule))]
     public class CAServerEntityEventHandlerCoreModule : AbpModule
     {
         public override void ConfigureServices(ServiceConfigurationContext context)

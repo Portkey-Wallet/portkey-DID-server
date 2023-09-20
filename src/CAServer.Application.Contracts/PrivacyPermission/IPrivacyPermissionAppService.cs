@@ -9,7 +9,7 @@ namespace CAServer.PrivacyPermission;
 public interface IPrivacyPermissionAppService
 {
     Task DeletePrivacyPermissionAsync(string chainId ,string caHash, string identifierHash);
-    Task<PrivacyPermissionDto> GetPrivacyPermissionAsync();
+    Task<PrivacyPermissionDto> GetPrivacyPermissionAsync(Guid id);
     Task SetPrivacyPermissionAsync(SetPrivacyPermissionInput input);
     Task<(List<Guid>, List<Guid>)> CheckPrivacyPermissionAsync(List<Guid> userIds, string searchKey, PrivacyType type);
 

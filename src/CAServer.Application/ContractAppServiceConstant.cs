@@ -1,4 +1,4 @@
-namespace CAServer.ContractEventHandler.Core.Application;
+namespace CAServer;
 
 public static class ContractAppServiceConstant
 {
