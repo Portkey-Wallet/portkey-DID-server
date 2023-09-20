@@ -8,7 +8,10 @@
     <ItemGroup>
 <!--        <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />-->
         <ProjectReference Include="..\CAServer.Application\CAServer.Application.csproj" />
+        <ProjectReference Include="..\CAServer.ContractEventHandler.Core\CAServer.ContractEventHandler.Core.csproj" />
         <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
     </ItemGroup>
+
+
 
 </Project>

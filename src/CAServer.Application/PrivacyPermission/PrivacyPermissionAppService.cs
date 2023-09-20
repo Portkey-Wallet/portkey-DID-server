@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
+using CAServer.Common;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.PrivacyPermission;
@@ -24,23 +26,47 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
     private readonly IGuardianAppService _guardianAppService;
     private readonly IUserExtraInfoAppService _userExtraInfoAppService;
     private readonly IContactProvider _contactProvider;
+    private readonly IContractProvider _contractProvider;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<PrivacyPermissionAppService> _logger;
     
     public PrivacyPermissionAppService(IUserAssetsProvider userAssetsProvider, IGuardianProvider guardianProvider,
         IGuardianAppService guardianAppService, IUserExtraInfoAppService userExtraInfoAppService,
-        IContactProvider contactProvider, IClusterClient clusterClient, ILogger<PrivacyPermissionAppService> logger)
+        IContactProvider contactProvider, IContractProvider contractProvider ,IClusterClient clusterClient, ILogger<PrivacyPermissionAppService> logger)
     {
         _userAssetsProvider = userAssetsProvider;
         _guardianProvider = guardianProvider;
         _guardianAppService = guardianAppService;
         _userExtraInfoAppService = userExtraInfoAppService;
         _contactProvider = contactProvider;
+        _contractProvider = contractProvider;
         _clusterClient = clusterClient;
         _logger = logger;
     }
-    
-    //todo:增加删除事件
+
+    public async Task DeletePrivacyPermissionAsync(string chainId ,string caHash, string identifierHash)
+    {
+        if (string.IsNullOrWhiteSpace(chainId) || string.IsNullOrWhiteSpace(caHash) || string.IsNullOrWhiteSpace(identifierHash))
+        {
+            return;
+        }
+        
+        var guardianListDto = await _guardianAppService.GetGuardianListAsync(new List<string>{identifierHash});
+        if (guardianListDto == null || guardianListDto.Count == 0)
+        {
+            return;
+        }
+
+        var holder = await _userAssetsProvider.GetCaHolderIndexByCahashAsync(caHash);
+        if (holder == null)
+        {
+            return;
+        }
+        var privacyPermissionGrain = _clusterClient.GetGrain<IPrivacyPermissionGrain>(holder.UserId);
+        var type = await GetPrivacyTypeAsync(guardianListDto.First());
+        
+        await privacyPermissionGrain.DeletePermissionAsync(guardianListDto.First().Identifier, type);
+    }
     
     public async Task<PrivacyPermissionDto> GetPrivacyPermissionAsync()
     {
@@ -114,7 +140,6 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         var rejectedUserIds = new List<Guid>();
         var currentUserId = CurrentUser.GetId();
         
-        
         var contactList = await _contactProvider.GetContactsAsync(currentUserId);
         
         var permissionCheckTasks = new List<Task<bool>>();
@@ -161,52 +186,32 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         
         foreach (var guardianIndexDto in guardians)
         {
-            if (IsPhone(guardianIndexDto.Identifier))
+            var type = await GetPrivacyTypeAsync(guardianIndexDto);
+            if (type == PrivacyType.Unknow)
             {
-                resultDic[PrivacyType.Phone].Add(new PermissionSetting()
-                {
-                    Identifier = guardianIndexDto.Identifier
-                });
+                continue;
             }
-            else if (IsEmail(guardianIndexDto.Identifier))
+
+            switch (type)
             {
-                resultDic[PrivacyType.Email].Add(new PermissionSetting()
-                {
-                    Identifier = guardianIndexDto.Identifier
-                });
-            }
-            else
-            {
-                var userExtraInfo = new UserExtraInfoResultDto();
-                try
-                {
-                    userExtraInfo = await _userExtraInfoAppService.GetUserExtraInfoAsync(guardianIndexDto.Identifier);
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e,"get user extra info error, Identifier:{Identifier}", guardianIndexDto.Identifier);
-                    continue;
-                }
-                
-                switch (userExtraInfo.GuardianType)
-                {
-                    case "Apple":
-                        resultDic[PrivacyType.Google].Add(new PermissionSetting()
+                case PrivacyType.Phone:
+                case PrivacyType.Email:
+                    resultDic[type].Add(new PermissionSetting()
+                    {
+                        Identifier = guardianIndexDto.Identifier
+                    });
+                    break;
+                case PrivacyType.Google:
+                case PrivacyType.Apple:
+                    var userExtraInfo = await _userExtraInfoAppService.GetUserExtraInfoAsync(guardianIndexDto.Identifier);
+                    if (userExtraInfo.VerifiedEmail && userExtraInfo.IsPrivate == false)
+                    {
+                        resultDic[type].Add(new PermissionSetting()
                         {
-                            Identifier = guardianIndexDto.Identifier
+                            Identifier = userExtraInfo.Email
                         });
-                        break;
-                    case "Google":
-                        resultDic[PrivacyType.Apple].Add(new PermissionSetting()
-                        {
-                            Identifier = guardianIndexDto.Identifier
-                        });
-                        break;
-                    default:
-                        _logger.LogError("get user extra GuardianType error, Identifier:{Identifier},type:{type}",
-                            guardianIndexDto.Identifier, userExtraInfo.GuardianType);
-                        break;
-                }
+                    }
+                    break;
             }
         }
 
@@ -221,5 +226,42 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
     private static bool IsEmail(string input)
     {
         return input.Count(c => c == '@') == 1;
+    }
+
+    private async Task<PrivacyType> GetPrivacyTypeAsync(GuardianIndexDto guardianIndexDto)
+    {
+        if (IsPhone(guardianIndexDto.Identifier))
+        {
+            return PrivacyType.Phone;
+        }
+        
+        if (IsEmail(guardianIndexDto.Identifier))
+        {
+            return PrivacyType.Email;
+        }
+        
+        var userExtraInfo = new UserExtraInfoResultDto();
+        try
+        {
+            userExtraInfo = await _userExtraInfoAppService.GetUserExtraInfoAsync(guardianIndexDto.Identifier);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,"get user extra info error, Identifier:{Identifier}", guardianIndexDto.Identifier);
+            return PrivacyType.Unknow;
+        }
+                
+        switch (userExtraInfo.GuardianType)
+        {
+            case "Apple":
+                return PrivacyType.Apple;
+            case "Google":
+                return PrivacyType.Google;
+            default:
+                _logger.LogError("get user extra GuardianType error, Identifier:{Identifier},type:{type}",
+                    guardianIndexDto.Identifier, userExtraInfo.GuardianType);
+                return PrivacyType.Unknow;
+        }
+        return PrivacyType.Unknow;
     }
 }

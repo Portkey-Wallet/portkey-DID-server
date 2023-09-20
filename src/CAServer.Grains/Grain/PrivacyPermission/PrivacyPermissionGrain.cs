@@ -31,6 +31,28 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>,IPri
     {
         return _objectMapper.Map<PrivacyPermissionState, PrivacyPermissionDto>(State);
     }
+    
+    public async Task DeletePermissionAsync(string identifier, PrivacyType type)
+    {
+        var checkList = State.PhoneList;
+        switch (type)
+        {
+            case PrivacyType.Phone:
+                checkList = State.PhoneList;
+                break;
+            case PrivacyType.Email:
+                checkList = State.EmailList;
+                break;
+            case PrivacyType.Google:
+                checkList = State.GoogleList;
+                break;
+            case PrivacyType.Apple:
+                checkList = State.AppleList;
+                break;
+        }
+        checkList.RemoveAll(item => item.Identifier == identifier);
+        await WriteStateAsync();
+    }
 
     public async Task<bool> IsPermissionAllowAsync(string identifier, PrivacyType type, bool isContract)
     {

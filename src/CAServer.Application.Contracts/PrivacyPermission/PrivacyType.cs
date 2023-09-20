@@ -6,4 +6,5 @@ public enum PrivacyType
     Phone,
     Google,
     Apple,
+    Unknow,
 }
