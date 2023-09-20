@@ -3,15 +3,24 @@ using System.Collections.Generic;
 using CAServer.Dtos;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
+using CAServer.Commons;
+using CAServer.Contacts;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Options;
+using DnsClient.Internal;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
+using Environment = System.Environment;
 
 namespace CAServer.CAAccount;
 
@@ -22,13 +31,20 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly INESTRepository<CAHolderIndex, Guid> _holderRepository;
+    private readonly IImRequestProvider _imRequestProvider;
+    private readonly HostInfoOptions _hostInfoOptions;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public NickNameAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
-        INESTRepository<CAHolderIndex, Guid> holderRepository)
+        INESTRepository<CAHolderIndex, Guid> holderRepository, IImRequestProvider imRequestProvider,
+        IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IHttpContextAccessor httpContextAccessor)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _holderRepository = holderRepository;
+        _imRequestProvider = imRequestProvider;
+        _hostInfoOptions = hostInfoOptions.Value;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<CAHolderResultDto> SetNicknameAsync(UpdateNickNameDto nickNameDto)
@@ -43,7 +59,36 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
+
+        await UpdateImUserAsync(userId, nickNameDto.NickName);
+        
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
+    }
+
+    private async Task UpdateImUserAsync(Guid userId, string nickName)
+    {
+        if (_hostInfoOptions.Environment == Options.Environment.Development)
+        {
+            return;
+        }
+
+        var imUserUpdateDto = new ImUserUpdateDto
+        {
+            Name = nickName
+        };
+
+        try
+        {
+            await _imRequestProvider.PostAsync<object>(ImConstant.UpdateImUserUrl, imUserUpdateDto);
+            Logger.LogInformation("{userId} update im user : {name}", userId.ToString(), nickName);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}, {imToken}", 
+                userId.ToString(), nickName, 
+                _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
+        }
+        
     }
 
     public async Task<CAHolderResultDto> GetCaHolderAsync()
