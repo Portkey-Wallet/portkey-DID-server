@@ -48,7 +48,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<ContractSyncOptions>(configuration.GetSection("Sync"));
         Configure<IndexOptions>(configuration.GetSection("Index"));
-        Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
+        Configure<CAServer.Options.GraphQLOptions>(configuration.GetSection("GraphQL"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
