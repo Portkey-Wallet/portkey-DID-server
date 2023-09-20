@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.PrivacyPermission;
 using CAServer.PrivacyPermission.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -11,8 +12,8 @@ namespace CAServer.Controllers;
 [RemoteService]
 [Area("app")]
 [ControllerName("PrivacyPermission")]
-[Route("api/app/privacypermission")]
-//[Authorize]
+[Route("api/app/privacyPermission")]
+[Authorize]
 public class PrivacyPermissionController
 {
     private readonly IPrivacyPermissionAppService _privacyPermissionAppService;

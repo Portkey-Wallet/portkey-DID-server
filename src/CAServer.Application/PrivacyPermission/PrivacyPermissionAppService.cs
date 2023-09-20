@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
@@ -209,13 +210,20 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
                     break;
                 case PrivacyType.Google:
                 case PrivacyType.Apple:
-                    var userExtraInfo = await _userExtraInfoAppService.GetUserExtraInfoAsync(guardianIndexDto.Identifier);
-                    if (userExtraInfo.VerifiedEmail && userExtraInfo.IsPrivate == false)
+                    try
                     {
-                        resultDic[type].Add(new PermissionSetting()
+                        var userExtraInfo = await _userExtraInfoAppService.GetUserExtraInfoAsync(guardianIndexDto.Identifier);
+                        if (userExtraInfo.VerifiedEmail && userExtraInfo.IsPrivate == false)
                         {
-                            Identifier = userExtraInfo.Email
-                        });
+                            resultDic[type].Add(new PermissionSetting()
+                            {
+                                Identifier = userExtraInfo.Email
+                            });
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e,"get user extra info error, Identifier:{Identifier}", guardianIndexDto.Identifier);          
                     }
                     break;
             }
@@ -226,7 +234,8 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
     
     private static bool IsPhone(string input)
     {
-        return input.All(char.IsDigit) && input.StartsWith("+");
+        var pattern = @"^\+\d+$";
+        return Regex.IsMatch(input, pattern);
     }
     
     private static bool IsEmail(string input)
