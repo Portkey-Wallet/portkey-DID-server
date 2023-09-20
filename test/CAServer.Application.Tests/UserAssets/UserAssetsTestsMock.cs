@@ -328,18 +328,22 @@ public partial class UserAssetsTests
         });
     }
     
-    private IOptions<SeedImageOptions> GetMockSeedImageOptions()
+    private IOptionsSnapshot<SeedImageOptions> GetMockSeedImageOptions()
     {
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<SeedImageOptions>>();
         var dict = new Dictionary<string, string>
         {
             ["TEST-0"] = "ImageUrl.svg"
         };
 
-        return new OptionsWrapper<SeedImageOptions>(new SeedImageOptions
-        {
-            SeedImageDic = dict
-        });
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+            new SeedImageOptions
+            {
+                SeedImageDic = dict
+            });
+        return mockOptionsSnapshot.Object;
     }
+    
     
     
     
