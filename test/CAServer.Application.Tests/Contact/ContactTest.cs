@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
+using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.Entities.Es;
 using CAServer.Grain.Tests;
@@ -10,6 +12,7 @@ using CAServer.Grains.Grain.Contacts;
 using CAServer.Options;
 using CAServer.Security;
 using CAServer.ThirdPart.Dtos;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -20,6 +23,7 @@ using Volo.Abp.Users;
 using Volo.Abp.Validation;
 using Xunit;
 using Environment = CAServer.Options.Environment;
+using ImInfo = CAServer.Contacts.ImInfo;
 
 namespace CAServer.Contact;
 
@@ -46,9 +50,11 @@ public partial class ContactTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        services.AddSingleton(GetMockHttpClient());
         services.AddSingleton(GetMockContactProvider());
         services.AddSingleton(GetMockHostInfoOptions());
         services.AddSingleton(GetMockVariablesOptions());
+        services.AddSingleton(GetMockAccessor());
     }
 
     [Fact]
@@ -262,7 +268,7 @@ public partial class ContactTest : CAServerApplicationTestBase
         await _contactAppService.MergeAsync(new ContactMergeDto()
         {
             Addresses = new List<ContactAddressDto>(),
-            ImInfo = new CAServer.Contacts.ImInfo()
+            ImInfo = new ImInfo()
             {
                 RelationId = "test",
                 PortkeyId = Guid.Empty
@@ -311,7 +317,7 @@ public partial class ContactTest : CAServerApplicationTestBase
                     ChainId = "tDVV"
                 }
             },
-            ImInfo = new CAServer.Contacts.ImInfo()
+            ImInfo = new ImInfo()
             {
                 RelationId = "test",
                 PortkeyId = Guid.Empty
@@ -448,15 +454,62 @@ public partial class ContactTest : CAServerApplicationTestBase
         };
     }
 
+    [Fact]
+    public async Task IM_Follow_Remark_Success_Test()
+    {
+        Addresses.Add(new ContactAddressDto
+        {
+            ChainId = DefaultChainId,
+            Address = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+        });
+
+        var dto = new CreateUpdateContactDto
+        {
+            Name = DefaultName,
+            Addresses = Addresses
+        };
+
+        //create
+        var createResult = await _contactAppService.CreateAsync(dto);
+
+        createResult.ShouldNotBeNull();
+        createResult.Name.ShouldBe(DefaultName);
+
+    }
+
     private IOptionsSnapshot<HostInfoOptions> GetMockHostInfoOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsSnapshot<HostInfoOptions>>();
         mockOptionsSnapshot.Setup(o => o.Value).Returns(
             new HostInfoOptions
             {
-                Environment = Environment.Development
+                Environment = Environment.Production
             });
         return mockOptionsSnapshot.Object;
+    }
+
+    private IHttpContextAccessor GetMockAccessor()
+    {
+        var mockAccessor = new Mock<IHttpContextAccessor>();
+        mockAccessor.Setup(o => o.HttpContext).Returns(
+            new DefaultHttpContext());
+        return mockAccessor.Object;
+    }
+    
+    private IHttpClientService GetMockHttpClient()
+    {
+        var mockHttpClient = new Mock<IHttpClientService>();
+        mockHttpClient
+            .Setup(o => o.GetAsync<CommonResponseDto<ImInfo>>(It.IsAny<string>(),
+                It.IsAny<Dictionary<string, string>>())).Returns(Task.FromResult(new CommonResponseDto<ImInfo>
+            {
+                Code = "20000",
+                Data = new ImInfo()
+                {
+                    Name = "aa"
+                }
+            }));
+        return mockHttpClient.Object;
     }
 
     private IOptions<VariablesOptions> GetMockVariablesOptions()
