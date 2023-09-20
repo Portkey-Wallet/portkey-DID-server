@@ -3,6 +3,7 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using CAServer.Options;
 using CAServer.Signature;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
@@ -25,6 +26,7 @@ using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Threading;
+using ChainOptions = CAServer.ContractEventHandler.Core.Application.ChainOptions;
 
 namespace CAServer.ContractEventHandler;
 
@@ -48,7 +50,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<ContractSyncOptions>(configuration.GetSection("Sync"));
         Configure<IndexOptions>(configuration.GetSection("Index"));
-        Configure<CAServer.Options.GraphQLOptions>(configuration.GetSection("GraphQL"));
+        Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
