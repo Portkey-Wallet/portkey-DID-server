@@ -39,9 +39,9 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
     private readonly GraphQLOptions _graphQLOptions;
     private readonly GraphQLHttpClient _graphQLClient;
     private readonly IClusterClient _clusterClient;
-    private readonly ILogger<ContractProvider> _logger;
+    private readonly ILogger<GraphQLProvider> _logger;
 
-    public GraphQLProvider(ILogger<ContractProvider> logger, IClusterClient clusterClient,
+    public GraphQLProvider(ILogger<GraphQLProvider> logger, IClusterClient clusterClient,
         IOptionsSnapshot<GraphQLOptions> graphQLOptions)
     {
         _logger = logger;
