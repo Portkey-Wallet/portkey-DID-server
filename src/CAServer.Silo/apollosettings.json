@@ -6,7 +6,7 @@
       "http://192.168.66.235:8080"
     ],
     "Namespaces": [
-      "appsettings.silo.json"
+      "silo.appsettings.json"
     ],
     "Env": "DEV"
   }

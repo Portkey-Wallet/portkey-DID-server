@@ -33,7 +33,7 @@ public class Program
             Log.Information("Starting CAServer.Silo.");
 
             await CreateHostBuilder(args).RunConsoleAsync();
-           
+
 
             return 0;
         }
@@ -51,11 +51,13 @@ public class Program
     internal static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
-            .ConfigureAppConfiguration((h,c)=>c.AddJsonFile("apollosettings.json"))
+
+
+#if !DEBUG
+            .ConfigureAppConfiguration((h,c)=>c.AddJsonFile("apollosettings.json")) 
+            .UseApollo()
+#endif
             .UseOrleansSnapshot()
             .UseAutofac()
-//#if !DEBUG
-            .UseApollo()
-//#endif
             .UseSerilog();
 }

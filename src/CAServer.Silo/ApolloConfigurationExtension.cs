@@ -8,7 +8,7 @@ public static class ApolloConfigurationExtension
     public static IHostBuilder UseApollo(this IHostBuilder builder)
     {
         var result = builder
-            .ConfigureAppConfiguration((config) =>
+            .ConfigureAppConfiguration(config =>
             {
                 config.AddApollo(config.Build().GetSection("apollo"));
             });
