@@ -29,7 +29,6 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
         _privacyPermissionAppService = privacyPermissionAppService;
         _logger = logger;
         Timer.Period = 1000 * WorkerOptions.TimePeriod;
-        _logger.LogInformation("LoginGuardianChangeRecordReceiveWorker -----------------------");
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
@@ -61,7 +60,6 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
                 if (queryEventDto.ChangeType == QueryLoginGuardianType.LoginGuardianRemoved ||
                     queryEventDto.ChangeType == QueryLoginGuardianType.LoginGuardianUnbound)
                 {
-                    //TODO:NotLoginGuardian的逻辑
                     await _privacyPermissionAppService.DeletePrivacyPermissionAsync(chainOptionsChainInfo.Key,
                         queryEventDto.CaHash, queryEventDto.NotLoginGuardian);
                 }

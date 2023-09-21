@@ -46,7 +46,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         _logger = logger;
         _clusterClient = clusterClient;
         _graphQLOptions = graphQLOptions.Value;
-        _graphQLClient = new GraphQLHttpClient(_graphQLOptions.GraphQLConnection, new NewtonsoftJsonSerializer());
+        _graphQLClient = new GraphQLHttpClient(_graphQLOptions.Configuration, new NewtonsoftJsonSerializer());
     }
 
     public async Task<long> GetIndexBlockHeightAsync(string chainId)

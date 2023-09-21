@@ -7,5 +7,5 @@ public class ContactOptions
 
 public class GraphQLOptions
 {
-    public string GraphQLConnection { get; set; }
+    public string Configuration { get; set; }
 }
