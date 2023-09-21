@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using AElf;
 using AElf.Cryptography;
@@ -35,5 +36,17 @@ public static class VerifyHelper
 
         return recovered && Address.FromPublicKey(publicKey) == transaction.From &&
                ByteString.CopyFrom(publicKey).ToHex() == inputPublicKey;
+    }
+    
+    
+    public static bool IsPhone(string input)
+    {
+        var pattern = @"^\+\d+$";
+        return Regex.IsMatch(input, pattern);
+    }
+
+    public static bool IsEmail(string input)
+    {
+        return input.Count(c => c == '@') == 1;
     }
 }
