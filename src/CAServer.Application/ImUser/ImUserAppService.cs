@@ -180,6 +180,11 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
 
     private async Task<List<CAHolderIndex>> GetCaHolderByCaHashAsync(List<string> caHashList)
     {
+        if (caHashList == null || caHashList.Count == 0)
+        {
+            return new List<CAHolderIndex>();
+        }
+        
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
 
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.CaHash).Terms(caHashList)));
