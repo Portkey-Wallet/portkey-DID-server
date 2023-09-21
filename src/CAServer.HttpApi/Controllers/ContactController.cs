@@ -49,7 +49,7 @@ public class ContactController : CAServerController
         return await _contactAppService.GetExistAsync(name);
     }
     
-    [HttpGet("existByUserId")]
+    [HttpGet("existByUserId/{id}")]
     public async Task<ContractExistDto> GetExistAsync(Guid id)
     {
         return await _contactAppService.GetExistByUserIdAsync(id);
