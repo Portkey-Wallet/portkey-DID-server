@@ -194,6 +194,16 @@ public class ContactAppService : CAServerAppService, IContactAppService
             Existed = existed
         };
     }
+    
+    public async Task<ContractExistDto> GetExistByUserIdAsync(Guid id)
+    {
+        var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), id);
+
+        return new ContractExistDto
+        {
+            Existed = (contact != null)
+        };
+    }
 
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
