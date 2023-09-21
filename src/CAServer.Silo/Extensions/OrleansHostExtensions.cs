@@ -1,13 +1,16 @@
 using System.Net;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Statistics;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace CAServer.Silo.Extensions;
 
@@ -15,16 +18,21 @@ public static class OrleansHostExtensions
 {
      public static IHostBuilder UseOrleansSnapshot(this IHostBuilder hostBuilder)
     {
+#if DEBUG
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
+#endif
+        
+
         if (configuration == null) throw new ArgumentNullException(nameof(configuration));
         var configSection = configuration.GetSection("Orleans");
         if (configSection == null)
             throw new ArgumentNullException(nameof(configSection), "The OrleansServer node is missing");
-        return hostBuilder.UseOrleans(siloBuilder =>
+        return hostBuilder.UseOrleans((context,siloBuilder) =>
         {
             //Configure OrleansSnapshot
+            configSection = context.Configuration.GetSection("Orleans");
             siloBuilder
                 .ConfigureEndpoints(advertisedIP:IPAddress.Parse(configSection.GetValue<string>("AdvertisedIP")),siloPort: configSection.GetValue<int>("SiloPort"), gatewayPort: configSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
                 .UseMongoDBClient(configSection.GetValue<string>("MongoDBClient"))

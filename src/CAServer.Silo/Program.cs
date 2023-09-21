@@ -1,5 +1,6 @@
 ﻿using CAServer.Silo;
 using CAServer.Silo.Extensions;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,6 +8,7 @@ using Serilog;
 using Serilog.Events;
 
 namespace CAServer;
+
 public class Program
 {
     public async static Task<int> Main(string[] args)
@@ -25,12 +27,13 @@ public class Program
             .WriteTo.Async(c => c.File("Logs/logs.txt"))
             .WriteTo.Async(c => c.Console())
             .CreateLogger();
-        
+
         try
         {
             Log.Information("Starting CAServer.Silo.");
 
             await CreateHostBuilder(args).RunConsoleAsync();
+
 
             return 0;
         }
@@ -47,12 +50,14 @@ public class Program
 
     internal static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
-            .ConfigureServices((hostcontext, services) =>
-            {
-                services.AddApplication<CAServerOrleansSiloModule>();
-            })
+            .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
+
+
+#if !DEBUG
+            .ConfigureAppConfiguration((h,c)=>c.AddJsonFile("apollosettings.json")) 
+            .UseApollo()
+#endif
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();
-    
 }
