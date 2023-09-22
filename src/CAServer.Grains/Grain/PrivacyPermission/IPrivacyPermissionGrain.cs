@@ -6,9 +6,9 @@ namespace CAServer.Grains.Grain.PrivacyPermission;
 
 public interface IPrivacyPermissionGrain : IGrainWithGuidKey
 {
-    Task DeletePermissionAsync(string identifier, PrivacyType type);
+    Task<int> DeletePermissionAsync(string identifier, PrivacyType type)
     Task<List<PermissionSetting>> GetPermissionAsync(List<PermissionSetting> checkList, PrivacyType privacyType);
     Task SetPermissionAsync(PermissionSetting setting);
     Task<PrivacyPermissionDto> GetPrivacyPermissionAsync();
-    Task<bool> IsPermissionAllowAsync(string identifier, PrivacyType type, bool isContract);
+    Task<(bool,string)> IsPermissionAllowAsync(string identifier, PrivacyType type, bool isContract);
 }

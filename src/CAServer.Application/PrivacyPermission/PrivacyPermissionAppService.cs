@@ -66,7 +66,10 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         var privacyPermissionGrain = _clusterClient.GetGrain<IPrivacyPermissionGrain>(holder.UserId);
         var type = await GetPrivacyTypeAsync(guardianListDto.First());
         
-        await privacyPermissionGrain.DeletePermissionAsync(guardianListDto.First().Identifier, type);
+        var count = await privacyPermissionGrain.DeletePermissionAsync(guardianListDto.First().Identifier, type);
+        _logger.LogInformation(
+            "DeletePrivacyPermissionAsync count:{count},cahash:{caHash},identifier:{identifier},type:{type}", count,
+            caHash, guardianListDto.First().Identifier, type);
     }
     
     public async Task<PrivacyPermissionDto> GetPrivacyPermissionAsync(Guid id)
@@ -149,7 +152,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         
         var contactList = await _contactProvider.GetContactsAsync(currentUserId);
         
-        var permissionCheckTasks = new List<Task<bool>>();
+        var permissionCheckTasks = new List<Task<(bool,string)>>();
         foreach (var userId in userIds)
         {
             var grain = _clusterClient.GetGrain<IPrivacyPermissionGrain>(userId);
@@ -160,7 +163,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         var results = await Task.WhenAll(permissionCheckTasks);
         for (int i = 0; i < results.Length; i++)
         {
-            if (results[i])
+            if (results[i].Item1)
             {
                 approvedUserIds.Add(userIds[i]);
             }
@@ -168,7 +171,13 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
             {
                 rejectedUserIds.Add(userIds[i]);
             }
+
+            _logger.LogInformation(
+                "CheckPrivacyPermissionAsync current:{currentUserId},CheckUserId:{userId},isAllow:{isAllow},reason:{reason},type:{type},searchKey:{searchKey}",
+                currentUserId, userIds[i],
+                results[i].Item1, results[i].Item2, type, searchKey);
         }
+        
         return (approvedUserIds,rejectedUserIds);
     }
     

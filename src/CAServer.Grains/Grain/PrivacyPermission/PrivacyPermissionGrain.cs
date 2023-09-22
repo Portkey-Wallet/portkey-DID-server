@@ -6,15 +6,15 @@ using Volo.Abp.PermissionManagement;
 
 namespace CAServer.Grains.Grain.PrivacyPermission;
 
-public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>,IPrivacyPermissionGrain
+public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPrivacyPermissionGrain
 {
     private readonly IObjectMapper _objectMapper;
-    
+
     public PrivacyPermissionGrain(IObjectMapper objectMapper)
     {
         _objectMapper = objectMapper;
     }
-    
+
     public override async Task OnActivateAsync()
     {
         await ReadStateAsync();
@@ -26,13 +26,13 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>,IPri
         await WriteStateAsync();
         await base.OnDeactivateAsync();
     }
-    
+
     public async Task<PrivacyPermissionDto> GetPrivacyPermissionAsync()
     {
         return _objectMapper.Map<PrivacyPermissionState, PrivacyPermissionDto>(State);
     }
-    
-    public async Task DeletePermissionAsync(string identifier, PrivacyType type)
+
+    public async Task<int> DeletePermissionAsync(string identifier, PrivacyType type)
     {
         var checkList = State.PhoneList;
         switch (type)
@@ -50,13 +50,15 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>,IPri
                 checkList = State.AppleList;
                 break;
         }
-        checkList.RemoveAll(item => item.Identifier == identifier);
+
+        var count = checkList.RemoveAll(item => item.Identifier == identifier);
         await WriteStateAsync();
+        return count;
     }
 
-    public async Task<bool> IsPermissionAllowAsync(string identifier, PrivacyType type, bool isContract)
+    public async Task<(bool, string)> IsPermissionAllowAsync(string identifier, PrivacyType type, bool isContract)
     {
-        var checkList = State.PhoneList;
+        var checkList = new List<PermissionSetting>();
         switch (type)
         {
             case PrivacyType.Phone:
@@ -72,29 +74,29 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>,IPri
                 checkList = State.AppleList;
                 break;
         }
-        
+
         var item = checkList.FirstOrDefault(dto => dto.Identifier == identifier);
         if (item == null)
         {
-            return true;
+            return (true, PermissionCheckResult.AllowEmpty);
         }
 
         if (item.Permission == PrivacySetting.Nobody)
         {
-            return false;
+            return (false, PermissionCheckResult.RejectNobody);
         }
-        
+
         if (item.Permission == PrivacySetting.EveryBody)
         {
-            return true;
+            return (true,PermissionCheckResult.AllowEveryBody);
         }
 
         if (item.Permission == PrivacySetting.MyContacts && isContract)
         {
-            return true;
+            return (true,PermissionCheckResult.AllowMyContacts);
         }
 
-        return false;
+        return (false,PermissionCheckResult.RejectMyContacts);
     }
 
     public async Task SetPermissionAsync(PermissionSetting setting)
@@ -116,12 +118,14 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>,IPri
             default:
                 break;
         }
+
         await WriteStateAsync();
     }
-    
-    public async Task<List<PermissionSetting>> GetPermissionAsync(List<PermissionSetting> checkList, PrivacyType privacyType)
+
+    public async Task<List<PermissionSetting>> GetPermissionAsync(List<PermissionSetting> checkList,
+        PrivacyType privacyType)
     {
-        if(checkList == null || checkList.Count == 0)
+        if (checkList == null || checkList.Count == 0)
         {
             return new List<PermissionSetting>();
         }
@@ -146,12 +150,12 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>,IPri
         }
 
         var remainingItems = checkList.Except(commonItems, new PermissionSettingComparer()).ToList();
-        
+
         foreach (var permissionSetting in remainingItems)
         {
             permissionSetting.Permission = PrivacySetting.EveryBody;
         }
-        
+
         var result = new List<PermissionSetting>();
         result.AddRange(commonItems);
         result.AddRange(remainingItems);
@@ -159,7 +163,7 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>,IPri
         {
             permissionSetting.PrivacyType = privacyType;
         }
-        
+
         return result;
     }
 
