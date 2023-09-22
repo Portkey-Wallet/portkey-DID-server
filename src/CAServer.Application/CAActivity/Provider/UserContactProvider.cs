@@ -15,7 +15,7 @@ public interface IUserContactProvider
     [ItemCanBeNull]
     Task<List<Tuple<ContactAddress, string>>> BatchGetUserNameAsync(IEnumerable<string> usersAddresses, Guid userId,
         string chainId = null);
-    
+
     Task<List<ContactAddress>> GetContactByUserNameAsync(string name, Guid userId);
 }
 
@@ -59,13 +59,14 @@ public class UserContactProvider : IUserContactProvider, ISingletonDependency
 
             foreach (var address in contact?.Addresses)
             {
-                ans.Add(new Tuple<ContactAddress, string>(address, contact.Name));
+                ans.Add(new Tuple<ContactAddress, string>(address,
+                    contact.Name.IsNullOrWhiteSpace() ? contact.CaHolderInfo?.WalletName : contact.Name));
             }
         }
 
         return ans;
     }
-    
+
     public async Task<List<ContactAddress>> GetContactByUserNameAsync(string name, Guid userId)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
