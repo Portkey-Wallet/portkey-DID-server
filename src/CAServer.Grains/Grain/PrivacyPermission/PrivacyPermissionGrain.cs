@@ -76,9 +76,13 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPr
         }
 
         var item = checkList.FirstOrDefault(dto => dto.Identifier == identifier);
-        if (item == null)
+        if (item == null || item.Permission == PrivacySetting.MyContacts)
         {
-            return (true, PermissionCheckResult.AllowEmpty);
+            if (isContract)
+            {
+                return (true, PermissionCheckResult.AllowMyContacts);
+            }
+            return (false, PermissionCheckResult.RejectMyContacts);
         }
 
         if (item.Permission == PrivacySetting.Nobody)
@@ -89,11 +93,6 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPr
         if (item.Permission == PrivacySetting.EveryBody)
         {
             return (true,PermissionCheckResult.AllowEveryBody);
-        }
-
-        if (item.Permission == PrivacySetting.MyContacts && isContract)
-        {
-            return (true,PermissionCheckResult.AllowMyContacts);
         }
 
         return (false,PermissionCheckResult.RejectMyContacts);
@@ -114,8 +113,6 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPr
                 break;
             case PrivacyType.Apple:
                 UpdatePermission(State.AppleList, setting);
-                break;
-            default:
                 break;
         }
 
@@ -153,7 +150,7 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPr
 
         foreach (var permissionSetting in remainingItems)
         {
-            permissionSetting.Permission = PrivacySetting.EveryBody;
+            permissionSetting.Permission = PrivacySetting.MyContacts;
         }
 
         var result = new List<PermissionSetting>();
