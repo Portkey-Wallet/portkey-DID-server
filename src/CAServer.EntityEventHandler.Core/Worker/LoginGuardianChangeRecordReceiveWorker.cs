@@ -28,7 +28,7 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
         _graphQlProvider = graphQlProvider;
         _privacyPermissionAppService = privacyPermissionAppService;
         _logger = logger;
-        Timer.Period = 1000 * WorkerOptions.TimePeriod;
+        Timer.Period = WorkerOptions.TimePeriod;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
