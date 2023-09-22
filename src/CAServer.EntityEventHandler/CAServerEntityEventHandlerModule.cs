@@ -51,7 +51,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureTokenCleanupService();
         //ConfigureEsIndexCreation();
         context.Services.AddHostedService<CAServerHostedService>();
-        Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<CAServer.Options.ChainOptions>(configuration.GetSection("Chains"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);

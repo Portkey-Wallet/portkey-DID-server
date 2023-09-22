@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.ContractEventHandler.Core.Application;
 using CAServer.PrivacyPermission;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,12 +12,12 @@ namespace CAServer.EntityEventHandler.Core.Worker;
 public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly IGraphQLProvider _graphQlProvider;
-    private readonly ChainOptions _chainOptions;
+    private readonly Options.ChainOptions _chainOptions;
     private readonly IPrivacyPermissionAppService _privacyPermissionAppService;
     private readonly ILogger<LoginGuardianChangeRecordReceiveWorker> _logger;
 
     public LoginGuardianChangeRecordReceiveWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IGraphQLProvider graphQlProvider, IOptions<ChainOptions> chainOptions,
+        IGraphQLProvider graphQlProvider, IOptions<Options.ChainOptions> chainOptions,
         IPrivacyPermissionAppService privacyPermissionAppService,
         ILogger<LoginGuardianChangeRecordReceiveWorker> logger) : base(
         timer,
@@ -46,7 +45,7 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
 
             if (lastEndHeight == 0)
             {
-                lastEndHeight = newIndexHeight - 1;
+                lastEndHeight = newIndexHeight - WorkerOptions.MaxOlderBlockHeightFromNow;
             }
             
             var queryList = await _graphQlProvider.GetLoginGuardianTransactionInfosAsync(chainOptionsChainInfo.Key, lastEndHeight, newIndexHeight);
