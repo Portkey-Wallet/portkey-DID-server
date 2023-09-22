@@ -4,11 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
-using CAServer.Options;
 using GraphQL;
 using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Common;
