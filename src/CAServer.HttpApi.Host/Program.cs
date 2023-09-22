@@ -28,19 +28,27 @@ public class Program
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-            
+
 #if DEBUG
             .WriteTo.Async(c => c.Console())
-#endif          
+#endif
             .CreateLogger();
 
         try
         {
             Log.Information("Starting CAServer.HttpApi.Host.");
             var builder = WebApplication.CreateBuilder(args);
+#if !DEBUG
+            builder.Configuration.AddJsonFile("apollo.appsettings.json");
+#endif            
+            
             builder.Configuration.AddJsonFile("phone.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
+#if !DEBUG
+                .UseApollo()
+#endif
+
                 .UseSerilog();
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
