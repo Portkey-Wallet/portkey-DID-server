@@ -43,4 +43,7 @@ public static class CommonConstant
     public const string ImUnFollowUrl = "api/v1/contacts/unfollow";
     
     public const string UserExtraInfoIdPrefix = "UserExtraInfo-";
+    
+    public const string ApplicationName = "Portkey";
+    public const string ModuleName = "Api";
 }
