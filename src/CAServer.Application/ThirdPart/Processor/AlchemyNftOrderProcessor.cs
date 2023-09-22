@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Volo.Abp.DistributedLocking;
 
 namespace CAServer.ThirdPart.Processor;
 
@@ -23,9 +24,10 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
     public AlchemyNftOrderProcessor(ILogger<AlchemyNftOrderProcessor> logger, IClusterClient clusterClient,
-        IOptions<ThirdPartOptions> thirdPartOptions,
-        AlchemyProvider alchemyProvider, IOrderStatusProvider orderStatusProvider)
-        : base(logger, clusterClient, thirdPartOptions, orderStatusProvider)
+        IOptions<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
+        IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
+        IAbpDistributedLock distributedLock)
+        : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock)
     {
         _logger = logger;
         _alchemyProvider = alchemyProvider;
@@ -45,7 +47,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         var inputDict = input as AlchemyNftOrderRequestDto;
         var hasAppId = inputDict.TryGetValue(AlchemyHelper.AppIdField, out var appId);
         var hasSignature = inputDict.TryGetValue(AlchemyHelper.SignatureField, out var inputSignature);
-        
+
         AssertHelper.NotEmpty(appId, "Empty appId");
         AssertHelper.NotEmpty(inputSignature, "Empty signature");
 

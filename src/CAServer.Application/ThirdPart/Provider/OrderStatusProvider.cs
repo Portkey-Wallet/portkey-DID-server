@@ -27,7 +27,7 @@ public interface IOrderStatusProvider
 {
     Task AddOrderStatusInfoAsync(OrderStatusInfoGrainDto grainDto);
     Task UpdateOrderStatusAsync(OrderStatusUpdateDto orderStatusDto);
-    Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated);
+    Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated, Dictionary<string, string> extension = null);
     Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(NftOrderGrainDto dataToBeUpdated);
     Task<int> CallBackNftOrderPayResultAsync(Guid orderId);
 }
@@ -62,21 +62,21 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         _distributedEventBus = distributedEventBus;
         _broadcastBus = broadcastBus;
     }
-
-
+    
     // update ramp order
-    public async Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated)
+    public async Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated, Dictionary<string, string> extension = null)
     {
         AssertHelper.NotEmpty(dataToBeUpdated.Id, "Update order id can not be empty");
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(dataToBeUpdated.Id);
-        dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
         _logger.LogInformation("This {ThirdPartName} order {OrderId} will be updated", dataToBeUpdated.MerchantName,
             dataToBeUpdated.Id);
 
         var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
         AssertHelper.IsTrue(result.Success, "Update order error");
 
-        await AddOrderStatusInfoAsync(_objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+        var orderStatusGrainDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
+        orderStatusGrainDto.OrderStatusInfo.Extension = extension.IsNullOrEmpty() ? string.Empty : JsonConvert.SerializeObject(extension);
+        await AddOrderStatusInfoAsync(orderStatusGrainDto);
 
         var orderChangeEto = _objectMapper.Map<OrderGrainDto, OrderEto>(result.Data);
         await _distributedEventBus.PublishAsync(orderChangeEto, false);

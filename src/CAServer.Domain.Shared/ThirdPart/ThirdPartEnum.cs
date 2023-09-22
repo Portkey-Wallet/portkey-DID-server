@@ -44,8 +44,8 @@ public enum NftOrderWebhookStatus
 ///     off-ramp:  Initialized - Created - Pending - StartTransfer - Transferring - Transferred - UserCompletesCoinDeposit - StartPayment - SuccessfulPayment
 ///                                                                              \- TransferFailed                                       \- PaymentFailed
 /// 
-///     nft-buy:   Initialized - Created - Pending - StartTransfer - Transferred - Finish
-///                                   \    (user pay success)     \- TransferFailed - Failed
+///     nft-buy:   Initialized - Created - Pending - StartTransfer - Transferring - Transferred - Finish
+///                                   \    (user pay success)                    \- TransferFailed
 ///                                    \-  Failed,Expired
 /// </summary>
 public enum OrderStatusType

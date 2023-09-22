@@ -1,16 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using CAServer.ThirdPart;
-using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processors;
-using Microsoft.Extensions.Logging;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 
-namespace CAServer.EntityEventHandler.Core.ThirdPart;
+namespace CAServer.BackGround.EventHandler;
 
 public class NftReleaseResultHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
 {

@@ -8,18 +8,22 @@ public class ThirdPartOptions
     public AlchemyOptions Alchemy { get; set; }
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
+    
+    public string NftOrderSettlementPublicKey { get; set; }
 }
 
 public class ThirdPartTimerOptions
 {
     public int DelaySeconds { get; set; } = 1;
     public int TimeoutMillis { get; set; } = 60000;
+    public int TransactionWaitDelaySeconds { get; set; } = 5;
+    public int TransactionWaitTimeoutSeconds { get; set; } = 60;
     public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
-    public int NftCheckoutMerchantCallbackCount = 3;
-    public int NftCheckoutResultThirdPartNotifyCount = 3;
-    public int NftUnCompletedMerchantCallbackMinuteAgo = 2;
-    public int NftUnCompletedThirdPartCallbackMinuteAgo = 2;
-    public int NftOrderExpireSeconds = 60 * 30;
+    public int NftCheckoutMerchantCallbackCount { get; set; }  = 3;
+    public int NftCheckoutResultThirdPartNotifyCount { get; set; }  = 3;
+    public int NftUnCompletedMerchantCallbackMinuteAgo { get; set; }  = 2;
+    public int NftUnCompletedThirdPartCallbackMinuteAgo { get; set; }  = 2;
+    public int NftOrderExpireSeconds { get; set; }  = 60 * 30;
 }
 
 public class AlchemyOptions

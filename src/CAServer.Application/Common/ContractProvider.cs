@@ -25,7 +25,8 @@ public interface IContractProvider
     public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
-    public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
+    public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId,
+        string fromPublicKey);
     Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
 }
@@ -161,7 +162,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     }
 
     public async Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address,
-        string chainId)
+        string chainId, string fromPublicKey)
     {
         var transferParam = new TransferInput
         {
@@ -171,7 +172,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         };
 
         return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
-            _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
+            fromPublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
     public async Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction)

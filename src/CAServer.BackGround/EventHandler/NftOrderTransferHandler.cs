@@ -1,35 +1,27 @@
-using CAServer.Common;
-using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
-using CAServer.ThirdPart.Provider;
-using Orleans;
+using CAServer.ThirdPart.Processors;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.BackGround.EventHandler;
 
-public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
+public class NftOrderTransferHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
 {
     private static readonly List<string> ResultStatus = new()
     {
-        OrderStatusType.Transferred.ToString(),
+        OrderStatusType.StartTransfer.ToString()
     };
 
-    private readonly ILogger<NftOrderPayResultHandler> _logger;
-    private readonly IClusterClient _clusterClient;
-    private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
-    private readonly IOrderStatusProvider _orderStatusProvider;
+    private readonly ILogger<NftOrderTransferHandler> _logger;
+    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
 
-    public NftOrderPayResultHandler(IClusterClient clusterClient,
-        ILogger<NftOrderPayResultHandler> logger,
-        IThirdPartOrderProvider thirdPartOrderProvider, IOrderStatusProvider orderStatusProvider)
+    public NftOrderTransferHandler(ILogger<NftOrderTransferHandler> logger,
+        IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory)
     {
-        _clusterClient = clusterClient;
         _logger = logger;
-        _thirdPartOrderProvider = thirdPartOrderProvider;
-        _orderStatusProvider = orderStatusProvider;
+        _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
     }
 
     private static bool Match(OrderEto eventData)
@@ -45,10 +37,10 @@ public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>, ITra
 
         var orderId = eventData.Id;
         var status = eventData.Status;
+        var thirdPart = eventData.MerchantName;
         try
         {
-            // callback merchant and update result
-            await _orderStatusProvider.CallBackNftOrderPayResultAsync(orderId);
+            await _thirdPartNftOrderProcessorFactory.GetProcessor(thirdPart).SettlementTransfer(orderId);
         }
         catch (UserFriendlyException e)
         {

@@ -1,8 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using AElf.Client.Dto;
+using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
@@ -11,8 +16,10 @@ using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.DistributedLocking;
 
 namespace CAServer.ThirdPart.Processor;
 
@@ -22,16 +29,21 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     private readonly ILogger<AbstractThirdPartNftOrderProcessor> _logger;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IContractProvider _contractProvider;
+    private readonly IAbpDistributedLock _distributedLock;
 
 
     protected AbstractThirdPartNftOrderProcessor(ILogger<AbstractThirdPartNftOrderProcessor> logger,
         IClusterClient clusterClient,
-        IOptions<ThirdPartOptions> thirdPartOptions, 
-        IOrderStatusProvider orderStatusProvider)
+        IOptions<ThirdPartOptions> thirdPartOptions,
+        IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
+        IAbpDistributedLock distributedLock)
     {
         _logger = logger;
         _clusterClient = clusterClient;
         _orderStatusProvider = orderStatusProvider;
+        _contractProvider = contractProvider;
+        _distributedLock = distributedLock;
         _thirdPartOptions = thirdPartOptions.Value;
     }
 
@@ -201,7 +213,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var nftOrderUpdateResult = await _orderStatusProvider.UpdateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(nftOrderUpdateResult.Success, "Update nft order fail");
         }
-    
+
         // update order grain
         if (orderNeedUpdate)
         {
@@ -214,6 +226,88 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         }
     }
 
+    public async Task SettlementTransfer(Guid orderId)
+    {
+        const string lockKeyPrefix = "nft_order:settlement_transfer:";
+        // query verify order grain
+        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
+        var orderGrainDto = (await orderGrain.GetOrder()).Data;
+        AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
+        AssertHelper.IsTrue(orderGrainDto.Id == orderId, "Invalid orderId {ThirdPartOrderId}", orderId);
+
+        var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
+        AssertHelper.IsTrue(currentStatus == OrderStatusType.StartTransfer,
+            "Order not in settlement state, current: {Status}", currentStatus);
+        AssertHelper.NullOrEmpty(orderGrainDto.TransactionId, "TransactionId exists: {TxId}",
+            orderGrainDto.TransactionId);
+
+        // query nft-order data and verify
+        var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(orderId);
+        var nftOrderGrainDto = (await nftOrderGrain.GetNftOrder()).Data;
+        AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
+        AssertHelper.IsTrue(nftOrderGrainDto.Id == orderId, "Invalid nftOrderId {OrderId}", orderId);
+        AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "NFT order merchant address missing");
+
+        // Duplicate check
+        await using var distributedLock = await _distributedLock.TryAcquireAsync(lockKeyPrefix + orderId);
+        AssertHelper.IsTrue(distributedLock != null, "Duplicate transfer, abort.");
+
+        // Settlement crypto to merchant
+        var sendResult = await _contractProvider.SendTransferAsync(orderGrainDto.Crypto, orderGrainDto.CryptoAmount,
+            nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
+            _thirdPartOptions.NftOrderSettlementPublicKey);
+        AssertHelper.NotEmpty(sendResult.TransactionId, "SettlementTransferId missing");
+
+        var txResult = await WaitTransactionResult(CommonConstant.MainChainId, sendResult.TransactionId);
+        AssertHelper.NotNull(txResult, "Transaction result empty, {ChainId}-{TxId}", CommonConstant.MainChainId,
+            sendResult.TransactionId);
+        AssertHelper.IsTrue(txResult.Status != TransactionState.NodeValidationFailed,
+            "Settlement transfer failed: " + txResult.Error);
+
+        // update main-order
+        orderGrainDto.TransactionId = sendResult.TransactionId;
+        orderGrainDto.Status = txResult.Status == TransactionState.Mined
+            ? OrderStatusType.Transferred.ToString()
+            : OrderStatusType.Transferring.ToString();
+        var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, new Dictionary<string, string>
+        {
+            ["txHash"] = sendResult.TransactionId,
+            ["txResult"] = JsonConvert.SerializeObject(txResult)
+        });
+        AssertHelper.IsTrue(updateResult.Success, "sava ramp order failed: " + updateResult.Message);
+    }
+
+
+    public async Task<TransactionResultDto> WaitTransactionResult(string chainId, string transactionId)
+    {
+        var delayMilliSeconds = _thirdPartOptions.Timer.TransactionWaitDelaySeconds * 1000;
+        var cts = new CancellationTokenSource(_thirdPartOptions.Timer.TransactionWaitTimeoutSeconds * 1000);
+        TransactionResultDto rawTxResult = null;
+        while (!cts.IsCancellationRequested)
+        {
+            try
+            {
+                rawTxResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
+                if (rawTxResult.Status != TransactionState.NotExisted && rawTxResult.Status != TransactionState.Pending)
+                {
+                    break;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Timed out waiting for transactionId {TransactionId} result", transactionId);
+                break;
+            }
+
+            // delay some times
+            await Task.Delay(delayMilliSeconds, cts.Token);
+        }
+
+        cts.Cancel();
+        return rawTxResult;
+    }
+
+
     public async Task<CommonResponseDto<Empty>> NotifyNftReleaseAsync(Guid orderId)
     {
         var maxNotifyCount = _thirdPartOptions.Timer.NftCheckoutResultThirdPartNotifyCount;
@@ -223,7 +317,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(orderId);
             var nftOrderGrainDto = (await nftOrderGrain.GetNftOrder()).Data;
             AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
-            AssertHelper.IsTrue(nftOrderGrainDto.ThirdPartNotifyCount < maxNotifyCount, 
+            AssertHelper.IsTrue(nftOrderGrainDto.ThirdPartNotifyCount < maxNotifyCount,
                 "Notify max count reached : " + maxNotifyCount);
 
             // query verify order grain

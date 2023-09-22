@@ -34,14 +34,20 @@ public partial class NftOrderTest : ThirdPartTestBase
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
-    private readonly INftOrderProvider _nftOrderProvider;
+    private readonly INftOrderMerchantCallbackWorker _nftOrderMerchantCallbackWorker;
+    private readonly INftOrderUnCompletedTransferWorker _nftOrderUnCompletedTransferWorker;
+    private readonly INftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
+    private readonly INftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
 
     public NftOrderTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
+        _nftOrderUnCompletedTransferWorker = GetRequiredService<INftOrderUnCompletedTransferWorker>();
+        _nftOrderThirdPartOrderStatusWorker = GetRequiredService<INftOrderThirdPartOrderStatusWorker>();
+        _orderThirdPartNftResultNotifyWorker = GetRequiredService<INftOrderThirdPartNftResultNotifyWorker>();
         _thirdPartNftOrderProcessorFactory = GetRequiredService<IThirdPartNftOrderProcessorFactory>();
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
-        _nftOrderProvider = GetRequiredService<INftOrderProvider>();
+        _nftOrderMerchantCallbackWorker = GetRequiredService<INftOrderMerchantCallbackWorker>();
         _testOutputHelper.WriteLine("publicKey = " + MerchantAccount.PublicKey.ToHex());
     }
 
@@ -329,7 +335,7 @@ public partial class NftOrderTest : ThirdPartTestBase
 
         #endregion
 
-        await _nftOrderProvider.HandleUnCompletedMerchantCallback();
+        await _nftOrderMerchantCallbackWorker.Handle();
     }
 
 
@@ -368,6 +374,6 @@ public partial class NftOrderTest : ThirdPartTestBase
 
         #endregion
 
-        await _nftOrderProvider.HandleUnCompletedNftOrderPayResultRefresh();
+        await _orderThirdPartNftResultNotifyWorker.Handle();
     }
 }

@@ -9,5 +9,7 @@ public class TransactionOptions
     public string NftOrderMerchantCallbackPeriod { get; set; } = "0 0/15 * * * ?";
     public string NftOrderThirdPartResultPeriod { get; set; } = "0 5/15 * * * ?";
     public string HandleUnCompletedNftOrderPayResultPeriod { get; set; } = "0 10/15 * * * ?";
+    public string HandleUnCompletedNftOrderPayTransferPeriod { get; set; } = "0/1 * * * * ?";
     public long ResendTimeInterval { get; set; }
+    public string LockKeyPrefix { get; set; } = "CAServer.BGD:NFT_Order_worker:";
 }

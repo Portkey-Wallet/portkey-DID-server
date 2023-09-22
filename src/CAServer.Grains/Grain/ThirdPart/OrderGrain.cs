@@ -52,6 +52,7 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
         {
             State.Id = this.GetPrimaryKey();
         }
+        State.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
         await WriteStateAsync();
 

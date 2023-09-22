@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using CAServer.BackGround;
+using CAServer.BackGround.EventHandler;
 using CAServer.BackGround.Provider;
 using CAServer.Bookmark;
 using CAServer.EntityEventHandler.Core;
@@ -32,16 +33,6 @@ public class CAServerApplicationTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        // load config from [appsettings.Development.json]
-        var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
-
-        var builder = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
-            .AddEnvironmentVariables();
-
-        var configuration = builder.Build();
-
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
@@ -49,7 +40,12 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<BookmarkHandler>();
 
         context.Services.AddSingleton<IThirdPartNftOrderProcessorFactory, ThirdPartNftOrderProcessorFactory>();
-        context.Services.AddSingleton<INftOrderProvider, NftOrderProvider>();
+        
+        context.Services.AddSingleton<INftOrderUnCompletedTransferWorker, NftOrderUnCompletedTransferWorker>();
+        context.Services.AddSingleton<INftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
+        context.Services.AddSingleton<INftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
+        context.Services.AddSingleton<INftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
+        
         context.Services.AddSingleton<NftOrderPayResultHandler>();
         context.Services.AddSingleton<NftOrderUpdateHandler>();
         context.Services.AddSingleton<NftReleaseResultHandler>();
@@ -95,7 +91,6 @@ public class CAServerApplicationTestModule : AbpModule
             o.Language = "en";
             o.ExpirationDays = 1;
         });
-        context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
         {
             option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
