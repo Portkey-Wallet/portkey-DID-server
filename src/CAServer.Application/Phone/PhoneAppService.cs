@@ -25,7 +25,7 @@ public class PhoneAppService : CAServerAppService, IPhoneAppService
 
     public PhoneAppService(IIpInfoAppService ipInfoAppService, IClusterClient clusterClient,
         ILogger<PhoneAppService> logger,
-        IOptions<PhoneInfoOptions> phoneInfoOptions)
+        IOptionsSnapshot<PhoneInfoOptions> phoneInfoOptions)
     {
         _ipInfoAppService = ipInfoAppService;
         _clusterClient = clusterClient;
