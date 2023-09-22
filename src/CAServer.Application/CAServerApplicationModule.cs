@@ -49,6 +49,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
+        Configure<IndicatorOptions>(configuration.GetSection("Indicator"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
