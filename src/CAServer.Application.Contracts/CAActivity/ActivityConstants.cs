@@ -11,7 +11,7 @@ public static class ActivityConstants
         { "SocialRecovery", "Social Recovery" },
         { "RemoveManagerInfo", "Exit Wallet" },
         { "AddManagerInfo", "Scan code login" },
-        { "CreateCAHolder", "Create CA address" },
+        { "CreateCAHolder", "Create AA address" },
         { "AddGuardian", "Add guardian" },
         { "RemoveGuardian", "Remove guardian" },
         { "UpdateGuardian", "Edit guardian" },
