@@ -32,10 +32,4 @@ public class ThirdPartMerchantController : CAServerController
     {
         return await _thirdPartOrderAppService.QueryMerchantNftOrderAsync(input);
     }
-
-    [HttpPost("nftResult")]
-    public async Task<ResponseDto> MerchantNftReleaseResult(NftReleaseResultRequestDto input)
-    {
-        return await _thirdPartOrderAppService.NoticeNftReleaseResultAsync(input);
-    }
 }

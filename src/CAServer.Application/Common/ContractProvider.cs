@@ -35,7 +35,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 {
     private readonly ChainOptions _chainOptions;
     private readonly ILogger<ContractProvider> _logger;
-    private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
+    private readonly ClaimTokenInfoOptions _claimTokenInfoOption; 
     private readonly ISignatureProvider _signatureProvider;
     private readonly ContractOptions _contractOptions;
 

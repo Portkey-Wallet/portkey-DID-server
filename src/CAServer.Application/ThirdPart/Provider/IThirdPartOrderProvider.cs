@@ -18,6 +18,6 @@ public interface IThirdPartOrderProvider
     public Task<PageResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(GetThirdPartOrderConditionDto condition, params OrderSectionEnum?[] withSections);
     public Task<PageResultDto<OrderDto>> GetNftOrdersByPageAsync(NftOrderQueryConditionDto condition);
     public Task<PageResultDto<NftOrderIndex>> QueryNftOrderPagerAsync(NftOrderQueryConditionDto condition);
-    public void SignMerchantDto(NftMerchantBaseDto input);
-    public void VerifyMerchantSignature(NftMerchantBaseDto input);
+    public void SignMerchantDto(string cryptoPrivateKey, NftMerchantBaseDto input);
+    public void VerifyMerchantSignature(string publicKey, NftMerchantBaseDto input);
 }

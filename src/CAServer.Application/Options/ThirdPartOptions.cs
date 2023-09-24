@@ -49,6 +49,9 @@ public class AlchemyOptions
 
 public class MerchantOptions
 {
+    
+    public string EncryptionKey { get; set; }
+    
     // merchantName => publicKey, publicKey of merchant
     public Dictionary<string, string> MerchantPublicKey { get; set; } = new();
     

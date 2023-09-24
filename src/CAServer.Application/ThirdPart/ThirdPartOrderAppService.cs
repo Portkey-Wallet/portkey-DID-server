@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Client.Proto;
+using AElf.Cryptography;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
@@ -22,6 +25,7 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
+using Address = AElf.Types.Address;
 
 namespace CAServer.ThirdPart;
 
@@ -34,7 +38,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IActivityProvider _activityProvider;
     private readonly ThirdPartOptions _thirdPartOptions;
-    private IOrderStatusProvider _orderStatusProvider;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -92,7 +96,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         try
         {
             AssertHelper.NotNull(input, "create Param null");
-            _thirdPartOrderProvider.VerifyMerchantSignature(input);
+            _thirdPartOrderProvider.VerifyMerchantSignature(input.PublicKey, input);
 
             var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
 
@@ -113,8 +117,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var createResult = await DoCreateOrderAsync(orderGrainData);
 
             // save nft order section
+            var randomPrivateKey = CryptoHelper.GenerateKeyPair().PrivateKey.ToHex();
             var nftOrderGrainDto = _objectMapper.Map<CreateNftOrderRequestDto, NftOrderGrainDto>(input);
             nftOrderGrainDto.Id = createResult.Data.Id;
+            nftOrderGrainDto.CaRandomPrivateKey =
+                EncryptionHelper.Encrypt(randomPrivateKey, _thirdPartOptions.Merchant.EncryptionKey);
             var createNftResult = await DoCreateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(createResult.Success, "Order save failed");
 
@@ -123,7 +130,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
                 MerchantName = createNftResult.Data.MerchantName,
                 OrderId = createNftResult.Data.Id.ToString()
             };
-            _thirdPartOrderProvider.SignMerchantDto(resp);
+            _thirdPartOrderProvider.SignMerchantDto(nftOrderGrainDto.CaRandomPrivateKey, resp);
 
             return new CommonResponseDto<CreateNftOrderResponseDto>(resp);
         }
@@ -178,7 +185,6 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     {
         try
         {
-            _thirdPartOrderProvider.VerifyMerchantSignature(input);
             AssertHelper.IsTrue(!input.MerchantOrderId.IsNullOrEmpty() && !input.MerchantName.IsNullOrEmpty(),
                 "merchantOrderId and merchantName can not be empty");
 
@@ -202,8 +208,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             orderQueryResponseDto.PaymentSymbol = orderDto.Crypto;
             orderQueryResponseDto.PaymentAmount = orderDto.CryptoAmount;
 
-            // sign response
-            _thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
+            //TODO nzc sign response
+            //_thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
             return new CommonResponseDto<NftOrderQueryResponseDto>(orderQueryResponseDto);
         }
         catch (UserFriendlyException e)
@@ -215,59 +221,6 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         {
             _logger.LogError(e, "QueryMerchantNftOrderAsync fail");
             return new CommonResponseDto<NftOrderQueryResponseDto>().Error(e, "Internal error please try again later.");
-        }
-    }
-
-    public async Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftReleaseResultRequestDto input)
-    {
-        try
-        {
-            _thirdPartOrderProvider.VerifyMerchantSignature(input);
-
-            // search ES for orderId
-            var nftOrderPager = await _thirdPartOrderProvider.GetNftOrdersByPageAsync(
-                new NftOrderQueryConditionDto(0, 1)
-                {
-                    MerchantName = input.MerchantName,
-                    MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
-                });
-            AssertHelper.NotEmpty(nftOrderPager.Data, "Order {OrderId} of {Merchant} not found", input.MerchantOrderId,
-                input.MerchantName);
-            var orderIndex = nftOrderPager.Data[0];
-            var orderId = orderIndex.Id;
-
-            // query verify order grain
-            var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
-            var orderGrainDto = (await orderGrain.GetOrder()).Data;
-            AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
-
-            // calculate new status and check
-            var nextStatus = input.ReleaseResult == NftReleaseResult.SUCCESS.ToString()
-                ? OrderStatusType.Finish
-                : OrderStatusType.TransferFailed;
-            var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
-            AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, nextStatus),
-                "Status {Next} unreachable from {Current}", nextStatus, currentStatus);
-
-            // update base-order status 
-            orderGrainDto.Status = nextStatus.ToString();
-            orderGrainDto.TransactionId = input.ReleaseTransactionId;
-            var orderUpdateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
-            AssertHelper.IsTrue(orderUpdateResult.Success, "Update ramp order fail");
-
-            return new CommonResponseDto<Empty>();
-        }
-        catch (UserFriendlyException e)
-        {
-            Logger.LogWarning(e, "Notice NFT release result failed, orderId={OrderId}, merchantName={MerchantName}",
-                input.MerchantOrderId, input.MerchantName);
-            return new CommonResponseDto<Empty>().Error(e);
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "Notice NFT release result error, orderId={OrderId}, merchantName={MerchantName}",
-                input.MerchantOrderId, input.MerchantName);
-            return new CommonResponseDto<Empty>().Error(e, "Internal error");
         }
     }
 

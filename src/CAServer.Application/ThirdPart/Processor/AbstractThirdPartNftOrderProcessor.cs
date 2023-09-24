@@ -279,7 +279,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
 
     public async Task<TransactionResultDto> WaitTransactionResult(string chainId, string transactionId)
-    {
+    { 
         var delayMilliSeconds = _thirdPartOptions.Timer.TransactionWaitDelaySeconds * 1000;
         var cts = new CancellationTokenSource(_thirdPartOptions.Timer.TransactionWaitTimeoutSeconds * 1000);
         TransactionResultDto rawTxResult = null;

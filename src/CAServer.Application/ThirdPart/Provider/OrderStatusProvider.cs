@@ -156,7 +156,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
                     ? NftOrderWebhookStatus.SUCCESS.ToString()
                     : NftOrderWebhookStatus.FAIL.ToString()
             };
-            _thirdPartOrderProvider.SignMerchantDto(requestDto);
+            //TODO nzc  _thirdPartOrderProvider.SignMerchantDto(requestDto);
 
             // do callback merchant
             var res = await _httpProvider.Invoke(HttpMethod.Post, nftOrderGrainDto.WebhookUrl,

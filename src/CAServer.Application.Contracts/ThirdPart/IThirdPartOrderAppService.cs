@@ -11,6 +11,5 @@ public interface IThirdPartOrderAppService
     Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input);
     Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input);
     Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
-    Task<CommonResponseDto<Empty>> NoticeNftReleaseResultAsync(NftReleaseResultRequestDto input);
     
 }

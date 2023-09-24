@@ -233,19 +233,19 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     }
 
 
-    public void SignMerchantDto(NftMerchantBaseDto input)
+    public void SignMerchantDto(string cryptoPrivateKey, NftMerchantBaseDto input)
     {
-        var primaryKey = _thirdPartOptions.Merchant.DidPrivateKey.GetValueOrDefault(input.MerchantName);
+        var primaryKey = EncryptionHelper.Decrypt(cryptoPrivateKey, _thirdPartOptions.Merchant.EncryptionKey);
         input.Signature = MerchantSignatureHelper.GetSignature(primaryKey, input);
     }
 
-    public void VerifyMerchantSignature(NftMerchantBaseDto input)
+    public void VerifyMerchantSignature(string publicKey, NftMerchantBaseDto input)
     {
         try
         {
-            var publicKey = _thirdPartOptions.Merchant.MerchantPublicKey.GetValueOrDefault(input.MerchantName);
             AssertHelper.NotEmpty(publicKey, "Invalid merchantName");
             AssertHelper.NotEmpty(input.Signature, "Empty input signature");
+            AssertHelper.NotEmpty(publicKey, "Empty input public key");
             var rawData = ThirdPartHelper.ConvertObjectToSortedString(input, MerchantSignatureHelper.SignatureField);
             var signatureValid = MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, rawData);
             if (!signatureValid)
