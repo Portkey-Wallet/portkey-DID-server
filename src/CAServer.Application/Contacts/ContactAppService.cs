@@ -196,22 +196,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         };
     }
 
-    public async Task<ContractExistDto> GetExistByUserIdAsync(Guid id)
-    {
-        /*
-         * The logic is as follows,
-         * If a follows b, and b sets the contact to visible, then no matter whether b follows a, a can see b's loginGurdian
-         * This method is whether a has the right to see b's contacts, so the logic is to see if a is in b's friend list
-         */
-        //var contact1 = await _contactProvider.GetContactAsync(CurrentUser.GetId(), id);
-        var contact2 = await _contactProvider.GetContactAsync(id, CurrentUser.GetId());
-
-        return new ContractExistDto
-        {
-            Existed = (contact2 != null)
-        };
-    }
-
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);

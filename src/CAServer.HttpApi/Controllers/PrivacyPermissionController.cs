@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.PrivacyPermission;
 using CAServer.PrivacyPermission.Dtos;
@@ -27,15 +28,18 @@ public class PrivacyPermissionController
     [Route("{id}")]
     public async Task<GetPrivacyPermissionAsyncResponseDto> GetPrivacyPermissionByIdAsync(Guid id)
     {
-        var  privacyPermissionDto = await _privacyPermissionAppService.GetPrivacyPermissionAsync(id);
+        var privacyPermissionDto = await _privacyPermissionAppService.GetPrivacyPermissionAsync(id);
         var permissions = new List<PermissionSetting>();
         permissions.AddRange(privacyPermissionDto.PhoneList);
         permissions.AddRange(privacyPermissionDto.EmailList);
         permissions.AddRange(privacyPermissionDto.AppleList);
         permissions.AddRange(privacyPermissionDto.GoogleList);
+        //check permissions's detail
+        permissions = await _privacyPermissionAppService.CheckPrivacyPermissionByIdAsync(permissions, id);
+
         return new GetPrivacyPermissionAsyncResponseDto
         {
-            Permissions =  permissions,
+            Permissions = permissions,
             UserId = privacyPermissionDto.UserId,
             Id = privacyPermissionDto.Id
         };
