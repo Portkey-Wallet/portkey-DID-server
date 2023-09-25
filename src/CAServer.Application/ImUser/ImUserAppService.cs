@@ -100,21 +100,14 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
             var ids = group.Select(u => 
                 StringHelper.RemovePrefix(u.Id, CommonConstant.UserExtraInfoIdPrefix)).ToList();
 
-            var tasks = ids.Select(id => GetCaHolderInfoAsync(id)).ToList();
+            var guardianTasks = ids.Select(GetGuardianInfoAsync).ToList();
+            var guardians = await Task.WhenAll(guardianTasks);
+            
+            var identifierHashList = guardians.Select(g => g.IdentifierHash).ToList();
 
-            var guardians = await Task.WhenAll(tasks);
-
-            var allCaHash = new List<string>();
-            foreach (var guardiansDto in guardians.ToList())
-            {
-                var caHashList = guardiansDto?.CaHolderInfo?.Select(c => c.CaHash).ToList();
-
-                if (caHashList != null)
-                {
-                    allCaHash.AddRange(caHashList);
-                }
-            }
-        
+            var guardianDtos = await GetCaHashAsync(identifierHashList);
+            var allCaHash = guardianDtos.Select(c => c.CaHash).ToList();
+            
             var caHolders = await GetCaHolderByCaHashAsync(allCaHash);
 
             var userIds = caHolders.Select(c => c.UserId).ToList();
@@ -178,6 +171,16 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
         return guardians.Item2;
     }
 
+    private async Task<GuardianIndex> GetGuardianInfoAsync(string identifier)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>();
+
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(identifier)));
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var guardianIndex = await _guardianRepository.GetAsync(Filter);
+        return guardianIndex;
+    }
+    
     private async Task<List<CAHolderIndex>> GetCaHolderByCaHashAsync(List<string> caHashList)
     {
         if (caHashList == null || caHashList.Count == 0)
