@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Balance;
 using CAServer.Bookmark;
@@ -26,5 +27,11 @@ public class BalanceController : CAServerController
     {
          await _balanceAppService.GetBalanceInfoAsync(chainId);
          return "ok";
+    }
+
+    [HttpGet("activities")]
+    public async Task<Dictionary<string, int>> GetActivityCountByDayAsync()
+    {
+        return await _balanceAppService.GetActivityCountByDayAsync();
     }
 }

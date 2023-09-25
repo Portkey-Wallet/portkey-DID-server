@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CAServer.CAActivity;
+using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
@@ -19,6 +21,13 @@ namespace CAServer.Balance;
 public class BalanceAppService : CAServerAppService, IBalanceAppService
 {
     private readonly IGraphQLHelper _graphQlHelper;
+
+    public static readonly List<string> AllSupportTypes = new()
+    {
+        "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
+        "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register"
+    };
 
     public BalanceAppService(IGraphQLHelper graphQlHelper)
     {
@@ -117,18 +126,18 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         Logger.LogInformation("both chain count: {count}", caHashListBoth.Distinct().ToList().Count);
         Logger.LogInformation("main chain count: {count}", caHashListMain.Distinct().ToList().Count);
         Logger.LogInformation("side chain count: {count}", caHashListSide.Distinct().ToList().Count);
-        
+
         Logger.LogInformation("======both=====");
         foreach (var hash in caHashListBoth.Distinct().ToList())
         {
             var both = balanceAll.Where(t => t.CaHash == hash).ToList().OrderBy(t => t.ChainId);
-        
+
             var builder = new StringBuilder($"{hash}");
             foreach (var bal in both)
             {
                 builder.Append($"\t\t{bal.ChainId}\t\t{Math.Round(GetBalanceInUsd(bal.Balance, 8), 6).ToString()}");
             }
-        
+
             Console.WriteLine(builder.ToString());
         }
 
@@ -138,13 +147,26 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
             var bal = balanceAll.FirstOrDefault(t => t.CaHash == hash && t.ChainId == "AELF");
             Console.WriteLine($"{hash}\t{Math.Round(GetBalanceInUsd(bal.Balance, 8), 6).ToString()}");
         }
-        
+
         Logger.LogInformation("======side=====");
         foreach (var hash in caHashListSide.Distinct().ToList())
         {
             var bal = balanceAll.FirstOrDefault(t => t.CaHash == hash && t.ChainId == "tDVV");
             Console.WriteLine($"{hash}\t{Math.Round(GetBalanceInUsd(bal.Balance, 8), 6).ToString()}");
         }
+    }
+
+    public async Task<Dictionary<string, int>> GetActivityCountByDayAsync()
+    {
+        foreach (var methodName in AllSupportTypes)
+        {
+            var transactions = await GetActivitiesAsync(null, string.Empty,
+                string.Empty, new List<string>() { methodName }, 0, 10);
+
+            var count = transactions.CaHolderTransaction.TotalRecordCount;
+        }
+
+        return new Dictionary<string, int>();
     }
 
     private async Task<IndexerTokenInfos> GetUserTokenInfoAsync(string chainId, string symbol,
@@ -184,4 +206,24 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
 
     public static decimal GetBalanceInUsd(long balance, int decimals) =>
         (decimal)(balance / Math.Pow(10, decimals));
+
+    private async Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> caAddressInfos, string inputChainId,
+        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
+        {
+            Query = @"
+			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{id,chainId,blockHeight,methodName,status,timestamp,totalRecordCount
+                    }
+                }",
+            Variables = new
+            {
+                caAddressInfos = caAddressInfos, chainId = inputChainId, symbol = symbolOpt,
+                methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
+                startBlockHeight = 0, endBlockHeight = 0
+            }
+        });
+    }
 }
