@@ -71,11 +71,12 @@ public class UserContactProvider : IUserContactProvider, ISingletonDependency
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<ContactIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.Name).Value(name)));
         mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<ContactIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var contact = await _contactIndexRepository.GetAsync(Filter);
-        return contact?.Addresses;
+        var contacts = await _contactIndexRepository.GetListAsync(Filter);
+        var contactList = contacts.Item2.Where(t => t.Name == name || t.CaHolderInfo?.WalletName == name).ToList();
+
+        return contactList.SelectMany(t => t.Addresses).ToList();
     }
 }
