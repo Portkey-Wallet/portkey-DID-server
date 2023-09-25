@@ -11,6 +11,7 @@ using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver.Linq;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 
@@ -22,12 +23,15 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
 {
     private readonly IGraphQLHelper _graphQlHelper;
 
-    public static readonly List<string> AllSupportTypes = new()
+    private static readonly List<string> AllSupportTypes = new()
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
         "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register"
     };
+
+    private long _start = 1694448000;
+    private long _end = 1695657600;
 
     public BalanceAppService(IGraphQLHelper graphQlHelper)
     {
@@ -158,13 +162,37 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
 
     public async Task<Dictionary<string, int>> GetActivityCountByDayAsync()
     {
-        foreach (var methodName in AllSupportTypes)
-        {
-            var transactions = await GetActivitiesAsync(null, string.Empty,
-                string.Empty, new List<string>() { methodName }, 0, 10);
+        var dic = new Dictionary<string, int>();
 
-            var count = transactions.CaHolderTransaction.TotalRecordCount;
+        var transactions = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty,
+            string.Empty, AllSupportTypes, 0, 1000000);
+
+        var data = transactions.CaHolderTransaction.Data
+            .Where(t => t.Status.Equals("MINED", StringComparison.OrdinalIgnoreCase))
+            .Where(t => t.Timestamp > _start && t.Timestamp < _end)
+            .ToList();
+
+        var result = data.Select(t => new
+                { t.MethodName, t.Timestamp, Date = GetDateTimeSeconds(t.Timestamp).ToString("yyyy-MM-dd") })
+            .ToList();
+
+        // var dd = result.GroupBy(t => t.Date).Select(t => new { name = t.Key, count = t.Count() })
+        //     .OrderBy(m => m.name).ToList();
+        // foreach (var d in dd)
+        // {
+        //     Console.WriteLine($"Transfer\t{d.name}\t {d.count}");
+        // }
+
+        var dataAll = result.GroupBy(t => new { t.Date, t.MethodName })
+            .Select(t => new { name = t.Key.MethodName, Date = t.Key.Date, count = t.Count() })
+            .OrderBy(m => m.Date).ThenBy(m => m.name).ToList();
+
+        foreach (var per in dataAll)
+        {
+            //Console.WriteLine($"{per.Date}\t{per.name}\t{per.count}");
+            Console.WriteLine($"{per.Date,-15} | {per.name,-50} | {per.count,5}");
         }
+
 
         return new Dictionary<string, int>();
     }
@@ -215,7 +243,7 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
             Query = @"
 			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{id,chainId,blockHeight,methodName,status,timestamp,totalRecordCount
+                        data{id,chainId,blockHeight,methodName,status,timestamp},totalRecordCount
                     }
                 }",
             Variables = new
@@ -225,5 +253,22 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
                 startBlockHeight = 0, endBlockHeight = 0
             }
         });
+    }
+
+    // 1694448000
+    // 1695657600
+    // private long GetBlockHash()
+    // {
+    //     
+    // }
+
+    public static DateTime GetDateTimeSeconds(long timestamp)
+    {
+        var begtime = timestamp * 10000000;
+        var dt_1970 = new DateTime(1970, 1, 1, 8, 0, 0);
+        var tricks_1970 = dt_1970.Ticks;
+        var time_tricks = tricks_1970 + begtime;
+        var dt = new DateTime(time_tricks);
+        return dt;
     }
 }

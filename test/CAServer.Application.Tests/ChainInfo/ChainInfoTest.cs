@@ -24,6 +24,22 @@ public class ChainInfoTest : CAServerApplicationTestBase
     }
 
     [Fact]
+    public void Test_Time()
+    {
+        var date = GetDateTimeSeconds(1694448000);
+        date.ToShortDateString().ShouldBe("2023/09/12");
+    }
+    public static DateTime GetDateTimeSeconds(long timestamp)
+    {
+        var begtime = timestamp * 10000000;
+        var dt_1970 = new DateTime(1970, 1, 1, 8, 0, 0);
+        var tricks_1970 = dt_1970.Ticks;
+        var time_tricks = tricks_1970 + begtime;
+        var dt = new DateTime(time_tricks);
+        return dt;
+    }
+
+    [Fact]
     public async Task Create_Success_Test()
     {
         var result = await _chainsService.CreateAsync(new CreateUpdateChainDto
