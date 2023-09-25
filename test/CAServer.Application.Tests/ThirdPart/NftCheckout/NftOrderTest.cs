@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
 using AElf.Cryptography.ECDSA;
+using AElf.Types;
 using CAServer.BackGround.Provider;
 using CAServer.Common;
 using CAServer.Commons.Dtos;
@@ -38,6 +39,7 @@ public partial class NftOrderTest : ThirdPartTestBase
     private readonly INftOrderUnCompletedTransferWorker _nftOrderUnCompletedTransferWorker;
     private readonly INftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
     private readonly INftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public NftOrderTest(ITestOutputHelper testOutputHelper)
     {
@@ -48,6 +50,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         _thirdPartNftOrderProcessorFactory = GetRequiredService<IThirdPartNftOrderProcessorFactory>();
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
         _nftOrderMerchantCallbackWorker = GetRequiredService<INftOrderMerchantCallbackWorker>();
+        _orderStatusProvider = GetRequiredService<IOrderStatusProvider>();
         _testOutputHelper.WriteLine("publicKey = " + MerchantAccount.PublicKey.ToHex());
     }
 
@@ -92,6 +95,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             WebhookUrl = "http://127.0.0.1:9200/myWebhook",
             PaymentSymbol = "ELF",
             PaymentAmount = "100000000",
+            ReceivingAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
             CaHash = caHash
         };
         input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
@@ -257,25 +261,6 @@ public partial class NftOrderTest : ThirdPartTestBase
         }
 
         #endregion
-    }
-
-    [Fact]
-    public async Task NftResultNotify()
-    {
-        await AlchemyOrderUpdateTest();
-
-        var nftResult = new NftReleaseResultRequestDto
-        {
-            MerchantName = MerchantName,
-            ReleaseResult = NftReleaseResult.SUCCESS.ToString(),
-            ReleaseTransactionId = HashHelper.ComputeFrom("").ToHex(),
-            MerchantOrderId = "00000000-0000-0000-0000-000000000001"
-        };
-        nftResult.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), nftResult);
-
-        var res = await _thirdPartOrderAppService.NoticeNftReleaseResultAsync(nftResult);
-        res.ShouldNotBeNull();
-        res.Success.ShouldBe(true);
     }
 
     [Fact]

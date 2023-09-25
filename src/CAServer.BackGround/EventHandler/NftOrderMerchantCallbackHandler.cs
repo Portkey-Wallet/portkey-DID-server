@@ -10,20 +10,20 @@ using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.BackGround.EventHandler;
 
-public class NftOrderPayResultHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
+public class NftOrderMerchantCallbackHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
 {
     private static readonly List<string> ResultStatus = new()
     {
         OrderStatusType.Transferred.ToString(),
     };
 
-    private readonly ILogger<NftOrderPayResultHandler> _logger;
+    private readonly ILogger<NftOrderMerchantCallbackHandler> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
-    public NftOrderPayResultHandler(IClusterClient clusterClient,
-        ILogger<NftOrderPayResultHandler> logger,
+    public NftOrderMerchantCallbackHandler(IClusterClient clusterClient,
+        ILogger<NftOrderMerchantCallbackHandler> logger,
         IThirdPartOrderProvider thirdPartOrderProvider, IOrderStatusProvider orderStatusProvider)
     {
         _clusterClient = clusterClient;

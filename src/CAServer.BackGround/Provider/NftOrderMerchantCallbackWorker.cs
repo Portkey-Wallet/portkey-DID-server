@@ -42,11 +42,9 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
         _transactionOptions = transactionOptions.Value;
         _thirdPartOptions = thirdPartOptions.Value;
     }
-
-
     
     /// <summary>
-    ///     Compensate for NFT-order-pay-result not properly notified to Merchant.
+    ///     Compensate for merchant NFT-order-pay-result not properly notified to Merchant.
     /// </summary>
     ///
     [AutomaticRetry(Attempts = 0)]
@@ -65,6 +63,7 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
         const int minCallbackCount = 1;
         var maxCallbackCount = _thirdPartOptions.Timer.NftCheckoutMerchantCallbackCount;
 
+        // query and handle WebhookCount > 0, but status is FAIL data
         // when WebhookCount > 0, WebhookTimeLt mast be exists
         var minusAgo = _thirdPartOptions.Timer.NftUnCompletedMerchantCallbackMinuteAgo;
         var lastWebhookTimeLt = DateTime.UtcNow.AddMinutes(- minusAgo).ToUtcString();

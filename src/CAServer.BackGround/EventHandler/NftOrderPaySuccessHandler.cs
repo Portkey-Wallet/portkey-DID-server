@@ -9,18 +9,19 @@ using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.BackGround.EventHandler;
 
-public class NftOrderTransferHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
+public class NftOrderPaySuccessHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
 {
     private static readonly List<string> ResultStatus = new()
     {
-        OrderStatusType.StartTransfer.ToString()
+        OrderStatusType.Pending.ToString(),
+        OrderStatusType.TransferFailed.ToString()
     };
 
-    private readonly ILogger<NftOrderTransferHandler> _logger;
+    private readonly ILogger<NftOrderPaySuccessHandler> _logger;
     private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
-    public NftOrderTransferHandler(ILogger<NftOrderTransferHandler> logger,
+    public NftOrderPaySuccessHandler(ILogger<NftOrderPaySuccessHandler> logger,
         IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, IOrderStatusProvider orderStatusProvider)
     {
         _logger = logger;
@@ -41,10 +42,14 @@ public class NftOrderTransferHandler : IDistributedEventHandler<OrderEto>, ITran
 
         var orderId = eventData.Id;
         var status = eventData.Status;
-        var thirdPart = eventData.MerchantName;
         try
         {
-            await _thirdPartNftOrderProcessorFactory.GetProcessor(thirdPart).SettlementTransfer(orderId);
+            var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
+            AssertHelper.NotNull(orderGrainDto, "Order {orderId} not found", orderId);
+            orderGrainDto.Status = OrderStatusType.StartTransfer.ToString();
+            orderGrainDto.TransactionId = null;
+            var updateRes = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
+            AssertHelper.IsTrue(updateRes.Success, "Update order status failed, status={Status}", orderGrainDto.Status);
         }
         catch (UserFriendlyException e)
         {

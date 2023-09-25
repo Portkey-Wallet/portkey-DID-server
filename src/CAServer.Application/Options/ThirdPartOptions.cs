@@ -19,6 +19,7 @@ public class ThirdPartTimerOptions
     public int TransactionWaitDelaySeconds { get; set; } = 5;
     public int TransactionWaitTimeoutSeconds { get; set; } = 60;
     public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
+    public int HandleUnCompletedSettlementTransferSecondsAgo { get; set; } = 2;
     public int NftCheckoutMerchantCallbackCount { get; set; }  = 3;
     public int NftCheckoutResultThirdPartNotifyCount { get; set; }  = 3;
     public int NftUnCompletedMerchantCallbackMinuteAgo { get; set; }  = 2;

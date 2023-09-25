@@ -64,6 +64,7 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
         const int minNotifyCount = 1;
         var maxNotifyCount = _thirdPartOptions.Timer.NftCheckoutResultThirdPartNotifyCount;
 
+        // query ThirdPartNotifyCount > 0 but status is FAIL data
         // when ThirdPartNotifyCount > 0, WebhookTimeLt mast be exists
         var minusAgo = _thirdPartOptions.Timer.NftUnCompletedThirdPartCallbackMinuteAgo;
         var lastWebhookTimeLt = DateTime.UtcNow.AddMinutes(-minusAgo).ToUtcString();

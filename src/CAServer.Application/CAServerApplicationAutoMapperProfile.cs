@@ -365,8 +365,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.Crypto, opt => opt.MapFrom(src => src.PaymentSymbol))
             .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.PaymentAmount));
 
-        CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>()
-            .ForMember(des => des.MerchantPublicKey, opt => opt.MapFrom(src => src.PublicKey));
+        CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>();
 
 
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();

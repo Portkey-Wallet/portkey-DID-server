@@ -96,7 +96,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         try
         {
             AssertHelper.NotNull(input, "create Param null");
-            _thirdPartOrderProvider.VerifyMerchantSignature(input.PublicKey, input);
+            _thirdPartOrderProvider.VerifyMerchantSignature(input);
 
             var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
 
@@ -120,8 +120,6 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var randomPrivateKey = CryptoHelper.GenerateKeyPair().PrivateKey.ToHex();
             var nftOrderGrainDto = _objectMapper.Map<CreateNftOrderRequestDto, NftOrderGrainDto>(input);
             nftOrderGrainDto.Id = createResult.Data.Id;
-            nftOrderGrainDto.CaRandomPrivateKey =
-                EncryptionHelper.Encrypt(randomPrivateKey, _thirdPartOptions.Merchant.EncryptionKey);
             var createNftResult = await DoCreateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(createResult.Success, "Order save failed");
 
@@ -130,7 +128,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
                 MerchantName = createNftResult.Data.MerchantName,
                 OrderId = createNftResult.Data.Id.ToString()
             };
-            _thirdPartOrderProvider.SignMerchantDto(nftOrderGrainDto.CaRandomPrivateKey, resp);
+            _thirdPartOrderProvider.SignMerchantDto(resp);
 
             return new CommonResponseDto<CreateNftOrderResponseDto>(resp);
         }
@@ -207,9 +205,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             orderQueryResponseDto.Status = orderDto.Status;
             orderQueryResponseDto.PaymentSymbol = orderDto.Crypto;
             orderQueryResponseDto.PaymentAmount = orderDto.CryptoAmount;
-
-            //TODO nzc sign response
-            //_thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
+            
+            _thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
             return new CommonResponseDto<NftOrderQueryResponseDto>(orderQueryResponseDto);
         }
         catch (UserFriendlyException e)
