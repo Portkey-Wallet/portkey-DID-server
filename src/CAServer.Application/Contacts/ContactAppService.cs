@@ -194,14 +194,16 @@ public class ContactAppService : CAServerAppService, IContactAppService
             Existed = existed
         };
     }
-    
+
     public async Task<ContractExistDto> GetExistByUserIdAsync(Guid id)
     {
-        var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), id);
+        //here need to check double diraction, a is b'contract and b is a's contract
+        var contact1 = await _contactProvider.GetContactAsync(CurrentUser.GetId(), id);
+        var contact2 = await _contactProvider.GetContactAsync(id, CurrentUser.GetId());
 
         return new ContractExistDto
         {
-            Existed = (contact != null)
+            Existed = (contact1 != null && contact2 != null)
         };
     }
 

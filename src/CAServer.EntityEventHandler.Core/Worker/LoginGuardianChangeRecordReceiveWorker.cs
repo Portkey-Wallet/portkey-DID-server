@@ -32,7 +32,6 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogInformation("LoginGuardianChangeRecordReceiveWorker start");
         foreach (var chainOptionsChainInfo in _chainOptions.ChainInfos)
         {
             var lastEndHeight =
@@ -69,7 +68,6 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
             {
                 await _graphQlProvider.SetLastEndHeightAsync(chainOptionsChainInfo.Key, QueryType.LoginGuardianChangeRecord, blockHeight);
             }
-            _logger.LogInformation("LoginGuardianChangeRecordReceiveWorker sync lastEndHeight: {BlockHeight}", blockHeight);
         }
        
         await Task.CompletedTask;
