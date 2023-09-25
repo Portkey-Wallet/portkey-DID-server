@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Contacts;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.PrivacyPermission;
@@ -29,11 +30,13 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
     private readonly IContactProvider _contactProvider;
     private readonly IContractProvider _contractProvider;
     private readonly IClusterClient _clusterClient;
+    private readonly IContactAppService _contactAppService;
     private readonly ILogger<PrivacyPermissionAppService> _logger;
     
     public PrivacyPermissionAppService(IUserAssetsProvider userAssetsProvider, IGuardianProvider guardianProvider,
         IGuardianAppService guardianAppService, IUserExtraInfoAppService userExtraInfoAppService,
-        IContactProvider contactProvider, IContractProvider contractProvider ,IClusterClient clusterClient, ILogger<PrivacyPermissionAppService> logger)
+        IContactProvider contactProvider, IContractProvider contractProvider, IClusterClient clusterClient,
+        IContactAppService contactAppService, ILogger<PrivacyPermissionAppService> logger)
     {
         _userAssetsProvider = userAssetsProvider;
         _guardianProvider = guardianProvider;
@@ -42,6 +45,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         _contactProvider = contactProvider;
         _contractProvider = contractProvider;
         _clusterClient = clusterClient;
+        _contactAppService = contactAppService;
         _logger = logger;
     }
 
@@ -150,14 +154,12 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         var rejectedUserIds = new List<Guid>();
         var currentUserId = CurrentUser.GetId();
         
-        var contactList = await _contactProvider.GetContactsAsync(currentUserId);
-        
         var permissionCheckTasks = new List<Task<(bool,string)>>();
         foreach (var userId in userIds)
         {
             var grain = _clusterClient.GetGrain<IPrivacyPermissionGrain>(userId);
-            var isContract = contactList.Any(contact => contact.UserId == userId);
-            permissionCheckTasks.Add(grain.IsPermissionAllowAsync(searchKey, type, isContract));
+            var isContract = await _contactAppService.GetExistByUserIdAsync(userId);
+            permissionCheckTasks.Add(grain.IsPermissionAllowAsync(searchKey, type, isContract.Existed));
         }
         
         var results = await Task.WhenAll(permissionCheckTasks);
