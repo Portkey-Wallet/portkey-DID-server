@@ -49,6 +49,7 @@ public partial class PrivacyPermissionTest
     [Fact]
     public async Task SetPrivacyPermissionAsync_test()
     {
+        Login(UserId);
         await _privacyPermissionAppService.SetPrivacyPermissionAsync(new SetPrivacyPermissionInput()
         {
             Identifier = "aaa@bbb"

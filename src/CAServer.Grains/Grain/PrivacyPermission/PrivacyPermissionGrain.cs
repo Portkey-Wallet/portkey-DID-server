@@ -55,7 +55,8 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPr
         await WriteStateAsync();
         return count;
     }
-
+    
+/*
     public async Task<(bool, string)> IsPermissionAllowAsync(string identifier, PrivacyType type, bool isContract)
     {
         var checkList = new List<PermissionSetting>();
@@ -97,6 +98,7 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPr
 
         return (false,PermissionCheckResult.RejectMyContacts);
     }
+    */
 
     public async Task SetPermissionAsync(PermissionSetting setting)
     {

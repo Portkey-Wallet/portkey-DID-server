@@ -157,17 +157,25 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         var approvedUserIds = new List<Guid>();
         var rejectedUserIds = new List<Guid>();
         var currentUserId = CurrentUser.GetId();
-        
+
         foreach (var userId in userIds)
         {
             if (userId == currentUserId)
             {
                 rejectedUserIds.Add(userId);
+                _logger.LogInformation(
+                    "CheckPrivacyPermissionAsync current:{currentUserId},CheckUserId:{userId},isAllow:{isAllow},type:{type},searchKey:{searchKey}",
+                    currentUserId, userId,
+                    true, type, searchKey);
                 continue;
             }
+
             approvedUserIds.Add(userId);
+            _logger.LogInformation(
+                "CheckPrivacyPermissionAsync current:{currentUserId},CheckUserId:{userId},isAllow:{isAllow},reason:{reason},type:{type},searchKey:{searchKey}",
+                currentUserId, userId,
+                false, type, searchKey);
         }
-        
         
         /*var permissionCheckTasks = new List<Task<(bool,string)>>();
         foreach (var userId in userIds)
