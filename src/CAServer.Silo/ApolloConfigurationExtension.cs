@@ -1,6 +1,7 @@
-namespace CAServer;
-
 using Microsoft.Extensions.Configuration;
+
+namespace CAServer.Silo;
+
 using Microsoft.Extensions.Hosting;
 
 public static class ApolloConfigurationExtension
