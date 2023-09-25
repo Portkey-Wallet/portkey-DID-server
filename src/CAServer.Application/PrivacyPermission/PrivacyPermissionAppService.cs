@@ -17,10 +17,14 @@ using CAServer.UserExtraInfo;
 using CAServer.UserExtraInfo.Dtos;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.Users;
 
 namespace CAServer.PrivacyPermission;
 
+[RemoteService(false)]
+[DisableAuditing]
 public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissionAppService
 {
     private readonly IUserAssetsProvider _userAssetsProvider;
@@ -154,7 +158,18 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         var rejectedUserIds = new List<Guid>();
         var currentUserId = CurrentUser.GetId();
         
-        var permissionCheckTasks = new List<Task<(bool,string)>>();
+        foreach (var userId in userIds)
+        {
+            if (userId == currentUserId)
+            {
+                rejectedUserIds.Add(userId);
+                continue;
+            }
+            approvedUserIds.Add(userId);
+        }
+        
+        
+        /*var permissionCheckTasks = new List<Task<(bool,string)>>();
         foreach (var userId in userIds)
         {
             var grain = _clusterClient.GetGrain<IPrivacyPermissionGrain>(userId);
@@ -178,7 +193,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
                 "CheckPrivacyPermissionAsync current:{currentUserId},CheckUserId:{userId},isAllow:{isAllow},reason:{reason},type:{type},searchKey:{searchKey}",
                 currentUserId, userIds[i],
                 results[i].Item1, results[i].Item2, type, searchKey);
-        }
+        }*/
         
         return (approvedUserIds,rejectedUserIds);
     }
@@ -216,7 +231,8 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
                 case PrivacyType.Email:
                     resultDic[type].Add(new PermissionSetting()
                     {
-                        Identifier = guardianIndexDto.Identifier
+                        Identifier = guardianIndexDto.Identifier,
+                        PrivacyType = type
                     });
                     break;
                 case PrivacyType.Google:
@@ -228,7 +244,8 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
                         {
                             resultDic[type].Add(new PermissionSetting()
                             {
-                                Identifier = userExtraInfo.Email
+                                Identifier = userExtraInfo.Email,
+                                PrivacyType = type
                             });
                         }
                     }
