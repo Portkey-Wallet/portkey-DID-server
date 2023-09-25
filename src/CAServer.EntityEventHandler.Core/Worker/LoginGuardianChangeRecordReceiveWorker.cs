@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.ContractEventHandler.Core.Application;
 using CAServer.PrivacyPermission;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,12 +12,12 @@ namespace CAServer.EntityEventHandler.Core.Worker;
 public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWorkerBase
 {
     private readonly IGraphQLProvider _graphQlProvider;
-    private readonly ChainOptions _chainOptions;
+    private readonly Options.ChainOptions _chainOptions;
     private readonly IPrivacyPermissionAppService _privacyPermissionAppService;
     private readonly ILogger<LoginGuardianChangeRecordReceiveWorker> _logger;
 
     public LoginGuardianChangeRecordReceiveWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IGraphQLProvider graphQlProvider, IOptions<ChainOptions> chainOptions,
+        IGraphQLProvider graphQlProvider, IOptions<Options.ChainOptions> chainOptions,
         IPrivacyPermissionAppService privacyPermissionAppService,
         ILogger<LoginGuardianChangeRecordReceiveWorker> logger) : base(
         timer,
@@ -28,12 +27,11 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
         _graphQlProvider = graphQlProvider;
         _privacyPermissionAppService = privacyPermissionAppService;
         _logger = logger;
-        Timer.Period = 1000 * WorkerOptions.TimePeriod;
+        Timer.Period = WorkerOptions.TimePeriod;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogInformation("LoginGuardianChangeRecordReceiveWorker start");
         foreach (var chainOptionsChainInfo in _chainOptions.ChainInfos)
         {
             var lastEndHeight =
@@ -46,7 +44,7 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
 
             if (lastEndHeight == 0)
             {
-                lastEndHeight = newIndexHeight - 1;
+                lastEndHeight = newIndexHeight - WorkerOptions.MaxOlderBlockHeightFromNow;
             }
             
             var queryList = await _graphQlProvider.GetLoginGuardianTransactionInfosAsync(chainOptionsChainInfo.Key, lastEndHeight, newIndexHeight);
@@ -70,7 +68,6 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
             {
                 await _graphQlProvider.SetLastEndHeightAsync(chainOptionsChainInfo.Key, QueryType.LoginGuardianChangeRecord, blockHeight);
             }
-            _logger.LogInformation("LoginGuardianChangeRecordReceiveWorker sync lastEndHeight: {BlockHeight}", blockHeight);
         }
        
         await Task.CompletedTask;
