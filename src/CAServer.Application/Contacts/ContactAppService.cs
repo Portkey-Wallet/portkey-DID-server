@@ -817,6 +817,18 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return result;
     }
 
+    public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
+    {
+        var contacts = await _contactProvider.GetContactListAsync(input.ContactUserIds, input.Address, CurrentUser.GetId());
+        if (contacts != null && contacts.Any())
+        {
+            contacts.ForEach(contact => contact.Addresses = contact.Addresses?.OrderBy(t => t.ChainId).ToList());
+            return ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contacts);
+        }
+
+        return new List<ContactResultDto>();
+    }
+
     public async Task<ContactResultDto> MergeUpdateAsync(Guid id, ContactDto contactDto)
     {
         Logger.LogDebug("[contact merge update] merge update begin, data:{data}",

@@ -20,4 +20,5 @@ public interface IContactAppService
     Task ReadImputationAsync(ReadImputationDto input);
     Task<ContactResultDto> GetContactAsync(Guid contactUserId);
     Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input);
+    Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input);
 }
