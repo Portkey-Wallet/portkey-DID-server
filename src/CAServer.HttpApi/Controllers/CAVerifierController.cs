@@ -252,6 +252,18 @@ public class CAVerifierController : CAServerController
         return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,
             type);
     }
+    
+    [HttpPost("GoogleRecaptchaV3")]
+    public async Task<bool> GoogleRecaptchaV3Async(GoogleRecaptchaInput input)
+    {
+        var result =  await _googleAppService.GoogleRecaptchaV3Async(input.RecaptchaToken, input.PlatformType);
+        return result;
+    }
+
+
+
+
+
 
     [HttpPost("getVerifierServer")]
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(GetVerifierServerInfoInput input)

@@ -19,11 +19,10 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private readonly ILogger<GoogleAppService> _logger;
     private readonly GoogleRecaptchaOptions _googleRecaptchaOption;
     private readonly IHttpClientFactory _httpClientFactory;
-    private const string CurrentVersion = "v1.3.0";
 
     public GoogleAppService(
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
-        ILogger<GoogleAppService> logger, IOptions<GoogleRecaptchaOptions> googleRecaptchaOption,
+        ILogger<GoogleAppService> logger, IOptionsSnapshot<GoogleRecaptchaOptions> googleRecaptchaOption,
         IHttpClientFactory httpClientFactory, ICacheProvider cacheProvider)
     {
         _logger = logger;
@@ -51,6 +50,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         {
             return false;
         }
+
         return type switch
         {
             OperationType.CreateCAHolder => true,
@@ -64,31 +64,59 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         var getSuccess = _googleRecaptchaOption.SecretMap.TryGetValue(platformTypeName, out var secret);
         if (!getSuccess)
         {
-            throw new UserFriendlyException("Google Recaptcha Secret Not Found");
+            _logger.LogError("Google Recaptcha Secret Not Found");
+            return false;
         }
 
-        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        var responseContent = await GoogleRecaptchaAsync(secret, recaptchaToken);
+        _logger.LogDebug(" VerifyGoogleRecaptchaToken responseContent is {responseContent}", responseContent);
+        return !string.IsNullOrEmpty(responseContent) && responseContent.Contains("\"success\": true");
+    }
+
+    public async Task<bool> GoogleRecaptchaV3Async(string inputRecaptchaToken,
+        PlatformType platformType = PlatformType.WEB)
+    {
+        var platformTypeName = platformType.ToString();
+        var getSuccess = _googleRecaptchaOption.V3SecretMap.TryGetValue(platformTypeName, out var secret);
+        if (!getSuccess)
+        {
+            _logger.LogError("Google Recaptcha Secret Not Found");
+            return false;
+        }
+
+        var responseContent = await GoogleRecaptchaAsync(secret, inputRecaptchaToken);
+        _logger.LogDebug(" VerifyGoogleRecaptchaToken responseContent is {responseContent}", responseContent);
+        if (string.IsNullOrEmpty(responseContent))
+        {
+            return false;
+        }
+
+        var googleReCaptchaResponse = JsonConvert.DeserializeObject<RecaptchaResponse>(responseContent);
+        return googleReCaptchaResponse.Score > _googleRecaptchaOption.Score;
+    }
+
+    private async Task<string> GoogleRecaptchaAsync(string secret, string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");
-            return false;
+            return string.Empty;
         }
 
         var content = new FormUrlEncodedContent(new[]
         {
             new KeyValuePair<string, string>("secret", secret),
-            new KeyValuePair<string, string>("response", recaptchaToken)
+            new KeyValuePair<string, string>("response", token)
         });
-        _logger.LogDebug("VerifyGoogleRecaptchaToken content is {content}", content.ToString());
         var client = _httpClientFactory.CreateClient();
         var response = await client.PostAsync(_googleRecaptchaOption.VerifyUrl, content);
-        _logger.LogDebug("response is {response}", response.ToString());
         if (!response.IsSuccessStatusCode)
         {
-            return false;
+            return string.Empty;
         }
 
         var responseContent = await response.Content.ReadAsStringAsync();
-        _logger.LogDebug(" VerifyGoogleRecaptchaToken responseContent is {responseContent}", responseContent);
-        return responseContent.Contains("\"success\": true");
+
+        return responseContent;
     }
 }
