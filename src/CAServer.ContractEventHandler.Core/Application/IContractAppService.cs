@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Monitor;
+using CAServer.Monitor.Logger;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
@@ -39,6 +42,7 @@ public class ContractAppService : IContractAppService
     private readonly IRecordsBucketContainer _recordsBucketContainer;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
+    private readonly IIndicatorLogger _indicatorLogger;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -158,7 +162,7 @@ public class ContractAppService : IContractAppService
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));
 
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
-        _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "");
+        _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "", MonitorTag.Register);
     }
 
     public async Task SocialRecoveryAsync(AccountRecoverCreateEto message)
@@ -246,7 +250,19 @@ public class ContractAppService : IContractAppService
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
-        _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "");
+        _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "",
+            MonitorTag.SocialRecover);
+    }
+
+    private async Task ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
+        string optionChainId, MonitorTag target)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        await ValidateTransactionAndSyncAsync(chainId, result, optionChainId);
+        stopwatch.Stop();
+
+        var duration = Convert.ToInt32(stopwatch.Elapsed.TotalMilliseconds);
+        _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, target.ToString(), duration);
     }
 
     private async Task<bool> ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
