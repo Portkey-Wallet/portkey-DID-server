@@ -27,7 +27,7 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register", "BeanGoTown-Bingo", "BeanGoTown-Play"
     };
 
     private long _start = 1694448000;
@@ -165,7 +165,7 @@ public class BalanceAppService : CAServerAppService, IBalanceAppService
         var dic = new Dictionary<string, int>();
 
         var transactions = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty,
-            string.Empty, AllSupportTypes, 0, 1000000);
+            string.Empty, new List<string>(), 0, 1000000);
 
         var data = transactions.CaHolderTransaction.Data
             .Where(t => t.Status.Equals("MINED", StringComparison.OrdinalIgnoreCase))
