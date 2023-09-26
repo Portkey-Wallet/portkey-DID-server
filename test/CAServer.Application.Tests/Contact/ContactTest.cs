@@ -80,8 +80,12 @@ public partial class ContactTest : CAServerApplicationTestBase
 
         // //update
         var newName = "newName";
-        dto.Name = newName;
-        var updateResult = await _contactAppService.UpdateAsync(createResult.Id, dto);
+        var updateDto = new CreateUpdateContactDto
+        {
+            Name = newName,
+            RelationId = "aa"
+        };
+        var updateResult = await _contactAppService.UpdateAsync(createResult.Id, updateDto);
 
         updateResult.ShouldNotBeNull();
         updateResult.Name.ShouldBe(newName);
@@ -477,6 +481,14 @@ public partial class ContactTest : CAServerApplicationTestBase
 
     }
 
+    [Fact]
+    public async Task GetContactList_Test()
+    {
+        var list = await _contactAppService.GetContactListAsync(new ContactListRequestDto());
+
+        list.ShouldNotBeNull();
+
+    }
     private IOptionsSnapshot<HostInfoOptions> GetMockHostInfoOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsSnapshot<HostInfoOptions>>();
