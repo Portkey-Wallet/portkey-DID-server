@@ -12,7 +12,7 @@ public class RegisterGrain : Grain<RegisterState>, IRegisterGrain
     private readonly IObjectMapper _objectMapper;
     private readonly CAAccountOption _cAAccountOption;
 
-    public RegisterGrain(IObjectMapper objectMapper, IOptions<CAAccountOption> options)
+    public RegisterGrain(IObjectMapper objectMapper, IOptionsSnapshot<CAAccountOption> options)
     {
         _objectMapper = objectMapper;
         _cAAccountOption = options.Value;
