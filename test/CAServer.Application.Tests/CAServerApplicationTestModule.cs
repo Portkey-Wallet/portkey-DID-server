@@ -5,6 +5,7 @@ using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
 using CAServer.BackGround.Provider;
 using CAServer.Bookmark;
+using CAServer.ContractEventHandler.Core;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.ThirdPart;
 using CAServer.Grain.Tests;
@@ -25,6 +26,7 @@ namespace CAServer;
 
 [DependsOn(
     typeof(CAServerApplicationModule),
+    typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),
     typeof(CAServerDomainTestModule)
@@ -41,7 +43,7 @@ public class CAServerApplicationTestModule : AbpModule
 
         context.Services.AddSingleton<IThirdPartNftOrderProcessorFactory, ThirdPartNftOrderProcessorFactory>();
         
-        context.Services.AddSingleton<INftOrderUnCompletedTransferWorker, NftOrderSettlementTransferWorker>();
+        context.Services.AddSingleton<INftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
         context.Services.AddSingleton<INftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
         context.Services.AddSingleton<INftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
         context.Services.AddSingleton<INftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
@@ -54,6 +56,7 @@ public class CAServerApplicationTestModule : AbpModule
         
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerContractEventHandlerCoreModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem

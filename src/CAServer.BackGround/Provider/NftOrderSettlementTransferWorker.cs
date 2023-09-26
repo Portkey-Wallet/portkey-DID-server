@@ -18,12 +18,12 @@ using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 
-public interface INftOrderUnCompletedTransferWorker
+public interface INftOrderSettlementTransferWorker
 {
     Task Handle();
 }
 
-public class NftOrderSettlementTransferWorker : INftOrderUnCompletedTransferWorker, ISingletonDependency
+public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderSettlementTransferWorker> _logger;
     private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;

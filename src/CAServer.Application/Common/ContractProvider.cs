@@ -41,17 +41,15 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption; 
     private readonly ISignatureProvider _signatureProvider;
     private readonly ContractOptions _contractOptions;
-    private readonly GraphQLHttpClient _graphQLClient;
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        IOptionsSnapshot<ContractOptions> contractOptions, GraphQLHttpClient graphQlClient)
+        IOptionsSnapshot<ContractOptions> contractOptions)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
-        _graphQLClient = graphQlClient;
         _contractOptions = contractOptions.Value;
     }
 

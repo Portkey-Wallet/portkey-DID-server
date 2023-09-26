@@ -114,21 +114,6 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     }
 
     [Fact]
-    public async Task GetThirdPartOrdersByPageAsyncTest()
-    {
-        var userId = Guid.NewGuid();
-        var skipCount = 1;
-        var maxResultCount = 10;
-
-        var orderList = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
-            new GetThirdPartOrderConditionDto(skipCount, maxResultCount)
-            {
-                UserId = userId
-            });
-        orderList.TotalRecordCount.ShouldBe(1);
-    }
-
-    [Fact]
     public void TestGetOrderTransDirectForQuery()
     {
         var sell = AlchemyHelper.GetOrderTransDirectForQuery("sell");

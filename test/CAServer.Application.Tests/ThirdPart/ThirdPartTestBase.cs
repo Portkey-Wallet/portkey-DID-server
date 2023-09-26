@@ -1,11 +1,24 @@
 using System.Collections.Generic;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Options;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace CAServer.ThirdPart;
 
 public class ThirdPartTestBase : CAServerApplicationTestBase
 {
+
+    protected static IOptionsSnapshot<GraphQLOptions> MockGraphQLOptions()
+    {
+        var mockOptions = new Mock<IOptionsSnapshot<GraphQLOptions>>();
+        var option = new GraphQLOptions
+        {
+            GraphQLConnection = "http://localhost:9200/_search"
+        };
+        mockOptions.Setup(m => m.Value).Returns(option);
+        return mockOptions.Object;
+    }
     
     protected static IOptions<ThirdPartOptions> MockThirdPartOptions()
     {

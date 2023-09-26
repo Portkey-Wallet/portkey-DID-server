@@ -120,6 +120,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var randomPrivateKey = CryptoHelper.GenerateKeyPair().PrivateKey.ToHex();
             var nftOrderGrainDto = _objectMapper.Map<CreateNftOrderRequestDto, NftOrderGrainDto>(input);
             nftOrderGrainDto.Id = createResult.Data.Id;
+            
             var createNftResult = await DoCreateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(createResult.Success, "Order save failed");
 

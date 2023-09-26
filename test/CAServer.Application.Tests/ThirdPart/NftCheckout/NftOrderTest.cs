@@ -36,7 +36,7 @@ public partial class NftOrderTest : ThirdPartTestBase
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
     private readonly INftOrderMerchantCallbackWorker _nftOrderMerchantCallbackWorker;
-    private readonly INftOrderUnCompletedTransferWorker _nftOrderUnCompletedTransferWorker;
+    private readonly INftOrderSettlementTransferWorker _nftOrderUnCompletedTransferWorker;
     private readonly INftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
     private readonly INftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
     private readonly IOrderStatusProvider _orderStatusProvider;
@@ -44,7 +44,7 @@ public partial class NftOrderTest : ThirdPartTestBase
     public NftOrderTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _nftOrderUnCompletedTransferWorker = GetRequiredService<INftOrderUnCompletedTransferWorker>();
+        _nftOrderUnCompletedTransferWorker = GetRequiredService<INftOrderSettlementTransferWorker>();
         _nftOrderThirdPartOrderStatusWorker = GetRequiredService<INftOrderThirdPartOrderStatusWorker>();
         _orderThirdPartNftResultNotifyWorker = GetRequiredService<INftOrderThirdPartNftResultNotifyWorker>();
         _thirdPartNftOrderProcessorFactory = GetRequiredService<IThirdPartNftOrderProcessorFactory>();
@@ -59,6 +59,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         base.AfterAddApplication(services);
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
         services.AddSingleton(MockThirdPartOptions());
+        services.AddSingleton(MockGraphQLOptions());
 
         // mock http
         services.AddSingleton(MockHttpFactory(_testOutputHelper,
@@ -95,7 +96,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             WebhookUrl = "http://127.0.0.1:9200/myWebhook",
             PaymentSymbol = "ELF",
             PaymentAmount = "100000000",
-            ReceivingAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
+            MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
             CaHash = caHash
         };
         input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
@@ -127,6 +128,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
             MerchantName = MerchantName,
             MerchantOrderId = orderId,
+            MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
             WebhookUrl = "http://127.0.0.1:9200/myWebhook",
             PaymentSymbol = "ELF",
             PaymentAmount = "100000000",
@@ -143,7 +145,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         input.Signature = "ERROR SIGN";
         var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
         res.ShouldNotBeNull();
-        res.Message.ShouldContain("Internal error");
+        res.Message.ShouldContain("Verify merchant signature failed");
     }
 
     [Fact]
@@ -277,6 +279,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
             MerchantName = MerchantName,
             MerchantOrderId = orderId,
+            MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
             WebhookUrl = "http://127.0.0.1:9200/myWebhookFail",
             PaymentSymbol = "ELF",
             PaymentAmount = "100000000",
