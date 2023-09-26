@@ -221,6 +221,36 @@ public class ContactProviderTest : CAServerApplicationTestBase
             e.ShouldNotBeNull();
         }
     }
+    
+    [Fact]
+    public async Task GetContactList_Provider_Test()
+    {
+        var newGuid = Guid.NewGuid();
+        _contactRepository.AddOrUpdateAsync(new ContactIndex()
+        {
+            UserId = _currentUser.GetId(),
+            CaHolderInfo = new Entities.Es.CaHolderInfo()
+            {
+                UserId = newGuid,
+            },
+            Addresses = new List<ContactAddress>()
+            {
+                new ContactAddress()
+                {
+                    Address = "aaa"
+                }
+            },
+            IsDeleted = false
+        });
+        
+        var list = await _contactProvider.GetContactListAsync(new List<string>()
+        {
+            newGuid.ToString()
+        },"", _currentUser.GetId());
+
+        list.ShouldNotBeNull();
+
+    }
 
     private async Task<IGraphQLHelper> GetGraphQlMock()
     {
