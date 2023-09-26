@@ -48,7 +48,8 @@ public class CAServerApplicationTestModule : AbpModule
         
         context.Services.AddSingleton<NftOrderMerchantCallbackHandler>();
         context.Services.AddSingleton<NftOrderUpdateHandler>();
-        context.Services.AddSingleton<NftReleaseResultHandler>();
+        context.Services.AddSingleton<NftOrderReleaseResultHandler>();
+        context.Services.AddSingleton<NftOrderPaySuccessHandler>();
         context.Services.AddSingleton<ThirdPartHandler>();
         
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });

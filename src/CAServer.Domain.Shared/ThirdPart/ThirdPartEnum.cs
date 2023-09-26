@@ -45,7 +45,7 @@ public enum NftOrderWebhookStatus
 ///                                                                              \- TransferFailed                                       \- PaymentFailed
 /// 
 ///     nft-buy:   Initialized - Created - Pending - StartTransfer - Transferring - Transferred - Finish
-///                                   \    (user pay success)                    \- TransferFailed
+///                                   \      \-(user pay success)                \- TransferFailed
 ///                                    \-  Failed,Expired
 /// </summary>
 public enum OrderStatusType
@@ -184,15 +184,20 @@ public class OrderStatusTransitions
             OrderStatusType.StartPayment,
             OrderStatusType.SuccessfulPayment,
             OrderStatusType.PaymentFailed,
+            OrderStatusType.Finish,
+            OrderStatusType.Failed,
         },
 
         // by local transaction: off-ramp user transfer crypto success
         [OrderStatusType.Transferred] = new()
         {
+            OrderStatusType.TransferFailed, // transaction rollback
             OrderStatusType.UserCompletesCoinDeposit,
             OrderStatusType.StartPayment,
             OrderStatusType.SuccessfulPayment,
             OrderStatusType.PaymentFailed,
+            OrderStatusType.Finish,
+            OrderStatusType.Failed,
         },
 
         // by third webhook : off-ramp user transfer crypto complete

@@ -28,6 +28,7 @@ public class CreateNftOrderRequestDto : NftMerchantBaseDto
 public class CreateNftOrderResponseDto : NftMerchantBaseDto
 {
     public string OrderId { get; set; }
+    public string MerchantAddress { get; set; }
 }
 
 

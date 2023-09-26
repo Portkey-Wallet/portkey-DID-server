@@ -5,10 +5,13 @@ using AElf.Contracts.MultiToken;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Commons;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Options;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using GraphQL;
+using GraphQL.Client.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portkey.Contracts.CA;
@@ -38,15 +41,17 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption; 
     private readonly ISignatureProvider _signatureProvider;
     private readonly ContractOptions _contractOptions;
+    private readonly GraphQLHttpClient _graphQLClient;
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        IOptionsSnapshot<ContractOptions> contractOptions)
+        IOptionsSnapshot<ContractOptions> contractOptions, GraphQLHttpClient graphQlClient)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
+        _graphQLClient = graphQlClient;
         _contractOptions = contractOptions.Value;
     }
 

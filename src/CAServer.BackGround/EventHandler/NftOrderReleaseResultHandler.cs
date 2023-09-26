@@ -7,18 +7,17 @@ using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.BackGround.EventHandler;
 
-public class NftReleaseResultHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
+public class NftOrderReleaseResultHandler : IDistributedEventHandler<OrderEto>, ITransientDependency
 {
     private static readonly List<string> NftReleaseResultStatus = new()
     {
         OrderStatusType.Finish.ToString(),
-        OrderStatusType.TransferFailed.ToString(),
     };
 
-    private readonly ILogger<NftReleaseResultHandler> _logger;
+    private readonly ILogger<NftOrderReleaseResultHandler> _logger;
     private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
-
-    public NftReleaseResultHandler(ILogger<NftReleaseResultHandler> logger,
+    
+    public NftOrderReleaseResultHandler(ILogger<NftOrderReleaseResultHandler> logger,
         IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory)
     {
         _logger = logger;

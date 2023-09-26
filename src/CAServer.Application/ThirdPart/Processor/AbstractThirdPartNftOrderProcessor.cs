@@ -18,6 +18,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Caching;
 using Volo.Abp.DistributedLocking;
 
 namespace CAServer.ThirdPart.Processor;
@@ -275,7 +276,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     ///     Invoke by worker, refresh settlement transfer transaction status
     /// </summary>
     /// <param name="orderId"></param>
-    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId)
+    /// <param name="confirmedHeight"></param>
+    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long confirmedHeight)
     {
         try
         {
@@ -295,18 +297,23 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
             // update order status
-            orderGrainDto.Status = rawTxResult.Status == TransactionState.Mined
-                ? OrderStatusType.Transferred.ToString()
+            var newStatus = rawTxResult.Status == TransactionState.Mined
+                ? rawTxResult.BlockNumber <= confirmedHeight 
+                    ? OrderStatusType.Finish.ToString() 
+                    : OrderStatusType.Transferred.ToString()
                 : OrderStatusType.TransferFailed.ToString();
+            AssertHelper.IsTrue(orderGrainDto.Status != newStatus, "Order status not changed : {Status}", orderGrainDto.Status);
 
             // Record transfer data when filed
-            var extraInfo = rawTxResult.Status == TransactionState.Mined
+            var extraInfo = newStatus == OrderStatusType.TransferFailed.ToString()
                 ? null
                 : new Dictionary<string, string>
                 {
                     ["txResult"] = JsonConvert.SerializeObject(rawTxResult)
                 };
-
+            
+            // update order status
+            orderGrainDto.Status = newStatus;
             var updateRes = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, extraInfo);
             AssertHelper.IsTrue(updateRes.Success, "Update NFT order settlement status failed: {Msg}",
                 updateRes.Message);
@@ -314,7 +321,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning(e, "NFT order RefreshSettlementTransfer failed, orderId={OrderId}", orderId);
+            _logger.LogWarning(e, "NFT order RefreshSettlementTransfer not change, orderId={OrderId}", orderId);
             return new CommonResponseDto<Empty>().Error(e, e.Message);
         }
         catch (Exception e)

@@ -14,21 +14,16 @@ public class NftOrderMerchantCallbackHandler : IDistributedEventHandler<OrderEto
 {
     private static readonly List<string> ResultStatus = new()
     {
-        OrderStatusType.Transferred.ToString(),
+        OrderStatusType.Finish.ToString(),
     };
 
     private readonly ILogger<NftOrderMerchantCallbackHandler> _logger;
-    private readonly IClusterClient _clusterClient;
-    private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
-    public NftOrderMerchantCallbackHandler(IClusterClient clusterClient,
-        ILogger<NftOrderMerchantCallbackHandler> logger,
-        IThirdPartOrderProvider thirdPartOrderProvider, IOrderStatusProvider orderStatusProvider)
+    public NftOrderMerchantCallbackHandler(ILogger<NftOrderMerchantCallbackHandler> logger,
+        IOrderStatusProvider orderStatusProvider)
     {
-        _clusterClient = clusterClient;
         _logger = logger;
-        _thirdPartOrderProvider = thirdPartOrderProvider;
         _orderStatusProvider = orderStatusProvider;
     }
 

@@ -1,6 +1,8 @@
 using CAServer.BackGround.Options;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.ThirdPart;
@@ -30,17 +32,19 @@ public class NftOrderSettlementTransferWorker : INftOrderUnCompletedTransferWork
     private readonly IAbpDistributedLock _distributedLock;
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly TransactionOptions _transactionOptions;
+    private readonly IGraphQLProvider _graphQlProvider;
 
     public NftOrderSettlementTransferWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, ILogger<NftOrderSettlementTransferWorker> logger,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
-        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions)
+        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions, IGraphQLProvider graphQlProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
+        _graphQlProvider = graphQlProvider;
         _transactionOptions = transactionOptions.Value;
         _thirdPartOptions = thirdPartOptions.Value;
     }
@@ -59,6 +63,9 @@ public class NftOrderSettlementTransferWorker : INftOrderUnCompletedTransferWork
             return;
         }
         
+        var confirmedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(CommonConstant.MainChainId);
+        _logger.LogDebug("HandleUnCompletedNftOrderSettlementTransfer LIB is {LibHeight}", confirmedHeight);
+        
         const int pageSize = 100;
         var secondsAgo = _thirdPartOptions.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds().ToString();
@@ -74,6 +81,7 @@ public class NftOrderSettlementTransferWorker : INftOrderUnCompletedTransferWork
                     StatusIn = new List<string>
                     {
                         OrderStatusType.Transferring.ToString(),
+                        OrderStatusType.Transferred.ToString(),
                     },
                     TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() }
                 }, OrderSectionEnum.NftSection);
@@ -86,7 +94,7 @@ public class NftOrderSettlementTransferWorker : INftOrderUnCompletedTransferWork
             {
                 callbackResults.Add(_thirdPartNftOrderProcessorFactory
                     .GetProcessor(orderDto.MerchantName)
-                    .RefreshSettlementTransfer(orderDto.Id));
+                    .RefreshSettlementTransfer(orderDto.Id, confirmedHeight));
             }
 
             // non data in page was handled, stop

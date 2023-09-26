@@ -126,7 +126,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var resp = new CreateNftOrderResponseDto
             {
                 MerchantName = createNftResult.Data.MerchantName,
-                OrderId = createNftResult.Data.Id.ToString()
+                MerchantAddress = nftOrderGrainDto.MerchantAddress,
+                OrderId = createNftResult.Data.Id.ToString(),
             };
             _thirdPartOrderProvider.SignMerchantDto(resp);
 
