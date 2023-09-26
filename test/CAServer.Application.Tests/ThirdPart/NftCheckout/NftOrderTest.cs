@@ -36,7 +36,7 @@ public partial class NftOrderTest : ThirdPartTestBase
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
     private readonly INftOrderMerchantCallbackWorker _nftOrderMerchantCallbackWorker;
-    private readonly INftOrderSettlementTransferWorker _nftOrderUnCompletedTransferWorker;
+    private readonly INftOrderSettlementTransferWorker _nftOrderSettlementTransferWorker;
     private readonly INftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
     private readonly INftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
     private readonly IOrderStatusProvider _orderStatusProvider;
@@ -44,7 +44,7 @@ public partial class NftOrderTest : ThirdPartTestBase
     public NftOrderTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _nftOrderUnCompletedTransferWorker = GetRequiredService<INftOrderSettlementTransferWorker>();
+        _nftOrderSettlementTransferWorker = GetRequiredService<INftOrderSettlementTransferWorker>();
         _nftOrderThirdPartOrderStatusWorker = GetRequiredService<INftOrderThirdPartOrderStatusWorker>();
         _orderThirdPartNftResultNotifyWorker = GetRequiredService<INftOrderThirdPartNftResultNotifyWorker>();
         _thirdPartNftOrderProcessorFactory = GetRequiredService<IThirdPartNftOrderProcessorFactory>();
@@ -60,6 +60,8 @@ public partial class NftOrderTest : ThirdPartTestBase
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
         services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(MockGraphQLOptions());
+        services.AddSingleton(MockContractProvider());
+        services.AddSingleton(MockGraphQlProvider());
 
         // mock http
         services.AddSingleton(MockHttpFactory(_testOutputHelper,
@@ -169,31 +171,61 @@ public partial class NftOrderTest : ThirdPartTestBase
     {
         await CreateTest();
 
-        var orderId = "994864610797428736";
-        var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
+        #region Mock Alchemy callback PAY_SUCCESS
+            
+            
+            var orderId = "994864610797428736";
+            var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
 
-        var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
-        {
-            ["orderNo"] = orderId,
-            ["merchantOrderNo"] = merchantOrderId,
-            ["amount"] = "100",
-            ["fiat"] = "USD",
-            ["payTime"] = "2022-07-08 15:18:43",
-            ["payType"] = "CREDIT_CARD",
-            ["type"] = "MARKET",
-            ["name"] = "LUCK",
-            ["quantity"] = "1",
-            ["uniqueId"] = "LUCK",
-            ["appId"] = "test",
-            ["message"] = "",
-            ["status"] = "PAY_SUCCESS",
-            ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
-        };
-        var result = await _thirdPartNftOrderProcessorFactory
-            .GetProcessor(ThirdPartNameType.Alchemy.ToString())
-            .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
-        result.ShouldNotBeNull();
-        result.Success.ShouldBe(true);
+            var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
+            {
+                ["orderNo"] = orderId,
+                ["merchantOrderNo"] = merchantOrderId,
+                ["amount"] = "100",
+                ["fiat"] = "USD",
+                ["payTime"] = "2022-07-08 15:18:43",
+                ["payType"] = "CREDIT_CARD",
+                ["type"] = "MARKET",
+                ["name"] = "LUCK",
+                ["quantity"] = "1",
+                ["uniqueId"] = "LUCK",
+                ["appId"] = "test",
+                ["message"] = "",
+                ["status"] = "PAY_SUCCESS",
+                ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
+            };
+            var result = await _thirdPartNftOrderProcessorFactory
+                .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+                .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
+            result.ShouldNotBeNull();
+            result.Success.ShouldBe(true);
+
+            var order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
+            order.ShouldNotBeNull();
+            order.Status.ShouldBe(OrderStatusType.Transferring.ToString());
+        
+        #endregion
+
+        #region update to Mined transactionId, for test
+        
+            order.TransactionId = MinedTxId;
+            var updMindTxId = await _orderStatusProvider.UpdateRampOrderAsync(order);
+
+        #endregion
+
+        #region run worker to fix transaction status
+        
+            await _nftOrderSettlementTransferWorker.Handle();
+            order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
+            order.ShouldNotBeNull();
+            order.Status.ShouldBe(OrderStatusType.Finish.ToString());
+
+            var nftOrder = await _orderStatusProvider.GetNftOrderAsync(Guid.Parse(merchantOrderId));
+            nftOrder.ShouldNotBeNull();
+            nftOrder.WebhookStatus.ShouldBe("SUCCESS");
+            nftOrder.ThirdPartNotifyStatus.ShouldBe("SUCCESS");
+            
+        #endregion
     }
 
     [Fact]

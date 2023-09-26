@@ -93,7 +93,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         AssertHelper.IsTrue(result.Success, "Update order error");
 
         var orderStatusGrainDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
-        orderStatusGrainDto.OrderStatusInfo.Extension = extension.IsNullOrEmpty() ? string.Empty : JsonConvert.SerializeObject(extension);
+        orderStatusGrainDto.OrderStatusInfo.Extension = extension.IsNullOrEmpty() ? null : JsonConvert.SerializeObject(extension);
         await AddOrderStatusInfoAsync(orderStatusGrainDto);
 
         var orderChangeEto = _objectMapper.Map<OrderGrainDto, OrderEto>(result.Data);

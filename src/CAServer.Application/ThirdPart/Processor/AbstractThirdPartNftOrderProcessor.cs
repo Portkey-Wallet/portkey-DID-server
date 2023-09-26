@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Client.Dto;
 using CAServer.Common;
 using CAServer.Commons;
@@ -12,6 +13,7 @@ using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -228,48 +230,72 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     public async Task SettlementTransfer(Guid orderId)
     {
         const string lockKeyPrefix = "nft_order:settlement_transfer:";
-        // query verify order grain
-        var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
-        AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
-
-        var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
-        AssertHelper.IsTrue(currentStatus == OrderStatusType.StartTransfer,
-            "Order not in settlement StartTransfer state, current: {Status}", currentStatus);
-        AssertHelper.NullOrEmpty(orderGrainDto.TransactionId, "TransactionId exists: {TxId}",
-            orderGrainDto.TransactionId);
-
-        // query nft-order data and verify
-        var nftOrderGrainDto = await _orderStatusProvider.GetNftOrderAsync(orderId);
-        AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
-        AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "NFT order merchant address missing");
-
-        // Duplicate check
-        await using var distributedLock = await _distributedLock.TryAcquireAsync(lockKeyPrefix + orderId);
-        AssertHelper.IsTrue(distributedLock != null, "Duplicate transfer, abort.");
-
-        // Transfer crypto to merchant
-        var sendResult = await _contractProvider.SendTransferAsync(orderGrainDto.Crypto, orderGrainDto.CryptoAmount,
-            nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
-            _thirdPartOptions.NftOrderSettlementPublicKey);
-        AssertHelper.NotEmpty(sendResult.TransactionId, "SettlementTransferId missing");
-
-        var txResult = await WaitTransactionResult(CommonConstant.MainChainId, sendResult.TransactionId);
-        AssertHelper.NotNull(txResult, "Transaction result empty, {ChainId}-{TxId}", CommonConstant.MainChainId,
-            sendResult.TransactionId);
-        AssertHelper.IsTrue(txResult.Status != TransactionState.NodeValidationFailed,
-            "Settlement transfer failed: " + txResult.Error);
-
-        // update main-order
-        orderGrainDto.TransactionId = sendResult.TransactionId;
-        orderGrainDto.Status = txResult.Status == TransactionState.Mined
-            ? OrderStatusType.Transferred.ToString()
-            : OrderStatusType.Transferring.ToString();
-        var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, new Dictionary<string, string>
+        try
         {
-            ["txHash"] = sendResult.TransactionId,
-            ["txResult"] = JsonConvert.SerializeObject(txResult)
-        });
-        AssertHelper.IsTrue(updateResult.Success, "sava ramp order failed: " + updateResult.Message);
+            // Duplicate check
+            await using var distributedLock = await _distributedLock.TryAcquireAsync(lockKeyPrefix + orderId);
+            AssertHelper.NotNull(distributedLock, "Duplicate transfer, abort");
+            
+            // query verify order grain
+            var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
+            AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
+
+            var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
+            AssertHelper.IsTrue(currentStatus == OrderStatusType.StartTransfer,
+                "Order not in settlement StartTransfer state, current: {Status}", currentStatus);
+            AssertHelper.NullOrEmpty(orderGrainDto.TransactionId, "TransactionId exists: {TxId}",
+                orderGrainDto.TransactionId);
+
+            // query nft-order data and verify
+            var nftOrderGrainDto = await _orderStatusProvider.GetNftOrderAsync(orderId);
+            AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
+            AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "NFT order merchant address missing");
+
+            // generate transfer transaction
+            var (txHash, transferTx) = await _contractProvider.GenerateTransferTransaction(orderGrainDto.Crypto, orderGrainDto.CryptoAmount,
+                nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
+                _thirdPartOptions.NftOrderSettlementPublicKey);
+            
+            // update main-order, record transactionId first
+            orderGrainDto.TransactionId = txHash;
+            orderGrainDto.Status = OrderStatusType.Transferring.ToString();
+            var transferringResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, new Dictionary<string, string>
+            {
+                ["txHash"] = txHash,
+                ["transaction"] = JsonConvert.SerializeObject(transferTx)
+            });
+            AssertHelper.IsTrue(transferringResult.Success, "sava ramp order failed: " + transferringResult.Message);
+            
+            // Transfer crypto to merchant, and wait result
+            var sendResult = await _contractProvider.SendRawTransactionAsync(CommonConstant.MainChainId, transferTx.ToByteArray().ToHex());
+            AssertHelper.NotNull(sendResult, "Empty send result");
+            
+            var txResult = await WaitTransactionResult(CommonConstant.MainChainId, sendResult.TransactionId);
+            AssertHelper.NotNull(txResult, "Transaction result empty, {ChainId}-{TxId}", CommonConstant.MainChainId,
+                sendResult.TransactionId);
+            AssertHelper.IsTrue(txResult.Status != TransactionState.NodeValidationFailed,
+                "Settlement transfer failed: " + txResult.Error);
+
+            // update main-order
+            orderGrainDto.TransactionId = sendResult.TransactionId;
+            orderGrainDto.Status = txResult.Status == TransactionState.Mined
+                ? OrderStatusType.Transferred.ToString()
+                : OrderStatusType.Transferring.ToString();
+            var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, new Dictionary<string, string>
+            {
+                ["txResult"] = JsonConvert.SerializeObject(txResult)
+            });
+            AssertHelper.IsTrue(updateResult.Success, "sava ramp order failed: " + updateResult.Message);
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning("Send SettlementTransfer failed, orderId={OrderId}", orderId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Send SettlementTransfer error, orderId={OrderId}", orderId);
+        }
+
     }
 
     /// <summary>
@@ -286,6 +312,14 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
 
             var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
+
+            // something wrong before transfer sent, status will be stay StartTransfer
+            if (currentStatus == OrderStatusType.StartTransfer)
+            {
+                await SettlementTransfer(orderId);
+                return new CommonResponseDto<Empty>();
+            }
+            
             AssertHelper.IsTrue(currentStatus == OrderStatusType.Transferring,
                 "Order not in settlement Transferring state, current: {Status}", currentStatus);
             AssertHelper.NotEmpty(orderGrainDto.TransactionId, "TransactionId not exists {OrderId}", orderId);
@@ -333,30 +367,21 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
     private async Task<TransactionResultDto> WaitTransactionResult(string chainId, string transactionId)
     {
+        var waitingStatus = new List<string> { TransactionState.NotExisted, TransactionState.Pending}; 
         var delayMilliSeconds = _thirdPartOptions.Timer.TransactionWaitDelaySeconds * 1000;
-        var cts = new CancellationTokenSource(_thirdPartOptions.Timer.TransactionWaitTimeoutSeconds * 1000);
         TransactionResultDto rawTxResult = null;
-        while (!cts.IsCancellationRequested)
+        using var cts = new CancellationTokenSource(delayMilliSeconds);
+        try
         {
-            try
+            while (!cts.IsCancellationRequested && (rawTxResult == null || waitingStatus.Contains(rawTxResult.Status)))
             {
                 rawTxResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
-                if (rawTxResult.Status != TransactionState.NotExisted && rawTxResult.Status != TransactionState.Pending)
-                {
-                    break;
-                }
             }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Timed out waiting for transactionId {TransactionId} result", transactionId);
-                break;
-            }
-
-            // delay some times
-            await Task.Delay(delayMilliSeconds, cts.Token);
         }
-
-        cts.Cancel();
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Timed out waiting for transactionId {TransactionId} result", transactionId);
+        }
         return rawTxResult;
     }
 

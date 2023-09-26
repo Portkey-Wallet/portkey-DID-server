@@ -80,6 +80,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
                     LastModifyTimeLt = lastModifyTimeLt,
                     StatusIn = new List<string>
                     {
+                        OrderStatusType.StartTransfer.ToString(),
                         OrderStatusType.Transferring.ToString(),
                         OrderStatusType.Transferred.ToString(),
                     },

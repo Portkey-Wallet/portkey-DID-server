@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -32,6 +33,8 @@ public interface IContractProvider
         string fromPublicKey);
     Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
+    Task<Tuple<string, Transaction>> GenerateTransferTransaction(string symbol, string amount, string address,
+        string chainId, string senderPubKey);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -82,6 +85,41 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         value.MergeFrom(ByteArrayHelper.HexStringToByteArray(result));
 
         return value;
+    }
+
+    /// <summary>
+    ///     Generate transfer-transaction
+    /// </summary>
+    /// <param name="symbol"></param>
+    /// <param name="amount"></param>
+    /// <param name="address"></param>
+    /// <param name="chainId"></param>
+    /// <param name="senderPubKey"></param>
+    /// <returns> Tuple( transactionId -> transaction ) </returns>
+    public async Task<Tuple<string, Transaction>> GenerateTransferTransaction(string symbol, string amount, string address,
+        string chainId, string senderPubKey)
+    {
+        AssertHelper.IsTrue(_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo), "ChainInfo not found : " + chainId);
+        var methodName = AElfContractMethodName.Transfer;
+        var transferParam = new TransferInput
+        {
+            Symbol = symbol,
+            Amount = long.Parse(amount),
+            To = Address.FromBase58(address)
+        };
+        
+        var client = new AElfClient(chainInfo.BaseUrl);
+        await client.IsConnectedAsync();
+        var ownAddress = client.GetAddressFromPubKey(senderPubKey);
+
+        var transaction = await client.GenerateTransactionAsync(ownAddress, chainInfo.TokenContractAddress, methodName, transferParam);
+        var transactionId = transaction.GetHash().ToHex();
+        _logger.LogDebug("Send tx methodName is: {MethodName} param is: {Transaction}, publicKey is:{PublicKey} ",
+            methodName, transaction, senderPubKey);
+        
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transactionId);
+        transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+        return new Tuple<string, Transaction>(transactionId, transaction);
     }
 
     private async Task<SendTransactionOutput> SendTransactionAsync<T>(string methodName, IMessage param,

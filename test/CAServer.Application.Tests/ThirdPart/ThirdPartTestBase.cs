@@ -1,6 +1,14 @@
+using System;
 using System.Collections.Generic;
+using System.Threading;
+using AElf;
+using AElf.Client.Dto;
+using AElf.Types;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Options;
+using GraphQL;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -9,6 +17,9 @@ namespace CAServer.ThirdPart;
 public class ThirdPartTestBase : CAServerApplicationTestBase
 {
 
+    internal readonly string PendingTxId = HashHelper.ComputeFrom("PENDING").ToHex();
+    internal readonly string MinedTxId = HashHelper.ComputeFrom("MINED").ToHex();
+    
     protected static IOptionsSnapshot<GraphQLOptions> MockGraphQLOptions()
     {
         var mockOptions = new Mock<IOptionsSnapshot<GraphQLOptions>>();
@@ -44,8 +55,8 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,
                 HandleUnCompletedOrderMinuteAgo = 0,
-                NftCheckoutResultThirdPartNotifyCount = 0,
-                NftUnCompletedMerchantCallbackMinuteAgo = 0
+                NftUnCompletedMerchantCallbackMinuteAgo = 0,
+                HandleUnCompletedSettlementTransferSecondsAgo = 0,
             },
             Merchant = new MerchantOptions
             {
@@ -61,6 +72,49 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             }
         };
         return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+    }
+
+    protected CAServer.Common.IContractProvider MockContractProvider()
+    {
+        var mockContractProvider = new Mock<CAServer.Common.IContractProvider>();
+        mockContractProvider
+            .Setup(p =>
+                p.SendRawTransactionAsync("AELF", It.IsAny<string>()))
+            .ReturnsAsync(new SendTransactionOutput{ TransactionId = PendingTxId });
+
+        mockContractProvider
+            .Setup(p => p.GetTransactionResultAsync(It.IsAny<string>(), PendingTxId))
+            .ReturnsAsync(new TransactionResultDto
+            {
+                TransactionId = PendingTxId,
+                Status = "PENDING",
+                Transaction = new TransactionDto()
+            });
+        
+        mockContractProvider
+            .Setup(p => p.GetTransactionResultAsync(It.IsAny<string>(), MinedTxId))
+            .ReturnsAsync(new TransactionResultDto
+            {
+                TransactionId = MinedTxId,
+                Status = "MINED",
+                Transaction = new TransactionDto()
+            });
+        
+        mockContractProvider
+            .Setup(p => p.GenerateTransferTransaction(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new Tuple<string, Transaction>(PendingTxId, new Transaction()));
+        
+        return mockContractProvider.Object;
+    }
+
+    protected IGraphQLProvider MockGraphQlProvider()
+    {
+        var mockGraphQlClient = new Mock<IGraphQLProvider>();
+        mockGraphQlClient
+            .Setup(p => p.GetIndexBlockHeightAsync("AELF"))
+            .ReturnsAsync(100);
+
+        return mockGraphQlClient.Object;
     }
 
 }
