@@ -47,7 +47,7 @@ public class ContractAppService : IContractAppService
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
         IContractProvider contractProvider, IObjectMapper objectMapper, ILogger<ContractAppService> logger,
-        IRecordsBucketContainer recordsBucketContainer)
+        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -57,6 +57,7 @@ public class ContractAppService : IContractAppService
         _objectMapper = objectMapper;
         _logger = logger;
         _recordsBucketContainer = recordsBucketContainer;
+        _indicatorLogger = indicatorLogger;
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
@@ -429,6 +430,7 @@ public class ContractAppService : IContractAppService
                         }
                         else
                         {
+                            AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType);
                             _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
                                 record.ChangeType, chainId, record.CaHash);
                         }
@@ -479,6 +481,7 @@ public class ContractAppService : IContractAppService
                     }
                     else
                     {
+                        AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType);
                         _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
                             record.ChangeType, chainId, record.CaHash);
                     }
@@ -749,5 +752,13 @@ public class ContractAppService : IContractAppService
                 await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height);
             }
         }
+    }
+
+    private void AddMonitorLog(long startHeight, long endHeight, string changeType)
+    {
+        var blockInterval = endHeight - startHeight;
+        var duration = (int)(Math.Round((double)blockInterval / 2, 2) * 1000);
+
+        _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, changeType, duration);
     }
 }
