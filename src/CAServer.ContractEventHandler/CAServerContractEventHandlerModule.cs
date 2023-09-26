@@ -3,6 +3,7 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using CAServer.Monitor;
 using CAServer.Signature;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
@@ -37,6 +38,7 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
+    typeof(CAServerMonitorModule),
     typeof(AbpCachingStackExchangeRedisModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {
