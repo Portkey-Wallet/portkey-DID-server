@@ -430,7 +430,8 @@ public class ContractAppService : IContractAppService
                         }
                         else
                         {
-                            AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType);
+                            AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType, record.BlockHash,
+                                result.BlockHash);
                             _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
                                 record.ChangeType, chainId, record.CaHash);
                         }
@@ -481,7 +482,9 @@ public class ContractAppService : IContractAppService
                     }
                     else
                     {
-                        AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType);
+                        //AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType);
+                        AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType, record.BlockHash,
+                            result.BlockHash);
                         _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
                             record.ChangeType, chainId, record.CaHash);
                     }
@@ -754,11 +757,12 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    private void AddMonitorLog(long startHeight, long endHeight, string changeType)
+    private void AddMonitorLog(long startHeight, long endHeight, string changeType, string startHash, string endHash)
     {
         var blockInterval = endHeight - startHeight;
         var duration = (int)(Math.Round((double)blockInterval / 2, 2) * 1000);
 
-        _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, changeType, duration);
+        var target = $"{changeType}:startInfo[{startHeight},{startHash}]:endInfo[{endHeight},{endHash}]";
+        _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, target, duration);
     }
 }
