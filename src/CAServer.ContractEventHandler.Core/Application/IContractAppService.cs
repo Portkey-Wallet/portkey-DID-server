@@ -430,8 +430,8 @@ public class ContractAppService : IContractAppService
                         }
                         else
                         {
-                            AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType, record.BlockHash,
-                                result.BlockHash);
+                            await AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId, result.BlockNumber,
+                                record.ChangeType);
                             _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
                                 record.ChangeType, chainId, record.CaHash);
                         }
@@ -482,9 +482,9 @@ public class ContractAppService : IContractAppService
                     }
                     else
                     {
-                        //AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType);
-                        AddMonitorLog(record.BlockHeight, result.BlockNumber, record.ChangeType, record.BlockHash,
-                            result.BlockHash);
+                        await AddMonitorLogAsync(chainId, record.BlockHeight, ContractAppServiceConstant.MainChainId,
+                            result.BlockNumber,
+                            record.ChangeType);
                         _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
                             record.ChangeType, chainId, record.CaHash);
                     }
@@ -757,12 +757,24 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    private void AddMonitorLog(long startHeight, long endHeight, string changeType, string startHash, string endHash)
+    private async Task AddMonitorLogAsync(string startChainId, long startHeight, string endChainId, long endHeight,
+        string changeType)
     {
-        var blockInterval = endHeight - startHeight;
-        var duration = (int)(Math.Round((double)blockInterval / 2, 2) * 1000);
+        try
+        {
+            if(!_indicatorLogger.IsEnabled()) return;
+            
+            var startBlock = await _contractProvider.GetBlockByHeightAsync(startChainId, startHeight);
+            var endBlock = await _contractProvider.GetBlockByHeightAsync(endChainId, endHeight);
+            var blockInterval = endBlock.Header.Time - startBlock.Header.Time;
+            var duration = (int)blockInterval.TotalMilliseconds;
 
-        var target = $"{changeType}:startInfo[{startHeight},{startHash}]:endInfo[{endHeight},{endHash}]";
-        _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, target, duration);
+            var target = $"{changeType}:startInfo[{startHeight}]:endInfo[{endHeight}]";
+            _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, target, duration);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "add monitor log error.");
+        }
     }
 }
