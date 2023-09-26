@@ -1,6 +1,7 @@
 using CAServer.Grains.State.PrivacyPermission;
 using CAServer.PrivacyPermission;
 using CAServer.PrivacyPermission.Dtos;
+using MongoDB.Driver.Linq;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.PermissionManagement;
 
@@ -162,6 +163,8 @@ public class PrivacyPermissionGrain : Orleans.Grain<PrivacyPermissionState>, IPr
         {
             permissionSetting.PrivacyType = privacyType;
         }
+
+        result = result.Where(x => x.Identifier != null).ToList();
 
         return result;
     }
