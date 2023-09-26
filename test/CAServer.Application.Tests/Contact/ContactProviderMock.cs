@@ -104,6 +104,15 @@ public partial class ContactTest
                     NickName = "test"
                 }
             });
+        
+        provider.Setup(t => t.GetContactListAsync(It.IsAny<List<string>>(), It.IsAny<string>(), It.IsAny<Guid>()))
+            .ReturnsAsync(new List<ContactIndex>()
+            {
+                new()
+                {
+                    Id = new Guid()
+                }
+            });
 
         return provider.Object;
     }

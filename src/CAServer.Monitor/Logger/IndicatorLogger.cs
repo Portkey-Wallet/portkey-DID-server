@@ -1,5 +1,3 @@
-using System;
-using CAServer.Options;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -9,6 +7,7 @@ namespace CAServer.Monitor.Logger;
 
 public interface IIndicatorLogger
 {
+    bool IsEnabled();
     void LogInformation(MonitorTag tag, string target, int latency);
 }
 
@@ -23,11 +22,18 @@ public class IndicatorLogger : IIndicatorLogger, ISingletonDependency
         _indicatorOptions = indicatorOptions.Value;
     }
 
+    public bool IsEnabled() => _indicatorOptions.IsEnabled;
+
     public void LogInformation(MonitorTag tag, string target, int latency)
     {
+        if (!_indicatorOptions.IsEnabled)
+        {
+            return;
+        }
+
         LogInformation(GetIndicator(tag, target, latency));
     }
-    
+
     private void LogInformation(Indicator indicator)
     {
         _monitorLogger.LogInformation(JsonConvert.SerializeObject(indicator, new JsonSerializerSettings()
