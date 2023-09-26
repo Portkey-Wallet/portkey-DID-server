@@ -108,4 +108,17 @@ public partial class PrivacyPermissionTest
         res[PrivacyType.Google].Count.ShouldBe(0);
         res[PrivacyType.Apple].Count.ShouldBe(1);
     }
+
+    [Fact]
+    public async Task CheckPrivacyPermissionByIdAsync_test()
+    {
+        Login(UserId);
+        var res = await _privacyPermissionAppService.CheckPrivacyPermissionByIdAsync(new List<PermissionSetting>(){new PermissionSetting()
+        {
+            Identifier = "xxxx@aaa",
+            PrivacyType = PrivacyType.Email,
+            Permission = PrivacySetting.EveryBody
+        }},Guid.NewGuid());
+        res.Count.ShouldBe(1);
+    }
 }
