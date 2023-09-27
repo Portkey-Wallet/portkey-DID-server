@@ -91,9 +91,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contactAddressDto.ChainName = contactAddressDto.ChainName.IsNullOrWhiteSpace()
                 ? CommonConstant.ChainName
                 : contactAddressDto.ChainName;
-            
+
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
+
         _ = FollowAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId);
         _ = ImRemarkAsync(contactResultDto?.Addresses?.FirstOrDefault()?.Address, userId, input.Name);
 
@@ -153,7 +154,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contactAddressDto.ChainName = contactAddressDto.ChainName.IsNullOrWhiteSpace()
                 ? CommonConstant.ChainName
                 : contactAddressDto.ChainName;
-            
+
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
 
@@ -177,7 +178,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
-        
+
         await ImRemarkAsync(result?.Data?.ImInfo?.RelationId, userId, "");
         _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
     }
@@ -226,6 +227,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
 
+        contactDtoList?.ForEach(t => { t.Addresses = t.Addresses?.OrderBy(f => f.ChainId).ToList(); });
         return new PagedResultDto<ContactListDto>
         {
             TotalCount = totalCount,
@@ -380,6 +382,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), contactUserId);
         if (contact != null)
         {
+            contact.Addresses = contact.Addresses?.OrderBy(t => t.ChainId).ToList();
             return ObjectMapper.Map<ContactIndex, ContactResultDto>(contact);
         }
 
@@ -637,8 +640,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return responseDto.Data;
     }
 
-    
-    
+
     private async Task ImRemarkAsync(string relationId, Guid userId, string name)
     {
         if (_hostInfoOptions.Environment == Environment.Development)
@@ -659,8 +661,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e,ImConstant.ImServerErrorPrefix + " remark fail : {userId}, {relationId}, {name}, {imToken}", 
-                userId.ToString(), relationId, name, 
+            Logger.LogError(e,
+                ImConstant.ImServerErrorPrefix + " remark fail : {userId}, {relationId}, {name}, {imToken}",
+                userId.ToString(), relationId, name,
                 _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
     }
@@ -681,8 +684,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " follow fail : {userId}, {address}, {imToken}", 
-                userId.ToString(), address, 
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " follow fail : {userId}, {address}, {imToken}",
+                userId.ToString(), address,
                 _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
     }
@@ -703,8 +706,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " unfollow fail : {userId}, {address}, {imToken}", 
-                userId.ToString(), address, 
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " unfollow fail : {userId}, {address}, {imToken}",
+                userId.ToString(), address,
                 _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
     }
@@ -796,6 +799,18 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         return result;
+    }
+
+    public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
+    {
+        var contacts = await _contactProvider.GetContactListAsync(input.ContactUserIds, input.Address, CurrentUser.GetId());
+        if (contacts != null && contacts.Any())
+        {
+            contacts.ForEach(contact => contact.Addresses = contact.Addresses?.OrderBy(t => t.ChainId).ToList());
+            return ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contacts);
+        }
+
+        return new List<ContactResultDto>();
     }
 
     public async Task<ContactResultDto> MergeUpdateAsync(Guid id, ContactDto contactDto)

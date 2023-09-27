@@ -38,4 +38,10 @@ public class ImUserController : CAServerController
     {
         return await _imUserAppService.GetHolderInfoAsync(userId);
     }
+    
+    [HttpGet("holder/list")]
+    public async Task<List<Guid>> ListHolderInfoAsync(string keyword)
+    {
+        return await _imUserAppService.ListHolderInfoAsync(keyword);
+    }
 }

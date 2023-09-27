@@ -4,6 +4,7 @@ using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Grains;
 using CAServer.IpInfo;
+using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
@@ -33,6 +34,7 @@ namespace CAServer;
     typeof(AbpSettingManagementApplicationModule),
     typeof(CAServerGrainsModule),
     typeof(CAServerSignatureModule),
+    typeof(CAServerMonitorModule),
     typeof(AbpDistributedLockingModule)
 )]
 public class CAServerApplicationModule : AbpModule

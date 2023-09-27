@@ -15,7 +15,9 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
+        <ProjectReference Include="..\CAServer.Application\CAServer.Application.csproj" />
         <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
+        <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
         <ProjectReference Include="..\CAServer.Signature\CAServer.Signature.csproj" />
     </ItemGroup>
 </Project>

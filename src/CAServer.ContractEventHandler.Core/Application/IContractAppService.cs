@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Monitor;
+using CAServer.Monitor.Logger;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
@@ -39,11 +42,12 @@ public class ContractAppService : IContractAppService
     private readonly IRecordsBucketContainer _recordsBucketContainer;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
+    private readonly IIndicatorLogger _indicatorLogger;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
         IContractProvider contractProvider, IObjectMapper objectMapper, ILogger<ContractAppService> logger,
-        IRecordsBucketContainer recordsBucketContainer)
+        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -53,6 +57,7 @@ public class ContractAppService : IContractAppService
         _objectMapper = objectMapper;
         _logger = logger;
         _recordsBucketContainer = recordsBucketContainer;
+        _indicatorLogger = indicatorLogger;
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
@@ -158,7 +163,7 @@ public class ContractAppService : IContractAppService
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));
 
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
-        _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "");
+        _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "", MonitorTag.Register);
     }
 
     public async Task SocialRecoveryAsync(AccountRecoverCreateEto message)
@@ -246,7 +251,19 @@ public class ContractAppService : IContractAppService
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
-        _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "");
+        _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "",
+            MonitorTag.SocialRecover);
+    }
+
+    private async Task ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
+        string optionChainId, MonitorTag target)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        await ValidateTransactionAndSyncAsync(chainId, result, optionChainId);
+        stopwatch.Stop();
+
+        var duration = Convert.ToInt32(stopwatch.Elapsed.TotalMilliseconds);
+        _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, target.ToString(), duration);
     }
 
     private async Task<bool> ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
@@ -413,6 +430,8 @@ public class ContractAppService : IContractAppService
                         }
                         else
                         {
+                            await AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId, result.BlockNumber,
+                                record.ChangeType);
                             _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
                                 record.ChangeType, chainId, record.CaHash);
                         }
@@ -463,6 +482,9 @@ public class ContractAppService : IContractAppService
                     }
                     else
                     {
+                        await AddMonitorLogAsync(chainId, record.BlockHeight, ContractAppServiceConstant.MainChainId,
+                            result.BlockNumber,
+                            record.ChangeType);
                         _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
                             record.ChangeType, chainId, record.CaHash);
                     }
@@ -732,6 +754,25 @@ public class ContractAppService : IContractAppService
                     height);
                 await _graphQLProvider.SetLastEndHeightAsync(chainId, QueryType.QueryRecord, height);
             }
+        }
+    }
+
+    private async Task AddMonitorLogAsync(string startChainId, long startHeight, string endChainId, long endHeight,
+        string changeType)
+    {
+        try
+        {
+            if(!_indicatorLogger.IsEnabled()) return;
+            
+            var startBlock = await _contractProvider.GetBlockByHeightAsync(startChainId, startHeight);
+            var endBlock = await _contractProvider.GetBlockByHeightAsync(endChainId, endHeight);
+            var blockInterval = endBlock.Header.Time - startBlock.Header.Time;
+            var duration = (int)blockInterval.TotalMilliseconds;
+            _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, changeType, duration);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "add monitor log error.");
         }
     }
 }
