@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CAServer.ContractEventHandler.Core.Application;
+namespace CAServer;
 
 public class LoginGuardianChangeRecords
 {

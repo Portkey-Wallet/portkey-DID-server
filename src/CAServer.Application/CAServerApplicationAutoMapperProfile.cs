@@ -202,6 +202,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<SendVerificationRequestInput, VerifierCodeRequestDto>();
         CreateMap<GuardianGrainDto, GuardianEto>();
         CreateMap<GuardianGrainDto, GuardianDeleteEto>();
+        CreateMap<GuardianIndex, GuardianIndexDto>().ReverseMap();
 
         CreateMap<ManagerInfo, ManagerInfoDto>()
             .ForMember(t => t.Address, m => m.MapFrom(f => f.Address.ToBase58()));

@@ -31,10 +31,12 @@ public class IndexOptions
     public Dictionary<string, long> AutoSyncStartHeight { get; set; }
 }
 
+/*
 public class GraphQLOptions
 {
     public string GraphQLConnection { get; set; }
 }
+*/
 
 public class ContractSyncOptions
 {

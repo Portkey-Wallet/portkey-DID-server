@@ -11,6 +11,8 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Device;
 using CAServer.Hubs;
+using CAServer.Monitor;
+using CAServer.Monitor.Logger;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Orleans;
@@ -32,13 +34,15 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     private readonly ILogger<CaAccountHandler> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IIndicatorLogger _indicatorLogger;
 
     public CaAccountHandler(INESTRepository<AccountRegisterIndex, Guid> registerRepository,
         INESTRepository<AccountRecoverIndex, Guid> recoverRepository,
         IObjectMapper objectMapper,
         ILogger<CaAccountHandler> logger,
         IDistributedEventBus distributedEventBus,
-        IClusterClient clusterClient)
+        IClusterClient clusterClient,
+        IIndicatorLogger indicatorLogger)
     {
         _registerRepository = registerRepository;
         _recoverRepository = recoverRepository;
@@ -46,6 +50,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _logger = logger;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
+        _indicatorLogger = indicatorLogger;
     }
 
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
@@ -92,7 +97,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             _logger.LogDebug("the second event: update register grain.");
 
             await SwapGrainStateAsync(eventData.CaHash, eventData.GrainId);
-            
+
             var grain = _clusterClient.GetGrain<IRegisterGrain>(eventData.GrainId);
             var result =
                 await grain.UpdateRegisterResultAsync(
@@ -111,7 +116,13 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             await _registerRepository.UpdateAsync(register);
 
             await PublicRegisterMessageAsync(result.Data, eventData.Context);
-            _logger.LogDebug($"register update success: {JsonConvert.SerializeObject(eventData)}");
+
+            var duration = DateTime.UtcNow - register.CreateTime;
+            _indicatorLogger.LogInformation(MonitorTag.Register, MonitorTag.Register.ToString(),
+                (int)(duration?.TotalMilliseconds ?? 0));
+            
+            _logger.LogDebug("register update success: id: {id}, status: {status}", register.Id.ToString(),
+                register.RegisterStatus);
         }
         catch (Exception ex)
         {
@@ -155,7 +166,13 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             await _recoverRepository.UpdateAsync(recover);
 
             await PublicRecoverMessageAsync(updateResult.Data, eventData.Context);
-            _logger.LogDebug($"recovery update success: {JsonConvert.SerializeObject(eventData)}");
+            
+            var duration = DateTime.UtcNow - recover.CreateTime;
+            _indicatorLogger.LogInformation(MonitorTag.SocialRecover, MonitorTag.SocialRecover.ToString(),
+                (int)(duration?.TotalMilliseconds ?? 0));
+            
+            _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
+                recover.RecoveryStatus);
         }
         catch (Exception ex)
         {

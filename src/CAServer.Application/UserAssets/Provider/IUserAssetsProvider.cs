@@ -31,4 +31,6 @@ public interface IUserAssetsProvider
     Task<CAHolderIndex> GetCaHolderIndexAsync(Guid userId);
     
     Task<CAHolderInfo> GetCaHolderManagerInfoAsync(List<string> userCaAddresses);
+
+    Task<CAHolderIndex> GetCaHolderIndexByCahashAsync(string caHash);
 }

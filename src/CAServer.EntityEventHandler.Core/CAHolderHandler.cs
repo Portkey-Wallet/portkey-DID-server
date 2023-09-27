@@ -97,6 +97,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
                 contact.CaHolderInfo.WalletName = eventData.Nickname;
                 contact.ModificationTime = DateTime.UtcNow;
+                contact.Index = updateResult.Data.Index;
+                
                 await _contactRepository.UpdateAsync(contact);
                 _logger.LogInformation("contact wallet name update success, contactId: {id}", contact.Id);
             }

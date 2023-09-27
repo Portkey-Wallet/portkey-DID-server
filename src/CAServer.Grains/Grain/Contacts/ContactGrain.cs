@@ -232,6 +232,8 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         }
 
         State.CaHolderInfo.WalletName = walletName;
+        
+        SetIndex();
         State.ModificationTime = DateTime.UtcNow;
 
         result.Success = true;

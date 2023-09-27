@@ -52,13 +52,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private const int MaxResultCount = 10;
     private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly SeedImageOptions _seedImageOptions;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,IOptions<SyncOriginChainIdOptions> syncOriginChainIdOptions,
         IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
-        IGuardianProvider guardianProvider, IDistributedEventBus distributedEventBus)
+        IGuardianProvider guardianProvider, IDistributedEventBus distributedEventBus,IOptionsSnapshot<SeedImageOptions> seedImageOptions)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -67,6 +68,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenAppService = tokenAppService;
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
+        _seedImageOptions = seedImageOptions.Value;
         _contactProvider = contactProvider;
         _chainOptions = chainOptions.Value;
         _clusterClient = clusterClient;
@@ -270,14 +272,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 var nftCollection =
                     ObjectMapper.Map<IndexerNftCollectionInfo, NftCollection>(nftCollectionInfo);
-                if (nftCollectionInfo == null || nftCollectionInfo.NftCollectionInfo == null)
+                if (nftCollectionInfo?.NftCollectionInfo == null)
                 {
                     dto.Data.Add(nftCollection);
                 }
                 else
                 {
+                    var isInSeedOption = _seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var imageUrl);
+                    var image = isInSeedOption ? imageUrl : nftCollectionInfo.NftCollectionInfo.ImageUrl;
                     nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
-                        nftCollectionInfo.NftCollectionInfo.ImageUrl, requestDto.Width, requestDto.Height,
+                        image, requestDto.Width, requestDto.Height,
                         ImageResizeType.Forest);
                     dto.Data.Add(nftCollection);
                 }
@@ -330,10 +334,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
                 nftItem.ImageUrl =
-                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width, requestDto.Height,
+                    await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
+                        requestDto.Height,
                         ImageResizeType.Forest);
                 nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
-                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,ImageResizeType.Forest);
+                    (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
+                    ImageResizeType.Forest);
 
                 dto.Data.Add(nftItem);
             }
@@ -799,5 +805,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
         
         return true;
+    }
+
+    private string GetImageUrlSuffix(string imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            return null;
+        }
+
+        var imageUrlArray = imageUrl.Split(".");
+        return imageUrlArray[^1].ToLower();
     }
 }

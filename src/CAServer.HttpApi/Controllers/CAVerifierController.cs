@@ -58,18 +58,21 @@ public class CAVerifierController : CAServerController
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
 
-        if (_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
         {
-            return type switch
-            {
-                OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
-                    sendVerificationRequestInput, type),
-                OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
-                    sendVerificationRequestInput, type),
-                _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
-                    type)
-            };
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
+
+        return type switch
+        {
+            OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
+                sendVerificationRequestInput, type),
+            OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
+                sendVerificationRequestInput, type),
+            _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
+                type)
+        };
+    }
 
         return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
     }

@@ -5,6 +5,7 @@ using CAServer.Common;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
+using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
@@ -34,6 +35,7 @@ namespace CAServer;
     typeof(AbpSettingManagementApplicationModule),
     typeof(CAServerGrainsModule),
     typeof(CAServerSignatureModule),
+    typeof(CAServerMonitorModule),
     typeof(AbpDistributedLockingModule)
 )]
 public class CAServerApplicationModule : AbpModule
@@ -92,6 +94,7 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
+        context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
     }

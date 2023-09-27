@@ -3,6 +3,8 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using CAServer.Options;
+using CAServer.Monitor;
 using CAServer.Signature;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
@@ -25,6 +27,7 @@ using Volo.Abp.EventBus.RabbitMq;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Threading;
+using ChainOptions = CAServer.ContractEventHandler.Core.Application.ChainOptions;
 
 namespace CAServer.ContractEventHandler;
 
@@ -37,6 +40,7 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
+    typeof(CAServerMonitorModule),
     typeof(AbpCachingStackExchangeRedisModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {
