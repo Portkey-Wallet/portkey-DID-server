@@ -142,7 +142,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
                 foreach (var guardian in info.GuardianList.Guardians)
                 {
-                    guardianSet.AddIfNotContains(guardian.IdentifierHash.ToHex());
+                    guardianSet.AddIfNotContains(guardian.VerifierId + guardian.IdentifierHash.ToHex());
                 }
             }
 
