@@ -33,12 +33,12 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         ContractResolver = new CamelCasePropertyNamesContractResolver()
     };
 
-    public AlchemyServiceAppService(IOptions<ThirdPartOptions> merchantOptions, AlchemyProvider alchemyProvider,
+    public AlchemyServiceAppService(IOptions<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         ILogger<AlchemyServiceAppService> logger, IDistributedCache<List<AlchemyFiatDto>> fiatListCache,
         IDistributedCache<AlchemyOrderQuoteDataDto> orderQuoteCache,
         IDistributedCache<List<AlchemyFiatDto>> nftFiatListCache)
     {
-        _alchemyOptions = merchantOptions.Value.Alchemy;
+        _alchemyOptions = thirdPartOptions.Value.Alchemy;
         _alchemyProvider = alchemyProvider;
         _logger = logger;
         _fiatListCache = fiatListCache;

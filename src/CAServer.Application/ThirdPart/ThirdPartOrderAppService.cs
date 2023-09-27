@@ -117,10 +117,13 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var createResult = await DoCreateOrderAsync(orderGrainData);
 
             // save nft order section
-            var randomPrivateKey = CryptoHelper.GenerateKeyPair().PrivateKey.ToHex();
             var nftOrderGrainDto = _objectMapper.Map<CreateNftOrderRequestDto, NftOrderGrainDto>(input);
             nftOrderGrainDto.Id = createResult.Data.Id;
-            
+            nftOrderGrainDto.MerchantAddress = nftOrderGrainDto.MerchantAddress.DefaultIfEmpty(
+                _thirdPartOptions.Merchant.GetOption(input.MerchantName).ReceivingAddress);
+            AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "Merchant crypto settlement address empty");
+
+
             var createNftResult = await DoCreateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(createResult.Success, "Order save failed");
 
@@ -207,7 +210,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             orderQueryResponseDto.Status = orderDto.Status;
             orderQueryResponseDto.PaymentSymbol = orderDto.Crypto;
             orderQueryResponseDto.PaymentAmount = orderDto.CryptoAmount;
-            
+
             _thirdPartOrderProvider.SignMerchantDto(orderQueryResponseDto);
             return new CommonResponseDto<NftOrderQueryResponseDto>(orderQueryResponseDto);
         }

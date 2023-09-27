@@ -51,14 +51,14 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public async Task<RampOrderIndex> GetThirdPartOrderIndexAsync(string orderId)
     {
-        var resDict = await GetThirdPartOrderIndexAsync(new List<string>(){orderId});
+        var resDict = await GetThirdPartOrderIndexAsync(new List<string>() { orderId });
         return resDict.IsNullOrEmpty() ? null : resDict.Values.First();
     }
 
     public async Task<Dictionary<Guid, RampOrderIndex>> GetThirdPartOrderIndexAsync(List<string> orderIdIn)
     {
         if (orderIdIn.IsNullOrEmpty()) return new Dictionary<Guid, RampOrderIndex>();
-        
+
         var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(orderIdIn)));
 
@@ -71,7 +71,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             ? new Dictionary<Guid, RampOrderIndex>()
             : userOrders.ToDictionary(order => order.Id, order => order);
     }
-    
+
     public async Task<OrderDto> GetThirdPartOrderAsync(string orderId)
     {
         var orderIndex = await GetThirdPartOrderIndexAsync(orderId);
@@ -193,9 +193,11 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
         // webhook
         if (condition.WebhookCountGtEq != null)
-            mustQuery.Add(q => q.LongRange(i => i.Field(f => f.WebhookCount).GreaterThanOrEquals(condition.WebhookCountGtEq)));
+            mustQuery.Add(q =>
+                q.LongRange(i => i.Field(f => f.WebhookCount).GreaterThanOrEquals(condition.WebhookCountGtEq)));
         if (condition.WebhookCountLtEq != null)
-            mustQuery.Add(q => q.LongRange(i => i.Field(f => f.WebhookCount).LessThanOrEquals(condition.WebhookCountLtEq)));
+            mustQuery.Add(q =>
+                q.LongRange(i => i.Field(f => f.WebhookCount).LessThanOrEquals(condition.WebhookCountLtEq)));
         if (condition.WebhookStatus.NotNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.WebhookStatus).Terms(condition.WebhookStatus)));
         if (condition.WebhookTimeLt.NotNullOrEmpty())
@@ -204,10 +206,12 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         // thirdPartNotify
         if (condition.ThirdPartNotifyCountGtEq != null)
             mustQuery.Add(q =>
-                q.LongRange(i => i.Field(f => f.ThirdPartNotifyCount).GreaterThanOrEquals(condition.ThirdPartNotifyCountGtEq)));
+                q.LongRange(i =>
+                    i.Field(f => f.ThirdPartNotifyCount).GreaterThanOrEquals(condition.ThirdPartNotifyCountGtEq)));
         if (condition.ThirdPartNotifyCountLtEq != null)
             mustQuery.Add(q =>
-                q.LongRange(i => i.Field(f => f.ThirdPartNotifyCount).LessThanOrEquals(condition.ThirdPartNotifyCountLtEq)));
+                q.LongRange(i =>
+                    i.Field(f => f.ThirdPartNotifyCount).LessThanOrEquals(condition.ThirdPartNotifyCountLtEq)));
         if (condition.ThirdPartNotifyStatus.NotNullOrEmpty())
             mustQuery.Add(q =>
                 q.Terms(i => i.Field(f => f.ThirdPartNotifyStatus).Terms(condition.ThirdPartNotifyStatus)));
@@ -235,21 +239,28 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public void SignMerchantDto(NftMerchantBaseDto input)
     {
-        var primaryKey = _thirdPartOptions.Merchant.DidPrivateKey.GetValueOrDefault(input.MerchantName);
-        input.Signature = MerchantSignatureHelper.GetSignature(primaryKey, input);
+        var merchantOption = _thirdPartOptions.Merchant.GetOption(input.MerchantName);
+        AssertHelper.NotEmpty(merchantOption?.DidPrivateKey, "Merchant {Merchant} did private key empty",
+            input.MerchantName);
+        input.Signature = MerchantSignatureHelper.GetSignature(merchantOption?.DidPrivateKey, input);
     }
 
     public void VerifyMerchantSignature(NftMerchantBaseDto input)
     {
         try
         {
-            var publicKey = _thirdPartOptions.Merchant.MerchantPublicKey.GetValueOrDefault(input.MerchantName);
-            AssertHelper.NotEmpty(publicKey, "Invalid merchantName");
             AssertHelper.NotEmpty(input.Signature, "Empty input signature");
+            
+            var merchantOption = _thirdPartOptions.Merchant.GetOption(input.MerchantName);
+            AssertHelper.NotEmpty(merchantOption?.PublicKey, "Merchant {Merchant} public key empty",
+                input.MerchantName);
+
             var rawData = ThirdPartHelper.ConvertObjectToSortedString(input, MerchantSignatureHelper.SignatureField);
-            var signatureValid = MerchantSignatureHelper.VerifySignature(publicKey, input.Signature, rawData);
+            var signatureValid =
+                MerchantSignatureHelper.VerifySignature(merchantOption?.PublicKey, input.Signature, rawData);
             if (!signatureValid)
-                _logger.LogWarning("Verify merchant {Name} signature failed, inputSignature={Signature}, rawData={RawData}",
+                _logger.LogWarning(
+                    "Verify merchant {Name} signature failed, inputSignature={Signature}, rawData={RawData}",
                     input.MerchantName, input.Signature, rawData);
             AssertHelper.IsTrue(signatureValid, "Invalid merchant signature");
         }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Common;
 using CAServer.Commons;
 
 namespace CAServer.Options;
@@ -50,12 +51,20 @@ public class AlchemyOptions
 
 public class MerchantOptions
 {
-    
-    public string EncryptionKey { get; set; }
-    
-    // merchantName => publicKey, publicKey of merchant
-    public Dictionary<string, string> MerchantPublicKey { get; set; } = new();
-    
-    // merchantName => privateKey, privateKey of Did, diff pk for diff merchant 
-    public Dictionary<string, string> DidPrivateKey { get; set; } = new();
+    public Dictionary<string, MerchantItem> Merchants { get; set; } = new ();
+
+    public MerchantItem GetOption(string merchantName)
+    {
+        var getRes = Merchants.TryGetValue(merchantName, out var merchantOption);
+        AssertHelper.IsTrue(getRes, "Merchant {Merchant} option not found", merchantName);
+        AssertHelper.NotNull(merchantOption, "Merchant {Merchant} option empty", merchantName);
+        return merchantOption;
+    }
+}
+
+public class MerchantItem
+{
+    public string PublicKey { get; set; }
+    public string DidPrivateKey { get; set; }
+    public string ReceivingAddress { get; set; }
 }

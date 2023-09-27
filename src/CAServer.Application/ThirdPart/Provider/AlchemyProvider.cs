@@ -36,11 +36,11 @@ public class AlchemyProvider : ISingletonDependency
     private readonly IHttpProvider _httpProvider;
 
     public AlchemyProvider(IHttpClientFactory httpClientFactory,
-        IOptions<ThirdPartOptions> merchantOptions,
+        IOptions<ThirdPartOptions> thirdPartOptions,
         ILogger<AlchemyProvider> logger, IHttpProvider httpProvider)
     {
         _httpClientFactory = httpClientFactory;
-        _alchemyOptions = merchantOptions.Value.Alchemy;
+        _alchemyOptions = thirdPartOptions.Value.Alchemy;
         _logger = logger;
         _httpProvider = httpProvider;
     }

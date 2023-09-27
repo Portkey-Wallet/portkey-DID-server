@@ -40,7 +40,7 @@ public class HubService : CAServerAppService, IHubService
 
     public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IHubProvider caHubProvider,
         IThirdPartOrderProvider thirdPartOrderProvider, IObjectMapper objectMapper,
-        IConnectionProvider connectionProvider, IOptions<ThirdPartOptions> merchantOptions,
+        IConnectionProvider connectionProvider, IOptions<ThirdPartOptions> thirdPartOptions,
         ILogger<HubService> logger, IOrderWsNotifyProvider orderWsNotifyProvider)
     {
         _hubProvider = hubProvider;
@@ -49,7 +49,7 @@ public class HubService : CAServerAppService, IHubService
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _connectionProvider = connectionProvider;
-        _thirdPartOptions = merchantOptions.Value;
+        _thirdPartOptions = thirdPartOptions.Value;
         _logger = logger;
         _orderWsNotifyProvider = orderWsNotifyProvider;
     }

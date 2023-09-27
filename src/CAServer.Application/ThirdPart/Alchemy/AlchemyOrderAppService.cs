@@ -47,7 +47,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
         ILogger<AlchemyOrderAppService> logger,
-        IOptions<ThirdPartOptions> merchantOptions,
+        IOptions<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider,
         IObjectMapper objectMapper,
         IOrderStatusProvider orderStatusProvider
@@ -58,7 +58,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         _clusterClient = clusterClient;
         _objectMapper = objectMapper;
         _logger = logger;
-        _alchemyOptions = merchantOptions.Value.Alchemy;
+        _alchemyOptions = thirdPartOptions.Value.Alchemy;
         _alchemyProvider = alchemyProvider;
         _orderStatusProvider = orderStatusProvider;
     }
