@@ -95,6 +95,11 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
             if (handleCount == 0) break;
         }
 
-        _logger.LogDebug("HandleUnCompletedMerchantCallback finish, total:{Total}", total);
+        
+        if (total > 1)
+        {
+            _logger.LogInformation("HandleUnCompletedMerchantCallback finish, total:{Total}", total);
+        }
+        
     }
 }

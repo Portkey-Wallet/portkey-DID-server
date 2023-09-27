@@ -108,6 +108,11 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
             if (handleCount == 0) break;
         }
 
-        _logger.LogDebug("HandleUnCompletedThirdPartResultNotify finish, total:{Total}", total);
+        
+        if (total > 1)
+        {
+            _logger.LogInformation("HandleUnCompletedThirdPartResultNotify finish, total:{Total}", total);
+        }
+
     }
 }

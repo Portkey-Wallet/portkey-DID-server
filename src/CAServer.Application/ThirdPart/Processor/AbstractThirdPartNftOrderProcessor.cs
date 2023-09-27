@@ -20,7 +20,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
-using Volo.Abp.Caching;
 using Volo.Abp.DistributedLocking;
 
 namespace CAServer.ThirdPart.Processor;
@@ -290,11 +289,12 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             orderGrainDto.Status = txResult.Status == TransactionState.Mined
                 ? OrderStatusType.Transferred.ToString()
                 : OrderStatusType.Transferring.ToString();
-            var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto,
-                new Dictionary<string, string>
-                {
-                    ["txResult"] = JsonConvert.SerializeObject(txResult, JsonSerializerSettings)
-                });
+
+            var extensionData = new Dictionary<string, string> { ["txStatus"] = txResult.Status };
+            if (txResult.Status != TransactionState.Mined)
+                extensionData["txResult"] = JsonConvert.SerializeObject(txResult, JsonSerializerSettings);
+
+            var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, extensionData);
             AssertHelper.IsTrue(updateResult.Success, "sava ramp order failed: " + updateResult.Message);
         }
         catch (UserFriendlyException e)
@@ -342,6 +342,9 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var rawTxResult =
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId,
                     orderGrainDto.TransactionId);
+            _logger.LogDebug(
+                "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}", orderId,
+                orderGrainDto.TransactionId, rawTxResult.Status);
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
             // update order status
@@ -355,7 +358,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // Record transfer data when filed
             var extraInfo = newStatus == OrderStatusType.TransferFailed.ToString()
-                ? new Dictionary<string, string> { ["txResult"] = JsonConvert.SerializeObject(rawTxResult, JsonSerializerSettings) }
+                ? new Dictionary<string, string>
+                    { ["txResult"] = JsonConvert.SerializeObject(rawTxResult, JsonSerializerSettings) }
                 : null;
 
             // update order status
@@ -380,14 +384,21 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     private async Task<TransactionResultDto> WaitTransactionResult(string chainId, string transactionId)
     {
         var waitingStatus = new List<string> { TransactionState.NotExisted, TransactionState.Pending };
-        var delayMilliSeconds = _thirdPartOptions.Timer.TransactionWaitDelaySeconds * 1000;
+        var maxWaitMillis = _thirdPartOptions.Timer.TransactionWaitTimeoutSeconds * 1000;
+        var delayMillis = _thirdPartOptions.Timer.TransactionWaitDelaySeconds * 1000;
         TransactionResultDto rawTxResult = null;
-        using var cts = new CancellationTokenSource(delayMilliSeconds);
+        using var cts = new CancellationTokenSource(maxWaitMillis);
         try
         {
             while (!cts.IsCancellationRequested && (rawTxResult == null || waitingStatus.Contains(rawTxResult.Status)))
             {
+                // delay some times
+                await Task.Delay(delayMillis, cts.Token);
+
                 rawTxResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
+                _logger.LogDebug(
+                    "WaitTransactionResult chainId={ChainId}, transactionId={TransactionId}, status={Status}", chainId,
+                    transactionId, rawTxResult.Status);
             }
         }
         catch (Exception e)
