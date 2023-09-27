@@ -1,8 +1,11 @@
 ﻿using CAServer.BackGround.Options;
 using CAServer.CAActivity.Provider;
+using CAServer.ContractEventHandler.Core;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
+using CAServer.Signature;
 using CAServer.ThirdPart.Provider;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -43,6 +46,7 @@ namespace CAServer.BackGround;
 [DependsOn(
     typeof(AbpAccountApplicationModule),
     typeof(CAServerApplicationContractsModule),
+    typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpIdentityApplicationModule),
     typeof(AbpPermissionManagementApplicationModule),
     typeof(AbpTenantManagementApplicationModule),
@@ -63,6 +67,7 @@ public class CABackGroundModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerContractEventHandlerCoreModule>(); });
 
         var configuration = context.Services.GetConfiguration();
         ConfigureOrleans(context, configuration);
@@ -75,6 +80,8 @@ public class CABackGroundModule : AbpModule
         context.Services.AddSingleton<IHostedService, InitJobsService>();
         Configure<TransactionOptions>(configuration.GetSection("Transaction"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
+        Configure<SignatureServerOptions>(context.Services.GetConfiguration().GetSection("SignatureServer"));
         ConfigureTokenCleanupService();
         ConfigureDistributedLocking(context, configuration);
         ConfigureMassTransit(context, configuration);
@@ -138,7 +145,7 @@ public class CABackGroundModule : AbpModule
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
     {
-        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
+        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:GraphQLConnection"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }

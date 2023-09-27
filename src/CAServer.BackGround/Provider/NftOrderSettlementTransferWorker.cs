@@ -59,7 +59,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
             await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "HandleUnCompletedNftOrderSettlementTransfer");
         if (handle == null)
         {
-            _logger.LogError("HandleUnCompletedNftOrderSettlementTransfer running, skip");
+            _logger.LogWarning("HandleUnCompletedNftOrderSettlementTransfer running, skip");
             return;
         }
         
@@ -104,7 +104,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
             total += handleCount;
         }
 
-        _logger.LogInformation("HandleUnCompletedNftOrderSettlementTransfer finish, total:{Total}", total);
+        _logger.LogDebug("HandleUnCompletedNftOrderSettlementTransfer finish, total:{Total}", total);
         
         
     }

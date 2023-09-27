@@ -35,6 +35,12 @@ public class AlchemyProvider : ISingletonDependency
     private readonly AlchemyOptions _alchemyOptions;
     private readonly IHttpProvider _httpProvider;
 
+    private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
+        .IgnoreNullValue()
+        .WithCamelCasePropertyNamesResolver()
+        .WithAElfTypesConverters()
+        .Build(); 
+
     public AlchemyProvider(IHttpClientFactory httpClientFactory,
         IOptions<ThirdPartOptions> thirdPartOptions,
         ILogger<AlchemyProvider> logger, IHttpProvider httpProvider)
@@ -110,7 +116,7 @@ public class AlchemyProvider : ISingletonDependency
         var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<Empty>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.NftResultNotice,
             header: GetNftAlchemyRequestHeader(),
-            body: JsonConvert.SerializeObject(request, HttpProvider.DefaultJsonSettings), 
+            body: JsonConvert.SerializeObject(request, JsonSerializerSettings), 
             withLog:true);
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             JsonConvert.SerializeObject(res));
@@ -134,7 +140,7 @@ public class AlchemyProvider : ISingletonDependency
     {
         var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.GetFreeLoginToken,
-            body: JsonConvert.SerializeObject(input, HttpProvider.DefaultJsonSettings),
+            body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
             header: GetNftAlchemyRequestHeader()
         );
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,

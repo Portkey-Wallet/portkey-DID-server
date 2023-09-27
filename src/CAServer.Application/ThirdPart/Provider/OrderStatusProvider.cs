@@ -45,6 +45,11 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
     private readonly IHttpProvider _httpProvider;
     private readonly IBus _broadcastBus;
 
+    private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
+        .WithCamelCasePropertyNamesResolver()
+        .WithAElfTypesConverters()
+        .IgnoreNullValue().Build();
+
 
     public OrderStatusProvider(
         ILogger<OrderStatusProvider> logger,
@@ -177,7 +182,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
 
             // do callback merchant
             var res = await _httpProvider.Invoke(HttpMethod.Post, nftOrderGrainDto.WebhookUrl,
-                body: JsonConvert.SerializeObject(requestDto, HttpProvider.DefaultJsonSettings));
+                body: JsonConvert.SerializeObject(requestDto, JsonSerializerSettings));
             nftOrderGrainDto.WebhookResult = res;
 
             var resObj = JsonConvert.DeserializeObject<CommonResponseDto<Empty>>(res);

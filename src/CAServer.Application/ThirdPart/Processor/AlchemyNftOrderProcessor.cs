@@ -23,6 +23,12 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     private readonly AlchemyOptions _alchemyOptions;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
+    private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
+        .WithCamelCasePropertyNamesResolver()
+        .IgnoreNullValue()
+        .WithAElfTypesConverters()
+        .Build();
+
     public AlchemyNftOrderProcessor(ILogger<AlchemyNftOrderProcessor> logger, IClusterClient clusterClient,
         IOptions<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
@@ -62,7 +68,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
             inputSignature, signSource);
 
         var achNftOrderRequest = JsonConvert.DeserializeObject<AlchemyNftOrderDto>(
-            JsonConvert.SerializeObject(input), HttpProvider.DefaultJsonSettings);
+            JsonConvert.SerializeObject(input), JsonSerializerSettings);
         // fill orderId 
         achNftOrderRequest.Id = Guid.Parse(achNftOrderRequest.MerchantOrderNo);
         // mapping status

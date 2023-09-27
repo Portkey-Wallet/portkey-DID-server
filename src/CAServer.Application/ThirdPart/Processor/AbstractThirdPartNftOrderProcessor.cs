@@ -34,6 +34,11 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     private readonly IContractProvider _contractProvider;
     private readonly IAbpDistributedLock _distributedLock;
 
+    private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
+        .WithAElfTypesConverters()
+        .WithCamelCasePropertyNamesResolver()
+        .IgnoreNullValue()
+        .Build();
 
     protected AbstractThirdPartNftOrderProcessor(ILogger<AbstractThirdPartNftOrderProcessor> logger,
         IClusterClient clusterClient,
@@ -235,7 +240,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             // Duplicate check
             await using var distributedLock = await _distributedLock.TryAcquireAsync(lockKeyPrefix + orderId);
             AssertHelper.NotNull(distributedLock, "Duplicate transfer, abort");
-            
+
             // query verify order grain
             var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
             AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
@@ -252,24 +257,28 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "NFT order merchant address missing");
 
             // generate transfer transaction
-            var (txHash, transferTx) = await _contractProvider.GenerateTransferTransaction(orderGrainDto.Crypto, orderGrainDto.CryptoAmount,
+            var (txHash, transferTx) = await _contractProvider.GenerateTransferTransaction(orderGrainDto.Crypto,
+                orderGrainDto.CryptoAmount,
                 nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
-                _thirdPartOptions.NftOrderSettlementPublicKey);
-            
+                _thirdPartOptions.Merchant.NftOrderSettlementPublicKey);
+
             // update main-order, record transactionId first
             orderGrainDto.TransactionId = txHash;
             orderGrainDto.Status = OrderStatusType.Transferring.ToString();
-            var transferringResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, new Dictionary<string, string>
-            {
-                ["txHash"] = txHash,
-                ["transaction"] = JsonConvert.SerializeObject(transferTx)
-            });
+            var transferringResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto,
+                new Dictionary<string, string>
+                {
+                    ["txHash"] = txHash,
+                    ["transaction"] = JsonConvert.SerializeObject(transferTx, JsonSerializerSettings)
+                });
             AssertHelper.IsTrue(transferringResult.Success, "sava ramp order failed: " + transferringResult.Message);
-            
+
             // Transfer crypto to merchant, and wait result
-            var sendResult = await _contractProvider.SendRawTransactionAsync(CommonConstant.MainChainId, transferTx.ToByteArray().ToHex());
+            var sendResult =
+                await _contractProvider.SendRawTransactionAsync(CommonConstant.MainChainId,
+                    transferTx.ToByteArray().ToHex());
             AssertHelper.NotNull(sendResult, "Empty send result");
-            
+
             var txResult = await WaitTransactionResult(CommonConstant.MainChainId, sendResult.TransactionId);
             AssertHelper.NotNull(txResult, "Transaction result empty, {ChainId}-{TxId}", CommonConstant.MainChainId,
                 sendResult.TransactionId);
@@ -281,21 +290,21 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             orderGrainDto.Status = txResult.Status == TransactionState.Mined
                 ? OrderStatusType.Transferred.ToString()
                 : OrderStatusType.Transferring.ToString();
-            var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, new Dictionary<string, string>
-            {
-                ["txResult"] = JsonConvert.SerializeObject(txResult)
-            });
+            var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto,
+                new Dictionary<string, string>
+                {
+                    ["txResult"] = JsonConvert.SerializeObject(txResult, JsonSerializerSettings)
+                });
             AssertHelper.IsTrue(updateResult.Success, "sava ramp order failed: " + updateResult.Message);
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning("Send SettlementTransfer failed, orderId={OrderId}", orderId);
+            _logger.LogWarning(e, "Send SettlementTransfer failed, orderId={OrderId}", orderId);
         }
         catch (Exception e)
         {
-            _logger.LogError("Send SettlementTransfer error, orderId={OrderId}", orderId);
+            _logger.LogError(e, "Send SettlementTransfer error, orderId={OrderId}", orderId);
         }
-
     }
 
     /// <summary>
@@ -319,8 +328,13 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 await SettlementTransfer(orderId);
                 return new CommonResponseDto<Empty>();
             }
-            
-            AssertHelper.IsTrue(currentStatus == OrderStatusType.Transferring,
+
+            var transferringState = new List<OrderStatusType>
+            {
+                OrderStatusType.Transferring,
+                OrderStatusType.Transferred
+            };
+            AssertHelper.IsTrue(transferringState.Contains(currentStatus),
                 "Order not in settlement Transferring state, current: {Status}", currentStatus);
             AssertHelper.NotEmpty(orderGrainDto.TransactionId, "TransactionId not exists {OrderId}", orderId);
 
@@ -332,20 +346,18 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // update order status
             var newStatus = rawTxResult.Status == TransactionState.Mined
-                ? rawTxResult.BlockNumber <= confirmedHeight 
-                    ? OrderStatusType.Finish.ToString() 
+                ? rawTxResult.BlockNumber <= confirmedHeight
+                    ? OrderStatusType.Finish.ToString()
                     : OrderStatusType.Transferred.ToString()
                 : OrderStatusType.TransferFailed.ToString();
-            AssertHelper.IsTrue(orderGrainDto.Status != newStatus, "Order status not changed : {Status}", orderGrainDto.Status);
+            AssertHelper.IsTrue(orderGrainDto.Status != newStatus, "Order status not changed : {Status}",
+                orderGrainDto.Status);
 
             // Record transfer data when filed
             var extraInfo = newStatus == OrderStatusType.TransferFailed.ToString()
-                ? null
-                : new Dictionary<string, string>
-                {
-                    ["txResult"] = JsonConvert.SerializeObject(rawTxResult)
-                };
-            
+                ? new Dictionary<string, string> { ["txResult"] = JsonConvert.SerializeObject(rawTxResult, JsonSerializerSettings) }
+                : null;
+
             // update order status
             orderGrainDto.Status = newStatus;
             var updateRes = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, extraInfo);
@@ -367,7 +379,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
     private async Task<TransactionResultDto> WaitTransactionResult(string chainId, string transactionId)
     {
-        var waitingStatus = new List<string> { TransactionState.NotExisted, TransactionState.Pending}; 
+        var waitingStatus = new List<string> { TransactionState.NotExisted, TransactionState.Pending };
         var delayMilliSeconds = _thirdPartOptions.Timer.TransactionWaitDelaySeconds * 1000;
         TransactionResultDto rawTxResult = null;
         using var cts = new CancellationTokenSource(delayMilliSeconds);
@@ -382,6 +394,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         {
             _logger.LogError(e, "Timed out waiting for transactionId {TransactionId} result", transactionId);
         }
+
         return rawTxResult;
     }
 

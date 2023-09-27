@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using CAServer.Common.Dtos;
+using CAServer.Commons;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -38,10 +39,10 @@ public interface IHttpProvider : ISingletonDependency
 
 public class HttpProvider : IHttpProvider
 {
-    public static readonly JsonSerializerSettings DefaultJsonSettings = new()
-    {
-        ContractResolver = new CamelCasePropertyNamesContractResolver()
-    };
+    private static readonly JsonSerializerSettings DefaultJsonSettings = JsonSettingsBuilder.New()
+            .WithCamelCasePropertyNamesResolver()
+            .IgnoreNullValue()
+            .Build();
     
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<HttpProvider> _logger;

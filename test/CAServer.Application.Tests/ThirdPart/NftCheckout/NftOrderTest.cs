@@ -8,6 +8,7 @@ using AElf.Cryptography.ECDSA;
 using AElf.Types;
 using CAServer.BackGround.Provider;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Processors;
@@ -40,6 +41,10 @@ public partial class NftOrderTest : ThirdPartTestBase
     private readonly INftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
     private readonly INftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
     private readonly IOrderStatusProvider _orderStatusProvider;
+    private static readonly JsonSerializerSettings JsonSettings = JsonSettingsBuilder.New()
+        .WithCamelCasePropertyNamesResolver()
+        .IgnoreNullValue()
+        .Build();
 
     public NftOrderTest(ITestOutputHelper testOutputHelper)
     {
@@ -115,7 +120,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         });
         result.Data.Count.ShouldBe(1);
         result.Data[0].NftOrderSection.ShouldNotBeNull();
-        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(result, HttpProvider.DefaultJsonSettings));
+        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(result, JsonSettings));
     }
 
     [Fact]

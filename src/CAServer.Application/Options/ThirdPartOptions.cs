@@ -10,7 +10,6 @@ public class ThirdPartOptions
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
     
-    public string NftOrderSettlementPublicKey { get; set; }
 }
 
 public class ThirdPartTimerOptions
@@ -51,6 +50,8 @@ public class AlchemyOptions
 
 public class MerchantOptions
 {
+    
+    public string NftOrderSettlementPublicKey { get; set; }
     public Dictionary<string, MerchantItem> Merchants { get; set; } = new ();
 
     public MerchantItem GetOption(string merchantName)
