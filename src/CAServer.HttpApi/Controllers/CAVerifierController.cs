@@ -74,9 +74,6 @@ public class CAVerifierController : CAServerController
         };
     }
 
-        return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
-    }
-
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
     {
