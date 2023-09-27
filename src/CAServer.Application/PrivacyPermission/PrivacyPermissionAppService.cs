@@ -128,14 +128,26 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         var result = new PrivacyPermissionDto();
         result.Id = userId;
         result.UserId = userId;
-        result.PhoneList =
-            await privacyPermissionGrain.GetPermissionAsync(privacyPermissionMap[PrivacyType.Phone], PrivacyType.Phone);
-        result.EmailList =
-            await privacyPermissionGrain.GetPermissionAsync(privacyPermissionMap[PrivacyType.Email], PrivacyType.Email);
-        result.AppleList =
-            await privacyPermissionGrain.GetPermissionAsync(privacyPermissionMap[PrivacyType.Apple], PrivacyType.Apple);
-        result.GoogleList =
-            await privacyPermissionGrain.GetPermissionAsync(privacyPermissionMap[PrivacyType.Google], PrivacyType.Google);
+        
+        var tasks = new List<Task>();
+        tasks.Add(Task.Run(async () =>
+        {
+            result.PhoneList = await privacyPermissionGrain.GetPermissionAsync(privacyPermissionMap[PrivacyType.Phone], PrivacyType.Phone);
+        }));
+        tasks.Add(Task.Run(async () =>
+        {
+            result.EmailList = await privacyPermissionGrain.GetPermissionAsync(privacyPermissionMap[PrivacyType.Email], PrivacyType.Email);
+        }));
+        tasks.Add(Task.Run(async () =>
+        {
+            result.AppleList = await privacyPermissionGrain.GetPermissionAsync(privacyPermissionMap[PrivacyType.Apple], PrivacyType.Apple);
+        }));
+        tasks.Add(Task.Run(async () =>
+        {
+            result.GoogleList = await privacyPermissionGrain.GetPermissionAsync(privacyPermissionMap[PrivacyType.Google], PrivacyType.Google);
+        }));
+        
+        await Task.WhenAll(tasks);
         return result;
     }
     

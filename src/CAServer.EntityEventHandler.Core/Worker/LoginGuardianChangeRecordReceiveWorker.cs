@@ -27,7 +27,7 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
         _graphQlProvider = graphQlProvider;
         _privacyPermissionAppService = privacyPermissionAppService;
         _logger = logger;
-        Timer.Period = WorkerOptions.TimePeriod;
+        Timer.Period = WorkerConst.TimePeriod;
     }
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
@@ -44,7 +44,7 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
 
             if (lastEndHeight == 0)
             {
-                lastEndHeight = newIndexHeight - WorkerOptions.MaxOlderBlockHeightFromNow;
+                lastEndHeight = newIndexHeight - WorkerConst.MaxOlderBlockHeightFromNow;
             }
             
             var queryList = await _graphQlProvider.GetLoginGuardianTransactionInfosAsync(chainOptionsChainInfo.Key, lastEndHeight, newIndexHeight);
