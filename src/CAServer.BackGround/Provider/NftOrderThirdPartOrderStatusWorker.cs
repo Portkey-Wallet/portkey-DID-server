@@ -98,7 +98,7 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
             total += handleCount;
         }
         
-        if (total > 1)
+        if (total > 0)
         {
             _logger.LogInformation("HandleUnCompletedThirdPartResultNotify finish, total:{Total}", total);
         }

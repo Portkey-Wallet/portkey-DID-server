@@ -342,9 +342,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var rawTxResult =
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId,
                     orderGrainDto.TransactionId);
-            _logger.LogDebug(
-                "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}", orderId,
-                orderGrainDto.TransactionId, rawTxResult.Status);
+            _logger.LogDebug("RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}", orderId, orderGrainDto.TransactionId, rawTxResult.Status);
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
             // update order status
@@ -394,7 +392,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             {
                 // delay some times
                 await Task.Delay(delayMillis, cts.Token);
-
+                
                 rawTxResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
                 _logger.LogDebug(
                     "WaitTransactionResult chainId={ChainId}, transactionId={TransactionId}, status={Status}", chainId,

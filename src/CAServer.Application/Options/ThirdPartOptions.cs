@@ -16,7 +16,7 @@ public class ThirdPartTimerOptions
 {
     public int DelaySeconds { get; set; } = 1;
     public int TimeoutMillis { get; set; } = 60000;
-    public int TransactionWaitDelaySeconds { get; set; } = 5;
+    public int TransactionWaitDelaySeconds { get; set; } = 2;
     public int TransactionWaitTimeoutSeconds { get; set; } = 45;
     public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
     public int HandleUnCompletedSettlementTransferSecondsAgo { get; set; } = 60;

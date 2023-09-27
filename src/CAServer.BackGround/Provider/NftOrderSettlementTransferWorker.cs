@@ -104,7 +104,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
             total += handleCount;
         }
 
-        if (total > 1)
+        if (total > 0)
         {
             _logger.LogInformation("HandleUnCompletedNftOrderSettlementTransfer finish, total:{Total}", total);
         }

@@ -96,7 +96,7 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
         }
 
         
-        if (total > 1)
+        if (total > 0)
         {
             _logger.LogInformation("HandleUnCompletedMerchantCallback finish, total:{Total}", total);
         }
