@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Types;
 using CAServer.Common;
 using CAServer.Options;
@@ -134,12 +135,14 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             {
                 var info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
                     chainInfo.Value.ChainId);
-                if (info?.GuardianList?.Guardians?.Count > 0)
+                if (!(info?.GuardianList?.Guardians?.Count > 0))
                 {
-                    foreach (var guardian in info.GuardianList.Guardians)
-                    {
-                        guardianSet.AddIfNotContains(guardian.VerifierId.ToHex());
-                    }
+                    continue;
+                }
+
+                foreach (var guardian in info.GuardianList.Guardians)
+                {
+                    guardianSet.AddIfNotContains(guardian.IdentifierHash.ToHex());
                 }
             }
 
