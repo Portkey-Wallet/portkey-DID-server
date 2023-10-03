@@ -146,7 +146,7 @@ public class RecordsBucketContainer : IRecordsBucketContainer
             await grain.SetToBeValidatedRecords(records);
         }
     }
-    
+
     private string GetSyncRecordBucket(SyncRecord record)
     {
         return "0";

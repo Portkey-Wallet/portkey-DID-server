@@ -17,6 +17,16 @@ public class SyncRecord
     public long ValidateHeight { get; set; }
     public int RetryTimes { get; set; }
     public TransactionInfo ValidateTransactionInfoDto { get; set; }
+
+    public RecordStatus RecordStatus { get; set; } = RecordStatus.NONE;
+}
+
+public enum RecordStatus
+{
+    NONE,
+    SYNCED,
+    NOT_MINED,
+    MINED
 }
 
 public class TransactionInfo
