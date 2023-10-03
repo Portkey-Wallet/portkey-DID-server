@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Etos;
@@ -26,7 +27,6 @@ public interface IContractAppService
     Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
     Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     Task QueryAndSyncAsync();
-
     Task InitializeIndexAsync();
 }
 
@@ -161,7 +161,7 @@ public class ContractAppService : IContractAppService
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));
 
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
-        _ = ValidateTransactionAndSyncAsync(createHolderDto.ChainId, outputGetHolderInfo, "", MonitorTag.Register);
+        _ = ValidateTransactionAndAddSyncRecordAsync(createHolderDto.ChainId, outputGetHolderInfo, "", MonitorTag.Register);
     }
 
     public async Task SocialRecoveryAsync(AccountRecoverCreateEto message)
@@ -249,43 +249,54 @@ public class ContractAppService : IContractAppService
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
-        _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, holderInfo, "",
+        _ = ValidateTransactionAndAddSyncRecordAsync(socialRecoveryDto.ChainId, holderInfo, "",
             MonitorTag.SocialRecover);
     }
 
-    private async Task ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput holderInfo,
+    private async Task ValidateTransactionAndAddSyncRecordAsync(string chainId, GetHolderInfoOutput holderInfo,
         string optionChainId, MonitorTag target)
     {
         var stopwatch = Stopwatch.StartNew();
-        await ValidateTransactionAndSyncAsync(chainId, holderInfo, optionChainId);
+        await ValidateTransactionAndAddSyncRecordAsync(chainId, holderInfo, optionChainId);
         stopwatch.Stop();
 
         var duration = Convert.ToInt32(stopwatch.Elapsed.TotalMilliseconds);
         _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, target.ToString(), duration);
     }
 
-    private async Task ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput holderInfo,
+    private async Task ValidateTransactionAndAddSyncRecordAsync(string chainId, GetHolderInfoOutput holderInfo,
         string optionChainId)
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var transactionDto =
             await _contractProvider.ValidateTransactionAsync(chainId, holderInfo, null);
 
-        var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
-        var tasks = new List<Task<bool>>();
-        if (chainInfo.IsMainChain)
+        var syncRecord = new SyncRecord
         {
-            tasks.AddRange(_chainOptions.ChainInfos.Values.Where(c => !c.IsMainChain && c.ChainId != optionChainId)
-                .Select(sideChain => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
-                    .SyncAsync(sideChain.ChainId, chainId, validateHeight, transactionDto)));
-        }
-        else
-        {
-            tasks.Add(new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
-                .SyncAsync(chainId, ContractAppServiceConstant.MainChainId, validateHeight, transactionDto));
-        }
-
-        await tasks.WhenAll();
+            ValidateHeight = transactionDto.TransactionResultDto.BlockNumber,
+            ValidateTransactionInfoDto = new TransactionInfo
+            {
+                BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
+                TransactionId = transactionDto.TransactionResultDto.TransactionId,
+                Transaction = transactionDto.Transaction.ToByteArray()
+            }
+        };
+        await _recordsBucketContainer.AddValidatedRecordsAsync(chainId, new List<SyncRecord> { syncRecord });
+        // var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
+        // var tasks = new List<Task<bool>>();
+        // if (chainInfo.IsMainChain)
+        // {
+        //     tasks.AddRange(_chainOptions.ChainInfos.Values.Where(c => !c.IsMainChain && c.ChainId != optionChainId)
+        //         .Select(sideChain => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+        //             .SyncAsync(sideChain.ChainId, chainId, validateHeight, transactionDto)));
+        // }
+        // else
+        // {
+        //     tasks.Add(new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+        //         .SyncAsync(chainId, ContractAppServiceConstant.MainChainId, validateHeight, transactionDto));
+        // }
+        //
+        // await tasks.WhenAll();
     }
 
     private async Task<bool> CheckHolderExistsOnBothChains(Hash loginGuardian)
@@ -523,11 +534,8 @@ public class ContractAppService : IContractAppService
             unsetLoginGuardians.Add(record.NotLoginGuardian);
         }
 
-        var outputGetHolderInfo =
-            await _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, record.CaHash);
-        var transactionDto =
-            await _contractProvider.ValidateTransactionAsync(chainId, outputGetHolderInfo,
-                unsetLoginGuardians);
+        var holderInfo = await _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, record.CaHash);
+        var transactionDto = await _contractProvider.ValidateTransactionAsync(chainId, holderInfo, unsetLoginGuardians);
 
         if (transactionDto.TransactionResultDto.Status != TransactionState.Mined)
         {
