@@ -207,29 +207,38 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
     private async Task<TransferLimitDto> GeneratorTransferLimitAsync(IndexerSearchTokenNft token)
     {
-        var singleTransferLimit = _securityOptions.DefaultTokenTransferLimit;
-        var dailyTransferLimit = _securityOptions.DefaultTokenTransferLimit;
+        var transferLimit = new TransferLimitDto
+        {
+            ChainId = token.ChainId,
+            Symbol = token.TokenInfo.Symbol,
+            Decimals = token.TokenInfo.Decimals,
+            Restricted = true
+        };
 
         if (_securityOptions.TokenTransferLimitDict[token.ChainId].SingleTransferLimit
             .TryGetValue(token.TokenInfo.Symbol, out var singleLimit))
         {
-            singleTransferLimit = singleLimit;
+            transferLimit.SingleLimit = (singleLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString();
+            transferLimit.DefaultSingleLimit = transferLimit.SingleLimit;
+        }
+        else
+        {
+            transferLimit.SingleLimit =
+                (_securityOptions.DefaultTokenTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString();
         }
 
         if (_securityOptions.TokenTransferLimitDict[token.ChainId].DailyTransferLimit
             .TryGetValue(token.TokenInfo.Symbol, out var dailyLimit))
         {
-            dailyTransferLimit = dailyLimit;
+            transferLimit.DailyLimit = (dailyLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString();
+            transferLimit.DefaultDailyLimit = transferLimit.DailyLimit;
+        }
+        else
+        {
+            transferLimit.DailyLimit =
+                (_securityOptions.DefaultTokenTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString();
         }
 
-        return new TransferLimitDto
-        {
-            ChainId = token.ChainId,
-            Symbol = token.TokenInfo.Symbol,
-            Decimals = token.TokenInfo.Decimals,
-            DailyLimit = (dailyTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString(),
-            SingleLimit = (singleTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString(),
-            Restricted = true
-        };
+        return transferLimit;
     }
 }
