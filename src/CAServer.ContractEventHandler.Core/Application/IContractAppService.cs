@@ -407,6 +407,7 @@ public class ContractAppService : IContractAppService
                 {
                     var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(info.ChainId);
 
+                    await AddHeightIndexMonitorLogAsync(chainId, indexHeight);
                     var record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
 
                     while (record != null)
@@ -448,6 +449,7 @@ public class ContractAppService : IContractAppService
                 var indexHeight = await _contractProvider.GetIndexHeightFromMainChainAsync(
                     ContractAppServiceConstant.MainChainId, await _contractProvider.GetChainIdAsync(chainId));
 
+                await AddHeightIndexMonitorLogAsync(chainId, indexHeight);
                 var record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
 
                 while (record != null)
@@ -769,8 +771,8 @@ public class ContractAppService : IContractAppService
     {
         try
         {
-            if(!_indicatorLogger.IsEnabled()) return;
-            
+            if (!_indicatorLogger.IsEnabled()) return;
+
             var startBlock = await _contractProvider.GetBlockByHeightAsync(startChainId, startHeight);
             var endBlock = await _contractProvider.GetBlockByHeightAsync(endChainId, endHeight);
             var blockInterval = endBlock.Header.Time - startBlock.Header.Time;
@@ -780,6 +782,23 @@ public class ContractAppService : IContractAppService
         catch (Exception e)
         {
             _logger.LogError(e, "add monitor log error.");
+        }
+    }
+
+    private async Task AddHeightIndexMonitorLogAsync(string chainId, long indexHeight)
+    {
+        try
+        {
+            if (!_indicatorLogger.IsEnabled()) return;
+
+            var height = await _contractProvider.GetBlockHeightAsync(chainId);
+            var duration = (int)Math.Abs(height - indexHeight);
+            _indicatorLogger.LogInformation(MonitorTag.DataSyncHeightIndex, chainId,
+                duration);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "add height index monitor log error.");
         }
     }
 }
