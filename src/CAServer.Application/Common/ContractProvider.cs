@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -5,12 +6,16 @@ using AElf.Contracts.MultiToken;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Commons;
+using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Options;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Orleans;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.TokenClaim;
 using Volo.Abp;
@@ -28,6 +33,10 @@ public interface IContractProvider
     public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
     Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
+    Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfo transactionInfo);
+
+    Task<TransactionResultDto> SyncTransactionAsync(string chainId,
+        SyncHolderInfoInput syncHolderInfoInput);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -37,8 +46,9 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
     private readonly ISignatureProvider _signatureProvider;
     private readonly ContractOptions _contractOptions;
+    private readonly IClusterClient _clusterClient;
 
-    public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
+    public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,IClusterClient clusterClient,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
         IOptionsSnapshot<ContractOptions> contractOptions)
     {
@@ -47,8 +57,56 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
         _contractOptions = contractOptions.Value;
+        _clusterClient = clusterClient;
     }
 
+    public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var result = await grain.SyncTransactionAsync(chainId, input);
+
+            _logger.LogInformation(
+                "SyncTransaction to chain: {id} result:" +
+                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "SyncTransaction to Chain: {id} Error: {input}", chainId,
+                JsonConvert.SerializeObject(input.ToString(), Formatting.Indented));
+            return new TransactionResultDto();
+        }
+    }
+    
+    public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId,
+        TransactionInfo transactionInfo)
+    {
+        try
+        {
+            if (transactionInfo == null)
+            {
+                return new SyncHolderInfoInput();
+            }
+
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var syncHolderInfoInput = await grain.GetSyncHolderInfoInputAsync(chainId, transactionInfo);
+
+            _logger.LogInformation("GetSyncHolderInfoInput on chain {id} succeed", chainId);
+
+            return syncHolderInfoInput;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetSyncHolderInfoInput on chain: {id} error: {dto}", chainId,
+                JsonConvert.SerializeObject(transactionInfo ?? new TransactionInfo(),
+                    Formatting.Indented));
+            return new SyncHolderInfoInput();
+        }
+    }
 
     private async Task<T> CallTransactionAsync<T>(string methodName, IMessage param, string contractAddress,
         string chainId) where T : class, IMessage<T>, new()

@@ -90,42 +90,6 @@ public class ValidateOriginChainIdGrain : Orleans.Grain<ValidateOriginChainIdSta
                 };
             }
             
-            if (string.IsNullOrWhiteSpace(State.TransactionId) || string.IsNullOrWhiteSpace(State.ChainId))
-            {
-                //this means some error , we can sync again
-                State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                return new GrainResultDto<bool>()
-                {
-                    Success = true,
-                    Data = true
-                };
-            }
-            
-            if (!_chainOptions.ChainInfos.TryGetValue(State.ChainId, out var chainInfo))
-            {
-                return new GrainResultDto<bool>()
-                {
-                    Success = true,
-                    Data = false
-                };
-            }
-            
-            var client = new AElfClient(chainInfo.BaseUrl);
-            await client.IsConnectedAsync();
-            
-            var txResult =
-                await client.GetTransactionResultAsync(State.TransactionId);
-            if (txResult.Status == TransactionState.Mined)
-            {
-                State.Status = ValidateStatus.Success;
-                await WriteStateAsync();
-                return new GrainResultDto<bool>()
-                {
-                    Success = true,
-                    Data = false
-                };
-            }
-            
             State.Status = ValidateStatus.Fail;
             State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             await WriteStateAsync();

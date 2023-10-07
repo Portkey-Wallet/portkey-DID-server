@@ -12,6 +12,7 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ValidateOriginChainId;
+using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -711,7 +712,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogInformation(
                 "UpdateOriginChainIdAsync,needValidate {needValidate},cahash:{cahash},uid:{uid} ,originChainId:{originChainId}",
                 needValidate.Data, userLoginEto.CaHash, userLoginEto.UserId, originChainId);
-
+            
             if (!needValidate.Data)
             {
                 return;
@@ -750,32 +751,51 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             if (transactionDto.TransactionResultDto.Status == TransactionState.Mined)
             {
-                await validateOriginChainIdGrain.SetStatusSuccessAsync();
                 _logger.LogInformation(
-                    "UpdateOriginChainIdAsync success,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
+                    "UpdateOriginChainIdAsync ValidateTransactionAsync success,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus},userId {uid}",
                     originChainId,
                     transactionDto.TransactionResultDto.TransactionId,
-                    transactionDto.TransactionResultDto.Status);
+                    transactionDto.TransactionResultDto.Status,userLoginEto.UserId);
+                var syncHolderInfoInput =
+                    await _contractProvider.GetSyncHolderInfoInputAsync(originChainId,
+                        new TransactionInfo()
+                        {
+                            BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
+                            TransactionId = transactionDto.TransactionResultDto.TransactionId,
+                            Transaction = transactionDto.Transaction.ToByteArray()
+                        });
+                foreach (var info in _chainOptions.ChainInfos.Values.Where(info => info.ChainId != originChainId))
+                {
+                    var result = await _contractProvider.SyncTransactionAsync(info.ChainId, syncHolderInfoInput);
+                    if (result.Status == TransactionState.Mined)
+                    {
+                        _logger.LogInformation(
+                            "UpdateOriginChainIdAsync SyncTransactionAsync success status {status},chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus},userId {uid}",
+                            result.Status, originChainId,
+                            result.TransactionId,
+                            result.Status,userLoginEto.UserId);
+                        await validateOriginChainIdGrain.SetStatusSuccessAsync();
+                    }
+                    else
+                    {
+                        _logger.LogInformation(
+                            "UpdateOriginChainIdAsync SyncTransactionAsync fail status {status},chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus},userId {uid}",
+                            result.Status, originChainId,
+                            result.TransactionId,
+                            result.Status,userLoginEto.UserId);
+                        await validateOriginChainIdGrain.SetStatusFailAsync();
+                        break;
+                    }
+                }
                 return;
             }
 
-            if (transactionDto.TransactionResultDto.Status == TransactionState.NodeValidationFailed ||
-                transactionDto.TransactionResultDto.Status == TransactionState.Failed)
-            {
-                await validateOriginChainIdGrain.SetStatusFailAsync();
-                _logger.LogInformation(
-                    "UpdateOriginChainIdAsync fail status {status} ,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
-                    transactionDto.TransactionResultDto.Status, originChainId,
-                    transactionDto.TransactionResultDto.TransactionId,
-                    transactionDto.TransactionResultDto.Status);
-                return;
-            }
-
+            await validateOriginChainIdGrain.SetStatusFailAsync();
             _logger.LogInformation(
-                "UpdateOriginChainIdAsync success status {status},chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus}",
+                "UpdateOriginChainIdAsync fail status {status} ,chainId {chainId},transactionId {transactionId},transactionStatus {transactionStatus},userId {uid}",
                 transactionDto.TransactionResultDto.Status, originChainId,
                 transactionDto.TransactionResultDto.TransactionId,
-                transactionDto.TransactionResultDto.Status);
+                transactionDto.TransactionResultDto.Status,userLoginEto.UserId);
         }
         catch (Exception e)
         {
