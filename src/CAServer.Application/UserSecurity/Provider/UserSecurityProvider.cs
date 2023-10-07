@@ -9,7 +9,7 @@ using GraphQL;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.UserSecurityAppService.Provider;
+namespace CAServer.UserSecurity.Provider;
 
 public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
 {
