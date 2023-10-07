@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -55,6 +56,7 @@ public class ContractProvider : IContractProvider
     private readonly ChainOptions _chainOptions;
     private readonly IndexOptions _indexOptions;
     private readonly ISignatureProvider _signatureProvider;
+    private readonly ConcurrentDictionary<string, int> _chainIdCache = new();
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider)
@@ -136,13 +138,20 @@ public class ContractProvider : IContractProvider
 
     public async Task<int> GetChainIdAsync(string chainId)
     {
+        if (_chainIdCache.TryGetValue(chainId, out var chainIdInt))
+        {
+            return chainIdInt;
+        }
+
         try
         {
             var chainInfo = _chainOptions.ChainInfos[chainId];
 
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
-            return await client.GetChainIdAsync();
+            chainIdInt = await client.GetChainIdAsync();
+            _chainIdCache[chainId] = chainIdInt;
+            return chainIdInt;
         }
         catch (Exception e)
         {
