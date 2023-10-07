@@ -222,17 +222,13 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             dailyTransferLimit = dailyLimit;
         }
 
-        var decimals = _securityOptions.DefaultTokenDecimalDict.TryGetValue(token.TokenInfo.Symbol, out var d)
-            ? d
-            : _securityOptions.DefaultTokenDecimals;
-
         return new TransferLimitDto
         {
             ChainId = token.ChainId,
             Symbol = token.TokenInfo.Symbol,
-            Decimals = decimals,
-            DailyLimit = (dailyTransferLimit * Math.Pow(10, decimals)).ToString(),
-            SingleLimit = (singleTransferLimit * Math.Pow(10, decimals)).ToString(),
+            Decimals = token.TokenInfo.Decimals,
+            DailyLimit = (dailyTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString(),
+            SingleLimit = (singleTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString(),
             Restricted = true
         };
     }
