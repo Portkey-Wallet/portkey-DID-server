@@ -9,7 +9,7 @@ using GraphQL;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.UserSecurityAppService.Provider;
+namespace CAServer.UserSecurity.Provider;
 
 public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
 {
@@ -60,8 +60,7 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
                                 cAHash,
                                 spender,
                                 symbol,
-                                amount,
-                                external
+                                amount
                                 },
                             totalRecordCount
                             }

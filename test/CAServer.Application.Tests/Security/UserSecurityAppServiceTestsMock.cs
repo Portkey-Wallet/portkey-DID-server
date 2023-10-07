@@ -5,7 +5,7 @@ using CAServer.Common;
 using CAServer.Security.Dtos;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
-using CAServer.UserSecurityAppService.Provider;
+using CAServer.UserSecurity.Provider;
 using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Portkey.Contracts.CA;

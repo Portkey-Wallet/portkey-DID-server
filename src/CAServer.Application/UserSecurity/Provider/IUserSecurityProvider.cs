@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using CAServer.Entities.Es;
 using CAServer.Security.Dtos;
 
-namespace CAServer.UserSecurityAppService.Provider;
+namespace CAServer.UserSecurity.Provider;
 
 public interface IUserSecurityProvider
 {

@@ -11,13 +11,13 @@ using CAServer.Security.Dtos;
 using CAServer.Security.Etos;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
-using CAServer.UserSecurityAppService.Provider;
+using CAServer.UserSecurity.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 
-namespace CAServer.UserSecurityAppService;
+namespace CAServer.UserSecurity;
 
 public class UserSecurityAppService : CAServerAppService, IUserSecurityAppService
 {
@@ -87,7 +87,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             _logger.LogDebug("CaHash: {caHash} have {COUNT} transfer limit list.", input.CaHash, dic.Count);
 
-            return new TransferLimitListResultDto()
+            return new TransferLimitListResultDto
             {
                 TotalRecordCount = dic.Count,
                 Data = dic.Values.ToList().OrderBy(t => t.Symbol != _defaultSymbol).ThenBy(t => t.Symbol)
