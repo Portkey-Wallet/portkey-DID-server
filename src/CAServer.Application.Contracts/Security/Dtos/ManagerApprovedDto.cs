@@ -9,7 +9,6 @@ public class ManagerApprovedDto
     public string Spender { get; set; }
     public string Symbol { get; set; }
     public long Amount { get; set; }
-    public string External { get; set; }
 }
 
 public class IndexerManagerApprovedList

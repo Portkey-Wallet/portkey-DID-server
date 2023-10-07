@@ -60,8 +60,7 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
                                 cAHash,
                                 spender,
                                 symbol,
-                                amount,
-                                external
+                                amount
                                 },
                             totalRecordCount
                             }
