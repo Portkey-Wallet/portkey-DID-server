@@ -43,11 +43,13 @@ public class ContractAppService : IContractAppService
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
     private readonly IIndicatorLogger _indicatorLogger;
+    private readonly IMonitorLogProvider _monitorLogProvider;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
         IContractProvider contractProvider, IObjectMapper objectMapper, ILogger<ContractAppService> logger,
-        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger)
+        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger,
+        IMonitorLogProvider monitorLogProvider)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -58,6 +60,7 @@ public class ContractAppService : IContractAppService
         _logger = logger;
         _recordsBucketContainer = recordsBucketContainer;
         _indicatorLogger = indicatorLogger;
+        _monitorLogProvider = monitorLogProvider;
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
@@ -407,11 +410,13 @@ public class ContractAppService : IContractAppService
                 {
                     var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(info.ChainId);
 
-                    await AddHeightIndexMonitorLogAsync(chainId, indexHeight);
+                    await _monitorLogProvider.AddHeightIndexMonitorLogAsync(chainId, indexHeight);
                     var record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
 
                     while (record != null)
                     {
+                        _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
+
                         var syncHolderInfoInput =
                             await _contractProvider.GetSyncHolderInfoInputAsync(chainId,
                                 record.ValidateTransactionInfoDto);
@@ -434,7 +439,9 @@ public class ContractAppService : IContractAppService
                         }
                         else
                         {
-                            await AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId, result.BlockNumber,
+                            await _monitorLogProvider.FinishAsync(record, info.ChainId, result.BlockNumber);
+                            await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId,
+                                result.BlockNumber,
                                 record.ChangeType);
                             _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
                                 record.ChangeType, chainId, record.CaHash);
@@ -449,11 +456,13 @@ public class ContractAppService : IContractAppService
                 var indexHeight = await _contractProvider.GetIndexHeightFromMainChainAsync(
                     ContractAppServiceConstant.MainChainId, await _contractProvider.GetChainIdAsync(chainId));
 
-                await AddHeightIndexMonitorLogAsync(chainId, indexHeight);
+                await _monitorLogProvider.AddHeightIndexMonitorLogAsync(chainId, indexHeight);
                 var record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
 
                 while (record != null)
                 {
+                    _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
+
                     var retryTimes = 0;
                     var mainHeight =
                         await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
@@ -489,7 +498,10 @@ public class ContractAppService : IContractAppService
                     }
                     else
                     {
-                        await AddMonitorLogAsync(chainId, record.BlockHeight, ContractAppServiceConstant.MainChainId,
+                        await _monitorLogProvider.FinishAsync(record, ContractAppServiceConstant.MainChainId,
+                            result.BlockNumber);
+                        await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight,
+                            ContractAppServiceConstant.MainChainId,
                             result.BlockNumber,
                             record.ChangeType);
                         _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
@@ -582,6 +594,8 @@ public class ContractAppService : IContractAppService
                 list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecordsAsync(chainId),
                     list);
 
+                await _monitorLogProvider.InitDataSyncMonitorAsync(list, chainId);
+
                 await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, list);
             }
 
@@ -618,7 +632,6 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation(
                     "Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height}",
                     record.ChangeType, chainId, record.CaHash, record.BlockHeight);
-
 
                 var unsetLoginGuardians = new RepeatedField<string>();
                 if (record.NotLoginGuardian != null)
@@ -658,6 +671,8 @@ public class ContractAppService : IContractAppService
                         Transaction = transactionDto.Transaction.ToByteArray()
                     };
                     validatedRecords.Add(record);
+
+                    _monitorLogProvider.AddNode(record, DataSyncType.EndValidate);
                 }
             }
 
@@ -684,7 +699,7 @@ public class ContractAppService : IContractAppService
                 CaHash = dto.CaHash,
                 ChangeType = dto.ChangeType,
                 NotLoginGuardian = dto.NotLoginGuardian,
-                ValidateHeight = long.MaxValue
+                ValidateHeight = long.MaxValue,
             })
             .ToList();
 
