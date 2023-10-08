@@ -157,7 +157,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             {
                 if (token.TokenInfo == null) continue;
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
-                    token.Balance > t) return new TokenBalanceTransferCheckAsyncResultDto { IsSafe = false };
+                    token.Balance > t * Math.Pow(10, token.TokenInfo.Decimals))
+                    return new TokenBalanceTransferCheckAsyncResultDto { IsSafe = false };
             }
 
             return new TokenBalanceTransferCheckAsyncResultDto();
