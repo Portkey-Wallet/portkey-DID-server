@@ -5,7 +5,7 @@ namespace CAServer.Options;
 public class SecurityOptions
 {
     public Dictionary<string, TokenTransferLimit> TokenTransferLimitDict { get; set; }
-    public Dictionary<string, long> TokenBalanceTransferThreshold { get; set; }
+    public Dictionary<string, float> TokenBalanceTransferThreshold { get; set; }
     public float DefaultTokenTransferLimit { get; set; }
 }
 
