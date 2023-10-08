@@ -97,6 +97,7 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
     {
+        var configSection = configuration.GetSection("Orleans");
         context.Services.AddSingleton(o =>
         {
             return new ClientBuilder()
@@ -115,6 +116,10 @@ public class CAServerContractEventHandlerModule : AbpModule
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .Configure<ClientMessagingOptions>(opt => 
+                { 
+                    opt.ResponseTimeout = TimeSpan.FromSeconds(configSection.GetValue<int>("ResponseTimeout")); 
+                })
                 .Build();
         });
     }
