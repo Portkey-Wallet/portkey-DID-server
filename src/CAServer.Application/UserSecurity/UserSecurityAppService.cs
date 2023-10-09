@@ -172,7 +172,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 // when token is NFT, TokenInfo == null
                 if (token.TokenInfo == null) continue;
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
-                    token.Balance > t * Math.Pow(10, token.TokenInfo.Decimals))
+                    token.Balance > t)
                     return new TokenBalanceTransferCheckAsyncResultDto
                         { IsTransferSafe = false, IsOriginChainSafe = true };
             }
@@ -235,25 +235,23 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         if (_securityOptions.TokenTransferLimitDict[token.ChainId].SingleTransferLimit
             .TryGetValue(token.TokenInfo.Symbol, out var singleLimit))
         {
-            transferLimit.SingleLimit = (singleLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString();
+            transferLimit.SingleLimit = singleLimit.ToString();
             transferLimit.DefaultSingleLimit = transferLimit.SingleLimit;
         }
         else
         {
-            transferLimit.SingleLimit =
-                (_securityOptions.DefaultTokenTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString();
+            transferLimit.SingleLimit = _securityOptions.DefaultTokenTransferLimit.ToString();
         }
 
         if (_securityOptions.TokenTransferLimitDict[token.ChainId].DailyTransferLimit
             .TryGetValue(token.TokenInfo.Symbol, out var dailyLimit))
         {
-            transferLimit.DailyLimit = (dailyLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString();
+            transferLimit.DailyLimit = dailyLimit.ToString();
             transferLimit.DefaultDailyLimit = transferLimit.DailyLimit;
         }
         else
         {
-            transferLimit.DailyLimit =
-                (_securityOptions.DefaultTokenTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString();
+            transferLimit.DailyLimit = _securityOptions.DefaultTokenTransferLimit.ToString();
         }
 
         return transferLimit;
