@@ -91,7 +91,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             {
                 TotalRecordCount = dic.Count,
                 Data = dic.Values.ToList().OrderBy(t => t.Symbol != _defaultSymbol).ThenBy(t => t.Symbol)
-                    .ThenBy(t => t.ChainId).ToList()
+                    .ThenBy(t => t.ChainId).ToList().Skip(input.SkipCount).Take(input.MaxResultCount).ToList()
             };
         }
         catch (Exception e)
