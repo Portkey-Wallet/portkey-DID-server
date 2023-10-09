@@ -16,15 +16,15 @@ public class IpInfoClient : IIpInfoClient
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IpServiceSettingOptions _ipServiceSetting;
     private readonly ILogger<IpInfoClient> _logger;
-    private readonly IIndicatorLogger _indicatorLogger;
+    private readonly IIndicatorScope _indicatorScope;
 
     public IpInfoClient(IHttpClientFactory httpClientFactory,
         IOptions<IpServiceSettingOptions> ipServiceSettingOption,
-        ILogger<IpInfoClient> logger, IIndicatorLogger indicatorLogger)
+        ILogger<IpInfoClient> logger, IIndicatorScope indicatorScope)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _indicatorLogger = indicatorLogger;
+        _indicatorScope = indicatorScope;
         _ipServiceSetting = ipServiceSettingOption.Value;
     }
 
@@ -34,7 +34,7 @@ public class IpInfoClient : IIpInfoClient
         var target = MonitorHelper.GetHttpTarget(MonitorRequestType.GetIpInfo, requestUrl);
         requestUrl += $"?access_key={_ipServiceSetting.AccessKey}&language={_ipServiceSetting.Language}";
 
-        var startTime = TimeHelper.GetTimeStampInMilliseconds();
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
         var httpClient = _httpClientFactory.CreateClient();
         var httpResponseMessage = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUrl));
 
@@ -52,9 +52,8 @@ public class IpInfoClient : IIpInfoClient
             _logger.LogError("{Message}", $"Request for ip info error: {content}");
             throw new UserFriendlyException(JObject.Parse(content)["error"]?["info"]?.ToString());
         }
-        
-        var duration = (int)(TimeHelper.GetTimeStampInMilliseconds() - startTime);
-        _indicatorLogger.LogInformation(MonitorTag.Http, target, duration);
+
+        _indicatorScope.End(interIndicator);
         return JsonConvert.DeserializeObject<IpInfoDto>(content);
     }
 }
