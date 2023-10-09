@@ -64,7 +64,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
             {
                 caAddressInfos = caAddressInfos, chainId = inputChainId, symbol = symbolOpt,
                 methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
-                startBlockHeight = 0, endBlockHeight = 0
+                startBlockHeight = 0, endBlockHeight = 0 , startTime = 0, endTime = 0
             }
         });
     }
