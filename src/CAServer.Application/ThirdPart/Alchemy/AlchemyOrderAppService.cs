@@ -51,7 +51,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         AlchemyProvider alchemyProvider,
         IObjectMapper objectMapper,
         IOrderStatusProvider orderStatusProvider
-        )
+    )
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -96,14 +96,15 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
-            _logger.LogInformation("This alchemy order {grainId} will be updated.", grainId);
+            _logger.LogInformation("This alchemy order {GrainId} will be updated, status={Status}", grainId,
+                dataToBeUpdated.Status);
 
             var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
 
             if (!result.Success)
             {
-                _logger.LogError("Update user order fail, third part order number: {orderId}", input.MerchantOrderNo);
-                return new BasicOrderResult() { Message = $"Update order failed,{result.Message}" };
+                _logger.LogError("Update user order fail, third part order number: {OrderId}", input.MerchantOrderNo);
+                return new BasicOrderResult { Message = $"Update order failed,{result.Message}" };
             }
 
             await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));

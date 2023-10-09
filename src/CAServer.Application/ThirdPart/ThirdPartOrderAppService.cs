@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
-using AElf;
-using AElf.Client.Proto;
-using AElf.Cryptography;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
@@ -16,16 +13,15 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
-using Address = AElf.Types.Address;
 
 namespace CAServer.ThirdPart;
 
@@ -39,6 +35,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     private readonly IActivityProvider _activityProvider;
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly IOrderStatusProvider _orderStatusProvider;
+    private readonly IAbpDistributedLock _distributedLock;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -47,7 +44,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         ILogger<ThirdPartOrderAppService> logger,
         IObjectMapper objectMapper,
         IActivityProvider activityProvider,
-        IOrderStatusProvider orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider,
+        IAbpDistributedLock distributedLock)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -58,6 +56,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _activityProvider = activityProvider;
         _thirdPartOptions = thirdPartOptions.Value;
         _orderStatusProvider = orderStatusProvider;
+        _distributedLock = distributedLock;
     }
 
 
@@ -98,32 +97,34 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             AssertHelper.NotNull(input, "create Param null");
             _thirdPartOrderProvider.VerifyMerchantSignature(input);
 
+            // Query userId from caHolder
             var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
+            
+            // query decimal of paymentSymbol via GraphQL
+            var decimalsList = await _activityProvider.GetTokenDecimalsAsync(input.PaymentSymbol);
+            AssertHelper.NotEmpty(decimalsList?.TokenInfo, "Price symbol of {PriceSymbol} decimal not found",
+                input.PaymentSymbol);
+            AssertHelper.IsTrue(double.TryParse(input.PaymentAmount, out var priceAmount), "Invalid priceAmount");
 
-            // save ramp order
+            var merchantAddress = input.MerchantAddress.DefaultIfEmpty(
+                _thirdPartOptions.Merchant.GetOption(input.MerchantName).ReceivingAddress);
+            AssertHelper.NotEmpty(merchantAddress, "Merchant crypto settlement address empty");
+            
+            // Save ramp order
             var orderGrainData = _objectMapper.Map<CreateNftOrderRequestDto, OrderGrainDto>(input);
             orderGrainData.Id = GuidHelper.UniqId(input.MerchantName, input.MerchantOrderId);
             orderGrainData.UserId = caHolder?.UserId ?? Guid.Empty;
             orderGrainData.Status = OrderStatusType.Initialized.ToString();
             orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
-
-            var decimalsList = await _activityProvider.GetTokenDecimalsAsync(input.PaymentSymbol);
-            AssertHelper.NotEmpty(decimalsList?.TokenInfo, "Price symbol of {PriceSymbol} decimal not found",
-                input.PaymentSymbol);
-            AssertHelper.IsTrue(double.TryParse(input.PaymentAmount, out var priceAmount), "Invalid priceAmount");
             orderGrainData.CryptoPrice =
                 (priceAmount / Math.Pow(10, decimalsList.TokenInfo[0].Decimals)).ToString(CultureInfo.InvariantCulture);
-
             var createResult = await DoCreateOrderAsync(orderGrainData);
+            AssertHelper.IsTrue(createResult.Success, "Create main order failed: " + createResult.Message);
 
             // save nft order section
             var nftOrderGrainDto = _objectMapper.Map<CreateNftOrderRequestDto, NftOrderGrainDto>(input);
             nftOrderGrainDto.Id = createResult.Data.Id;
-            nftOrderGrainDto.MerchantAddress = nftOrderGrainDto.MerchantAddress.DefaultIfEmpty(
-                _thirdPartOptions.Merchant.GetOption(input.MerchantName).ReceivingAddress);
-            AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "Merchant crypto settlement address empty");
-
-
+            nftOrderGrainDto.MerchantAddress = merchantAddress;
             var createNftResult = await DoCreateNftOrderAsync(nftOrderGrainDto);
             AssertHelper.IsTrue(createResult.Success, "Order save failed");
 

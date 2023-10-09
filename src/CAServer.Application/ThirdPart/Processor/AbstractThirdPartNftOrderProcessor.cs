@@ -192,12 +192,6 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
         AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
         var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
-        // TODO nzc if (orderGrainDto.Status == updateRequest.Status)
-        // {
-        //     _logger.LogInformation("Status {Status} of order {GrainId} no need to update", updateRequest.Status,
-        //         updateRequest.Id);
-        //     return;
-        // }
 
         // query nft-order data and verify
         var nftOrderGrainDto = await _orderStatusProvider.GetNftOrderAsync(orderId);
@@ -425,6 +419,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var orderGrainDto = (await orderGrain.GetOrder()).Data;
             AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
 
+            // notify third-part NFT released
             var notifyThirdPartResp = await DoNotifyNftReleaseAsync(orderGrainDto, nftOrderGrainDto);
 
             nftOrderGrainDto.ThirdPartNotifyCount++;

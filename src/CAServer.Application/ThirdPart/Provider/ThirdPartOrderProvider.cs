@@ -176,12 +176,20 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     // query nft-order index
     public async Task<PageResultDto<NftOrderIndex>> QueryNftOrderPagerAsync(NftOrderQueryConditionDto condition)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<NftOrderIndex>, QueryContainer>> { };
+        var mustQuery = new List<Func<QueryContainerDescriptor<NftOrderIndex>, QueryContainer>>();
 
         // by id
         if (!condition.IdIn.IsNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(condition.IdIn)));
 
+        // by NFT symbol
+        if (condition.NftSymbol.NotNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.NftSymbol).Terms(condition.NftSymbol)));
+
+        // in expire time 
+        if (condition.ExpireTimeGt.NotNullOrEmpty())
+            mustQuery.Add(q => q.TermRange(i => i.Field(f => f.ExpireTime).GreaterThan(condition.ExpireTimeGt)));
+        
         // by merchantOrderId
         if (condition.MerchantName.NotNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.MerchantName).Terms(condition.MerchantName)));
@@ -216,7 +224,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             mustQuery.Add(q =>
                 q.Terms(i => i.Field(f => f.ThirdPartNotifyStatus).Terms(condition.ThirdPartNotifyStatus)));
 
-        IPromise<IList<ISort>> Sort(SortDescriptor<NftOrderIndex> s) => s.Descending(a => a.Id);
+        IPromise<IList<ISort>> Sort(SortDescriptor<NftOrderIndex> s) => s.Descending(a => a.CreateTime);
         QueryContainer Filter(QueryContainerDescriptor<NftOrderIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, nftOrders) = await _nftOrderRepository.GetSortListAsync(Filter, sortFunc: Sort,
             limit: condition.MaxResultCount, skip: condition.SkipCount);

@@ -79,7 +79,9 @@ public class NftOrderQueryConditionDto : PagedResultRequestDto
     public List<Guid> IdIn { get; set; }
     public string MerchantName { get; set; }
     public List<string> MerchantOrderIdIn { get; set; }
+    public string NftSymbol { get; set; }
     
+    public string ExpireTimeGt { get; set; }
     public int? WebhookCountGtEq { get; set; }
     public int? WebhookCountLtEq { get; set; }
     public string WebhookStatus { get; set; }

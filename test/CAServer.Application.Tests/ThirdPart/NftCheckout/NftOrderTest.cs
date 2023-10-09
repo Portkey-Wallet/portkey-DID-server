@@ -211,7 +211,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         
         #endregion
 
-        #region update to Mined transactionId, for test
+        #region update to Mined transactionId (just for test)
         
             order.TransactionId = MinedTxId;
             var updMindTxId = await _orderStatusProvider.UpdateRampOrderAsync(order);
@@ -399,6 +399,6 @@ public partial class NftOrderTest : ThirdPartTestBase
 
         #endregion
 
-        await _orderThirdPartNftResultNotifyWorker.Handle();
+        await _nftOrderThirdPartOrderStatusWorker.Handle();
     }
 }
