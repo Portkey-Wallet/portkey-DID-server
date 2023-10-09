@@ -10,7 +10,6 @@ using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.ImUser.Dto;
-using CAServer.Monitor;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -39,7 +38,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly VariablesOptions _variablesOptions;
     private readonly HostInfoOptions _hostInfoOptions;
     private readonly IImRequestProvider _imRequestProvider;
-    private readonly IIndicatorScope _indicatorScope;
 
     public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         IHttpContextAccessor httpContextAccessor,
@@ -48,7 +46,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         IHttpClientService httpClientService,
         IOptions<VariablesOptions> variablesOptions,
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions,
-        IImRequestProvider imRequestProvider, IIndicatorScope indicatorScope)
+        IImRequestProvider imRequestProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -59,7 +57,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _hostInfoOptions = hostInfoOptions.Value;
         _httpClientService = httpClientService;
         _imRequestProvider = imRequestProvider;
-        _indicatorScope = indicatorScope;
     }
 
     public async Task<ContactResultDto> CreateAsync(CreateUpdateContactDto input)
@@ -594,8 +591,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
-
-
         var header = new Dictionary<string, string>();
         if (hasAuthToken)
         {
@@ -603,11 +598,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var url = _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}";
-        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
-        
         var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfoDto>>(url, header);
-        _indicatorScope.End(interIndicator);
         if (!responseDto.Success())
         {
             throw new UserFriendlyException(responseDto.Message);
@@ -625,7 +616,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
 
-
         var header = new Dictionary<string, string>();
         if (hasAuthToken)
         {
@@ -633,12 +623,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var url = _imServerOptions.BaseUrl + $"api/v1/users/imUser?address={address}";
-        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
-        
         var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(url, header);
-
-        _indicatorScope.End(interIndicator);
         if (!responseDto.Success())
         {
             throw new UserFriendlyException(responseDto.Message);
@@ -722,10 +707,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private async Task ImPostAsync(string url, object param)
     {
         if (_hostInfoOptions.Environment == Environment.Development) return;
-
-        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
-
+        
         if (!_httpContextAccessor.HttpContext.Request.Headers.Keys.Contains(CommonConstant.ImAuthHeader,
                 StringComparer.OrdinalIgnoreCase))
         {
@@ -745,8 +727,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var responseDto = await _httpClientService.PostAsync<CommonResponseDto<object>>(url, param, header);
-
-        _indicatorScope.End(interIndicator);
         if (!responseDto.Success())
         {
             Logger.LogError("request im error, url:{url}", url);

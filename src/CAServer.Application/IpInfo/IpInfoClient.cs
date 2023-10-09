@@ -30,10 +30,9 @@ public class IpInfoClient : IIpInfoClient
     public async Task<IpInfoDto> GetIpInfoAsync(string ip)
     {
         var requestUrl = $"{_ipServiceSetting.BaseUrl.TrimEnd('/')}/{ip}";
-        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.GetIpInfo, requestUrl);
         requestUrl += $"?access_key={_ipServiceSetting.AccessKey}&language={_ipServiceSetting.Language}";
-
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
+        
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http);
         var httpClient = _httpClientFactory.CreateClient();
         var httpResponseMessage = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUrl));
 
@@ -45,14 +44,13 @@ public class IpInfoClient : IIpInfoClient
         }
 
         var content = await httpResponseMessage.Content.ReadAsStringAsync();
-
         if (content.Contains("error"))
         {
             _logger.LogError("{Message}", $"Request for ip info error: {content}");
             throw new UserFriendlyException(JObject.Parse(content)["error"]?["info"]?.ToString());
         }
 
-        _indicatorScope.End(interIndicator);
+        _indicatorScope.End(MonitorHelper.GetRequestUrl(httpResponseMessage), interIndicator);
         return JsonConvert.DeserializeObject<IpInfoDto>(content);
     }
 }

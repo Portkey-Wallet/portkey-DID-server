@@ -41,14 +41,13 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
     public async Task<T> GetAsync<T>(string url)
     {
         url = GetUrl(url);
-        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
-        
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http);
+
         var client = GetClient();
         var response = await client.GetAsync(url);
         var content = await response.Content.ReadAsStringAsync();
 
-        _indicatorScope.End(interIndicator);
+        _indicatorScope.End(MonitorHelper.GetRequestUrl(response), interIndicator);
         if (response.StatusCode != HttpStatusCode.OK)
         {
             _logger.LogError("Response status code not good, code:{code}, message: {message}, url:{url}",
@@ -63,8 +62,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
     public async Task<T> GetAsync<T>(string url, IDictionary<string, string> headers)
     {
         url = GetUrl(url);
-        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http);
 
         if (headers == null)
         {
@@ -80,7 +78,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
         var response = await client.GetAsync(url);
         var content = await response.Content.ReadAsStringAsync();
 
-        _indicatorScope.End(interIndicator);
+        _indicatorScope.End(MonitorHelper.GetRequestUrl(response), interIndicator);
         if (response.StatusCode != HttpStatusCode.OK)
         {
             _logger.LogError("Response status code not good, code:{code}, message: {message}, url:{url}",
@@ -133,9 +131,8 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
     private async Task<T> PostJsonAsync<T>(string url, object paramObj, Dictionary<string, string> headers)
     {
         url = GetUrl(url);
-        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
-        
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http);
+
         var serializerSettings = new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
@@ -161,7 +158,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
 
         var response = await client.PostAsync(url, requestContent);
         var content = await response.Content.ReadAsStringAsync();
-        _indicatorScope.End(interIndicator);
+        _indicatorScope.End(MonitorHelper.GetRequestUrl(response), interIndicator);
 
         if (response.StatusCode != HttpStatusCode.OK)
         {
@@ -178,8 +175,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
         Dictionary<string, string> headers)
     {
         url = GetUrl(url);
-        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http);
 
         var client = GetClient();
         if (headers is { Count: > 0 })
@@ -198,7 +194,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
 
         var response = await client.PostAsync(url, new FormUrlEncodedContent(param));
         var content = await response.Content.ReadAsStringAsync();
-        _indicatorScope.End(interIndicator);
+        _indicatorScope.End(MonitorHelper.GetRequestUrl(response), interIndicator);
 
         if (response.StatusCode != HttpStatusCode.OK)
         {
