@@ -7,6 +7,8 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.Commons;
+using CAServer.Monitor;
+using CAServer.Monitor.Logger;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -24,24 +26,30 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ImServerOptions _imServerOptions;
     private readonly ILogger<ImRequestProvider> _logger;
-    
+    private readonly IIndicatorScope _indicatorScope;
 
-    public ImRequestProvider(IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor, 
-        IOptionsSnapshot<ImServerOptions> imServerOptions, ILogger<ImRequestProvider> logger)
+    public ImRequestProvider(IHttpClientFactory httpClientFactory, IHttpContextAccessor httpContextAccessor,
+        IOptionsSnapshot<ImServerOptions> imServerOptions, ILogger<ImRequestProvider> logger,
+        IIndicatorScope indicatorScope)
     {
         _httpClientFactory = httpClientFactory;
         _httpContextAccessor = httpContextAccessor;
         _imServerOptions = imServerOptions.Value;
         _logger = logger;
+        _indicatorScope = indicatorScope;
     }
 
-     public async Task<T> GetAsync<T>(string url)
+    public async Task<T> GetAsync<T>(string url)
     {
         url = GetUrl(url);
+        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
+        
         var client = GetClient();
         var response = await client.GetAsync(url);
         var content = await response.Content.ReadAsStringAsync();
 
+        _indicatorScope.End(interIndicator);
         if (response.StatusCode != HttpStatusCode.OK)
         {
             _logger.LogError("Response status code not good, code:{code}, message: {message}, url:{url}",
@@ -49,13 +57,16 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
 
             throw new UserFriendlyException(content, ((int)response.StatusCode).ToString());
         }
-        
+
         return GetData(JsonConvert.DeserializeObject<ImResponseDto<T>>(content));
     }
 
     public async Task<T> GetAsync<T>(string url, IDictionary<string, string> headers)
     {
         url = GetUrl(url);
+        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
+
         if (headers == null)
         {
             return await GetAsync<T>(url);
@@ -70,6 +81,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
         var response = await client.GetAsync(url);
         var content = await response.Content.ReadAsStringAsync();
 
+        _indicatorScope.End(interIndicator);
         if (response.StatusCode != HttpStatusCode.OK)
         {
             _logger.LogError("Response status code not good, code:{code}, message: {message}, url:{url}",
@@ -85,7 +97,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
     {
         var response =
             await PostJsonAsync<ImResponseDto<T>>(url, null, null);
-        
+
         return GetData(response);
     }
 
@@ -93,7 +105,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
     {
         var response =
             await PostJsonAsync<ImResponseDto<T>>(url, paramObj, null);
-        
+
         return GetData(response);
     }
 
@@ -115,13 +127,16 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
         }
 
         var response = await PostFormAsync<ImResponseDto<T>>(url, (Dictionary<string, string>)paramObj, headers);
-        
+
         return GetData(response);
     }
 
     private async Task<T> PostJsonAsync<T>(string url, object paramObj, Dictionary<string, string> headers)
     {
         url = GetUrl(url);
+        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
+        
         var serializerSettings = new JsonSerializerSettings
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
@@ -147,6 +162,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
 
         var response = await client.PostAsync(url, requestContent);
         var content = await response.Content.ReadAsStringAsync();
+        _indicatorScope.End(interIndicator);
 
         if (response.StatusCode != HttpStatusCode.OK)
         {
@@ -163,8 +179,10 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
         Dictionary<string, string> headers)
     {
         url = GetUrl(url);
-        var client = GetClient();
+        var target = MonitorHelper.GetHttpTarget(MonitorRequestType.Relation, url);
+        var interIndicator = _indicatorScope.Begin(MonitorTag.Http, target);
 
+        var client = GetClient();
         if (headers is { Count: > 0 })
         {
             foreach (var header in headers)
@@ -181,6 +199,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
 
         var response = await client.PostAsync(url, new FormUrlEncodedContent(param));
         var content = await response.Content.ReadAsStringAsync();
+        _indicatorScope.End(interIndicator);
 
         if (response.StatusCode != HttpStatusCode.OK)
         {
@@ -192,7 +211,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
 
         return JsonConvert.DeserializeObject<T>(content);
     }
-    
+
     private T GetData<T>(ImResponseDto<T> response)
     {
         if (response.Code != ImConstant.SuccessCode)
@@ -207,7 +226,7 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
     {
         var authToken = _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.AuthHeader]
             .FirstOrDefault();
-        
+
         var imAuthToken = _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]
             .FirstOrDefault();
 
@@ -215,24 +234,23 @@ public class ImRequestProvider : IImRequestProvider, ISingletonDependency
         {
             throw new Exception();
         }
-        
+
         var client = _httpClientFactory.CreateClient();
 
         client.DefaultRequestHeaders.Add(CommonConstant.ImAuthHeader, imAuthToken);
-        
+
         client.DefaultRequestHeaders.Add(CommonConstant.AuthHeader, authToken);
-        
+
         return client;
     }
 
     private string GetUrl(string url)
     {
-        if (_imServerOptions == null ||_imServerOptions.BaseUrl.IsNullOrWhiteSpace())
+        if (_imServerOptions == null || _imServerOptions.BaseUrl.IsNullOrWhiteSpace())
         {
             return url;
         }
 
         return $"{_imServerOptions.BaseUrl.TrimEnd('/')}/{url}";
     }
-    
 }
