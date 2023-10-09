@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
+using AElf.Kernel;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
@@ -336,7 +337,9 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var rawTxResult =
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId,
                     orderGrainDto.TransactionId);
-            _logger.LogDebug("RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}", orderId, orderGrainDto.TransactionId, rawTxResult.Status);
+            _logger.LogDebug(
+                "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}", orderId,
+                orderGrainDto.TransactionId, rawTxResult.Status, rawTxResult.BlockNumber);
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
             // update order status
@@ -345,8 +348,9 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                     ? OrderStatusType.Finish.ToString()
                     : OrderStatusType.Transferred.ToString()
                 : OrderStatusType.TransferFailed.ToString();
-            AssertHelper.IsTrue(orderGrainDto.Status != newStatus, "Order status not changed : {Status}",
-                orderGrainDto.Status);
+            AssertHelper.IsTrue(orderGrainDto.Status != newStatus,
+                "Order status not changed, status={Status}, txBlock={Height}",
+                rawTxResult.Status, rawTxResult.BlockNumber);
 
             // Record transfer data when filed
             var extraInfo = newStatus == OrderStatusType.TransferFailed.ToString()
@@ -363,7 +367,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning(e, "NFT order RefreshSettlementTransfer not change, orderId={OrderId}", orderId);
+            _logger.LogWarning("NFT order RefreshSettlementTransfer not change, orderId={OrderId}, msg={Msg}", orderId,
+                e.Message);
             return new CommonResponseDto<Empty>().Error(e, e.Message);
         }
         catch (Exception e)
@@ -386,7 +391,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             {
                 // delay some times
                 await Task.Delay(delayMillis, cts.Token);
-                
+
                 rawTxResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
                 _logger.LogDebug(
                     "WaitTransactionResult chainId={ChainId}, transactionId={TransactionId}, status={Status}", chainId,
