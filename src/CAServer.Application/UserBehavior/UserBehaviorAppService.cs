@@ -56,7 +56,7 @@ public class UserBehaviorAppService : CAServerAppService, IUserBehaviorAppServic
             return;
         }
         
-        userBehaviorIndex.Timestamp = DateTimeOffset.UtcNow;
+        userBehaviorIndex.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         userBehaviorIndex.CaAddress = userBehaviorEto.CaAddress;
         userBehaviorIndex.CaHash = userBehaviorEto.CaHash;
         userBehaviorIndex.UserId = userBehaviorEto.UserId;
@@ -77,7 +77,7 @@ public class UserBehaviorAppService : CAServerAppService, IUserBehaviorAppServic
         userBehaviorIndex.Referer = userBehaviorEto.Referer;
         userBehaviorIndex.UserAgent = userBehaviorEto.UserAgent;
         userBehaviorIndex.Origin = userBehaviorEto.Origin;
-        userBehaviorIndex.Timestamp = DateTimeOffset.UtcNow;
+        userBehaviorIndex.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         userBehaviorIndex.DappName = GetDappName(userBehaviorEto);
         userBehaviorIndex.Device = GetDevice(userBehaviorEto);
 

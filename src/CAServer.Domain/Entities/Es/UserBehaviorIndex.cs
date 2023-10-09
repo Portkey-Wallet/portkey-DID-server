@@ -18,5 +18,5 @@ public class UserBehaviorIndex : CAServerEsEntity<string>, IIndexBuild
     public string Origin { get; set; }
     [Keyword] public string ChainId { get; set; }
     [Keyword] public string SessionId { get; set; }
-    [Keyword] public DateTimeOffset Timestamp { get; set; }
+    [Keyword] public long Timestamp { get; set; }
 }
