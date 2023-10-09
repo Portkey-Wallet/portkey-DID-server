@@ -77,6 +77,7 @@ public class CABackGroundModule : AbpModule
         context.Services.AddSingleton<IThirdPartOrderProvider, ThirdPartOrderProvider>();
         context.Services.AddSingleton<IActivityProvider, ActivityProvider>();
         context.Services.AddSingleton<IHostedService, InitJobsService>();
+        context.Services.AddSingleton<IGraphQLProvider, GraphQLProvider>();
         Configure<TransactionOptions>(configuration.GetSection("Transaction"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
