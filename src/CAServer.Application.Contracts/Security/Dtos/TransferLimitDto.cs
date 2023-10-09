@@ -4,8 +4,6 @@ namespace CAServer.Security.Dtos;
 
 public class TransferLimitDto
 {
-    public string DefaultSingleLimit;
-    public string DefaultDailyLimit;
     public string ChainId { get; set; }
     public string Symbol { get; set; }
     public long Decimals { get; set; }
