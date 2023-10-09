@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Monitor;
-using CAServer.Monitor.Logger;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;

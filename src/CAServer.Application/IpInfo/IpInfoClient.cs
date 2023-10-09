@@ -2,7 +2,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Monitor;
-using CAServer.Monitor.Logger;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
