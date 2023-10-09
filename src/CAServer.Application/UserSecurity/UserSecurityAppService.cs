@@ -160,7 +160,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             if (registryChainGuardianCount > 1)
             {
                 return new TokenBalanceTransferCheckAsyncResultDto
-                    { IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing, };
+                    { IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing };
             }
 
             var assert = await GetUserAssetsAsync(input.CaHash);
@@ -174,10 +174,10 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
                     token.Balance > t)
                     return new TokenBalanceTransferCheckAsyncResultDto
-                        { IsTransferSafe = false, IsOriginChainSafe = true };
+                        { IsTransferSafe = false, IsOriginChainSafe = false };
             }
 
-            return new TokenBalanceTransferCheckAsyncResultDto { IsSynchronizing = isSynchronizing, };
+            return new TokenBalanceTransferCheckAsyncResultDto { IsSynchronizing = isSynchronizing };
         }
         catch (Exception e)
         {
