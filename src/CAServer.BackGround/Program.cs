@@ -27,7 +27,7 @@ public class Program
 
         try
         {
-            Log.Information("Starting CAServer.HttpApi.Host.");
+            Log.Information("Starting CAServer.BackGround.");
             var builder = WebApplication.CreateBuilder(args);
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
