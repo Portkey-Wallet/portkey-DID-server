@@ -82,7 +82,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
             Variables = new
             {
                 transactionId = inputTransactionId, blockHash = inputBlockHash, skipCount = 0, maxResultCount = 1,
-                startBlockHeight = 0, endBlockHeight = 0
+                startBlockHeight = 0, endBlockHeight = 0, startTime = 0, endTime = 0
             }
         });
     }
