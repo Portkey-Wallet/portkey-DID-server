@@ -52,19 +52,21 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
     /// <summary>
     ///     fix uncompleted ELF transfer to merchant
     /// </summary>
+    /// 
+    [AutomaticRetry(Attempts = 0)]
     public async Task Handle()
     {
-        _logger.LogDebug("HandleUnCompletedNftOrderSettlementTransfer start");
+        _logger.LogDebug("NftOrderSettlementTransferWorker start");
         await using var handle =
-            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "HandleUnCompletedNftOrderSettlementTransfer");
+            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "NftOrderSettlementTransferWorker");
         if (handle == null)
         {
-            _logger.LogWarning("HandleUnCompletedNftOrderSettlementTransfer running, skip");
+            _logger.LogWarning("NftOrderSettlementTransferWorker running, skip");
             return;
         }
         
         var confirmedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(CommonConstant.MainChainId);
-        _logger.LogDebug("HandleUnCompletedNftOrderSettlementTransfer LIB is {LibHeight}", confirmedHeight);
+        _logger.LogDebug("NftOrderSettlementTransferWorker LIB: {LibHeight}", confirmedHeight);
         
         const int pageSize = 100;
         var secondsAgo = _thirdPartOptions.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
@@ -106,7 +108,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
 
         if (total > 0)
         {
-            _logger.LogInformation("HandleUnCompletedNftOrderSettlementTransfer finish, total:{Total}", total);
+            _logger.LogInformation("NftOrderSettlementTransferWorker finish, total:{Total}", total);
         }
 
     }

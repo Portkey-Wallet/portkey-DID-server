@@ -51,14 +51,14 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
     public async Task Handle()
     {
         await using var handle =
-            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "HandleUnCompletedMerchantCallback");
+            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "NftOrderMerchantCallbackWorker");
         if (handle == null)
         {
-            _logger.LogWarning("HandleUnCompletedMerchantCallback running, skip");
+            _logger.LogWarning("NftOrderMerchantCallbackWorker running, skip");
             return;
         }
 
-        _logger.LogDebug("HandleUnCompletedMerchantCallback start");
+        _logger.LogDebug("NftOrderMerchantCallbackWorker start");
         const int pageSize = 100;
         const int minCallbackCount = 1;
         var maxCallbackCount = _thirdPartOptions.Timer.NftCheckoutMerchantCallbackCount;
@@ -98,7 +98,7 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
         
         if (total > 0)
         {
-            _logger.LogInformation("HandleUnCompletedMerchantCallback finish, total:{Total}", total);
+            _logger.LogInformation("NftOrderMerchantCallbackWorker finish, total:{Total}", total);
         }
         
     }

@@ -52,14 +52,14 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
     public async Task Handle()
     {
         await using var handle =
-            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "HandleUnCompletedNftOrderPayResultRefresh");
+            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "NftOrderThirdPartOrderStatusWorker");
         if (handle == null)
         {
-            _logger.LogWarning("HandleUnCompletedNftOrderPayResultRefresh running, skip");
+            _logger.LogWarning("NftOrderThirdPartOrderStatusWorker running, skip");
             return;
         }
 
-        _logger.LogDebug("HandleUnCompletedThirdPartResultNotify start");
+        _logger.LogDebug("NftOrderThirdPartOrderStatusWorker start");
         const int pageSize = 100;
         var minutesAgo = _thirdPartOptions.Timer.HandleUnCompletedOrderMinuteAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddMinutes(-minutesAgo).ToUtcMilliSeconds().ToString();
@@ -100,7 +100,7 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
         
         if (total > 0)
         {
-            _logger.LogInformation("HandleUnCompletedThirdPartResultNotify finish, total:{Total}", total);
+            _logger.LogInformation("NftOrderThirdPartOrderStatusWorker finish, total:{Total}", total);
         }
     }
 }
