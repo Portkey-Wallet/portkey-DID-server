@@ -46,7 +46,6 @@ namespace CAServer.BackGround;
 [DependsOn(
     typeof(AbpAccountApplicationModule),
     typeof(CAServerApplicationContractsModule),
-    typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpIdentityApplicationModule),
     typeof(AbpPermissionManagementApplicationModule),
     typeof(AbpTenantManagementApplicationModule),
