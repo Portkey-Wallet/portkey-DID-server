@@ -93,7 +93,6 @@ public partial class UserSecurityAppServiceTest
                                 Spender = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                 Symbol = "ELF",
                                 Amount = 10000,
-                                External = "test"
                             }
                         }
                     }
