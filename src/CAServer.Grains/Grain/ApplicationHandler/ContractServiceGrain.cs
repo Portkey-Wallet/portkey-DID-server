@@ -3,7 +3,9 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
+using CAServer.Commons;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Monitor;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
@@ -25,12 +27,14 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractServiceGrain> _logger;
     private readonly ISignatureProvider _signatureProvider;
+    private readonly IIndicatorScope _indicatorScope;
 
     public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions,
-        IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractServiceGrain> logger)
+        IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractServiceGrain> logger, IIndicatorScope indicatorScope)
     {
         _objectMapper = objectMapper;
         _logger = logger;
+        _indicatorScope = indicatorScope;
         _grainOptions = grainOptions.Value;
         _chainOptions = chainOptions.Value;
         _signatureProvider = signatureProvider;
@@ -52,10 +56,14 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
 
+            var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                MonitorAelfClientType.GenerateTransactionAsync.ToString());
+            
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
                     param);
-
+            _indicatorScope.End(interIndicator);
+            
             var refBlockNumber = transaction.RefBlockNumber;
 
             refBlockNumber -= _grainOptions.SafeBlockHeight;
@@ -74,21 +82,32 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
+            var sendIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                MonitorAelfClientType.SendTransactionAsync.ToString());
             var result = await client.SendTransactionAsync(new SendTransactionInput
             {
                 RawTransaction = transaction.ToByteArray().ToHex()
             });
+            _indicatorScope.End(sendIndicator);
 
             await Task.Delay(_grainOptions.Delay);
 
+            var getIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                MonitorAelfClientType.GetTransactionResultAsync.ToString());
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-
+            _indicatorScope.End(getIndicator);
+            
             var times = 0;
             while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
             {
                 times++;
                 await Task.Delay(_grainOptions.RetryDelay);
+                
+                var retryGetIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                    MonitorAelfClientType.GetTransactionResultAsync.ToString());
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+                
+                _indicatorScope.End(retryGetIndicator);
             }
 
             return new TransactionInfoDto
@@ -159,8 +178,13 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             var validateTokenHeight = transactionInfo.BlockNumber;
 
+            var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                MonitorAelfClientType.GetMerklePathByTransactionIdAsync.ToString());
+            
             var merklePathDto =
                 await client.GetMerklePathByTransactionIdAsync(transactionInfo.TransactionId);
+            _indicatorScope.End(interIndicator);
+            
             var merklePath = new MerklePath();
             foreach (var node in merklePathDto.MerklePathNodes)
             {
@@ -208,21 +232,28 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var chainInfo = _chainOptions.ChainInfos[chainId];
 
             var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
-
+            var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                MonitorAelfClientType.GenerateTransactionAsync.ToString());
+            
             var transaction = await client.GenerateTransactionAsync(ownAddress, chainInfo.CrossChainContractAddress,
                 MethodName.UpdateMerkleTree,
                 new Int64Value
                 {
                     Value = syncHolderInfoInput.VerificationTransactionInfo.ParentChainHeight
                 });
+            _indicatorScope.End(interIndicator);
+            
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
+            var executeIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                MonitorAelfClientType.ExecuteTransactionAsync.ToString());
+            
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
                 RawTransaction = transaction.ToByteArray().ToHex()
             });
-
+            _indicatorScope.End(executeIndicator);
             var context = CrossChainMerkleProofContext.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(result));
 
             syncHolderInfoInput.VerificationTransactionInfo.MerklePath.MerklePathNodes.AddRange(
