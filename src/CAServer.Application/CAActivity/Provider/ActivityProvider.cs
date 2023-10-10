@@ -55,8 +55,8 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
             Query = @"
-			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!,$startTime:Long!, $endTime:Long!){
-                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount,startTime:$startTime,endTime:$endTime}){
+			    query ($chainId:String,$symbol:String,$caAddressInfos:[CAAddressInfo]!,$methodNames:[String],$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {chainId:$chainId,symbol:$symbol,caAddressInfos:$caAddressInfos,methodNames:$methodNames,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount
                     }
                 }",
@@ -64,7 +64,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
             {
                 caAddressInfos = caAddressInfos, chainId = inputChainId, symbol = symbolOpt,
                 methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
-                startBlockHeight = 0, endBlockHeight = 0 , startTime = 0, endTime = 0
+                startBlockHeight = 0, endBlockHeight = 0
             }
         });
     }
@@ -74,15 +74,15 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
             Query = @"
-			    query($transactionId:String,$blockHash:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!,$startTime:Long!, $endTime:Long!) {
-                    caHolderTransaction(dto: {transactionId:$transactionId,blockHash:$blockHash,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount,startTime:$startTime,endTime:$endTime}){
+			    query($transactionId:String,$blockHash:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {transactionId:$transactionId,blockHash:$blockHash,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount}},totalRecordCount
                     }
                 }",
             Variables = new
             {
                 transactionId = inputTransactionId, blockHash = inputBlockHash, skipCount = 0, maxResultCount = 1,
-                startBlockHeight = 0, endBlockHeight = 0, startTime = 0, endTime = 0
+                startBlockHeight = 0, endBlockHeight = 0
             }
         });
     }
