@@ -29,6 +29,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<MonitorLogProvider> _logger;
     private readonly IIndicatorLogger _indicatorLogger;
+    private readonly int _maxDuration = 300_000;
 
     public MonitorLogProvider(IContractProvider contractProvider, ILogger<MonitorLogProvider> logger,
         IIndicatorLogger indicatorLogger)
@@ -60,26 +61,26 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
     {
         if (!_indicatorLogger.IsEnabled()) return;
 
+        var block = await _contractProvider.GetBlockByHeightAsync(chainId, syncRecord.BlockHeight);
+        syncRecord.DataSyncMonitor.StartTime = block.Header.Time;
+        var blockTime = TimeHelper.GetTimeStampFromDateTime(block.Header.Time);
+        var getRecordTime = TimeHelper.GetTimeStampInMilliseconds();
+        var duration = getRecordTime - blockTime;
+
+        if (duration > _maxDuration)
+        {
+            _logger.LogWarning(
+                "sync data duration too large, {blockHeight}, caHash: {caHash}, changeType: {changeType}, blockTime: {blockTime}, getRecordTime: {getRecordTime}",
+                syncRecord.BlockHeight, syncRecord.CaHash, syncRecord.ChangeType, block.Header.Time, getRecordTime);
+            return;
+        }
+
         syncRecord.DataSyncMonitor = new DataSyncMonitor()
         {
             CaHash = syncRecord.CaHash,
             ChangeType = syncRecord.ChangeType,
             MonitorNodes = new List<MonitorNode>()
         };
-
-        var block = await _contractProvider.GetBlockByHeightAsync(chainId, syncRecord.BlockHeight);
-        syncRecord.DataSyncMonitor.StartTime = block.Header.Time;
-        var blockTime = TimeHelper.GetTimeStampFromDateTime(block.Header.Time);
-        var getRecordTime = TimeHelper.GetTimeStampInMilliseconds();
-        var duration = (int)(getRecordTime - blockTime);
-
-        if (duration < 0)
-        {
-            _logger.LogWarning(
-                "sync data duration too large, {blockHeight}, caHash: {caHash}, changeType: {changeType}, blockTime: {blockTime}",
-                syncRecord.BlockHeight, syncRecord.CaHash, syncRecord.ChangeType, block.Header.Time);
-            return;
-        }
 
         syncRecord.DataSyncMonitor.MonitorNodes.Add(new MonitorNode()
         {
@@ -91,7 +92,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
         {
             Name = DataSyncType.GetRecord.ToString(),
             StartTime = getRecordTime,
-            Duration = duration
+            Duration = (int)duration
         });
     }
 
@@ -178,7 +179,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
             var endBlock = await _contractProvider.GetBlockByHeightAsync(endChainId, endHeight);
             var blockInterval = endBlock.Header.Time - startBlock.Header.Time;
             var duration = (int)blockInterval.TotalMilliseconds;
-            
+
             if (duration < 0) return;
             _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, changeType, duration);
         }
