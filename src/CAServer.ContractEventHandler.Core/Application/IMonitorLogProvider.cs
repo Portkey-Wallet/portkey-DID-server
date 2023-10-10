@@ -178,6 +178,8 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
             var endBlock = await _contractProvider.GetBlockByHeightAsync(endChainId, endHeight);
             var blockInterval = endBlock.Header.Time - startBlock.Header.Time;
             var duration = (int)blockInterval.TotalMilliseconds;
+            
+            if (duration < 0) return;
             _indicatorLogger.LogInformation(MonitorTag.ChainDataSync, changeType, duration);
         }
         catch (Exception e)
