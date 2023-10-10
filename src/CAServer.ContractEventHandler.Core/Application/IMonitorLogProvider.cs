@@ -62,7 +62,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
         if (!_indicatorLogger.IsEnabled()) return;
 
         var block = await _contractProvider.GetBlockByHeightAsync(chainId, syncRecord.BlockHeight);
-        syncRecord.DataSyncMonitor.StartTime = block.Header.Time;
+
         var blockTime = TimeHelper.GetTimeStampFromDateTime(block.Header.Time);
         var getRecordTime = TimeHelper.GetTimeStampInMilliseconds();
         var duration = getRecordTime - blockTime;
@@ -79,6 +79,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
         {
             CaHash = syncRecord.CaHash,
             ChangeType = syncRecord.ChangeType,
+            StartTime = block.Header.Time,
             MonitorNodes = new List<MonitorNode>()
         };
 
