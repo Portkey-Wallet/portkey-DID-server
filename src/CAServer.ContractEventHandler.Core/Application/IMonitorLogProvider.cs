@@ -50,7 +50,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "init data sync monitor log error, caHash: {caHash}, changeType: {ChangeType}",
+                _logger.LogError(e, "init data sync monitor log error, caHash: {caHash}, changeType: {changeType}",
                     syncRecord.CaHash, syncRecord.ChangeType);
             }
         }
@@ -70,18 +70,28 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
         var block = await _contractProvider.GetBlockByHeightAsync(chainId, syncRecord.BlockHeight);
         syncRecord.DataSyncMonitor.StartTime = block.Header.Time;
         var blockTime = TimeHelper.GetTimeStampFromDateTime(block.Header.Time);
+        var getRecordTime = TimeHelper.GetTimeStampInMilliseconds();
+        var duration = (int)(getRecordTime - blockTime);
+
+        if (duration < 0)
+        {
+            _logger.LogWarning(
+                "sync data duration too large, {blockHeight}, caHash: {caHash}, changeType: {changeType}, blockTime: {blockTime}",
+                syncRecord.BlockHeight, syncRecord.CaHash, syncRecord.ChangeType, block.Header.Time);
+            return;
+        }
+
         syncRecord.DataSyncMonitor.MonitorNodes.Add(new MonitorNode()
         {
             Name = DataSyncType.RegisterChainBlock.ToString(),
             StartTime = blockTime
         });
 
-        var getRecordTime = TimeHelper.GetTimeStampInMilliseconds();
         syncRecord.DataSyncMonitor.MonitorNodes.Add(new MonitorNode()
         {
             Name = DataSyncType.GetRecord.ToString(),
             StartTime = getRecordTime,
-            Duration = (int)(getRecordTime - blockTime)
+            Duration = duration
         });
     }
 
@@ -117,7 +127,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "write monitor log fail, caHash: {caHash}, changeType: {ChangeType}",
+            _logger.LogError(e, "write monitor log fail, caHash: {caHash}, changeType: {changeType}",
                 record.CaHash, record.ChangeType);
         }
     }
@@ -153,7 +163,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
     private void AddSyncLog(SyncRecord record)
     {
         var logInfo = JsonConvert.SerializeObject(record.DataSyncMonitor);
-        _logger.LogInformation("[SyncRecordLog] caHash: {caHash}, changeType: {ChangeType}, logInfo: {logInfo}",
+        _logger.LogInformation("[SyncRecordLog] caHash: {caHash}, changeType: {changeType}, logInfo: {logInfo}",
             record.CaHash, record.ChangeType, logInfo);
     }
 
