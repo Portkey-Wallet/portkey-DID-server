@@ -53,18 +53,17 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             var valueTuple = GetTokenInfoFromId(id);
             grainId = await AddTokenAsync(valueTuple.symbol, valueTuple.chainId);
         }
-
-        var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(grainId);
-
+        
+        //var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(grainId);
         var grain = _clusterClient.GetGrain<IUserTokenGrain>(grainId);
         var userId = CurrentUser.GetId();
-        var tokenResult = await grain.ChangeTokenDisplayAsync(userId, isDisplay, isNeedDelete);
+        var tokenResult = await grain.ChangeTokenDisplayAsync(userId, isDisplay, false);
         if (!tokenResult.Success)
         {
             throw new UserFriendlyException(tokenResult.Message);
         }
 
-        await PublishAsync(tokenResult.Data, isNeedDelete);
+        await PublishAsync(tokenResult.Data, false);
         return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
     }
 
