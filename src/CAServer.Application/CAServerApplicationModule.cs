@@ -35,7 +35,6 @@ namespace CAServer;
     typeof(AbpSettingManagementApplicationModule),
     typeof(CAServerGrainsModule),
     typeof(CAServerSignatureModule),
-    typeof(CAServerMonitorModule),
     typeof(AbpDistributedLockingModule)
 )]
 public class CAServerApplicationModule : AbpModule
