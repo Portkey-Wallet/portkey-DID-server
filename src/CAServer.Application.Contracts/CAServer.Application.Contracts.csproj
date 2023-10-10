@@ -52,4 +52,8 @@
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateResponseDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\IAppleMigrateAppService.cs" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="UserBehavior\Dtos\" />
+    </ItemGroup>
 </Project>

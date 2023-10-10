@@ -91,7 +91,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             {
                 TotalRecordCount = dic.Count,
                 Data = dic.Values.ToList().OrderBy(t => t.Symbol != _defaultSymbol).ThenBy(t => t.Symbol)
-                    .ThenBy(t => t.ChainId).ToList()
+                    .ThenBy(t => t.ChainId).ToList().Skip(input.SkipCount).Take(input.MaxResultCount).ToList()
             };
         }
         catch (Exception e)
@@ -130,7 +130,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     {
         try
         {
-            var guardianSet = new HashSet<string>();
+            var registryChainGuardianSet = new HashSet<string>();
+            var nonRegistryChainGuardianSet = new HashSet<string>();
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
                 var info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
@@ -140,14 +141,27 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                     continue;
                 }
 
-                foreach (var guardian in info.GuardianList.Guardians)
+                var registryFlag = chainInfo.Value.ChainId == ChainHelper.ConvertChainIdToBase58(info.CreateChainId);
+
+                foreach (var g in info.GuardianList.Guardians)
                 {
-                    guardianSet.AddIfNotContains(guardian.VerifierId + guardian.IdentifierHash.ToHex());
+                    var guardianName = g.VerifierId + g.IdentifierHash.ToHex();
+                    if (registryFlag) registryChainGuardianSet.AddIfNotContains(guardianName);
+                    else nonRegistryChainGuardianSet.AddIfNotContains(guardianName);
                 }
             }
 
-            _logger.LogDebug("CaHash: {caHash} have {COUNT} guardianCount.", input.CaHash, guardianSet.Count);
-            if (guardianSet.Count > 1) return new TokenBalanceTransferCheckAsyncResultDto();
+            var registryChainGuardianCount = registryChainGuardianSet.Count();
+            var nonRegistryChainGuardianCount = nonRegistryChainGuardianSet.Count();
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} registry count {non-registry COUNT} non-registry count.",
+                input.CaHash, registryChainGuardianCount, nonRegistryChainGuardianCount);
+            var isSynchronizing = registryChainGuardianCount != nonRegistryChainGuardianCount;
+
+            if (registryChainGuardianCount > 1)
+            {
+                return new TokenBalanceTransferCheckAsyncResultDto
+                    { IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing };
+            }
 
             var assert = await GetUserAssetsAsync(input.CaHash);
             _logger.LogDebug("CaHash: {caHash} have {COUNT} token assert.", input.CaHash,
@@ -155,12 +169,15 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
+                // when token is NFT, TokenInfo == null
                 if (token.TokenInfo == null) continue;
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
-                    token.Balance > t) return new TokenBalanceTransferCheckAsyncResultDto { IsSafe = false };
+                    token.Balance > t)
+                    return new TokenBalanceTransferCheckAsyncResultDto
+                        { IsTransferSafe = false, IsOriginChainSafe = false };
             }
 
-            return new TokenBalanceTransferCheckAsyncResultDto();
+            return new TokenBalanceTransferCheckAsyncResultDto { IsSynchronizing = isSynchronizing };
         }
         catch (Exception e)
         {
@@ -207,29 +224,36 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
     private async Task<TransferLimitDto> GeneratorTransferLimitAsync(IndexerSearchTokenNft token)
     {
-        var singleTransferLimit = _securityOptions.DefaultTokenTransferLimit;
-        var dailyTransferLimit = _securityOptions.DefaultTokenTransferLimit;
+        var transferLimit = new TransferLimitDto
+        {
+            ChainId = token.ChainId,
+            Symbol = token.TokenInfo.Symbol,
+            Decimals = token.TokenInfo.Decimals,
+            Restricted = true
+        };
 
         if (_securityOptions.TokenTransferLimitDict[token.ChainId].SingleTransferLimit
             .TryGetValue(token.TokenInfo.Symbol, out var singleLimit))
         {
-            singleTransferLimit = singleLimit;
+            transferLimit.SingleLimit = singleLimit.ToString();
+            transferLimit.DefaultSingleLimit = transferLimit.SingleLimit;
+        }
+        else
+        {
+            transferLimit.SingleLimit = _securityOptions.DefaultTokenTransferLimit.ToString();
         }
 
         if (_securityOptions.TokenTransferLimitDict[token.ChainId].DailyTransferLimit
             .TryGetValue(token.TokenInfo.Symbol, out var dailyLimit))
         {
-            dailyTransferLimit = dailyLimit;
+            transferLimit.DailyLimit = dailyLimit.ToString();
+            transferLimit.DefaultDailyLimit = transferLimit.DailyLimit;
+        }
+        else
+        {
+            transferLimit.DailyLimit = _securityOptions.DefaultTokenTransferLimit.ToString();
         }
 
-        return new TransferLimitDto
-        {
-            ChainId = token.ChainId,
-            Symbol = token.TokenInfo.Symbol,
-            Decimals = token.TokenInfo.Decimals,
-            DailyLimit = (dailyTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString(),
-            SingleLimit = (singleTransferLimit * Math.Pow(10, token.TokenInfo.Decimals)).ToString(),
-            Restricted = true
-        };
+        return transferLimit;
     }
 }

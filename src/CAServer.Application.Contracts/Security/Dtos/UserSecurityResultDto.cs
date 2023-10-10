@@ -16,5 +16,7 @@ public class ManagerApprovedListResultDto
 
 public class TokenBalanceTransferCheckAsyncResultDto
 {
-    public bool IsSafe { get; set; } = true;
+    public bool IsTransferSafe { get; set; } = true;
+    public bool IsSynchronizing { get; set; }
+    public bool IsOriginChainSafe { get; set; } = true;
 }

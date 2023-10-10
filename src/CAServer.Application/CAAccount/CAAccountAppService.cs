@@ -21,6 +21,9 @@ using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
+using CAServer.UserBehavior;
+using CAServer.UserBehavior.Etos;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -36,6 +39,7 @@ namespace CAServer.CAAccount;
 [DisableAuditing]
 public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 {
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<CAAccountAppService> _logger;
@@ -60,7 +64,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IUserAssetsProvider userAssetsProvider,
         ICAAccountProvider accountProvider,
         INickNameAppService caHolderAppService,
-        IAppleAuthProvider appleAuthProvider
+        IAppleAuthProvider appleAuthProvider,
+        IHttpContextAccessor httpContextAccessor
     )
     {
         _distributedEventBus = distributedEventBus;
@@ -74,6 +79,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _accountProvider = accountProvider;
         _appleAuthProvider = appleAuthProvider;
         _chainOptions = chainOptions.Value;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -100,7 +106,19 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data));
-
+        await _distributedEventBus.PublishAsync(
+            new UserBehaviorEto()
+            {
+                Action = UserBehaviorAction.NewRecord,
+                ChainId = input.ChainId,
+                Referer = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Referer]
+                    .FirstOrDefault(),
+                UserAgent = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.UserAgent]
+                    .FirstOrDefault(),
+                Origin = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Origin]
+                    .FirstOrDefault(),
+                SessionId = registerDto.Id.ToString()
+            });
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
