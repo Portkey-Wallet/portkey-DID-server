@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -36,6 +37,9 @@ public interface IContractProvider
 
     Task<TransactionInfoDto> ValidateTransactionAsync(string chainId,
         GetHolderInfoOutput result, RepeatedField<string> unsetLoginGuardians);
+    
+    Task<List<TransactionInfoDto>> ValidateTransactionListAsync(string chainId,
+        List<GetHolderInfoOutput> outputList, List<RepeatedField<string>> unsetLoginGuardiansList);
 
     Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfo transactionInfo);
 
@@ -301,6 +305,34 @@ public class ContractProvider : IContractProvider
         {
             _logger.LogError(e, "ValidateTransaction on chain: {id} error", chainId);
             return new TransactionInfoDto();
+        }
+    }
+
+    public async Task<List<TransactionInfoDto>> ValidateTransactionListAsync(string chainId, List<GetHolderInfoOutput> outputList, List<RepeatedField<string>> unsetLoginGuardiansList)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var transactionDtoList =
+                await grain.ValidateTransactionListAsync(chainId, outputList, unsetLoginGuardiansList);
+
+            foreach (var transactionDto in transactionDtoList)
+            {
+                _logger.LogInformation(
+                    "ValidateTransaction to chain: {id} result:" +
+                    "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                    chainId,
+                    transactionDto.TransactionResultDto.TransactionId, transactionDto.TransactionResultDto.BlockNumber,
+                    transactionDto.TransactionResultDto.Status,
+                    transactionDto.TransactionResultDto.Error);
+            }
+
+            return transactionDtoList;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "ValidateTransaction on chain: {id} error", chainId);
+            return new List<TransactionInfoDto>();
         }
     }
 

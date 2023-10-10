@@ -13,6 +13,9 @@ public interface IContractServiceGrain : IGrainWithGuidKey
 
     Task<TransactionInfoDto> ValidateTransactionAsync(string chainId, GetHolderInfoOutput output,
         RepeatedField<string> unsetLoginGuardianTypes);
+    
+    Task<List<TransactionInfoDto>> ValidateTransactionListAsync(string chainId,
+        List<GetHolderInfoOutput> outputList, List<RepeatedField<string>> unsetLoginGuardiansList);
 
     Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfo transactionInfo);
     Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input);

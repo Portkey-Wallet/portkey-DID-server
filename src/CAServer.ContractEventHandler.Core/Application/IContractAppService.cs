@@ -519,6 +519,62 @@ public class ContractAppService : IContractAppService
         }
     }
 
+    private async Task ProcessValidatedRecord(string chainId, List<SyncRecord> records)
+    {
+        var holderInfoList = new List<GetHolderInfoOutput>();
+        var unsetLoginGuardiansList = new List<RepeatedField<string>>();
+        foreach (var record in records)
+        {
+            record.RecordStatus = RecordStatus.NONE;
+            _logger.LogInformation(
+                "Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height}",
+                record.ChangeType, chainId, record.CaHash, record.BlockHeight);
+
+
+            var unsetLoginGuardians = new RepeatedField<string>();
+            if (record.NotLoginGuardian != null)
+            {
+                unsetLoginGuardians.Add(record.NotLoginGuardian);
+            }
+            unsetLoginGuardiansList.Add(unsetLoginGuardians);
+
+            // single view from node
+            var holderInfo = await _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, record.CaHash);
+            holderInfoList.Add(holderInfo);
+        }
+
+        var transactionDtoList =
+            await _contractProvider.ValidateTransactionListAsync(chainId, holderInfoList, unsetLoginGuardiansList);
+
+        for (int i = 0; i < transactionDtoList.Count; i++)
+        {
+            var transactionDto = transactionDtoList[i];
+            var record = records[i];
+            if (record == null)
+            {
+                continue;
+            }
+            if (transactionDto.TransactionResultDto.Status != TransactionState.Mined)
+            {
+                _logger.LogError("ValidateQueryEvents on chain: {id} of account: {hash} failed",
+                    chainId, record.CaHash);
+                record.RetryTimes++;
+                record.RecordStatus = RecordStatus.NOT_MINED;
+            }
+            else
+            {
+                record.ValidateHeight = transactionDto.TransactionResultDto.BlockNumber;
+                record.ValidateTransactionInfoDto = new TransactionInfo
+                {
+                    BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
+                    TransactionId = transactionDto.TransactionResultDto.TransactionId,
+                    Transaction = transactionDto.Transaction.ToByteArray()
+                };
+                record.RecordStatus = RecordStatus.MINED;
+            }
+        }
+    }
+
     private async Task ProcessValidatedRecord(string chainId, SyncRecord record)
     {
         record.RecordStatus = RecordStatus.NONE;

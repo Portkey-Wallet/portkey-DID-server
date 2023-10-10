@@ -104,6 +104,91 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
+    private async Task<List<TransactionInfoDto>> SendTransactionsToChainAsync(string chainId, List<IMessage> paramList,
+        string methodName)
+    {
+        try
+        {
+            if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+            {
+                return null;
+            }
+
+            var client = new AElfClient(chainInfo.BaseUrl);
+            await client.IsConnectedAsync();
+            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
+                ownAddress, chainInfo.ContractAddress);
+
+            var transactionList = new List<Transaction>();
+            foreach (var param in paramList)
+            {
+                var transaction =
+                    await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
+                        param);
+
+                var refBlockNumber = transaction.RefBlockNumber;
+
+                refBlockNumber -= _grainOptions.SafeBlockHeight;
+
+                if (refBlockNumber < 0)
+                {
+                    refBlockNumber = 0;
+                }
+
+                var blockDto = await client.GetBlockByHeightAsync(refBlockNumber);
+
+                transaction.RefBlockNumber = refBlockNumber;
+                transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
+
+                var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
+                _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
+                transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+                transactionList.Add(transaction);
+            }
+            
+            var transactionIdList = await client.SendTransactionsAsync(new SendTransactionsInput()
+            {
+                RawTransactions = String.Join(",", transactionList.Select(o => o.ToByteArray().ToHex()).ToList())
+            });
+            if (transactionIdList.Length != transactionList.Count)
+            {
+                _logger.LogError(methodName + " error paramList length: {0}, transactionIdList length: {1}, paramsList: {2}",
+                    paramList.Count, transactionIdList.Length, JsonConvert.SerializeObject(paramList));
+                return new List<TransactionInfoDto>();
+            }
+
+            await Task.Delay(_grainOptions.Delay);
+
+            var resultList = new List<TransactionInfoDto>();
+            for (int i = 0; i < transactionIdList.Length; i++)
+            {
+                var transactionId = transactionIdList[i];
+                var transactionResult = await client.GetTransactionResultAsync(transactionId);
+
+                var times = 0;
+                while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+                {
+                    times++;
+                    await Task.Delay(_grainOptions.RetryDelay);
+                    transactionResult = await client.GetTransactionResultAsync(transactionId);
+                }
+                resultList.Add(new TransactionInfoDto
+                {
+                    Transaction = transactionList[i],
+                    TransactionResultDto = transactionResult
+                });
+            }
+
+            return resultList;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, methodName + " error: {params}", JsonConvert.SerializeObject(paramList));
+            return new List<TransactionInfoDto>();
+        }
+    }
+
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
     {
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
@@ -143,6 +228,29 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         
         DeactivateOnIdle();
 
+        return result;
+    }
+
+
+    public async Task<List<TransactionInfoDto>> ValidateTransactionListAsync(string chainId, List<GetHolderInfoOutput> outputList, List<RepeatedField<string>> unsetLoginGuardiansList)
+    {
+        var paramList = new List<IMessage>();
+        for (int i = 0; i <= outputList.Count; i++)
+        {
+            var unsetLoginGuardians = unsetLoginGuardiansList[i];
+            var param = _objectMapper.Map<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>(outputList[i]);
+
+            if (unsetLoginGuardians != null)
+            {
+                foreach (var notLoginGuardian in unsetLoginGuardians)
+                {
+                    param.NotLoginGuardians.Add(Hash.LoadFromHex(notLoginGuardian));
+                }
+            }
+            paramList.Add(param);
+        }
+        var result = await SendTransactionsToChainAsync(chainId, paramList, MethodName.Validate);
+        DeactivateOnIdle();
         return result;
     }
 
