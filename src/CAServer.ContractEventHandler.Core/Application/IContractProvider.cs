@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -55,6 +56,8 @@ public class ContractProvider : IContractProvider
     private readonly ChainOptions _chainOptions;
     private readonly IndexOptions _indexOptions;
     private readonly ISignatureProvider _signatureProvider;
+    private readonly AsyncLocal<int> _sessionId = new AsyncLocal<int>();
+
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider)
@@ -64,8 +67,9 @@ public class ContractProvider : IContractProvider
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
         _signatureProvider = signatureProvider;
+        _sessionId.Value = new Random().Next();
     }
-
+    
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,
         bool isCrossChain) where T : IMessage<T>, new()
     {

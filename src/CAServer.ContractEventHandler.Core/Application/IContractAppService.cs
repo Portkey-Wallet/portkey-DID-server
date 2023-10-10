@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Etos;
@@ -64,7 +65,7 @@ public class ContractAppService : IContractAppService
     {
         _logger.LogInformation("CreateHolder message: " + "\n{message}",
             JsonConvert.SerializeObject(message, Formatting.Indented));
-
+        
         var registerResult = new CreateHolderEto
         {
             Id = message.Id,
