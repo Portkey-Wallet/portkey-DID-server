@@ -11,7 +11,9 @@ public class UserBehaviorConst
 
     public static Dictionary<string, string> HostMapping = new Dictionary<string, string>()
     {
-        { "www.beangotown.com", "beangotown" }
+        { "www.beangotown.com", "beangotown" },
+        { "192.168.66.248:3008", "beangotown" },
+        { "192.168.66.248", "beangotown" }
     };
     
 }
