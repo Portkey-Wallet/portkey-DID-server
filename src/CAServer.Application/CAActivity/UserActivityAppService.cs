@@ -343,7 +343,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                                     Convert.ToInt32(dto.TransactionFees[i].Decimals)).ToString();
                             //this means this Transation fee is pay by manager
                             var activityOptions =
-                                _activityOptions.ActivityTransactionFeeFix.Where(x => x.ChainId == ht.ChainId).ToList().FirstOrDefault();
+                                _activityOptions.ActivityTransactionFeeFix?.Where(x => x.ChainId == ht.ChainId).ToList().FirstOrDefault();
                             if (activityOptions?.StartBlock > 0)
                             {
                                 if (ht.IsManagerConsumer && ht.BlockHeight > activityOptions.StartBlock)
