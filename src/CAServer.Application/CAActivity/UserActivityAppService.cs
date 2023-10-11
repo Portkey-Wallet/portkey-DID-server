@@ -339,6 +339,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                             dto.TransactionFees[i].FeeInUsd = CalculationHelper
                                 .GetBalanceInUsd(priceList[i] * dto.TransactionFees[i].Fee,
                                     Convert.ToInt32(dto.TransactionFees[i].Decimals)).ToString();
+                            //this means this Transation fee is pay by manager
+                            if (ht.IsManagerConsumer)
+                            {
+                                dto.TransactionFees[i].FeeInUsd = "0";
+                                dto.TransactionFees[i].Fee = 0;
+                            }
                         }
                     }
                 }
