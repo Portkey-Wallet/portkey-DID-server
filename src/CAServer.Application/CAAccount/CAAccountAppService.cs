@@ -106,19 +106,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data));
-        await _distributedEventBus.PublishAsync(
-            new UserBehaviorEto()
-            {
-                Action = UserBehaviorAction.NewRecord,
-                ChainId = input.ChainId,
-                Referer = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Referer]
-                    .FirstOrDefault(),
-                UserAgent = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.UserAgent]
-                    .FirstOrDefault(),
-                Origin = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Origin]
-                    .FirstOrDefault(),
-                SessionId = registerDto.Id.ToString()
-            });
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
