@@ -213,7 +213,6 @@ public class CAServerHttpApiHostModule : AbpModule
         IConfiguration configuration,
         IWebHostEnvironment hostingEnvironment)
     {
-        ServicePointManager.DefaultConnectionLimit = 10000; 
         var dataProtectionBuilder = context.Services.AddDataProtection().SetApplicationName("CAServer");
         if (!hostingEnvironment.IsDevelopment())
         {
