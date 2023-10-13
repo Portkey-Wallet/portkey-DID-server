@@ -164,19 +164,13 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             for (int i = 0; i < transactionIdList.Length; i++)
             {
                 var transactionId = transactionIdList[i];
-                var transactionResult = await client.GetTransactionResultAsync(transactionId);
-
-                var times = 0;
-                while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
-                {
-                    times++;
-                    await Task.Delay(_grainOptions.RetryDelay);
-                    transactionResult = await client.GetTransactionResultAsync(transactionId);
-                }
                 resultList.Add(new TransactionInfoDto
                 {
                     Transaction = transactionList[i],
-                    TransactionResultDto = transactionResult
+                    TransactionResultDto = new TransactionResultDto
+                    {
+                        TransactionId = transactionId
+                    }
                 });
             }
 
@@ -355,5 +349,17 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         DeactivateOnIdle();
 
         return result.TransactionResultDto;
+    }
+
+    public async Task<List<TransactionResultDto>> SyncTransactionListAsync(string chainId, List<SyncHolderInfoInput> inputList)
+    {
+        var paramList = new List<IMessage>();
+        foreach (var input in inputList)
+        {
+            paramList.Add(input);
+        }
+        var result = await SendTransactionsToChainAsync(chainId, paramList, MethodName.SyncHolderInfo);
+        DeactivateOnIdle();
+        return result.Select(t => t.TransactionResultDto).ToList();
     }
 }

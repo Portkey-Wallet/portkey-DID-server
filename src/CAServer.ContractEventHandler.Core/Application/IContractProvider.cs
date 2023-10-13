@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -16,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -45,12 +47,17 @@ public interface IContractProvider
 
     Task<TransactionResultDto> SyncTransactionAsync(string chainId,
         SyncHolderInfoInput syncHolderInfoInput);
+    
+    Task<List<TransactionResultDto>> SyncTransactionListAsync(string chainId,
+        List<SyncHolderInfoInput> syncHolderInfoInputList);
 
     Task MainChainCheckSideChainBlockIndexAsync(string chainIdSide, long txHeight);
     Task SideChainCheckMainChainBlockIndexAsync(string sideChainId, long txHeight);
 
     Task<ChainStatusDto> GetChainStatusAsync(string chainId);
     Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false);
+    
+    Task QueryTransactionResultAsync(string chainId, List<TransactionResultDto> transactionResultDtoList, bool confirmed = true);
 }
 
 public class ContractProvider : IContractProvider
@@ -61,15 +68,18 @@ public class ContractProvider : IContractProvider
     private readonly IndexOptions _indexOptions;
     private readonly ISignatureProvider _signatureProvider;
     private readonly ConcurrentDictionary<string, int> _chainIdCache = new();
+    private readonly IGraphQLProvider _graphQLProvider;
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
-        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider)
+        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
+        IGraphQLProvider graphQLProvider)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
         _signatureProvider = signatureProvider;
+        _graphQLProvider = graphQLProvider;
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,
@@ -313,19 +323,12 @@ public class ContractProvider : IContractProvider
         try
         {
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var transactionDtoList =
-                await grain.ValidateTransactionListAsync(chainId, outputList, unsetLoginGuardiansList);
-
-            foreach (var transactionDto in transactionDtoList)
-            {
-                _logger.LogInformation(
-                    "ValidateTransaction to chain: {id} result:" +
-                    "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
-                    chainId,
-                    transactionDto.TransactionResultDto.TransactionId, transactionDto.TransactionResultDto.BlockNumber,
-                    transactionDto.TransactionResultDto.Status,
-                    transactionDto.TransactionResultDto.Error);
-            }
+            var transactionDtoList = await grain.ValidateTransactionListAsync(chainId, outputList, unsetLoginGuardiansList);
+            _logger.LogInformation(
+                "ValidateTransaction to chain: {id} result:" +
+                "\nTransactionId: {transactionId}",
+                chainId,
+                String.Join(",", transactionDtoList.Select(t => t.TransactionResultDto.TransactionId)));
 
             return transactionDtoList;
         }
@@ -448,6 +451,26 @@ public class ContractProvider : IContractProvider
         }
     }
 
+    public async Task<List<TransactionResultDto>> SyncTransactionListAsync(string chainId, List<SyncHolderInfoInput> syncHolderInfoInputList)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var result = await grain.SyncTransactionListAsync(chainId, syncHolderInfoInputList);
+            _logger.LogInformation(
+                "SyncTransaction to chain: {id} result:" +
+                "\nTransactionIds: {transactionIds}",
+                chainId, string.Join(",", result.Select(t => t.TransactionId).ToList()));
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "SyncTransaction to Chain: {id} Error: {input}", chainId,
+                JsonConvert.SerializeObject(syncHolderInfoInputList, Formatting.Indented));
+            return new List<TransactionResultDto>();
+        }
+    }
+
     public async Task<ChainStatusDto> GetChainStatusAsync(string chainId)
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
@@ -460,5 +483,43 @@ public class ContractProvider : IContractProvider
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
         return await client.GetBlockByHeightAsync(height, includeTransactions);
+    }
+    
+    public async Task QueryTransactionResultAsync(string chainId, List<TransactionResultDto> transactionResultDtoList, bool confirmed)
+    {
+        var transactionInfoIndexerList = await _graphQLProvider.QueryTransactionInfosAsync(chainId, 
+            transactionResultDtoList.Select(t => t.TransactionId).ToList(), confirmed);
+        if (transactionInfoIndexerList.IsNullOrEmpty())
+        {
+            // indexer exception or no data, search node
+            var tasks = transactionResultDtoList.Select(t => GetTransactionResultAsync(chainId, t.TransactionId));
+            var chainTransactionResultDtoList = await tasks.WhenAll();
+            for (int i = 0; i < chainTransactionResultDtoList.Length; i++)
+            {
+                var transactionResultDto = transactionResultDtoList[i];
+                transactionResultDto.Status = chainTransactionResultDtoList[i].Status;
+                if (chainTransactionResultDtoList[i].Status == TransactionState.Mined)
+                {
+                    transactionResultDto.BlockNumber = chainTransactionResultDtoList[i].BlockNumber;
+                }
+            }
+            return;
+        }
+        // use indexer 
+        for (int i = 0; i < transactionResultDtoList.Count; i++)
+        {
+            var transactionResultDto = transactionResultDtoList[i];
+            var indexerTransactionInfo = transactionInfoIndexerList.FirstOrDefault(t =>
+                t.TransactionId == transactionResultDto.TransactionId);
+            if (indexerTransactionInfo != null)
+            {
+                transactionResultDto.Status = TransactionState.Mined;
+                transactionResultDto.BlockNumber = indexerTransactionInfo.BlockHeight;
+            }
+            else
+            {
+                transactionResultDto.Status = TransactionState.NotExisted;
+            }
+        }
     }
 }

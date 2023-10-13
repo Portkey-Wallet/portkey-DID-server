@@ -19,4 +19,5 @@ public interface IContractServiceGrain : IGrainWithGuidKey
 
     Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfo transactionInfo);
     Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input);
+    Task<List<TransactionResultDto>> SyncTransactionListAsync(string chainId, List<SyncHolderInfoInput> input);
 }

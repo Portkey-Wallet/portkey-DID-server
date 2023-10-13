@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
@@ -6,6 +8,7 @@ using CAServer.Monitor;
 using CAServer.Monitor.Logger;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Nito.AsyncEx;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
@@ -24,6 +27,8 @@ public abstract class ChainHolderInfoSyncWorker
 
     public abstract Task<bool> SyncAsync(string sideChainId, string targetChainId, long validateHeight, TransactionInfoDto transactionDto);
     public abstract Task ProcessSyncRecord(string chainId, string targetChainId, SyncRecord record, IndexOptions indexOptions);
+    
+    public abstract Task ProcessSyncRecordList(string chainId, string targetChainId, List<SyncRecord> recordList, IndexOptions indexOptions);
 
     protected async Task AddMonitorLogAsync(string fromChainId, long startHeight, string targetChainId, long endHeight,
         string changeType)
@@ -97,6 +102,45 @@ public class MainChainHolderInfoSyncWorker : ChainHolderInfoSyncWorker
         _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
             record.ChangeType, chainId, record.CaHash);
     }
+    
+    public override async Task ProcessSyncRecordList(string chainId, string targetChainId, List<SyncRecord> records, IndexOptions indexOptions)
+    {
+        var tasks = records.Select(r =>
+            _contractProvider.GetSyncHolderInfoInputAsync(chainId, r.ValidateTransactionInfoDto)).ToList();
+        var syncHolderInfoInputList = await tasks.WhenAll();
+        var resultList = await _contractProvider.SyncTransactionListAsync(targetChainId, syncHolderInfoInputList.ToList());
+        //wait
+        await _contractProvider.QueryTransactionResultAsync(chainId, resultList);
+        for (int i = 0; i < resultList.Count; i++)
+        {
+            var result = resultList[i];
+            var record = records[i];
+            if (record == null)
+            {
+                continue;
+            }
+            record.RecordStatus = RecordStatus.SYNCED;
+            if (result.Status != TransactionState.Mined)
+            {
+                _logger.LogError(
+                    "{type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}",
+                    record.ChangeType, chainId, record.CaHash, result.Error);
+
+                record.RetryTimes++;
+                record.ValidateHeight = long.MaxValue;
+                record.ValidateTransactionInfoDto = new TransactionInfo();
+                record.RecordStatus = RecordStatus.NOT_MINED;
+                return;
+            }
+
+            record.RecordStatus = RecordStatus.MINED;
+            // do not wait
+            _ = AddMonitorLogAsync(chainId, record.BlockHeight, targetChainId, result.BlockNumber,
+                record.ChangeType);
+            _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
+                record.ChangeType, chainId, record.CaHash);
+        }
+    }
 }
 
 public class SideChainHolderInfoSyncWorker : ChainHolderInfoSyncWorker
@@ -167,5 +211,59 @@ public class SideChainHolderInfoSyncWorker : ChainHolderInfoSyncWorker
             record.ChangeType);
         _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
             record.ChangeType, chainId, record.CaHash);
+    }
+
+    public override async Task ProcessSyncRecordList(string chainId, string targetChainId, List<SyncRecord> records, IndexOptions indexOptions)
+    {
+        var retryTimes = 0;
+        var mainHeight = await _contractProvider.GetBlockHeightAsync(targetChainId);
+        var indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
+
+        while (indexMainChainBlock <= mainHeight && retryTimes < indexOptions.IndexTimes)
+        {
+            await Task.Delay(indexOptions.IndexDelay);
+            indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
+            retryTimes++;
+        }
+
+        
+        var tasks = records.Select(r =>
+            _contractProvider.GetSyncHolderInfoInputAsync(chainId, r.ValidateTransactionInfoDto)).ToList();
+        var syncHolderInfoInputList = await tasks.WhenAll();
+        var resultList = await _contractProvider.SyncTransactionListAsync(ContractAppServiceConstant.MainChainId, syncHolderInfoInputList.ToList());
+        
+        //wait
+        await _contractProvider.QueryTransactionResultAsync(ContractAppServiceConstant.MainChainId, resultList);
+        for (int i = 0; i < resultList.Count; i++)
+        {
+            var result = resultList[i];
+            var record = records[i];
+            if (record == null)
+            {
+                continue;
+            }
+            record.RecordStatus = RecordStatus.SYNCED;
+
+            if (result.Status != TransactionState.Mined)
+            {
+                _logger.LogError("{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}",
+                    record.ChangeType, chainId, record.CaHash, result.Error);
+
+                record.RetryTimes++;
+                record.ValidateHeight = long.MaxValue;
+                record.ValidateTransactionInfoDto = new TransactionInfo();
+                record.RecordStatus = RecordStatus.NOT_MINED;
+                return;
+            }
+
+            record.RecordStatus = RecordStatus.MINED;
+
+            // do not wait
+            _ = AddMonitorLogAsync(chainId, record.BlockHeight, ContractAppServiceConstant.MainChainId,
+                result.BlockNumber,
+                record.ChangeType);
+            _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
+                record.ChangeType, chainId, record.CaHash);
+        }
     }
 }

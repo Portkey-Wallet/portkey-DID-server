@@ -13,6 +13,7 @@ using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 using Portkey.Contracts.CA;
@@ -366,8 +367,16 @@ public class ContractAppService : IContractAppService
                     var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(info.ChainId);
 
                     targetRecords = records.Where(r => r.ValidateHeight < indexHeight).ToList();
-                    tasks.AddRange(targetRecords.Select(record => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
-                        .ProcessSyncRecord(chainId, info.ChainId, record, _indexOptions)));
+                    // tasks.AddRange(targetRecords.Select(record => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+                    //     .ProcessSyncRecord(chainId, info.ChainId, record, _indexOptions)));
+                    
+                    tasks.AddRange(targetRecords
+                        .Select((record, index) => new {record, index})
+                        .GroupBy(x => x.index / 100)
+                        .Select(group => group.Select(x => x.record))
+                        .Select(group => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+                            .ProcessSyncRecordList(chainId, info.ChainId, group.ToList(), _indexOptions))
+                        .ToList());
                 }
             }
             else
@@ -376,8 +385,15 @@ public class ContractAppService : IContractAppService
                     ContractAppServiceConstant.MainChainId, await _contractProvider.GetChainIdAsync(chainId));
 
                 targetRecords = records.Where(r => r.ValidateHeight < indexHeight).ToList();
-                tasks.AddRange(targetRecords.Select(record => new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
-                    .ProcessSyncRecord(ContractAppServiceConstant.MainChainId, chainId, record, _indexOptions)));
+                // tasks.AddRange(targetRecords.Select(record => new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+                //     .ProcessSyncRecord(chainId, ContractAppServiceConstant.MainChainId, record, _indexOptions)));
+                tasks.AddRange(targetRecords
+                    .Select((record, index) => new {record, index})
+                    .GroupBy(x => x.index / 100)
+                    .Select(group => group.Select(x => x.record))
+                    .Select(group => new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+                        .ProcessSyncRecordList(chainId, ContractAppServiceConstant.MainChainId, group.ToList(), _indexOptions))
+                    .ToList());
             }
 
             await tasks.WhenAll();
@@ -487,9 +503,6 @@ public class ContractAppService : IContractAppService
 
         try
         {
-            var validatedRecords = new List<SyncRecord>();
-            var failedRecords = new List<SyncRecord>();
-
             var storedToBeValidatedRecords = await _recordsBucketContainer.GetToBeValidatedRecordsAsync(chainId);
 
             if (storedToBeValidatedRecords.IsNullOrEmpty())
@@ -502,8 +515,15 @@ public class ContractAppService : IContractAppService
                 .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
             var currentBlockHeight = await _contractProvider.GetBlockHeightAsync(chainId);
             var targetRecords = storedToBeValidatedRecords.Where(record => record.BlockHeight < currentBlockHeight).ToList();
-            var tasks = storedToBeValidatedRecords.Select(record => ProcessValidatedRecord(chainId, record)).ToList();
+            // var tasks = targetRecords.Select(record => ProcessValidatedRecord(chainId, record)).ToList();
+            var tasks = targetRecords
+                .Select((record, index) => new {record, index})
+                .GroupBy(x => x.index / 100)
+                .Select(group => group.Select(x => x.record))
+                .Select(group => ProcessValidatedRecordList(chainId, group.ToList()))
+                .ToList();
             await tasks.WhenAll();
+
             await _recordsBucketContainer.AddValidatedRecordsAsync(chainId, targetRecords.Where(r => r.RecordStatus == RecordStatus.MINED).ToList());
             var leftRecords = targetRecords.Where(r => r.RecordStatus == RecordStatus.NOT_MINED).ToList();
             leftRecords.AddRange(storedToBeValidatedRecords.Where(record => record.BlockHeight >= currentBlockHeight));
@@ -511,7 +531,7 @@ public class ContractAppService : IContractAppService
 
             _logger.LogInformation(
                 "ValidateQueryEvents on chain: {id} ends, validated {num} events and failed {failedNum} events",
-                chainId, validatedRecords.Count, failedRecords.Count);
+                chainId, storedToBeValidatedRecords.Count - leftRecords.Count, leftRecords.Count);
         }
         catch (Exception e)
         {
@@ -519,7 +539,7 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    private async Task ProcessValidatedRecord(string chainId, List<SyncRecord> records)
+    private async Task ProcessValidatedRecordList(string chainId, List<SyncRecord> records)
     {
         var holderInfoList = new List<GetHolderInfoOutput>();
         var unsetLoginGuardiansList = new List<RepeatedField<string>>();
@@ -537,24 +557,27 @@ public class ContractAppService : IContractAppService
                 unsetLoginGuardians.Add(record.NotLoginGuardian);
             }
             unsetLoginGuardiansList.Add(unsetLoginGuardians);
-
-            // single view from node
-            var holderInfo = await _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, record.CaHash);
-            holderInfoList.Add(holderInfo);
         }
+
+        var viewTasks = records.Select(t =>
+            _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, t.CaHash)).ToList();
+        holderInfoList.AddRange(await viewTasks.WhenAll());
 
         var transactionDtoList =
             await _contractProvider.ValidateTransactionListAsync(chainId, holderInfoList, unsetLoginGuardiansList);
 
+        // wait a moment
+        await _contractProvider.QueryTransactionResultAsync(chainId, transactionDtoList.Select(t => t.TransactionResultDto).ToList());
+        
         for (int i = 0; i < transactionDtoList.Count; i++)
         {
-            var transactionDto = transactionDtoList[i];
             var record = records[i];
             if (record == null)
             {
                 continue;
             }
-            if (transactionDto.TransactionResultDto.Status != TransactionState.Mined)
+
+            if (transactionDtoList[i].TransactionResultDto.Status != TransactionState.Mined)
             {
                 _logger.LogError("ValidateQueryEvents on chain: {id} of account: {hash} failed",
                     chainId, record.CaHash);
@@ -563,12 +586,12 @@ public class ContractAppService : IContractAppService
             }
             else
             {
-                record.ValidateHeight = transactionDto.TransactionResultDto.BlockNumber;
+                record.ValidateHeight = transactionDtoList[i].TransactionResultDto.BlockNumber;
                 record.ValidateTransactionInfoDto = new TransactionInfo
                 {
-                    BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
-                    TransactionId = transactionDto.TransactionResultDto.TransactionId,
-                    Transaction = transactionDto.Transaction.ToByteArray()
+                    BlockNumber = transactionDtoList[i].TransactionResultDto.BlockNumber,
+                    TransactionId = transactionDtoList[i].TransactionResultDto.TransactionId,
+                    Transaction = transactionDtoList[i].Transaction.ToByteArray()
                 };
                 record.RecordStatus = RecordStatus.MINED;
             }

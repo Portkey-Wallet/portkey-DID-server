@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AElf.Types;
 using CAServer.UserAssets.Provider;
 
 namespace CAServer.CAActivity.Provider;
@@ -65,4 +66,17 @@ public class SymbolInfo
 public class CaHolderTransactionInfos
 {
     public CaHolderTransaction CaHolderTransactionInfo { get; set; }
+}
+
+public class QueryTransactionInfosDto
+{
+    public List<TransactionInfoIndexerDto> QueryTransactionInfos { get; set; }
+}
+
+public class TransactionInfoIndexerDto
+{
+    public string TransactionId { get; set; }
+    public long BlockHeight { get; set; }
+    public string MethodName { get; set; }
+    public bool Confirmed { get; set; }
 }

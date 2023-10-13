@@ -31,6 +31,8 @@ public interface IGraphQLProvider
         long endHeight);
 
     Task<IndexerTransaction> GetReceiveTransactionAsync(string chainId, string transferTxId, long endHeight);
+
+    Task<List<TransactionInfoIndexerDto>> QueryTransactionInfosAsync(string chainId, List<string> transactionIds, bool confirmed);
 }
 
 public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
@@ -254,5 +256,26 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         });
 
         return txs.Data.CaHolderTransactionInfo.Data.FirstOrDefault();
+    }
+
+    public async Task<List<TransactionInfoIndexerDto>> QueryTransactionInfosAsync(string chainId, List<string> transactionIds, bool confirmed)
+    {
+        var txs = await _graphQLClient.SendQueryAsync<QueryTransactionInfosDto>(new GraphQLRequest
+        {
+            Query =
+                @"query($chainId:String!,$transactionId:[String],$confirmed:Boolean!){
+            queryTransactionIds(dto: {chainId:$chainId,:transactionIds:$transactionIds,confirmed:$confirmed}){
+                transactionId
+            }
+        }",
+            Variables = new
+            {
+                chainId = chainId,
+                transactionIds = transactionIds,
+                confirmed = confirmed
+            }
+        });
+
+        return txs.Data.QueryTransactionInfos.IsNullOrEmpty() ? new List<TransactionInfoIndexerDto>() : txs.Data.QueryTransactionInfos;
     }
 }
