@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.ContractEventHandler.Core.Application;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +29,15 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
         _logger.LogInformation("QueryAndSyncAsync start==============");
-        await _contractAppService.QueryAndSyncAsync();
+        try
+        {
+            await _contractAppService.QueryAndSyncAsync();
+        }
+        catch (Exception e)
+        {
+            _logger.LogInformation("QueryAndSyncAsync end exception==============");
+        }
+       
         _logger.LogInformation("QueryAndSyncAsync end==============");
     }
 }
