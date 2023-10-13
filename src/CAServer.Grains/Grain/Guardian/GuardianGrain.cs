@@ -33,7 +33,8 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         if (!string.IsNullOrEmpty(State.IdentifierHash) && !State.IsDeleted)
         {
             result.Message = "Guardian hash info has already exist.";
-            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+            result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State); 
+            DeactivateOnIdle();
             return result;
         }
 
@@ -48,6 +49,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         result.Success = true;
 
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        DeactivateOnIdle();
         return result;
     }
 
@@ -58,11 +60,13 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         if (string.IsNullOrEmpty(State.IdentifierHash) || State.IsDeleted)
         {
             result.Message = "Guardian not exist.";
+            DeactivateOnIdle();
             return Task.FromResult(result);
         }
 
         result.Success = true;
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        DeactivateOnIdle();
         return Task.FromResult(result);
     }
 
@@ -73,6 +77,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         if (string.IsNullOrEmpty(State.IdentifierHash) || State.IsDeleted)
         {
             result.Message = "Guardian not exist.";
+            DeactivateOnIdle();
             return result;
         }
 
@@ -81,6 +86,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         result.Success = true;
 
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        DeactivateOnIdle();
         return result;
     }
 }
