@@ -402,14 +402,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private GrainResultDto<GuardianGrainDto> GetGuardian(string guardianIdentifier)
     {
-        return new GrainResultDto<GuardianGrainDto>()
-        {
-            Success = false
-        };
-        //var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
+        var guardianGrainId = GrainIdHelper.GenerateGrainId("Guardian", guardianIdentifier);
 
-        //var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
-        //return guardianGrain.GetGuardianAsync(guardianIdentifier).Result;
+        var guardianGrain = _clusterClient.GetGrain<IGuardianGrain>(guardianGrainId);
+        return guardianGrain.GetGuardianAsync(guardianIdentifier).Result;
     }
 
     private async Task AddGuardianAsync(string guardianIdentifier, string salt, string identifierHash)
