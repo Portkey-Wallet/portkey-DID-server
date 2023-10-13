@@ -67,6 +67,12 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
+                .Configure<PerformanceTuningOptions>(opt =>
+                {
+                    opt.MinDotNetThreadPoolSize = 2048;
+                    opt.MinIOThreadPoolSize = 2048;
+                    opt.DefaultConnectionLimit = 4096;
+                })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
         });
