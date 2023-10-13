@@ -11,6 +11,7 @@ using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
+using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,6 +56,10 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var contactProviderMock = new Mock<IContactProvider>();
         var clusterClientMock = new Mock<IClusterClient>();
         var guardianProviderMock = new Mock<IGuardianProvider>();
+        var seedImageOptionsMock = new Mock<IOptionsSnapshot<SeedImageOptions>>();
+        seedImageOptionsMock.Setup(o => o.Value).Returns(new SeedImageOptions());
+        var userTokenAppServiceMock = new Mock<IUserTokenAppService>();
+        var tokenProvider = new Mock<ITokenProvider>();
         var userAssetsAppService = new UserAssetsAppService(
             logger: loggerMock.Object,
             userAssetsProvider: userAssetsProviderMock.Object,
@@ -66,9 +71,12 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             contractProvider: contractProviderMock.Object,
             contactProvider: contactProviderMock.Object,
             clusterClient: clusterClientMock.Object,
+            guardianProvider: guardianProviderMock.Object,
             distributedEventBus: GetRequiredService<IDistributedEventBus>(),
+            seedImageOptions:  seedImageOptionsMock.Object,
             syncOriginChainIdOptions: syncOriginChainIdOptionsMock.Object,
-            guardianProvider: guardianProviderMock.Object);
+            userTokenAppService: userTokenAppServiceMock.Object,
+            tokenProvider: tokenProvider.Object);
         return userAssetsAppService;
     }
 
