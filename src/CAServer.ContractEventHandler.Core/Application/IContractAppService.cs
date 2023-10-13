@@ -378,8 +378,12 @@ public class ContractAppService : IContractAppService
     public async Task QueryAndSyncAsync()
     {
         var tasks = new List<Task>();
+        _logger.LogInformation("QueryAndSyncAsyncQueryAndSyncAsyncQueryAndSyncAsync  starts, chain count: {count}",
+            _chainOptions.ChainInfos.Count);
+
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
+            _logger.LogInformation("QueryEventsAndSyncAsync on chain: {id} starts", chainId);
             tasks.Add(QueryEventsAndSyncAsync(chainId));
         }
 
