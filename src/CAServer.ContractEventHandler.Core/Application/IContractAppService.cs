@@ -381,13 +381,21 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("QueryAndSyncAsyncQueryAndSyncAsyncQueryAndSyncAsync  starts, chain count: {count}",
             _chainOptions.ChainInfos.Count);
 
-        foreach (var chainId in _chainOptions.ChainInfos.Keys)
+        try
         {
-            _logger.LogInformation("QueryEventsAndSyncAsync on chain: {id} starts", chainId);
-            tasks.Add(QueryEventsAndSyncAsync(chainId));
-        }
+            foreach (var chainId in _chainOptions.ChainInfos.Keys)
+            {
+                _logger.LogInformation("QueryEventsAndSyncAsync on chain: {id} starts", chainId);
+                tasks.Add(QueryEventsAndSyncAsync(chainId));
+            }
 
-        await tasks.WhenAll();
+            await tasks.WhenAll();
+        } catch (Exception e)
+        {
+            _logger.LogError(e, "QueryAndSyncAsync error");
+            _logger.LogInformation("QueryAndSyncAsyncQueryAndSyncAsyncQueryAndSyncAsync excptipon");
+        }
+       
     }
 
     private async Task QueryEventsAndSyncAsync(string chainId)
