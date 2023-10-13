@@ -285,7 +285,11 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 ? OrderStatusType.Transferred.ToString()
                 : OrderStatusType.Transferring.ToString();
 
-            var extensionData = new Dictionary<string, string> { ["txStatus"] = txResult.Status };
+            var extensionData = new Dictionary<string, string>
+            {
+                ["txStatus"] = txResult.Status,
+                ["txBlockHeight"] = txResult.BlockNumber.ToString()
+            };
             if (txResult.Status != TransactionState.Mined)
                 extensionData["txResult"] = JsonConvert.SerializeObject(txResult, JsonSerializerSettings);
 
@@ -307,7 +311,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="orderId"></param>
     /// <param name="confirmedHeight"></param>
-    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long confirmedHeight)
+    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long chainHeight, long confirmedHeight)
     {
         try
         {
@@ -344,7 +348,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // update order status
             var newStatus = rawTxResult.Status == TransactionState.Mined
-                ? rawTxResult.BlockNumber <= confirmedHeight
+                ? rawTxResult.BlockNumber <= confirmedHeight || chainHeight >= rawTxResult.BlockNumber + _thirdPartOptions.Timer.TransactionConfirmHeight
                     ? OrderStatusType.Finish.ToString()
                     : OrderStatusType.Transferred.ToString()
                 : OrderStatusType.TransferFailed.ToString();

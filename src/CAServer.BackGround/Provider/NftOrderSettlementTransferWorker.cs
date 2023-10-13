@@ -15,6 +15,7 @@ using Hangfire;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
+using IContractProvider = CAServer.Common.IContractProvider;
 
 namespace CAServer.BackGround.Provider;
 
@@ -33,11 +34,13 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly TransactionOptions _transactionOptions;
     private readonly IGraphQLProvider _graphQlProvider;
+    private readonly IContractProvider _contractProvider;
+
 
     public NftOrderSettlementTransferWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, ILogger<NftOrderSettlementTransferWorker> logger,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
-        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions, IGraphQLProvider graphQlProvider)
+        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions, IGraphQLProvider graphQlProvider, IContractProvider contractProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
@@ -45,6 +48,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
         _graphQlProvider = graphQlProvider;
+        _contractProvider = contractProvider;
         _transactionOptions = transactionOptions.Value;
         _thirdPartOptions = thirdPartOptions.Value;
     }
@@ -65,8 +69,9 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
             return;
         }
         
+        var chainHeight = await _contractProvider.GetBlockHeight(CommonConstant.MainChainId);
         var confirmedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(CommonConstant.MainChainId);
-        _logger.LogDebug("NftOrderSettlementTransferWorker LIB: {LibHeight}", confirmedHeight);
+        _logger.LogDebug("NftOrderSettlementTransferWorker chainHeight={Height} LIB: {LibHeight}", chainHeight, confirmedHeight);
         
         const int pageSize = 100;
         var secondsAgo = _thirdPartOptions.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
@@ -97,7 +102,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
             {
                 callbackResults.Add(_thirdPartNftOrderProcessorFactory
                     .GetProcessor(orderDto.MerchantName)
-                    .RefreshSettlementTransfer(orderDto.Id, confirmedHeight));
+                    .RefreshSettlementTransfer(orderDto.Id, chainHeight, confirmedHeight));
             }
 
             // non data in page was handled, stop

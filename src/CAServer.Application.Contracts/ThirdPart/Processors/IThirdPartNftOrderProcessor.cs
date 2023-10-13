@@ -13,7 +13,7 @@ public interface IThirdPartNftOrderProcessor : ISingletonDependency
     public Task<CommonResponseDto<Empty>> UpdateThirdPartNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
     public Task<CommonResponseDto<Empty>> RefreshThirdPartNftOrderAsync(Guid orderId);
     public Task<CommonResponseDto<Empty>> NotifyNftReleaseAsync(Guid orderId);
-    public Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long confirmedHeight);
+    public Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long blockHeight, long confirmedHeight);
     public Task SettlementTransfer(Guid orderId);
 
 }
