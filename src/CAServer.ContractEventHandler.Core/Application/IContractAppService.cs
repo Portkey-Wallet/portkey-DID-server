@@ -388,10 +388,13 @@ public class ContractAppService : IContractAppService
 
     private async Task QueryEventsAndSyncAsync(string chainId)
     {
+        _logger.LogInformation("QueryEventsAndSync  QueryEventsAsync on chain: {id} starts", chainId);
         await QueryEventsAsync(chainId);
 
+        _logger.LogInformation("QueryEventsAndSync ValidateQueryEventsAsync on chain: {id} starts ",chainId );
         await ValidateQueryEventsAsync(chainId);
 
+        _logger.LogInformation("QueryEventsAndSync SyncQueryEventsAsync on chain: {id} starts ",chainId );
         await SyncQueryEventsAsync(chainId);
     }
 
