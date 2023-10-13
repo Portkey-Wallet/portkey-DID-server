@@ -44,7 +44,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         State.IdentifierHash = identifierHash;
         State.IsDeleted = false;
         
-        await WriteStateAsync();
+        //await WriteStateAsync();
         result.Success = true;
 
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
@@ -77,7 +77,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         }
 
         State.IsDeleted = true;
-        await WriteStateAsync();
+        //await WriteStateAsync();
         result.Success = true;
 
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);

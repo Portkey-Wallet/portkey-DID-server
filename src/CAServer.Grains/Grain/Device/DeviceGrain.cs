@@ -23,7 +23,7 @@ public class DeviceGrain : Grain<DeviceState>, IDeviceGrain
         if (State.Salt.IsNullOrWhiteSpace())
         {
             State.Salt = GenerateSalt(DeviceGrainConstants.RandomSaltSize);
-            await WriteStateAsync();
+            //await WriteStateAsync();
         }
 
         return State.Salt;
@@ -43,6 +43,6 @@ public class DeviceGrain : Grain<DeviceState>, IDeviceGrain
     public async Task SetSaltAsync(string salt)
     {
         State.Salt = salt;
-        await WriteStateAsync();
+        //await WriteStateAsync();
     }
 }

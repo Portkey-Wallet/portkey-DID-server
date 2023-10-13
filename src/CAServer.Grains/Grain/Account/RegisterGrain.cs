@@ -56,7 +56,7 @@ public class RegisterGrain : Grain<RegisterState>, IRegisterGrain
         State.Id = this.GetPrimaryKeyString();
         registerInfo.GrainId = State.Id;
 
-        await WriteStateAsync();
+        //await WriteStateAsync();
 
         result.Success = true;
         result.Data = _objectMapper.Map<RegisterInfo, RegisterGrainDto>(registerInfo);
@@ -81,7 +81,7 @@ public class RegisterGrain : Grain<RegisterState>, IRegisterGrain
         register.CaHash = resultDto.CaHash;
         register.CaAddress = resultDto.CaAddress;
 
-        await WriteStateAsync();
+        //await WriteStateAsync();
         result.Success = true;
         result.Data = _objectMapper.Map<RegisterInfo, RegisterGrainDto>(register);
         return result;
