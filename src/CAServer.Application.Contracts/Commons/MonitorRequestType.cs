@@ -19,3 +19,20 @@ public enum MonitorAelfClientType
     GetMerklePathByTransactionIdAsync,
     ExecuteTransactionAsync
 }
+
+public enum RegisterAndRecoveryLogType
+{
+    CheckCaHolderExists,
+    CreateCaHolder,
+    SocialRecovery,
+    GetHolderInfo
+}
+
+public enum DataSyncLogType
+{
+    QueryRecord,
+    ValidateTransaction,
+    CheckBlockIndex,
+    GetHolderInfo,
+    SyncTransaction
+}

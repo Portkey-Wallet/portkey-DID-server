@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
+using CAServer.Commons;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
@@ -46,12 +47,13 @@ public class ContractAppService : IContractAppService
     private readonly ILogger<ContractAppService> _logger;
     private readonly IIndicatorLogger _indicatorLogger;
     private readonly IMonitorLogProvider _monitorLogProvider;
+    private readonly IIndicatorScope _indicatorScope;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
         IContractProvider contractProvider, IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger,
-        IMonitorLogProvider monitorLogProvider)
+        IMonitorLogProvider monitorLogProvider, IIndicatorScope indicatorScope)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -63,12 +65,15 @@ public class ContractAppService : IContractAppService
         _recordsBucketContainer = recordsBucketContainer;
         _indicatorLogger = indicatorLogger;
         _monitorLogProvider = monitorLogProvider;
+        _indicatorScope = indicatorScope;
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
     {
         _logger.LogInformation("CreateHolder message: " + "\n{message}",
             JsonConvert.SerializeObject(message, Formatting.Indented));
+
+        var beginTime = TimeHelper.GetTimeStampInMilliseconds();
 
         var registerResult = new CreateHolderEto
         {
@@ -99,6 +104,9 @@ public class ContractAppService : IContractAppService
         }
 
         var checkCaHolderExists = await CheckHolderExistsOnBothChains(createHolderDto.GuardianInfo.IdentifierHash);
+        var checkHolderTime = TimeHelper.GetTimeStampInMilliseconds();
+        _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.Register,
+            RegisterAndRecoveryLogType.CheckCaHolderExists.ToString(), beginTime, checkHolderTime);
 
         if (!checkCaHolderExists)
         {
@@ -115,6 +123,10 @@ public class ContractAppService : IContractAppService
         }
 
         var resultCreateCaHolder = await _contractProvider.CreateHolderInfoAsync(createHolderDto);
+        
+        var caHolderCreatedTime = TimeHelper.GetTimeStampInMilliseconds();
+        _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.Register,
+            RegisterAndRecoveryLogType.CreateCaHolder.ToString(), checkHolderTime, caHolderCreatedTime);
 
         if (resultCreateCaHolder.Status != TransactionState.Mined)
         {
@@ -146,6 +158,10 @@ public class ContractAppService : IContractAppService
         var outputGetHolderInfo =
             await _contractProvider.GetHolderInfoFromChainAsync(createHolderDto.ChainId,
                 createHolderDto.GuardianInfo.IdentifierHash, null);
+        
+        var getHolderInfoTime = TimeHelper.GetTimeStampInMilliseconds();
+        _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.Register,
+            RegisterAndRecoveryLogType.GetHolderInfo.ToString(), caHolderCreatedTime, getHolderInfoTime);
 
         if (outputGetHolderInfo.CaHash == null || outputGetHolderInfo.CaHash.Value.IsEmpty)
         {
@@ -184,6 +200,8 @@ public class ContractAppService : IContractAppService
     {
         _logger.LogInformation("SocialRecovery message: " + "\n{message}",
             JsonConvert.SerializeObject(message, Formatting.Indented));
+        
+        var beginTime = TimeHelper.GetTimeStampInMilliseconds();
 
         var recoveryResult = new SocialRecoveryEto
         {
@@ -213,7 +231,10 @@ public class ContractAppService : IContractAppService
         }
 
         var resultSocialRecovery = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
-
+        var socialRecoveryTime = TimeHelper.GetTimeStampInMilliseconds();
+        _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.Register,
+            RegisterAndRecoveryLogType.SocialRecovery.ToString(), beginTime, socialRecoveryTime);
+        
         if (resultSocialRecovery.Status != TransactionState.Mined)
         {
             recoveryResult.RecoveryMessage = "Transaction status: " + resultSocialRecovery.Status + ". Error: " +
@@ -243,6 +264,9 @@ public class ContractAppService : IContractAppService
 
         var outputGetHolderInfo = await _contractProvider.GetHolderInfoFromChainAsync(socialRecoveryDto.ChainId,
             socialRecoveryDto.LoginGuardianIdentifierHash, null);
+        var getHolderInfoTime = TimeHelper.GetTimeStampInMilliseconds();
+        _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.Register,
+            RegisterAndRecoveryLogType.GetHolderInfo.ToString(), socialRecoveryTime, getHolderInfoTime);
 
         if (outputGetHolderInfo.CaHash == null || outputGetHolderInfo.CaHash.Value.IsEmpty)
         {
@@ -285,9 +309,15 @@ public class ContractAppService : IContractAppService
     private async Task<bool> ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
         string optionChainId)
     {
+        var beginTime = TimeHelper.GetTimeStampInMilliseconds();
+        
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var transactionDto =
             await _contractProvider.ValidateTransactionAsync(chainId, result, null);
+        
+        var validateTransactionTime = TimeHelper.GetTimeStampInMilliseconds();
+        _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.ValidateTransactionAndSync,
+            DataSyncLogType.ValidateTransaction.ToString(), beginTime, validateTransactionTime);
 
         var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
         SyncHolderInfoInput syncHolderInfoInput;
@@ -300,6 +330,9 @@ public class ContractAppService : IContractAppService
                          !c.IsMainChain && c.ChainId != optionChainId))
             {
                 await _contractProvider.SideChainCheckMainChainBlockIndexAsync(sideChain.ChainId, validateHeight);
+                var checkBlockIndexTime = TimeHelper.GetTimeStampInMilliseconds();
+                _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.ValidateTransactionAndSync,
+                    DataSyncLogType.CheckBlockIndex.ToString(), validateTransactionTime, checkBlockIndexTime);
 
                 syncHolderInfoInput =
                     await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
@@ -308,20 +341,31 @@ public class ContractAppService : IContractAppService
                         BlockNumber = transactionDto.TransactionResultDto.BlockNumber,
                         Transaction = transactionDto.Transaction.ToByteArray()
                     });
-
+                
+                var getHolderInfoTime = TimeHelper.GetTimeStampInMilliseconds();
+                _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.ValidateTransactionAndSync,
+                    DataSyncLogType.GetHolderInfo.ToString(), checkBlockIndexTime, getHolderInfoTime);
+                
                 if (syncHolderInfoInput.VerificationTransactionInfo == null)
                 {
                     return false;
                 }
 
                 var resultDto = await _contractProvider.SyncTransactionAsync(sideChain.ChainId, syncHolderInfoInput);
+                var syncTransactionTime = TimeHelper.GetTimeStampInMilliseconds();
+                _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.ValidateTransactionAndSync,
+                    DataSyncLogType.SyncTransaction.ToString(), getHolderInfoTime, syncTransactionTime);
+                
                 syncSucceed = syncSucceed && resultDto.Status == TransactionState.Mined;
             }
         }
         else
         {
             await _contractProvider.MainChainCheckSideChainBlockIndexAsync(chainId, validateHeight);
-
+            var checkBlockIndexTime = TimeHelper.GetTimeStampInMilliseconds();
+            _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.ValidateTransactionAndSync,
+                DataSyncLogType.CheckBlockIndex.ToString(), validateTransactionTime, checkBlockIndexTime);
+            
             syncHolderInfoInput =
                 await _contractProvider.GetSyncHolderInfoInputAsync(chainId, new TransactionInfo
                 {
@@ -330,6 +374,10 @@ public class ContractAppService : IContractAppService
                     Transaction = transactionDto.Transaction.ToByteArray()
                 });
 
+            var getHolderInfoTime = TimeHelper.GetTimeStampInMilliseconds();
+            _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.ValidateTransactionAndSync,
+                DataSyncLogType.GetHolderInfo.ToString(), checkBlockIndexTime, getHolderInfoTime);
+            
             if (syncHolderInfoInput.VerificationTransactionInfo == null)
             {
                 return false;
@@ -338,6 +386,9 @@ public class ContractAppService : IContractAppService
             var syncResult =
                 await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
                     syncHolderInfoInput);
+            var syncTransactionTime = TimeHelper.GetTimeStampInMilliseconds();
+            _monitorLogProvider.AddRegisterAndRecoveryLog(MonitorTag.ValidateTransactionAndSync,
+                DataSyncLogType.SyncTransaction.ToString(), getHolderInfoTime, syncTransactionTime);
 
             // result = await _contractProvider.GetHolderInfoFromChainAsync(ContractAppServiceConstant.MainChainId, Hash.Empty, result.CaHash.ToHex());
             //
@@ -390,12 +441,12 @@ public class ContractAppService : IContractAppService
             }
 
             await tasks.WhenAll();
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             _logger.LogError(e, "QueryAndSyncAsync error");
             _logger.LogInformation("QueryAndSyncAsyncQueryAndSyncAsyncQueryAndSyncAsync excptipon");
         }
-       
     }
 
     private async Task QueryEventsAndSyncAsync(string chainId)
@@ -403,10 +454,10 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("QueryEventsAndSync  QueryEventsAsync on chain: {id} starts", chainId);
         await QueryEventsAsync(chainId);
 
-        _logger.LogInformation("QueryEventsAndSync ValidateQueryEventsAsync on chain: {id} starts ",chainId );
+        _logger.LogInformation("QueryEventsAndSync ValidateQueryEventsAsync on chain: {id} starts ", chainId);
         await ValidateQueryEventsAsync(chainId);
 
-        _logger.LogInformation("QueryEventsAndSync SyncQueryEventsAsync on chain: {id} starts ",chainId );
+        _logger.LogInformation("QueryEventsAndSync SyncQueryEventsAsync on chain: {id} starts ", chainId);
         await SyncQueryEventsAsync(chainId);
     }
 
@@ -582,12 +633,17 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("Query on chain: {id}, from {start} to {end}", chainId, startIndexHeight,
                     endIndexHeight);
 
+                var interIndicator = _indicatorScope.Begin(MonitorTag.ChainDataSync,
+                    DataSyncLogType.QueryRecord.ToString());
+
                 queryEvents.AddRange(await _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
                     chainId, startIndexHeight, endIndexHeight));
                 queryEvents.AddRange(await _graphQLProvider.GetManagerTransactionInfosAsync(
                     chainId, startIndexHeight, endIndexHeight));
                 queryEvents.AddRange(await _graphQLProvider.GetGuardianTransactionInfosAsync(
                     chainId, startIndexHeight, endIndexHeight));
+
+                _indicatorScope.End(interIndicator);
 
                 if (endIndexHeight == targetIndexHeight)
                 {
