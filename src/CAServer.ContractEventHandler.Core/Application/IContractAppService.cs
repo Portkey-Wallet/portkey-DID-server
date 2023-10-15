@@ -395,7 +395,7 @@ public class ContractAppService : IContractAppService
             _logger.LogError(e, "QueryAndSyncAsync error");
             _logger.LogInformation("QueryAndSyncAsyncQueryAndSyncAsyncQueryAndSyncAsync excptipon");
         }
-       
+        _logger.LogInformation("QueryAndSyncAsyncQueryAndSyncAsyncQueryAndSyncAsync excptipon");
     }
 
     private async Task QueryEventsAndSyncAsync(string chainId)
@@ -453,10 +453,18 @@ public class ContractAppService : IContractAppService
                         if (result.Status != TransactionState.Mined)
                         {
                             _logger.LogError(
-                                "{type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
-                                record.ChangeType, chainId, record.CaHash, result.Error,
+                                "{type} SyncToSide failed on chain: {id} of account: {hash},txid:{id}, error: {error},record.RetryTimes:{retry}, data:{data}",
+                                record.ChangeType, chainId, record.CaHash,record.ValidateTransactionInfoDto.TransactionId, result.Error,record.RetryTimes,
                                 JsonConvert.SerializeObject(syncHolderInfoInput));
 
+
+                            if (record.RetryTimes < 1)
+                            {
+                                await _monitorLogProvider.FinishAsync(record, info.ChainId, result.BlockNumber);
+                                await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId,
+                                    result.BlockNumber,
+                                    record.ChangeType);
+                            }
                             record.RetryTimes++;
                             record.ValidateHeight = long.MaxValue;
                             record.ValidateTransactionInfoDto = new TransactionInfo();
@@ -512,10 +520,19 @@ public class ContractAppService : IContractAppService
                     if (result.Status != TransactionState.Mined)
                     {
                         _logger.LogError(
-                            "{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
-                            record.ChangeType, chainId, record.CaHash, result.Error,
+                            "{type} SyncToMain failed on chain: {id} of account: {hash},txid:{id},record.RetryTimes:{retry}, error: {error}, data{data}",
+                            record.ChangeType, chainId, record.CaHash,record.ValidateTransactionInfoDto.TransactionId,record.RetryTimes, result.Error,
                             JsonConvert.SerializeObject(syncHolderInfoInput));
 
+                        if (record.RetryTimes < 1)
+                        {
+                            await _monitorLogProvider.FinishAsync(record, ContractAppServiceConstant.MainChainId,
+                                result.BlockNumber);
+                            await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight,
+                                ContractAppServiceConstant.MainChainId,
+                                result.BlockNumber,
+                                record.ChangeType);
+                        }
                         record.RetryTimes++;
                         record.ValidateHeight = long.MaxValue;
                         record.ValidateTransactionInfoDto = new TransactionInfo();
