@@ -31,7 +31,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<MonitorLogProvider> _logger;
     private readonly IIndicatorLogger _indicatorLogger;
-    private readonly int _maxDuration = 300_000;
+    private readonly int _maxDuration = 3000_000;
 
     public MonitorLogProvider(IContractProvider contractProvider, ILogger<MonitorLogProvider> logger,
         IIndicatorLogger indicatorLogger)
