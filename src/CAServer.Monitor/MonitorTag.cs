@@ -8,5 +8,6 @@ public enum MonitorTag
     Register,
     SocialRecover,
     ChainDataSync,
-    DataSyncHeightIndex
+    DataSyncHeightIndex,
+    ValidateTransactionAndSync
 }

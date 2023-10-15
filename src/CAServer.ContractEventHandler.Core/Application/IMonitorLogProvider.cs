@@ -22,6 +22,8 @@ public interface IMonitorLogProvider
         string changeType);
 
     Task AddHeightIndexMonitorLogAsync(string chainId, long indexHeight);
+
+    void AddRegisterAndRecoveryLog(MonitorTag tag, string target, long beginTime, long endTime);
 }
 
 public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
@@ -29,7 +31,7 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<MonitorLogProvider> _logger;
     private readonly IIndicatorLogger _indicatorLogger;
-    private readonly int _maxDuration = 300_000;
+    private readonly int _maxDuration = 3000_000;
 
     public MonitorLogProvider(IContractProvider contractProvider, ILogger<MonitorLogProvider> logger,
         IIndicatorLogger indicatorLogger)
@@ -204,6 +206,21 @@ public class MonitorLogProvider : IMonitorLogProvider, ISingletonDependency
         catch (Exception e)
         {
             _logger.LogError(e, "add height index monitor log error.");
+        }
+    }
+
+    public void AddRegisterAndRecoveryLog(MonitorTag tag, string target, long beginTime, long endTime)
+    {
+        try
+        {
+            if (!_indicatorLogger.IsEnabled()) return;
+
+            var duration = (int)(endTime - beginTime);
+            _indicatorLogger.LogInformation(tag, target, duration);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "add monitor log error.");
         }
     }
 }
