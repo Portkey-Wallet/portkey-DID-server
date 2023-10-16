@@ -50,20 +50,21 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     {
         try
         {
-            eventData.Nickname = "Wallet 01";
-            _logger.LogInformation("receive create token event...");
+            eventData.Nickname = eventData.UserId.ToString("N").Substring(0, 8);
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
             var result = await grain.AddHolderAsync(_objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData));
 
             if (!result.Success)
             {
-                _logger.LogError("{Message}", JsonConvert.SerializeObject(result));
+                _logger.LogError("create holder fail: {message}, userId: {userId}, aAHash: {caHash}", result.Message,
+                    eventData.UserId, eventData.CaHash);
                 return;
             }
 
             await _caHolderRepository.AddAsync(_objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data));
 
-            _logger.LogInformation("add user token...");
+            _logger.LogInformation("create holder success, userId: {userId}, aAHash: {caHash}", eventData.UserId,
+                eventData.CaHash);
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
         }
         catch (Exception ex)
@@ -98,7 +99,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 contact.CaHolderInfo.WalletName = eventData.Nickname;
                 contact.ModificationTime = DateTime.UtcNow;
                 contact.Index = updateResult.Data.Index;
-                
+
                 await _contactRepository.UpdateAsync(contact);
                 _logger.LogInformation("contact wallet name update success, contactId: {id}", contact.Id);
             }

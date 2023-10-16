@@ -1,3 +1,4 @@
+using CAServer.CAAccount.Dtos;
 using CAServer.Grains.State;
 using Orleans;
 using Volo.Abp.ObjectMapping;
@@ -98,5 +99,30 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         result.Success = true;
         result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
         return Task.FromResult(result);
+    }
+
+    public async Task<GrainResultDto<CAHolderGrainDto>> UpdateHolderInfo(HolderInfoDto holderInfo)
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return result;
+        }
+
+        if (!holderInfo.NickName.IsNullOrWhiteSpace())
+        {
+            State.Nickname = holderInfo.NickName;
+        }
+
+        if (!holderInfo.Avatar.IsNullOrWhiteSpace())
+        {
+            State.Avatar = holderInfo.Avatar;
+        }
+        await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
+        return result;
     }
 }
