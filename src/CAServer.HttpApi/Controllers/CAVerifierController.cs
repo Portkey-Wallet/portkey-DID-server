@@ -53,6 +53,7 @@ public class CAVerifierController : CAServerController
         [FromHeader] string version,
         VerifierServerInput verifierServerInput)
     {
+        _logger.LogInformation("SendVerificationRequest requestDto is {@requestDto}", verifierServerInput);
         var type = verifierServerInput.OperationType;
         ValidateOperationType(type);
         var sendVerificationRequestInput =
@@ -200,8 +201,11 @@ public class CAVerifierController : CAServerController
     [HttpPost("verifyCode")]
     public async Task<VerificationCodeResponse> VerifyCode(VerificationSignatureRequestDto requestDto)
     {
+        _logger.LogInformation("VerifyCode requestDto is {@requestDto}", requestDto);
         ValidateOperationType(requestDto.OperationType);
-        return await _verifierAppService.VerifyCodeAsync(requestDto);
+        var resp =  await _verifierAppService.VerifyCodeAsync(requestDto);
+        _logger.LogInformation("VerifyCode response is {@resp}", resp);
+        return resp;
     }
 
     [HttpPost("verifyGoogleToken")]

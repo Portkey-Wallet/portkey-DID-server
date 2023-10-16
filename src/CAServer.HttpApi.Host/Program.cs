@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Hubs;
 using Microsoft.AspNetCore.Builder;
@@ -44,6 +45,10 @@ public class Program
                 .UseSerilog();
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
+            
+            ThreadPool.SetMinThreads(65535, 65535);
+            ThreadPool.SetMaxThreads(65535, 65535);
+            
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
             await app.InitializeApplicationAsync();
