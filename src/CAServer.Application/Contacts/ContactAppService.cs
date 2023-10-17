@@ -747,29 +747,30 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         var contactsIm = contacts.Where(t => t.ImInfo != null).ToList();
         var names = contactsIm.Where(t => !t.Name.IsNullOrWhiteSpace());
-        foreach (var name in names)
+        foreach (var contact in names)
         {
             result.Add(new GetNamesResultDto()
             {
-                PortkeyId = Guid.Parse(name.ImInfo.PortkeyId),
-                Name = name.Name
+                PortkeyId = Guid.Parse(contact.ImInfo.PortkeyId),
+                Name = contact.Name,
+                Avatar = contact.Avatar
             });
 
-            input.Remove(Guid.Parse(name.ImInfo.PortkeyId));
+            input.Remove(Guid.Parse(contact.ImInfo.PortkeyId));
         }
 
         var contactsHolder = contactsIm.Where(t => t.Name.IsNullOrWhiteSpace() && t.CaHolderInfo != null);
-        foreach (var name in contactsHolder)
+        foreach (var contact in contactsHolder)
         {
             result.Add(new GetNamesResultDto()
             {
-                PortkeyId = name.CaHolderInfo.UserId,
-                Name = name.CaHolderInfo.WalletName
+                PortkeyId = contact.CaHolderInfo.UserId,
+                Name = contact.CaHolderInfo.WalletName,
+                Avatar = contact.Avatar
             });
 
-            input.Remove(name.CaHolderInfo.UserId);
+            input.Remove(contact.CaHolderInfo.UserId);
         }
-
 
         if (input.Count == 0) return result;
 
@@ -779,18 +780,20 @@ public class ContactAppService : CAServerAppService, IContactAppService
             result.Add(new GetNamesResultDto()
             {
                 PortkeyId = holder.UserId,
-                Name = holder.NickName
+                Name = holder.NickName,
+                Avatar = holder.Avatar
             });
 
             input.Remove(holder.UserId);
         }
 
-        foreach (var per in input)
+        foreach (var item in input)
         {
             result.Add(new GetNamesResultDto()
             {
-                PortkeyId = per,
-                Name = string.Empty
+                PortkeyId = item,
+                Name = string.Empty,
+                Avatar = string.Empty
             });
         }
 
