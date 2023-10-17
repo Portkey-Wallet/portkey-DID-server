@@ -163,15 +163,6 @@ public class ContractAppService : IContractAppService
         registerResult.CaHash = outputGetHolderInfo.CaHash.ToHex();
 
         await _distributedEventBus.PublishAsync(registerResult);
-        await _distributedEventBus.PublishAsync(
-            new UserBehaviorEto()
-            {
-                ChainId = createHolderDto.ChainId,
-                CaAddress = registerResult.CaAddress,
-                CaHash = registerResult.CaHash,
-                Action = UserBehaviorAction.Register,
-                SessionId = message.Id.ToString()
-            });
 
         _logger.LogInformation("Register state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));

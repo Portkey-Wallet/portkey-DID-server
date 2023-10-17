@@ -86,6 +86,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 
             if (coinData.MarketData == null)
             {
+                Logger.LogError( "get history price error: {symbol}, {dateTime}", symbol, dateTime);
                 return 0;
             }
 
