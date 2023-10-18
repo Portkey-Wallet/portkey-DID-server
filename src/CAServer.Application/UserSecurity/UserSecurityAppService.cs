@@ -69,6 +69,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             }
 
             // If the transferLimit is updated, the token transferLimit will be overwritten
+            // var res = new IndexerTransferLimitList();
             var res = await _userSecurityProvider.GetTransferLimitListByCaHash(input.CaHash);
             _logger.LogDebug("CaHash: {caHash} have {COUNT} transfer limit change history.", input.CaHash,
                 res.CaHolderTransferLimit.TotalRecordCount);
@@ -90,7 +91,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             {
                 TotalRecordCount = dic.Count,
                 Data = dic.Values.ToList().OrderBy(t => t.Symbol != _defaultSymbol).ThenBy(t => t.Symbol)
-                    .ThenBy(t => t.ChainId).ToList()
+                    .ThenBy(t => t.ChainId).ToList().Skip(input.SkipCount).Take(input.MaxResultCount).ToList()
             };
         }
         catch (Exception e)
@@ -159,7 +160,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             if (registryChainGuardianCount > 1)
             {
                 return new TokenBalanceTransferCheckAsyncResultDto
-                    { IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing, };
+                    { IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing };
             }
 
             var assert = await GetUserAssetsAsync(input.CaHash);
@@ -173,10 +174,10 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
                     token.Balance > t)
                     return new TokenBalanceTransferCheckAsyncResultDto
-                        { IsTransferSafe = false, IsOriginChainSafe = true };
+                        { IsTransferSafe = false, IsOriginChainSafe = false };
             }
 
-            return new TokenBalanceTransferCheckAsyncResultDto { IsSynchronizing = isSynchronizing, };
+            return new TokenBalanceTransferCheckAsyncResultDto { IsSynchronizing = isSynchronizing };
         }
         catch (Exception e)
         {
