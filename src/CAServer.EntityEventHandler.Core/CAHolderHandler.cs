@@ -97,6 +97,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 }
 
                 contact.CaHolderInfo.WalletName = eventData.Nickname;
+                contact.Avatar = eventData.Avatar;
                 contact.ModificationTime = DateTime.UtcNow;
                 contact.Index = updateResult.Data.Index;
 
