@@ -46,9 +46,6 @@ public class Program
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             
-            ThreadPool.SetMinThreads(65535, 65535);
-            ThreadPool.SetMaxThreads(65535, 65535);
-            
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
             await app.InitializeApplicationAsync();
