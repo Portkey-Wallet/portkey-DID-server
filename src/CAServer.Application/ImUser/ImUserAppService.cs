@@ -86,6 +86,23 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
         return guidsByGuardian.Union(guidsByUserExtraInfo).ToList();
     }
 
+    public async Task<List<HolderInfoResultDto>> GetHolderInfosAsync(List<Guid> userIds)
+    {
+        var holders = await GetHolderIndexListAsync(userIds);
+        return ObjectMapper.Map<List<CAHolderIndex>, List<HolderInfoResultDto>>(holders);
+    }
+
+    private async Task<List<CAHolderIndex>> GetHolderIndexListAsync(List<Guid> userIds)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userIds)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var userExtraInfos = await _caHolderRepository.GetListAsync(Filter);
+
+        return userExtraInfos.Item2;
+    }
+
     private async Task<List<Guid>> GetIdsByUserExtraInfoAsync(string keyword)
     {
         var approvedAllUserIds = new List<Guid>();
