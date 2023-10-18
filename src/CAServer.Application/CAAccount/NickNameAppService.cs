@@ -64,7 +64,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
 
-    private async Task UpdateImUserAsync(Guid userId, string nickName)
+    private async Task UpdateImUserAsync(Guid userId, string nickName, string avatar = "")
     {
         if (_hostInfoOptions.Environment == Options.Environment.Development)
         {
@@ -73,7 +73,8 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
 
         var imUserUpdateDto = new ImUserUpdateDto
         {
-            Name = nickName
+            Name = nickName,
+            Avatar = avatar
         };
 
         try
@@ -102,7 +103,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         var holder = await _holderRepository.GetAsync(Filter);
         return ObjectMapper.Map<CAHolderIndex, CAHolderResultDto>(holder);
     }
-    
+
     public async Task<CAHolderResultDto> DeleteAsync()
     {
         var userId = CurrentUser.GetId();
@@ -117,7 +118,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, DeleteCAHolderEto>(result.Data));
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
-    
+
     public async Task<CAHolderResultDto> UpdateHolderInfoAsync(HolderInfoDto holderInfo)
     {
         var userId = CurrentUser.GetId();
@@ -130,13 +131,8 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
-
-        if (!holderInfo.NickName.IsNullOrWhiteSpace())
-        {
-            await UpdateImUserAsync(userId, holderInfo.NickName);
-        }
-
+        await UpdateImUserAsync(userId, holderInfo.NickName, holderInfo.Avatar);
+        
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
-
 }
