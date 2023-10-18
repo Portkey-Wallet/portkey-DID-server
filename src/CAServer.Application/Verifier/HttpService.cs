@@ -57,7 +57,7 @@ public class HttpService : IHttpService
         }
 
         Client = _httpClientFactory.CreateClient();
-        Client.Timeout = TimeSpan.FromSeconds(TimeoutSeconds);
+        Client.Timeout = TimeSpan.FromSeconds(TimeoutSeconds * 2);
         Client.DefaultRequestHeaders.Accept.Clear();
         Client.DefaultRequestHeaders.Accept.Add(
             MediaTypeWithQualityHeaderValue.Parse($"application/json{version}"));
