@@ -109,8 +109,7 @@ public class MainChainHolderInfoSyncWorker : ChainHolderInfoSyncWorker
             _contractProvider.GetSyncHolderInfoInputAsync(chainId, r.ValidateTransactionInfoDto)).ToList();
         var syncHolderInfoInputList = await tasks.WhenAll();
         var resultList = await _contractProvider.SyncTransactionListAsync(targetChainId, syncHolderInfoInputList.ToList());
-        //wait
-        await _contractProvider.QueryTransactionResultAsync(chainId, resultList);
+        await _contractProvider.QueryTransactionResultAsync(chainId, resultList, true);
         for (int i = 0; i < resultList.Count; i++)
         {
             var result = resultList[i];
@@ -233,7 +232,7 @@ public class SideChainHolderInfoSyncWorker : ChainHolderInfoSyncWorker
         var resultList = await _contractProvider.SyncTransactionListAsync(ContractAppServiceConstant.MainChainId, syncHolderInfoInputList.ToList());
         
         //wait
-        await _contractProvider.QueryTransactionResultAsync(ContractAppServiceConstant.MainChainId, resultList);
+        await _contractProvider.QueryTransactionResultAsync(ContractAppServiceConstant.MainChainId, resultList, true);
         for (int i = 0; i < resultList.Count; i++)
         {
             var result = resultList[i];

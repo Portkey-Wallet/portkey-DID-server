@@ -157,9 +157,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                     paramList.Count, transactionIdList.Length, JsonConvert.SerializeObject(paramList));
                 return new List<TransactionInfoDto>();
             }
-
-            await Task.Delay(_grainOptions.Delay);
-
+            
             var resultList = new List<TransactionInfoDto>();
             for (int i = 0; i < transactionIdList.Length; i++)
             {
@@ -229,7 +227,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     public async Task<List<TransactionInfoDto>> ValidateTransactionListAsync(string chainId, List<GetHolderInfoOutput> outputList, List<RepeatedField<string>> unsetLoginGuardiansList)
     {
         var paramList = new List<IMessage>();
-        for (int i = 0; i <= outputList.Count; i++)
+        for (int i = 0; i < outputList.Count; i++)
         {
             var unsetLoginGuardians = unsetLoginGuardiansList[i];
             var param = _objectMapper.Map<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>(outputList[i]);

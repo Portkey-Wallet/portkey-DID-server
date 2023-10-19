@@ -515,7 +515,6 @@ public class ContractAppService : IContractAppService
                 .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
             var currentBlockHeight = await _contractProvider.GetBlockHeightAsync(chainId);
             var targetRecords = storedToBeValidatedRecords.Where(record => record.BlockHeight < currentBlockHeight).ToList();
-            // var tasks = targetRecords.Select(record => ProcessValidatedRecord(chainId, record)).ToList();
             var tasks = targetRecords
                 .Select((record, index) => new {record, index})
                 .GroupBy(x => x.index / 100)
@@ -566,8 +565,7 @@ public class ContractAppService : IContractAppService
         var transactionDtoList =
             await _contractProvider.ValidateTransactionListAsync(chainId, holderInfoList, unsetLoginGuardiansList);
 
-        // wait a moment
-        await _contractProvider.QueryTransactionResultAsync(chainId, transactionDtoList.Select(t => t.TransactionResultDto).ToList());
+        await _contractProvider.QueryTransactionResultAsync(chainId, transactionDtoList.Select(t => t.TransactionResultDto).ToList(), true);
         
         for (int i = 0; i < transactionDtoList.Count; i++)
         {

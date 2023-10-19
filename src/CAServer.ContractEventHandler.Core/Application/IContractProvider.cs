@@ -57,7 +57,7 @@ public interface IContractProvider
     Task<ChainStatusDto> GetChainStatusAsync(string chainId);
     Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false);
     
-    Task QueryTransactionResultAsync(string chainId, List<TransactionResultDto> transactionResultDtoList, bool confirmed = true);
+    Task QueryTransactionResultAsync(string chainId, List<TransactionResultDto> transactionResultDtoList, bool? confirmed);
 }
 
 public class ContractProvider : IContractProvider
@@ -485,7 +485,7 @@ public class ContractProvider : IContractProvider
         return await client.GetBlockByHeightAsync(height, includeTransactions);
     }
     
-    public async Task QueryTransactionResultAsync(string chainId, List<TransactionResultDto> transactionResultDtoList, bool confirmed)
+    public async Task QueryTransactionResultAsync(string chainId, List<TransactionResultDto> transactionResultDtoList, bool? confirmed)
     {
         var transactionInfoIndexerList = await _graphQLProvider.QueryTransactionInfosAsync(chainId, 
             transactionResultDtoList.Select(t => t.TransactionId).ToList(), confirmed);
