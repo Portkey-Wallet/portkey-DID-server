@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 
 namespace CAServer.ThirdPart;
 

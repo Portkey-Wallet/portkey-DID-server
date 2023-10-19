@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Processors;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;

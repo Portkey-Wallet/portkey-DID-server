@@ -5,6 +5,7 @@ namespace CAServer.ThirdPart;
 public enum ThirdPartNameType
 {
     Alchemy = 0,
+    Transak = 1,
     Unknown
 }
 

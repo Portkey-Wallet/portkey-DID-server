@@ -5,6 +5,7 @@ using AElf;
 using AElf.Contracts.MultiToken;
 using AElf.Types;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.DependencyInjection;
 using Portkey.Contracts.CA;
 using Shouldly;

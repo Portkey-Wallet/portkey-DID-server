@@ -6,6 +6,7 @@ using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;

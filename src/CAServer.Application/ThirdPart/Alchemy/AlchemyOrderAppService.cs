@@ -11,6 +11,7 @@ using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;

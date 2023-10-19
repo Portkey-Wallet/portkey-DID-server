@@ -3,6 +3,7 @@ using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.Verifier;
 using Shouldly;
 using Xunit;

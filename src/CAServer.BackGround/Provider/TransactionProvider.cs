@@ -9,6 +9,7 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Options;

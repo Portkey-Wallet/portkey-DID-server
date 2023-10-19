@@ -35,6 +35,7 @@ using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;

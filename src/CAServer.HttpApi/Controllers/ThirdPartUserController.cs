@@ -1,14 +1,15 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
-
 
 [RemoteService]
 [Area("app")]
@@ -17,45 +18,52 @@ namespace CAServer.Controllers;
 [Authorize]
 public class ThirdPartUserController : CAServerController
 {
-    private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IThirdPartOrderAppService _thirdPartOrdersAppService;
+    private readonly IRampService _rampService;
 
-    public ThirdPartUserController(IAlchemyOrderAppService alchemyOrderService,
-        IThirdPartOrderAppService thirdPartOrderAppService, IAlchemyServiceAppService alchemyServiceAppService)
+    public ThirdPartUserController(IThirdPartOrderAppService thirdPartOrderAppService,
+        IAlchemyServiceAppService alchemyServiceAppService,
+        IRampService rampService)
     {
-        _alchemyOrderService = alchemyOrderService;
         _thirdPartOrdersAppService = thirdPartOrderAppService;
         _alchemyServiceAppService = alchemyServiceAppService;
+        _rampService = rampService;
     }
-    
-    
+
+
     [HttpPost("order")]
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(
         CreateUserOrderDto input)
     {
         return await _thirdPartOrdersAppService.CreateThirdPartOrderAsync(input);
     }
-    
+
     [HttpGet("orders")]
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
     }
-    
-    [HttpPost("alchemy/txHash")]
-    public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
+
+    [HttpGet("ramp/coverage")]
+    public async Task<CommonResponseDto<RampCoverage>> GetRampCoverage(string type)
     {
-        await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
-    }
-    
-    [HttpPost("alchemy/transaction")]
-    public async Task TransactionAsync(TransactionDto input)
-    {
-        await _alchemyOrderService.TransactionAsync(input);
+        return await _rampService.GetRampCoverageAsync(type);
     }
 
-    [HttpPost("token")]
+    [HttpGet("ramp/detail")]
+    public async Task<CommonResponseDto<RampDetail>> GetRampDetail(RampDetailRequest request)
+    {
+        return await _rampService.GetRampDetailAsync(request);
+    }
+
+    [HttpGet("ramp/detail/providers")]
+    public async Task<CommonResponseDto<RampProviderDetail>> GetRampProvidersDetail(RampDetailRequest request)
+    {
+        return await _rampService.GetRampProvidersDetailAsync(request);
+    }
+
+    [HttpPost("alchemy/token")]
     public async Task<AlchemyBaseResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
     {
@@ -69,12 +77,6 @@ public class ThirdPartUserController : CAServerController
         return await _alchemyServiceAppService.GetAlchemyNftFreeLoginTokenAsync(input);
     }
 
-    [HttpGet("fiatList")]
-    public async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
-    }
-    
     [HttpGet("alchemy/nft/fiatList")]
     public async Task<CommonResponseDto<List<AlchemyFiatDto>>> GetAlchemyNftFiatListAsync()
     {
@@ -83,28 +85,15 @@ public class ThirdPartUserController : CAServerController
         );
     }
 
-    [HttpGet("cryptoList")]
-    public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input);
-    }
-
-    [HttpPost("order/quote")]
-    public async Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-    }
-
-    [HttpGet("signature")]
+    [HttpGet("alchemy/signature")]
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
     }
-    
+
     [HttpGet("alchemy/signature/api")]
     public async Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, string> input)
     {
         return await _alchemyServiceAppService.GetAlchemyApiSignatureAsync(input);
     }
-    
 }

@@ -11,6 +11,7 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;

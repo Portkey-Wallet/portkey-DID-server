@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using Google.Protobuf.WellKnownTypes;
 
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart.Dtos.ThirdPart;
 
 public class GetAlchemyFreeLoginTokenDto
 {
