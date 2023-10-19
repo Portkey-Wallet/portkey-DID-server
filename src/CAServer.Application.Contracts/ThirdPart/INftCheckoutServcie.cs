@@ -1,6 +1,6 @@
-using Volo.Abp.DependencyInjection;
+using CAServer.ThirdPart.Processors;
 
-namespace CAServer.ThirdPart.Processors;
+namespace CAServer.ThirdPart;
 
 public interface INftCheckoutService 
 {
