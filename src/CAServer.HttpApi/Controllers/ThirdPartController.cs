@@ -15,13 +15,13 @@ namespace CAServer.Controllers;
 public class ThirdPartOrderController : CAServerController
 {
     private readonly IAlchemyOrderAppService _alchemyOrderService;
-    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
+    private readonly INftCheckoutService _nftCheckoutService;
 
     public ThirdPartOrderController(IAlchemyOrderAppService alchemyOrderService,
-        IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory)
+        INftCheckoutService nftCheckoutService)
     {
         _alchemyOrderService = alchemyOrderService;
-        _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
+        _nftCheckoutService = nftCheckoutService;
     }
 
 
@@ -36,7 +36,7 @@ public class ThirdPartOrderController : CAServerController
     public async Task<string> UpdateAlchemyNftOrderAsync(
         AlchemyNftOrderRequestDto input)
     {
-        var res = await _thirdPartNftOrderProcessorFactory
+        var res = await _nftCheckoutService
             .GetProcessor(ThirdPartNameType.Alchemy.ToString())
             .UpdateThirdPartNftOrderAsync(input);
         return res.Success ? "success" : "fail";

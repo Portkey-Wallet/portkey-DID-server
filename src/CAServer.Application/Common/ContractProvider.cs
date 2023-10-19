@@ -33,7 +33,7 @@ public interface IContractProvider
         string fromPublicKey);
     Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
-    Task<long> GetBlockHeight(string chainId);
+    Task<ChainStatusDto> GetChainStatus(string chainId);
     Task<Tuple<string, Transaction>> GenerateTransferTransaction(string symbol, string amount, string address,
         string chainId, string senderPubKey);
 }
@@ -88,11 +88,11 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return value;
     }
 
-    public async Task<long> GetBlockHeight(string chainId)
+    public async Task<ChainStatusDto> GetChainStatus(string chainId)
     {
         var client = await GetAElfClientAsync(chainId);
         AssertHelper.NotNull(client, "Send RawTransaction FAILED!, client of ChainId={ChainId} NOT FOUND", chainId);
-        return await client.GetBlockHeightAsync();
+        return await client.GetChainStatusAsync();
     }
 
     /// <summary>

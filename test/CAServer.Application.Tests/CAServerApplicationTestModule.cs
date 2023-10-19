@@ -13,6 +13,7 @@ using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Processors;
 using Microsoft.Extensions.Configuration;
@@ -41,7 +42,7 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
 
-        context.Services.AddSingleton<IThirdPartNftOrderProcessorFactory, ThirdPartNftOrderProcessorFactory>();
+        context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
         
         context.Services.AddSingleton<INftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
         context.Services.AddSingleton<INftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();

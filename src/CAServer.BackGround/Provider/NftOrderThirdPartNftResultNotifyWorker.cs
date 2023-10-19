@@ -24,7 +24,7 @@ public interface INftOrderThirdPartNftResultNotifyWorker
 public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResultNotifyWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderThirdPartNftResultNotifyWorker> _logger;
-    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
+    private readonly INftCheckoutService _nftCheckoutService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
@@ -32,12 +32,12 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
     private readonly TransactionOptions _transactionOptions;
 
     public NftOrderThirdPartNftResultNotifyWorker(IThirdPartOrderProvider thirdPartOrderProvider,
-        IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, ILogger<NftOrderThirdPartNftResultNotifyWorker> logger,
+        INftCheckoutService nftCheckoutService, ILogger<NftOrderThirdPartNftResultNotifyWorker> logger,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
         IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
-        _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
+        _nftCheckoutService = nftCheckoutService;
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
@@ -96,7 +96,7 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
                     continue;
                 }
 
-                callbackResults.Add(_thirdPartNftOrderProcessorFactory
+                callbackResults.Add(_nftCheckoutService
                     .GetProcessor(baseOrder.MerchantName)
                     .NotifyNftReleaseAsync(orderDto.Id));
             }

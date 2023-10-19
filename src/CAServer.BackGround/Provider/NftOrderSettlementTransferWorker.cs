@@ -27,27 +27,25 @@ public interface INftOrderSettlementTransferWorker
 public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderSettlementTransferWorker> _logger;
-    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
+    private readonly INftCheckoutService _nftCheckoutService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly TransactionOptions _transactionOptions;
-    private readonly IGraphQLProvider _graphQlProvider;
     private readonly IContractProvider _contractProvider;
 
 
     public NftOrderSettlementTransferWorker(IThirdPartOrderProvider thirdPartOrderProvider,
-        IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, ILogger<NftOrderSettlementTransferWorker> logger,
+        INftCheckoutService nftCheckoutService, ILogger<NftOrderSettlementTransferWorker> logger,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
-        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions, IGraphQLProvider graphQlProvider, IContractProvider contractProvider)
+        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions, IContractProvider contractProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
-        _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
+        _nftCheckoutService = nftCheckoutService;
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
-        _graphQlProvider = graphQlProvider;
         _contractProvider = contractProvider;
         _transactionOptions = transactionOptions.Value;
         _thirdPartOptions = thirdPartOptions.Value;
@@ -69,15 +67,16 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
             return;
         }
         
-        var chainHeight = await _contractProvider.GetBlockHeight(CommonConstant.MainChainId);
-        var confirmedHeight = await _graphQlProvider.GetIndexBlockHeightAsync(CommonConstant.MainChainId);
-        _logger.LogDebug("NftOrderSettlementTransferWorker chainHeight={Height} LIB: {LibHeight}", chainHeight, confirmedHeight);
+        var chainStatus = await _contractProvider.GetChainStatus(CommonConstant.MainChainId);
+        _logger.LogDebug("NftOrderSettlementTransferWorker chainHeight={Height} LIB: {LibHeight}", 
+            chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight);
         
         const int pageSize = 100;
         var secondsAgo = _thirdPartOptions.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow.AddHours(-1).ToUtcMilliSeconds().ToString();
         var total = 0;
+        var count = 0;
         while (true)
         {
             if (string.Compare(lastModifyTimeLt, modifyTimeGt, StringComparison.Ordinal) <= 0) break;
@@ -94,26 +93,31 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
                     TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() }
                 }, OrderSectionEnum.NftSection);
             if (pendingData.Data.IsNullOrEmpty()) break;
-
+            total += pendingData.Data.Count;
+            
             lastModifyTimeLt = pendingData.Data.Min(order => order.LastModifyTime);
 
             var callbackResults = new List<Task<CommonResponseDto<Empty>>>();
             foreach (var orderDto in pendingData.Data)
             {
-                callbackResults.Add(_thirdPartNftOrderProcessorFactory
+                callbackResults.Add(_nftCheckoutService
                     .GetProcessor(orderDto.MerchantName)
-                    .RefreshSettlementTransfer(orderDto.Id, chainHeight, confirmedHeight));
+                    .RefreshSettlementTransfer(orderDto.Id, chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight));
             }
 
             // non data in page was handled, stop
             // All data at 'lastModifyTimeLt' may have reached max notify-count.
             var handleCount = (await Task.WhenAll(callbackResults.ToArray())).Count(resp => resp.Success);
-            total += handleCount;
+            count += handleCount;
         }
 
         if (total > 0)
         {
-            _logger.LogInformation("NftOrderSettlementTransferWorker finish, total:{Total}", total);
+            _logger.LogInformation("NftOrderSettlementTransferWorker finish, total:{Count}/{Total}", count, total);
+        }
+        else
+        {
+            _logger.LogDebug("NftOrderSettlementTransferWorker finish, total:{Count}/{Total}", count, total);
         }
 
     }

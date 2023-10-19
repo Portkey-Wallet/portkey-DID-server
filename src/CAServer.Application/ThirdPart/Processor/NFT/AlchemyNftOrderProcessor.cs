@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
@@ -15,7 +14,7 @@ using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.DistributedLocking;
 
-namespace CAServer.ThirdPart.Processor;
+namespace CAServer.ThirdPart.Processor.NFT;
 
 public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 {

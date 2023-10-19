@@ -15,13 +15,13 @@ public class NftOrderReleaseResultHandler : IDistributedEventHandler<OrderEto>, 
     };
 
     private readonly ILogger<NftOrderReleaseResultHandler> _logger;
-    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
+    private readonly INftCheckoutService _nftCheckoutService;
     
     public NftOrderReleaseResultHandler(ILogger<NftOrderReleaseResultHandler> logger,
-        IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory)
+        INftCheckoutService nftCheckoutService)
     {
         _logger = logger;
-        _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
+        _nftCheckoutService = nftCheckoutService;
     }
 
     private static bool Match(OrderEto eventData)
@@ -37,7 +37,7 @@ public class NftOrderReleaseResultHandler : IDistributedEventHandler<OrderEto>, 
 
         try
         {
-            await _thirdPartNftOrderProcessorFactory.GetProcessor(eventData.MerchantName)
+            await _nftCheckoutService.GetProcessor(eventData.MerchantName)
                 .NotifyNftReleaseAsync(eventData.Id);
         }
         catch (UserFriendlyException e)

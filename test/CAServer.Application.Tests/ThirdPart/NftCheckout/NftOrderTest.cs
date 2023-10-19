@@ -35,7 +35,7 @@ public partial class NftOrderTest : ThirdPartTestBase
 
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly ITestOutputHelper _testOutputHelper;
-    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
+    private readonly INftCheckoutService _nftCheckoutService;
     private readonly INftOrderMerchantCallbackWorker _nftOrderMerchantCallbackWorker;
     private readonly INftOrderSettlementTransferWorker _nftOrderSettlementTransferWorker;
     private readonly INftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
@@ -52,7 +52,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         _nftOrderSettlementTransferWorker = GetRequiredService<INftOrderSettlementTransferWorker>();
         _nftOrderThirdPartOrderStatusWorker = GetRequiredService<INftOrderThirdPartOrderStatusWorker>();
         _orderThirdPartNftResultNotifyWorker = GetRequiredService<INftOrderThirdPartNftResultNotifyWorker>();
-        _thirdPartNftOrderProcessorFactory = GetRequiredService<IThirdPartNftOrderProcessorFactory>();
+        _nftCheckoutService = GetRequiredService<INftCheckoutService>();
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
         _nftOrderMerchantCallbackWorker = GetRequiredService<INftOrderMerchantCallbackWorker>();
         _orderStatusProvider = GetRequiredService<IOrderStatusProvider>();
@@ -199,7 +199,7 @@ public partial class NftOrderTest : ThirdPartTestBase
                 ["status"] = "PAY_SUCCESS",
                 ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
             };
-            var result = await _thirdPartNftOrderProcessorFactory
+            var result = await _nftCheckoutService
                 .GetProcessor(ThirdPartNameType.Alchemy.ToString())
                 .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
             result.ShouldNotBeNull();
@@ -261,7 +261,7 @@ public partial class NftOrderTest : ThirdPartTestBase
                 ["status"] = "PAY_SUCCESS",
                 ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
             };
-            var result = await _thirdPartNftOrderProcessorFactory
+            var result = await _nftCheckoutService
                 .GetProcessor(ThirdPartNameType.Alchemy.ToString())
                 .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
             result.ShouldNotBeNull();
@@ -293,7 +293,7 @@ public partial class NftOrderTest : ThirdPartTestBase
                 ["status"] = "NEW",
                 ["signature"] = "W26721QQmJauXuCqfHWiC7oFg44="
             };
-            var result = await _thirdPartNftOrderProcessorFactory
+            var result = await _nftCheckoutService
                 .GetProcessor(ThirdPartNameType.Alchemy.ToString())
                 .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
             result.Success.ShouldBe(false);
@@ -352,7 +352,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             ["status"] = "PAY_SUCCESS",
             ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
         };
-        var result = await _thirdPartNftOrderProcessorFactory
+        var result = await _nftCheckoutService
             .GetProcessor(ThirdPartNameType.Alchemy.ToString())
             .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
         result.ShouldNotBeNull();
@@ -391,7 +391,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             ["status"] = "NEW",
             ["signature"] = "W26721QQmJauXuCqfHWiC7oFg44="
         };
-        var result = await _thirdPartNftOrderProcessorFactory
+        var result = await _nftCheckoutService
             .GetProcessor(ThirdPartNameType.Alchemy.ToString())
             .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
         result.ShouldNotBeNull();

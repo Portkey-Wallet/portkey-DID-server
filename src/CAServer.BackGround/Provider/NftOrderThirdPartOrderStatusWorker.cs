@@ -24,7 +24,7 @@ public interface INftOrderThirdPartOrderStatusWorker
 public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderThirdPartOrderStatusWorker> _logger;
-    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
+    private readonly INftCheckoutService _nftCheckoutService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
@@ -32,12 +32,12 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
     private readonly TransactionOptions _transactionOptions;
 
     public NftOrderThirdPartOrderStatusWorker(IThirdPartOrderProvider thirdPartOrderProvider,
-        IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, ILogger<NftOrderThirdPartOrderStatusWorker> logger,
+        INftCheckoutService nftCheckoutService, ILogger<NftOrderThirdPartOrderStatusWorker> logger,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
         IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
-        _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
+        _nftCheckoutService = nftCheckoutService;
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
@@ -87,7 +87,7 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
             var callbackResults = new List<Task<CommonResponseDto<Empty>>>();
             foreach (var orderDto in pendingData.Data)
             {
-                callbackResults.Add(_thirdPartNftOrderProcessorFactory
+                callbackResults.Add(_nftCheckoutService
                     .GetProcessor(orderDto.MerchantName)
                     .RefreshThirdPartNftOrderAsync(orderDto.Id));
             }

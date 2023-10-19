@@ -66,7 +66,6 @@ public class CABackGroundModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
-        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerContractEventHandlerCoreModule>(); });
 
         var configuration = context.Services.GetConfiguration();
         ConfigureOrleans(context, configuration);
@@ -77,10 +76,8 @@ public class CABackGroundModule : AbpModule
         context.Services.AddSingleton<IThirdPartOrderProvider, ThirdPartOrderProvider>();
         context.Services.AddSingleton<IActivityProvider, ActivityProvider>();
         context.Services.AddSingleton<IHostedService, InitJobsService>();
-        context.Services.AddSingleton<IGraphQLProvider, GraphQLProvider>();
         Configure<TransactionOptions>(configuration.GetSection("Transaction"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
-        Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         Configure<SignatureServerOptions>(context.Services.GetConfiguration().GetSection("SignatureServer"));
         ConfigureTokenCleanupService();
         ConfigureDistributedLocking(context, configuration);

@@ -9,6 +9,7 @@ using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
 using CAServer.ThirdPart.Processor;
+using CAServer.ThirdPart.Processor.NFT;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Microsoft.AspNetCore.Http;

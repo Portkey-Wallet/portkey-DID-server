@@ -18,14 +18,12 @@ public class NftOrderPaySuccessHandler : IDistributedEventHandler<OrderEto>, ITr
     };
 
     private readonly ILogger<NftOrderPaySuccessHandler> _logger;
-    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
-    public NftOrderPaySuccessHandler(ILogger<NftOrderPaySuccessHandler> logger,
-        IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, IOrderStatusProvider orderStatusProvider)
+    public NftOrderPaySuccessHandler(ILogger<NftOrderPaySuccessHandler> logger, 
+        OrderStatusProvider orderStatusProvider)
     {
         _logger = logger;
-        _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
         _orderStatusProvider = orderStatusProvider;
     }
 

@@ -4,14 +4,14 @@ using CAServer.Common;
 using CAServer.ThirdPart.Processors;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.ThirdPart.Processor;
+namespace CAServer.ThirdPart;
 
-public class ThirdPartNftOrderProcessorFactory : IThirdPartNftOrderProcessorFactory, ISingletonDependency
+public class NftCheckoutService : INftCheckoutService, ISingletonDependency
 {
     private readonly Dictionary<string, IThirdPartNftOrderProcessor> _processors;
 
 
-    public ThirdPartNftOrderProcessorFactory(IEnumerable<IThirdPartNftOrderProcessor> processors)
+    public NftCheckoutService(IEnumerable<IThirdPartNftOrderProcessor> processors)
     {
         _processors = processors.ToDictionary(processor => processor.ThirdPartName().ToLower(), processor => processor);
     }

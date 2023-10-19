@@ -17,14 +17,14 @@ public class NftOrderTransferHandler : IDistributedEventHandler<OrderEto>, ITran
     };
 
     private readonly ILogger<NftOrderTransferHandler> _logger;
-    private readonly IThirdPartNftOrderProcessorFactory _thirdPartNftOrderProcessorFactory;
+    private readonly INftCheckoutService _nftCheckoutService;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
     public NftOrderTransferHandler(ILogger<NftOrderTransferHandler> logger,
-        IThirdPartNftOrderProcessorFactory thirdPartNftOrderProcessorFactory, IOrderStatusProvider orderStatusProvider)
+        INftCheckoutService nftCheckoutService, IOrderStatusProvider orderStatusProvider)
     {
         _logger = logger;
-        _thirdPartNftOrderProcessorFactory = thirdPartNftOrderProcessorFactory;
+        _nftCheckoutService = nftCheckoutService;
         _orderStatusProvider = orderStatusProvider;
     }
 
@@ -44,7 +44,7 @@ public class NftOrderTransferHandler : IDistributedEventHandler<OrderEto>, ITran
         var thirdPart = eventData.MerchantName;
         try
         {
-            await _thirdPartNftOrderProcessorFactory.GetProcessor(thirdPart).SettlementTransfer(orderId);
+            await _nftCheckoutService.GetProcessor(thirdPart).SettlementTransfer(orderId);
         }
         catch (UserFriendlyException e)
         {
