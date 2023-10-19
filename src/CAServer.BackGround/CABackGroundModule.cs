@@ -1,7 +1,5 @@
 ﻿using CAServer.BackGround.Options;
 using CAServer.CAActivity.Provider;
-using CAServer.ContractEventHandler.Core;
-using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
@@ -35,7 +33,6 @@ using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.PermissionManagement;
-using Volo.Abp.RabbitMQ;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.Threading;

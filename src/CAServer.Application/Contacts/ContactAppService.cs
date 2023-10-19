@@ -604,7 +604,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}",
             header);
 
-        if (!responseDto.Success())
+        if (!responseDto.Success)
         {
             throw new UserFriendlyException(responseDto.Message);
         }
@@ -632,7 +632,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             _imServerOptions.BaseUrl + $"api/v1/users/imUser?address={address}",
             header);
 
-        if (!responseDto.Success())
+        if (!responseDto.Success)
         {
             throw new UserFriendlyException(responseDto.Message);
         }
@@ -736,7 +736,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         var responseDto = await _httpClientService.PostAsync<CommonResponseDto<object>>(url, param, header);
 
-        if (!responseDto.Success())
+        if (!responseDto.Success)
         {
             Logger.LogError("request im error, url:{url}", url);
         }

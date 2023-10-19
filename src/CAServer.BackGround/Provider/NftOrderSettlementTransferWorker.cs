@@ -1,21 +1,15 @@
 using CAServer.BackGround.Options;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
-using CAServer.ContractEventHandler.Core.Application;
-using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
-using CAServer.ThirdPart.Dtos.Order;
-using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Hangfire;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
-using IContractProvider = CAServer.Common.IContractProvider;
 
 namespace CAServer.BackGround.Provider;
 

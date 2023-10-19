@@ -20,17 +20,6 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
     internal readonly string PendingTxId = HashHelper.ComputeFrom("PENDING").ToHex();
     internal readonly string MinedTxId = HashHelper.ComputeFrom("MINED").ToHex();
     
-    protected static IOptionsSnapshot<GraphQLOptions> MockGraphQLOptions()
-    {
-        var mockOptions = new Mock<IOptionsSnapshot<GraphQLOptions>>();
-        var option = new GraphQLOptions
-        {
-            GraphQLConnection = "http://localhost:9200/_search"
-        };
-        mockOptions.Setup(m => m.Value).Returns(option);
-        return mockOptions.Object;
-    }
-    
     protected static IOptions<ThirdPartOptions> MockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()

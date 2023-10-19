@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.Options;
 using Google.Protobuf.WellKnownTypes;
