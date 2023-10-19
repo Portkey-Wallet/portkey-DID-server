@@ -13,6 +13,7 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -25,7 +26,7 @@ using Volo.Abp.Users;
 
 namespace CAServer.ThirdPart;
 
-public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppService, ISingletonDependency
+public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppService, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;

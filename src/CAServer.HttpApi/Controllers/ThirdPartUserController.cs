@@ -1,10 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -20,15 +20,12 @@ public class ThirdPartUserController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IThirdPartOrderAppService _thirdPartOrdersAppService;
-    private readonly IRampService _rampService;
 
     public ThirdPartUserController(IThirdPartOrderAppService thirdPartOrderAppService,
-        IAlchemyServiceAppService alchemyServiceAppService,
-        IRampService rampService)
+        IAlchemyServiceAppService alchemyServiceAppService)
     {
         _thirdPartOrdersAppService = thirdPartOrderAppService;
         _alchemyServiceAppService = alchemyServiceAppService;
-        _rampService = rampService;
     }
 
 
@@ -48,19 +45,25 @@ public class ThirdPartUserController : CAServerController
     [HttpGet("ramp/coverage")]
     public async Task<CommonResponseDto<RampCoverage>> GetRampCoverage(string type)
     {
-        return await _rampService.GetRampCoverageAsync(type);
+        return await _thirdPartOrdersAppService.GetRampCoverageAsync(type);
     }
 
     [HttpGet("ramp/detail")]
     public async Task<CommonResponseDto<RampDetail>> GetRampDetail(RampDetailRequest request)
     {
-        return await _rampService.GetRampDetailAsync(request);
+        return await _thirdPartOrdersAppService.GetRampDetailAsync(request);
     }
 
     [HttpGet("ramp/detail/providers")]
     public async Task<CommonResponseDto<RampProviderDetail>> GetRampProvidersDetail(RampDetailRequest request)
     {
-        return await _rampService.GetRampProvidersDetailAsync(request);
+        return await _thirdPartOrdersAppService.GetRampProvidersDetailAsync(request);
+    }
+    
+    [HttpPost("transaction")]
+    public async Task<CommonResponseDto<Empty>> TransactionForwardCall(TransactionDto input)
+    {
+        return await _thirdPartOrdersAppService.TransactionForwardCall(input);
     }
 
     [HttpPost("alchemy/token")]
