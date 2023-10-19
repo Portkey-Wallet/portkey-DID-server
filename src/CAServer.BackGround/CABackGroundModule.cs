@@ -139,7 +139,7 @@ public class CABackGroundModule : AbpModule
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
     {
-        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:GraphQLConnection"],
+        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
