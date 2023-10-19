@@ -77,14 +77,6 @@ public class ThirdPartUserController : CAServerController
         return await _alchemyServiceAppService.GetAlchemyNftFreeLoginTokenAsync(input);
     }
 
-    [HttpGet("alchemy/nft/fiatList")]
-    public async Task<CommonResponseDto<List<AlchemyFiatDto>>> GetAlchemyNftFiatListAsync()
-    {
-        return new CommonResponseDto<List<AlchemyFiatDto>>(
-            await _alchemyServiceAppService.GetAlchemyNftFiatListAsync()
-        );
-    }
-
     [HttpGet("alchemy/signature")]
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
