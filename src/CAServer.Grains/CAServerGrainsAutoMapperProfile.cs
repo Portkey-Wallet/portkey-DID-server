@@ -19,8 +19,10 @@ using CAServer.Grains.State.Contacts;
 using CAServer.Grains.State.CrossChain;
 using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
+using CAServer.Grains.State.PrivacyPermission;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
+using CAServer.PrivacyPermission.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Google.Protobuf.Collections;
@@ -103,6 +105,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<OrderStatusInfoState, OrderStatusInfoGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkResultDto>();
+
+        CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
         CreateMap<NftOrderGrainDto, NftOrderState>();
         CreateMap<NftOrderState, NftOrderGrainDto>();
     }

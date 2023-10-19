@@ -43,6 +43,7 @@ public class Program
 #endif            
             
             builder.Configuration.AddJsonFile("phone.json");
+            builder.Configuration.AddJsonFile("seedurl.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
 #if !DEBUG

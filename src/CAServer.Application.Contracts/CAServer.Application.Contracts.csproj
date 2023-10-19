@@ -16,6 +16,9 @@
         <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
         <PackageReference Include="AElf.Sdk.CSharp" Version="1.2.3" />
         <PackageReference Include="AutoMapper" Version="12.0.0" />
+        <PackageReference Include="GraphQL.Client" Version="5.1.0" />
+        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
+        <PackageReference Include="GraphQL.Primitives" Version="5.1.0" />
         <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.6.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -39,11 +42,18 @@
         <Reference Include="CAServer.Application">
             <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Application.dll</HintPath>
         </Reference>
+        <Reference Include="CAServer.Grains">
+          <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Grains.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateRequestDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateResponseDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\IAppleMigrateAppService.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
 </Project>

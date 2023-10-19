@@ -23,6 +23,8 @@ public static class CommonConstant
     public static DateTimeOffset DefaultAbsoluteExpiration = DateTime.Parse("2099-01-01 12:00:00");
     public const string OrderStatusInfoPrefix = "OrderStatusInfo";
 
+    public const string ChainName = "aelf";
+
     public const string MainChainId = "AELF";
     public const string TDVVChainId = "tDVV";
     public const string TDVWChainId = "tDVW";
@@ -32,4 +34,17 @@ public static class CommonConstant
 
     public const string AppleTransferMessage =
         "We are currently upgrading our system to serve you better. During this period, the Apple ID service is temporarily unavailable.";
+
+    public const string AuthHeader = "Authorization";
+    public const string ImAuthHeader = "R-Authorization";
+    public const string SuccessCode = "20000";
+
+    public const string AppleRevokeUrl = "https://appleid.apple.com/auth/revoke";
+    public const string ImFollowUrl = "api/v1/contacts/follow";
+    public const string ImUnFollowUrl = "api/v1/contacts/unfollow";
+    
+    public const string UserExtraInfoIdPrefix = "UserExtraInfo-";
+    
+    public const string ApplicationName = "Portkey";
+    public const string ModuleName = "Api";
 }

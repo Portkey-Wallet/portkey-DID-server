@@ -1,4 +1,4 @@
-namespace CAServer.ContractEventHandler.Core.Application;
+namespace CAServer;
 
 public static class ContractAppServiceConstant
 {
@@ -19,6 +19,7 @@ public static class QueryType
     public const string LoginGuardian = "LoginGuardianOn";
     public const string ManagerInfo = "ManagerInfoOn";
     public const string QueryRecord = "QueryRecord";
+    public const string LoginGuardianChangeRecord = "LoginGuardianChangeRecord";
 }
 
 public static class LoggerMsg

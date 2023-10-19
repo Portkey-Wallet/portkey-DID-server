@@ -29,10 +29,10 @@ public class CAVerifierController : CAServerController
     private readonly ISwitchAppService _switchAppService;
     private readonly IGoogleAppService _googleAppService;
     private const string GoogleRecaptcha = "GoogleRecaptcha";
+    private const string CheckSwitch = "CheckSwitch";
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
-    private const string CurrentVersion = "v1.3.0";
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
@@ -54,19 +54,13 @@ public class CAVerifierController : CAServerController
     {
         var type = verifierServerInput.OperationType;
         ValidateOperationType(type);
-        if (!string.IsNullOrWhiteSpace(version) && version.Equals(CurrentVersion))
-        {
-            type = type switch
-            {
-                OperationType.Unknown => OperationType.CreateCAHolder,
-                OperationType.CreateCAHolder => OperationType.SocialRecovery,
-                OperationType.SocialRecovery => OperationType.AddGuardian,
-                _ => type
-            };
-        }
-
         var sendVerificationRequestInput =
             _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+
+        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        {
+            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+        }
 
         return type switch
         {
@@ -229,15 +223,9 @@ public class CAVerifierController : CAServerController
     {
         var type = operationTypeRequestInput.OperationType;
         ValidateOperationType(type);
-        if (!string.IsNullOrWhiteSpace(version) && version.Equals(CurrentVersion))
+        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
         {
-            type = type switch
-            {
-                OperationType.Unknown => OperationType.CreateCAHolder,
-                OperationType.CreateCAHolder => OperationType.SocialRecovery,
-                OperationType.SocialRecovery => OperationType.AddGuardian,
-                _ => type
-            };
+            return false;
         }
 
         var userIpAddress = UserIpAddress(HttpContext);

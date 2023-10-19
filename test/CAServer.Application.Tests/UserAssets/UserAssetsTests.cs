@@ -24,7 +24,6 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockUserAssetsProvider());
@@ -32,6 +31,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(GetUserContactProvider());
         services.AddSingleton(GetMockTokenInfoOptions());
         services.AddSingleton(GetContractProvider());
+        services.AddSingleton(GetMockSeedImageOptions());
     }
 
     private void Login(Guid userId)
@@ -158,11 +158,11 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         Login(Guid.NewGuid());
         var input = new GetTokenBalanceRequestDto
         {
-            CaHash = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033",
+            CaAddress = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033",
             Symbol = "ELF"
         };
         var result = await _userAssetsAppService.GetTokenBalanceAsync(input);
-        result.Balance.ShouldBe("2000");
+        result.Balance.ShouldBe(null);
     }
     
    

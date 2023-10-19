@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Options;
 using GraphQL;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.ContractEventHandler.Core.Application;
+namespace CAServer;
 
 public interface IGraphQLProvider
 {
@@ -37,15 +38,15 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
     private readonly GraphQLOptions _graphQLOptions;
     private readonly GraphQLHttpClient _graphQLClient;
     private readonly IClusterClient _clusterClient;
-    private readonly ILogger<ContractProvider> _logger;
+    private readonly ILogger<GraphQLProvider> _logger;
 
-    public GraphQLProvider(ILogger<ContractProvider> logger, IClusterClient clusterClient,
+    public GraphQLProvider(ILogger<GraphQLProvider> logger, IClusterClient clusterClient,
         IOptionsSnapshot<GraphQLOptions> graphQLOptions)
     {
         _logger = logger;
         _clusterClient = clusterClient;
         _graphQLOptions = graphQLOptions.Value;
-        _graphQLClient = new GraphQLHttpClient(_graphQLOptions.GraphQLConnection, new NewtonsoftJsonSerializer());
+        _graphQLClient = new GraphQLHttpClient(_graphQLOptions.Configuration, new NewtonsoftJsonSerializer());
     }
 
     public async Task<long> GetIndexBlockHeightAsync(string chainId)

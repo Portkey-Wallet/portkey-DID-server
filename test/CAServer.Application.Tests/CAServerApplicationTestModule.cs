@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Configuration;
 using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
 using CAServer.BackGround.Provider;
@@ -14,14 +12,15 @@ using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.ThirdPart;
-using CAServer.ThirdPart.Processor;
-using CAServer.ThirdPart.Processors;
-using Microsoft.Extensions.Configuration;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer;
 
@@ -41,6 +40,10 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
+        
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+
+        ConfigureGraphQl(context);
 
         context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
         
@@ -97,18 +100,18 @@ public class CAServerApplicationTestModule : AbpModule
             o.Language = "en";
             o.ExpirationDays = 1;
         });
-        context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
+        context.Services.Configure<ChainOptions>(option =>
         {
-            option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
-                { { "TEST", new CAServer.Grains.Grain.ApplicationHandler.ChainInfo() } };
+            option.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
+                { { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() } };
         });
 
-        context.Services.Configure<CAServer.Options.ChainOptions>(option =>
+        context.Services.Configure<Options.ChainOptions>(option =>
         {
-            option.ChainInfos = new Dictionary<string, CAServer.Options.ChainInfo>
+            option.ChainInfos = new Dictionary<string, Options.ChainInfo>
             {
                 {
-                    "TEST", new CAServer.Options.ChainInfo()
+                    "TEST", new Options.ChainInfo()
                     {
                         BaseUrl = "http://127.0.0.1:6889",
                         ChainId = "TEST",
@@ -129,6 +132,28 @@ public class CAServerApplicationTestModule : AbpModule
             options.Code = "SG";
             options.Iso = "65";
         });
+
+        context.Services.Configure<AppleCacheOptions>(options =>
+        {
+            options.Configuration = "127.0.0.1:6379";
+            options.Db = 2;
+        });
+
+        context.Services.Configure<AwsThumbnailOptions>(options =>
+        {
+            options.ImBaseUrl = "https:127.0.0.1";
+            options.PortKeyBaseUrl = "https:127.0.0.1";
+        });
         base.ConfigureServices(context);
     }
+
+    private void ConfigureGraphQl(ServiceConfigurationContext context)
+    {
+        context.Services.AddSingleton(new GraphQLHttpClient(
+            "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
+            new NewtonsoftJsonSerializer()));
+        context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
+    }
+    
+
 }

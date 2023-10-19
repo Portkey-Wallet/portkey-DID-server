@@ -2,18 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Account;
+using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
+using CAServer.Commons;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Options;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Moq;
 using Orleans.TestingHost;
+using Shouldly;
 using Volo.Abp.Validation;
 using Xunit;
 
 namespace CAServer.CAAccount;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public class RecoveryServiceTests : CAServerApplicationTestBase
+public partial class RecoveryServiceTests : CAServerApplicationTestBase
 {
     private const string DefaultEmailAddress = "1025289418@qq.com";
     private const string DefaultVerifierId = "DefaultVerifierId";
@@ -27,11 +34,22 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
 
     private readonly ICAAccountAppService _caAccountAppService;
     private readonly TestCluster _cluster;
+    private readonly AppleCacheOptions _appleCacheOptions;
 
     public RecoveryServiceTests()
     {
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
+        _appleCacheOptions = MockAppleCacheOptions().Value;
+    }
+    
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        services.AddSingleton(GetMockAppleUserProvider());
+        services.AddSingleton(GetMockUserAssetsProvider());
+        services.AddSingleton(GetContractProvider());
+        services.AddSingleton(GetMockGuardianProvider());
+        services.AddSingleton(GetMockCaAccountProvider());
     }
 
     [Fact]
@@ -110,7 +128,7 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             Assert.True(ex is AbpValidationException);
         }
     }
-    
+
     [Fact]
     public async Task RecoverRequestAsync_Type_Is_Invalid_Test()
     {
@@ -166,6 +184,65 @@ public class RecoveryServiceTests : CAServerApplicationTestBase
             RecoveryStatus = "PASS",
             RecoveryMessage = string.Empty
         };
+    }
+
+    private IOptionsSnapshot<AppleCacheOptions> MockAppleCacheOptions()
+    {
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AppleCacheOptions>>();
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+            new AppleCacheOptions
+            {
+            });
+        return mockOptionsSnapshot.Object;
+    }
+    
+    [Fact]
+    public async Task Revoke_Check_Test()
+    {
+        var userId = Guid.NewGuid();
+        var resultDto =  await _caAccountAppService.RevokeCheckAsync(userId);
+        resultDto.ValidatedAssets.ShouldBeFalse();
+        resultDto.ValidatedDevice.ShouldBeTrue();
+        resultDto.ValidatedGuardian.ShouldBeFalse();
+    }
+
+    private IAppleUserProvider GetMockAppleUserProvider()
+    {
+        var provider = new Mock<IAppleUserProvider>();
+
+        provider.Setup(t => t.GetUserExtraInfoAsync(It.IsAny<string>())).ReturnsAsync(new AppleUserExtraInfo()
+        {
+            UserId = Guid.NewGuid().ToString("N"),
+            FirstName = "Kui",
+            LastName = "Li"
+        });
+
+        provider.Setup(t => t.SetUserExtraInfoAsync(It.IsAny<AppleUserExtraInfo>())).Returns(Task.CompletedTask);
+
+        return provider.Object;
+    }
+    
+    [Fact]
+    public async Task Revoke_Entrance_Test()
+    {
+        var resultDto = await _caAccountAppService.RevokeEntranceAsync();
+        resultDto.EntranceDisplay.ShouldBeTrue();
+    }
+    
+    [Fact]
+    public async Task Revoke_Valid_Fail_Test()
+    {
+        try
+        {
+            await _caAccountAppService.RevokeAsync(new RevokeDto
+            {
+                AppleToken = "aaaa"
+            });
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldBe(ResponseMessage.ValidFail);
+        }
         
         
     }

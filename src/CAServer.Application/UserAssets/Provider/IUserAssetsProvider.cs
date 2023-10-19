@@ -28,4 +28,9 @@ public interface IUserAssetsProvider
     Task<List<UserTokenIndex>> GetUserDefaultTokenSymbolAsync(Guid userId);
     Task<List<UserTokenIndex>> GetUserIsDisplayTokenSymbolAsync(Guid userId);
     Task<List<(string, string)>> GetUserNotDisplayTokenAsync(Guid userId);
+    Task<CAHolderIndex> GetCaHolderIndexAsync(Guid userId);
+    
+    Task<CAHolderInfo> GetCaHolderManagerInfoAsync(List<string> userCaAddresses);
+
+    Task<CAHolderIndex> GetCaHolderIndexByCahashAsync(string caHash);
 }
