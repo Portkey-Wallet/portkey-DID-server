@@ -2,10 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
+using CAServer.CAActivity.Provider;
+using CAServer.Common;
+using CAServer.Contacts.Provider;
+using CAServer.Etos;
+using CAServer.Grains.Grain.ValidateOriginChainId;
+using CAServer.Guardian.Provider;
+using CAServer.Options;
+using CAServer.Tokens;
+using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
+using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Moq;
 using NSubstitute;
+using Orleans;
+using Portkey.Contracts.CA;
 using Shouldly;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using Xunit;
 
@@ -20,6 +37,47 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
     public UserAssetsTests()
     {
         _userAssetsAppService = GetRequiredService<IUserAssetsAppService>();
+    }
+
+    public IUserAssetsAppService GetMock()
+    {
+        var loggerMock = new Mock<ILogger<UserAssetsAppService>>();
+        var tokenAppServiceMock = new Mock<ITokenAppService>();
+        var userAssetsProviderMock = new Mock<IUserAssetsProvider>();
+        var userContactProviderMock = new Mock<IUserContactProvider>();
+        var tokenInfoOptionsMock = new Mock<IOptions<TokenInfoOptions>>();
+        tokenInfoOptionsMock.Setup(o => o.Value).Returns(new TokenInfoOptions());
+        var imageProcessProviderMock = new Mock<IImageProcessProvider>();
+        var chainOptionsMock = new Mock<IOptions<ChainOptions>>();
+        chainOptionsMock.Setup(o => o.Value).Returns(new ChainOptions());
+        var syncOriginChainIdOptionsMock =  new Mock<IOptions<SyncOriginChainIdOptions>>();
+        syncOriginChainIdOptionsMock.Setup(o => o.Value).Returns(new SyncOriginChainIdOptions());
+        var contractProviderMock = new Mock<IContractProvider>();
+        var contactProviderMock = new Mock<IContactProvider>();
+        var clusterClientMock = new Mock<IClusterClient>();
+        var guardianProviderMock = new Mock<IGuardianProvider>();
+        var seedImageOptionsMock = new Mock<IOptionsSnapshot<SeedImageOptions>>();
+        seedImageOptionsMock.Setup(o => o.Value).Returns(new SeedImageOptions());
+        var userTokenAppServiceMock = new Mock<IUserTokenAppService>();
+        var tokenProvider = new Mock<ITokenProvider>();
+        var userAssetsAppService = new UserAssetsAppService(
+            logger: loggerMock.Object,
+            userAssetsProvider: userAssetsProviderMock.Object,
+            tokenAppService: tokenAppServiceMock.Object,
+            userContactProvider: userContactProviderMock.Object,
+            tokenInfoOptions: tokenInfoOptionsMock.Object,
+            imageProcessProvider: imageProcessProviderMock.Object,
+            chainOptions: chainOptionsMock.Object,
+            contractProvider: contractProviderMock.Object,
+            contactProvider: contactProviderMock.Object,
+            clusterClient: clusterClientMock.Object,
+            guardianProvider: guardianProviderMock.Object,
+            distributedEventBus: GetRequiredService<IDistributedEventBus>(),
+            seedImageOptions:  seedImageOptionsMock.Object,
+            syncOriginChainIdOptions: syncOriginChainIdOptionsMock.Object,
+            userTokenAppService: userTokenAppServiceMock.Object,
+            tokenProvider: tokenProvider.Object);
+        return userAssetsAppService;
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -60,6 +118,35 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         data.Symbol.ShouldBe("ELF");
         data.ChainId.ShouldBe("AELF");
         data.BalanceInUsd.ShouldBe("0.00002");
+    }
+
+    [Fact]
+    public async Task UpdateMerkerTreeTest()
+    {
+        Login(Guid.NewGuid());
+        
+        //var userAssetsAppServiceMock = GetMock();
+        
+        await _userAssetsAppService.UpdateOriginChainIdAsync("AELF", "tDVW",new UserLoginEto());
+    }
+
+    [Fact]
+    public async Task CheckChainMerkerTreeStatusTest()
+    {
+        Login(Guid.NewGuid());
+        
+        var param = new UserLoginEto
+        {
+            CaHash  = "bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf",
+        };
+        var userAssetsAppServiceMock = GetMock();
+        await userAssetsAppServiceMock.CheckOriginChainIdStatusAsync(param);
+        
+        param = new UserLoginEto
+        {
+            CaHash  = "bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf",
+        };
+        await userAssetsAppServiceMock.CheckOriginChainIdStatusAsync(param);
     }
 
     [Fact]

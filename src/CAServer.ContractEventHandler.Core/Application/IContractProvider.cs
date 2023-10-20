@@ -1,11 +1,14 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
+using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Monitor;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
@@ -55,15 +58,20 @@ public class ContractProvider : IContractProvider
     private readonly ChainOptions _chainOptions;
     private readonly IndexOptions _indexOptions;
     private readonly ISignatureProvider _signatureProvider;
+    private readonly IGraphQLProvider _graphQlProvider;
+    private readonly IIndicatorScope _indicatorScope;
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
-        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider)
+        IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
+        IGraphQLProvider graphQlProvider, IIndicatorScope indicatorScope)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
         _indexOptions = indexOptions.Value;
         _clusterClient = clusterClient;
         _signatureProvider = signatureProvider;
+        _graphQlProvider = graphQlProvider;
+        _indicatorScope = indicatorScope;
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,
@@ -78,17 +86,25 @@ public class ContractProvider : IContractProvider
             var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
             var contractAddress = isCrossChain ? chainInfo.CrossChainContractAddress : chainInfo.ContractAddress;
 
+            var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                MonitorAelfClientType.GenerateTransactionAsync.ToString());
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress, contractAddress,
                     methodName, param);
+            _indicatorScope.End(generateIndicator);
+
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+
+            var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                MonitorAelfClientType.ExecuteTransactionAsync.ToString());
 
             var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
             {
                 RawTransaction = transaction.ToByteArray().ToHex()
             });
 
+            _indicatorScope.End(interIndicator);
             var value = new T();
             value.MergeFrom(ByteArrayHelper.HexStringToByteArray(result));
 
@@ -274,6 +290,7 @@ public class ContractProvider : IContractProvider
     {
         try
         {
+            await CheckCreateChainIdAsync(result);
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
             var transactionDto =
                 await grain.ValidateTransactionAsync(chainId, result, unsetLoginGuardians);
@@ -411,7 +428,14 @@ public class ContractProvider : IContractProvider
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
-        return await client.GetChainStatusAsync();
+
+        var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            MonitorAelfClientType.GetChainStatusAsync.ToString());
+
+        var chainStatusDto = await client.GetChainStatusAsync();
+        _indicatorScope.End(interIndicator);
+
+        return chainStatusDto;
     }
 
     public async Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false)
@@ -419,5 +443,16 @@ public class ContractProvider : IContractProvider
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var client = new AElfClient(chainInfo.BaseUrl);
         return await client.GetBlockByHeightAsync(height, includeTransactions);
+    }
+
+    private async Task CheckCreateChainIdAsync(GetHolderInfoOutput holderInfoOutput)
+    {
+        if (holderInfoOutput.CreateChainId > 0) return;
+
+        var holderInfos = await _graphQlProvider.GetCaHolderInfoAsync(holderInfoOutput.CaHash.ToHex());
+        var holderInfo = holderInfos?.CaHolderInfo?.FirstOrDefault();
+        if (holderInfo == null) return;
+
+        holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(holderInfo.OriginChainId);
     }
 }

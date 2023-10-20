@@ -6,6 +6,8 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Cryptography;
+using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
@@ -44,6 +46,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
+    private readonly VerifierAccountOptions _verifierAccountOptions;
 
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
@@ -60,7 +63,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider, IOptionsSnapshot<VerifierAccountOptions> verifierAccountOptions)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -72,6 +75,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
+        _verifierAccountOptions = verifierAccountOptions.Value;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -286,6 +290,50 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         return _objectMapper.Map<VerifierServer, GetVerifierServerResponse>(verifierServer);
     }
 
+    public async Task<VerificationCodeResponse> MockVerifyCodeAsync(MockVerifyCodeRequestInput request)
+    {
+        var requestDto =
+            _objectMapper.Map<MockVerifyCodeRequestInput, VierifierCodeRequestInput>(request);
+        var guardianGrainResult = GetSaltAndHash(requestDto);
+        var chainId = ChainHelper.ConvertBase58ToChainId(request.ChainId).ToString();
+        var salt = guardianGrainResult.Data.Salt;
+        var guardianIdentifierHash = guardianGrainResult.Data.IdentifierHash;
+        var privateKey = _verifierAccountOptions.VerifierAccountDic[request.VerifierId];
+        var operationType = Convert.ToInt16(requestDto.OperationType);
+
+        var data = GenerateSignature(request.Type, salt, guardianIdentifierHash, privateKey, operationType.ToString(), chainId);
+        
+        return new VerificationCodeResponse
+        {   
+            VerificationDoc = data.Data,
+            Signature = data.Signature
+        };
+    }
+    
+    
+    public static GenerateSignatureOutput GenerateSignature(int guardianType, string salt,
+        string guardianIdentifierHash,
+        string privateKey,
+        string operationType, string chainId)
+    {
+        //create signature
+        var verifierSPublicKey =
+            CryptoHelper.FromPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey)).PublicKey;
+        var verifierAddress = Address.FromPublicKey(verifierSPublicKey);
+        var data =
+            $"{guardianType},{guardianIdentifierHash},{DateTime.UtcNow:yyyy/MM/dd HH:mm:ss.fff},{verifierAddress.ToBase58()},{salt},{operationType},{chainId}";
+        var hashByteArray = HashHelper.ComputeFrom(data).ToByteArray();
+        var signature =
+            CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey), hashByteArray);
+        return new GenerateSignatureOutput
+        {
+            Data = data,
+            Signature = signature.ToHex()
+        };
+    }
+
+
+
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
     {
         var userExtraInfoGrainId =
@@ -444,4 +492,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new Exception("Invalid token");
         }
     }
+}
+
+public class GenerateSignatureOutput
+{
+    public string Data { get; set; }
+    public string Signature { get; set; }
 }

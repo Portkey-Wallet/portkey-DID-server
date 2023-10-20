@@ -40,7 +40,6 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
-    typeof(CAServerMonitorModule),
     typeof(AbpCachingStackExchangeRedisModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {

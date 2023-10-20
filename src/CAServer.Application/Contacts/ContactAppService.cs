@@ -20,7 +20,6 @@ using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
-using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
 using Environment = CAServer.Options.Environment;
 
@@ -592,18 +591,14 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
-
-
         var header = new Dictionary<string, string>();
         if (hasAuthToken)
         {
             header.Add(CommonConstant.AuthHeader, authToken);
         }
 
-        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfoDto>>(
-            _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}",
-            header);
-
+        var url = _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}";
+        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfoDto>>(url, header);
         if (!responseDto.Success)
         {
             throw new UserFriendlyException(responseDto.Message);
@@ -621,17 +616,14 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
 
-
         var header = new Dictionary<string, string>();
         if (hasAuthToken)
         {
             header.Add(CommonConstant.AuthHeader, authToken);
         }
 
-        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(
-            _imServerOptions.BaseUrl + $"api/v1/users/imUser?address={address}",
-            header);
-
+        var url = _imServerOptions.BaseUrl + $"api/v1/users/imUser?address={address}";
+        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(url, header);
         if (!responseDto.Success)
         {
             throw new UserFriendlyException(responseDto.Message);
@@ -715,7 +707,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private async Task ImPostAsync(string url, object param)
     {
         if (_hostInfoOptions.Environment == Environment.Development) return;
-
+        
         if (!_httpContextAccessor.HttpContext.Request.Headers.Keys.Contains(CommonConstant.ImAuthHeader,
                 StringComparer.OrdinalIgnoreCase))
         {
@@ -735,7 +727,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var responseDto = await _httpClientService.PostAsync<CommonResponseDto<object>>(url, param, header);
-
         if (!responseDto.Success)
         {
             Logger.LogError("request im error, url:{url}", url);
@@ -803,7 +794,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
     {
-        var contacts = await _contactProvider.GetContactListAsync(input.ContactUserIds, input.Address, CurrentUser.GetId());
+        var contacts =
+            await _contactProvider.GetContactListAsync(input.ContactUserIds, input.Address, CurrentUser.GetId());
         if (contacts != null && contacts.Any())
         {
             contacts.ForEach(contact => contact.Addresses = contact.Addresses?.OrderBy(t => t.ChainId).ToList());
