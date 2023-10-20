@@ -4,12 +4,11 @@ namespace CAServer.Options;
 
 public class ActivityOptions
 {
-    public List<TransactionFeeFixHeight> ActivityTransactionFeeFixHeight { get; set; }
+    public List<TransactionFeeFix> ActivityTransactionFeeFix { get; set; }
 }
 
-public class TransactionFeeFixHeight
+public class TransactionFeeFix
 {
     public string ChainId { get; set; }
     public long StartBlock { get; set; }
 }
-

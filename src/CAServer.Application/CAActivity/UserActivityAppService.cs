@@ -42,7 +42,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
-        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,IOptions<ActivityOptions> activityOptions,IUserAssetsProvider userAssetsProvider)
+        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions, IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -341,16 +341,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                             dto.TransactionFees[i].FeeInUsd = CalculationHelper
                                 .GetBalanceInUsd(priceList[i] * dto.TransactionFees[i].Fee,
                                     Convert.ToInt32(dto.TransactionFees[i].Decimals)).ToString();
-                            //this means this Transation fee is pay by manager
-                            var activityOptions =
-                                _activityOptions.ActivityTransactionFeeFixHeight.Where(x => x.ChainId == ht.ChainId).ToList().FirstOrDefault();
-                            if (activityOptions?.StartBlock > 0)
+                        }
+                        //this means this Transation fee is pay by manager
+                        var activityOptions =
+                            _activityOptions.ActivityTransactionFeeFix?.Where(x => x.ChainId == ht.ChainId).ToList().FirstOrDefault();
+                        if (activityOptions?.StartBlock > 0)
+                        {
+                            if (ht.IsManagerConsumer && ht.BlockHeight > activityOptions.StartBlock)
                             {
-                                if (ht.IsManagerConsumer && ht.BlockHeight > activityOptions.StartBlock)
-                                {
-                                    dto.TransactionFees[i].FeeInUsd = "0";
-                                    dto.TransactionFees[i].Fee = 0;
-                                }
+                                dto.TransactionFees[i].FeeInUsd = "0";
+                                dto.TransactionFees[i].Fee = 0;
                             }
                         }
                     }
