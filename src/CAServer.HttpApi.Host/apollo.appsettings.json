@@ -1,14 +1,4 @@
 {
   "apollo": {
-    "AppId": "CAServerService",
-    "ConfigServer": [
-      "http://192.168.66.35:8080",
-      "http://192.168.67.7:8080"
-    ],
-    "Namespaces": [
-      "api.appsettings.json",
-      "phone.json"
-    ],
-    "Env": "DEV"
   }
 }
