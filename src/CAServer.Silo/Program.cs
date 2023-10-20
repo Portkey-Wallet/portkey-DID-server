@@ -52,10 +52,10 @@ public class Program
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
 
 
-#if !DEBUG
-            .ConfigureAppConfiguration((h,c)=>c.AddJsonFile("apollo.appsettings.json")) 
-            .UseApollo()
-#endif
+// #if !DEBUG
+            // .ConfigureAppConfiguration((h,c)=>c.AddJsonFile("apollo.appsettings.json")) 
+            // .UseApollo()
+// #endif
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();
