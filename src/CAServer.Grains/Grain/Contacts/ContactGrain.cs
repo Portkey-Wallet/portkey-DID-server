@@ -216,7 +216,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         return result;
     }
 
-    public async Task<GrainResultDto<ContactGrainDto>> UpdateWalletName(string walletName)
+    public async Task<GrainResultDto<ContactGrainDto>> UpdateContactInfo(string walletName, string avatar)
     {
         var result = new GrainResultDto<ContactGrainDto>();
         if (State.IsDeleted)
@@ -232,7 +232,12 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         }
 
         State.CaHolderInfo.WalletName = walletName;
-        
+
+        if (!avatar.IsNullOrWhiteSpace())
+        {
+            State.Avatar = avatar;
+        }
+
         SetIndex();
         State.ModificationTime = DateTime.UtcNow;
 
