@@ -87,7 +87,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             {
                 if (contact.CaHolderInfo == null) return;
                 var grain = _clusterClient.GetGrain<IContactGrain>(contact.Id);
-                var updateResult = await grain.UpdateWalletName(eventData.Nickname);
+                var updateResult = await grain.UpdateContactInfo(eventData.Nickname, eventData.Avatar);
 
                 if (!updateResult.Success)
                 {
