@@ -14,5 +14,4 @@ public interface IVerifierAppService
     public Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress);
     public Task<bool> GuardianExistsAsync(string guardianIdentifier);
     public Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId);
-    Task<VerificationCodeResponse> MockVerifyCodeAsync(MockVerifyCodeRequestInput input);
 }
