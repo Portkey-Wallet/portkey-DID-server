@@ -495,6 +495,8 @@ public class ContractAppService : IContractAppService
                     _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
                     if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash, record.ValidateHeight))
                     {
+                        records.Remove(record);
+                        record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
                         continue;
                     }
 
