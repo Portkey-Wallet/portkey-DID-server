@@ -461,6 +461,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                         t.Item1.Address == user.Address && t.Item1.ChainId == user.AddressChainId);
 
                 user.Name = contact?.Item2;
+                user.Avatar = contact?.Item3;
                 user.Index = GetIndex(user.Name);
 
                 if (!string.IsNullOrWhiteSpace(user.Name))
