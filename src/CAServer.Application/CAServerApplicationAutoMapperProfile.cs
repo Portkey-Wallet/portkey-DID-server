@@ -408,7 +408,5 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
-        CreateMap<MockVerifyCodeRequestInput, VierifierCodeRequestInput>();
-
     }
 }

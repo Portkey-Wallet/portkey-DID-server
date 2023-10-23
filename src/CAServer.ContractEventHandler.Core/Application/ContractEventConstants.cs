@@ -4,4 +4,6 @@ public class ContractEventConstants
 {
     public const string SyncHolderUpdateVersionCachePrefix = "SyncHolderUpdateVersion";
     public const long SyncHolderUpdateVersionCacheExpireTime = 60 * 60 * 24;
+    
+    public const string BlockHeightCachePrefix = "BlockHeight";
 }
