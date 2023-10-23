@@ -759,7 +759,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return;
         }
 
-        await UpdateOriginChainIdAsync(originChainId, syncChainId, userLoginEto);
+        //this will take very long time
+        UpdateOriginChainIdAsync(originChainId, syncChainId, userLoginEto);
     }
 
     public async Task UpdateOriginChainIdAsync(string originChainId, string syncChainId, UserLoginEto userLoginEto)
