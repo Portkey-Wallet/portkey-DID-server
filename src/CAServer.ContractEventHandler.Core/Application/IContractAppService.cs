@@ -438,14 +438,13 @@ public class ContractAppService : IContractAppService
 
                     while (record != null)
                     {
-                        _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
-
                         if (!await CheckSyncHolderVersionAsync(info.ChainId, record.CaHash, record.ValidateHeight))
                         {
                             records.Remove(record);
                             record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
                             continue;
                         }
+                        _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
 
                         var syncHolderInfoInput =
                             await _contractProvider.GetSyncHolderInfoInputAsync(chainId,
@@ -492,13 +491,13 @@ public class ContractAppService : IContractAppService
 
                 while (record != null)
                 {
-                    _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
                     if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash, record.ValidateHeight))
                     {
                         records.Remove(record);
                         record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
                         continue;
                     }
+                    _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
 
                     var retryTimes = 0;
                     var mainHeight =
