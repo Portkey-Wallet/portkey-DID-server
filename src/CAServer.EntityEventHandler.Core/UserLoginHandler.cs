@@ -23,7 +23,7 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     {
         try 
         {
-            await _userAssetsAppService.CheckOriginChainIdStatusAsync(eventData);
+            await _userAssetsAppService.SyncOriginChainIdAsync(eventData);
         }
         catch (Exception e)
         {

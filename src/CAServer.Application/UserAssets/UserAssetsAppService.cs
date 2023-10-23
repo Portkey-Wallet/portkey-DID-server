@@ -725,7 +725,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
-    public async Task CheckOriginChainIdStatusAsync(UserLoginEto userLoginEto)
+    public async Task SyncOriginChainIdAsync(UserLoginEto userLoginEto)
     {
         if (!await NeedSyncStatusAsync(userLoginEto.UserId))
         {
