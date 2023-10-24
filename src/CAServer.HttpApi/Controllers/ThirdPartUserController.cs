@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
@@ -60,7 +61,7 @@ public class ThirdPartUserController : CAServerController
         return await _thirdPartOrdersAppService.GetRampProvidersDetailAsync(request);
     }
     
-    [HttpPost("transaction")]
+    [HttpPost("ramp/transaction")]
     public async Task<CommonResponseDto<Empty>> TransactionForwardCall(TransactionDto input)
     {
         return await _thirdPartOrdersAppService.TransactionForwardCall(input);

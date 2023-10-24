@@ -27,12 +27,10 @@ public partial class VerifierServerClientTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(GetVerifierServerProvider());
         services.AddSingleton(GetAdaptableVariableOptions());
         // services.AddSingleton(GetMockHttpClient());
         services.AddSingleton(GetMockHttpClientFactory());
-        base.AfterAddApplication(services);
     }
 
 

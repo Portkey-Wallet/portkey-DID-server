@@ -91,7 +91,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
-        
+
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
 
@@ -102,6 +102,22 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             : guardian.OriginChainId;
 
         return new RegisterInfoResultDto { OriginChainId = originChainId };
+    }
+
+    public async Task<List<GuardianIndexDto>> GetGuardianListAsync(List<string> identifierHashList)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardians = await _guardianRepository.GetListAsync(Filter);
+
+        var result = guardians.Item2.Where(t => t.IsDeleted == false).ToList();
+
+        return ObjectMapper.Map<List<GuardianIndex>, List<GuardianIndexDto>>(result);
     }
 
     private string GetHash(string guardianIdentifier)
@@ -180,11 +196,14 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
 
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(guardianIdentifier)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
         var guardianGrainDto = await _guardianRepository.GetAsync(Filter);
+        if (guardianGrainDto == null || guardianGrainDto.IsDeleted) return null;
+        
         return guardianGrainDto?.IdentifierHash;
     }
 
@@ -219,13 +238,16 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
         var guardians = await _guardianRepository.GetListAsync(Filter);
 
-        return guardians.Item2?.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
+        var result = guardians.Item2.Where(t => t.IsDeleted == false);
+
+        return result?.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
     }
 
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)

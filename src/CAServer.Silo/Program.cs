@@ -6,7 +6,6 @@ using Serilog;
 using Serilog.Events;
 
 namespace CAServer.Silo;
-
 public class Program
 {
     public async static Task<int> Main(string[] args)
@@ -22,8 +21,10 @@ public class Program
 #endif
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
-            .WriteTo.Async(c => c.File("Logs/logs.txt"))
+            .ReadFrom.Configuration(configuration)
+#if DEBUG
             .WriteTo.Async(c => c.Console())
+#endif
             .CreateLogger();
 
         try
@@ -51,10 +52,10 @@ public class Program
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
 
 
-#if !DEBUG
-            .ConfigureAppConfiguration((h,c)=>c.AddJsonFile("apollo.appsettings.json")) 
-            .UseApollo()
-#endif
+// #if !DEBUG
+            // .ConfigureAppConfiguration((h,c)=>c.AddJsonFile("apollo.appsettings.json")) 
+            // .UseApollo()
+// #endif
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();

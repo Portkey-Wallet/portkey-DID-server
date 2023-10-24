@@ -1,15 +1,20 @@
 using System;
-using AutoResponseWrapper.Response;
 using JetBrains.Annotations;
 using Volo.Abp;
 
-namespace CAServer.Commons.Dtos;
+namespace CAServer.Commons;
 
-public class CommonResponseDto<T> : ResponseDto
+public class CommonResponseDto<T>
 {
     private const string SuccessCode = "20000";
     private const string CommonErrorCode = "50000";
 
+    
+    public string Code { get; set; }
+    public T Data { get; set; }
+    public string Message { get; set; }
+
+    
     public bool Success => Code == SuccessCode;
 
 

@@ -1,3 +1,4 @@
+using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using Shouldly;
 using Xunit;
@@ -49,7 +50,7 @@ public class GuardianTest : CAServerGrainTestBase
         result.Success.ShouldBeTrue();
         result.Data.Identifier.ShouldBe(identifier);
     }
-    
+
     [Fact]
     public async Task GetGuardian_Not_Exist_Test()
     {
@@ -61,4 +62,33 @@ public class GuardianTest : CAServerGrainTestBase
         result.Success.ShouldBeFalse();
         result.Message.ShouldBe("Guardian not exist.");
     }
+
+    [Fact]
+    public async Task DeleteGuardianTest()
+    {
+        var identifier = "test@qq.com";
+        var salt = "salt";
+        var identifierHash = "identifierHash";
+
+        var grain = Cluster.Client.GetGrain<IGuardianGrain>(Guid.NewGuid().ToString());
+        await grain.AddGuardianAsync(identifier, salt, identifierHash);
+        var result = await grain.GetGuardianAsync(identifier);
+        result.Success.ShouldBeTrue();
+        result.Data.Identifier.ShouldBe(identifier);
+
+        var deleteResult = await grain.DeleteGuardian();
+        deleteResult.Success.ShouldBeTrue();
+        deleteResult.Data.Identifier.ShouldBe(identifier);
+    }
+    
+    [Fact]
+    public async Task DeleteNotExistGuardianTest()
+    {
+        var grain = Cluster.Client.GetGrain<IGuardianGrain>(Guid.NewGuid().ToString());
+
+        var deleteResult = await grain.DeleteGuardian();
+        deleteResult.Success.ShouldBeFalse();
+        deleteResult.Message.ShouldBe("Guardian not exist.");
+    }
+    
 }

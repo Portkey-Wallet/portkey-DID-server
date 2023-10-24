@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CAServer.ContractEventHandler.Core\CAServer.ContractEventHandler.Core.csproj" />
     <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
     <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
     <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
     <ProjectReference Include="..\CAServer.HttpApi\CAServer.HttpApi.csproj" />
+    <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
     <ProjectReference Include="..\CAServer.Signature\CAServer.Signature.csproj" />
   </ItemGroup>
 
@@ -54,6 +54,5 @@
   <ItemGroup>
     <Compile Remove="Hubs\ICAHubProvider.cs" />
   </ItemGroup>
-
 
 </Project>

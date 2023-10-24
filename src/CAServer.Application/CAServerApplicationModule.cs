@@ -4,6 +4,7 @@ using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Grains;
 using CAServer.IpInfo;
+using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
@@ -37,6 +38,7 @@ namespace CAServer;
     typeof(AbpSettingManagementApplicationModule),
     typeof(CAServerGrainsModule),
     typeof(CAServerSignatureModule),
+    typeof(CAServerMonitorModule),
     typeof(AbpDistributedLockingModule)
 )]
 public class CAServerApplicationModule : AbpModule
@@ -50,6 +52,10 @@ public class CAServerApplicationModule : AbpModule
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
+        Configure<ImServerOptions>(configuration.GetSection("ImServer"));
+        Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
+        Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
+        
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
@@ -86,10 +92,14 @@ public class CAServerApplicationModule : AbpModule
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
         Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
+        Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
+        Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        Configure<VariablesOptions>(configuration.GetSection("Variables"));
+        context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
     }
 }

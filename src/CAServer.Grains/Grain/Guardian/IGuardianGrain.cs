@@ -8,4 +8,6 @@ public interface IGuardianGrain : IGrainWithStringKey
         string originalIdentifier = "");
 
     Task<GrainResultDto<GuardianGrainDto>> GetGuardianAsync(string identifier);
+    
+    Task<GrainResultDto<GuardianGrainDto>> DeleteGuardian();
 }

@@ -38,7 +38,6 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(MockThirdPartOptions());
         // services.AddSingleton(MockThirdPartOrderProvider());
         // services.AddSingleton(getMockOrderGrain());

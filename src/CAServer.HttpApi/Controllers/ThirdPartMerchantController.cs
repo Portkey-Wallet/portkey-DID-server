@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using AutoResponseWrapper.Response;
+using CAServer.Commons;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -22,13 +22,13 @@ public class ThirdPartMerchantController : CAServerController
     }
 
     [HttpPost("nftOrder")]
-    public async Task<ResponseDto> MerchantCreateNftOrder(CreateNftOrderRequestDto input)
+    public async Task<CommonResponseDto<CreateNftOrderResponseDto>> MerchantCreateNftOrder(CreateNftOrderRequestDto input)
     {
         return await _thirdPartOrderAppService.CreateNftOrderAsync(input);
     }
 
     [HttpGet("nftOrder")]
-    public async Task<ResponseDto> MerchantQueryNftOrder(OrderQueryRequestDto input)
+    public async Task<CommonResponseDto<NftOrderQueryResponseDto>> MerchantQueryNftOrder(OrderQueryRequestDto input)
     {
         return await _thirdPartOrderAppService.QueryMerchantNftOrderAsync(input);
     }

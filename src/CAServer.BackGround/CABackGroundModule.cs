@@ -1,7 +1,5 @@
 ﻿using CAServer.BackGround.Options;
 using CAServer.CAActivity.Provider;
-using CAServer.ContractEventHandler.Core;
-using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
@@ -35,7 +33,6 @@ using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.PermissionManagement;
-using Volo.Abp.RabbitMQ;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.Threading;
@@ -142,7 +139,7 @@ public class CABackGroundModule : AbpModule
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
     {
-        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:GraphQLConnection"],
+        context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }

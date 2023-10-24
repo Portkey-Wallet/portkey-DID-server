@@ -327,4 +327,24 @@ public partial class UserAssetsTests
             TokenInfos = dict
         });
     }
+    
+    private IOptionsSnapshot<SeedImageOptions> GetMockSeedImageOptions()
+    {
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<SeedImageOptions>>();
+        var dict = new Dictionary<string, string>
+        {
+            ["TEST-0"] = "ImageUrl.svg"
+        };
+
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+            new SeedImageOptions
+            {
+                SeedImageDic = dict
+            });
+        return mockOptionsSnapshot.Object;
+    }
+    
+    
+    
+    
 }

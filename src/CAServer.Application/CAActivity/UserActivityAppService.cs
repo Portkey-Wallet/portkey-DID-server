@@ -15,6 +15,7 @@ using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -34,12 +35,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ChainOptions _chainOptions;
+    private readonly ActivityOptions _activityOptions;
     private const int MaxResultCount = 10;
+    private readonly IUserAssetsProvider _userAssetsProvider;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
-        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions)
+        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions, IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -48,7 +51,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _activitiesIcon = activitiesIconOption?.Value;
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
+        _userAssetsProvider = userAssetsProvider;
         _chainOptions = chainOptions.Value;
+        _activityOptions = activityOptions.Value;
     }
 
 
@@ -154,11 +159,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     public async Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto request)
     {
-        var caHash = request.CaHash;
-        var caAddressInfos = new List<CAAddressInfo>();
-        try
+        var result = await _userAssetsProvider.GetCaHolderManagerInfoAsync(new List<string> { request.CaAddress });
+        if (result == null || result.CaHolderManagerInfo.IsNullOrEmpty())
         {
-            foreach (var chainInfo in _chainOptions.ChainInfos)
+            return string.Empty;
+        }
+
+        var caHash = result.CaHolderManagerInfo.First().CaHash;
+        var caAddressInfos = new List<CAAddressInfo>();
+
+        foreach (var chainInfo in _chainOptions.ChainInfos)
+        {
+            try
             {
                 var output =
                     await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainInfo.Value.ChainId);
@@ -168,12 +180,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     CaAddress = output.CaAddress.ToBase58()
                 });
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {caAddress}", request.CaAddress);
+            }
         }
-        catch (Exception e)
+
+        if (caAddressInfos.Count == 0)
         {
-            _logger.LogError(e, "GetCaHolderCreateTimeAsync Error {request}", request);
-            throw new UserFriendlyException("Internal service error, please try again later.");
+            _logger.LogDebug("No caAddressInfos found. CaAddress is {CaAddress}", request.CaAddress);
+            return string.Empty;
         }
+
 
         var filterTypes = new List<string>
         {
@@ -187,9 +205,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return string.Empty;
         }
 
-        var date = transactions.CaHolderTransaction.Data[0].Timestamp;
+        var data = transactions.CaHolderTransaction.Data;
+        foreach (var indexerTransaction in data.Where(indexerTransaction => indexerTransaction.Timestamp > 0))
+        {
+            return indexerTransaction.Timestamp.ToString();
+        }
 
-        return date.ToString();
+        return string.Empty;
     }
 
 
@@ -320,6 +342,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                                 .GetBalanceInUsd(priceList[i] * dto.TransactionFees[i].Fee,
                                     Convert.ToInt32(dto.TransactionFees[i].Decimals)).ToString();
                         }
+                        //this means this Transation fee is pay by manager
+                        var activityOptions =
+                            _activityOptions.ActivityTransactionFeeFix?.Where(x => x.ChainId == ht.ChainId).ToList().FirstOrDefault();
+                        if (activityOptions?.StartBlock > 0)
+                        {
+                            if (ht.IsManagerConsumer && ht.BlockHeight > activityOptions.StartBlock)
+                            {
+                                dto.TransactionFees[i].FeeInUsd = "0";
+                                dto.TransactionFees[i].Fee = 0;
+                            }
+                        }
                     }
                 }
             }
@@ -329,7 +362,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 dto.NftInfo = new NftDetail
                 {
                     NftId = ht.NftInfo.Symbol.Split("-").Last(),
-                    ImageUrl = _imageProcessProvider.GetResizeImage(ht.NftInfo.ImageUrl, weidth, height),
+
+                    ImageUrl = await _imageProcessProvider.GetResizeImageAsync(ht.NftInfo.ImageUrl, weidth, height,
+                        ImageResizeType.Forest),
                     Alias = ht.NftInfo.TokenName
                 };
             }
