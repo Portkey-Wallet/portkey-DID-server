@@ -43,14 +43,14 @@ public class ThirdPartObsoleteController
     }
     
     [Obsolete("Just for old version front-end")]
-    [HttpGet("fiatList")]
+    [HttpGet("alchemy/fiatList")]
     public async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
     }
     
     [Obsolete("Just for old version front-end")]
-    [HttpGet("cryptoList")]
+    [HttpGet("alchemy/cryptoList")]
     public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAchCryptoListAsync(
         GetAlchemyCryptoListDto input)
     {
@@ -58,7 +58,7 @@ public class ThirdPartObsoleteController
     }
 
     [Obsolete("Just for old version front-end")]
-    [HttpPost("order/quote")]
+    [HttpPost("alchemy/order/quote")]
     public async Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(
         GetAlchemyOrderQuoteDto input)
     {
@@ -66,14 +66,14 @@ public class ThirdPartObsoleteController
     }
     
     [Obsolete("Just for old version front-end")]
-    [HttpGet("signature")]
+    [HttpGet("alchemy/signature")]
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
     }
     
     [Obsolete("Just for old version front-end")]
-    [HttpPost("token")]
+    [HttpPost("alchemy/token")]
     public async Task<AlchemyBaseResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
     {

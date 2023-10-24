@@ -67,11 +67,17 @@ public class ThirdPartUserController : CAServerController
         return await _thirdPartOrdersAppService.TransactionForwardCall(input);
     }
 
-    [HttpPost("alchemy/token")]
+    [HttpPost("ramp/token")]
     public async Task<AlchemyBaseResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input);
+    }
+    
+    [HttpGet("ramp/signature")]
+    public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
+    {
+        return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
     }
 
     [HttpPost("alchemy/token/nft")]
@@ -81,11 +87,6 @@ public class ThirdPartUserController : CAServerController
         return await _alchemyServiceAppService.GetAlchemyNftFreeLoginTokenAsync(input);
     }
 
-    [HttpGet("alchemy/signature")]
-    public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
-    }
 
     [HttpGet("alchemy/signature/api")]
     public async Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, string> input)
