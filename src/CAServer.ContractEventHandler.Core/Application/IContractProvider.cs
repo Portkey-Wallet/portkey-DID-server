@@ -452,7 +452,7 @@ public class ContractProvider : IContractProvider
             return await client.GetBlockByHeightAsync(height, includeTransactions);
         }, () => new DistributedCacheEntryOptions()
         {
-            AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+            AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(ContractEventConstants.BlockHeightCacheExpireMinutes)
         });
 
         return blockInfo;
