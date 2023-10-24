@@ -55,7 +55,7 @@ public class ThirdPartUserController : CAServerController
         await _alchemyOrderService.TransactionAsync(input);
     }
 
-    [HttpPost("token")]
+    [HttpPost("alchemy/token")]
     public async Task<AlchemyBaseResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
     {
@@ -68,26 +68,25 @@ public class ThirdPartUserController : CAServerController
     {
         return await _alchemyServiceAppService.GetAlchemyNftFreeLoginTokenAsync(input);
     }
-
-    [HttpGet("fiatList")]
+    [HttpGet("alchemy/fiatList")]
     public async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
     }
     
-    [HttpGet("cryptoList")]
+    [HttpGet("alchemy/cryptoList")]
     public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input);
     }
 
-    [HttpPost("order/quote")]
+    [HttpPost("alchemy/order/quote")]
     public async Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
     {
         return await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
     }
 
-    [HttpGet("signature")]
+    [HttpGet("alchemy/signature")]
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
         return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
