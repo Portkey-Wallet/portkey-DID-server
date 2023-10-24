@@ -13,7 +13,6 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -46,7 +45,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         IObjectMapper objectMapper,
         IActivityProvider activityProvider,
         IOrderStatusProvider orderStatusProvider,
-        IAbpDistributedLock distributedLock)
+        IAbpDistributedLock distributedLock, IOptionsMonitor<RampOptions> rampOptions)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -58,6 +57,8 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         _thirdPartOptions = thirdPartOptions.Value;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
+        _rampOptions = rampOptions;
+        _rampOptions = rampOptions;
     }
 
 

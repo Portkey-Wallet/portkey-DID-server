@@ -1,0 +1,36 @@
+{
+  "Providers": {
+    "Alchemy": {
+      "Name": "AlchemyPay",
+      "Logo": "https://ramp.alchemypay.org/static/img/6.32716249.svg",
+      "AgreementContent": "AlchemyPay is a fiat-to-crypto platform independently operated by a third-party entity. Portkey shall not be held liable for any loss or damage suffered as a result of using AlchemyPay service. ",
+      "PaymentTags": [
+        "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
+        "https://ramp.alchemypay.org/static/img/2.a5406123.svg",
+        "https://ramp.alchemypay.org/static/img/3.22abdb74.svg"
+      ],
+      "Coverage": {
+        "OnRamp": true,
+        "OffRamp": true
+      }
+    },
+    "Transak": {
+      "Name": "Transak",
+      "Logo": "https://assets.transak.com/images/website/transak-logo.svg",
+      "AgreementContent": "Transak is a fiat-to-crypto platform independently operated by a third-party entity. Portkey shall not be held liable for any loss or damage suffered as a result of using Transak service. ",
+      "PaymentTags": [
+        "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
+        "https://ramp.alchemypay.org/static/img/2.a5406123.svg"
+      ],
+      "Coverage": {
+        "OnRamp": true,
+        "OffRamp": true
+      }
+    }
+  },
+  "WhiteList": [
+    "fd71c1fd-d123-4ff4-83ef-136331af175d"
+  ]
+  
+  
+}

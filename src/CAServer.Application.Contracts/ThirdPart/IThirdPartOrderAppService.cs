@@ -16,8 +16,11 @@ public interface IThirdPartOrderAppService
     Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
     
     // ramp
-    Task<CommonResponseDto<RampCoverage>> GetRampCoverageAsync(string type);
-    Task<CommonResponseDto<RampDetail>> GetRampDetailAsync(RampDetailRequest request);
-    Task<CommonResponseDto<RampProviderDetail>> GetRampProvidersDetailAsync(RampDetailRequest request);
+    Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync();
+    Task<CommonResponseDto<RampPriceDto>> GetRampPriceAsync(RampDetailRequest request);
+    Task<CommonResponseDto<RampDetailDto>> GetRampDetailAsync(RampDetailRequest request);
     Task<CommonResponseDto<Empty>> TransactionForwardCall(TransactionDto input);
+    
+    Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(string type, string fiat);
+    Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(string type, string crypto);
 }

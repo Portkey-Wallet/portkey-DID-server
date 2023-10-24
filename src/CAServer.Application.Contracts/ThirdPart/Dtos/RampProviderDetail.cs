@@ -2,16 +2,17 @@ using System.Collections.Generic;
 
 namespace CAServer.ThirdPart.Dtos;
 
-public class RampProviderDetail
+public class RampDetailDto
 {
     
-    public List<ProviderRampDetail> ProvidersList { get; set; }
+    public List<ProviderRampDetailDto> ProvidersList { get; set; }
     
 }
 
 
-public class ProviderRampDetail
+public class ProviderRampDetailDto
 {
-    public string ThirdPartName { get; set; }
+    public string ThirdPart { get; set; }
     public string Price { get; set; }
+    public Dictionary<string, string> Exchange { get; set; }
 }

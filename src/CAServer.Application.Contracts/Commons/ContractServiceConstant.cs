@@ -47,4 +47,7 @@ public static class CommonConstant
     
     public const string ApplicationName = "Portkey";
     public const string ModuleName = "Api";
+
+    public const string DefaultFiatUSD = "USD";
+    public const string DefaultCryptoELF = "ELF";
 }
