@@ -140,13 +140,13 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             CaHash  = "bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf",
         };
         var userAssetsAppServiceMock = GetMock();
-        await userAssetsAppServiceMock.CheckOriginChainIdStatusAsync(param);
+        await userAssetsAppServiceMock.SyncOriginChainIdAsync(param);
         
         param = new UserLoginEto
         {
             CaHash  = "bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf",
         };
-        await userAssetsAppServiceMock.CheckOriginChainIdStatusAsync(param);
+        await userAssetsAppServiceMock.SyncOriginChainIdAsync(param);
     }
 
     [Fact]
