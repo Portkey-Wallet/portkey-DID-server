@@ -24,6 +24,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using MongoDB.Driver.Linq;
+using Nito.AsyncEx;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -121,7 +122,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             res.CaHolderTokenBalanceInfo.Data =
                 res.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
-            
+
             await CheckNeedAddTokenAsync(CurrentUser.GetId(), res);
 
             var chainInfos = await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddresses);
@@ -288,17 +289,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     private async Task AddDisplayAsync(List<string> tokenIds)
     {
+        var tasks = new List<Task>();
         foreach (var tokenId in tokenIds)
         {
-            try
-            {
-                await _userTokenAppService.ChangeTokenDisplayAsync(true, tokenId);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "add token failed, tokenId: {tokenId}", tokenId);
-            }
+            tasks.Add(_userTokenAppService.ChangeTokenDisplayAsync(true, tokenId));
         }
+
+        await Task.WhenAll(tasks);
     }
 
     public async Task<GetNftCollectionsDto> GetNFTCollectionsAsync(GetNftCollectionsRequestDto requestDto)
