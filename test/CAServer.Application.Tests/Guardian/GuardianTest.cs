@@ -1,21 +1,25 @@
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
+using CAServer.AppleAuth;
 using CAServer.CAAccount.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Grain.Tests;
-using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Options;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Moq;
 using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Validation;
 using Xunit;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer.Guardian;
 
@@ -42,6 +46,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
         services.AddSingleton(GetGuardianProviderMock());
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetChainOptions());
+        services.AddSingleton(GetMockVerifierIdMappingOptions());
     }
 
     [Fact]
@@ -53,7 +58,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
             Id = guardianIdentifier,
             Identifier = guardianIdentifier,
             IdentifierHash = HashHelper.ComputeFrom("123").ToHex(),
-            Salt = "Salt"
+            Salt = "Salt",
         });
 
         var result = await _guardianAppService.GetGuardianIdentifiersAsync(new GuardianIdentifierDto
@@ -199,5 +204,17 @@ public partial class GuardianTest : CAServerApplicationTestBase
                     { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo { } }
                 }
             });
+    }
+    
+    private IOptionsSnapshot<VerifierIdMappingOptions> GetMockVerifierIdMappingOptions()
+    {
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<VerifierIdMappingOptions>>();
+
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+            new VerifierIdMappingOptions
+            {
+                VerifierIdMap = new Dictionary<string, string>(){{HashHelper.ComputeFrom("123").ToHex(),HashHelper.ComputeFrom("123").ToHex()}}
+            });
+        return mockOptionsSnapshot.Object;
     }
 }
