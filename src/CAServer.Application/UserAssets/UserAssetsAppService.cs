@@ -717,15 +717,4 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return new Dictionary<string, decimal>();
         }
     }
-
-    private string GetImageUrlSuffix(string imageUrl)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl))
-        {
-            return null;
-        }
-
-        var imageUrlArray = imageUrl.Split(".");
-        return imageUrlArray[^1].ToLower();
-    }
 }
