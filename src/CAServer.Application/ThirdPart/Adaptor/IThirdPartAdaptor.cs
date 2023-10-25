@@ -11,8 +11,12 @@ public interface IThirdPartAdaptor
 
     Task<List<RampFiatItem>> GetFiatListAsync(string type, string crypto);
 
+    Task<RampLimitDto> GetRampLimitAsync(RampLimitRequest rampDetailRequest);
+
+    Task<decimal?> GetRampExchangeAsync(RampExchangeRequest rampDetailRequest);
+
     Task<RampPriceDto> GetRampPriceAsync(RampDetailRequest rampDetailRequest);
 
-    Task<RampDetailDto> GetRampDetailAsync(RampDetailRequest rampDetailRequest);
+    Task<ProviderRampDetailDto> GetRampDetailAsync(RampDetailRequest rampDetailRequest);
 
 }

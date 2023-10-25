@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using JetBrains.Annotations;
 
 namespace CAServer.Commons;
@@ -23,6 +24,11 @@ public static class StringHelper
     public static bool NotNullOrEmpty([CanBeNull] this string source)
     {
         return !source.IsNullOrEmpty();
+    }
+    
+    public static double SafeToDouble(this string s, double defaultValue = 0)
+    {
+        return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
     }
     
 }

@@ -3,6 +3,7 @@
     "Alchemy": {
       "Name": "AlchemyPay",
       "AppId": "f83Is2y7L425rxl8",
+      "BaseUrl": "https://ramptest.alchemypay.org",
       "Logo": "https://ramp.alchemypay.org/static/img/6.32716249.svg",
       "AgreementContent": "AlchemyPay is a fiat-to-crypto platform independently operated by a third-party entity. Portkey shall not be held liable for any loss or damage suffered as a result of using AlchemyPay service. ",
       "PaymentTags": [
@@ -18,6 +19,7 @@
     "Transak": {
       "Name": "Transak",
       "AppId": "09c056fd-d423-46d9-a641-e4a7a1e7de33",
+      "BaseUrl": "https://global-stg.transak.com",
       "Logo": "https://assets.transak.com/images/website/transak-logo.svg",
       "AgreementContent": "Transak is a fiat-to-crypto platform independently operated by a third-party entity. Portkey shall not be held liable for any loss or damage suffered as a result of using Transak service. ",
       "PaymentTags": [

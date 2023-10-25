@@ -4,9 +4,7 @@ namespace CAServer.ThirdPart.Dtos.Ramp;
 
 public class RampDetailDto
 {
-    
     public List<ProviderRampDetailDto> ProvidersList { get; set; }
-    
 }
 
 

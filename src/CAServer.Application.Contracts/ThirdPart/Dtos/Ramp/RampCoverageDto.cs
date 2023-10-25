@@ -11,6 +11,7 @@ public class RampProviderDto
 {
     public string Name { get; set; }
     public string AppId { get; set; }
+    public string BaseUrl { get; set; }
     public string Logo { get; set; }
     public string AgreementContent { get; set; }
     public RampProviderCoverageDto Coverage { get; set; }

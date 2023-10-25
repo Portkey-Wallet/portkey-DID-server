@@ -14,6 +14,7 @@ public class RampOptions
 public class ThirdPartProviders
 {
     public string AppId { get; set; }
+    public string BaseUrl { get; set; }
     public string Name { get; set; }
     public string Logo { get; set; }
     public string AgreementContent { get; set; }

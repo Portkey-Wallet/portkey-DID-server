@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Options;
@@ -9,13 +10,13 @@ using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
 using Google.Protobuf.WellKnownTypes;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace CAServer.ThirdPart;
 
 public partial class ThirdPartOrderAppService
 {
-    // GetRampCoverageAsync
+    // Ramp coverage
     public Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync()
     {
         var coverageDto = new RampCoverageDto();
@@ -45,64 +46,183 @@ public partial class ThirdPartOrderAppService
             .ToDictionary(a => a.Key, a => a.Value);
     }
 
-    // GetRampCryptoListAsync
+    // Crypto list
     public Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(string type, string fiat)
     {
-        var defaultCurrencyOption = _rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption();
-        var cryptoDto = new RampCryptoDto
+        try
         {
-            DefaultCrypto = defaultCurrencyOption.ToCrypto()
-        };
-        var cryptoList = _rampOptions?.CurrentValue?.CryptoList;
-        for (var i = 0; cryptoList != null && i < cryptoList.Count; i++)
-        {
-            cryptoDto.CryptoList.Add(_objectMapper.Map<CryptoItem, RampCurrencyItem>(cryptoList[i]));
-        }
+            var defaultCurrencyOption = _rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption();
+            var cryptoDto = new RampCryptoDto
+            {
+                DefaultCrypto = defaultCurrencyOption.ToCrypto()
+            };
+            var cryptoList = _rampOptions?.CurrentValue?.CryptoList;
+            for (var i = 0; cryptoList != null && i < cryptoList.Count; i++)
+            {
+                cryptoDto.CryptoList.Add(_objectMapper.Map<CryptoItem, RampCurrencyItem>(cryptoList[i]));
+            }
 
-        return Task.FromResult(new CommonResponseDto<RampCryptoDto>(cryptoDto));
+            return Task.FromResult(new CommonResponseDto<RampCryptoDto>(cryptoDto));
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "GetRampLimitAsync ERROR, type={Type}, fiat={Fiat}", type, fiat);
+            return Task.FromResult(
+                new CommonResponseDto<RampCryptoDto>().Error(e, "Internal error, please try again later"));
+        }
     }
 
-    // GetRampFiatListAsync
+    // Fiat list
     public async Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(string type, string crypto)
     {
-        // fiat-country => item
-        var fiatDict = new SortedDictionary<string, RampFiatItem>();
-        foreach (var (_, adaptor) in GetThirdPartAdaptors())
+        try
         {
-            var fiatList = await adaptor.GetFiatListAsync(type, crypto);
+            // fiat-country => item
+            var fiatDict = new SortedDictionary<string, RampFiatItem>();
+
+            // invoke adaptors ASYNC
+            var fiatTask = GetThirdPartAdaptors().Values
+                .Select(adaptor => adaptor.GetFiatListAsync(type, crypto)).ToList();
+
+            var fiatList = (await Task.WhenAll(fiatTask))
+                .Where(res => res != null)
+                .SelectMany(list => list).ToList();
+            AssertHelper.NotEmpty(fiatList, "Fiat list empty");
             foreach (var fiatItem in fiatList)
             {
                 var id = GrainIdHelper.GenerateGrainId(fiatItem.Symbol, fiatItem.Country);
                 fiatDict.GetOrAdd(id, _ => fiatItem);
             }
+
+            var defaultCurrencyOption = _rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption();
+            return new CommonResponseDto<RampFiatDto>(new RampFiatDto
+            {
+                FiatList = fiatDict.Values.ToList(),
+                DefaultFiat = defaultCurrencyOption.ToFiat()
+            });
         }
-
-        var defaultCurrencyOption = _rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption();
-        return new CommonResponseDto<RampFiatDto>(new RampFiatDto
+        catch (Exception e)
         {
-            FiatList = fiatDict.Values.ToList(),
-            DefaultFiat = defaultCurrencyOption.ToFiat()
-        });
+            Logger.LogError(e, "GetRampLimitAsync ERROR, type={Type}, crypto={Crypto}", type, crypto);
+            return new CommonResponseDto<RampFiatDto>().Error(e, "Internal error, please try again later");
+        }
     }
 
-    public Task<CommonResponseDto<RampLimitDto>> GetRampLimitAsync(RampLimitRequest request)
+
+    // Ramp limit
+    public async Task<CommonResponseDto<RampLimitDto>> GetRampLimitAsync(RampLimitRequest request)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var rampLimit = new RampLimitDto();
+
+            // invoke adaptors ASYNC
+            var limitTasks = GetThirdPartAdaptors().Values
+                .Select(adaptor => adaptor.GetRampLimitAsync(request)).ToList();
+
+            var limitList = (await Task.WhenAll(limitTasks)).Where(limit => limit != null).ToList();
+            AssertHelper.NotEmpty(limitList, "Empty limit list");
+
+            rampLimit.Crypto = new CurrencyLimit
+            {
+                Symbol = request.Crypto,
+                MinLimit = limitList.Select(limit => limit.Crypto.MinLimit).Min(),
+                MaxLimit = limitList.Select(limit => limit.Crypto.MaxLimit).Max()
+            };
+
+            rampLimit.Fiat = new CurrencyLimit
+            {
+                Symbol = request.Fiat,
+                MinLimit = limitList.Select(limit => limit.Fiat.MinLimit).Min(),
+                MaxLimit = limitList.Select(limit => limit.Fiat.MaxLimit).Max()
+            };
+            return new CommonResponseDto<RampLimitDto>(rampLimit);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "GetRampLimitAsync ERROR, crypto={Crypto}, fiat={Fiat}", request.Crypto, request.Fiat);
+            return new CommonResponseDto<RampLimitDto>().Error(e, "Internal error, please try again later");
+        }
     }
 
-    public Task<CommonResponseDto<RampExchangeDto>> GetRampExchangeAsync(RampExchangeRequest request)
+    // Ramp exchange
+    public async Task<CommonResponseDto<RampExchangeDto>> GetRampExchangeAsync(RampExchangeRequest request)
     {
-        throw new NotImplementedException();
+        try
+        {
+            // invoke adaptors ASYNC
+            var exchangeTasks = GetThirdPartAdaptors().Values
+                .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();
+
+            // choose the MAX crypto-fiat exchange rate
+            var maxExchange = (await Task.WhenAll(exchangeTasks)).Where(limit => limit != null).Max();
+            AssertHelper.NotNull(maxExchange, "empty maxExchange");
+
+            var exchangeId = GrainIdHelper.GenerateGrainId(request.Crypto, request.Fiat);
+            var exchange = new RampExchangeDto
+            {
+                Exchange = new Dictionary<string, string>
+                {
+                    [exchangeId] = maxExchange.ToString()
+                }
+            };
+            return new CommonResponseDto<RampExchangeDto>(exchange);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "GetRampExchangeAsync ERROR, crypto={Crypto}, fiat={Fiat}", request.Crypto,
+                request.Fiat);
+            return new CommonResponseDto<RampExchangeDto>().Error(e, "Internal error, please try again later");
+        }
     }
 
+    // Ramp price
     public async Task<CommonResponseDto<RampPriceDto>> GetRampPriceAsync(RampDetailRequest request)
     {
-        throw new NotImplementedException();
+        try
+        {
+            // invoke adaptors ASYNC
+            var priceTask = GetThirdPartAdaptors().Values
+                .Select(adaptor => adaptor.GetRampPriceAsync(request)).ToList();
+
+            // order by price and choose the MAX one
+            var priceList = (await Task.WhenAll(priceTask)).Where(price => price != null)
+                .OrderBy(price => price.Price.SafeToDouble()).ToList();
+            AssertHelper.NotEmpty(priceTask, "Price list empty");
+            
+            return new CommonResponseDto<RampPriceDto>(priceList.First());
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "GetRampPriceAsync ERROR, crypto={Crypto}, fiat={Fiat}", request.Crypto,
+                request.Fiat);
+            return new CommonResponseDto<RampPriceDto>().Error(e, "Internal error, please try again later");
+        }
     }
 
+    // Ramp detail
     public async Task<CommonResponseDto<RampDetailDto>> GetRampDetailAsync(RampDetailRequest request)
     {
-        throw new NotImplementedException();
+        try
+        {
+            // invoke adaptors ASYNC
+            var detailTasks = GetThirdPartAdaptors().Values.Select(adaptor => adaptor.GetRampDetailAsync(request))
+                .ToList();
+            
+            var detailList =(await  Task.WhenAll(detailTasks)).Where(detail => detail != null).ToList();
+            AssertHelper.NotEmpty(detailList, "Ramp detail list empty");
+            
+            return new CommonResponseDto<RampDetailDto>(new RampDetailDto
+            {
+                ProvidersList = detailList
+            });
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "GetRampDetailAsync ERROR, crypto={Crypto}, fiat={Fiat}", request.Crypto,
+                request.Fiat);
+            return new CommonResponseDto<RampDetailDto>().Error(e, "Internal error, please try again later");
+        }
     }
 
     public async Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input)
