@@ -3,6 +3,7 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.MongoDB;
 using CAServer.Options;
 using CAServer.Monitor;
@@ -100,9 +101,14 @@ public class CAServerContractEventHandlerModule : AbpModule
         }
     }
 
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
         StartOrleans(context.ServiceProvider);
+    }
+
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
     }
