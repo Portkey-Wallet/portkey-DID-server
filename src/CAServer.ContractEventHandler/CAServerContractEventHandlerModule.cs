@@ -3,9 +3,13 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using CAServer.Grains.Grain.ValidateOriginChainId;
+using CAServer.MongoDB;
 using CAServer.Options;
 using CAServer.Monitor;
 using CAServer.Signature;
+using Medallion.Threading;
+using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -40,8 +44,9 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
-    typeof(CAServerMonitorModule),
-    typeof(AbpCachingStackExchangeRedisModule))]
+    typeof(AbpCachingStackExchangeRedisModule),
+    typeof(CAServerMongoDbModule)
+)]
 public class CAServerContractEventHandlerModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -63,11 +68,24 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.Services.AddHttpClient();
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
+        ConfigureDistributedLocking(context, configuration);
     }
 
     private void ConfigureCache(IConfiguration configuration)
     {
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
+    }
+
+    private void ConfigureDistributedLocking(
+        ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddSingleton<IDistributedLockProvider>(sp =>
+        {
+            var connection = ConnectionMultiplexer
+                .Connect(configuration["Redis:Configuration"]);
+            return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
+        });
     }
 
     private void ConfigureDataProtection(
@@ -83,9 +101,14 @@ public class CAServerContractEventHandlerModule : AbpModule
         }
     }
 
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
         StartOrleans(context.ServiceProvider);
+    }
+
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
     }

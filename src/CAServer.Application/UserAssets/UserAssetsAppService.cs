@@ -2,20 +2,37 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
+using CAServer.Etos;
+using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.ValidateOriginChainId;
+using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Guardian.Provider;
+using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Tokens;
+using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using MongoDB.Driver.Linq;
+using Nito.AsyncEx;
+using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
+using ChainOptions = CAServer.Options.ChainOptions;
 using Token = CAServer.UserAssets.Dtos.Token;
 using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
 
@@ -33,14 +50,23 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IImageProcessProvider _imageProcessProvider;
     private readonly ChainOptions _chainOptions;
     private readonly IContractProvider _contractProvider;
+    private readonly IContactProvider _contactProvider;
+    private readonly IClusterClient _clusterClient;
+    private readonly IGuardianProvider _guardianProvider;
     private const int MaxResultCount = 10;
+    private readonly IDistributedEventBus _distributedEventBus;
     private readonly SeedImageOptions _seedImageOptions;
+    private readonly IUserTokenAppService _userTokenAppService;
+    private readonly ITokenProvider _tokenProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
         IUserContactProvider userContactProvider, IOptions<TokenInfoOptions> tokenInfoOptions,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
-        IContractProvider contractProvider, IOptionsSnapshot<SeedImageOptions> seedImageOptions)
+        IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
+        IGuardianProvider guardianProvider, IDistributedEventBus distributedEventBus,
+        IOptionsSnapshot<SeedImageOptions> seedImageOptions, IUserTokenAppService userTokenAppService,
+        ITokenProvider tokenProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -50,11 +76,33 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
         _seedImageOptions = seedImageOptions.Value;
+        _contactProvider = contactProvider;
         _chainOptions = chainOptions.Value;
+        _clusterClient = clusterClient;
+        _guardianProvider = guardianProvider;
+        _distributedEventBus = distributedEventBus;
+        _userTokenAppService = userTokenAppService;
+        _tokenProvider = tokenProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
     {
+        try
+        {
+            var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
+            await _distributedEventBus.PublishAsync(new UserLoginEto()
+            {
+                Id = CurrentUser.GetId(),
+                UserId = CurrentUser.GetId(),
+                CaHash = caHolderIndex.CaHash,
+                CreateTime = DateTime.UtcNow
+            });
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "send UserLoginEto fail,user {id}", CurrentUser.GetId());
+        }
+
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
@@ -69,6 +117,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             res.CaHolderTokenBalanceInfo.Data =
                 res.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
+
+            await CheckNeedAddTokenAsync(CurrentUser.GetId(), res);
 
             var chainInfos = await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddresses);
             var chainIds = chainInfos.CaHolderManagerInfo.Select(c => c.ChainId).Distinct().ToList();
@@ -199,6 +249,50 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
+    private async Task CheckNeedAddTokenAsync(Guid userId, IndexerTokenInfos tokenInfos)
+    {
+        try
+        {
+            var tokens = tokenInfos?.CaHolderTokenBalanceInfo?.Data?.Where(t => t.TokenInfo != null && t.Balance > 0)
+                .Select(f => f.TokenInfo)
+                .ToList();
+
+            if (tokens.IsNullOrEmpty()) return;
+
+            var userTokens =
+                await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
+
+            var tokenIds = new List<string>();
+            foreach (var token in tokens)
+            {
+                var userToken =
+                    userTokens.FirstOrDefault(f => f.Token.Symbol == token.Symbol && f.Token.ChainId == token.ChainId);
+
+                if (userToken == null)
+                {
+                    tokenIds.Add(token.Id);
+                }
+            }
+
+            await AddDisplayAsync(tokenIds);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "check need add token failed, userId: {userId}", userId);
+        }
+    }
+
+    private async Task AddDisplayAsync(List<string> tokenIds)
+    {
+        var tasks = new List<Task>();
+        foreach (var tokenId in tokenIds)
+        {
+            tasks.Add(_userTokenAppService.ChangeTokenDisplayAsync(true, tokenId));
+        }
+
+        await Task.WhenAll(tasks);
+    }
+
     public async Task<GetNftCollectionsDto> GetNFTCollectionsAsync(GetNftCollectionsRequestDto requestDto)
     {
         try
@@ -235,7 +329,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 }
                 else
                 {
-                    var isInSeedOption = _seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var imageUrl);
+                    var isInSeedOption =
+                        _seedImageOptions.SeedImageDic.TryGetValue(nftCollection.Symbol, out var imageUrl);
                     var image = isInSeedOption ? imageUrl : nftCollectionInfo.NftCollectionInfo.ImageUrl;
                     nftCollection.ImageUrl = await _imageProcessProvider.GetResizeImageAsync(
                         image, requestDto.Width, requestDto.Height,
@@ -290,6 +385,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
+                nftItem.Decimals = nftInfo.NftInfo.Decimals.ToString();
                 nftItem.ImageUrl =
                     await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
                         requestDto.Height,
@@ -620,16 +716,5 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "get symbols price failed, symbol={symbols}", symbols);
             return new Dictionary<string, decimal>();
         }
-    }
-
-    private string GetImageUrlSuffix(string imageUrl)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl))
-        {
-            return null;
-        }
-
-        var imageUrlArray = imageUrl.Split(".");
-        return imageUrlArray[^1].ToLower();
     }
 }
