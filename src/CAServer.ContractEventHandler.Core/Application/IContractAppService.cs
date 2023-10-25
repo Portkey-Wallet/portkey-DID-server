@@ -340,12 +340,10 @@ public class ContractAppService : IContractAppService
             }
 
             var holderInfoOutput =
-                await _contractProvider.GetHolderInfoFromChainAsync(originChainId, Hash.LoadFromHex(userLoginEto.CaHash),
-                    null);
+                await _contractProvider.GetHolderInfoFromChainAsync(originChainId, null, userLoginEto.CaHash);
 
             var syncHolderInfoOutput =
-                await _contractProvider.GetHolderInfoFromChainAsync(syncChainId, Hash.LoadFromHex(userLoginEto.CaHash),
-                    null);
+                await _contractProvider.GetHolderInfoFromChainAsync(syncChainId, null, userLoginEto.CaHash);
 
             if (holderInfoOutput.CreateChainId > 0 && syncHolderInfoOutput.CreateChainId > 0)
             {
