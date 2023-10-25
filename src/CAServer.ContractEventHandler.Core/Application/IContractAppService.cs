@@ -354,19 +354,30 @@ public class ContractAppService : IContractAppService
                 return;
             }
 
-            _logger.LogInformation(
-                "UpdateOriginChainIdAsync success,originChainId {originChainId}:{holderInfoOutput.CreateChainId}, syncChainId:{syncChainId}:{syncHolderInfoOutput.CreateChainId},userId {uid}",
-                originChainId, holderInfoOutput.CreateChainId, syncChainId, syncHolderInfoOutput.CreateChainId,
-                userLoginEto.UserId);
-
             holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
 
             var transactionDto = await _contractProvider.ValidateTransactionAsync(originChainId, holderInfoOutput, null);
-            await validateOriginChainIdGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,
-                originChainId);
-            await validateOriginChainIdGrain.SetStatusSuccessAsync();
-            _ = ValidateTransactionAndSyncAsync(originChainId, holderInfoOutput, "",
-                MonitorTag.LoginSync);
+            if (transactionDto.TransactionResultDto.Status == TransactionState.Mined)
+            {
+                await validateOriginChainIdGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,
+                    originChainId);
+                await validateOriginChainIdGrain.SetStatusSuccessAsync();
+                _logger.LogInformation(
+                    "UpdateOriginChainIdAsync success,originChainId {originChainId}:{holderInfoOutput.CreateChainId}, syncChainId:{syncChainId}:{syncHolderInfoOutput.CreateChainId},userId {uid}",
+                    originChainId, holderInfoOutput.CreateChainId, syncChainId, syncHolderInfoOutput.CreateChainId,
+                    userLoginEto.UserId);
+                _ = ValidateTransactionAndSyncAsync(originChainId, holderInfoOutput, "",
+                    MonitorTag.LoginSync);
+            }
+            else
+            {
+                await validateOriginChainIdGrain.SetStatusFailAsync();
+                _logger.LogInformation(
+                    "UpdateOriginChainIdAsync fail,originChainId {originChainId}:{holderInfoOutput.CreateChainId}, syncChainId:{syncChainId}:{syncHolderInfoOutput.CreateChainId},userId {uid},,txid:{txid},status:{status}",
+                    originChainId, holderInfoOutput.CreateChainId, syncChainId, syncHolderInfoOutput.CreateChainId,
+                    userLoginEto.UserId, transactionDto.TransactionResultDto.TransactionId,
+                    transactionDto.TransactionResultDto.Status);
+            }
         }
         catch (Exception e)
         {
