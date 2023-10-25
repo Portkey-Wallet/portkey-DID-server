@@ -12,6 +12,7 @@ public class NftOrderSectionDto : BaseOrderSection
 
     public Guid Id { get; set; }
     public string NftSymbol { get; set; }
+    public string NftCollectionName { get; set; }
     public string MerchantName { get; set; }
     public string MerchantOrderId { get; set; }
     public string NftPicture { get; set; }
