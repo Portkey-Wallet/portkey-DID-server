@@ -50,8 +50,6 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var imageProcessProviderMock = new Mock<IImageProcessProvider>();
         var chainOptionsMock = new Mock<IOptions<ChainOptions>>();
         chainOptionsMock.Setup(o => o.Value).Returns(new ChainOptions());
-        var syncOriginChainIdOptionsMock =  new Mock<IOptions<SyncOriginChainIdOptions>>();
-        syncOriginChainIdOptionsMock.Setup(o => o.Value).Returns(new SyncOriginChainIdOptions());
         var contractProviderMock = new Mock<IContractProvider>();
         var contactProviderMock = new Mock<IContactProvider>();
         var clusterClientMock = new Mock<IClusterClient>();
@@ -74,7 +72,6 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             guardianProvider: guardianProviderMock.Object,
             distributedEventBus: GetRequiredService<IDistributedEventBus>(),
             seedImageOptions:  seedImageOptionsMock.Object,
-            syncOriginChainIdOptions: syncOriginChainIdOptionsMock.Object,
             userTokenAppService: userTokenAppServiceMock.Object,
             tokenProvider: tokenProvider.Object);
         return userAssetsAppService;
@@ -118,35 +115,6 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         data.Symbol.ShouldBe("ELF");
         data.ChainId.ShouldBe("AELF");
         data.BalanceInUsd.ShouldBe("0.00002");
-    }
-
-    [Fact]
-    public async Task UpdateMerkerTreeTest()
-    {
-        Login(Guid.NewGuid());
-        
-        //var userAssetsAppServiceMock = GetMock();
-        
-        await _userAssetsAppService.UpdateOriginChainIdAsync("AELF", "tDVW",new UserLoginEto());
-    }
-
-    [Fact]
-    public async Task CheckChainMerkerTreeStatusTest()
-    {
-        Login(Guid.NewGuid());
-        
-        var param = new UserLoginEto
-        {
-            CaHash  = "bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf",
-        };
-        var userAssetsAppServiceMock = GetMock();
-        await userAssetsAppServiceMock.CheckOriginChainIdStatusAsync(param);
-        
-        param = new UserLoginEto
-        {
-            CaHash  = "bd8f9aee71f7a582ee15ca7b6d76a3a924364a60a11ee48fb49b997989e0dbcf",
-        };
-        await userAssetsAppServiceMock.CheckOriginChainIdStatusAsync(param);
     }
 
     [Fact]

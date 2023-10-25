@@ -29,7 +29,6 @@ public interface IContractProvider
 {
     Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId,
         Hash loginGuardian, string caHash);
-
     Task<int> GetChainIdAsync(string chainId);
     Task<long> GetBlockHeightAsync(string chainId);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string txId);
@@ -124,7 +123,7 @@ public class ContractProvider : IContractProvider
             return new T();
         }
     }
-
+    
     public async Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId, Hash loginGuardian,
         string caHash)
     {
