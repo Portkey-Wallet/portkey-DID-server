@@ -385,6 +385,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
                 nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
                 nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
+                nftItem.Decimals = nftInfo.NftInfo.Decimals.ToString();
                 nftItem.ImageUrl =
                     await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
                         requestDto.Height,
