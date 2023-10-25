@@ -1,9 +1,13 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
+using CAServer.Options;
 using CAServer.Security.Dtos;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Shouldly;
 using Xunit;
@@ -29,6 +33,7 @@ public partial class UserSecurityAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockUserAssetsProvider());
         services.AddSingleton(GetMockUserSecurityProvider());
         services.AddSingleton(GetContractProvider());
+        services.AddSingleton(MockSecurityOptions());
     }
 
     [Fact]
@@ -69,5 +74,27 @@ public partial class UserSecurityAppServiceTest : CAServerApplicationTestBase
         data.Amount.ShouldBe(10000);
         data.CaHash.ShouldBe(defaultTestCaHash);
         data.Spender.ShouldBe(Address.FromPublicKey("AAA".HexToByteArray()).ToBase58());
+    }
+
+    private IOptionsSnapshot<SecurityOptions> MockSecurityOptions()
+    {
+        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<SecurityOptions>>();
+        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+            new SecurityOptions
+            {
+                DefaultTokenTransferLimit = 1000,
+                TokenTransferLimitDict = new Dictionary<string, TokenTransferLimit>()
+                {
+                    {
+                        "AELF", new TokenTransferLimit()
+                        {
+                            SingleTransferLimit = new Dictionary<string, string>() { ["ELF"] = "20000000000" },
+                            DailyTransferLimit = new Dictionary<string, string>() { ["ELF"] = "20000000000" }
+                        }
+                    }
+                },
+                TokenBalanceTransferThreshold = new Dictionary<string, long>() { { "ELF", 100000000000 } }
+            });
+        return mockOptionsSnapshot.Object;
     }
 }
