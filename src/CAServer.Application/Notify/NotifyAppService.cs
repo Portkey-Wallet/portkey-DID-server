@@ -43,6 +43,39 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
 
     public async Task<PullNotifyResultDto> PullNotifyAsync(PullNotifyDto input)
     {
+        var rules = await GetNotifyAsync(input);
+        if (rules.IsNullOrEmpty()) return null;
+
+        var notifyRules = rules.First();
+        if (notifyRules.Countries is { Length: > 0 })
+        {
+            var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
+            notifyRules = rules?.Where(t => t.Countries.Contains(ipInfo.Code)).FirstOrDefault();
+            if (notifyRules == null)
+            {
+                return null;
+            }
+        }
+
+        var grain = _clusterClient.GetGrain<INotifyGrain>(notifyRules.Id);
+        var resultDto = await grain.GetNotifyAsync();
+        if (!resultDto.Success)
+        {
+            throw new UserFriendlyException(resultDto.Message);
+        }
+
+        var notifyDto = ObjectMapper.Map<NotifyGrainDto, PullNotifyResultDto>(resultDto.Data);
+
+        if (!notifyDto.IsForceUpdate)
+        {
+            // how to get previous version ?
+        }
+
+        return notifyDto;
+    }
+
+    private async Task<List<NotifyRulesIndex>> GetNotifyAsync(PullNotifyDto input)
+    {
         var mustQuery = new List<Func<QueryContainerDescriptor<NotifyRulesIndex>, QueryContainer>>();
         //mustQuery.Add(q => q.Term(i => i.Field(f => f.AppId).Value(input.AppId)));
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceTypes).Terms(input.DeviceType.ToString())));
@@ -57,28 +90,10 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
 
         if (totalCount <= 0)
         {
-            return null;
+            return new List<NotifyRulesIndex>();
         }
 
-        var notifyRules = notifyRulesIndices.First();
-        if (notifyRules.Countries is { Length: > 0 })
-        {
-            var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
-            notifyRules = notifyRulesIndices?.Where(t => t.Countries.Contains(ipInfo.Code)).FirstOrDefault();
-            if (notifyRules == null)
-            {
-                return null;
-            }
-        }
-
-        var grain = _clusterClient.GetGrain<INotifyGrain>(notifyRules.Id);
-        var resultDto = await grain.GetNotifyAsync();
-        if (!resultDto.Success)
-        {
-            throw new UserFriendlyException(resultDto.Message);
-        }
-
-        return ObjectMapper.Map<NotifyGrainDto, PullNotifyResultDto>(resultDto.Data);
+        return notifyRulesIndices;
     }
 
     public async Task<NotifyResultDto> CreateAsync(CreateNotifyDto notifyDto)
@@ -135,7 +150,7 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         var condition =
             "/items/upgradePush?fields=*,countries.country_id.value,deviceBrands.deviceBrand_id.value,deviceTypes.deviceType_id.value,targetVersion.value," +
             $"appVersions.appVersion_id.value,styleType.value,targetVersion.value&filter[targetVersion][value][_eq]={version}&filter[status][_eq]=published";
-        
+
         Logger.LogDebug("before get data from cms.");
         var notifyDto = await GetDataAsync(condition);
 
