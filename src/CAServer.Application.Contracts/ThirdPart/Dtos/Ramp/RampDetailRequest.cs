@@ -1,4 +1,4 @@
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart.Dtos.Ramp;
 
 public class RampDetailRequest
 {

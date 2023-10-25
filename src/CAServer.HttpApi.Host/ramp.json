@@ -2,6 +2,7 @@
   "Providers": {
     "Alchemy": {
       "Name": "AlchemyPay",
+      "AppId": "f83Is2y7L425rxl8",
       "Logo": "https://ramp.alchemypay.org/static/img/6.32716249.svg",
       "AgreementContent": "AlchemyPay is a fiat-to-crypto platform independently operated by a third-party entity. Portkey shall not be held liable for any loss or damage suffered as a result of using AlchemyPay service. ",
       "PaymentTags": [
@@ -16,6 +17,7 @@
     },
     "Transak": {
       "Name": "Transak",
+      "AppId": "09c056fd-d423-46d9-a641-e4a7a1e7de33",
       "Logo": "https://assets.transak.com/images/website/transak-logo.svg",
       "AgreementContent": "Transak is a fiat-to-crypto platform independently operated by a third-party entity. Portkey shall not be held liable for any loss or damage suffered as a result of using Transak service. ",
       "PaymentTags": [
@@ -27,6 +29,21 @@
         "OffRamp": true
       }
     }
+  },
+  "CryptoList": [
+    {
+      "symbol": "ELF",
+      "icon" : "",
+      "decimals": "8",
+      "network": "AELF-AELF",
+      "address": ""
+    }
+  ],
+  "DefaultCurrency": {
+    "Crypto": "ELF",
+    "CryptoAmount": "40000000000",
+    "Fiat": "USD",
+    "FiatAmount": "200"
   },
   "WhiteList": [
     "fd71c1fd-d123-4ff4-83ef-136331af175d"

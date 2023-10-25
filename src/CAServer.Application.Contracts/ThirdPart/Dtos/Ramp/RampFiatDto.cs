@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using CAServer.Commons;
 
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart.Dtos.Ramp;
 
 public class RampFiatDto
 {
     public List<RampFiatItem> FiatList { get; set; }
-    public string DefaultFiat { get; set; } = CommonConstant.DefaultFiatUSD;
+    public DefaultCurrency DefaultFiat { get; set; }
 }
 
 
@@ -16,8 +16,4 @@ public class RampFiatItem
     public string Symbol { get; set;}
     public string CountryName { get; set;}
     public string Icon { get; set;}
-    public string BuyMinLimit { get; set;}
-    public string BuyMaxLimit { get; set;}
-    public string SellMinLimit { get; set;}
-    public string SellMaxLimit { get; set;}
 }

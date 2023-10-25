@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
@@ -9,6 +10,7 @@ using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
+using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
@@ -33,19 +35,22 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IActivityProvider _activityProvider;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly IOptionsMonitor<RampOptions> _rampOptions;
+    private readonly Dictionary<string, IThirdPartAdaptor> _thirdPartAdaptors;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
-        IOptions<ThirdPartOptions> thirdPartOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<ThirdPartOrderAppService> logger,
         IObjectMapper objectMapper,
         IActivityProvider activityProvider,
         IOrderStatusProvider orderStatusProvider,
-        IAbpDistributedLock distributedLock, IOptionsMonitor<RampOptions> rampOptions)
+        IAbpDistributedLock distributedLock, IOptionsMonitor<RampOptions> rampOptions,
+        IEnumerable<IThirdPartAdaptor> thirdPartAdaptors)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -54,10 +59,10 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         _objectMapper = objectMapper;
         _logger = logger;
         _activityProvider = activityProvider;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
-        _rampOptions = rampOptions;
+        _thirdPartAdaptors = thirdPartAdaptors.ToDictionary(a => a.ThirdPart(), a => a);
         _rampOptions = rampOptions;
     }
 
@@ -101,7 +106,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
 
             // Query userId from caHolder
             var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
-            
+
             // query decimal of paymentSymbol via GraphQL
             var decimalsList = await _activityProvider.GetTokenDecimalsAsync(input.PaymentSymbol);
             AssertHelper.NotEmpty(decimalsList?.TokenInfo, "Price symbol of {PriceSymbol} decimal not found",
@@ -109,9 +114,9 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
             AssertHelper.IsTrue(double.TryParse(input.PaymentAmount, out var priceAmount), "Invalid priceAmount");
 
             var merchantAddress = input.MerchantAddress.DefaultIfEmpty(
-                _thirdPartOptions.Merchant.GetOption(input.MerchantName).ReceivingAddress);
+                _thirdPartOptions.CurrentValue.Merchant.GetOption(input.MerchantName).ReceivingAddress);
             AssertHelper.NotEmpty(merchantAddress, "Merchant crypto settlement address empty");
-            
+
             // Save ramp order
             var orderGrainData = _objectMapper.Map<CreateNftOrderRequestDto, OrderGrainDto>(input);
             orderGrainData.Id = GuidHelper.UniqId(input.MerchantName, input.MerchantOrderId);
@@ -176,7 +181,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         _logger.LogInformation("This nft-order {OrderId} of merchant:{MerchantName} will be created",
             nftOrderGrainDto.MerchantOrderId, nftOrderGrainDto.MerchantName);
         nftOrderGrainDto.CreateTime = DateTime.UtcNow;
-        nftOrderGrainDto.ExpireTime = DateTime.UtcNow.AddSeconds(_thirdPartOptions.Timer.NftOrderExpireSeconds);
+        nftOrderGrainDto.ExpireTime = DateTime.UtcNow.AddSeconds(_thirdPartOptions.CurrentValue.Timer.NftOrderExpireSeconds);
         var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(nftOrderGrainDto.Id);
         var result = await nftOrderGrain.CreateNftOrder(nftOrderGrainDto);
         AssertHelper.IsTrue(result.Success, "Create merchant nft-order fail");

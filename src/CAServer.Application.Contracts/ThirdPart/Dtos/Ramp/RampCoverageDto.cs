@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart.Dtos.Ramp;
 
 public class RampCoverageDto
 {
-    private Dictionary<string, RampProviderDto> ThirdPart { get; set; } = new();
+    public Dictionary<string, RampProviderDto> ThirdPart { get; set; } = new();
 }
 
 public class RampProviderDto
