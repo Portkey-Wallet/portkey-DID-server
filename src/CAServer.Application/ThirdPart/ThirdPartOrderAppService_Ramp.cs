@@ -41,9 +41,11 @@ public partial class ThirdPartOrderAppService
     private Dictionary<string, IThirdPartAdaptor> GetThirdPartAdaptors()
     {
         var providers = GetRampProviders();
-        return _thirdPartAdaptors
-            .Where(a => providers.ContainsKey(a.Key))
-            .ToDictionary(a => a.Key, a => a.Value);
+        return providers.IsNullOrEmpty()
+            ? new Dictionary<string, IThirdPartAdaptor>()
+            : _thirdPartAdaptors
+                .Where(a => providers.ContainsKey(a.Key))
+                .ToDictionary(a => a.Key, a => a.Value);
     }
 
     // Crypto list
@@ -66,7 +68,7 @@ public partial class ThirdPartOrderAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "GetRampLimitAsync ERROR, type={Type}, fiat={Fiat}", type, fiat);
+            Logger.LogError(e, "GetRampCryptoListAsync ERROR, type={Type}, fiat={Fiat}", type, fiat);
             return Task.FromResult(
                 new CommonResponseDto<RampCryptoDto>().Error(e, "Internal error, please try again later"));
         }
@@ -103,7 +105,7 @@ public partial class ThirdPartOrderAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "GetRampLimitAsync ERROR, type={Type}, crypto={Crypto}", type, crypto);
+            Logger.LogError(e, "GetRampFiatListAsync ERROR, type={Type}, crypto={Crypto}", type, crypto);
             return new CommonResponseDto<RampFiatDto>().Error(e, "Internal error, please try again later");
         }
     }
@@ -189,7 +191,7 @@ public partial class ThirdPartOrderAppService
             var priceList = (await Task.WhenAll(priceTask)).Where(price => price != null)
                 .OrderBy(price => price.Price.SafeToDouble()).ToList();
             AssertHelper.NotEmpty(priceTask, "Price list empty");
-            
+
             return new CommonResponseDto<RampPriceDto>(priceList.First());
         }
         catch (Exception e)
@@ -205,13 +207,15 @@ public partial class ThirdPartOrderAppService
     {
         try
         {
+            AssertHelper.NotEmpty(request.Crypto, "Param crypto empty");
+            AssertHelper.NotEmpty(request.Fiat, "Param fiat empty");
+
             // invoke adaptors ASYNC
             var detailTasks = GetThirdPartAdaptors().Values.Select(adaptor => adaptor.GetRampDetailAsync(request))
                 .ToList();
-            
-            var detailList =(await  Task.WhenAll(detailTasks)).Where(detail => detail != null).ToList();
+            var detailList = (await Task.WhenAll(detailTasks)).Where(detail => detail != null).ToList();
             AssertHelper.NotEmpty(detailList, "Ramp detail list empty");
-            
+
             return new CommonResponseDto<RampDetailDto>(new RampDetailDto
             {
                 ProvidersList = detailList
@@ -233,12 +237,40 @@ public partial class ThirdPartOrderAppService
     public async Task<CommonResponseDto<RampFreeLoginDto>> GetRampThirdPartFreeLoginTokenAsync(
         RampFreeLoginRequest input)
     {
-        throw new NotImplementedException();
+        try
+        {
+            AssertHelper.NotEmpty(input.ThirdPart, "param thirdPart empty");
+
+            var adaptor = GetThirdPartAdaptors()[input.ThirdPart];
+            AssertHelper.NotNull(adaptor, "Provider {ThirdPart} not found", input.ThirdPart);
+
+            return new CommonResponseDto<RampFreeLoginDto>(await adaptor.GetRampFreeLoginAsync(input));
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "GetRampThirdPartFreeLoginTokenAsync ERROR, thirdPart={ThirdPart}", input.ThirdPart);
+            return new CommonResponseDto<RampFreeLoginDto>().Error(e, "Internal error, please try again later");
+        }
     }
 
     public async Task<CommonResponseDto<AlchemySignatureResultDto>> GetRampThirdPartSignatureAsync(
         RampSignatureRequest input)
     {
-        throw new NotImplementedException();
+        try
+        {
+            AssertHelper.NotEmpty(input.ThirdPart, "param thirdPart empty");
+
+            var adaptor = GetThirdPartAdaptors()[input.ThirdPart];
+            AssertHelper.NotNull(adaptor, "Provider {ThirdPart} not found", input.ThirdPart);
+
+            return new CommonResponseDto<AlchemySignatureResultDto>(
+                await adaptor.GetRampThirdPartSignatureAsync(input));
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "GetRampThirdPartSignatureAsync ERROR, thirdPart={ThirdPart}", input.ThirdPart);
+            return new CommonResponseDto<AlchemySignatureResultDto>().Error(e,
+                "Internal error, please try again later");
+        }
     }
 }

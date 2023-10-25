@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CAServer.ThirdPart.Dtos.Ramp;
 
 public class RampSignatureDto
@@ -8,6 +10,6 @@ public class RampSignatureDto
 
 public class RampSignatureRequest
 {
-    public string ThirdPart { get; set; }
-    public string Address { get; set; }
+    [Required] public string ThirdPart { get; set; }
+    [Required] public string Address { get; set; }
 }

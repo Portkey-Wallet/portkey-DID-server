@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CAServer.ThirdPart.Dtos.Ramp;
 
 public class RampFreeLoginDto
@@ -8,6 +10,6 @@ public class RampFreeLoginDto
 
 public class RampFreeLoginRequest
 {
-    public string ThirdPart { get; set; }
-    public string Email { get; set; }
+    [Required] public string ThirdPart { get; set; }
+    [Required] public string Email { get; set; }
 }
