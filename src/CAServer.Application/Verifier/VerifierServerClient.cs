@@ -8,6 +8,7 @@ using AElf;
 using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Settings;
+using CAServer.Switch;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,16 +24,20 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ISwitchAppService _switchAppService;
+    private const string ContractsSwitch = "ContractsSwitch";
+
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory, ISwitchAppService switchAppService)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
         _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
+        _switchAppService = switchAppService;
     }
 
     private bool _disposed;
@@ -91,6 +96,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
+
         var type = Convert.ToInt32(input.OperationType).ToString();
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
@@ -101,13 +107,13 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
             { "operationType", type },
-            {
-                "chainId",
-                string.IsNullOrWhiteSpace(input.TargetChainId)
-                    ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
-                    : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString()
-            }
         };
+        if (_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
+        {
+            parameters.Add("chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
+                ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
+                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString());
+        }
 
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
