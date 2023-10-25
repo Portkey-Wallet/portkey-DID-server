@@ -15,6 +15,7 @@ public class NftMerchantBaseDto
 public class CreateNftOrderRequestDto : NftMerchantBaseDto
 {
     [Required] public string NftSymbol { get; set; }
+    public string NftCollectionName { get; set; }
     [Required] public string MerchantOrderId { get; set; }
     [Required] public string WebhookUrl { get; set; }
     public string NftPicture { get; set; }
@@ -42,6 +43,7 @@ public class OrderQueryRequestDto : NftMerchantBaseDto
 public class NftOrderQueryResponseDto : NftMerchantBaseDto
 {
     public string NftSymbol { get; set; }
+    public string NftCollectionName { get; set; }
     public string MerchantOrderId { get; set; }
     public string NftPicture { get; set; }
     public string PaymentSymbol { get; set; }
