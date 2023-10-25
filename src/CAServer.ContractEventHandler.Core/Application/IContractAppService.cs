@@ -340,12 +340,12 @@ public class ContractAppService : IContractAppService
             }
 
             var holderInfoOutput =
-                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
-                    null, originChainId);
+                await _contractProvider.GetHolderInfoFromChainAsync(originChainId, Hash.LoadFromHex(userLoginEto.CaHash),
+                    null);
 
             var syncHolderInfoOutput =
-                await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(userLoginEto.CaHash),
-                    null, syncChainId);
+                await _contractProvider.GetHolderInfoFromChainAsync(syncChainId, Hash.LoadFromHex(userLoginEto.CaHash),
+                    null);
 
             if (holderInfoOutput.CreateChainId > 0 && syncHolderInfoOutput.CreateChainId > 0)
             {
@@ -363,10 +363,7 @@ public class ContractAppService : IContractAppService
 
             holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
 
-            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var transactionDto =
-                await grain.ValidateTransactionAsync(originChainId, holderInfoOutput, null);
-
+            var transactionDto = await _contractProvider.ValidateTransactionAsync(originChainId, holderInfoOutput, null);
             await validateOriginChainIdGrain.SetInfoAsync(transactionDto.TransactionResultDto.TransactionId,
                 originChainId);
             await validateOriginChainIdGrain.SetStatusSuccessAsync();
