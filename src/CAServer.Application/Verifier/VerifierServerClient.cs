@@ -163,7 +163,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        if (_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
+        if (!_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
         {
             chainId = string.Empty;
         }
