@@ -47,4 +47,6 @@ public static class CommonConstant
     
     public const string ApplicationName = "Portkey";
     public const string ModuleName = "Api";
+
+    public const int WalletNameDefaultLength = 8;
 }

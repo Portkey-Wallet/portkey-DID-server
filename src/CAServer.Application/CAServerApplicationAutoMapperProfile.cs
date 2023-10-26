@@ -413,6 +413,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
 
+        CreateMap<CAHolderIndex, HolderInfoWithAvatar>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
+        CreateMap<CAHolderGrainDto, HolderInfoWithAvatar>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
+        CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
+
         CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
             .Ignore(des => des.MerchantName)
             .ForMember(des => des.Crypto, opt => opt.MapFrom(src => src.PaymentSymbol))
