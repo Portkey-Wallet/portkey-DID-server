@@ -62,10 +62,12 @@ public class ContractProvider : IContractProvider
     private readonly IGraphQLProvider _graphQlProvider;
     private readonly IIndicatorScope _indicatorScope;
     private readonly IDistributedCache<BlockDto> _distributedCache;
+    private readonly BlockInfoOptions _blockInfoOptions;
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
-        IGraphQLProvider graphQlProvider, IIndicatorScope indicatorScope, IDistributedCache<BlockDto> distributedCache)
+        IGraphQLProvider graphQlProvider, IIndicatorScope indicatorScope, IDistributedCache<BlockDto> distributedCache,
+        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
@@ -75,6 +77,7 @@ public class ContractProvider : IContractProvider
         _graphQlProvider = graphQlProvider;
         _indicatorScope = indicatorScope;
         _distributedCache = distributedCache;
+        _blockInfoOptions = blockInfoOptions.Value;
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,
@@ -123,7 +126,7 @@ public class ContractProvider : IContractProvider
             return new T();
         }
     }
-    
+
     public async Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId, Hash loginGuardian,
         string caHash)
     {
@@ -451,7 +454,7 @@ public class ContractProvider : IContractProvider
             return await client.GetBlockByHeightAsync(height, includeTransactions);
         }, () => new DistributedCacheEntryOptions()
         {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(ContractEventConstants.BlockHeightCacheExpireMinutes)
+            AbsoluteExpiration = DateTimeOffset.UtcNow.AddSeconds(_blockInfoOptions.BlockCacheExpire)
         });
 
         return blockInfo;
