@@ -163,8 +163,11 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
+        if (_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
+        {
+            chainId = string.Empty;
+        }
         var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType, chainId });
-
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
             MediaTypeNames.Application.Json);

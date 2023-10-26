@@ -14,6 +14,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
+using CAServer.Switch;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -39,6 +40,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly AppleTransferOptions _appleTransferOptions;
     private readonly VerifierIdMappingOptions _verifierIdMappingOptions;
+    private readonly SwitchAppService _switchAppService;
+    private const string ContractsSwitch = "ContractsSwitch";
 
 
     public GuardianAppService(
@@ -46,7 +49,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
-        IOptionsSnapshot<VerifierIdMappingOptions> verifierIdMappingOptions)
+        IOptionsSnapshot<VerifierIdMappingOptions> verifierIdMappingOptions, SwitchAppService switchAppService)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -54,6 +57,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _chainOptions = chainOptions.Value;
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
+        _switchAppService = switchAppService;
         _verifierIdMappingOptions = verifierIdMappingOptions.Value;
         _appleUserProvider = appleUserProvider;
         _appleTransferOptions = appleTransferOptions.Value;
@@ -73,14 +77,19 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var guardianResult =
             ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
         var guardianDtos = guardianResult.GuardianList.Guardians;
-        var chainIds = _chainOptions.ChainInfos.Where(t => t.Value.IsMainChain).Select(t => t.Key).ToList();
-        if (!chainIds.Contains(guardianIdentifierDto.ChainId))
+
+        if (_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
         {
-            foreach (var dto in guardianDtos)
+            var chainIds = _chainOptions.ChainInfos.Where(t => t.Value.IsMainChain).Select(t => t.Key).ToList();
+            if (!chainIds.Contains(guardianIdentifierDto.ChainId))
             {
-                dto.VerifierId = _verifierIdMappingOptions.VerifierIdMap.TryGetValue(dto.VerifierId,out var verifierId)
-                    ? verifierId
-                    : throw new UserFriendlyException("Invalidate VerifierId");
+                foreach (var dto in guardianDtos)
+                {
+                    dto.VerifierId =
+                        _verifierIdMappingOptions.VerifierIdMap.TryGetValue(dto.VerifierId, out var verifierId)
+                            ? verifierId
+                            : throw new UserFriendlyException("Invalidate VerifierId");
+                }
             }
         }
 
