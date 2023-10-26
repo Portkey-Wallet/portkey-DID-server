@@ -127,8 +127,15 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
 
+        _logger.LogInformation(
+            "CreateHolderInfo start inGrain to chain : {id} loginIdentifyHash: {loginHash}",
+            createHolderDto.ChainId, createHolderDto.GuardianInfo.IdentifierHash.ToHex());
         var result = await SendTransactionToChainAsync(createHolderDto.ChainId, param, MethodName.CreateCAHolder);
-        
+        _logger.LogInformation(
+            "CreateHolderInfo end inGrain to chain: {id} result: loginIdentifyHash: {loginHash} " +
+            "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+            createHolderDto.ChainId, createHolderDto.GuardianInfo.IdentifierHash.ToHex(),
+            result.TransactionResultDto.TransactionId, result.TransactionResultDto.BlockNumber, result.TransactionResultDto.Status, result.TransactionResultDto.Error);
         DeactivateOnIdle();
         
         return result.TransactionResultDto;

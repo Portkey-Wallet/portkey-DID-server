@@ -234,14 +234,17 @@ public class ContractProvider : IContractProvider
     {
         try
         {
+            _logger.LogInformation(
+                "CreateHolderInfo to chain: {id} loginIdentifyHash: {loginHash}",
+                createHolderDto.ChainId, createHolderDto.GuardianInfo.IdentifierHash.ToHex());
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
             var result =
                 await grain.CreateHolderInfoAsync(createHolderDto);
 
             _logger.LogInformation(
-                "CreateHolderInfo to chain: {id} result:" +
+                "CreateHolderInfo to chain: {id} result: loginIdentifyHash: {loginHash} " +
                 "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
-                createHolderDto.ChainId,
+                createHolderDto.ChainId, createHolderDto.GuardianInfo.IdentifierHash.ToHex(),
                 result.TransactionId, result.BlockNumber, result.Status, result.Error);
 
             return result;
