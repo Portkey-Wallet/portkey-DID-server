@@ -78,7 +78,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             foreach (var dto in guardianDtos)
             {
-                dto.VerifierId = _verifierIdMappingOptions.VerifierIdMap[dto.VerifierId];
+                dto.VerifierId = _verifierIdMappingOptions.VerifierIdMap.TryGetValue(dto.VerifierId,out var verifierId)
+                    ? verifierId
+                    : throw new UserFriendlyException("Invalidate VerifierId");
             }
         }
 

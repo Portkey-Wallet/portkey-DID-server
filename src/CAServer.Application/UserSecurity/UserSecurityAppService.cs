@@ -77,11 +77,11 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             foreach (var transferLimit in res.CaHolderTransferLimit.Data)
             {
                 var tempKey = transferLimit.ChainId + "-" + transferLimit.Symbol;
-                if (dic.TryGetValue(tempKey, out _))
+                if (dic.TryGetValue(tempKey, out var tempValue))
                 {
-                    dic[tempKey].DailyLimit = transferLimit.DailyLimit;
-                    dic[tempKey].SingleLimit = transferLimit.SingleLimit;
-                    dic[tempKey].Restricted = !(transferLimit.DailyLimit == "-1" && transferLimit.SingleLimit == "-1");
+                    tempValue.DailyLimit = transferLimit.DailyLimit;
+                    tempValue.SingleLimit = transferLimit.SingleLimit;
+                    tempValue.Restricted = !(transferLimit.DailyLimit == "-1" && transferLimit.SingleLimit == "-1");
                 }
             }
 

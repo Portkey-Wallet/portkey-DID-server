@@ -173,7 +173,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.CollectionName))
             .ForMember(t => t.Balance, m => m.MapFrom(f => f.NftInfo == null ? null : f.Balance.ToString()))
             .ForMember(t => t.TokenContractAddress,
-                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.TokenContractAddress));
+                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.TokenContractAddress))
+            .ForMember(t => t.Decimals,
+                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.Decimals.ToString()));
 
         // user activity
         CreateMap<IndexerTransaction, GetActivityDto>()
@@ -410,7 +412,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
-        CreateMap<MockVerifyCodeRequestInput, VierifierCodeRequestInput>();
 
         CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
             .Ignore(des => des.MerchantName)

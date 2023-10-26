@@ -33,11 +33,11 @@ public class UserSecurityHandler : IDistributedEventHandler<UserTransferLimitHis
 
             await _userTransferLimitHistoryRepository.AddOrUpdateAsync(userTransferLimitHistoryIndex);
 
-            _logger.LogInformation($"Order{eventData.Id} add or update success orderId.");
+            _logger.LogInformation("Order {eventDataId} add or update success orderId.",eventData.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"An error occurred while processing the event,orderId: {eventData.Id}");
+            _logger.LogError(ex, "An error occurred while processing the event,orderId: {eventDataId}",eventData.Id);
         }
     }
 }

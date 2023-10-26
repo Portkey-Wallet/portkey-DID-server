@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AElf;
 using AElf.Types;
 using CAServer.Guardian.Provider;
 using Moq;
@@ -42,7 +43,8 @@ public partial class GuardianTest
                     {
                         new Portkey.Contracts.CA.Guardian()
                         {
-                            IdentifierHash = Hash.LoadFromHex(_identifierHash)
+                            IdentifierHash = Hash.LoadFromHex(_identifierHash),
+                            VerifierId = HashHelper.ComputeFrom("123"),
                         }
                     }
                 }

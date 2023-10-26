@@ -7,6 +7,7 @@ public enum MonitorTag
     AelfClient,
     Register,
     SocialRecover,
+    LoginSync,
     ChainDataSync,
     DataSyncHeightIndex
 }
