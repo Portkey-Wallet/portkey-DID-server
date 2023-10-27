@@ -1,16 +1,19 @@
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.State;
+using Microsoft.Extensions.Logging;
 using Orleans;
 using Volo.Abp.ObjectMapping;
 
 public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
 {
     private readonly IObjectMapper _objectMapper;
+    private readonly ILogger<GuardianGrain> _logger;
 
-    public GuardianGrain(IObjectMapper objectMapper)
+    public GuardianGrain(IObjectMapper objectMapper, ILogger<GuardianGrain> logger)
     {
         _objectMapper = objectMapper;
+        _logger = logger;
     }
 
     public override async Task OnActivateAsync()
@@ -28,6 +31,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
     public async Task<GrainResultDto<GuardianGrainDto>> AddGuardianAsync(string identifier, string salt,
         string identifierHash, string originalIdentifier = "")
     {
+        _logger.LogInformation("AddGuardian start, identifier:{identifier}, identifierHash :{identifierHash}", identifier, identifierHash);
         var result = new GrainResultDto<GuardianGrainDto>();
 
         if (!string.IsNullOrEmpty(State.IdentifierHash) && !State.IsDeleted)
@@ -48,11 +52,14 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
         result.Success = true;
 
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        _logger.LogInformation("AddGuardian end, identifier:{identifier}, identifierHash :{identifierHash}", identifier, identifierHash);
+
         return result;
     }
 
     public Task<GrainResultDto<GuardianGrainDto>> GetGuardianAsync(string identifier)
     {
+        _logger.LogInformation("GetGuardian start, identifier:{identifier}", identifier);
         var result = new GrainResultDto<GuardianGrainDto>();
 
         if (string.IsNullOrEmpty(State.IdentifierHash) || State.IsDeleted)
@@ -63,6 +70,7 @@ public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
 
         result.Success = true;
         result.Data = _objectMapper.Map<GuardianState, GuardianGrainDto>(State);
+        _logger.LogInformation("GetGuardian end, identifier:{identifier}", identifier);
         return Task.FromResult(result);
     }
 
