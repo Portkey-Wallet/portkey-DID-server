@@ -73,8 +73,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var guardianResult =
             ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
         var guardianDtos = guardianResult.GuardianList.Guardians;
-        var chainIds = _chainOptions.ChainInfos.Where(t => t.Value.IsMainChain).Select(t => t.Key).ToList();
-        if (!chainIds.Contains(guardianIdentifierDto.ChainId))
+        var chainIds = _chainOptions.ChainInfos.Where(t => !t.Value.IsMainChain).Select(t => t.Key).ToList();
+        if (chainIds.Contains(guardianIdentifierDto.ChainId))
         {
             foreach (var dto in guardianDtos)
             {
