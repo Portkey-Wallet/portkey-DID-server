@@ -70,8 +70,10 @@ public static class OrleansHostExtensions
                 .Configure<PerformanceTuningOptions>(opt =>
                 {
                     opt.MinDotNetThreadPoolSize = 20480;
-                    opt.MinIOThreadPoolSize = 20480;
-                    opt.DefaultConnectionLimit = 40960;
+                    opt.MinIOThreadPoolSize = 200;
+                }).Configure<SchedulingOptions>(opt => 
+                { 
+                    opt.MaxActiveThreads = 20000; 
                 })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
