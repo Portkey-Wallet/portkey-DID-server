@@ -48,4 +48,5 @@ public static class CommonConstant
     public const string ModuleName = "Api";
 
     public const int WalletNameDefaultLength = 8;
+    public const string AppVersionKeyPrefix = "AppVersion";
 }
