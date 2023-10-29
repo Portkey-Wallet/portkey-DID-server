@@ -67,6 +67,10 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
+                .Configure<GrainCollectionOptions>(opt =>
+                {
+                    opt.CollectionAge = TimeSpan.FromMinutes(2);
+                })
                 .Configure<PerformanceTuningOptions>(opt =>
                 {
                     opt.MinDotNetThreadPoolSize = 20480;
