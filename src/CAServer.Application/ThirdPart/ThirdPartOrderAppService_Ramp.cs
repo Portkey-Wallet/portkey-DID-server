@@ -29,18 +29,46 @@ public partial class ThirdPartOrderAppService
         return Task.FromResult(new CommonResponseDto<RampCoverageDto>(coverageDto));
     }
 
-    private Dictionary<string, ThirdPartProviders> GetRampProviders()
+    private Dictionary<string, ThirdPartProviders> GetRampProviders(string type = null)
     {
-        //TODO nzc choose strategy
+        // expression params
+        var getParamDict = (bool baseCoverage) => new Dictionary<string, object>
+        {
+            ["baseCoverage"] = baseCoverage,
+            ["portkeyId"] = (CurrentUser.Id ?? new Guid()).ToString(),
+            ["portkeyIdWhitelist"] = _rampOptions.CurrentValue.PortkeyIdWhiteList,
+            ["deviceType"] = "WebSDK" // TODO nzc
+        };
+
+        var calculateCoverage = (string providerName, ThirdPartProviders provider) =>
+        {
+            // if off-ramp support
+            provider.Coverage.OffRamp = ExpressionHelper.Evaluate<bool>(
+                _rampOptions.CurrentValue.CoverageExpressions[providerName].OffRamp,
+                getParamDict(provider.Coverage.OffRamp));
+
+            // if on-ramp support
+            provider.Coverage.OnRamp = ExpressionHelper.Evaluate<bool>(
+                _rampOptions.CurrentValue.CoverageExpressions[providerName].OnRamp,
+                getParamDict(provider.Coverage.OnRamp));
+
+            // calculate by input-type
+            if (!provider.Coverage.OffRamp && !provider.Coverage.OnRamp) return null;
+            if (type == OrderTransDirect.BUY.ToString() && !provider.Coverage.OnRamp) return null;
+            if (type == OrderTransDirect.SELL.ToString() && !provider.Coverage.OffRamp) return null;
+            return provider;
+        };
+
         return _rampOptions?.CurrentValue?.Providers == null
             ? new Dictionary<string, ThirdPartProviders>()
-            : _rampOptions.CurrentValue.Providers.Where(p => p.Value.Coverage.OnRamp && p.Value.Coverage.OffRamp)
+            : _rampOptions.CurrentValue.Providers
+                .Where(p => calculateCoverage(p.Key, p.Value) != null)
                 .ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
-    private Dictionary<string, IThirdPartAdaptor> GetThirdPartAdaptors()
+    private Dictionary<string, IThirdPartAdaptor> GetThirdPartAdaptors(string type = null)
     {
-        var providers = GetRampProviders();
+        var providers = GetRampProviders(type);
         return providers.IsNullOrEmpty()
             ? new Dictionary<string, IThirdPartAdaptor>()
             : _thirdPartAdaptors
@@ -83,7 +111,7 @@ public partial class ThirdPartOrderAppService
             var fiatDict = new SortedDictionary<string, RampFiatItem>();
 
             // invoke adaptors ASYNC
-            var fiatTask = GetThirdPartAdaptors().Values
+            var fiatTask = GetThirdPartAdaptors(type).Values
                 .Select(adaptor => adaptor.GetFiatListAsync(type, crypto)).ToList();
 
             var fiatList = (await Task.WhenAll(fiatTask))
@@ -119,7 +147,7 @@ public partial class ThirdPartOrderAppService
             var rampLimit = new RampLimitDto();
 
             // invoke adaptors ASYNC
-            var limitTasks = GetThirdPartAdaptors().Values
+            var limitTasks = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampLimitAsync(request)).ToList();
 
             var limitList = (await Task.WhenAll(limitTasks)).Where(limit => limit != null).ToList();
@@ -153,20 +181,16 @@ public partial class ThirdPartOrderAppService
         try
         {
             // invoke adaptors ASYNC
-            var exchangeTasks = GetThirdPartAdaptors().Values
+            var exchangeTasks = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();
 
             // choose the MAX crypto-fiat exchange rate
             var maxExchange = (await Task.WhenAll(exchangeTasks)).Where(limit => limit != null).Max();
             AssertHelper.NotNull(maxExchange, "empty maxExchange");
 
-            var exchangeId = GrainIdHelper.GenerateGrainId(request.Crypto, request.Fiat);
             var exchange = new RampExchangeDto
             {
-                Exchange = new Dictionary<string, string>
-                {
-                    [exchangeId] = maxExchange.ToString()
-                }
+                Exchange = maxExchange.ToString()
             };
             return new CommonResponseDto<RampExchangeDto>(exchange);
         }
@@ -184,7 +208,7 @@ public partial class ThirdPartOrderAppService
         try
         {
             // invoke adaptors ASYNC
-            var priceTask = GetThirdPartAdaptors().Values
+            var priceTask = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampPriceAsync(request)).ToList();
 
             // order by price and choose the MAX one
@@ -211,7 +235,7 @@ public partial class ThirdPartOrderAppService
             AssertHelper.NotEmpty(request.Fiat, "Param fiat empty");
 
             // invoke adaptors ASYNC
-            var detailTasks = GetThirdPartAdaptors().Values.Select(adaptor => adaptor.GetRampDetailAsync(request))
+            var detailTasks = GetThirdPartAdaptors(request.Type).Values.Select(adaptor => adaptor.GetRampDetailAsync(request))
                 .ToList();
             var detailList = (await Task.WhenAll(detailTasks)).Where(detail => detail != null).ToList();
             AssertHelper.NotEmpty(detailList, "Ramp detail list empty");

@@ -1,4 +1,5 @@
 using System;
+using CAServer.Commons;
 using Google.Protobuf.WellKnownTypes;
 using Nest;
 
@@ -24,6 +25,11 @@ public class AlchemyBaseResponseDto<T>
     public AlchemyBaseResponseDto(T data)
     {
         Data = data;
+    }
+
+    public static AlchemyBaseResponseDto<T> Convert(CommonResponseDto<T> resp)
+    {
+        return resp.Success ? new AlchemyBaseResponseDto<T>(resp.Data) : Fail(resp.Message);
     }
     
     public static AlchemyBaseResponseDto<T> Fail(string msg, int code = 50000)

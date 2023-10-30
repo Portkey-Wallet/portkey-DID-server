@@ -8,6 +8,7 @@ using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -48,19 +49,18 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
     // get Alchemy login free token
-    public async Task<AlchemyBaseResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
+    public async Task<CommonResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
     {
         try
         {
-            return JsonConvert.DeserializeObject<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(
-                await _alchemyProvider.HttpPost2AlchemyAsync(
-                    _alchemyOptions.GetTokenUri, JsonConvert.SerializeObject(input, Formatting.None, _setting)));
+            return new CommonResponseDto<AlchemyTokenDataDto>(
+                await _alchemyProvider.GetAlchemyRampFreeLoginToken(input));
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error deserializing free login");
-            throw new UserFriendlyException(e.Message);
+            _logger.LogError(e, "GetAlchemyFreeLoginTokenAsync error");
+            return new CommonResponseDto<AlchemyTokenDataDto>().Error(e, "Get alchemy free login token fail.");
         }
     }
 
@@ -68,7 +68,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         GetAlchemyFreeLoginTokenDto input)
     {
         try
-        { 
+        {
             var resp = await _alchemyProvider.GetNftFreeLoginToken(input);
             AssertHelper.NotEmpty(resp.AccessToken, "AccessToken empty");
             return new AlchemyBaseResponseDto<AlchemyTokenDataDto>(resp);
@@ -77,32 +77,24 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         {
             _logger.LogError(e, "Get alchemy nft free login token failed");
             throw new UserFriendlyException("Get token failed, please try again later");
-        } 
+        }
     }
-    
+
 
     // get Alchemy fiat list
-    public async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
+    public async Task<CommonResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
         try
         {
-            var queryString = string.Join("&", input.GetType().GetProperties()
-                .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(input)}"));
-
-            if (input.Type != "BUY")
-            {
-                return await GetFiatListFromAlchemyAsync(queryString);
-            }
-
-            return new AlchemyBaseResponseDto<List<AlchemyFiatDto>>
-            {
-                Data = await GetAlchemyFiatListAsync(CommonConstant.FiatListKey, queryString)
-            };
+            var fiatList = input.Type == OrderTransDirect.BUY.ToString()
+                ? await GetAlchemyFiatListWithCacheAsync(input)
+                : await _alchemyProvider.GetAlchemyFiatList(input);
+            return new CommonResponseDto<List<AlchemyFiatDto>>(fiatList);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error deserializing fiat list.");
-            throw new UserFriendlyException(e.Message);
+            _logger.LogError(e, "Error deserializing fiat list");
+            return new CommonResponseDto<List<AlchemyFiatDto>>().Error(e, "Get Alchemy fiat list failed");
         }
     }
 
@@ -117,21 +109,15 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         );
     }
 
-    private async Task<List<AlchemyFiatDto>> GetAlchemyFiatListAsync(string key, string queryString)
+    private async Task<List<AlchemyFiatDto>> GetAlchemyFiatListWithCacheAsync(GetAlchemyFiatListDto input)
     {
-        return await _fiatListCache.GetOrAddAsync(key,
-            async () => await GetFiatListDataAsync(queryString),
+        return await _fiatListCache.GetOrAddAsync(CommonConstant.FiatListKey,
+            async () => await _alchemyProvider.GetAlchemyFiatList(input),
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.FiatListExpirationMinutes)
             }
         );
-    }
-
-    private async Task<List<AlchemyFiatDto>> GetFiatListDataAsync(string queryString)
-    {
-        var result = await GetFiatListFromAlchemyAsync(queryString);
-        return result.Data;
     }
 
     private async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetFiatListFromAlchemyAsync(string queryString)
@@ -242,24 +228,22 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
     // generate alchemy signature
-    public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
+    public async Task<CommonResponseDto<AlchemySignatureResultDto>> GetAlchemySignatureAsync(
+        GetAlchemySignatureDto input)
     {
         try
         {
-            return new AlchemySignatureResultDto()
+            return new CommonResponseDto<AlchemySignatureResultDto>(new AlchemySignatureResultDto()
             {
                 Signature = AlchemyHelper.AesEncrypt($"address={input.Address}&appId={_alchemyOptions.AppId}",
                     _alchemyOptions.AppSecret)
-            };
+            });
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Alchemy signature AES encrypting exception");
-            return new AlchemySignatureResultDto()
-            {
-                Success = "Fail",
-                ReturnMsg = $"Error AES encrypting, error msg is {e.Message}"
-            };
+            return new CommonResponseDto<AlchemySignatureResultDto>().Error(e,
+                $"Error AES encrypting, error msg is {e.Message}");
         }
     }
 
@@ -273,7 +257,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             var appSecret = _alchemyOptions.NftAppId == appId
                 ? _alchemyOptions.NftAppSecret
                 : _alchemyOptions.AppSecret;
-            
+
             var src = ThirdPartHelper.ConvertObjectToSortedString(input, AlchemyHelper.SignatureField);
             var sign = AlchemyHelper.HmacSign(src, appSecret);
             _logger.LogInformation("GetAlchemyApiSignatureAsync, sourceStr={Source}, signature={Sign}", src, sign);

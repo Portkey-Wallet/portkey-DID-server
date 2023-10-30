@@ -27,4 +27,5 @@ public interface IThirdPartOrderAppService
     Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input);
     Task<CommonResponseDto<RampFreeLoginDto>> GetRampThirdPartFreeLoginTokenAsync(RampFreeLoginRequest input);
     Task<CommonResponseDto<AlchemySignatureResultDto>> GetRampThirdPartSignatureAsync(RampSignatureRequest input);
+    
 }

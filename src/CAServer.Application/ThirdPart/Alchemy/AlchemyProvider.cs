@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.Common;
@@ -16,17 +15,20 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.ThirdPart.Provider;
+namespace CAServer.ThirdPart.Alchemy;
 
 public static class AlchemyApi
 {
+    // nft
     public static ApiInfo GetFreeLoginToken { get; } = new(HttpMethod.Post, "/nft/openapi/merchant/getToken");
     public static ApiInfo NftResultNotice { get; } = new(HttpMethod.Post, "/nft/openapi/merchant/notice");
     public static ApiInfo QueryNftTrade { get; } = new(HttpMethod.Get, "/nft/openapi/query/trade");
     public static ApiInfo QueryNftFiatList { get; } = new(HttpMethod.Get, "/nft/openapi/fiat/list");
     
-    
+    // ramp
+    public static ApiInfo RampFreeLoginToken { get; } = new(HttpMethod.Post, "/merchant/getToken");
     public static ApiInfo QueryFiatList { get; } = new(HttpMethod.Get, "/merchant/fiat/list");
+    public static ApiInfo QueryCryptoList { get; } = new(HttpMethod.Get, "/merchant/crypto/list");
 }
 
 public class AlchemyProvider : ISingletonDependency
@@ -94,8 +96,34 @@ public class AlchemyProvider : ISingletonDependency
         }
     }
 
+    public async Task<List<AlchemyFiatDto>> GetAlchemyFiatList(GetAlchemyFiatListDto input)
+    {
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.BaseUrl,
+            AlchemyApi.QueryFiatList,
+            header: GetRampAlchemyRequestHeader(),
+            param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings))
+        );
+        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            "GetAlchemyFiatList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+        return result.Data;
+    }
+    
+    /// Get Alchemy ramp free login toke 
+    public async Task<AlchemyTokenDataDto> GetAlchemyRampFreeLoginToken(GetAlchemyFreeLoginTokenDto input)
+    {
+        
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(_alchemyOptions.BaseUrl,
+            AlchemyApi.RampFreeLoginToken,
+            header: GetRampAlchemyRequestHeader(),
+            body: JsonConvert.SerializeObject(input, JsonSerializerSettings)
+        );
+        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            "GetAlchemyRampFreeLoginToken fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+        return result.Data;
+    }
 
-    ///     Notice Alchemy NFT release result
+
+    /// Notice Alchemy NFT release result
     public async Task<AlchemyNftOrderDto> GetNftTrade(AlchemyNftReleaseNoticeRequestDto request)
     {
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(_alchemyOptions.NftBaseUrl,

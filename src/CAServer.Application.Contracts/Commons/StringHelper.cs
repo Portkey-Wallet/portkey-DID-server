@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using JetBrains.Annotations;
 
@@ -30,5 +31,34 @@ public static class StringHelper
     {
         return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
     }
+    
+    public static double SafeToInt(this string s, int defaultValue = 0)
+    {
+        return int.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
+    }
+    
+    /// replace all {param.key} in string
+    public static string ReplaceWithDict(this string input, Dictionary<string, string> replacements, bool throwErrorIfNotFound = true, string defaultValue = "")
+    {
+        foreach (var pair in replacements)
+        {
+            var key = "{" + pair.Key + "}";
+            if (input.Contains(key))
+            {
+                input = input.Replace(key, pair.Value);
+            }
+            else if (throwErrorIfNotFound)
+            {
+                throw new Exception($"Key '{key}' not found in the input string.");
+            }
+            else
+            {
+                input = input.Replace(key, defaultValue);
+            }
+        }
+        return input;
+    }
+    
+    
     
 }

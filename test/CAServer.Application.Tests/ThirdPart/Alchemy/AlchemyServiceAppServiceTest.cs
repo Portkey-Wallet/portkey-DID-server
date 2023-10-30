@@ -113,7 +113,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Email = "test@portkey.finance"
         };
         var result = await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
     
     [Fact]
@@ -135,7 +135,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Type = "BUY"
         };
         var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Type = "SELL"
         };
         var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
 
     [Fact]

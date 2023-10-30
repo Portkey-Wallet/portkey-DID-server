@@ -9,6 +9,8 @@ using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.ThirdPart.Adaptor;
+using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Processor.NFT;
 using CAServer.ThirdPart.Processors;
@@ -68,6 +70,9 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
         
+        context.Services.AddTransient<IThirdPartAdaptor, AlchemyAdaptor>();
+        context.Services.AddTransient<IThirdPartAdaptor, TransakAdaptor>();
+        
         context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
 
 
@@ -99,6 +104,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+        
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
     }

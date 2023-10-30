@@ -11,6 +11,7 @@ public class RampDetailDto
 public class ProviderRampDetailDto
 {
     public string ThirdPart { get; set; }
-    public string Price { get; set; }
-    public Dictionary<string, string> Exchange { get; set; }
+    public string CryptoAmount { get; set; }
+    public string FiatAmount { get; set; }
+    public string Exchange { get; set; }
 }

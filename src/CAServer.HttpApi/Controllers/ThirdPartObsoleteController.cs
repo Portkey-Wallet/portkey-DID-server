@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
@@ -10,7 +11,6 @@ using Volo.Abp;
 
 namespace CAServer.Controllers;
 
-
 [RemoteService]
 [Area("app")]
 [ControllerName("ThirdPart")]
@@ -18,16 +18,16 @@ namespace CAServer.Controllers;
 [Authorize]
 public class ThirdPartObsoleteController
 {
-    
     private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
 
-    public ThirdPartObsoleteController(IAlchemyOrderAppService alchemyOrderService, IAlchemyServiceAppService alchemyServiceAppService)
+    public ThirdPartObsoleteController(IAlchemyOrderAppService alchemyOrderService,
+        IAlchemyServiceAppService alchemyServiceAppService)
     {
         _alchemyOrderService = alchemyOrderService;
         _alchemyServiceAppService = alchemyServiceAppService;
     }
-    
+
     [Obsolete("Just for old version front-end")]
     [HttpPost("alchemy/txHash")]
     public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
@@ -41,14 +41,15 @@ public class ThirdPartObsoleteController
     {
         await _alchemyOrderService.TransactionAsync(input);
     }
-    
+
     [Obsolete("Just for old version front-end")]
     [HttpGet("alchemy/fiatList")]
     public async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
+        return AlchemyBaseResponseDto<List<AlchemyFiatDto>>.Convert(
+            await _alchemyServiceAppService.GetAlchemyFiatListAsync(input));
     }
-    
+
     [Obsolete("Just for old version front-end")]
     [HttpGet("alchemy/cryptoList")]
     public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAchCryptoListAsync(
@@ -64,21 +65,22 @@ public class ThirdPartObsoleteController
     {
         return await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
     }
-    
+
     [Obsolete("Just for old version front-end")]
     [HttpGet("alchemy/signature")]
     public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+        var response = await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+        AssertHelper.IsTrue(response.Success, response.Message);
+        return response.Data;
     }
-    
+
     [Obsolete("Just for old version front-end")]
     [HttpPost("alchemy/token")]
     public async Task<AlchemyBaseResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input);
+        return AlchemyBaseResponseDto<AlchemyTokenDataDto>.Convert(
+            await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input));
     }
-    
-
 }

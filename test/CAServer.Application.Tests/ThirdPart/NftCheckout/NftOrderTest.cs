@@ -10,6 +10,7 @@ using CAServer.BackGround.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
+using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Processors;

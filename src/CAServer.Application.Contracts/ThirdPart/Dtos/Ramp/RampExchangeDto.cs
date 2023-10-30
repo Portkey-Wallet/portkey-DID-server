@@ -5,7 +5,7 @@ namespace CAServer.ThirdPart.Dtos.Ramp;
 
 public class RampExchangeDto
 {
-    public Dictionary<string, string> Exchange { get; set; } = new ();
+    public string Exchange { get; set; }
 }
 
 public class RampExchangeRequest

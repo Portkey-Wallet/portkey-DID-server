@@ -50,18 +50,20 @@ public class ThirdPartUserController : CAServerController
         return await _thirdPartOrdersAppService.GetRampCoverageAsync();
     }
 
-    [HttpGet("ramp/currency")]
-    public async Task<CommonResponseDto<RampCryptoDto>> GetRampCurrency(string type, string fiat = CommonConstant.DefaultFiatUSD)
+    [HttpGet("ramp/crypto")]
+    public async Task<CommonResponseDto<RampCryptoDto>> GetRampCurrency(string type,
+        string fiat = CommonConstant.DefaultFiatUSD)
     {
         return await _thirdPartOrdersAppService.GetRampCryptoListAsync(type, fiat);
     }
 
     [HttpGet("ramp/fiat")]
-    public async Task<CommonResponseDto<RampFiatDto>> GetRampFiat(string type, string crypto = CommonConstant.DefaultCryptoELF)
+    public async Task<CommonResponseDto<RampFiatDto>> GetRampFiat(string type,
+        string crypto = CommonConstant.DefaultCryptoELF)
     {
         return await _thirdPartOrdersAppService.GetRampFiatListAsync(type, crypto);
     }
-    
+
     [HttpGet("ramp/limit")]
     public async Task<CommonResponseDto<RampLimitDto>> GetRampLimit(RampLimitRequest request)
     {
@@ -85,24 +87,25 @@ public class ThirdPartUserController : CAServerController
     {
         return await _thirdPartOrdersAppService.GetRampDetailAsync(request);
     }
-    
+
     [HttpPost("ramp/transaction")]
     public async Task<CommonResponseDto<Empty>> TransactionForwardCall(TransactionDto input)
     {
         return await _thirdPartOrdersAppService.TransactionForwardCallAsync(input);
     }
 
-    [HttpPost("ramp/token")]
-    public async Task<CommonResponseDto<RampFreeLoginDto>> GetRampThirdPartFreeLoginTokenAsync(
-        RampFreeLoginRequest input)
+    [HttpPost("ramp/alchemy/token")]
+    public async Task<CommonResponseDto<AlchemyTokenDataDto>> GetRampThirdPartFreeLoginTokenAsync(
+        GetAlchemyFreeLoginTokenDto input)
     {
-        return await _thirdPartOrdersAppService.GetRampThirdPartFreeLoginTokenAsync(input);
+        return await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input);
     }
-    
-    [HttpGet("ramp/signature")]
-    public async Task<CommonResponseDto<AlchemySignatureResultDto>> GetAlchemySignatureAsync(RampSignatureRequest input)
-    { 
-        return await _thirdPartOrdersAppService.GetRampThirdPartSignatureAsync(input);
+
+    [HttpGet("ramp/alchemy/signature")]
+    public async Task<CommonResponseDto<AlchemySignatureResultDto>> GetAlchemySignatureAsync(
+        GetAlchemySignatureDto input)
+    {
+        return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
     }
 
     [HttpPost("alchemy/token/nft")]
