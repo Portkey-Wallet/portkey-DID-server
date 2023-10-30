@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.Hubs;
@@ -130,6 +131,24 @@ public class CAServerHttpApiHostModule : AbpModule
                 options.Authority = configuration["AuthServer:Authority"];
                 options.RequireHttpsMetadata = Convert.ToBoolean(configuration["AuthServer:RequireHttpsMetadata"]);
                 options.Audience = "CAServer";
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = receivedContext =>
+                    {
+                        var accessToken = receivedContext.Request.Query["access_token"];
+
+                        // If the request is for our hub...
+                        var path = receivedContext.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            (path.StartsWithSegments("/dataReporting")))
+                        {
+                            receivedContext.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
     }
 
@@ -300,6 +319,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
+
         if (env.IsDevelopment())
         {
             app.UseSwagger();
@@ -313,7 +333,7 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();
+        app.UseAuditing();      
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();

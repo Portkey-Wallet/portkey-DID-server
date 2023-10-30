@@ -27,10 +27,10 @@ public class Program
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-            
+
 #if DEBUG
             .WriteTo.Async(c => c.Console())
-#endif          
+#endif
             .CreateLogger();
 
         try
@@ -46,6 +46,7 @@ public class Program
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
+            app.MapHub<DataReportingHub>("dataReporting");
             await app.InitializeApplicationAsync();
             await app.RunAsync();
             return 0;
