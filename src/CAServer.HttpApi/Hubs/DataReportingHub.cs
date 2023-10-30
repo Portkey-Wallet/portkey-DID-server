@@ -1,34 +1,47 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.Models;
+using CAServer.DataReporting;
+using CAServer.DataReporting.Dtos;
+using CAServer.Hub;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.AspNetCore.SignalR;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.ObjectMapping;
+using Volo.Abp.Users;
 
 namespace CAServer.Hubs;
 
+[HubRoute("dataReporting")]
 public class DataReportingHub : AbpHub
 {
     private readonly ILogger<DataReportingHub> _logger;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IHubService _hubService;
-
+    private readonly IDataReportingAppService _dataReportingAppService;
+    private readonly IObjectMapper _objectMapper;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IConnectionProvider _connectionProvider;
 
     public DataReportingHub(ILogger<DataReportingHub> logger, IDistributedEventBus distributedEventBus,
-        IHubService hubService)
+        IHubService hubService, IDataReportingAppService dataReportingAppService, IObjectMapper objectMapper,
+        IHttpContextAccessor httpContextAccessor, IConnectionProvider connectionProvider)
     {
         _logger = logger;
         _distributedEventBus = distributedEventBus;
         _hubService = hubService;
+        _dataReportingAppService = dataReportingAppService;
+        _objectMapper = objectMapper;
+        _httpContextAccessor = httpContextAccessor;
+        _connectionProvider = connectionProvider;
     }
 
     public override Task OnConnectedAsync()
     {
-        // online
-        // string token = _httpContextAccessor.HttpContext?.Request.Query["access_token"];
-        //
+        _logger.LogInformation("connected!!!!");
+        string token = _httpContextAccessor.HttpContext?.Request.Query["access_token"];
         // if (token.IsNullOrWhiteSpace())
         // {
         //     return null;
@@ -37,6 +50,7 @@ public class DataReportingHub : AbpHub
         return base.OnConnectedAsync();
     }
 
+    [Authorize]
     public async Task Connect(string clientId)
     {
         if (string.IsNullOrEmpty(clientId))
@@ -48,28 +62,42 @@ public class DataReportingHub : AbpHub
         _logger.LogInformation("clientId={ClientId} connect", clientId);
     }
 
-    public Task ReportDeviceInfo(Reporting input)
+    public async Task ReportDeviceInfo(Reporting input)
     {
         _logger.LogInformation("report DeviceInfo, {data}", JsonConvert.SerializeObject(input));
-        return Task.CompletedTask;
+        var dto = _objectMapper.Map<Reporting, ReportingDto>(input);
+        dto.UserId = CurrentUser.GetId();
+        await _dataReportingAppService.ReportDeviceInfoAsync(dto);
     }
 
-    public Task ReportAppStatus(ReportingData input)
+    public async Task ReportAppStatus(ReportingData input)
     {
         _logger.LogInformation("report status, {data}", JsonConvert.SerializeObject(input));
-        return Task.CompletedTask;
-    }
-    
-    public Task Logout(ReportingData input)
-    {
-        _logger.LogInformation("logout, {data}", JsonConvert.SerializeObject(input));
-        return Task.CompletedTask;
+
+        var dto = _objectMapper.Map<ReportingData, ReportingDataDto>(input);
+        dto.UserId = CurrentUser.GetId();
+        dto.DeviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
+
+        await _dataReportingAppService.ReportAppStatusAsync(dto);
     }
 
-    public override Task OnDisconnectedAsync(Exception? exception)
+    public async Task Logout()
     {
+        await _dataReportingAppService.LogoutAsync(Context.ConnectionId, CurrentUser.GetId());
+        _logger.LogInformation("logout, deviceId:{deviceId}, userId:{userId}", Context.ConnectionId,
+            CurrentUser.GetId());
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var connectionId = Context.ConnectionId;
         // offline
-        _logger.LogInformation("disconnect, {data}", nameof(OnDisconnectedAsync));
-        return Task.CompletedTask;
+        await ReportAppStatus(new ReportingData()
+        {
+            Status = AppStatus.Offline
+        });
+
+        _hubService.UnRegisterClient(Context.ConnectionId);
+        _logger.LogInformation("disconnect, clientId:{connectionId}", connectionId);
     }
 }

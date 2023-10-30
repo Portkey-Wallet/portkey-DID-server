@@ -11,6 +11,8 @@ using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
 using CAServer.Signature;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -34,6 +36,7 @@ using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Serilog;
+using Volo.Abp.AspNetCore.SignalR;
 using Volo.Abp.Autofac;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
@@ -57,7 +60,8 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
-    typeof(AbpSwashbuckleModule)
+    typeof(AbpSwashbuckleModule),
+    typeof(AbpAspNetCoreSignalRModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
 {
@@ -84,6 +88,23 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        context.Services.AddHttpContextAccessor();
+        
+        //
+        // Configure<AbpSignalROptions>(options =>
+        // {
+        //     options.Hubs.Add(
+        //         new HubConfig(
+        //             typeof(DataReportingHub), //Hub type
+        //             "/dataReporting", //Hub route (URL)
+        //             hubOptions =>
+        //             {
+        //                 //Additional options
+        //                 hubOptions.LongPolling.PollTimeout = TimeSpan.FromSeconds(30);
+        //             }
+        //         )
+        //     );
+        // });
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -136,14 +157,10 @@ public class CAServerHttpApiHostModule : AbpModule
                 {
                     OnMessageReceived = receivedContext =>
                     {
-                        var accessToken = receivedContext.Request.Query["access_token"];
-
-                        // If the request is for our hub...
                         var path = receivedContext.HttpContext.Request.Path;
-                        if (!string.IsNullOrEmpty(accessToken) &&
-                            (path.StartsWithSegments("/dataReporting")))
+                        if (path.StartsWithSegments("/dataReporting"))
                         {
-                            receivedContext.Token = accessToken;
+                            receivedContext.Token = receivedContext.Request.Query["access_token"];;
                         }
 
                         return Task.CompletedTask;
@@ -337,6 +354,11 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
+        
+        FirebaseApp.Create(new AppOptions()
+        {
+            Credential = GoogleCredential.FromFile("david.json")
+        });
 
         StartOrleans(context.ServiceProvider);
     }

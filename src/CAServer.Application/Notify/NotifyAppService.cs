@@ -9,6 +9,7 @@ using CAServer.IpInfo;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Notify.Provider;
+using FirebaseAdmin.Messaging;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
@@ -39,6 +40,27 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         _notifyRulesRepository = notifyRulesRepository;
         _notifyProvider = notifyProvider;
         _ipInfoAppService = ipInfoAppService;
+    }
+
+    public async Task<int> FireAsync(string token, string title, string content)
+    {
+        var message = new MulticastMessage()
+        {
+            Notification = new Notification()
+            {
+                Title = "Hello from C# Firebase Admin SDK!",
+                Body = "This is a test notification"
+            },
+            Tokens = new List<string>()
+            {
+                //"qbQXTBoSEMnrjdtr8qx3M:APA91bHCxbhWUMK7WoofmmDLhLk7ozLgNtV3IopBO-sl4S3kNMNq53TjLsVHRuLa0BN9uGsZlvZT8UgpQddc-N8GObGvYArU9ulIMJMTtsr30sfJHW3KQ7Yzj31t4Hhsbal3b7N4nwKz",
+                "di0iTU9JTpGwuW9c72aoCM:APA91bFYewRh5wfWumKfzndhk3XA8yiJK-t_pI8VZS8eRuFv8VGJbJ19Gk2F01BX-oZ7HrlZVGCXM73l9uLD0wqxccuRim5MjOPM3r7ofDrq1p-w_bmyLq9YCsaPWv4sg03N29dyH3UM"
+            }
+        };
+
+        var messaging = FirebaseMessaging.DefaultInstance;
+        var result = await messaging.SendMulticastAsync(message);
+        return result.SuccessCount;
     }
 
     public async Task<PullNotifyResultDto> PullNotifyAsync(PullNotifyDto input)
@@ -135,7 +157,7 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         var condition =
             "/items/upgradePush?fields=*,countries.country_id.value,deviceBrands.deviceBrand_id.value,deviceTypes.deviceType_id.value,targetVersion.value," +
             $"appVersions.appVersion_id.value,styleType.value,targetVersion.value&filter[targetVersion][value][_eq]={version}&filter[status][_eq]=published";
-        
+
         Logger.LogDebug("before get data from cms.");
         var notifyDto = await GetDataAsync(condition);
 
