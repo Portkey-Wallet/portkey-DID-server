@@ -75,7 +75,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Type = "ONE"
         };
         var result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
 
     [Fact]
@@ -94,15 +94,15 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         
         // from mock http
         var result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
         
         // from cache
         result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
 
         input.Side = "SELL";
         result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
     
     [Fact]

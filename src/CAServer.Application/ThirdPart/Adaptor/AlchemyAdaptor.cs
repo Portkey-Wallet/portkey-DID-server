@@ -6,10 +6,12 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart.Alchemy;
+using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace CAServer.ThirdPart.Adaptor;
 
@@ -76,9 +78,26 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         throw new NotImplementedException();
     }
 
-    public Task<RampPriceDto> GetRampPriceAsync(RampDetailRequest rampDetailRequest)
+    public async Task<RampPriceDto> GetRampPriceAsync(RampDetailRequest rampDetailRequest)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
+            var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
+            var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, RampPriceDto>(orderQuote.Data);
+            rampPrice.ThirdPart = ThirdPart();
+            rampPrice.FeeInfo = new RampFeeInfo
+            {
+                RampFee = FeeItem.Fiat(orderQuote.Data.Fiat, orderQuote.Data.RampFee),
+                NetworkFee = FeeItem.Fiat(orderQuote.Data.Fiat, orderQuote.Data.NetworkFee),
+            };
+            return rampPrice;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "GetRampPriceAsync ERROR");
+            return null;
+        }
     }
 
     public Task<ProviderRampDetailDto> GetRampDetailAsync(RampDetailRequest rampDetailRequest)

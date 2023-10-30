@@ -63,7 +63,8 @@ public class ThirdPartObsoleteController
     public async Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(
         GetAlchemyOrderQuoteDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
+        return AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>.Convert(
+            await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input));
     }
 
     [Obsolete("Just for old version front-end")]

@@ -207,13 +207,21 @@ public partial class ThirdPartOrderAppService
     {
         try
         {
+            AssertHelper.IsTrue(request.IsBuy() && request.FiatAmount != null && request.FiatAmount > 0,
+                "Invalid fiat amount");
+            AssertHelper.IsTrue(request.IsSell() && request.CryptoAmount != null && request.CryptoAmount > 0,
+                "Invalid crypto amount");
+
             // invoke adaptors ASYNC
             var priceTask = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampPriceAsync(request)).ToList();
 
             // order by price and choose the MAX one
             var priceList = (await Task.WhenAll(priceTask)).Where(price => price != null)
-                .OrderBy(price => price.Price.SafeToDouble()).ToList();
+                .OrderBy(price => request.IsBuy()
+                    ? price.CryptoAmount.SafeToDouble()
+                    : price.FiatAmount.SafeToDouble())
+                .ToList();
             AssertHelper.NotEmpty(priceTask, "Price list empty");
 
             return new CommonResponseDto<RampPriceDto>(priceList.First());
@@ -235,7 +243,8 @@ public partial class ThirdPartOrderAppService
             AssertHelper.NotEmpty(request.Fiat, "Param fiat empty");
 
             // invoke adaptors ASYNC
-            var detailTasks = GetThirdPartAdaptors(request.Type).Values.Select(adaptor => adaptor.GetRampDetailAsync(request))
+            var detailTasks = GetThirdPartAdaptors(request.Type).Values
+                .Select(adaptor => adaptor.GetRampDetailAsync(request))
                 .ToList();
             var detailList = (await Task.WhenAll(detailTasks)).Where(detail => detail != null).ToList();
             AssertHelper.NotEmpty(detailList, "Ramp detail list empty");

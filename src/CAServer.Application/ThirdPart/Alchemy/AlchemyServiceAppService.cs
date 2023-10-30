@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Grains;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
@@ -80,16 +81,12 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         }
     }
 
-
     // get Alchemy fiat list
     public async Task<CommonResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
         try
         {
-            var fiatList = input.Type == OrderTransDirect.BUY.ToString()
-                ? await GetAlchemyFiatListWithCacheAsync(input)
-                : await _alchemyProvider.GetAlchemyFiatList(input);
-            return new CommonResponseDto<List<AlchemyFiatDto>>(fiatList);
+            return new CommonResponseDto<List<AlchemyFiatDto>>(await GetAlchemyFiatListWithCacheAsync(input));
         }
         catch (Exception e)
         {
@@ -111,19 +108,13 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
 
     private async Task<List<AlchemyFiatDto>> GetAlchemyFiatListWithCacheAsync(GetAlchemyFiatListDto input)
     {
-        return await _fiatListCache.GetOrAddAsync(CommonConstant.FiatListKey,
+        return await _fiatListCache.GetOrAddAsync(GrainIdHelper.GenerateGrainId(CommonConstant.FiatListKey, input.Type),
             async () => await _alchemyProvider.GetAlchemyFiatList(input),
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.FiatListExpirationMinutes)
             }
         );
-    }
-
-    private async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetFiatListFromAlchemyAsync(string queryString)
-    {
-        return JsonConvert.DeserializeObject<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(
-            await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.FiatListUri + "?" + queryString));
     }
 
     // get Alchemy cryptoList 
@@ -146,33 +137,21 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
     // post Alchemy cryptoList
-    public async Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(
+    public async Task<CommonResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(
         GetAlchemyOrderQuoteDto input)
     {
         try
         {
-            var key = $"{input.Crypto}.{input.Network}.{input.Fiat}.{input.Country}";
-            if (input.Side == "BUY")
-            {
-                return new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>()
-                {
-                    Data = await GetBuyOrderQuoteAsync(key, input)
-                };
-            }
-
-            key += $".{input.Amount}";
-            return new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>()
-            {
-                Data = await GetOrderQuoteAsync(key, input)
-            };
+            var key = string.Join(CommonConstant.Dot, input.Crypto, input.Network, input.Fiat, input.Country);
+            var orderQuote = await GetBuyOrderQuoteAsync(key, input);
+            return new CommonResponseDto<AlchemyOrderQuoteDataDto>(orderQuote);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Error deserializing order quote.");
-            throw new UserFriendlyException(e.Message);
+            Logger.LogError(e, "GetAlchemyOrderQuoteAsync error");
+            return new CommonResponseDto<AlchemyOrderQuoteDataDto>().Error(e, "Internal error please try again later.");
         }
     }
-
 
     private async Task<AlchemyOrderQuoteDataDto> GetBuyOrderQuoteAsync(string key, GetAlchemyOrderQuoteDto input)
     {
@@ -182,24 +161,17 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             return await GetOrderQuoteAsync(key, input);
         }
 
-        var fiatListData = await _fiatListCache.GetAsync(CommonConstant.FiatListKey);
-        if (fiatListData == null || fiatListData.Count == 0)
-        {
-            var fiatList = await GetAlchemyFiatListAsync(new GetAlchemyFiatListDto());
-            fiatListData = fiatList.Data;
-        }
-
+        var fiatListData = await GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto { Type = input.Side });
+        AssertHelper.NotEmpty(fiatListData, "Query Alchemy fiat list empty");
+        
         var fiat = fiatListData.FirstOrDefault(t => t.Currency == input.Fiat);
-        if (fiat == null)
-        {
-            throw new UserFriendlyException("Get fiat list data fail.");
-        }
+        AssertHelper.NotEmpty(fiatListData, "{Fiat} not found in Alchemy fiat list", input.Fiat);
 
-        double.TryParse(input.Amount, out var amount);
-        double.TryParse(fiat.FixedFee, out var fixedFee);
-        double.TryParse(fiat.FeeRate, out var feeRate);
-        double.TryParse(quoteData.NetworkFee, out var networkFee);
-        double.TryParse(quoteData.CryptoPrice, out var cryptoPrice);
+        var amount = input.Amount.SafeToDouble();
+        var fixedFee = fiat.FixedFee.SafeToDouble();
+        var feeRate = fiat.FeeRate.SafeToDouble();
+        var networkFee = quoteData.NetworkFee.SafeToDouble();
+        var cryptoPrice = quoteData.CryptoPrice.SafeToDouble();
         var rampFee = fixedFee + amount * feeRate;
         quoteData.RampFee = rampFee.ToString("f2");
         quoteData.CryptoQuantity = ((amount - rampFee - networkFee) / cryptoPrice).ToString("f8");
@@ -211,7 +183,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         return await _orderQuoteCache.GetOrAddAsync(
             key,
-            async () => await GetOrderQuoteFromAlchemyAsync(input),
+            async () => await _alchemyProvider.GetAlchemyOrderQuote(input),
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.OrderQuoteExpirationMinutes)
@@ -219,13 +191,6 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         );
     }
 
-    private async Task<AlchemyOrderQuoteDataDto> GetOrderQuoteFromAlchemyAsync(GetAlchemyOrderQuoteDto input)
-    {
-        var result = JsonConvert.DeserializeObject<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>>(
-            await _alchemyProvider.HttpPost2AlchemyAsync(_alchemyOptions.OrderQuoteUri,
-                JsonConvert.SerializeObject(input, Formatting.None, _setting)));
-        return result.Data;
-    }
 
     // generate alchemy signature
     public async Task<CommonResponseDto<AlchemySignatureResultDto>> GetAlchemySignatureAsync(

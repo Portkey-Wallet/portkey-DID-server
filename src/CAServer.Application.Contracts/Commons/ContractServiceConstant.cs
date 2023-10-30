@@ -13,6 +13,12 @@ public static class AElfContractMethodName
 
 public static class CommonConstant
 {
+    public const string EmptyString = "";
+    public const string Dot = ".";
+
+    public const string CurrencyFiat = "Fiat";
+    public const string CurrencyCrypto = "Crypto";
+    
     public const string ResourceTokenKey = "ResourceToken";
     public const int CacheExpirationDays = 365;
 

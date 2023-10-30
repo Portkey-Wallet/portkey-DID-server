@@ -16,7 +16,13 @@ public class GetAlchemyCryptoListDto
 
 public class GetAlchemyFiatListDto
 {
-    public string Type { get; set; } = "BUY";
+    public string Type { get; set; } = OrderTransDirect.BUY.ToString();
+
+    public bool IsBuy()
+    {
+        return Type == OrderTransDirect.BUY.ToString();
+    }
+    
 }
 
 public class GetAlchemyOrderQuoteDto

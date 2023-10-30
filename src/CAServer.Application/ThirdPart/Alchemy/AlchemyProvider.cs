@@ -26,6 +26,7 @@ public static class AlchemyApi
     public static ApiInfo QueryNftFiatList { get; } = new(HttpMethod.Get, "/nft/openapi/fiat/list");
     
     // ramp
+    public static ApiInfo RampOrderQuote { get; } = new(HttpMethod.Post, "/merchant/order/quote");
     public static ApiInfo RampFreeLoginToken { get; } = new(HttpMethod.Post, "/merchant/getToken");
     public static ApiInfo QueryFiatList { get; } = new(HttpMethod.Get, "/merchant/fiat/list");
     public static ApiInfo QueryCryptoList { get; } = new(HttpMethod.Get, "/merchant/crypto/list");
@@ -96,6 +97,21 @@ public class AlchemyProvider : ISingletonDependency
         }
     }
 
+    public async Task<AlchemyOrderQuoteDataDto> GetAlchemyOrderQuote(GetAlchemyOrderQuoteDto input)
+    {
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>>(_alchemyOptions.BaseUrl,
+            AlchemyApi.RampOrderQuote,
+            header: GetRampAlchemyRequestHeader(),
+            body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
+            withLog: true
+        );
+        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            "GetAlchemyOrderQuote fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+        return result.Data;
+    }
+    
+    
+    /// get Alchemy fiat list
     public async Task<List<AlchemyFiatDto>> GetAlchemyFiatList(GetAlchemyFiatListDto input)
     {
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.BaseUrl,

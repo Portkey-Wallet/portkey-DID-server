@@ -13,7 +13,7 @@ public interface IAlchemyServiceAppService
     Task<CommonResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input);
     Task<List<AlchemyFiatDto>> GetAlchemyNftFiatListAsync();
     Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input);
-    Task<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
+    Task<CommonResponseDto<AlchemyOrderQuoteDataDto>> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input);
     Task<CommonResponseDto<AlchemySignatureResultDto>> GetAlchemySignatureAsync(GetAlchemySignatureDto input);
     Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, string> input);
 }
