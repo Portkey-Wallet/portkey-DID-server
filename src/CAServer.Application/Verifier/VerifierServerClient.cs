@@ -107,13 +107,12 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
             { "operationType", type },
-        };
-        if (_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
-        {
-            parameters.Add("chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
+            { "chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
                 ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
-                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString());
-        }
+                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString() }
+            
+        };
+       
 
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
@@ -163,10 +162,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        if (!_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
-        {
-            chainId = string.Empty;
-        }
         var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType, chainId });
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
