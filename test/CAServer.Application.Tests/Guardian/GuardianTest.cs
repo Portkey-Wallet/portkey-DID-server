@@ -47,6 +47,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetChainOptions());
         services.AddSingleton(GetMockVerifierIdMappingOptions());
+        services.AddSingleton(GetContractProviderMock());
     }
 
     [Fact]
