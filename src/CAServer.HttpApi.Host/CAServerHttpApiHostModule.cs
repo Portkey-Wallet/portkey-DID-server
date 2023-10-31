@@ -28,6 +28,7 @@ using Microsoft.OpenApi.Models;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
+using Serilog;
 using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
@@ -282,7 +283,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseDeveloperExceptionPage();
         }
-
+        
         app.UseAbpRequestLocalization();
         app.UseCorrelationId();
         app.UseStaticFiles();
@@ -312,7 +313,8 @@ public class CAServerHttpApiHostModule : AbpModule
                 // options.OAuthScopes("CAServer");
             });
         }
-
+        app.UseSerilogRequestLogging();
+        app.UseMiddleware<RequestLogContextMiddleware>();
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();

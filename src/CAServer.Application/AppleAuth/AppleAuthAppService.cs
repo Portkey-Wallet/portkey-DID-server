@@ -66,7 +66,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
     public async Task ReceiveAsync(AppleAuthDto appleAuthDto)
     {
         Logger.LogInformation($"Apple token:  {JsonConvert.SerializeObject(appleAuthDto)}");
-
+        Logger.LogInformation(new EventId(1001, "Action"), "Get action executed");
         var identityToken = appleAuthDto.Id_token;
         if (string.IsNullOrEmpty(appleAuthDto.Id_token))
         {

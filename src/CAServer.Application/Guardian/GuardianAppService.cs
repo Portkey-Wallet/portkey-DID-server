@@ -14,6 +14,12 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
+using Fable.FirebaseAdmin;
+using Firebase.Database;
+using FirebaseAdmin;
+using FirebaseAdmin.Auth;
+using Google.Apis.Auth.OAuth2;
+using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -61,6 +67,20 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
     {
+        
+        var app = FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromFile("_appleTransferOptions.FirebaseCredentialPath")
+        });
+
+
+
+
+
+
+        var result = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync("");
+        
+        
         var hash = await GetHashFromIdentifierAsync(guardianIdentifierDto.GuardianIdentifier);
         if (string.IsNullOrWhiteSpace(hash))
         {

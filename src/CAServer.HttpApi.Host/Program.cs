@@ -54,7 +54,7 @@ public class Program
                 .WithTracing(builder =>
                 {
                     builder.AddAspNetCoreInstrumentation();
-                    builder.AddConsoleExporter();
+                    //builder.AddConsoleExporter();
                 });
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
