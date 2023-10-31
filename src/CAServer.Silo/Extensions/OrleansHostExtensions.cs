@@ -69,7 +69,19 @@ public static class OrleansHostExtensions
                 })
                 .Configure<GrainCollectionOptions>(opt =>
                 {
-                    opt.CollectionAge = TimeSpan.FromMinutes(2);
+                    var collectionAge = configSection.GetValue<int>("CollectionAge");
+                    if (collectionAge > 0)
+                    {
+                        opt.CollectionAge = TimeSpan.FromSeconds(collectionAge);
+                    }
+                })
+                .Configure<MessagingOptions>(opt =>
+                {
+                    var responseTimeout = configSection.GetValue<int>("ResponseTimeout");
+                    if (responseTimeout > 0)
+                    {
+                        opt.ResponseTimeout = TimeSpan.FromSeconds(configSection.GetValue<int>("ResponseTimeout"));
+                    }
                 })
                 .Configure<PerformanceTuningOptions>(opt =>
                 {
