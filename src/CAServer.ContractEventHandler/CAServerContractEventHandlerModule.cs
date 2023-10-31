@@ -3,10 +3,8 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.MongoDB;
 using CAServer.Options;
-using CAServer.Monitor;
 using CAServer.Signature;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
@@ -75,7 +73,7 @@ public class CAServerContractEventHandlerModule : AbpModule
     {
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
     }
-
+    
     private void ConfigureDistributedLocking(
         ServiceConfigurationContext context,
         IConfiguration configuration)
@@ -87,7 +85,7 @@ public class CAServerContractEventHandlerModule : AbpModule
             return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
         });
     }
-
+    
     private void ConfigureDataProtection(
         ServiceConfigurationContext context,
         IConfiguration configuration,

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using AElf;
 using AElf.Types;
+using CAServer.Common;
 using CAServer.Guardian.Provider;
 using Moq;
 using Portkey.Contracts.CA;
@@ -53,4 +54,27 @@ public partial class GuardianTest
 
         return provider.Object;
     }
+    
+    public IContractProvider GetContractProviderMock()
+    {
+        var provider = new Mock<IContractProvider>();
+
+        provider.Setup(t => t.GetVerifierServersListAsync(It.IsAny<string>()))
+            .ReturnsAsync(new GetVerifierServersOutput()
+            {
+                VerifierServers =
+                {
+                   new Portkey.Contracts.CA.VerifierServer
+                   {
+                       Id = HashHelper.ComputeFrom("123"),
+                       ImageUrl= "http://localhost:8000",
+                       Name = "MockName"
+                   } 
+                }
+                
+            });
+
+        return provider.Object;
+    }
+    
 }
