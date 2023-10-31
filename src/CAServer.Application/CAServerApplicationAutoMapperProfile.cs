@@ -438,10 +438,23 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.CryptoQuantity))
             .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.CryptoPrice))
             .ReverseMap();
+        CreateMap<AlchemyOrderQuoteDataDto, ProviderRampDetailDto>()
+            .ForMember(des => des.FiatAmount, opt => opt.MapFrom(src => src.FiatQuantity))
+            .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.CryptoQuantity))
+            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.CryptoPrice))
+            .ReverseMap();
         CreateMap<RampDetailRequest, GetAlchemyOrderQuoteDto>()
             .Ignore(des => des.Type)
             .ForMember(des => des.Side, opt => opt.MapFrom(src => src.Type))
             .ForMember(des => des.Amount, opt => opt.MapFrom(src => src.Type == OrderTransDirect.BUY.ToString() ? src.FiatAmount : src.CryptoAmount))
+            .ReverseMap();
+        CreateMap<RampExchangeRequest, GetAlchemyOrderQuoteDto>()
+            .Ignore(des => des.Type)
+            .ForMember(des => des.Side, opt => opt.MapFrom(src => src.Type))
+            .ReverseMap();
+        CreateMap<RampLimitRequest, GetAlchemyOrderQuoteDto>()
+            .Ignore(des => des.Type)
+            .ForMember(des => des.Side, opt => opt.MapFrom(src => src.Type))
             .ReverseMap();
 
     }

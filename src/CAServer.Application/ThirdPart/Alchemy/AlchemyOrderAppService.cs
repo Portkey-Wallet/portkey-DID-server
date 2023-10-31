@@ -151,55 +151,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             _logger.LogError(e, "Occurred error during update alchemy order transaction hash.");
         }
     }
-
-    public async Task TransactionAsync(TransactionDto input)
-    {
-        _logger.LogInformation("TransactionAsync start, OrderId: {orderId}", input.OrderId);
-        if (!VerifyInput(input))
-        {
-            _logger.LogWarning("Transaction input valid failed, orderId:{orderId}", input.OrderId);
-            await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
-            {
-                OrderId = input.OrderId.ToString(),
-                RawTransaction = input.RawTransaction,
-                Status = OrderStatusType.Invalid,
-                DicExt = new Dictionary<string, object>()
-                {
-                    ["reason"] = "Transaction input valid failed."
-                }
-            });
-
-            throw new UserFriendlyException("Input validation failed.");
-        }
-
-        var transactionEto = ObjectMapper.Map<TransactionDto, TransactionEto>(input);
-        await _distributedEventBus.PublishAsync(transactionEto);
-    }
-
-    private bool VerifyInput(TransactionDto input)
-    {
-        try
-        {
-            var validStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
-            var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
-            var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
-            var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
-
-            if (!CryptoHelper.VerifySignature(signature, data, publicKey))
-            {
-                _logger.LogWarning("data validation failed");
-                return false;
-            }
-
-            return true;
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "Input validation internal error");
-            return false;
-        }
-    }
-
+    
     public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfoAsync(OrderDto input)
     {
         try

@@ -44,6 +44,7 @@ public class AlchemyOptions
     public string GetTokenUri { get; set; }
     public bool SkipCheckSign { get; set; } = false;
     public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
+    public int CryptoListExpirationMinutes { get; set; } = CommonConstant.CryptoListExpirationMinutes;
     public int NftFiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
     public string MerchantQueryTradeUri { get; set; }

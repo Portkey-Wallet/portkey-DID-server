@@ -25,6 +25,7 @@ public static class CommonConstant
     public const string FiatListKey = "FiatList";
     public const string NftFiatListKey = "NftFiatList";
     public const int FiatListExpirationMinutes = 30;
+    public const int CryptoListExpirationMinutes = 30;
     public const int OrderQuoteExpirationMinutes = 30;
     public static DateTimeOffset DefaultAbsoluteExpiration = DateTime.Parse("2099-01-01 12:00:00");
     public const string OrderStatusInfoPrefix = "OrderStatusInfo";

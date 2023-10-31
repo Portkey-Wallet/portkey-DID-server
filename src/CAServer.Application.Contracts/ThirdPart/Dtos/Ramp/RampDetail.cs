@@ -14,4 +14,5 @@ public class ProviderRampDetailDto
     public string CryptoAmount { get; set; }
     public string FiatAmount { get; set; }
     public string Exchange { get; set; }
+    public RampFeeInfo FeeInfo { get; set; }
 }

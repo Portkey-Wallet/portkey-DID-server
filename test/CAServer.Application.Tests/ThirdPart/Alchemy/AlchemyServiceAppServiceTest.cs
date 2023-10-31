@@ -134,7 +134,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         {
             Type = "BUY"
         };
-        var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
+        var result = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(input);
         result.Success.ShouldBe(true);
     }
 
@@ -145,7 +145,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         {
             Type = "SELL"
         };
-        var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
+        var result = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(input);
         result.Success.ShouldBe(true);
     }
 
@@ -153,7 +153,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     public async Task GetAlchemyCryptoListAsyncTest()
     {
         var result = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(new GetAlchemyCryptoListDto());
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
 
     [Fact]

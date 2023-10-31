@@ -110,6 +110,18 @@ public class AlchemyProvider : ISingletonDependency
         return result.Data;
     }
     
+    /// get Alchemy Crypto list
+    public async Task<List<AlchemyCryptoDto>> GetAlchemyCryptoList(GetAlchemyCryptoListDto input)
+    {
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>>(_alchemyOptions.BaseUrl,
+            AlchemyApi.QueryCryptoList,
+            header: GetRampAlchemyRequestHeader(),
+            param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings))
+        );
+        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            "GetAlchemyCryptoList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+        return result.Data;
+    }
     
     /// get Alchemy fiat list
     public async Task<List<AlchemyFiatDto>> GetAlchemyFiatList(GetAlchemyFiatListDto input)

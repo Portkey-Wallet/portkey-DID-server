@@ -31,6 +31,10 @@ public static class StringHelper
     {
         return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
     }
+    public static decimal SafeToDecimal(this string s, decimal defaultValue = 0)
+    {
+        return decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
+    }
     
     public static double SafeToInt(this string s, int defaultValue = 0)
     {

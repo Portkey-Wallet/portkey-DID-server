@@ -35,16 +35,22 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         return ThirdPartNameType.Alchemy.ToString();
     }
 
-    private ThirdPartProviders alchemyProviderOption()
+    private ThirdPartProviders AlchemyProviderOption()
     {
         return _rampOptions.CurrentValue.Providers[ThirdPart()];
     }
 
+    /// <summary>
+    ///     Get fiat list
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="crypto"></param>
+    /// <returns></returns>
     public async Task<List<RampFiatItem>> GetFiatListAsync(string type, string crypto)
     {
         try
         {
-            var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListAsync(new GetAlchemyFiatListDto
+            var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto
             {
                 Type = type
             });
@@ -54,7 +60,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
                 Country = f.Country,
                 Symbol = f.Currency,
                 CountryName = f.CountryName,
-                Icon = alchemyProviderOption().CountryIconUrl.ReplaceWithDict(new Dictionary<string, string>
+                Icon = AlchemyProviderOption().CountryIconUrl.ReplaceWithDict(new Dictionary<string, string>
                 {
                     ["ISO"] = f.Country
                 })
@@ -63,21 +69,116 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "GetFiatList error");
+            Logger.LogError(e, "{ThirdPart} GetFiatList error", ThirdPart());
             return new List<RampFiatItem>();
         }
     }
 
-    public Task<RampLimitDto> GetRampLimitAsync(RampLimitRequest rampDetailRequest)
+    /// <summary>
+    ///     Get ramp limit
+    /// </summary>
+    /// <param name="rampLimitRequest"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public async Task<RampLimitDto> GetRampLimitAsync(RampLimitRequest rampLimitRequest)
     {
-        throw new NotImplementedException();
+        try
+        {
+            return rampLimitRequest.IsBuy()
+                ? await AlchemyOnRampLimit(rampLimitRequest)
+                : await AlchemyOffRampLimit(rampLimitRequest);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{ThirdPart} GetRampLimitAsync ERROR", ThirdPart());
+            return null;
+        }
     }
 
-    public Task<decimal?> GetRampExchangeAsync(RampExchangeRequest rampDetailRequest)
+    private async Task<RampLimitDto> AlchemyOnRampLimit(RampLimitRequest rampDetailRequest)
     {
-        throw new NotImplementedException();
+        
+        var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto
+        {
+            Type = rampDetailRequest.Type
+        });
+        AssertHelper.IsTrue(alchemyFiatList.Success, "Fiat list query failed.");
+
+        var fiatItem = alchemyFiatList.Data.FirstOrDefault(fiat => fiat.Currency == rampDetailRequest.Fiat);
+        AssertHelper.NotNull(fiatItem, "Fiat {Currency} not found in fiat list", rampDetailRequest.Fiat);
+
+        return new RampLimitDto
+        {
+            Fiat = new CurrencyLimit(rampDetailRequest.Fiat, fiatItem?.PayMin, fiatItem?.PayMax)
+        };
+    }
+    
+
+    private async Task<RampLimitDto> AlchemyOffRampLimit(RampLimitRequest rampDetailRequest)
+    {
+        var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(new GetAlchemyCryptoListDto
+        {
+            Fiat = rampDetailRequest.Fiat
+        });
+        AssertHelper.IsTrue(alchemyCryptoList.Success, "Crypto list query failed.");
+
+        var cryptoItem = alchemyCryptoList.Data.FirstOrDefault(crypto => crypto.Crypto == rampDetailRequest.Crypto);
+        AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found", rampDetailRequest.Crypto);
+
+        return new RampLimitDto
+        {
+            Crypto = new CurrencyLimit(rampDetailRequest.Crypto, cryptoItem?.MinSellAmount, cryptoItem?.MaxSellAmount)
+        };
     }
 
+
+    /// <summary>
+    ///     Get ramp exchange
+    /// </summary>
+    /// <param name="rampExchangeRequest"></param>
+    /// <returns></returns>
+    public async Task<decimal?> GetRampExchangeAsync(RampExchangeRequest rampExchangeRequest)
+    {
+        try
+        {
+            var alchemyOrderQuoteDto =
+                ObjectMapper.Map<RampExchangeRequest, GetAlchemyOrderQuoteDto>(rampExchangeRequest);
+            var orderQuote = await GetCommonAlchemyOrderQuoteData(alchemyOrderQuoteDto);
+            return orderQuote.CryptoPrice.SafeToDecimal();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{ThirdPart} GetRampExchangeAsync ERROR", ThirdPart());
+            return null;
+        }
+    }
+
+
+    private async Task<AlchemyOrderQuoteDataDto> GetCommonAlchemyOrderQuoteData(GetAlchemyOrderQuoteDto input)
+    {
+        var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto
+        {
+            Type = input.ToString()
+        });
+        AssertHelper.IsTrue(alchemyFiatList.Success, "Fiat list empty");
+
+        var fiatItem = alchemyFiatList.Data.FirstOrDefault(fiat => fiat.Currency == input.Fiat);
+        AssertHelper.NotNull(fiatItem, "Fiat {Currency} not found in fiat list", input.Fiat);
+            
+        // query order quote with a valid amount
+        input.Amount = fiatItem?.PayMin;
+        var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
+        AssertHelper.IsTrue(orderQuote.Success, "Order quote empty");
+        
+        return orderQuote.Data;
+    }
+
+
+    /// <summary>
+    ///     Get ramp price
+    /// </summary>
+    /// <param name="rampDetailRequest"></param>
+    /// <returns></returns>
     public async Task<RampPriceDto> GetRampPriceAsync(RampDetailRequest rampDetailRequest)
     {
         try
@@ -95,13 +196,37 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         }
         catch (Exception e)
         {
-            Log.Error(e, "GetRampPriceAsync ERROR");
+            Log.Error(e, "{ThirdPart} GetRampPriceAsync ERROR", ThirdPart());
             return null;
         }
     }
 
-    public Task<ProviderRampDetailDto> GetRampDetailAsync(RampDetailRequest rampDetailRequest)
+    /// <summary>
+    ///     Get ramp detail
+    /// </summary>
+    /// <param name="rampDetailRequest"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public async Task<ProviderRampDetailDto> GetRampDetailAsync(RampDetailRequest rampDetailRequest)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
+            var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
+            var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, ProviderRampDetailDto>(orderQuote.Data);
+            rampPrice.ThirdPart = ThirdPart();
+            rampPrice.FeeInfo = new RampFeeInfo
+            {
+                RampFee = FeeItem.Fiat(orderQuote.Data.Fiat, orderQuote.Data.RampFee),
+                NetworkFee = FeeItem.Fiat(orderQuote.Data.Fiat, orderQuote.Data.NetworkFee),
+            };
+            return rampPrice;
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{ThirdPart} GetRampDetailAsync ERROR", ThirdPart());
+            return null;
+        }
     }
+    
 }

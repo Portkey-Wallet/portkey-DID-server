@@ -20,12 +20,14 @@ public class ThirdPartObsoleteController
 {
     private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
+    private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
 
     public ThirdPartObsoleteController(IAlchemyOrderAppService alchemyOrderService,
-        IAlchemyServiceAppService alchemyServiceAppService)
+        IAlchemyServiceAppService alchemyServiceAppService, IThirdPartOrderAppService thirdPartOrderAppService)
     {
         _alchemyOrderService = alchemyOrderService;
         _alchemyServiceAppService = alchemyServiceAppService;
+        _thirdPartOrderAppService = thirdPartOrderAppService;
     }
 
     [Obsolete("Just for old version front-end")]
@@ -39,7 +41,8 @@ public class ThirdPartObsoleteController
     [HttpPost("alchemy/transaction")]
     public async Task TransactionAsync(TransactionDto input)
     {
-        await _alchemyOrderService.TransactionAsync(input);
+        var result = await _thirdPartOrderAppService.TransactionForwardCallAsync(input);
+        AssertHelper.IsTrue(result.Success, result.Message);
     }
 
     [Obsolete("Just for old version front-end")]
@@ -47,7 +50,7 @@ public class ThirdPartObsoleteController
     public async Task<AlchemyBaseResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
         return AlchemyBaseResponseDto<List<AlchemyFiatDto>>.Convert(
-            await _alchemyServiceAppService.GetAlchemyFiatListAsync(input));
+            await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(input));
     }
 
     [Obsolete("Just for old version front-end")]
@@ -55,7 +58,8 @@ public class ThirdPartObsoleteController
     public async Task<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>> GetAchCryptoListAsync(
         GetAlchemyCryptoListDto input)
     {
-        return await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input);
+        return AlchemyBaseResponseDto<List<AlchemyCryptoDto>>.Convert(
+            await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input));
     }
 
     [Obsolete("Just for old version front-end")]

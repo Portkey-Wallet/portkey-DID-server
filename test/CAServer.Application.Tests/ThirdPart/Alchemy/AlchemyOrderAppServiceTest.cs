@@ -20,10 +20,12 @@ namespace CAServer.ThirdPart.Alchemy;
 public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 {
     private readonly IAlchemyOrderAppService _alchemyOrderAppService;
+    private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
 
     public AlchemyOrderAppServiceTest()
     {
         _alchemyOrderAppService = GetRequiredService<IAlchemyOrderAppService>();
+        _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
@@ -194,7 +196,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
     [Fact]
     public async Task SignatureTest()
     {
-        await _alchemyOrderAppService.TransactionAsync(new TransactionDto()
+        await _thirdPartOrderAppService.TransactionForwardCallAsync(new TransactionDto()
         {
             MerchantName = "Alchemy",
             OrderId = Guid.Parse("5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e"),
@@ -212,7 +214,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
     {
         try
         {
-            await _alchemyOrderAppService.TransactionAsync(new TransactionDto()
+            await _thirdPartOrderAppService.TransactionForwardCallAsync(new TransactionDto()
             {
                 MerchantName = "Alchemy",
                 OrderId = Guid.Parse("5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e"),
@@ -235,7 +237,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
     {
         try
         {
-            await _alchemyOrderAppService.TransactionAsync(new TransactionDto()
+            await _thirdPartOrderAppService.TransactionForwardCallAsync(new TransactionDto()
             {
                 MerchantName = "Alchemy",
                 OrderId = Guid.Parse("5ee4a7b7-5c41-a40b-f17d-3a0c7607f66e"),

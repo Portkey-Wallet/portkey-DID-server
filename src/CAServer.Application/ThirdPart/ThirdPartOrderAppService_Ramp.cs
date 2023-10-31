@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Cryptography;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains;
@@ -9,14 +12,19 @@ using CAServer.Options;
 using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
+using CAServer.ThirdPart.Etos;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
+using Volo.Abp;
 
 namespace CAServer.ThirdPart;
 
 public partial class ThirdPartOrderAppService
 {
-    // Ramp coverage
+    /// <summary>
+    ///     Ramp coverage
+    /// </summary>
+    /// <returns></returns>
     public Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync()
     {
         var coverageDto = new RampCoverageDto();
@@ -76,7 +84,12 @@ public partial class ThirdPartOrderAppService
                 .ToDictionary(a => a.Key, a => a.Value);
     }
 
-    // Crypto list
+    /// <summary>
+    ///     Crypto list
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="fiat"></param>
+    /// <returns></returns>
     public Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(string type, string fiat)
     {
         try
@@ -102,7 +115,12 @@ public partial class ThirdPartOrderAppService
         }
     }
 
-    // Fiat list
+    /// <summary>
+    ///     Fiat list
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="crypto"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(string type, string crypto)
     {
         try
@@ -139,7 +157,11 @@ public partial class ThirdPartOrderAppService
     }
 
 
-    // Ramp limit
+    /// <summary>
+    ///     Ramp limit
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<RampLimitDto>> GetRampLimitAsync(RampLimitRequest request)
     {
         try
@@ -175,7 +197,11 @@ public partial class ThirdPartOrderAppService
         }
     }
 
-    // Ramp exchange
+    /// <summary>
+    ///     Ramp exchange
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<RampExchangeDto>> GetRampExchangeAsync(RampExchangeRequest request)
     {
         try
@@ -202,7 +228,11 @@ public partial class ThirdPartOrderAppService
         }
     }
 
-    // Ramp price
+    /// <summary>
+    ///     Calculate Ramp price
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<RampPriceDto>> GetRampPriceAsync(RampDetailRequest request)
     {
         try
@@ -234,7 +264,11 @@ public partial class ThirdPartOrderAppService
         }
     }
 
-    // Ramp detail
+    /// <summary>
+    ///     Ramp detail
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<RampDetailDto>> GetRampDetailAsync(RampDetailRequest request)
     {
         try
@@ -262,11 +296,67 @@ public partial class ThirdPartOrderAppService
         }
     }
 
+    /// <summary>
+    ///     Off-ramp: send transfer transaction forward to Node
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    /// <exception cref="UserFriendlyException"></exception>
     public async Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input)
     {
-        throw new NotImplementedException();
+        try
+        {
+            _logger.LogInformation("TransactionAsync start, OrderId: {orderId}", input.OrderId);
+            if (!VerifyInput(input))
+            {
+                _logger.LogWarning("Transaction input valid failed, orderId:{orderId}", input.OrderId);
+                await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
+                {
+                    OrderId = input.OrderId.ToString(),
+                    RawTransaction = input.RawTransaction,
+                    Status = OrderStatusType.Invalid,
+                    DicExt = new Dictionary<string, object>()
+                    {
+                        ["reason"] = "Transaction input valid failed."
+                    }
+                });
+                throw new UserFriendlyException("Input validation failed.");
+            }
+
+            var transactionEto = ObjectMapper.Map<TransactionDto, TransactionEto>(input);
+            await _distributedEventBus.PublishAsync(transactionEto);
+            return new CommonResponseDto<Empty>();
+        }
+        catch (UserFriendlyException e)
+        {
+            Logger.LogWarning(e, "Transaction forward call failed");
+            return new CommonResponseDto<Empty>().Error(e);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Transaction forward call error");
+            return new CommonResponseDto<Empty>().Error(e, "Internal error please try again later.");
+        }
     }
 
+    
+    private bool VerifyInput(TransactionDto input)
+    {
+        try
+        {
+            var validStr = EncryptionHelper.MD5Encrypt32(input.OrderId + input.RawTransaction);
+            var publicKey = ByteArrayHelper.HexStringToByteArray(input.PublicKey);
+            var signature = ByteArrayHelper.HexStringToByteArray(input.Signature);
+            var data = Encoding.UTF8.GetBytes(validStr).ComputeHash();
+            return CryptoHelper.VerifySignature(signature, data, publicKey);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Input validation internal error");
+            return false;
+        }
+    }
+    
     public async Task<CommonResponseDto<RampFreeLoginDto>> GetRampThirdPartFreeLoginTokenAsync(
         RampFreeLoginRequest input)
     {
