@@ -53,11 +53,30 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
             },
             Tokens = new List<string>()
             {
-                //"qbQXTBoSEMnrjdtr8qx3M:APA91bHCxbhWUMK7WoofmmDLhLk7ozLgNtV3IopBO-sl4S3kNMNq53TjLsVHRuLa0BN9uGsZlvZT8UgpQddc-N8GObGvYArU9ulIMJMTtsr30sfJHW3KQ7Yzj31t4Hhsbal3b7N4nwKz",
-                "di0iTU9JTpGwuW9c72aoCM:APA91bFYewRh5wfWumKfzndhk3XA8yiJK-t_pI8VZS8eRuFv8VGJbJ19Gk2F01BX-oZ7HrlZVGCXM73l9uLD0wqxccuRim5MjOPM3r7ofDrq1p-w_bmyLq9YCsaPWv4sg03N29dyH3UM"
+                "f_rJmfIjWkRzuKdmcya4b7:APA91bHadg2GNLDV3NcpwG-hDVq1tXjEqBRiT8rrQq7_ANgQjEGadSYTgelgx20KS3BUhxp8lX1qJwy2R51-VFTrjOXEyB5zDzYh0i0Cah9t5cdoNqDNLHGpYxqlEGn83msHjJuzGmM-",
+                "di0iTU9JTpGwuW9c72aoCM:APA91bFYewRh5wfWumKfzndhk3XA8yiJK-t_pI8VZS8eRuFv8VGJbJ19Gk2F01BX-oZ7HrlZVGCXM73l9uLD0wqxccuRim5MjOPM3r7ofDrq1p-w_bmyLq9YCsaPWv4sg03N29dyH3UM",
+                "fBca4zRmTw-0pKfvcXTLYk:APA91bEUAm_81kaB0iY4hT_E361Lu085Cjoa36Yhh6m-PMvvrej7Hawyk_bpEtVqu7RL1xxNk1ALjhvRr32fEEtRL56Rs5UFBm61zv-SzJ8ntaPhAkYsLdVay0tHgIgQvBqNTzWU4iED"
+            },
+            Android = new AndroidConfig()
+            {
+                Notification = new AndroidNotification()
+                {
+                    Title = "Hello from C# Firebase Admin SDK!",
+                    Body = "This is a test notification",
+                    Icon = "https://profile-avatar.csdnimg.cn/91e6e8ae5e7d45b9a71e7147219f82af_baidu_38845827.jpg!1",
+                    NotificationCount = 0,
+                }
+            },
+            Apns = new ApnsConfig()
+            {
+                CustomData = new Dictionary<string, object>() { ["badge"] = 100000000 ,["aps"]=new Aps()
+                {
+                    Badge = 100000000
+                }}
             }
         };
 
+        Console.WriteLine(JsonConvert.SerializeObject(message.Android));
         var messaging = FirebaseMessaging.DefaultInstance;
         var result = await messaging.SendMulticastAsync(message);
         return result.SuccessCount;

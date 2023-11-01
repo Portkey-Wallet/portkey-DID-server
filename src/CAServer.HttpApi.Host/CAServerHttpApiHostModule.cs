@@ -1,7 +1,5 @@
 using System;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Hub;
@@ -10,7 +8,6 @@ using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
-using CAServer.Signature;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using GraphQL.Client.Abstractions;
@@ -45,7 +42,6 @@ using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
-using Volo.Abp.VirtualFileSystem;
 
 namespace CAServer;
 
@@ -89,22 +85,6 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
         context.Services.AddHttpContextAccessor();
-        
-        //
-        // Configure<AbpSignalROptions>(options =>
-        // {
-        //     options.Hubs.Add(
-        //         new HubConfig(
-        //             typeof(DataReportingHub), //Hub type
-        //             "/dataReporting", //Hub route (URL)
-        //             hubOptions =>
-        //             {
-        //                 //Additional options
-        //                 hubOptions.LongPolling.PollTimeout = TimeSpan.FromSeconds(30);
-        //             }
-        //         )
-        //     );
-        // });
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -153,19 +133,19 @@ public class CAServerHttpApiHostModule : AbpModule
                 options.RequireHttpsMetadata = Convert.ToBoolean(configuration["AuthServer:RequireHttpsMetadata"]);
                 options.Audience = "CAServer";
 
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = receivedContext =>
-                    {
-                        var path = receivedContext.HttpContext.Request.Path;
-                        if (path.StartsWithSegments("/dataReporting"))
-                        {
-                            receivedContext.Token = receivedContext.Request.Query["access_token"];;
-                        }
-
-                        return Task.CompletedTask;
-                    }
-                };
+                // options.Events = new JwtBearerEvents
+                // {
+                //     OnMessageReceived = receivedContext =>
+                //     {
+                //         var path = receivedContext.HttpContext.Request.Path;
+                //         if (path.StartsWithSegments("/dataReporting"))
+                //         {
+                //             receivedContext.Token = receivedContext.Request.Headers["Authorization"];
+                //         }
+                //
+                //         return Task.CompletedTask;
+                //     }
+                // };
             });
     }
 
@@ -221,7 +201,6 @@ public class CAServerHttpApiHostModule : AbpModule
                 .UseMongoDBClustering(options =>
                 {
                     options.DatabaseName = configuration["Orleans:DataBase"];
-                    ;
                     options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
                 .Configure<ClusterOptions>(options =>

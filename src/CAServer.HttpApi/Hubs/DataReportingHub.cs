@@ -14,7 +14,8 @@ using Volo.Abp.Users;
 
 namespace CAServer.Hubs;
 
-[HubRoute("dataReporting")]
+//[HubRoute("dataReporting")]
+[Authorize]
 public class DataReportingHub : AbpHub
 {
     private readonly ILogger<DataReportingHub> _logger;
@@ -37,11 +38,11 @@ public class DataReportingHub : AbpHub
         _httpContextAccessor = httpContextAccessor;
         _connectionProvider = connectionProvider;
     }
-
+    
     public override Task OnConnectedAsync()
     {
         _logger.LogInformation("connected!!!!");
-        string token = _httpContextAccessor.HttpContext?.Request.Query["access_token"];
+        string token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"];
         // if (token.IsNullOrWhiteSpace())
         // {
         //     return null;
@@ -58,6 +59,7 @@ public class DataReportingHub : AbpHub
             return;
         }
 
+        var id = CurrentUser.Id;
         await _hubService.RegisterClient(clientId, Context.ConnectionId);
         _logger.LogInformation("clientId={ClientId} connect", clientId);
     }
@@ -97,7 +99,8 @@ public class DataReportingHub : AbpHub
             Status = AppStatus.Offline
         });
 
+        var clientId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
         _hubService.UnRegisterClient(Context.ConnectionId);
-        _logger.LogInformation("disconnect, clientId:{connectionId}", connectionId);
+        _logger.LogInformation("disconnect, clientId:{clientId}", clientId ?? "");
     }
 }

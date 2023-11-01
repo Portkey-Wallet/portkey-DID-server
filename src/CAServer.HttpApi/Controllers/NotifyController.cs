@@ -13,6 +13,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Notify")]
 [Route("api/app/notify")]
+[IgnoreAntiforgeryToken]
 public class NotifyController
 {
     private readonly INotifyAppService _notifyAppService;
@@ -22,7 +23,7 @@ public class NotifyController
         _notifyAppService = notifyAppService;
     }
 
-    [HttpPost]
+    [HttpPost("fire")]
     public async Task<int> FireAsync(string token, string title, string content)
     {
         return await _notifyAppService.FireAsync(token, title, content);
