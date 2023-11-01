@@ -42,7 +42,8 @@ public class DataReportingHub : AbpHub
     public override Task OnConnectedAsync()
     {
         _logger.LogInformation("connected!!!!");
-        string token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"];
+        var accessToken = _httpContextAccessor.HttpContext.Request.Query["access_token"];
+
         // if (token.IsNullOrWhiteSpace())
         // {
         //     return null;
@@ -50,8 +51,7 @@ public class DataReportingHub : AbpHub
 
         return base.OnConnectedAsync();
     }
-
-    [Authorize]
+    
     public async Task Connect(string clientId)
     {
         if (string.IsNullOrEmpty(clientId))
