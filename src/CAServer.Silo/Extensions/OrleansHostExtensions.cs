@@ -75,12 +75,12 @@ public static class OrleansHostExtensions
                         opt.CollectionAge = TimeSpan.FromSeconds(collectionAge);
                     }
                 })
-                .Configure<MessagingOptions>(opt =>
+                .Configure<SiloMessagingOptions>(opt =>
                 {
                     var responseTimeout = configSection.GetValue<int>("ResponseTimeout");
                     if (responseTimeout > 0)
                     {
-                        opt.ResponseTimeout = TimeSpan.FromSeconds(configSection.GetValue<int>("ResponseTimeout"));
+                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
                     }
                 })
                 .Configure<PerformanceTuningOptions>(opt =>
