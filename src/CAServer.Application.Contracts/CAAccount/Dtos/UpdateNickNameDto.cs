@@ -4,5 +4,5 @@ namespace CAServer.Dtos;
 
 public class UpdateNickNameDto
 {
-    [Required] [Range(1, 16)] public string NickName { get; set; }
+    [Required] [MaxLength(16)] public string NickName { get; set; }
 }
