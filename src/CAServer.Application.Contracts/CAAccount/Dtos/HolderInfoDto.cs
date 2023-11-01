@@ -6,7 +6,7 @@ namespace CAServer.CAAccount.Dtos;
 
 public class HolderInfoDto : IValidatableObject
 {
-    public string NickName { get; set; }
+    [Range(1, 16)] public string NickName { get; set; }
     public string Avatar { get; set; }
 
 
