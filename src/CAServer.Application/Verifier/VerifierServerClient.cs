@@ -24,20 +24,17 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ISwitchAppService _switchAppService;
-    private const string ContractsSwitch = "ContractsSwitch";
 
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
-        IHttpClientFactory httpClientFactory, ISwitchAppService switchAppService)
+        IHttpClientFactory httpClientFactory)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
         _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
-        _switchAppService = switchAppService;
     }
 
     private bool _disposed;
@@ -107,13 +104,13 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
             { "operationType", type },
+            {
+                "chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
+                    ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
+                    : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString()
+            }
         };
-        if (_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
-        {
-            parameters.Add("chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
-                ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
-                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString());
-        }
+
 
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
@@ -163,10 +160,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        if (!_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
-        {
-            chainId = string.Empty;
-        }
         var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType, chainId });
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
