@@ -1,17 +1,19 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
-using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.DistributedLocking;
@@ -96,5 +98,28 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
+        Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        AddMessagePushService(context, configuration);
+    }
+
+    private void AddMessagePushService(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var baseUrl = configuration["MessagePush:BaseUrl"];
+        var appId = configuration["MessagePush:AppId"];
+        if (baseUrl.IsNullOrWhiteSpace())
+        {
+            return;
+        }
+
+        context.Services.AddHttpClient(MessagePushConstant.MessagePushServiceName, httpClient =>
+        {
+            httpClient.BaseAddress = new Uri(baseUrl);
+
+            if (!appId.IsNullOrWhiteSpace())
+            {
+                httpClient.DefaultRequestHeaders.Add(
+                    "AppId", appId);
+            }
+        });
     }
 }

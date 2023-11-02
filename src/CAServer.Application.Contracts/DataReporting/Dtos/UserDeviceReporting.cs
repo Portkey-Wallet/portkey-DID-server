@@ -2,7 +2,7 @@ using System;
 
 namespace CAServer.DataReporting.Dtos;
 
-public class ReportingDto : Reporting
+public class UserDeviceReporting : UserDeviceReportingDto
 {
     public Guid UserId { get; set; }
 }

@@ -6,7 +6,8 @@ namespace CAServer.DataReporting;
 
 public interface IDataReportingAppService
 {
-    Task ReportDeviceInfoAsync(ReportingDto input);
-    Task ReportAppStatusAsync(ReportingDataDto input);
-    Task LogoutAsync(string deviceId,Guid userId);
+    Task ReportDeviceInfoAsync(UserDeviceReporting input);
+    Task ReportAppStatusAsync(AppStatusReporting input);
+    Task ExitWalletAsync(string deviceId, Guid userId);
+    Task SwitchNetworkAsync(string deviceId, Guid userId);
 }

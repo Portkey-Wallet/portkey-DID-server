@@ -46,9 +46,8 @@ public class Program
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
-
+            //app.MapHub<DataReportingHub>("dataReporting");
             await app.InitializeApplicationAsync();
-            app.MapHub<DataReportingHub>("/dataReporting");
             await app.RunAsync();
             return 0;
         }

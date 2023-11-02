@@ -1,88 +1,49 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
+using CAServer.Commons;
 using CAServer.DataReporting.Dtos;
-using CAServer.DataReporting.Etos;
-using CAServer.Entities.Es;
 using Microsoft.Extensions.Logging;
-using Nest;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
-using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.DataReporting;
 
 [RemoteService(false), DisableAuditing]
 public class DataReportingAppService : CAServerAppService, IDataReportingAppService
 {
-    private readonly IDistributedEventBus _distributedEventBus;
-    private readonly INESTRepository<FireBaseTokenIndex, string> _firebaseRepository;
+    private readonly IMessagePushRequestProvider _requestProvider;
 
-    public DataReportingAppService(IDistributedEventBus distributedEventBus,
-        INESTRepository<FireBaseTokenIndex, string> firebaseRepository)
+    public DataReportingAppService(IMessagePushRequestProvider requestProvider)
     {
-        _distributedEventBus = distributedEventBus;
-        _firebaseRepository = firebaseRepository;
+        _requestProvider = requestProvider;
     }
 
-    public async Task ReportDeviceInfoAsync(ReportingDto input)
+    public async Task ReportDeviceInfoAsync(UserDeviceReporting input)
     {
-        var id = $"{input.UserId}-{input.DeviceId}";
-        var firebaseIndex = ObjectMapper.Map<ReportingDto, FireBaseTokenIndex>(input);
-        firebaseIndex.Id = id;
-        firebaseIndex.PortKeyId = input.UserId;
-        firebaseIndex.ModificationTime = DateTime.UtcNow;
-        firebaseIndex.AppStatus = AppStatus.Foreground.ToString();
-
-        Logger.LogInformation("ReportDeviceInfoAsync :{data}", JsonConvert.SerializeObject(firebaseIndex));
-        //await _firebaseRepository.AddOrUpdateAsync(firebaseIndex);
-        //await _distributedEventBus.PublishAsync(ObjectMapper.Map<Reporting, ReportingEto>(input));
+        Logger.LogDebug("reportDeviceInfo, userId: {userId}, deviceId: {deviceId}, data: {data}", input.UserId,
+            input.DeviceId, JsonConvert.SerializeObject(input));
+        await _requestProvider.PostAsync(MessagePushConstant.ReportDeviceInfoUri, input);
     }
 
-    public async Task ReportAppStatusAsync(ReportingDataDto input)
+    public async Task ReportAppStatusAsync(AppStatusReporting input)
     {
-        var id = $"{input.UserId}-{input.DeviceId}";
-        // var firebaseIndex = await _firebaseRepository.GetAsync(id);
-        //
-        // if (firebaseIndex == null)
-        // {
-        //     Logger.LogWarning("firebase index not exists, id:{id}", id);
-        //     return;
-        // }
-
-        // firebaseIndex.AppStatus = input.Status.ToString();
-        // firebaseIndex.ModificationTime = DateTime.UtcNow;
-
-        Logger.LogInformation("ReportAppStatusAsync :{id}, {status}", id, input.Status.ToString());
-        //await _firebaseRepository.UpdateAsync(firebaseIndex);
-
-        // await _distributedEventBus.PublishAsync(ObjectMapper.Map<ReportingData, ReportingDataEto>(input));
+        Logger.LogDebug("reportAppStatus, userId: {userId}, deviceId: {deviceId}, status: {status}", input.UserId,
+            input.DeviceId, input.Status.ToString());
+        await _requestProvider.PostAsync(MessagePushConstant.ReportAppStatusUri, input);
     }
 
-    public async Task LogoutAsync(string deviceId, Guid userId)
+    public async Task ExitWalletAsync(string deviceId, Guid userId)
     {
-        var id = $"{userId}-{deviceId}";
-        // var firebaseIndex = await _firebaseRepository.GetAsync(id);
-        //
-        // if (firebaseIndex == null)
-        // {
-        //     Logger.LogWarning("firebase index not exists, id:{id}", id);
-        //     return;
-        // }
-
-        Logger.LogInformation("LogoutAsync :{data}", id);
-        //await _firebaseRepository.DeleteAsync(firebaseIndex);
+        Logger.LogDebug("exitWallet, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
+        await _requestProvider.PostAsync(MessagePushConstant.ExitWalletUri, new { userId, deviceId });
     }
 
-    private async Task<FireBaseTokenIndex> GetAsync(string id)
+    public async Task SwitchNetworkAsync(string deviceId, Guid userId)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<FireBaseTokenIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.Id).Value(id)));
-        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
-
-        QueryContainer Filter(QueryContainerDescriptor<FireBaseTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
-        return await _firebaseRepository.GetAsync(Filter);
+        Logger.LogDebug("switchNetwork, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
+        await _requestProvider.PostAsync(MessagePushConstant.SwitchNetworkUri, new { userId, deviceId });
     }
 }
