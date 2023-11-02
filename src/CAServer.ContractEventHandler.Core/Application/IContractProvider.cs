@@ -344,6 +344,8 @@ public class ContractProvider : IContractProvider
     {
         try
         {
+            var checkTasks = outputList.Select(CheckCreateChainIdAsync);
+            await checkTasks.WhenAll();
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
             var transactionDtoList = await grain.ValidateTransactionListAsync(chainId, outputList, unsetLoginGuardiansList);
             _logger.LogInformation(
