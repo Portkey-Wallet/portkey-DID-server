@@ -7,6 +7,7 @@ using CAServer.DataReporting.Etos;
 using CAServer.Entities.Es;
 using Microsoft.Extensions.Logging;
 using Nest;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -35,40 +36,44 @@ public class DataReportingAppService : CAServerAppService, IDataReportingAppServ
         firebaseIndex.ModificationTime = DateTime.UtcNow;
         firebaseIndex.AppStatus = AppStatus.Foreground.ToString();
 
-        await _firebaseRepository.AddOrUpdateAsync(firebaseIndex);
+        Logger.LogInformation("ReportDeviceInfoAsync :{data}", JsonConvert.SerializeObject(firebaseIndex));
+        //await _firebaseRepository.AddOrUpdateAsync(firebaseIndex);
         //await _distributedEventBus.PublishAsync(ObjectMapper.Map<Reporting, ReportingEto>(input));
     }
 
     public async Task ReportAppStatusAsync(ReportingDataDto input)
     {
         var id = $"{input.UserId}-{input.DeviceId}";
-        var firebaseIndex = await _firebaseRepository.GetAsync(id);
+        // var firebaseIndex = await _firebaseRepository.GetAsync(id);
+        //
+        // if (firebaseIndex == null)
+        // {
+        //     Logger.LogWarning("firebase index not exists, id:{id}", id);
+        //     return;
+        // }
 
-        if (firebaseIndex == null)
-        {
-            Logger.LogWarning("firebase index not exists, id:{id}", id);
-            return;
-        }
+        // firebaseIndex.AppStatus = input.Status.ToString();
+        // firebaseIndex.ModificationTime = DateTime.UtcNow;
 
-        firebaseIndex.AppStatus = input.Status.ToString();
-        firebaseIndex.ModificationTime = DateTime.UtcNow;
+        Logger.LogInformation("ReportAppStatusAsync :{id}, {status}", id, input.Status.ToString());
+        //await _firebaseRepository.UpdateAsync(firebaseIndex);
 
-        await _firebaseRepository.UpdateAsync(firebaseIndex);
         // await _distributedEventBus.PublishAsync(ObjectMapper.Map<ReportingData, ReportingDataEto>(input));
     }
 
     public async Task LogoutAsync(string deviceId, Guid userId)
     {
         var id = $"{userId}-{deviceId}";
-        var firebaseIndex = await _firebaseRepository.GetAsync(id);
+        // var firebaseIndex = await _firebaseRepository.GetAsync(id);
+        //
+        // if (firebaseIndex == null)
+        // {
+        //     Logger.LogWarning("firebase index not exists, id:{id}", id);
+        //     return;
+        // }
 
-        if (firebaseIndex == null)
-        {
-            Logger.LogWarning("firebase index not exists, id:{id}", id);
-            return;
-        }
-
-        await _firebaseRepository.DeleteAsync(firebaseIndex);
+        Logger.LogInformation("LogoutAsync :{data}", id);
+        //await _firebaseRepository.DeleteAsync(firebaseIndex);
     }
 
     private async Task<FireBaseTokenIndex> GetAsync(string id)
