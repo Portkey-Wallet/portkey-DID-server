@@ -28,6 +28,7 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Guardian;
 using CAServer.Hubs;
+using CAServer.ImUser.Dto;
 using CAServer.IpInfo;
 using CAServer.Message.Dtos;
 using CAServer.Message.Etos;
@@ -450,5 +451,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderDto, NftOrderQueryResponseDto>()
             .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
             .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));
+        CreateMap<CAHolderIndex, HolderInfoResultDto>();
     }
 }
