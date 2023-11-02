@@ -9,20 +9,22 @@ using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Events;
 using System.Diagnostics.Metrics;
+using Microsoft.AspNetCore.Http;
+using OpenTelemetry.Metrics;
+using Serilog.Context;
+using Serilog.Templates;
 using Meter = System.Diagnostics.Metrics.Meter;
 
 namespace CAServer;
 
 public class Program
 {
-    static Meter s_meter = new Meter("HatCo.Store");
-    static Counter<int> s_hatsSold = s_meter.CreateCounter<int>("hatco.store.hats_sold");
-    
     public async static Task<int> Main(string[] args)
     {
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
+
         Log.Logger = new LoggerConfiguration()
 #if DEBUG
             .MinimumLevel.Debug()
@@ -32,15 +34,21 @@ public class Program
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-            
+
 #if DEBUG
-            .WriteTo.Async(c => c.Console())
-#endif          
+            //.WriteTo.Async(c => c.Console())
+            // .WriteTo.Console(outputTemplate:
+            //   "[{Timestamp:HH:mm:ss fff} {Level:u3} {Properties:j}] - {Message}{NewLine}{Exception}")
+            .WriteTo.Console(new ExpressionTemplate(
+                "[{@t:HH:mm:ss fff} {@l:u3}" +
+                " Application:{Application},Module:{Module}{#if CorrelationId is not null},CorrelationId:{CorrelationId}{#end}{#if RequestPath is not null},RequestPath:{RequestPath}{#end}] {@m}\n{@x}"))
+            // //.WriteTo.Console(new ExpressionTemplate("[{Timestamp:HH:mm:ss fff} {Level:u3}]-{tracing_id}{Message}{NewLine}{Exception}"))
+#endif
             .CreateLogger();
+
 
         try
         {
-            s_hatsSold.Add(4);
             Log.Information("Starting CAServer.HttpApi.Host.");
             var builder = WebApplication.CreateBuilder(args);
             builder.Configuration.AddJsonFile("phone.json");
@@ -51,10 +59,11 @@ public class Program
             builder.Services.AddSignalR();
             builder.Services.AddRazorPages();
             builder.Services.AddOpenTelemetry()
-                .WithTracing(builder =>
+                .WithMetrics(builder =>
                 {
                     builder.AddAspNetCoreInstrumentation();
-                    //builder.AddConsoleExporter();
+                    builder.AddMeter("Microsoft.AspNetCore.Hosting");
+                    builder.AddMeter("Microsoft.AspNetCore.Server.Kestrel");
                 });
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
@@ -68,7 +77,7 @@ public class Program
             app.UseStaticFiles();
             app.UseRouting();
             //app.MapRazorPages();
-            
+
             app.MapHub<CAHub>("ca");
             await app.InitializeApplicationAsync();
             await app.RunAsync();

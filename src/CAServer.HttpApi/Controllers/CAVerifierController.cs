@@ -62,7 +62,7 @@ public class CAVerifierController : CAServerController
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
-
+        
         return type switch
         {
             OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
@@ -246,6 +246,7 @@ public class CAVerifierController : CAServerController
     [HttpPost("getVerifierServer")]
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(GetVerifierServerInfoInput input)
     {
+        var context = HttpContext.Request.HttpContext;
         return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
     }
 

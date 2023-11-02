@@ -3,6 +3,7 @@ using CAServer.Silo.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Orleans.Hosting;
 using Serilog;
 using Serilog.Events;
 
@@ -34,7 +35,6 @@ public class Program
             Log.Information("Starting CAServer.Silo.");
 
             await CreateHostBuilder(args).RunConsoleAsync();
-
             return 0;
         }
         catch (Exception ex)
@@ -46,6 +46,7 @@ public class Program
         {
             Log.CloseAndFlush();
         }
+
     }
 
     internal static IHostBuilder CreateHostBuilder(string[] args) =>

@@ -6,7 +6,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using CAServer.Common;
+using Microsoft.AspNetCore.Http;
 using Serilog;
+using Serilog.Context;
 
 namespace CAServer.Verifier;
 
@@ -62,6 +65,7 @@ public class HttpService : IHttpService
         Client.DefaultRequestHeaders.Accept.Add(
             MediaTypeWithQualityHeaderValue.Parse($"application/json{version}"));
         Client.DefaultRequestHeaders.Add("Connection", "close");
+        
         return Client;
 
     }
@@ -85,7 +89,9 @@ public class HttpService : IHttpService
         {
             var paramsStr = JsonSerializer.Serialize(parameters);
             content = new StringContent(paramsStr, Encoding.UTF8, "application/json");
+            content.Headers.Add("RequestId",DashExecutionContext.TraceIdentifier);
             content.Headers.ContentType = MediaTypeHeaderValue.Parse($"application/json{version}");
+            
         }
 
         else

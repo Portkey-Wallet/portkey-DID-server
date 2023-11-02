@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Common;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 using Serilog.Context;
 
 namespace CAServer;
@@ -18,7 +18,8 @@ public class RequestLogContextMiddleware
     public Task Invoke(HttpContext context)
     {
         var id = GetCorrelationId(context);
-        using (LogContext.PushProperty("CorrelationId", id))
+        
+        using (LogContext.PushProperty("tracing_id", id))
         {
             return _next.Invoke(context);
         }
@@ -26,7 +27,14 @@ public class RequestLogContextMiddleware
 
     public static string GetCorrelationId(HttpContext httpContext)
     {
-        httpContext.Request.Headers.TryGetValue("Cko-Correlation-Id", out var correlationId);
-        return correlationId.FirstOrDefault() ?? "I am tracing ID";
+        if (httpContext.Request.Headers.TryGetValue("Cko-Correlation-Id", out var correlationId))
+        {
+            DashExecutionContext.TrySetTraceIdentifier(correlationId);
+        }
+        else
+        {
+            DashExecutionContext.TrySetTraceIdentifier(httpContext.TraceIdentifier);
+        }
+        return correlationId.FirstOrDefault() ?? httpContext.TraceIdentifier;
     }
 }

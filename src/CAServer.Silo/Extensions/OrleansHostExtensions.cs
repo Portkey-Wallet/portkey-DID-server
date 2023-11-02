@@ -1,4 +1,5 @@
 using System.Net;
+using CAServer.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -7,6 +8,7 @@ using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Providers.MongoDB.Configuration;
+using Orleans.Runtime;
 using Orleans.Statistics;
 
 namespace CAServer.Silo.Extensions;
@@ -59,6 +61,7 @@ public static class OrleansHostExtensions
                 })
                // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
+                
                 .UseDashboard(options => {
                     options.Username = configSection.GetValue<string>("DashboardUserName");
                     options.Password = configSection.GetValue<string>("DashboardPassword");
@@ -66,6 +69,18 @@ public static class OrleansHostExtensions
                     options.Port = configSection.GetValue<int>("DashboardPort");
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
+                })
+                .AddOutgoingGrainCallFilter(context=>context.Invoke())
+                .AddIncomingGrainCallFilter(async context =>
+                {
+                    var fullName = context.Grain.GetType().FullName;
+                    if (fullName != null && fullName.StartsWith("Orleans.Runtime"))
+                    {
+                        await context.Invoke();
+                        return;
+                    }
+                    DashExecutionContext.TrySetTraceIdentifier(RequestContext.Get("X-Dash-TraceIdentifier").ToString());
+                    await context.Invoke();
                 })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });

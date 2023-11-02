@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
@@ -78,7 +79,6 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
         {
             throw new UserFriendlyException("Not set nginx header.");
         }
-
         Logger.LogInformation(
             $"X-Forwarded-For: {_httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString()}");
 

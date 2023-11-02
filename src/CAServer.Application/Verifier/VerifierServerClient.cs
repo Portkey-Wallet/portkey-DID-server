@@ -10,6 +10,7 @@ using CAServer.Dtos;
 using CAServer.Settings;
 using CAServer.Switch;
 using CAServer.Verifier.Dtos;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -79,6 +80,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", dto.GuardianIdentifier },
             { "verifierSessionId", dto.VerifierSessionId.ToString() },
         };
+
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
     }
 
@@ -107,13 +109,12 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
             { "operationType", type },
+            {
+                "chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
+                    ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
+                    : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString()
+            }
         };
-        if (_switchAppService.GetSwitchStatus(ContractsSwitch).IsOpen)
-        {
-            parameters.Add("chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
-                ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
-                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString());
-        }
 
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
@@ -162,6 +163,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         OperationType verifierCodeOperationType, string chainId)
     {
         var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("Request_id", DashExecutionContext.TraceIdentifier);
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
         var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType, chainId });
 
