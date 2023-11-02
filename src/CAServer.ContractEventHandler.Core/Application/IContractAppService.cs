@@ -3,20 +3,26 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Types;
+using CAServer.Commons;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Guardian.Provider;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
+using CAServer.UserAssets.Provider;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
+using Orleans;
 using Portkey.Contracts.CA;
+using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
@@ -28,6 +34,11 @@ public interface IContractAppService
     Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     Task QueryAndSyncAsync();
     Task InitializeIndexAsync();
+    
+    Task SyncOriginChainIdAsync(UserLoginEto userLoginEto);
+    // Task UpdateOriginChainIdAsync(string originChainId, string syncChainId ,UserLoginEto userLoginEto);
+    // Task InitializeQueryRecordIndexAsync();
+    // Task InitializeIndexAsync(long blockHeight);
 }
 
 public class ContractAppService : IContractAppService
@@ -41,11 +52,21 @@ public class ContractAppService : IContractAppService
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
     private readonly IIndicatorLogger _indicatorLogger;
+    private readonly IMonitorLogProvider _monitorLogProvider;
+    private readonly IGuardianProvider _guardianProvider;
+    private readonly IClusterClient _clusterClient;
+    private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
+    private readonly IUserAssetsProvider _userAssetsProvider;
+    private readonly IDistributedCache<string> _distributedCache;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
         IContractProvider contractProvider, IObjectMapper objectMapper, ILogger<ContractAppService> logger,
-        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger)
+        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger,
+        IGuardianProvider guardianProvider, IClusterClient clusterClient,
+        IOptions<SyncOriginChainIdOptions> syncOriginChainIdOptions,
+        IUserAssetsProvider userAssetsProvider,
+        IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -56,6 +77,12 @@ public class ContractAppService : IContractAppService
         _logger = logger;
         _recordsBucketContainer = recordsBucketContainer;
         _indicatorLogger = indicatorLogger;
+        _monitorLogProvider = monitorLogProvider;
+        _guardianProvider = guardianProvider;
+        _clusterClient = clusterClient;
+        _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
+        _userAssetsProvider = userAssetsProvider;
+        _distributedEventBus = distributedEventBus;
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
@@ -248,9 +275,122 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("Recovery state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
 
+        // _logger.LogInformation("ValidateTransactionAndSyncAsync, holderInfo: {holderInfo}",
+        //     JsonConvert.SerializeObject(outputGetHolderInfo));
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
         _ = ValidateTransactionAndAddSyncRecordAsync(socialRecoveryDto.ChainId, holderInfo, "",
             MonitorTag.SocialRecover);
+    }
+    
+    public async Task SyncOriginChainIdAsync(UserLoginEto userLoginEto)
+    {
+        if (!await NeedSyncStatusAsync(userLoginEto.UserId))
+        {
+            return;
+        }
+
+        var originChainId = "";
+        var syncChainId = "";
+        var guardians = await _guardianProvider.GetGuardiansAsync("", userLoginEto.CaHash);
+        if (guardians == null || guardians.CaHolderInfo == null || guardians.CaHolderInfo.Count == 0)
+        {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,guardians is null or empty,userId {uid}",
+                userLoginEto.UserId);
+            return;
+        }
+
+        originChainId = guardians.CaHolderInfo?.FirstOrDefault()?.OriginChainId;
+        if (string.IsNullOrWhiteSpace(originChainId))
+        {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,originChainId is null or empty,userId {uid}",
+                userLoginEto.UserId);
+            return;
+        }
+
+        syncChainId = _chainOptions.ChainInfos.Where(kvp => kvp.Key != originChainId).Select(kvp => kvp.Key)
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(syncChainId))
+        {
+            _logger.LogInformation("CheckOriginChainIdStatusAsync fail,syncChainId is null or empty,userId {uid}",
+                userLoginEto.UserId);
+            return;
+        }
+
+        //this will take very long time
+       await UpdateOriginChainIdAsync(originChainId, syncChainId, userLoginEto);
+    }
+
+    public async Task UpdateOriginChainIdAsync(string originChainId, string syncChainId, UserLoginEto userLoginEto)
+    {
+        var validateOriginChainIdGrain = _clusterClient.GetGrain<IValidateOriginChainIdGrain>(userLoginEto.UserId);
+        try
+        {
+            var needValidate = await validateOriginChainIdGrain.NeedValidateAsync();
+            _logger.LogInformation(
+                "UpdateOriginChainIdAsync,needValidate {needValidate},cahash:{cahash},uid:{uid} ,originChainId:{originChainId}",
+                needValidate.Data, userLoginEto.CaHash, userLoginEto.UserId, originChainId);
+
+            if (!needValidate.Data)
+            {
+                return;
+            }
+
+            var holderInfoOutput =
+                await _contractProvider.GetHolderInfoFromChainAsync(originChainId, null, userLoginEto.CaHash);
+
+            var syncHolderInfoOutput =
+                await _contractProvider.GetHolderInfoFromChainAsync(syncChainId, null, userLoginEto.CaHash);
+
+            if (holderInfoOutput.CreateChainId > 0 && syncHolderInfoOutput.CreateChainId > 0)
+            {
+                await validateOriginChainIdGrain.SetStatusSuccessAsync();
+                _logger.LogInformation(
+                    "UpdateOriginChainIdAsync already success,chainId {chainId},userId {uid}", originChainId,
+                    userLoginEto.UserId);
+                return;
+            }
+
+            holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
+
+            
+            await validateOriginChainIdGrain.SetStatusSuccessAsync();
+            _logger.LogInformation(
+                "UpdateOriginChainIdAsync success,originChainId {originChainId}:{holderInfoOutput.CreateChainId}, syncChainId:{syncChainId}:{syncHolderInfoOutput.CreateChainId},userId {uid}",
+                originChainId, holderInfoOutput.CreateChainId, syncChainId, syncHolderInfoOutput.CreateChainId,
+                userLoginEto.UserId);
+            _ = ValidateTransactionAndAddSyncRecordAsync(originChainId, holderInfoOutput, "",
+                MonitorTag.LoginSync);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UpdateOriginChainIdAsync fail,chainId {chainId},userId {uid},cahash:{cahash}",
+                originChainId,
+                userLoginEto.UserId, userLoginEto.CaHash);
+            await validateOriginChainIdGrain.SetStatusFailAsync();
+        }
+    }
+
+    public async Task<bool> NeedSyncStatusAsync(Guid userId)
+    {
+        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
+        if (caHolderIndex == null || caHolderIndex.IsDeleted)
+        {
+            _logger.LogInformation("UpdateOriginChainIdAsync caHolderIndex is null or deleted,userId {uid}", userId);
+            return false;
+        }
+
+        _logger.LogInformation(
+            "UpdateOriginChainIdAsync caHolderIndex.CreateTime:{caHolderIndex.CreateTime},checkTime:{time}",
+            (TimeHelper.GetTimeStampFromDateTime(caHolderIndex.CreateTime),
+                _syncOriginChainIdOptions.CheckUserRegistrationTimestamp));
+
+        if (TimeHelper.GetTimeStampFromDateTime(caHolderIndex.CreateTime) >
+            _syncOriginChainIdOptions.CheckUserRegistrationTimestamp)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private async Task ValidateTransactionAndAddSyncRecordAsync(string chainId, GetHolderInfoOutput holderInfo,
@@ -267,7 +407,7 @@ public class ContractAppService : IContractAppService
     private async Task ValidateTransactionAndAddSyncRecordAsync(string chainId, GetHolderInfoOutput holderInfo,
         string optionChainId)
     {
-        var chainInfo = _chainOptions.ChainInfos[chainId];
+        // var chainInfo = _chainOptions.ChainInfos[chainId];
         var transactionDto =
             await _contractProvider.ValidateTransactionAsync(chainId, holderInfo, null);
 
@@ -365,6 +505,7 @@ public class ContractAppService : IContractAppService
                 foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
                 {
                     var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(info.ChainId);
+                    await _monitorLogProvider.AddHeightIndexMonitorLogAsync(chainId, indexHeight);
 
                     targetRecords = records.Where(r => r.ValidateHeight < indexHeight).ToList();
                     // tasks.AddRange(targetRecords.Select(record => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
@@ -374,7 +515,7 @@ public class ContractAppService : IContractAppService
                         .Select((record, index) => new {record, index})
                         .GroupBy(x => x.index / 100)
                         .Select(group => group.Select(x => x.record))
-                        .Select(group => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+                        .Select(group => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _monitorLogProvider, _distributedCache)
                             .ProcessSyncRecordList(chainId, info.ChainId, group.ToList(), _indexOptions))
                         .ToList());
                 }
@@ -383,6 +524,7 @@ public class ContractAppService : IContractAppService
             {
                 var indexHeight = await _contractProvider.GetIndexHeightFromMainChainAsync(
                     ContractAppServiceConstant.MainChainId, await _contractProvider.GetChainIdAsync(chainId));
+                await _monitorLogProvider.AddHeightIndexMonitorLogAsync(chainId, indexHeight);
 
                 targetRecords = records.Where(r => r.ValidateHeight < indexHeight).ToList();
                 // tasks.AddRange(targetRecords.Select(record => new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
@@ -391,7 +533,7 @@ public class ContractAppService : IContractAppService
                     .Select((record, index) => new {record, index})
                     .GroupBy(x => x.index / 100)
                     .Select(group => group.Select(x => x.record))
-                    .Select(group => new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+                    .Select(group => new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _monitorLogProvider, _distributedCache)
                         .ProcessSyncRecordList(chainId, ContractAppServiceConstant.MainChainId, group.ToList(), _indexOptions))
                     .ToList());
             }
@@ -447,6 +589,8 @@ public class ContractAppService : IContractAppService
                     _graphQLProvider.GetLoginGuardianTransactionInfosAsync(
                         chainId, startIndexHeight, endIndexHeight),
                     _graphQLProvider.GetManagerTransactionInfosAsync(
+                        chainId, startIndexHeight, endIndexHeight),
+                    _graphQLProvider.GetGuardianTransactionInfosAsync(
                         chainId, startIndexHeight, endIndexHeight)
                 };
                 var ansList = await tasks.WhenAll();
@@ -485,6 +629,8 @@ public class ContractAppService : IContractAppService
 
                 list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecordsAsync(chainId),
                     list);
+
+                await _monitorLogProvider.InitDataSyncMonitorAsync(list, chainId);
 
                 await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, list);
             }
@@ -592,6 +738,8 @@ public class ContractAppService : IContractAppService
                     Transaction = transactionDtoList[i].Transaction.ToByteArray()
                 };
                 record.RecordStatus = RecordStatus.MINED;
+                
+                _monitorLogProvider.AddNode(record, DataSyncType.EndValidate);
             }
         }
     }
@@ -602,8 +750,7 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation(
             "Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height}",
             record.ChangeType, chainId, record.CaHash, record.BlockHeight);
-
-
+        
         var unsetLoginGuardians = new RepeatedField<string>();
         if (record.NotLoginGuardian != null)
         {
@@ -630,6 +777,8 @@ public class ContractAppService : IContractAppService
                 Transaction = transactionDto.Transaction.ToByteArray()
             };
             record.RecordStatus = RecordStatus.MINED;
+            
+            _monitorLogProvider.AddNode(record, DataSyncType.EndValidate);
         }
     }
 
@@ -643,7 +792,7 @@ public class ContractAppService : IContractAppService
                 CaHash = dto.CaHash,
                 ChangeType = dto.ChangeType,
                 NotLoginGuardian = dto.NotLoginGuardian,
-                ValidateHeight = long.MaxValue
+                ValidateHeight = long.MaxValue,
             })
             .ToList();
 

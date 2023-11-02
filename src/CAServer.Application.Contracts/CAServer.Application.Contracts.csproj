@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CAServer.Domain.Shared\CAServer.Domain.Shared.csproj" />
+        <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -50,5 +51,9 @@
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateRequestDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateResponseDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\IAppleMigrateAppService.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
 </Project>

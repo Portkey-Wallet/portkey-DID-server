@@ -21,10 +21,14 @@ using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
+using CAServer.UserBehavior;
+using CAServer.UserBehavior.Etos;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -36,6 +40,7 @@ namespace CAServer.CAAccount;
 [DisableAuditing]
 public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 {
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<CAAccountAppService> _logger;
@@ -60,7 +65,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         IUserAssetsProvider userAssetsProvider,
         ICAAccountProvider accountProvider,
         INickNameAppService caHolderAppService,
-        IAppleAuthProvider appleAuthProvider
+        IAppleAuthProvider appleAuthProvider,
+        IHttpContextAccessor httpContextAccessor
     )
     {
         _distributedEventBus = distributedEventBus;
@@ -74,6 +80,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _accountProvider = accountProvider;
         _appleAuthProvider = appleAuthProvider;
         _chainOptions = chainOptions.Value;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -100,7 +107,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data));
-
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
@@ -340,7 +346,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
 
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
-                                                                       && g.GuardianList.Guardians.Count > 0);
+                                                                       && g.GuardianList.Guardians.Count > 0
+                                                                       && g.OriginChainId == g.ChainId);
 
         return guardianInfo?.GuardianList.Guardians
             .Where(t => t.Type.Equals(((int)GuardianIdentifierType.Apple).ToString()) && t.IsLoginGuardian).ToList();

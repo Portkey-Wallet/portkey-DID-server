@@ -4,9 +4,11 @@ using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
+using AElf;
 using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Settings;
+using CAServer.Switch;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,6 +24,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
@@ -90,6 +93,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
+
         var type = Convert.ToInt32(input.OperationType).ToString();
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
@@ -99,8 +103,15 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", input.GuardianIdentifier },
             { "guardianIdentifierHash", input.GuardianIdentifierHash },
             { "salt", input.Salt },
-            { "operationType", type }
+            { "operationType", type },
+            {
+                "chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
+                    ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
+                    : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString()
+            }
         };
+
+
         return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
     }
 
@@ -137,17 +148,19 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
 
         return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
-            input.OperationType);
+            input.OperationType,
+            string.IsNullOrWhiteSpace(input.TargetChainId)
+                ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
+                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString());
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
         string accessToken, string identifierHash, string salt,
-        OperationType verifierCodeOperationType)
+        OperationType verifierCodeOperationType, string chainId)
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType });
-
+        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType, chainId });
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
             MediaTypeNames.Application.Json);
