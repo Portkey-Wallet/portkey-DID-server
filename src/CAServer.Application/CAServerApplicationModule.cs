@@ -15,6 +15,7 @@ using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Processor.NFT;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
+using CAServer.ThirdPart.Transak;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -57,8 +58,9 @@ public class CAServerApplicationModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
+
+        context.Services.AddMemoryCache();
         
-        context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
@@ -69,6 +71,10 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        
+        
+        context.Services.AddTransient<AlchemyProvider>();
+        context.Services.AddTransient<TransakProvider>();
         
         context.Services.AddTransient<IThirdPartAdaptor, AlchemyAdaptor>();
         context.Services.AddTransient<IThirdPartAdaptor, TransakAdaptor>();

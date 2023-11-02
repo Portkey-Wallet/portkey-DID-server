@@ -22,8 +22,8 @@ public interface IThirdPartOrderAppService
     
     // ramp
     Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync();
-    Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(string type, string fiat);
-    Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(string type, string crypto);
+    Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(RampCryptoRequest rampCryptoRequest);
+    Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(RampFiatRequest request);
     Task<CommonResponseDto<RampLimitDto>> GetRampLimitAsync(RampLimitRequest request);
     Task<CommonResponseDto<RampExchangeDto>> GetRampExchangeAsync(RampExchangeRequest request);
     Task<CommonResponseDto<RampPriceDto>> GetRampPriceAsync(RampDetailRequest request);

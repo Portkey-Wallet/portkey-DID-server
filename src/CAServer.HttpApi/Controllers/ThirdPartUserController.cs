@@ -51,17 +51,15 @@ public class ThirdPartUserController : CAServerController
     }
 
     [HttpGet("ramp/crypto")]
-    public async Task<CommonResponseDto<RampCryptoDto>> GetRampCurrency(string type,
-        string fiat = CommonConstant.DefaultFiatUSD)
+    public async Task<CommonResponseDto<RampCryptoDto>> GetRampCurrency(RampCryptoRequest request)
     {
-        return await _thirdPartOrdersAppService.GetRampCryptoListAsync(type, fiat);
+        return await _thirdPartOrdersAppService.GetRampCryptoListAsync(request);
     }
 
     [HttpGet("ramp/fiat")]
-    public async Task<CommonResponseDto<RampFiatDto>> GetRampFiat(string type,
-        string crypto = CommonConstant.DefaultCryptoELF)
+    public async Task<CommonResponseDto<RampFiatDto>> GetRampFiat(RampFiatRequest rampFiatRequest)
     {
-        return await _thirdPartOrdersAppService.GetRampFiatListAsync(type, crypto);
+        return await _thirdPartOrdersAppService.GetRampFiatListAsync(rampFiatRequest);
     }
 
     [HttpGet("ramp/limit")]

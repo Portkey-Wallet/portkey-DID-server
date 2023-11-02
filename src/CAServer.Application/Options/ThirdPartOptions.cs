@@ -7,6 +7,7 @@ namespace CAServer.Options;
 public class ThirdPartOptions
 {
     public AlchemyOptions Alchemy { get; set; }
+    public TransakOptions Transak { get; set; }
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
     
@@ -33,7 +34,6 @@ public class AlchemyOptions
     public string AppId { get; set; }
     public string AppSecret { get; set; }
     public string BaseUrl { get; set; }
-    
     public string NftAppId { get; set; }
     public string NftAppSecret { get; set; }
     public string NftBaseUrl { get; set; }
@@ -48,6 +48,17 @@ public class AlchemyOptions
     public int NftFiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
     public string MerchantQueryTradeUri { get; set; }
+}
+
+public class TransakOptions
+{
+    public string AppId { get; set; }
+    public string AppSecret { get; set; }
+    public string BaseUrl { get; set; }
+    public double RefreshTokenDurationPercent { get; set; } = 0.8;
+    public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
+    public int CryptoListExpirationMinutes { get; set; } = CommonConstant.CryptoListExpirationMinutes;
+    public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
 }
 
 public class MerchantOptions

@@ -38,6 +38,7 @@ public class ThirdPartProviders
     public string BaseUrl { get; set; }
     public string Name { get; set; }
     public string Logo { get; set; }
+    public string WebhookUrl { get; set; }
     public string CountryIconUrl { get; set; }
     public List<string> PaymentTags { get; set; }
     public ProviderCoverage Coverage { get; set; }

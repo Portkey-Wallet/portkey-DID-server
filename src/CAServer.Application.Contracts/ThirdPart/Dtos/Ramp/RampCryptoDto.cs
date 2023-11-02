@@ -3,6 +3,14 @@ using CAServer.Commons;
 
 namespace CAServer.ThirdPart.Dtos.Ramp;
 
+
+public class RampCryptoRequest
+{
+    public string Type { get; set; }
+    public string Fiat { get; set; }
+    public string Country { get; set; }
+}
+
 public class RampCryptoDto
 {
     public List<RampCurrencyItem> CryptoList { get; set; } = new List<RampCurrencyItem>();

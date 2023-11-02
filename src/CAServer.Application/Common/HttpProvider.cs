@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Web;
 using CAServer.Common.Dtos;
 using CAServer.Commons;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -83,7 +84,8 @@ public class HttpProvider : IHttpProvider
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, bool withLog = false)
+        Dictionary<string, string> header = null,
+        bool withLog = false)
     {
         // url params
         var fullUrl = PathParamUrl(url, pathParams);

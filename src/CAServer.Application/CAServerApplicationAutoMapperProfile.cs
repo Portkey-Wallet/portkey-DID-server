@@ -456,6 +456,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .Ignore(des => des.Type)
             .ForMember(des => des.Side, opt => opt.MapFrom(src => src.Type))
             .ReverseMap();
+        CreateMap<TransakRampPrice, RampPriceDto>()
+            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => 1 / src.ConversionPrice.SafeToDecimal(-1)))
+            .ReverseMap();
+        CreateMap<RampDetailRequest, GetRampPriceRequest>()
+            .ForMember(des => des.IsBuyOrSell, opt => opt.MapFrom(src => src.Type))
+            .ForMember(des => des.FiatCurrency, opt => opt.MapFrom(src => src.Fiat))
+            .ForMember(des => des.CryptoCurrency, opt => opt.MapFrom(src => src.Crypto))
+            .ReverseMap();
 
     }
 }

@@ -11,7 +11,7 @@ public interface IThirdPartAdaptor
 
     string ThirdPart();
 
-    Task<List<RampFiatItem>> GetFiatListAsync(string type, string crypto);
+    Task<List<RampFiatItem>> GetFiatListAsync(RampFiatRequest rampFiatRequest);
 
     Task<RampLimitDto> GetRampLimitAsync(RampLimitRequest rampLimitRequest);
 

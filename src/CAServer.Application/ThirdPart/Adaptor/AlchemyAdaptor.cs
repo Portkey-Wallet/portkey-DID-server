@@ -43,16 +43,15 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     /// <summary>
     ///     Get fiat list
     /// </summary>
-    /// <param name="type"></param>
-    /// <param name="crypto"></param>
+    /// <param name="rampFiatRequest"></param>
     /// <returns></returns>
-    public async Task<List<RampFiatItem>> GetFiatListAsync(string type, string crypto)
+    public async Task<List<RampFiatItem>> GetFiatListAsync(RampFiatRequest rampFiatRequest)
     {
         try
         {
             var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto
             {
-                Type = type
+                Type = rampFiatRequest.Type
             });
             AssertHelper.IsTrue(alchemyFiatList.Success, "GetFiatListAsync error {Msg}", alchemyFiatList.Message);
             var rampFiatList = alchemyFiatList.Data.Select(f => new RampFiatItem()

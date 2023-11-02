@@ -90,7 +90,7 @@ public partial class ThirdPartOrderAppService
     /// <param name="type"></param>
     /// <param name="fiat"></param>
     /// <returns></returns>
-    public Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(string type, string fiat)
+    public Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(RampCryptoRequest request)
     {
         try
         {
@@ -110,7 +110,7 @@ public partial class ThirdPartOrderAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "GetRampCryptoListAsync ERROR, type={Type}, fiat={Fiat}", type, fiat);
+            Logger.LogError(e, "GetRampCryptoListAsync ERROR, type={Type}, fiat={Fiat}", request.Type, request.Fiat);
             return Task.FromResult(
                 new CommonResponseDto<RampCryptoDto>().Error(e, "Internal error, please try again later"));
         }
@@ -122,7 +122,7 @@ public partial class ThirdPartOrderAppService
     /// <param name="type"></param>
     /// <param name="crypto"></param>
     /// <returns></returns>
-    public async Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(string type, string crypto)
+    public async Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(RampFiatRequest rampFiatRequest)
     {
         try
         {
@@ -130,8 +130,8 @@ public partial class ThirdPartOrderAppService
             var fiatDict = new SortedDictionary<string, RampFiatItem>();
 
             // invoke provider-adaptors ASYNC
-            var fiatTask = GetThirdPartAdaptors(type).Values
-                .Select(adaptor => adaptor.GetFiatListAsync(type, crypto)).ToList();
+            var fiatTask = GetThirdPartAdaptors(rampFiatRequest.Type).Values
+                .Select(adaptor => adaptor.GetFiatListAsync(rampFiatRequest)).ToList();
 
             var fiatList = (await Task.WhenAll(fiatTask))
                 .Where(res => !res.IsNullOrEmpty())
@@ -139,7 +139,7 @@ public partial class ThirdPartOrderAppService
                 .Where(item => item != null)
                 .ToList();
             AssertHelper.NotEmpty(fiatList, "Fiat list empty");
-            
+
             foreach (var fiatItem in fiatList)
             {
                 var id = GrainIdHelper.GenerateGrainId(fiatItem.Symbol, fiatItem.Country);
@@ -155,7 +155,8 @@ public partial class ThirdPartOrderAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "GetRampFiatListAsync ERROR, type={Type}, crypto={Crypto}", type, crypto);
+            Logger.LogError(e, "GetRampFiatListAsync ERROR, type={Type}, crypto={Crypto}",
+                rampFiatRequest.Type, rampFiatRequest.Crypto);
             return new CommonResponseDto<RampFiatDto>().Error(e, "Internal error, please try again later");
         }
     }
@@ -343,7 +344,7 @@ public partial class ThirdPartOrderAppService
         }
     }
 
-    
+
     private bool VerifyInput(TransactionDto input)
     {
         try
@@ -360,7 +361,7 @@ public partial class ThirdPartOrderAppService
             return false;
         }
     }
-    
+
     public async Task<CommonResponseDto<RampFreeLoginDto>> GetRampThirdPartFreeLoginTokenAsync(
         RampFreeLoginRequest input)
     {

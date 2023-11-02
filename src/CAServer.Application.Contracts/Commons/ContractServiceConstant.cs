@@ -15,6 +15,8 @@ public static class CommonConstant
 {
     public const string EmptyString = "";
     public const string Dot = ".";
+    public const string Hyphen = "-";
+    
 
     public const string CurrencyFiat = "Fiat";
     public const string CurrencyCrypto = "Crypto";
