@@ -94,6 +94,7 @@ public partial class ThirdPartOrderAppService
     {
         try
         {
+            // get support crypto from options
             var defaultCurrencyOption = _rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption();
             var cryptoDto = new RampCryptoDto
             {
@@ -128,14 +129,17 @@ public partial class ThirdPartOrderAppService
             // fiat-country => item
             var fiatDict = new SortedDictionary<string, RampFiatItem>();
 
-            // invoke adaptors ASYNC
+            // invoke provider-adaptors ASYNC
             var fiatTask = GetThirdPartAdaptors(type).Values
                 .Select(adaptor => adaptor.GetFiatListAsync(type, crypto)).ToList();
 
             var fiatList = (await Task.WhenAll(fiatTask))
-                .Where(res => res != null)
-                .SelectMany(list => list).ToList();
+                .Where(res => !res.IsNullOrEmpty())
+                .SelectMany(list => list)
+                .Where(item => item != null)
+                .ToList();
             AssertHelper.NotEmpty(fiatList, "Fiat list empty");
+            
             foreach (var fiatItem in fiatList)
             {
                 var id = GrainIdHelper.GenerateGrainId(fiatItem.Symbol, fiatItem.Country);
@@ -168,7 +172,7 @@ public partial class ThirdPartOrderAppService
         {
             var rampLimit = new RampLimitDto();
 
-            // invoke adaptors ASYNC
+            // invoke provider-adaptors ASYNC
             var limitTasks = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampLimitAsync(request)).ToList();
 
@@ -206,7 +210,7 @@ public partial class ThirdPartOrderAppService
     {
         try
         {
-            // invoke adaptors ASYNC
+            // invoke provider-adaptors ASYNC
             var exchangeTasks = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();
 
@@ -242,7 +246,7 @@ public partial class ThirdPartOrderAppService
             AssertHelper.IsTrue(request.IsSell() && request.CryptoAmount != null && request.CryptoAmount > 0,
                 "Invalid crypto amount");
 
-            // invoke adaptors ASYNC
+            // invoke provider-adaptors ASYNC
             var priceTask = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampPriceAsync(request)).ToList();
 
@@ -276,7 +280,7 @@ public partial class ThirdPartOrderAppService
             AssertHelper.NotEmpty(request.Crypto, "Param crypto empty");
             AssertHelper.NotEmpty(request.Fiat, "Param fiat empty");
 
-            // invoke adaptors ASYNC
+            // invoke provider-adaptors ASYNC
             var detailTasks = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampDetailAsync(request))
                 .ToList();

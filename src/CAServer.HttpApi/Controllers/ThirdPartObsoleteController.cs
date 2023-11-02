@@ -18,23 +18,21 @@ namespace CAServer.Controllers;
 [Authorize]
 public class ThirdPartObsoleteController
 {
-    private readonly IAlchemyOrderAppService _alchemyOrderService;
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
 
-    public ThirdPartObsoleteController(IAlchemyOrderAppService alchemyOrderService,
+    public ThirdPartObsoleteController(
         IAlchemyServiceAppService alchemyServiceAppService, IThirdPartOrderAppService thirdPartOrderAppService)
     {
-        _alchemyOrderService = alchemyOrderService;
         _alchemyServiceAppService = alchemyServiceAppService;
         _thirdPartOrderAppService = thirdPartOrderAppService;
     }
 
     [Obsolete("Just for old version front-end")]
     [HttpPost("alchemy/txHash")]
-    public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
+    public async Task SendAlchemyTxHashAsync(TransactionHashDto request)
     {
-        await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
+        await _thirdPartOrderAppService.UpdateOffRampTxHash(request);
     }
 
     [Obsolete("Just for old version front-end")]

@@ -6,10 +6,8 @@ using CAServer.BackGround.Options;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
-using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
-using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Options;
@@ -28,26 +26,25 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 {
     private readonly IContractProvider _contractProvider;
     private readonly ILogger<TransactionProvider> _logger;
-    private readonly IAlchemyOrderAppService _alchemyOrderService;
-    private readonly TransactionOptions _transactionOptions;
+    private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
+    private readonly IOptionsMonitor<TransactionOptions> _transactionOptions;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
     public TransactionProvider(IContractProvider contractProvider, ILogger<TransactionProvider> logger,
-        IAlchemyOrderAppService alchemyOrderService,
-        IOptionsSnapshot<TransactionOptions> options,
+        IOptionsMonitor<TransactionOptions> options,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IObjectMapper objectMapper,
-        IOrderStatusProvider orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider, IThirdPartOrderAppService thirdPartOrderAppService)
     {
         _contractProvider = contractProvider;
         _logger = logger;
-        _alchemyOrderService = alchemyOrderService;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _orderStatusProvider = orderStatusProvider;
-        _transactionOptions = options.Value;
+        _thirdPartOrderAppService = thirdPartOrderAppService;
+        _transactionOptions = options;
     }
 
     public async Task HandleTransactionAsync(HandleTransactionDto transactionDto)
@@ -60,13 +57,13 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 
             // not existed->retry  pending->wait  other->fail
             var times = 0;
-            while (transactionResult.Status == TransactionState.NotExisted && times < _transactionOptions.RetryTime)
+            while (transactionResult.Status == TransactionState.NotExisted && times < _transactionOptions.CurrentValue.RetryTime)
             {
                 times++;
                 await _contractProvider.SendRawTransactionAsync(transactionDto.ChainId,
                     transaction.ToByteArray().ToHex());
 
-                await Task.Delay(_transactionOptions.DelayTime);
+                await Task.Delay(_transactionOptions.CurrentValue.DelayTime);
                 transactionResult = await QueryTransactionAsync(transactionDto.ChainId, transaction);
             }
 
@@ -124,15 +121,16 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             try
             {
                 // get status from ach.
-                var orderInfo = await _alchemyOrderService.QueryAlchemyOrderInfoAsync(order);
-                if (orderInfo == null || string.IsNullOrWhiteSpace(orderInfo.OrderNo)) continue;
+                var orderInfo = await _thirdPartOrderAppService.QueryThirdPartRampOrder(order);
+                AssertHelper.IsTrue(orderInfo.Success, "Query order Fail");
+                if (orderInfo.Data == null || orderInfo.Data.Id == Guid.Empty) continue;
 
-                var achOrderStatus = AlchemyHelper.GetOrderStatus(orderInfo.Status);
-                await HandleUnCompletedOrderAsync(order, achOrderStatus);
+                var achOrderStatus = AlchemyHelper.GetOrderStatus(orderInfo.Data.Status);
+                await HandleUnCompletedOrderAsync(order, achOrderStatus.ToString());
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Handle unCompleted order fail, orderId:{orderId}", order.Id);
+                _logger.LogError(e, "Handle unCompleted order fail, orderId:{OrderId}", order.Id);
             }
         }
     }
@@ -143,7 +141,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         var transactionResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
         while (transactionResult.Status == TransactionState.Pending)
         {
-            await Task.Delay(_transactionOptions.DelayTime);
+            await Task.Delay(_transactionOptions.CurrentValue.DelayTime);
             transactionResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
         }
 
@@ -183,7 +181,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 
         var isOverInterval = long.Parse(TimeHelper.GetTimeStampInMilliseconds().ToString()) -
                              long.Parse(order.LastModifyTime) >
-                             _transactionOptions.ResendTimeInterval * 1000;
+                             _transactionOptions.CurrentValue.ResendTimeInterval * 1000;
 
         if (order.Status == OrderStatusType.Transferred.ToString() &&
             achOrderStatus == OrderStatusType.Created.ToString() && isOverInterval)
@@ -196,7 +194,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
     {
         if (string.IsNullOrWhiteSpace(txHash)) return;
 
-        await _alchemyOrderService.UpdateAlchemyTxHashAsync(new SendAlchemyTxHashDto
+        await _thirdPartOrderAppService.UpdateOffRampTxHash(new TransactionHashDto
         {
             MerchantName = merchantName,
             OrderId = orderId,

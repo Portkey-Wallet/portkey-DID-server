@@ -13,8 +13,11 @@ using CAServer.Options;
 using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
+using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Provider;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -40,6 +43,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
     private readonly Dictionary<string, IThirdPartAdaptor> _thirdPartAdaptors;
+    private readonly Dictionary<string, AbstractRampOrderProcessor> _rampOrderProcessors;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -50,7 +54,8 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         IActivityProvider activityProvider,
         IOrderStatusProvider orderStatusProvider,
         IAbpDistributedLock distributedLock, IOptionsMonitor<RampOptions> rampOptions,
-        IEnumerable<IThirdPartAdaptor> thirdPartAdaptors)
+        IEnumerable<IThirdPartAdaptor> thirdPartAdaptors,
+        IEnumerable<AbstractRampOrderProcessor> rampOrderProcessors)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -62,10 +67,18 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         _thirdPartOptions = thirdPartOptions;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
-        _thirdPartAdaptors = thirdPartAdaptors.ToDictionary(a => a.ThirdPart(), a => a);
         _rampOptions = rampOptions;
+        _thirdPartAdaptors = thirdPartAdaptors.ToDictionary(a => a.ThirdPart(), a => a);
+        _rampOrderProcessors = rampOrderProcessors.ToDictionary(p => p.MerchantName(), p => p);
     }
 
+    private AbstractRampOrderProcessor GetThirdPartOrderProcessor(string thirdPart)
+    {
+        var processorExists = _rampOrderProcessors.TryGetValue(thirdPart, out var processor);
+        AssertHelper.IsTrue(processorExists, "Order processor of {ThirdPart} not exists", thirdPart);
+        AssertHelper.NotNull(processor, "Order processor of {ThirdPart} null", thirdPart);
+        return processor;
+    }
 
     // crate user ramp order
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
@@ -95,6 +108,50 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
 
         return new OrderCreatedDto();
     }
+
+    public async Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrder(OrderDto orderDto)
+    {
+        try
+        {
+            var orderResp = await GetThirdPartOrderProcessor(orderDto.MerchantName).QueryThirdOrderAsync(orderDto);
+            return new CommonResponseDto<OrderDto>(orderResp);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Ramp thirdPart update order error");
+            return new CommonResponseDto<OrderDto>().Error(e);
+        }
+    }
+
+    public async Task<CommonResponseDto<Empty>> OrderUpdateAsync(string thirdPart, IThirdPartOrder thirdPartOrder)
+    {
+        try
+        {
+            return await GetThirdPartOrderProcessor(thirdPart).OrderUpdateAsync(thirdPartOrder);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Ramp thirdPart update order error");
+            return new CommonResponseDto<Empty>().Error(e);
+        }
+    }
+
+    public async Task UpdateOffRampTxHash(TransactionHashDto input)
+    {
+        try
+        {
+            AssertHelper.NotNull(input, "input null");
+            AssertHelper.NotEmpty(input.MerchantName, "MerchantName empty");
+            AssertHelper.NotEmpty(input.OrderId, "OrderId empty");
+            AssertHelper.NotEmpty(input.TxHash, "TxHash empty");
+            await GetThirdPartOrderProcessor(input.MerchantName).UpdateTxHashAsync(input);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "UpdateTxHashAsync error");
+        }
+    }
+    
 
     // create base order with nft-order section
     public async Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input)

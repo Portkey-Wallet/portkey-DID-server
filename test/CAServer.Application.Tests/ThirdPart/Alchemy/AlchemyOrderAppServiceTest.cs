@@ -1,30 +1,22 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using AElf;
-using AElf.Contracts.MultiToken;
-using AElf.Types;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.DependencyInjection;
-using Portkey.Contracts.CA;
 using Shouldly;
-using Volo.Abp;
 using Volo.Abp.Validation;
 using Xunit;
-using TransferInput = AElf.Client.MultiToken.TransferInput;
 
 namespace CAServer.ThirdPart.Alchemy;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 {
-    private readonly IAlchemyOrderAppService _alchemyOrderAppService;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
+    
 
     public AlchemyOrderAppServiceTest()
     {
-        _alchemyOrderAppService = GetRequiredService<IAlchemyOrderAppService>();
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
     }
 
@@ -46,7 +38,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
             OrderNo = "OrderNo",
             Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
-        var result = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+        var result = await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
         result.Success.ShouldBe(true);
 
         var inputFail = new AlchemyOrderUpdateDto
@@ -58,7 +50,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
             OrderNo = "OrderNo",
             Signature = "5f4e9f8c1f3a63c12032b9c6c59a019c259bd063"
         };
-        var resultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(inputFail);
+        var resultFail = await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), inputFail);
         resultFail.Success.ShouldBe(false);
 
         var signatureFail = new AlchemyOrderUpdateDto
@@ -70,7 +62,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
             OrderNo = "OrderNo",
             Signature = "1111111111111111111111111111111111"
         };
-        var signResultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(signatureFail);
+        var signResultFail = await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), signatureFail);
         signResultFail.Success.ShouldBe(false);
     }
 
@@ -88,7 +80,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
                 OrderNo = "OrderNo",
                 Signature = null
             };
-            await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+            await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
         }
         catch (Exception e)
         {
@@ -110,7 +102,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
                 OrderNo = "OrderNo",
                 Signature = "1111111111111111111111111111111111"
             };
-            await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+            await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
         }
         catch (Exception e)
         {
@@ -132,7 +124,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
                 OrderNo = "OrderNo",
                 Signature = "1111111111111111111111111111111111"
             };
-            await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+            await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
         }
         catch (Exception e)
         {
@@ -143,7 +135,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
     [Fact]
     public async Task UpdateAlchemyTxHashAsyncTest()
     {
-        var input = new SendAlchemyTxHashDto()
+        var input = new TransactionHashDto()
         {
             MerchantName = "Alchemy",
             OrderId = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -151,14 +143,14 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
         };
         try
         {
-            await _alchemyOrderAppService.UpdateAlchemyTxHashAsync(input);
+            await _thirdPartOrderAppService.UpdateOffRampTxHash(input);
         }
         catch (Exception e)
         {
             e.ShouldBe(null);
         }
 
-        var inputFail = new SendAlchemyTxHashDto()
+        var inputFail = new TransactionHashDto()
         {
             MerchantName = "Alchemy",
             OrderId = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -166,7 +158,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
         };
         try
         {
-            await _alchemyOrderAppService.UpdateAlchemyTxHashAsync(inputFail);
+            await _thirdPartOrderAppService.UpdateOffRampTxHash(inputFail);
         }
         catch (Exception e)
         {
@@ -189,7 +181,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
             Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
 
-        var signResultFail = await _alchemyOrderAppService.UpdateAlchemyOrderAsync(input);
+        var signResultFail = await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
         signResultFail.Success.ShouldBe(true);
     }
 
@@ -264,6 +256,6 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
             Id = Guid.Empty,
             ThirdPartOrderNo = "123"
         };
-        await _alchemyOrderAppService.QueryAlchemyOrderInfoAsync(input);
+        await _thirdPartOrderAppService.QueryThirdPartRampOrder(input);
     }
 }

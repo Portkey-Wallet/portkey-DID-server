@@ -61,7 +61,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         try
         {
             return new CommonResponseDto<AlchemyTokenDataDto>(
-                await _alchemyProvider.GetAlchemyRampFreeLoginToken(input));
+                await _alchemyProvider.GetAlchemyRampFreeLoginTokenAsync(input));
         }
         catch (Exception e)
         {
@@ -95,7 +95,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         {
             var cacheKey = GrainIdHelper.GenerateGrainId(FiatCacheKey, input.Type);
             var resp = await _fiatListCache.GetOrAddAsync(cacheKey,
-                async () => await _alchemyProvider.GetAlchemyFiatList(input),
+                async () => await _alchemyProvider.GetAlchemyFiatListAsync(input),
                 () => new DistributedCacheEntryOptions
                 {
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.FiatListExpirationMinutes)
@@ -130,7 +130,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         {
             var cacheKey = GrainIdHelper.GenerateGrainId(CryptoCacheKey, input.Fiat);
             var resp = await _cryptoListCache.GetOrAddAsync(cacheKey,
-                async () => await _alchemyProvider.GetAlchemyCryptoList(input),
+                async () => await _alchemyProvider.GetAlchemyCryptoListAsync(input),
                 () => new DistributedCacheEntryOptions
                 {
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.CryptoListExpirationMinutes)
@@ -183,7 +183,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         var cacheKey =
             GrainIdHelper.GenerateGrainId(PriceCacheKey, input.Crypto, input.Network, input.Fiat, input.Country);
         return await _orderQuoteCache.GetOrAddAsync(cacheKey,
-            async () => await _alchemyProvider.GetAlchemyOrderQuote(input),
+            async () => await _alchemyProvider.GetAlchemyOrderQuoteAsync(input),
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.OrderQuoteExpirationMinutes)

@@ -42,7 +42,7 @@ public class GetAlchemySignatureDto
     [Required] public string Address { get; set; }
 }
 
-public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
+public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject, IThirdPartOrder
 {
     [Required] public string MerchantOrderNo { get; set; }
     public string OrderNo { get; set; }
@@ -83,13 +83,6 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
     }
 }
 
-public class SendAlchemyTxHashDto
-{
-    public string MerchantName { get; set; }
-    [Required] public string OrderId { get; set; }
-    [Required] public string TxHash { get; set; }
-}
-
 public class WaitToSendOrderInfoDto
 {
     public string OrderNo { get; set; }
@@ -108,7 +101,7 @@ public class QueryAlchemyOrderInfoDto
     public string OrderId { get; set; }
 }
 
-public class OrderQueryDto
+public class QueryAlchemyOrderDto
 {
     public string OrderNo { get; set; }
     public string MerchantOrderNo { get; set; }

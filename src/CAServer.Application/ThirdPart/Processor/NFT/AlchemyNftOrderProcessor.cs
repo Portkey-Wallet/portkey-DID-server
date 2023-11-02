@@ -73,7 +73,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         // fill orderId 
         achNftOrderRequest.Id = Guid.Parse(achNftOrderRequest.MerchantOrderNo);
         // mapping status
-        achNftOrderRequest.Status = AlchemyHelper.GetOrderStatus(achNftOrderRequest.Status);
+        achNftOrderRequest.Status = AlchemyHelper.GetOrderStatus(achNftOrderRequest.Status).ToString();
         return achNftOrderRequest;
     }
 
@@ -84,7 +84,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
             OrderNo = orderId.ToString()
         });
         alchemyOrder.Id = Guid.Parse(alchemyOrder.MerchantOrderNo);
-        alchemyOrder.Status = AlchemyHelper.GetOrderStatus(alchemyOrder.Status);
+        alchemyOrder.Status = AlchemyHelper.GetOrderStatus(alchemyOrder.Status).ToString();
         return alchemyOrder;
     }
 

@@ -22,14 +22,18 @@ public static class AlchemyApi
     // nft
     public static ApiInfo GetFreeLoginToken { get; } = new(HttpMethod.Post, "/nft/openapi/merchant/getToken");
     public static ApiInfo NftResultNotice { get; } = new(HttpMethod.Post, "/nft/openapi/merchant/notice");
+    
     public static ApiInfo QueryNftTrade { get; } = new(HttpMethod.Get, "/nft/openapi/query/trade");
     public static ApiInfo QueryNftFiatList { get; } = new(HttpMethod.Get, "/nft/openapi/fiat/list");
     
     // ramp
     public static ApiInfo RampOrderQuote { get; } = new(HttpMethod.Post, "/merchant/order/quote");
     public static ApiInfo RampFreeLoginToken { get; } = new(HttpMethod.Post, "/merchant/getToken");
+    public static ApiInfo UpdateSellOrder { get; } = new(HttpMethod.Post, "/webhooks/off/merchant");
+    
     public static ApiInfo QueryFiatList { get; } = new(HttpMethod.Get, "/merchant/fiat/list");
     public static ApiInfo QueryCryptoList { get; } = new(HttpMethod.Get, "/merchant/crypto/list");
+    public static ApiInfo QueryOrderTrade { get; } = new(HttpMethod.Get, "/merchant/query/trade");
 }
 
 public class AlchemyProvider : ISingletonDependency
@@ -53,20 +57,6 @@ public class AlchemyProvider : ISingletonDependency
         _alchemyOptions = thirdPartOptions.Value.Alchemy;
         _logger = logger;
         _httpProvider = httpProvider;
-    }
-
-    [Obsolete("use HttpProvider instead")]
-    public async Task<string> HttpGetFromAlchemy(string path)
-    {
-        var client = _httpClientFactory.CreateClient();
-        SetAlchemyRequestHeader(client);
-        HttpResponseMessage respMsg = await client.GetAsync(_alchemyOptions.BaseUrl + path);
-        var respStr = await respMsg.Content.ReadAsStringAsync();
-
-        _logger.LogInformation("[ACH][{StatusCode}][get]request url: \n{url}", respMsg.StatusCode,
-            _alchemyOptions.BaseUrl + path);
-
-        return respStr;
     }
 
     [Obsolete("use HttpProvider instead")]
@@ -97,7 +87,7 @@ public class AlchemyProvider : ISingletonDependency
         }
     }
 
-    public async Task<AlchemyOrderQuoteDataDto> GetAlchemyOrderQuote(GetAlchemyOrderQuoteDto input)
+    public async Task<AlchemyOrderQuoteDataDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
     {
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>>(_alchemyOptions.BaseUrl,
             AlchemyApi.RampOrderQuote,
@@ -111,7 +101,7 @@ public class AlchemyProvider : ISingletonDependency
     }
     
     /// get Alchemy Crypto list
-    public async Task<List<AlchemyCryptoDto>> GetAlchemyCryptoList(GetAlchemyCryptoListDto input)
+    public async Task<List<AlchemyCryptoDto>> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input)
     {
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>>(_alchemyOptions.BaseUrl,
             AlchemyApi.QueryCryptoList,
@@ -124,7 +114,7 @@ public class AlchemyProvider : ISingletonDependency
     }
     
     /// get Alchemy fiat list
-    public async Task<List<AlchemyFiatDto>> GetAlchemyFiatList(GetAlchemyFiatListDto input)
+    public async Task<List<AlchemyFiatDto>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.BaseUrl,
             AlchemyApi.QueryFiatList,
@@ -135,9 +125,24 @@ public class AlchemyProvider : ISingletonDependency
             "GetAlchemyFiatList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
         return result.Data;
     }
+
+    /// query Alchemy order info
+    public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfoAsync(QueryAlchemyOrderDto input)
+    {
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<QueryAlchemyOrderInfo>>(_alchemyOptions.BaseUrl,
+            AlchemyApi.QueryOrderTrade,
+            header: GetRampAlchemyRequestHeader(),
+            param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings)),
+            withLog: true
+        );
+        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            "QueryAlchemyOrderInfoAsync fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+        return result.Data;
+    }
+    
     
     /// Get Alchemy ramp free login toke 
-    public async Task<AlchemyTokenDataDto> GetAlchemyRampFreeLoginToken(GetAlchemyFreeLoginTokenDto input)
+    public async Task<AlchemyTokenDataDto> GetAlchemyRampFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input)
     {
         
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(_alchemyOptions.BaseUrl,
@@ -150,6 +155,18 @@ public class AlchemyProvider : ISingletonDependency
         return result.Data;
     }
 
+    /// Update off-ramp order TxHash
+    public async Task UpdateOffRampOrder(WaitToSendOrderInfoDto input)
+    {
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(_alchemyOptions.NftBaseUrl,
+            AlchemyApi.UpdateSellOrder,
+            header: GetRampAlchemyRequestHeader(),
+            body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
+            withLog: true
+        );
+        AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
+            "UpdateSellOrder fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
+    }
 
     /// Notice Alchemy NFT release result
     public async Task<AlchemyNftOrderDto> GetNftTrade(AlchemyNftReleaseNoticeRequestDto request)
