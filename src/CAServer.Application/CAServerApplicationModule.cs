@@ -13,6 +13,7 @@ using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Processor.NFT;
+using CAServer.ThirdPart.Processor.Ramp;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using CAServer.ThirdPart.Transak;
@@ -72,16 +73,17 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
         
-        
         context.Services.AddTransient<AlchemyProvider>();
         context.Services.AddTransient<TransakProvider>();
         
         context.Services.AddTransient<IThirdPartAdaptor, AlchemyAdaptor>();
         context.Services.AddTransient<IThirdPartAdaptor, TransakAdaptor>();
         
+        context.Services.AddSingleton<AbstractRampOrderProcessor, TransakOrderProcessor>();
+        context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
+        
         context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
-
-
+        
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));

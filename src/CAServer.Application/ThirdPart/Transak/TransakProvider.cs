@@ -9,16 +9,11 @@ using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Options;
-using CAServer.ThirdPart.Alchemy;
-using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
-using Google.Protobuf.WellKnownTypes;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Polly.RateLimit;
-using Volo.Abp;
 using Volo.Abp.DistributedLocking;
 
 namespace CAServer.ThirdPart.Transak;
@@ -89,7 +84,7 @@ public class TransakProvider : CAServerAppService
         var accessToken = await GetAccessTokenWithRetry();
         return new Dictionary<string, string> { ["access-token"] = accessToken };
     }
-    
+
     /// <summary>
     ///     Get Access Token With Retry
     /// </summary>
@@ -109,6 +104,7 @@ public class TransakProvider : CAServerAppService
                 AssertHelper.IsTrue(stopwatch.ElapsedMilliseconds > timeOutMillis,
                     "Failed to get access token within the specified timeout.");
             }
+
             await Task.Delay(100);
         }
     }
@@ -157,7 +153,8 @@ public class TransakProvider : CAServerAppService
     public async Task<TransakAccessToken> GetAccessTokenAsync()
     {
         // cacheData not exists or force
-        var accessTokenResp = await _httpProvider.Invoke<TransakMetaResponse<object, TransakAccessToken>>(_transakOptions.CurrentValue.BaseUrl,
+        var accessTokenResp = await _httpProvider.Invoke<TransakMetaResponse<object, TransakAccessToken>>(
+            _transakOptions.CurrentValue.BaseUrl,
             TransakApi.RefreshAccessToken,
             body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = GetApiKey() }),
             header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.CurrentValue.AppSecret },
@@ -173,25 +170,30 @@ public class TransakProvider : CAServerAppService
     /// <returns></returns>
     public async Task<List<TransakCryptoItem>> GetCryptoCurrenciesAsync()
     {
-        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCryptoItem>>>(_transakOptions.CurrentValue.BaseUrl,
+        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCryptoItem>>>(
+            _transakOptions.CurrentValue.BaseUrl,
             TransakApi.GetFiatCurrencies
-            );
-        AssertHelper.IsTrue(resp.Success, "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error.StatusCode, resp.Error.Message);
+        );
+        AssertHelper.IsTrue(resp.Success,
+            "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error.StatusCode,
+            resp.Error.Message);
         return resp.Response;
     }
-    
-    
+
+
     /// <summary>
     ///     Query fiat currencies
     /// </summary>
     /// <returns></returns>
     public async Task<List<TransakFiatItem>> GetFiatCurrenciesAsync()
     {
-        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakFiatItem>>>(_transakOptions.CurrentValue.BaseUrl,
+        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakFiatItem>>>(
+            _transakOptions.CurrentValue.BaseUrl,
             TransakApi.GetFiatCurrencies,
-            param: new Dictionary<string, string>{ ["apiKey"] = GetApiKey()}
-            );
-        AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}", resp.Error.StatusCode, resp.Error.Message);
+            param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() }
+        );
+        AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}",
+            resp.Error.StatusCode, resp.Error.Message);
         return resp.Response;
     }
 
@@ -201,14 +203,17 @@ public class TransakProvider : CAServerAppService
     /// <returns></returns>
     public async Task<List<TransakCountry>> GetTransakCountriesAsync()
     {
-        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCountry>>>(_transakOptions.CurrentValue.BaseUrl,
+        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCountry>>>(
+            _transakOptions.CurrentValue.BaseUrl,
             TransakApi.GetFiatCurrencies
         );
-        AssertHelper.IsTrue(resp.Success, "GetTransakCountriesAsync Transak response error, code={Code}, message={Message}", resp.Error.StatusCode, resp.Error.Message);
-        return resp.Response;   
+        AssertHelper.IsTrue(resp.Success,
+            "GetTransakCountriesAsync Transak response error, code={Code}, message={Message}", resp.Error.StatusCode,
+            resp.Error.Message);
+        return resp.Response;
     }
-    
-    
+
+
     /// <summary>
     ///     Get ramp price
     /// </summary>
@@ -217,15 +222,18 @@ public class TransakProvider : CAServerAppService
     public async Task<TransakRampPrice> GetRampPriceAsync(GetRampPriceRequest input)
     {
         input.PartnerApiKey = GetApiKey();
-        var resp = await _httpProvider.Invoke<TransakBaseResponse<TransakRampPrice>>(_transakOptions.CurrentValue.BaseUrl,
+        var resp = await _httpProvider.Invoke<TransakBaseResponse<TransakRampPrice>>(
+            _transakOptions.CurrentValue.BaseUrl,
             TransakApi.GetPrice,
-            param: JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings)),
+            param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
+                JsonConvert.SerializeObject(input, JsonSerializerSettings)),
             withLog: true
         );
-        AssertHelper.IsTrue(resp.Success, "GetRampPrice Transak response error, code={Code}, message={Message}", resp.Error.StatusCode, resp.Error.Message);
+        AssertHelper.IsTrue(resp.Success, "GetRampPrice Transak response error, code={Code}, message={Message}",
+            resp.Error.StatusCode, resp.Error.Message);
         return resp.Response;
     }
-    
+
     /// <summary>
     ///     update webhook url
     /// </summary>
@@ -239,7 +247,7 @@ public class TransakProvider : CAServerAppService
             withLog: true
         );
     }
-    
+
     /// <summary>
     ///     Get order by id
     /// </summary>

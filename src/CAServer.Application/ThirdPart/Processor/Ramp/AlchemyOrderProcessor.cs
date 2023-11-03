@@ -11,10 +11,9 @@ using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.ThirdPart.Processor.Ramp;
@@ -25,18 +24,13 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
 
-    private readonly JsonSerializerSettings _setting = new()
-    {
-        ContractResolver = new CamelCasePropertyNamesContractResolver()
-    };
-
     public AlchemyOrderProcessor(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
         IOptions<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider,
-        IOrderStatusProvider orderStatusProvider) : base(clusterClient, thirdPartOrderProvider, distributedEventBus,
-        orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock) : base(clusterClient,
+        thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartOptions = thirdPartOptions.Value;
@@ -50,22 +44,23 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         return dto;
     }
 
-    public override string MerchantName()
+    public override string ThirdPartName()
     {
         return ThirdPartNameType.Alchemy.ToString();
     }
 
-    protected override Task<OrderDto>  VerifyOrderInputAsync<T>(T iThirdPartOrder)
+    protected override Task<OrderDto> VerifyOrderInputAsync<T>(T iThirdPartOrder)
     {
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
         // verify signature of input
         var expectedSignature = GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address);
         AssertHelper.IsTrue(input.Signature != expectedSignature, "signature NOT match");
-        
+
         // convert input param to orderDto
         var orderDto = ObjectMapper.Map<AlchemyOrderUpdateDto, OrderDto>(input);
-        
+
         // mapping ach-order-status to Ramp-order-status
+        orderDto.MerchantName = ThirdPartName();
         orderDto.Status = AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
         return Task.FromResult(orderDto);
     }
@@ -110,7 +105,9 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             };
 
             var queryResult = await _alchemyProvider.QueryAlchemyOrderInfoAsync(orderQueryDto);
-            return ObjectMapper.Map<QueryAlchemyOrderInfo, OrderDto>(queryResult);
+            var achOrder = ObjectMapper.Map<QueryAlchemyOrderInfo, OrderDto>(queryResult);
+            achOrder.Status = AlchemyHelper.GetOrderStatus(achOrder.Status).ToString();
+            return achOrder;
         }
         catch (Exception e)
         {

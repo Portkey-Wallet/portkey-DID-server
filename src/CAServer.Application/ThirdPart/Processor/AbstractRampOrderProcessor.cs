@@ -13,8 +13,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
-using Volo.Abp.Users;
 
 namespace CAServer.ThirdPart.Processor;
 
@@ -24,6 +24,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
+    private readonly IAbpDistributedLock _distributedLock;
 
     protected readonly JsonSerializerSettings JsonDecodeSettings = new()
     {
@@ -32,12 +33,13 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
 
     protected AbstractRampOrderProcessor(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider, IDistributedEventBus distributedEventBus,
-        IOrderStatusProvider orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock)
     {
         _clusterClient = clusterClient;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
         _orderStatusProvider = orderStatusProvider;
+        _distributedLock = distributedLock;
     }
 
     /// <summary>
@@ -63,7 +65,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
     ///     ThirdPart name
     /// </summary>
     /// <returns></returns>
-    public abstract string MerchantName();
+    public abstract string ThirdPartName();
 
     /// <summary>
     ///     Query new Third order data, and convert to orderDto
@@ -79,8 +81,10 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         try
         {
             inputOrderDto = await VerifyOrderInputAsync(thirdPartOrder);
-
             var grainId = inputOrderDto.Id;
+            await using var handle =
+                await _distributedLock.TryAcquireAsync(name: "ramp:orderUpdate:" + grainId);
+            AssertHelper.NotNull(handle, "Order update processing ABORT, orderId={OrderId}", grainId.ToString());
 
             var inputState = ThirdPartHelper.ParseOrderStatus(inputOrderDto.Status);
             AssertHelper.IsTrue(inputState != OrderStatusType.Unknown, "Unknown order status {Status}",
