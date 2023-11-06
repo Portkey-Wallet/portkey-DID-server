@@ -20,20 +20,20 @@ namespace CAServer.ThirdPart.Processor.Ramp;
 
 public class AlchemyOrderProcessor : AbstractRampOrderProcessor
 {
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
 
     public AlchemyOrderProcessor(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
-        IOptions<ThirdPartOptions> thirdPartOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock) : base(clusterClient,
         thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
         _alchemyProvider = alchemyProvider;
     }
 
@@ -54,7 +54,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
         // verify signature of input
         var expectedSignature = GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address);
-        AssertHelper.IsTrue(input.Signature != expectedSignature, "signature NOT match");
+        AssertHelper.IsTrue(input.Signature == expectedSignature, "signature NOT match");
 
         // convert input param to orderDto
         var orderDto = ObjectMapper.Map<AlchemyOrderUpdateDto, OrderDto>(input);
@@ -81,7 +81,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
 
             var orderPendingUpdate = ObjectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
             orderPendingUpdate.TxHash = input.TxHash;
-            orderPendingUpdate.AppId = _thirdPartOptions.Alchemy.AppId;
+            orderPendingUpdate.AppId = _thirdPartOptions.CurrentValue.Alchemy.AppId;
             orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
                 orderPendingUpdate.Network, orderPendingUpdate.Address);
 
@@ -122,8 +122,8 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
     {
         try
         {
-            var bytes = Encoding.UTF8.GetBytes(_thirdPartOptions.Alchemy.AppId +
-                                               _thirdPartOptions.Alchemy.AppSecret + orderNo + crypto +
+            var bytes = Encoding.UTF8.GetBytes(_thirdPartOptions.CurrentValue.Alchemy.AppId +
+                                               _thirdPartOptions.CurrentValue.Alchemy.AppSecret + orderNo + crypto +
                                                network + address);
             var hashBytes = SHA1.Create().ComputeHash(bytes);
 

@@ -1,16 +1,22 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Types;
+using CAServer.Commons;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Options;
+using CAServer.ThirdPart.Dtos.ThirdPart;
+using CAServer.ThirdPart.Transak;
 using GraphQL;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using Xunit.Abstractions;
 
 namespace CAServer.ThirdPart;
 
@@ -19,8 +25,29 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
 
     internal readonly string PendingTxId = HashHelper.ComputeFrom("PENDING").ToHex();
     internal readonly string MinedTxId = HashHelper.ComputeFrom("MINED").ToHex();
+
+
+    public ThirdPartTestBase(ITestOutputHelper output) : base(output)
+    {
+    }
     
-    protected static IOptions<ThirdPartOptions> MockThirdPartOptions()
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        base.AfterAddApplication(services);
+        services.AddSingleton(MockHttpFactory());
+        MockHttpByPath(TransakApi.RefreshAccessToken.Method, TransakApi.RefreshAccessToken.Path, new TransakMetaResponse<object, TransakAccessToken>
+        {
+            Data = new TransakAccessToken
+            {
+                AccessToken = "TransakAccessTokenMockData",
+                ExpiresAt = DateTime.UtcNow.AddHours(2).ToUtcSeconds()
+            }
+        });
+        MockHttpByPath(TransakApi.UpdateWebhook.Method, TransakApi.UpdateWebhook.Path, "success");
+    }
+
+
+    protected static IOptionsMonitor<ThirdPartOptions> MockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
@@ -38,6 +65,12 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 OrderQuoteUri = "/merchant/order/quote",
                 GetTokenUri = "/merchant/getToken",
                 MerchantQueryTradeUri = "/merchant/query/trade"
+            },
+            Transak = new TransakOptions
+            {
+                AppId = "transakAppId",
+                AppSecret = "transakAppSecret",
+                BaseUrl = "http://127.0.0.1:9200"
             },
             Timer = new ThirdPartTimerOptions()
             {
@@ -59,7 +92,100 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 }
             }
         };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+        
+        var optionMock = new Mock<IOptionsMonitor<ThirdPartOptions>>();
+        optionMock.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
+        return optionMock.Object;
+    }
+
+    protected static IOptionsMonitor<RampOptions> MockRampOptions()
+    {
+        var rampOption = new RampOptions
+        {
+            Providers = new Dictionary<string, ThirdPartProvider>
+            {
+                ["Alchemy"] = new()
+                {
+                    AppId = "test",
+                    BaseUrl = "http://127.0.0.1:9200",
+                    Name = "AlchemyPay",
+                    Logo = "http://127.0.0.1:9200/logo.png",
+                    WebhookUrl = "http://127.0.0.1:9200",
+                    CountryIconUrl = "http://127.0.0.1:9200",
+                    PaymentTags = new List<string>{"ApplePay", "GooglePay"},
+                    Coverage = new ProviderCoverage
+                    {
+                        OffRamp = true,
+                        OnRamp = true
+                    }
+                },
+                ["Transak"] = new()
+                {
+                    AppId = "test",
+                    BaseUrl = "http://127.0.0.1:9200",
+                    Name = "TransakPay",
+                    Logo = "http://127.0.0.1:9200/logo.png",
+                    WebhookUrl = "http://127.0.0.1:9200",
+                    CountryIconUrl = "http://127.0.0.1:9200",
+                    PaymentTags = new List<string>{"ApplePay", "GooglePay"},
+                    Coverage = new ProviderCoverage
+                    {
+                        OffRamp = true,
+                        OnRamp = true
+                    }
+                }
+            },
+            PortkeyIdWhiteList = new List<string>(),
+            DefaultCurrency = new DefaultCurrencyOption(),
+            CryptoList = new List<CryptoItem>{ new()
+            {
+                Symbol = "ELF",
+                Icon = "http://127.0.0.1:9200/elf.png",
+                Decimals = "8",
+                Network = "AELF-AELF",
+                Address = "0x00000000"
+            }},
+            CoverageExpressions = new Dictionary<string, CoverageExpression>
+            {
+                ["Alchemy"] = new()
+                {
+                    OnRamp = new List<string>
+                    {
+                        "(baseCoverage || InList(portkeyId, whiteList))",
+                        "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+                    },
+                    OffRamp = new List<string>
+                    {
+                        "(baseCoverage || InList(portkeyId, whiteList))",
+                        "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+                    }
+                },
+                ["Transak"] = new()
+                {
+                    OnRamp = new List<string>
+                    {
+                        "(baseCoverage || InList(portkeyId, whiteList))",
+                        "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+                    },
+                    OffRamp = new List<string>
+                    {
+                        "(baseCoverage || InList(portkeyId, whiteList))",
+                        "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+                    }
+                }
+            }
+        };
+        
+        
+        var optionMock = new Mock<IOptionsMonitor<RampOptions>>();
+        optionMock.Setup(o => o.CurrentValue).Returns(rampOption);
+        return optionMock.Object;
+    }
+
+    protected MassTransit.IBus MockMassTransitIBus()
+    {
+        var mockContractProvider = new Mock<MassTransit.IBus>();
+        return mockContractProvider.Object;
     }
 
     protected CAServer.Common.IContractProvider MockContractProvider()
@@ -91,7 +217,16 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
         mockContractProvider
             .Setup(p => p.GenerateTransferTransaction(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new Tuple<string, Transaction>(PendingTxId, new Transaction()));
-        
+
+        mockContractProvider
+            .Setup(p => p.GetChainStatus(It.IsAny<string>()))
+            .ReturnsAsync(new ChainStatusDto
+            {
+                BestChainHeight = 100,
+                LongestChainHeight = 100,
+                LastIrreversibleBlockHeight = 100,
+                GenesisBlockHash = HashHelper.ComputeFrom("").ToHex()
+            });
         return mockContractProvider.Object;
     }
 

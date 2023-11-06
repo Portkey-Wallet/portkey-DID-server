@@ -22,14 +22,14 @@ using Xunit.Abstractions;
 namespace CAServer.ThirdPart;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
+public class ThirdPartOrderAppServiceTest : ThirdPartTestBase
 {
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly ITestOutputHelper _testOutputHelper;
 
 
-    public ThirdPartOrderAppServiceTest(ITestOutputHelper testOutputHelper)
+    public ThirdPartOrderAppServiceTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
@@ -38,10 +38,9 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(MockThirdPartOptions());
-        // services.AddSingleton(MockThirdPartOrderProvider());
-        // services.AddSingleton(getMockOrderGrain());
-        // services.AddSingleton(getMockDistributedEventBus());
+        services.AddSingleton(MockMassTransitIBus());
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
     }
 

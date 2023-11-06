@@ -31,13 +31,13 @@ public partial class ThirdPartOrderAppService
         var providers = GetRampProviders();
         foreach (var (k, v) in providers)
         {
-            coverageDto.ThirdPart[k] = _objectMapper.Map<ThirdPartProviders, RampProviderDto>(v);
+            coverageDto.ThirdPart[k] = _objectMapper.Map<ThirdPartProvider, RampProviderDto>(v);
         }
 
         return Task.FromResult(new CommonResponseDto<RampCoverageDto>(coverageDto));
     }
 
-    private Dictionary<string, ThirdPartProviders> GetRampProviders(string type = null)
+    private Dictionary<string, ThirdPartProvider> GetRampProviders(string type = null)
     {
         // expression params
         var getParamDict = (bool baseCoverage) => new Dictionary<string, object>
@@ -48,7 +48,7 @@ public partial class ThirdPartOrderAppService
             ["deviceType"] = "WebSDK" // TODO nzc
         };
 
-        var calculateCoverage = (string providerName, ThirdPartProviders provider) =>
+        var calculateCoverage = (string providerName, ThirdPartProvider provider) =>
         {
             // if off-ramp support
             provider.Coverage.OffRamp = ExpressionHelper.Evaluate<bool>(
@@ -68,7 +68,7 @@ public partial class ThirdPartOrderAppService
         };
 
         return _rampOptions?.CurrentValue?.Providers == null
-            ? new Dictionary<string, ThirdPartProviders>()
+            ? new Dictionary<string, ThirdPartProvider>()
             : _rampOptions.CurrentValue.Providers
                 .Where(p => calculateCoverage(p.Key, p.Value) != null)
                 .ToDictionary(kv => kv.Key, kv => kv.Value);

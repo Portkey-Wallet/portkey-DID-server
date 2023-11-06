@@ -35,7 +35,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         return ThirdPartNameType.Alchemy.ToString();
     }
 
-    private ThirdPartProviders AlchemyProviderOption()
+    private ThirdPartProvider AlchemyProviderOption()
     {
         return _rampOptions.CurrentValue.Providers[ThirdPart()];
     }

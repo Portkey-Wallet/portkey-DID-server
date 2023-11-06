@@ -92,7 +92,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
 
             var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
             AssertHelper.NotNull(esOrderData, "Order not found, id={Id}", grainId);
-            AssertHelper.NotNull(inputOrderDto.Id != esOrderData.Id, "Order invalid");
+            AssertHelper.IsTrue(inputOrderDto.Id == esOrderData.Id, "Order invalid");
 
             var currentStatus = ThirdPartHelper.ParseOrderStatus(esOrderData.Status);
             AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, inputState),

@@ -61,6 +61,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
 
         context.Services.AddMemoryCache();
+        context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
         
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
@@ -73,8 +74,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
         
-        context.Services.AddTransient<AlchemyProvider>();
-        context.Services.AddTransient<TransakProvider>();
+        context.Services.AddSingleton<AlchemyProvider>();
+        context.Services.AddSingleton<TransakProvider>();
         
         context.Services.AddTransient<IThirdPartAdaptor, AlchemyAdaptor>();
         context.Services.AddTransient<IThirdPartAdaptor, TransakAdaptor>();

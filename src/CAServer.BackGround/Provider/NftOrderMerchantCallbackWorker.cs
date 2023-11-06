@@ -27,20 +27,20 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly TransactionOptions _transactionOptions;
 
     public NftOrderMerchantCallbackWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<NftOrderMerchantCallbackWorker> logger,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
-        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions)
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
         _transactionOptions = transactionOptions.Value;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
     }
     
     /// <summary>
@@ -61,11 +61,11 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
         _logger.LogDebug("NftOrderMerchantCallbackWorker start");
         const int pageSize = 100;
         const int minCallbackCount = 1;
-        var maxCallbackCount = _thirdPartOptions.Timer.NftCheckoutMerchantCallbackCount;
+        var maxCallbackCount = _thirdPartOptions.CurrentValue.Timer.NftCheckoutMerchantCallbackCount;
 
         // query and handle WebhookCount > 0, but status is FAIL data
         // when WebhookCount > 0, WebhookTimeLt mast be exists
-        var minusAgo = _thirdPartOptions.Timer.NftUnCompletedMerchantCallbackMinuteAgo;
+        var minusAgo = _thirdPartOptions.CurrentValue.Timer.NftUnCompletedMerchantCallbackMinuteAgo;
         var lastWebhookTimeLt = DateTime.UtcNow.AddMinutes(- minusAgo).ToUtcString();
         var total = 0;
         while (true)

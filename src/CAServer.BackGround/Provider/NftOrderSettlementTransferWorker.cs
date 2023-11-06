@@ -23,26 +23,24 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
     private readonly ILogger<NftOrderSettlementTransferWorker> _logger;
     private readonly INftCheckoutService _nftCheckoutService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
-    private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly TransactionOptions _transactionOptions;
     private readonly IContractProvider _contractProvider;
 
 
     public NftOrderSettlementTransferWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         INftCheckoutService nftCheckoutService, ILogger<NftOrderSettlementTransferWorker> logger,
-        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
-        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions, IContractProvider contractProvider)
+        IAbpDistributedLock distributedLock,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions, IContractProvider contractProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _nftCheckoutService = nftCheckoutService;
         _logger = logger;
-        _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
         _contractProvider = contractProvider;
         _transactionOptions = transactionOptions.Value;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
     }
     
     /// <summary>
@@ -66,7 +64,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
             chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight);
         
         const int pageSize = 100;
-        var secondsAgo = _thirdPartOptions.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
+        var secondsAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow.AddHours(-1).ToUtcMilliSeconds().ToString();
         var total = 0;

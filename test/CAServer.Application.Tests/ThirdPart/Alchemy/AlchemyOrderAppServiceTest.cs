@@ -1,21 +1,24 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Grains.Grain;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Volo.Abp.Validation;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace CAServer.ThirdPart.Alchemy;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
+public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
 {
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     
 
-    public AlchemyOrderAppServiceTest()
+    public AlchemyOrderAppServiceTest(ITestOutputHelper output) : base(output)
     {
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
     }
@@ -24,11 +27,24 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
     {
         base.AfterAddApplication(services);
         services.AddSingleton(GetMockThirdPartOptions());
+        services.AddSingleton(MockRampOptions());
     }
+
+    private async Task<GrainResultDto<OrderGrainDto>> InitRampOrder(Guid id)
+    {
+        
+        return await _thirdPartOrderAppService.DoCreateOrderAsync(new OrderGrainDto
+        {
+            Id = id,
+            Status = OrderStatusType.Initialized.ToString()
+        });
+    }
+    
 
     [Fact]
     public async Task UpdateAlchemyOrderAsyncTest()
     {
+        await InitRampOrder(Guid.Parse("00000000-0000-0000-0000-000000000000"));
         var input = new AlchemyOrderUpdateDto
         {
             MerchantOrderNo = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -41,6 +57,7 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
         var result = await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
         result.Success.ShouldBe(true);
 
+        await InitRampOrder(Guid.Parse("00000000-0000-0000-0000-000000000001"));
         var inputFail = new AlchemyOrderUpdateDto
         {
             MerchantOrderNo = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -169,6 +186,9 @@ public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTest
     [Fact]
     public async Task UpdateAlchemySellAddressAsyncTest()
     {
+        var initResp = await InitRampOrder(new Guid("00000000-0000-0000-0000-000000000001"));
+        initResp.Success.ShouldBe(true);
+        
         var input = new AlchemyOrderUpdateDto()
         {
             Id = new Guid("00000000-0000-0000-0000-000000000001"),

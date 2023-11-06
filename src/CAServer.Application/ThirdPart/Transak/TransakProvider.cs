@@ -34,7 +34,7 @@ public static class TransakApi
 public class TransakProvider : CAServerAppService
 {
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
-    private readonly IOptionsMonitor<TransakOptions> _transakOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IHttpProvider _httpProvider;
     private readonly IClusterClient _clusterClient;
@@ -46,11 +46,11 @@ public class TransakProvider : CAServerAppService
         .Build();
 
     public TransakProvider(
-        IOptionsMonitor<TransakOptions> transakOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider, IOptionsMonitor<RampOptions> rampOptions, IClusterClient clusterClient,
         IAbpDistributedLock distributedLock)
     {
-        _transakOptions = transakOptions;
+        _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
         _rampOptions = rampOptions;
         _clusterClient = clusterClient;
@@ -58,9 +58,14 @@ public class TransakProvider : CAServerAppService
         InitAsync().GetAwaiter().GetResult();
     }
 
+    private TransakOptions TransakOptions()
+    {
+        return _thirdPartOptions.CurrentValue.Transak;
+    }
+
     public string GetApiKey()
     {
-        var key = (_transakOptions.CurrentValue.AppId ?? "").Split(":");
+        var key = (TransakOptions().AppId ?? "").Split(":");
         return key.Length == 1 ? key[0] : key[1];
     }
 
@@ -71,12 +76,15 @@ public class TransakProvider : CAServerAppService
 
     private async Task InitAsync()
     {
-        var webhookUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Alchemy.ToString()].WebhookUrl;
-        AssertHelper.NotEmpty(webhookUrl, "Transak webhookUrl empty in ramp options");
-        await UpdateWebhookAsync(new UpdateWebhookRequest
+        if(_rampOptions?.CurrentValue?.Providers.TryGetValue(ThirdPartNameType.Alchemy.ToString(), out var provider) == true)
         {
-            WebhookUrl = webhookUrl
-        });
+            var webhookUrl = provider.WebhookUrl;
+            AssertHelper.NotEmpty(webhookUrl, "Transak webhookUrl empty in ramp options");
+            await UpdateWebhookAsync(new UpdateWebhookRequest
+            {
+                WebhookUrl = webhookUrl
+            });
+        }
     }
 
     private async Task<Dictionary<string, string>> GetAccessTokenHeader()
@@ -132,7 +140,7 @@ public class TransakProvider : CAServerAppService
 
         // Expire ahead of RefreshTokenDurationPercent of the totalDuration.
         var expiration = DateTimeOffset.FromUnixTimeSeconds(accessToken.ExpiresAt).UtcDateTime;
-        var refreshDuration = (expiration - now) * _transakOptions.CurrentValue.RefreshTokenDurationPercent;
+        var refreshDuration = (expiration - now) * TransakOptions().RefreshTokenDurationPercent;
 
         // record accessToken data to Grain
         await tokenGrain.SetAccessToken(new TransakAccessTokenDto()
@@ -154,10 +162,10 @@ public class TransakProvider : CAServerAppService
     {
         // cacheData not exists or force
         var accessTokenResp = await _httpProvider.Invoke<TransakMetaResponse<object, TransakAccessToken>>(
-            _transakOptions.CurrentValue.BaseUrl,
+            TransakOptions().BaseUrl,
             TransakApi.RefreshAccessToken,
             body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = GetApiKey() }),
-            header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.CurrentValue.AppSecret },
+            header: new Dictionary<string, string> { ["api-secret"] = TransakOptions().AppSecret },
             settings: JsonSerializerSettings);
         AssertHelper.NotNull(accessTokenResp?.Data, "AccessToken response null");
         AssertHelper.NotEmpty(accessTokenResp.Data.AccessToken, "AccessToken empty");
@@ -171,7 +179,7 @@ public class TransakProvider : CAServerAppService
     public async Task<List<TransakCryptoItem>> GetCryptoCurrenciesAsync()
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCryptoItem>>>(
-            _transakOptions.CurrentValue.BaseUrl,
+            TransakOptions().BaseUrl,
             TransakApi.GetFiatCurrencies
         );
         AssertHelper.IsTrue(resp.Success,
@@ -188,7 +196,7 @@ public class TransakProvider : CAServerAppService
     public async Task<List<TransakFiatItem>> GetFiatCurrenciesAsync()
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakFiatItem>>>(
-            _transakOptions.CurrentValue.BaseUrl,
+            TransakOptions().BaseUrl,
             TransakApi.GetFiatCurrencies,
             param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() }
         );
@@ -204,7 +212,7 @@ public class TransakProvider : CAServerAppService
     public async Task<List<TransakCountry>> GetTransakCountriesAsync()
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCountry>>>(
-            _transakOptions.CurrentValue.BaseUrl,
+            TransakOptions().BaseUrl,
             TransakApi.GetFiatCurrencies
         );
         AssertHelper.IsTrue(resp.Success,
@@ -223,7 +231,7 @@ public class TransakProvider : CAServerAppService
     {
         input.PartnerApiKey = GetApiKey();
         var resp = await _httpProvider.Invoke<TransakBaseResponse<TransakRampPrice>>(
-            _transakOptions.CurrentValue.BaseUrl,
+            TransakOptions().BaseUrl,
             TransakApi.GetPrice,
             param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
                 JsonConvert.SerializeObject(input, JsonSerializerSettings)),
@@ -241,7 +249,7 @@ public class TransakProvider : CAServerAppService
     public async Task UpdateWebhookAsync(UpdateWebhookRequest input)
     {
         // Update the webhook address when the system starts.
-        await _httpProvider.Invoke(_transakOptions.CurrentValue.BaseUrl, TransakApi.UpdateWebhook,
+        await _httpProvider.Invoke(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
             body: JsonConvert.SerializeObject(input),
             header: await GetAccessTokenHeader(),
             withLog: true
@@ -255,10 +263,10 @@ public class TransakProvider : CAServerAppService
     /// <returns></returns>
     public async Task<TransakOrderDto> GetOrderByIdAsync(string orderId)
     {
-        var resp = await _httpProvider.Invoke<QueryTransakOrderByIdResult>(_transakOptions.CurrentValue.BaseUrl,
+        var resp = await _httpProvider.Invoke<QueryTransakOrderByIdResult>(TransakOptions().BaseUrl,
             TransakApi.GetOrderById,
             pathParams: new Dictionary<string, string> { ["orderId"] = orderId },
-            header: new Dictionary<string, string> { ["api-secret"] = _transakOptions.CurrentValue.AppSecret },
+            header: new Dictionary<string, string> { ["api-secret"] = TransakOptions().AppSecret },
             settings: JsonSerializerSettings,
             withLog: true
         );

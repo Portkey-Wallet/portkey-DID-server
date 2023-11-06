@@ -218,7 +218,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     }
 
     // create ramp order
-    private async Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto)
+    public async Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto)
     {
         _logger.LogInformation("This third part order {OrderId} of user:{UserId} will be created",
             orderGrainDto.ThirdPartOrderNo, orderGrainDto.UserId);

@@ -431,7 +431,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
             .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));
         
-        CreateMap<ThirdPartProviders, RampCoverageDto>().ReverseMap();
+        CreateMap<ThirdPartProvider, RampCoverageDto>().ReverseMap();
         CreateMap<CryptoItem, RampCurrencyItem>().ReverseMap();
         CreateMap<AlchemyOrderQuoteDataDto, RampPriceDto>()
             .ForMember(des => des.FiatAmount, opt => opt.MapFrom(src => src.FiatQuantity))

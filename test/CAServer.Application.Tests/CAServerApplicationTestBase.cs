@@ -17,12 +17,23 @@ using Xunit.Abstractions;
 
 namespace CAServer;
 
-public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApplicationTestModule>
+public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAServerApplicationTestModule>
 {
     
+    protected readonly ITestOutputHelper _output = null;
+
+    protected CAServerApplicationTestBase(ITestOutputHelper output)
+    {
+        _output = output;
+    }
+
+    protected CAServerApplicationTestBase()
+    {
+    }
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        //services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
+        services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
         services.AddSingleton(GetMockInMemoryHarness());
     }
 

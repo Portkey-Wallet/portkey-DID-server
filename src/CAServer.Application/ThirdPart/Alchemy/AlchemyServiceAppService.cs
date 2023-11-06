@@ -27,7 +27,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     private const string PriceCacheKey = "ramp:achCache:price";
 
     private readonly ILogger<AlchemyServiceAppService> _logger;
-    private readonly AlchemyOptions _alchemyOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IDistributedCache<List<AlchemyFiatDto>> _fiatListCache;
     private readonly IDistributedCache<List<AlchemyCryptoDto>> _cryptoListCache;
@@ -39,13 +39,13 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         ContractResolver = new CamelCasePropertyNamesContractResolver()
     };
 
-    public AlchemyServiceAppService(IOptions<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
+    public AlchemyServiceAppService(IOptionsMonitor<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         ILogger<AlchemyServiceAppService> logger, IDistributedCache<List<AlchemyFiatDto>> fiatListCache,
         IDistributedCache<AlchemyOrderQuoteDataDto> orderQuoteCache,
         IDistributedCache<List<AlchemyFiatDto>> nftFiatListCache,
         IDistributedCache<List<AlchemyCryptoDto>> cryptoListCache)
     {
-        _alchemyOptions = thirdPartOptions.Value.Alchemy;
+        _thirdPartOptions = thirdPartOptions;
         _alchemyProvider = alchemyProvider;
         _logger = logger;
         _fiatListCache = fiatListCache;
@@ -54,6 +54,11 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         _cryptoListCache = cryptoListCache;
     }
 
+    private AlchemyOptions AlchemyOptions()
+    {
+        return _thirdPartOptions.CurrentValue.Alchemy;
+    }
+    
     /// get Alchemy login free token
     public async Task<CommonResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
@@ -98,7 +103,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
                 async () => await _alchemyProvider.GetAlchemyFiatListAsync(input),
                 () => new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.FiatListExpirationMinutes)
+                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(AlchemyOptions().FiatListExpirationMinutes)
                 }
             );
             return new CommonResponseDto<List<AlchemyFiatDto>>(resp);
@@ -117,7 +122,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             async () => await _alchemyProvider.GetNftFiatList(),
             () => new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.NftFiatListExpirationMinutes)
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(AlchemyOptions().NftFiatListExpirationMinutes)
             }
         );
     }
@@ -133,7 +138,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
                 async () => await _alchemyProvider.GetAlchemyCryptoListAsync(input),
                 () => new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.CryptoListExpirationMinutes)
+                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(AlchemyOptions().CryptoListExpirationMinutes)
                 }
             );
             return new CommonResponseDto<List<AlchemyCryptoDto>>(resp);
@@ -186,7 +191,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             async () => await _alchemyProvider.GetAlchemyOrderQuoteAsync(input),
             () => new DistributedCacheEntryOptions
             {
-                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_alchemyOptions.OrderQuoteExpirationMinutes)
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(AlchemyOptions().OrderQuoteExpirationMinutes)
             }
         );
     }
@@ -199,8 +204,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         {
             return new CommonResponseDto<AlchemySignatureResultDto>(new AlchemySignatureResultDto()
             {
-                Signature = AlchemyHelper.AesEncrypt($"address={input.Address}&appId={_alchemyOptions.AppId}",
-                    _alchemyOptions.AppSecret)
+                Signature = AlchemyHelper.AesEncrypt($"address={input.Address}&appId={AlchemyOptions().AppId}",
+                    AlchemyOptions().AppSecret)
             });
         }
         catch (Exception e)
@@ -219,9 +224,9 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             // Ensure input isn't fake webhook data.
             AssertHelper.IsTrue(!input.ContainsKey("status"), "invalid param keys");
             AssertHelper.IsTrue(input.TryGetValue("appId", out var appId), "appId missing");
-            var appSecret = _alchemyOptions.NftAppId == appId
-                ? _alchemyOptions.NftAppSecret
-                : _alchemyOptions.AppSecret;
+            var appSecret = AlchemyOptions().NftAppId == appId
+                ? AlchemyOptions().NftAppSecret
+                : AlchemyOptions().AppSecret;
 
             var src = ThirdPartHelper.ConvertObjectToSortedString(input, AlchemyHelper.SignatureField);
             var sign = AlchemyHelper.HmacSign(src, appSecret);

@@ -38,7 +38,7 @@ public static class AlchemyApi
 
 public class AlchemyProvider : CAServerAppService
 {
-    private readonly IOptionsMonitor<AlchemyOptions> _alchemyOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IHttpProvider _httpProvider;
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
@@ -48,17 +48,22 @@ public class AlchemyProvider : CAServerAppService
         .Build(); 
 
     public AlchemyProvider(
-        IOptionsMonitor<AlchemyOptions> alchemyOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider)
     {
-        _alchemyOptions = alchemyOptions;
+        _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
+    }
+
+    private AlchemyOptions AlchemyOptions()
+    {
+        return _thirdPartOptions.CurrentValue.Alchemy;
     }
 
     /// get Alchemy order quote
     public async Task<AlchemyOrderQuoteDataDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.RampOrderQuote,
             header: GetRampAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
@@ -72,7 +77,7 @@ public class AlchemyProvider : CAServerAppService
     /// get Alchemy Crypto list
     public async Task<List<AlchemyCryptoDto>> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryCryptoList,
             header: GetRampAlchemyRequestHeader(),
             param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings))
@@ -85,7 +90,7 @@ public class AlchemyProvider : CAServerAppService
     /// get Alchemy fiat list
     public async Task<List<AlchemyFiatDto>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryFiatList,
             header: GetRampAlchemyRequestHeader(),
             param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings))
@@ -98,7 +103,7 @@ public class AlchemyProvider : CAServerAppService
     /// query Alchemy order info
     public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfoAsync(QueryAlchemyOrderDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<QueryAlchemyOrderInfo>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<QueryAlchemyOrderInfo>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryOrderTrade,
             header: GetRampAlchemyRequestHeader(),
             param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings)),
@@ -114,7 +119,7 @@ public class AlchemyProvider : CAServerAppService
     public async Task<AlchemyTokenDataDto> GetAlchemyRampFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input)
     {
         
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.RampFreeLoginToken,
             header: GetRampAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings)
@@ -127,7 +132,7 @@ public class AlchemyProvider : CAServerAppService
     /// Update off-ramp order TxHash
     public async Task UpdateOffRampOrder(WaitToSendOrderInfoDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.UpdateSellOrder,
             header: GetRampAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
@@ -140,7 +145,7 @@ public class AlchemyProvider : CAServerAppService
     /// Notice Alchemy NFT release result
     public async Task<AlchemyNftOrderDto> GetNftTrade(AlchemyNftReleaseNoticeRequestDto request)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryNftTrade,
             header: GetNftAlchemyRequestHeader(),
             param: new Dictionary<string, string>
@@ -156,7 +161,7 @@ public class AlchemyProvider : CAServerAppService
     ///     Notice Alchemy NFT release result
     public async Task NoticeNftReleaseResult(AlchemyNftReleaseNoticeRequestDto request)
     {
-        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<Empty>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<Empty>>(AlchemyOptions().BaseUrl,
             AlchemyApi.NftResultNotice,
             header: GetNftAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(request, JsonSerializerSettings), 
@@ -169,7 +174,7 @@ public class AlchemyProvider : CAServerAppService
     ///     Notice Alchemy NFT release result
     public async Task<List<AlchemyFiatDto>> GetNftFiatList()
     {
-        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryNftFiatList,
             header: GetNftAlchemyRequestHeader()
         );
@@ -181,7 +186,7 @@ public class AlchemyProvider : CAServerAppService
     ///     Get Alchemy NFT free login Token
     public async Task<AlchemyTokenDataDto> GetNftFreeLoginToken(GetAlchemyFreeLoginTokenDto input)
     {
-        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(_alchemyOptions.CurrentValue.BaseUrl,
+        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.GetFreeLoginToken,
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
             header: GetNftAlchemyRequestHeader()
@@ -193,13 +198,13 @@ public class AlchemyProvider : CAServerAppService
 
     private Dictionary<string, string> GetRampAlchemyRequestHeader()
     {
-        return GetAlchemyRequestHeader(_alchemyOptions.CurrentValue.AppId, _alchemyOptions.CurrentValue.AppSecret);
+        return GetAlchemyRequestHeader(AlchemyOptions().AppId, AlchemyOptions().AppSecret);
     }
 
 
     private Dictionary<string, string> GetNftAlchemyRequestHeader()
     {
-        return GetAlchemyRequestHeader(_alchemyOptions.CurrentValue.NftAppId, _alchemyOptions.CurrentValue.NftAppSecret);
+        return GetAlchemyRequestHeader(AlchemyOptions().NftAppId, AlchemyOptions().NftAppSecret);
     }
 
 

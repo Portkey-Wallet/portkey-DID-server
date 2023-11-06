@@ -48,7 +48,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         .IgnoreNullValue()
         .Build();
 
-    public NftOrderTest(ITestOutputHelper testOutputHelper)
+    public NftOrderTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
         _nftOrderSettlementTransferWorker = GetRequiredService<INftOrderSettlementTransferWorker>();
@@ -65,28 +65,21 @@ public partial class NftOrderTest : ThirdPartTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
+        services.AddSingleton(MockRampOptions());
         services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(MockContractProvider());
         services.AddSingleton(MockGraphQlProvider());
 
-        // mock http
-        services.AddSingleton(MockHttpFactory(_testOutputHelper,
-            PathMatcher(HttpMethod.Post, "/myWebhook", new CommonResponseDto<Empty>()),
-            PathMatcher(HttpMethod.Post, "/myWebhookFail",
-                new CommonResponseDto<Empty>().Error(new Exception("MockError"))),
-            PathMatcher(HttpMethod.Post, AlchemyApi.NftResultNotice.Path, new CommonResponseDto<Empty>()),
-            PathMatcher(HttpMethod.Get, AlchemyApi.QueryNftTrade.Path, new AlchemyBaseResponseDto<AlchemyNftOrderDto>(
-                new AlchemyNftOrderDto
-                {
-                    MerchantOrderNo = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4",
-                    Status = "PAY_SUCCESS"
-                })
-            ),
-            PathMatcher(HttpMethod.Get, AlchemyApi.QueryNftFiatList.Path,
-                new AlchemyBaseResponseDto<List<AlchemyFiatDto>>(
-                    new() { new AlchemyFiatDto { Country = "USA" } })
-            )
-        ));
+        MockHttpByPath(HttpMethod.Post, "/myWebhook", new CommonResponseDto<Empty>());
+        MockHttpByPath(HttpMethod.Post, AlchemyApi.NftResultNotice.Path, new CommonResponseDto<Empty>());
+        MockHttpByPath(HttpMethod.Get, AlchemyApi.QueryNftTrade.Path, new AlchemyBaseResponseDto<AlchemyNftOrderDto>(
+            new AlchemyNftOrderDto
+            {
+                MerchantOrderNo = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4",
+                Status = "PAY_SUCCESS"
+            }));
+        MockHttpByPath(HttpMethod.Post, "/myWebhookFail",
+            new CommonResponseDto<Empty>().Error(new Exception("MockError")));
     }
 
     [Fact]

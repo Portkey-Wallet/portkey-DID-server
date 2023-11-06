@@ -26,14 +26,14 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
 
     private readonly TransakProvider _transakProvider;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
-    private readonly IMemoryCache<List<TransakCryptoItem>> _cryptoCache;
-    private readonly IMemoryCache<List<TransakFiatItem>> _fiatCache;
-    private readonly IMemoryCache<Dictionary<string, TransakCountry>> _countryCache;
+    private readonly ILocalMemoryCache<List<TransakCryptoItem>> _cryptoCache;
+    private readonly ILocalMemoryCache<List<TransakFiatItem>> _fiatCache;
+    private readonly ILocalMemoryCache<Dictionary<string, TransakCountry>> _countryCache;
     private readonly IDistributedCache<TransakRampPrice> _rampPrice;
 
     public TransakAdaptor(TransakProvider transakProvider, IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
-        IMemoryCache<List<TransakCryptoItem>> cryptoCache, IMemoryCache<List<TransakFiatItem>> fiatCache,
-        IMemoryCache<Dictionary<string, TransakCountry>> countryCache, IDistributedCache<TransakRampPrice> rampPrice)
+        ILocalMemoryCache<List<TransakCryptoItem>> cryptoCache, ILocalMemoryCache<List<TransakFiatItem>> fiatCache,
+        ILocalMemoryCache<Dictionary<string, TransakCountry>> countryCache, IDistributedCache<TransakRampPrice> rampPrice)
     {
         _transakProvider = transakProvider;
         _thirdPartOptions = thirdPartOptions;
