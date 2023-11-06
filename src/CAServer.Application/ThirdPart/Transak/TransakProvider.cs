@@ -187,11 +187,11 @@ public class TransakProvider
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCryptoItem>>>(
             TransakOptions().BaseUrl,
-            TransakApi.GetFiatCurrencies
+            TransakApi.GetCryptoCurrencies
         );
         AssertHelper.IsTrue(resp.Success,
-            "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error.StatusCode,
-            resp.Error.Message);
+            "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
+            resp.Error?.Message);
         return resp.Response;
     }
 
@@ -208,7 +208,7 @@ public class TransakProvider
             param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() }
         );
         AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}",
-            resp.Error.StatusCode, resp.Error.Message);
+            resp.Error?.StatusCode, resp.Error?.Message);
         return resp.Response;
     }
 
@@ -216,15 +216,16 @@ public class TransakProvider
     ///     Get transak country list
     /// </summary>
     /// <returns></returns>
+    /// <returns></returns>
     public async Task<List<TransakCountry>> GetTransakCountriesAsync()
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCountry>>>(
             TransakOptions().BaseUrl,
-            TransakApi.GetFiatCurrencies
+            TransakApi.GetCountries
         );
         AssertHelper.IsTrue(resp.Success,
-            "GetTransakCountriesAsync Transak response error, code={Code}, message={Message}", resp.Error.StatusCode,
-            resp.Error.Message);
+            "GetTransakCountriesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
+            resp.Error?.Message);
         return resp.Response;
     }
 
@@ -245,7 +246,7 @@ public class TransakProvider
             withLog: true
         );
         AssertHelper.IsTrue(resp.Success, "GetRampPrice Transak response error, code={Code}, message={Message}",
-            resp.Error.StatusCode, resp.Error.Message);
+            resp.Error?.StatusCode, resp.Error?.Message);
         return resp.Response;
     }
 

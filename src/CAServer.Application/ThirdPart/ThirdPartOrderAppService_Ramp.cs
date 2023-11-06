@@ -39,6 +39,8 @@ public partial class ThirdPartOrderAppService
 
     private Dictionary<string, ThirdPartProvider> GetRampProviders(string type = null)
     {
+        if (_rampOptions?.CurrentValue?.Providers == null) return new Dictionary<string, ThirdPartProvider>();
+
         // expression params
         var getParamDict = (bool baseCoverage) => new Dictionary<string, object>
         {
@@ -66,13 +68,12 @@ public partial class ThirdPartOrderAppService
             if (type == OrderTransDirect.SELL.ToString() && !provider.Coverage.OffRamp) return null;
             return provider;
         };
-
-        return _rampOptions?.CurrentValue?.Providers == null
-            ? new Dictionary<string, ThirdPartProvider>()
-            : _rampOptions.CurrentValue.Providers
+            
+        return _rampOptions.CurrentValue.Providers
                 .Where(p => calculateCoverage(p.Key, p.Value) != null)
                 .ToDictionary(kv => kv.Key, kv => kv.Value);
     }
+
 
     private Dictionary<string, IThirdPartAdaptor> GetThirdPartAdaptors(string type = null)
     {
@@ -87,8 +88,7 @@ public partial class ThirdPartOrderAppService
     /// <summary>
     ///     Crypto list
     /// </summary>
-    /// <param name="type"></param>
-    /// <param name="fiat"></param>
+    /// <param name="request"></param>
     /// <returns></returns>
     public Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(RampCryptoRequest request)
     {
@@ -119,8 +119,7 @@ public partial class ThirdPartOrderAppService
     /// <summary>
     ///     Fiat list
     /// </summary>
-    /// <param name="type"></param>
-    /// <param name="crypto"></param>
+    /// <param name="rampFiatRequest"></param>
     /// <returns></returns>
     public async Task<CommonResponseDto<RampFiatDto>> GetRampFiatListAsync(RampFiatRequest rampFiatRequest)
     {
@@ -146,11 +145,21 @@ public partial class ThirdPartOrderAppService
                 fiatDict.GetOrAdd(id, _ => fiatItem);
             }
 
-            var defaultCurrencyOption = _rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption();
+            // default 
+            var defaultCurrencyOption = (_rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption()).ToFiat();
+            var defaultFiatId = GrainIdHelper.GenerateGrainId(defaultCurrencyOption.Symbol, defaultCurrencyOption.Country);
+            
+            // ensure that default fiat in fiat-list
+            var defaultFiatExists = fiatDict.TryGetValue(defaultFiatId, out var defaultFiat);
+            if (!defaultFiatExists)
+            {
+                defaultFiat = fiatDict.Values.FirstOrDefault(f => f.Symbol == defaultCurrencyOption.Symbol,
+                    fiatDict.Values.First());
+            }
             return new CommonResponseDto<RampFiatDto>(new RampFiatDto
             {
                 FiatList = fiatDict.Values.ToList(),
-                DefaultFiat = defaultCurrencyOption.ToFiat()
+                DefaultFiat = ObjectMapper.Map<RampFiatItem, DefaultFiatCurrency>(defaultFiat)
             });
         }
         catch (Exception e)

@@ -465,6 +465,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RampExchangeRequest, RampDetailRequest>().ReverseMap();
         CreateMap<RampLimitRequest, RampDetailRequest>().ReverseMap();
         CreateMap<RampPriceDto, ProviderRampDetailDto>().ReverseMap();
+        CreateMap<RampFiatItem, DefaultFiatCurrency>().ReverseMap();
         CreateMap<RampDetailRequest, GetRampPriceRequest>()
             .ForMember(des => des.IsBuyOrSell, opt => opt.MapFrom(src => src.Type))
             .ForMember(des => des.FiatCurrency, opt => opt.MapFrom(src => src.Fiat))

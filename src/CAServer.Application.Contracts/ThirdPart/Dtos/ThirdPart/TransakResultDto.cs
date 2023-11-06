@@ -56,12 +56,18 @@ public class TransakCryptoNetwork
 {
     public string Name { get; set; }
     public string ChainId { get; set; }
-    public List<string> FiatCurrenciesNotSupported { get; set; }
+    public List<TransakCryptoFiatNotSupported> FiatCurrenciesNotSupported { get; set; }
 
     public string ToNetworkId()
     {
         return string.Join(CommonConstant.Hyphen, Name.ToUpper(), ChainId.DefaultIfEmpty(CommonConstant.EmptyString));
     }
+}
+
+public class TransakCryptoFiatNotSupported
+{
+    public string FiatCurrency { get; set; }
+    public string PaymentMethod { get; set; }
 }
 
 public class TransakFiatItem

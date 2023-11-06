@@ -111,7 +111,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     Name = "AlchemyPay",
                     Logo = "http://127.0.0.1:9200/logo.png",
                     WebhookUrl = "http://127.0.0.1:9200",
-                    CountryIconUrl = "http://127.0.0.1:9200",
+                    CountryIconUrl = "https://static.alchemypay.org/alchemypay/flag/{ISO}.png",
                     PaymentTags = new List<string>{"ApplePay", "GooglePay"},
                     Coverage = new ProviderCoverage
                     {
@@ -126,7 +126,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     Name = "TransakPay",
                     Logo = "http://127.0.0.1:9200/logo.png",
                     WebhookUrl = "http://127.0.0.1:9200",
-                    CountryIconUrl = "http://127.0.0.1:9200",
+                    CountryIconUrl = "https://static.alchemypay.org/alchemypay/flag/{ISO}.png",
                     PaymentTags = new List<string>{"ApplePay", "GooglePay"},
                     Coverage = new ProviderCoverage
                     {
@@ -151,26 +151,26 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 {
                     OnRamp = new List<string>
                     {
-                        "(baseCoverage || InList(portkeyId, whiteList))",
-                        "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+                        "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
+                        "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
                     },
                     OffRamp = new List<string>
                     {
-                        "(baseCoverage || InList(portkeyId, whiteList))",
-                        "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+                        "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
+                        "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
                     }
                 },
                 ["Transak"] = new()
                 {
                     OnRamp = new List<string>
                     {
-                        "(baseCoverage || InList(portkeyId, whiteList))",
-                        "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+                        "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
+                        "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
                     },
                     OffRamp = new List<string>
                     {
-                        "(baseCoverage || InList(portkeyId, whiteList))",
-                        "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+                        "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
+                        "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
                     }
                 }
             }

@@ -1,9 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
+using CAServer.Common.Dtos;
+using CAServer.Commons;
+using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
@@ -12,7 +18,6 @@ namespace CAServer;
 
 public abstract partial class CAServerApplicationTestBase
 {
-    
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory = new();
     private readonly Mock<HttpMessageHandler> _mockHandler = new(MockBehavior.Strict);
 
@@ -26,25 +31,64 @@ public abstract partial class CAServerApplicationTestBase
     }
 
 
-    private void MockHttpByPath(HttpMethod method, string path,
-        string respData)
+    private void MockHttpByPath(string respData, params string[] expressions)
     {
         _mockHandler.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req =>
-                    req.Method == method && req.RequestUri.ToString().Contains(path)),
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => ExpressionHelper.Evaluate<bool>(expressions, ParseRequest(req))),
                 ItExpr.IsAny<CancellationToken>())
-            .Returns(() =>
+            .Returns((HttpRequestMessage req, CancellationToken _) =>
             {
                 var response = new HttpResponseMessage(HttpStatusCode.OK);
                 response.Content = new StringContent(respData, Encoding.UTF8, "application/json");
+                var method = req.Method.ToString();
+                var path = req.RequestUri.AbsolutePath;
                 _output?.WriteLine($"Mock Http {method} to {path}, resp={respData}");
                 return Task.FromResult(response);
             });
     }
 
-    protected void MockHttpByPath(HttpMethod method, string path, object response)
+
+    private Dictionary<string, object> ParseRequest(HttpRequestMessage request)
     {
-        MockHttpByPath(method, path, JsonConvert.SerializeObject(response));
+        var dict = new Dictionary<string, object>
+        {
+            { "method", request.Method.ToString() },
+            { "path", request.RequestUri.AbsolutePath }
+        };
+        var query = HttpUtility.ParseQueryString(request.RequestUri.Query);
+        var urlParamDict = query.AllKeys.ToDictionary(key => key, key => (object)query[key]);
+        dict.Add("param", urlParamDict);
+
+        if (request.Content == null) return dict;
+
+        var requestBody = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        try
+        {
+            var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(requestBody);
+            dict.Add("bodyObject", bodyDict);
+        }
+        catch (JsonException)
+        {
+            dict.Add("bodyString", requestBody);
+        }
+
+        return dict;
+    }
+
+    
+    protected void MockHttpByPath(HttpMethod method, string path, object response, params string[] expressions)
+    {
+        if (!expressions.IsNullOrEmpty()) expressions.AddFirst(" && ");
+        expressions.AddFirst($"method==\"{method}\" && path.Contains(\"{path}\")");
+        MockHttpByPath(JsonConvert.SerializeObject(response), expressions);
+    }
+
+    protected void MockHttpByPath(ApiInfo apiInfo, object response, params string[] expressions)
+    {
+        if (!expressions.IsNullOrEmpty()) expressions.AddFirst(" && ");
+        expressions.AddFirst($"method==\"{apiInfo.Method}\" && path.Contains(\"{apiInfo.Path}\")");
+        MockHttpByPath(response is string s ? s : JsonConvert.SerializeObject(response), expressions);
     }
 }

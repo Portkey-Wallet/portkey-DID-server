@@ -62,25 +62,30 @@ public class ProviderCoverage
 public class DefaultCurrencyOption
 {
     public string Crypto { get; set; } = "ELF";
-    public string CryptoAmount { get; set; } = "40000000000";
+    public string CryptoAmount { get; set; } = "400";
+    public string Network { get; set; } = "AELF-AELF";
+    
     public string Fiat { get; set; } = "USD";
     public string FiatAmount { get; set; } = "200";
+    public string Country { get; set; } = "US";
 
-    public DefaultCurrency ToCrypto()
+    public DefaultCryptoCurrency ToCrypto()
     {
-        return new DefaultCurrency
+        return new DefaultCryptoCurrency
         {
             Symbol = Crypto,
-            Amount = CryptoAmount
+            Amount = CryptoAmount,
+            Network = Network
         };
     }
 
-    public DefaultCurrency ToFiat()
+    public DefaultFiatCurrency ToFiat()
     {
-        return new DefaultCurrency
+        return new DefaultFiatCurrency
         {
             Symbol = Fiat,
-            Amount = FiatAmount
+            Amount = FiatAmount,
+            Country = Country
         };
     }
 }

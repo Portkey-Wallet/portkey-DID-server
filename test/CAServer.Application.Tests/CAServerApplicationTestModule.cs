@@ -27,6 +27,7 @@ namespace CAServer;
 
 [DependsOn(
     typeof(CAServerApplicationModule),
+    typeof(CAServerApplicationContractsModule),
     typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),

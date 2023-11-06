@@ -44,7 +44,7 @@
     ],
     "DefaultCurrency": {
       "Crypto": "ELF",
-      "CryptoAmount": "40000000000",
+      "CryptoAmount": "400",
       "Fiat": "USD",
       "FiatAmount": "200"
     },
@@ -54,22 +54,22 @@
     "CoverageExpressions": {
       "Alchemy": {
         "OnRamp": [
-          "(baseCoverage || InList(portkeyId, whiteList))",
-          "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
+          "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
         ],
         "OffRamp": [
-          "(baseCoverage || InList(portkeyId, whiteList))",
-          "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
+          "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
         ]
       },
       "Transak": {
         "OnRamp": [
-          "(baseCoverage || InList(portkeyId, whiteList))",
-          "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
+          "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
         ],
         "OffRamp": [
-          "(baseCoverage || InList(portkeyId, whiteList))",
-          "&& InList(deviceType, ToList('WebSDK','Chrome'))"
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
+          "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
         ]
       }
     }

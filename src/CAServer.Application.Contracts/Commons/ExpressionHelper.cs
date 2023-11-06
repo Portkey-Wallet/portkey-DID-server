@@ -1,7 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CAServer.Common;
 using CodingSeb.ExpressionEvaluator;
+using Microsoft.IdentityModel.Tokens;
 
 namespace CAServer.Commons;
 
@@ -9,10 +12,11 @@ public class ExpressionHelper
 {
     
     // InList
-    private static readonly Func<object, List<object>, bool> InListFunction = (item, list) =>
-        !list.IsNullOrEmpty() && item != null && list.Contains(item);
-
-    private static readonly Dictionary<string, object> ExtensionFunctions = new ()
+    private static readonly Func<object, object, bool> InListFunction = (item, list) =>
+        list is IEnumerable enumerable && enumerable.OfType<object>().Any(e => e.Equals(item));
+    
+    
+    private static readonly Dictionary<string, object> ExtensionFunctions = new()
     {
         ["InList"] = InListFunction
     };
@@ -31,7 +35,7 @@ public class ExpressionHelper
         {
             evaluator.Variables[name] = function;
         }
-        
+
         if (variables == null)
         {
             return evaluator.Evaluate<T>(expression);
@@ -41,7 +45,7 @@ public class ExpressionHelper
         {
             evaluator.Variables[pair.Key] = pair.Value;
         }
+
         return evaluator.Evaluate<T>(expression);
     }
-    
 }

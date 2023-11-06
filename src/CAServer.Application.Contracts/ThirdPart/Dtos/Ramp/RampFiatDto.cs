@@ -15,7 +15,7 @@ public class RampFiatRequest
 public class RampFiatDto
 {
     public List<RampFiatItem> FiatList { get; set; }
-    public DefaultCurrency DefaultFiat { get; set; }
+    public DefaultFiatCurrency DefaultFiat { get; set; }
 }
 
 

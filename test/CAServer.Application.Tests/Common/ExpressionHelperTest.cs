@@ -26,5 +26,27 @@ public class ExpressionHelperTest
             ["deviceId"] = "aaa"
         })));
     }
-    
+
+    [Fact]
+    public void InListTest()
+    {
+        var param = new Dictionary<string, object>
+        {
+            ["item"] = "abc",
+            ["dataList"] = new List<string>{"abc", "123"}
+        };  
+        
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<bool>("InList(item, dataList)", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<bool>("InList(item, List(\"ab\", \"bc\"))", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<bool>("InList(item, List(\"abc\", \"bc\"))", param).ToString());
+
+    }
+
+    [Fact]
+    public void StringTest()
+    {
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<bool>("\"abx\".Contains(\"ab\")").ToString());
+
+    }
+
 }
