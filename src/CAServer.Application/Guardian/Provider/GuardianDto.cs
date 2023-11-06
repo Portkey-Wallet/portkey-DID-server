@@ -14,6 +14,7 @@ public class GuardianInfo
 
 public class GuardianDto : GuardianBase
 {
+    public string ChainId { get; set; }
     public string OriginChainId { get; set; }
     public GuardianBaseListDto GuardianList { get; set; }
     public List<ManagerInfoDBase> ManagerInfos { get; set; }

@@ -77,11 +77,9 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureVirtualFileSystem(context);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
-        ConfigureHub(context, configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
-        //ConfigureOrleans(context, configuration);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -308,30 +306,18 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseCors();
         app.UseAuthentication();
 
-        if (MultiTenancyConsts.IsEnabled)
-        {
-            app.UseMultiTenancy();
-        }
-
         app.UseAuthorization();
-        if (!env.IsDevelopment())
-        {
-            app.UseMiddleware<RealIpMiddleware>();
-        }
-        if (env.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseAbpSwaggerUI(options =>
-            {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API");
 
-                // var configuration = context.GetConfiguration();
-                // options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
-                // options.OAuthScopes("CAServer");
-            });
-        }
+        app.UseSwagger();
+        app.UseAbpSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API");
 
-        app.UseAuditing();
+            // var configuration = context.GetConfiguration();
+            // options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
+            // options.OAuthScopes("CAServer");
+        });
+
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
