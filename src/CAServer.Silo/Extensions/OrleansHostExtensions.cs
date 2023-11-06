@@ -10,6 +10,7 @@ using Orleans.Hosting;
 using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Runtime;
 using Orleans.Statistics;
+using Serilog.Context;
 
 namespace CAServer.Silo.Extensions;
 
@@ -79,7 +80,10 @@ public static class OrleansHostExtensions
                         await context.Invoke();
                         return;
                     }
-                    DashExecutionContext.TrySetTraceIdentifier(RequestContext.Get("X-Dash-TraceIdentifier").ToString());
+                    var correlationId = RequestContext.Get("CorrelationId") != null ? RequestContext.Get("CorrelationId").ToString() : Guid.NewGuid().ToString();
+                    var id = DashExecutionContext.TrySetTraceIdentifier(correlationId);
+                    var tracingId = DashExecutionContext.TraceIdentifier;
+                    LogContext.PushProperty("CorrelationId", correlationId);
                     await context.Invoke();
                 })
                 .UseLinuxEnvironmentStatistics()

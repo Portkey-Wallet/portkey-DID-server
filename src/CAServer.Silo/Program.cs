@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Orleans.Hosting;
 using Serilog;
 using Serilog.Events;
+using Serilog.Templates;
 
 namespace CAServer;
 
@@ -26,7 +27,8 @@ public class Program
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
 #if DEBUG
-            .WriteTo.Async(c => c.Console())
+            .WriteTo.Console(new ExpressionTemplate("[{@t:HH:mm:ss fff} {@l:u3}" +
+                                                    " Application:{Application},Module:{Module}{#if CorrelationId is not null},CorrelationId:{CorrelationId}{#end}{#if RequestPath is not null},RequestPath:{RequestPath}{#end}] {@m}\n{@x}"))
 #endif
             .CreateLogger();
 
