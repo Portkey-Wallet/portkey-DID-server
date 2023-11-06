@@ -10,6 +10,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos.ThirdPart;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
@@ -31,8 +32,9 @@ public static class TransakApi
     public static ApiInfo RefreshAccessToken { get; } = new(HttpMethod.Post, "/partners/api/v2/refresh-token");
 }
 
-public class TransakProvider : CAServerAppService
+public class TransakProvider
 {
+    private readonly ILogger<TransakProvider> _logger;
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IAbpDistributedLock _distributedLock;
@@ -48,13 +50,14 @@ public class TransakProvider : CAServerAppService
     public TransakProvider(
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider, IOptionsMonitor<RampOptions> rampOptions, IClusterClient clusterClient,
-        IAbpDistributedLock distributedLock)
+        IAbpDistributedLock distributedLock, ILogger<TransakProvider> logger)
     {
         _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
         _rampOptions = rampOptions;
         _clusterClient = clusterClient;
         _distributedLock = distributedLock;
+        _logger = logger;
         InitAsync().GetAwaiter().GetResult();
     }
 
@@ -76,7 +79,7 @@ public class TransakProvider : CAServerAppService
 
     private async Task InitAsync()
     {
-        if(_rampOptions?.CurrentValue?.Providers.TryGetValue(ThirdPartNameType.Alchemy.ToString(), out var provider) == true)
+        if(_rampOptions?.CurrentValue?.Providers.TryGetValue(ThirdPartNameType.Transak.ToString(), out var provider) == true)
         {
             var webhookUrl = provider.WebhookUrl;
             AssertHelper.NotEmpty(webhookUrl, "Transak webhookUrl empty in ramp options");
@@ -84,6 +87,10 @@ public class TransakProvider : CAServerAppService
             {
                 WebhookUrl = webhookUrl
             });
+        }
+        else
+        {
+            _logger.LogError("Transak webhook url options not exists, skip update to Transak");            
         }
     }
 

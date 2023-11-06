@@ -36,8 +36,9 @@ public static class AlchemyApi
     public static ApiInfo QueryOrderTrade { get; } = new(HttpMethod.Get, "/merchant/query/trade");
 }
 
-public class AlchemyProvider : CAServerAppService
+public class AlchemyProvider
 {
+    private readonly ILogger<AlchemyProvider> _logger;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IHttpProvider _httpProvider;
 
@@ -49,10 +50,11 @@ public class AlchemyProvider : CAServerAppService
 
     public AlchemyProvider(
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
-        IHttpProvider httpProvider)
+        IHttpProvider httpProvider, ILogger<AlchemyProvider> logger)
     {
         _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
+        _logger = logger;
     }
 
     private AlchemyOptions AlchemyOptions()
@@ -213,7 +215,7 @@ public class AlchemyProvider : CAServerAppService
         var timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
         var source = appId + appSecret + timeStamp;
         var sign = AlchemyHelper.GenerateAlchemyApiSign(source);
-        Logger.LogDebug("appId: {AppId}, timeStamp: {TimeStamp}, signature: {Signature}", appId,
+        _logger.LogDebug("appId: {AppId}, timeStamp: {TimeStamp}, signature: {Signature}", appId,
             timeStamp, sign);
         return new Dictionary<string, string>
         {
