@@ -10,5 +10,5 @@ public interface IContactGrain : IGrainWithGuidKey
     Task<GrainResultDto<ContactGrainDto>> GetContactAsync();
     Task<GrainResultDto<ContactGrainDto>> ReadImputation();
     Task<GrainResultDto<ContactGrainDto>> Imputation();
-    Task<GrainResultDto<ContactGrainDto>> UpdateContactInfo(string walletName,string avatar);
+    Task<GrainResultDto<ContactGrainDto>> UpdateContactInfo(string walletName, string avatar);
 }
