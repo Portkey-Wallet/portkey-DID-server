@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.AppleAuth.Provider;
@@ -25,7 +26,7 @@ public class ImUserAppServiceTest : CAServerApplicationTestBase
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
         _caHolderRepository = GetRequiredService<INESTRepository<CAHolderIndex, Guid>>();
     }
-    
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(GetMockAppleUserProvider());
@@ -38,7 +39,7 @@ public class ImUserAppServiceTest : CAServerApplicationTestBase
         {
             var userId = _currentUser.GetId();
 
-           await _caHolderRepository.AddOrUpdateAsync(new CAHolderIndex()
+            await _caHolderRepository.AddOrUpdateAsync(new CAHolderIndex()
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
@@ -52,7 +53,32 @@ public class ImUserAppServiceTest : CAServerApplicationTestBase
             e.ShouldNotBeNull();
         }
     }
-    
+
+    [Fact]
+    public async Task GetHolderInfosTest()
+    {
+        try
+        {
+            var userId = _currentUser.GetId();
+
+            await _caHolderRepository.AddOrUpdateAsync(new CAHolderIndex()
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                CaHash = "test",
+                NickName = "test"
+            });
+            await _imUserAppService.GetHolderInfosAsync(new List<Guid>()
+            {
+                userId
+            });
+        }
+        catch (Exception e)
+        {
+            e.ShouldNotBeNull();
+        }
+    }
+
     private IAppleUserProvider GetMockAppleUserProvider()
     {
         var provider = new Mock<IAppleUserProvider>();
