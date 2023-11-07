@@ -68,7 +68,7 @@ public class ImUserAppServiceTest : CAServerApplicationTestBase
                 CaHash = "test",
                 NickName = "test"
             });
-            await _imUserAppService.GetUserInfosAsync(new List<Guid>()
+            await _imUserAppService.GetUserInfoAsync(new List<Guid>()
             {
                 userId
             });
