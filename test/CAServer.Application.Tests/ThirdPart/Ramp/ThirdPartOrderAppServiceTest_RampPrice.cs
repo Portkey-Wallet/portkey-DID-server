@@ -1,10 +1,12 @@
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Transak;
 using Newtonsoft.Json;
+using Shouldly;
 using Xunit;
 
 namespace CAServer.ThirdPart.Ramp;
@@ -15,8 +17,8 @@ public partial class ThirdPartOrderAppServiceTest
     private AlchemyOrderQuoteDataDto _alchemyOrderQuote = new AlchemyOrderQuoteDataDto
     {
         Crypto = "ELF",
-        CryptoPrice = "200",
-        CryptoQuantity = "20000000000",
+        CryptoPrice = "0.354321",
+        CryptoQuantity = "200",
         Fiat = "USD",
         FiatQuantity = "65",
         RampFee = "4.00",
@@ -24,14 +26,14 @@ public partial class ThirdPartOrderAppServiceTest
         PayWayCode = "1001"
     };
 
-    private TransakRampPrice _transaKPriceUSD = JsonConvert.DeserializeObject<TransakRampPrice>(
+    private readonly TransakRampPrice _transaKPriceUSD = JsonConvert.DeserializeObject<TransakRampPrice>(
         """
         {
-          "conversionPrice": 0.0005510110357006733,
+          "conversionPrice": 2.811223,
           "fiatCurrency": "USD",
           "cryptoCurrency": "ELF",
           "paymentMethod": "credit_debit_card",
-          "fiatAmount": 65,
+          "fiatAmount": 64,
           "cryptoAmount": 200,
           "isBuyOrSell": "BUY",
           "feeDecimal": 0.0668,
@@ -57,10 +59,10 @@ public partial class ThirdPartOrderAppServiceTest
         """
         );
     
-    private TransakRampPrice _transaKPriceEUR = JsonConvert.DeserializeObject<TransakRampPrice>(
+    private readonly TransakRampPrice _transaKPriceEUR = JsonConvert.DeserializeObject<TransakRampPrice>(
         """
         {
-          "conversionPrice": 0.0005510110357006733,
+          "conversionPrice": 2.95123,
           "fiatCurrency": "EUR",
           "cryptoCurrency": "ELF",
           "paymentMethod": "credit_debit_card",
@@ -89,13 +91,10 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """
         );
-    
-    
-    [Fact]
-    public async Task RampPriceTest()
+
+
+    private void MockRampPrice()
     {
-        MockRampLists();
-        
         MockHttpByPath(AlchemyApi.RampOrderQuote, new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>
         {
             Data = _alchemyOrderQuote
@@ -104,23 +103,100 @@ public partial class ThirdPartOrderAppServiceTest
         MockHttpByPath(TransakApi.GetPrice, new TransakBaseResponse<TransakRampPrice>
         {
             Response = _transaKPriceUSD
-        }, "param.FiatCurrency==\"USD\" ");
+        }, """ param["fiatCurrency"] =="USD" """);
         
         MockHttpByPath(TransakApi.GetPrice, new TransakBaseResponse<TransakRampPrice>
         {
             Response = _transaKPriceEUR
-        }, "param.FiatCurrency==\"EUR\" ");
-        
-        
-        await _thirdPartOrderAppService.GetRampPriceAsync(new RampDetailRequest()
-        {
-            Type = OrderTransDirect.BUY.ToString(),
-            Crypto = "ELF",
-            Fiat = "ERU",
-            Country = "DE",
-        });
+        }, """ param["fiatCurrency"] =="EUR" """);
     }
     
     
+    [Fact]
+    public async Task RampPriceTest()
+    {
+        MockRampLists();
+        MockRampPrice();
+        
+        var price = await _thirdPartOrderAppService.GetRampPriceAsync(new RampDetailRequest
+        {
+            Type = OrderTransDirect.SELL.ToString(),
+            Crypto = "ELF",
+            CryptoAmount = 200,
+            Network = "AELF-AELF",
+            Fiat = "USD",
+            FiatAmount = 65,
+            Country = "US",
+        });
+        price.ShouldNotBeNull();
+
+    }
+
+    [Fact]
+    public async Task ExchangeTest()
+    {
+        MockRampLists();
+        MockRampPrice();
+
+        
+        var usdExchange = await _thirdPartOrderAppService.GetRampExchangeAsync(new RampExchangeRequest
+        {
+            Type = OrderTransDirect.SELL.ToString(),
+            Crypto = "ELF",
+            Network = "AELF-AELF",
+            Fiat = "USD",
+            Country = "US",
+        });
+        usdExchange.ShouldNotBeNull();
+        usdExchange.Success.ShouldBeTrue();
+        usdExchange.Data.Exchange.ShouldBe("0.355717");
+        
+        
+        var eurExchange = await _thirdPartOrderAppService.GetRampExchangeAsync(new RampExchangeRequest
+        {
+            Type = OrderTransDirect.SELL.ToString(),
+            Crypto = "ELF",
+            Network = "AELF-AELF",
+            Fiat = "EUR",
+            Country = "DE",
+        });
+        eurExchange.ShouldNotBeNull();
+        eurExchange.Success.ShouldBeTrue();
+        eurExchange.Data.Exchange.ShouldBe("0.338841");
+
+    }
+
+
+    [Fact]
+    public async Task RampLimitTest()
+    {
+        MockRampLists();
+        MockRampPrice();
+
+        var sellLimit = await _thirdPartOrderAppService.GetRampLimitAsync(new RampLimitRequest
+        {
+            Type = OrderTransDirect.SELL.ToString(),
+            Crypto = "ELF",
+            Network = "AELF-AELF",
+            Fiat = "USD",
+            Country = "US",
+        });
+        sellLimit.ShouldNotBeNull();
+        sellLimit.Success.ShouldBeTrue();
+        
+        var buyLimit = await _thirdPartOrderAppService.GetRampLimitAsync(new RampLimitRequest
+        {
+            Type = OrderTransDirect.BUY.ToString(),
+            Crypto = "ELF",
+            Network = "AELF-AELF",
+            Fiat = "USD",
+            Country = "US",
+        });
+        buyLimit.ShouldNotBeNull();
+        buyLimit.Success.ShouldBeTrue();
+        
+
+
+    }
     
 }

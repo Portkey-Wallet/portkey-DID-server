@@ -8,7 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace CAServer.Commons;
 
-public class ExpressionHelper
+public static class ExpressionHelper
 {
     
     // InList
@@ -21,9 +21,21 @@ public class ExpressionHelper
         ["InList"] = InListFunction
     };
 
-    public static T Evaluate<T>(IEnumerable<string> multilineExpression, Dictionary<string, object> variables = null)
+    public static bool Evaluate(string expression, Dictionary<string, object> variables = null)
     {
-        return Evaluate<T>(string.Join("", multilineExpression), variables);
+        try
+        {
+            return Evaluate<bool>(expression, variables);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+    
+    public static bool Evaluate(IEnumerable<string> multilineExpression, Dictionary<string, object> variables = null)
+    {
+        return Evaluate(string.Join("", multilineExpression), variables);
     }
 
     public static T Evaluate<T>(string expression, Dictionary<string, object> variables = null)
@@ -35,7 +47,6 @@ public class ExpressionHelper
         {
             evaluator.Variables[name] = function;
         }
-
         if (variables == null)
         {
             return evaluator.Evaluate<T>(expression);

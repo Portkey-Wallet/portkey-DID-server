@@ -28,13 +28,18 @@ public class GetAlchemyFiatListDto
 public class GetAlchemyOrderQuoteDto
 {
     [Required] public string Crypto { get; set; }
-    [Required] public string Network { get; set; }
+    public string Network { get; set; }
     [Required] public string Fiat { get; set; }
     [Required] public string Country { get; set; }
     [Required] public string Amount { get; set; }
     [Required] public string Side { get; set; }
     public string PayWayCode { get; set; }
     public string Type { get; set; }
+
+    public bool IsBuy()
+    {
+        return Side == OrderTransDirect.BUY.ToString();
+    }
 }
 
 public class GetAlchemySignatureDto

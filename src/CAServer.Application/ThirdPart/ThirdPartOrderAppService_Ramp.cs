@@ -53,12 +53,12 @@ public partial class ThirdPartOrderAppService
         var calculateCoverage = (string providerName, ThirdPartProvider provider) =>
         {
             // if off-ramp support
-            provider.Coverage.OffRamp = ExpressionHelper.Evaluate<bool>(
+            provider.Coverage.OffRamp = ExpressionHelper.Evaluate(
                 _rampOptions.CurrentValue.CoverageExpressions[providerName].OffRamp,
                 getParamDict(provider.Coverage.OffRamp));
 
             // if on-ramp support
-            provider.Coverage.OnRamp = ExpressionHelper.Evaluate<bool>(
+            provider.Coverage.OnRamp = ExpressionHelper.Evaluate(
                 _rampOptions.CurrentValue.CoverageExpressions[providerName].OnRamp,
                 getParamDict(provider.Coverage.OnRamp));
 
@@ -189,19 +189,20 @@ public partial class ThirdPartOrderAppService
             var limitList = (await Task.WhenAll(limitTasks)).Where(limit => limit != null).ToList();
             AssertHelper.NotEmpty(limitList, "Empty limit list");
 
-            rampLimit.Crypto = new CurrencyLimit
+            rampLimit.Crypto = request.IsBuy() ? null : new CurrencyLimit
             {
                 Symbol = request.Crypto,
-                MinLimit = limitList.Select(limit => limit.Crypto.MinLimit).Min(),
-                MaxLimit = limitList.Select(limit => limit.Crypto.MaxLimit).Max()
+                MinLimit = limitList.Min(limit => limit.Crypto.MinLimit.SafeToDecimal()).ToString(6),
+                MaxLimit = limitList.Max(limit => limit.Crypto.MaxLimit.SafeToDecimal()).ToString(6)
             };
 
-            rampLimit.Fiat = new CurrencyLimit
+            rampLimit.Fiat = request.IsSell() ? null : new CurrencyLimit
             {
                 Symbol = request.Fiat,
-                MinLimit = limitList.Select(limit => limit.Fiat.MinLimit).Min(),
-                MaxLimit = limitList.Select(limit => limit.Fiat.MaxLimit).Max()
+                MinLimit = limitList.Min(limit => limit.Fiat.MinLimit.SafeToDecimal()).ToString(2),
+                MaxLimit = limitList.Max(limit => limit.Fiat.MaxLimit.SafeToDecimal()).ToString(2)
             };
+            
             return new CommonResponseDto<RampLimitDto>(rampLimit);
         }
         catch (Exception e)
@@ -251,9 +252,9 @@ public partial class ThirdPartOrderAppService
     {
         try
         {
-            AssertHelper.IsTrue(request.IsBuy() && request.FiatAmount != null && request.FiatAmount > 0,
+            AssertHelper.IsTrue(!request.IsBuy() || (request.FiatAmount ?? 0) > 0,
                 "Invalid fiat amount");
-            AssertHelper.IsTrue(request.IsSell() && request.CryptoAmount != null && request.CryptoAmount > 0,
+            AssertHelper.IsTrue(!request.IsSell() || (request.CryptoAmount ?? 0)  > 0,
                 "Invalid crypto amount");
 
             // invoke provider-adaptors ASYNC
@@ -262,11 +263,11 @@ public partial class ThirdPartOrderAppService
 
             // order by price and choose the MAX one
             var priceList = (await Task.WhenAll(priceTask)).Where(price => price != null)
-                .OrderBy(price => request.IsBuy()
+                .OrderByDescending(price => request.IsBuy()
                     ? price.CryptoAmount.SafeToDouble()
                     : price.FiatAmount.SafeToDouble())
                 .ToList();
-            AssertHelper.NotEmpty(priceTask, "Price list empty");
+            AssertHelper.NotEmpty(priceList, "Price list empty");
 
             return new CommonResponseDto<RampPriceDto>(priceList.First());
         }
@@ -368,46 +369,6 @@ public partial class ThirdPartOrderAppService
         {
             Logger.LogError(e, "Input validation internal error");
             return false;
-        }
-    }
-
-    public async Task<CommonResponseDto<RampFreeLoginDto>> GetRampThirdPartFreeLoginTokenAsync(
-        RampFreeLoginRequest input)
-    {
-        try
-        {
-            AssertHelper.NotEmpty(input.ThirdPart, "param thirdPart empty");
-
-            var adaptor = GetThirdPartAdaptors()[input.ThirdPart];
-            AssertHelper.NotNull(adaptor, "Provider {ThirdPart} not found", input.ThirdPart);
-
-            return new CommonResponseDto<RampFreeLoginDto>(await adaptor.GetRampFreeLoginAsync(input));
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "GetRampThirdPartFreeLoginTokenAsync ERROR, thirdPart={ThirdPart}", input.ThirdPart);
-            return new CommonResponseDto<RampFreeLoginDto>().Error(e, "Internal error, please try again later");
-        }
-    }
-
-    public async Task<CommonResponseDto<AlchemySignatureResultDto>> GetRampThirdPartSignatureAsync(
-        RampSignatureRequest input)
-    {
-        try
-        {
-            AssertHelper.NotEmpty(input.ThirdPart, "param thirdPart empty");
-
-            var adaptor = GetThirdPartAdaptors()[input.ThirdPart];
-            AssertHelper.NotNull(adaptor, "Provider {ThirdPart} not found", input.ThirdPart);
-
-            return new CommonResponseDto<AlchemySignatureResultDto>(
-                await adaptor.GetRampThirdPartSignatureAsync(input));
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "GetRampThirdPartSignatureAsync ERROR, thirdPart={ThirdPart}", input.ThirdPart);
-            return new CommonResponseDto<AlchemySignatureResultDto>().Error(e,
-                "Internal error, please try again later");
         }
     }
 }

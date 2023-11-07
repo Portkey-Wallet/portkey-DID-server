@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CAServer.Commons;
@@ -149,7 +150,7 @@ public class TransakRampPrice
 {
     public string QuoteId { get; set; }
 
-    // Fiat : Crypto
+    // Crypto-Fiat
     public decimal ConversionPrice { get; set; }
     public decimal MarketConversionPrice { get; set; }
     public string Slippage { get; set; }
@@ -188,9 +189,10 @@ public class TransakRampPrice
             : FeeDecimal;
     }
 
-    public decimal CryptoFiatExchange()
+    public decimal FiatCryptoExchange()
     {
-        return 1 / ConversionPrice;
+        var cryptoFiatExchange = 1 / ConversionPrice;
+        return decimal.Round(cryptoFiatExchange, 6, MidpointRounding.ToZero);
     }
 }
 

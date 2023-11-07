@@ -32,7 +32,5 @@ public interface IThirdPartOrderAppService
     Task<CommonResponseDto<RampPriceDto>> GetRampPriceAsync(RampDetailRequest request);
     Task<CommonResponseDto<RampDetailDto>> GetRampDetailAsync(RampDetailRequest request);
     Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input);
-    Task<CommonResponseDto<RampFreeLoginDto>> GetRampThirdPartFreeLoginTokenAsync(RampFreeLoginRequest input);
-    Task<CommonResponseDto<AlchemySignatureResultDto>> GetRampThirdPartSignatureAsync(RampSignatureRequest input);
     
 }

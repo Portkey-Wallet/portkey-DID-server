@@ -8,7 +8,6 @@ namespace CAServer.Common;
 
 public class ExpressionHelperTest
 {
-    
     private readonly ITestOutputHelper _testOutputHelper;
 
     public ExpressionHelperTest(ITestOutputHelper testOutputHelper)
@@ -20,11 +19,13 @@ public class ExpressionHelperTest
     public void EvaluateTest()
     {
         _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<int>("1 + 2").ToString());
-        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(ExpressionHelper.Evaluate<List<object>>("List(1,2,'3')")));
-        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(ExpressionHelper.Evaluate<bool>("InList(deviceId, List(\"aaa\", \"bbb\", \"3\"))", new Dictionary<string, object>
-        {
-            ["deviceId"] = "aaa"
-        })));
+        _testOutputHelper.WriteLine(
+            JsonConvert.SerializeObject(ExpressionHelper.Evaluate<List<object>>("List(1,2,'3')")));
+        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(ExpressionHelper.Evaluate(
+            "InList(deviceId, List(\"aaa\", \"bbb\", \"3\"))", new Dictionary<string, object>
+            {
+                ["deviceId"] = "aaa"
+            })));
     }
 
     [Fact]
@@ -33,20 +34,38 @@ public class ExpressionHelperTest
         var param = new Dictionary<string, object>
         {
             ["item"] = "abc",
-            ["dataList"] = new List<string>{"abc", "123"}
-        };  
-        
-        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<bool>("InList(item, dataList)", param).ToString());
-        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<bool>("InList(item, List(\"ab\", \"bc\"))", param).ToString());
-        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<bool>("InList(item, List(\"abc\", \"bc\"))", param).ToString());
+            ["dataList"] = new List<string> { "abc", "123" }
+        };
 
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("InList(item, dataList)", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("InList(item, List(\"ab\", \"bc\"))", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("InList(item, List(\"abc\", \"bc\"))", param).ToString());
     }
 
     [Fact]
     public void StringTest()
     {
-        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate<bool>("\"abx\".Contains(\"ab\")").ToString());
-
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("\"abx\".Contains(\"ab\")").ToString());
     }
 
+    [Fact]
+    public void ParamTest()
+    {
+        var param = new Dictionary<string, object>()
+        {
+            ["currency"] = "USD"
+        };
+
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("""  param["currency"] == "USD" """,
+            new Dictionary<string, object>()
+            {
+                ["param"] = param
+            }).ToString());
+
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("""  param["currencySymbol"] == "USD" """,
+            new Dictionary<string, object>()
+            {
+                ["param"] = param
+            }).ToString());
+    }
 }

@@ -189,7 +189,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
             .Where(f => f.Symbol == rampDetailRequest.Fiat)
             .Where(f => !f.SupportingCountries.IsNullOrEmpty())
             .FirstOrDefault(f => f.SupportingCountries.Contains(rampDetailRequest.Country));
-        AssertHelper.NotNull(fiat, "Fiat {Fiat} not fount", rampDetailRequest.Fiat);
+        AssertHelper.NotNull(fiat, "Fiat {Fiat} not found", rampDetailRequest.Fiat);
         AssertHelper.NotEmpty(fiat.PaymentOptions, "Fiat {Fiat} payment empty", rampDetailRequest.Fiat);
 
         var paymentOption = fiat.PaymentOptions
@@ -223,7 +223,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
             .Where(f => f.Symbol == fiat)
             .Where(f => !f.SupportingCountries.IsNullOrEmpty())
             .FirstOrDefault(f => country.IsNullOrEmpty() || f.SupportingCountries.Contains(country));
-        AssertHelper.NotNull(fiatItem, "Fiat {Fiat} not fount", fiat);
+        AssertHelper.NotNull(fiatItem, "Fiat {Fiat} not found", fiat);
         AssertHelper.NotEmpty(fiatItem.PaymentOptions, "Fiat {Fiat} payment empty", fiat);
         return fiatItem;
     }
@@ -244,15 +244,15 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
             var limitCurrencyFiat = paymentOption?.LimitCurrency == fiat.Symbol
                 ? fiat
                 : await GetTransakFiatItem(rampLimitRequest.Type, paymentOption.LimitCurrency);
-            AssertHelper.NotNull(fiat, "LimitCurrencyFiat {Fiat} not fount", paymentOption.LimitCurrency);
+            AssertHelper.NotNull(fiat, "LimitCurrencyFiat {Fiat} not found", paymentOption.LimitCurrency);
             AssertHelper.NotEmpty(fiat.SupportingCountries, "LimitCurrencyFiat {Fiat} support country empty",
                 paymentOption.LimitCurrency);
 
             // fiat price
             var rampDetailRequest = ObjectMapper.Map<RampLimitRequest, RampDetailRequest>(rampLimitRequest);
             var fiatPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
-            var cryptoFiatExchange = fiatPrice.CryptoFiatExchange();
-            AssertHelper.IsTrue(cryptoFiatExchange > 0, "Invalid fiat price exchange {Ex}", fiatPrice.ConversionPrice);
+            var fiatCryptoExchange = fiatPrice.FiatCryptoExchange();
+            AssertHelper.IsTrue(fiatCryptoExchange > 0, "Invalid fiat price exchange {Ex}", fiatPrice.ConversionPrice);
 
             // limit currency price
             rampDetailRequest.Fiat = limitCurrencyFiat?.Symbol;
@@ -260,15 +260,15 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
             var limitCurrencyPrice = fiat.Symbol == paymentOption.LimitCurrency
                 ? fiatPrice
                 : await GetCommonRampPriceWithCache(rampDetailRequest);
-            var limitCurrencyCryptoFiatExchange = limitCurrencyPrice.CryptoFiatExchange();
+            var limitCurrencyCryptoFiatExchange = limitCurrencyPrice.FiatCryptoExchange();
             AssertHelper.IsTrue(limitCurrencyCryptoFiatExchange > 0, "Invalid limitCurrency fiat price exchange {Ex}",
-                limitCurrencyPrice.CryptoFiatExchange());
+                limitCurrencyPrice.FiatCryptoExchange());
 
             // calculate limit amount by two exchanges
             var limitCurrencyMaxLimit = fiat.MaxLimit(rampLimitRequest.Type);
-            var fiatMinLimit = CalculateLimit(limitCurrencyCryptoFiatExchange, cryptoFiatExchange,
+            var fiatMinLimit = CalculateLimit(limitCurrencyCryptoFiatExchange, fiatCryptoExchange,
                 limitCurrencyMaxLimit.MinLimit.SafeToDecimal());
-            var fiatMaxLimit = CalculateLimit(limitCurrencyCryptoFiatExchange, cryptoFiatExchange,
+            var fiatMaxLimit = CalculateLimit(limitCurrencyCryptoFiatExchange, fiatCryptoExchange,
                 limitCurrencyMaxLimit.MaxLimit.SafeToDecimal());
 
             // TODO nzc decimals need to test 
@@ -276,8 +276,8 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
                 fiatMinLimit.ToString(2, DecimalHelper.RoundingOption.Ceiling),
                 fiatMaxLimit.ToString(2, DecimalHelper.RoundingOption.Floor));
             var cryptoLimit = new CurrencyLimit(rampLimitRequest.Crypto,
-                (cryptoFiatExchange * fiatMinLimit).ToString(8, DecimalHelper.RoundingOption.Ceiling),
-                (cryptoFiatExchange * fiatMinLimit).ToString(8, DecimalHelper.RoundingOption.Floor));
+                (fiatMinLimit / fiatCryptoExchange).ToString(8, DecimalHelper.RoundingOption.Ceiling),
+                (fiatMaxLimit / fiatCryptoExchange).ToString(8, DecimalHelper.RoundingOption.Floor));
             return new RampLimitDto
             {
                 Fiat = fiatLimit,
@@ -308,7 +308,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
         {
             var rampDetailRequest = ObjectMapper.Map<RampExchangeRequest, RampDetailRequest>(rampExchangeRequest);
             var commonPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
-            return commonPrice.CryptoFiatExchange();
+            return commonPrice.FiatCryptoExchange();
         }
         catch (Exception e)
         {
@@ -323,13 +323,23 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
         {
             var commonPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
             var transakFeePercent = commonPrice.TransakFeePercent();
+            
             var fiatAmount = rampDetailRequest.IsBuy()
                 ? rampDetailRequest.FiatAmount ?? 0
-                : rampDetailRequest.CryptoAmount * commonPrice.ConversionPrice ?? 0;
+                : rampDetailRequest.CryptoAmount / commonPrice.ConversionPrice ?? 0;
+            
             var networkFee = commonPrice.NetworkFee();
             var transakFee = fiatAmount * transakFeePercent;
-
+            fiatAmount = fiatAmount - transakFee - networkFee;
+            
+            var cryptoAmount = rampDetailRequest.IsBuy()
+                ? fiatAmount * commonPrice.ConversionPrice
+                : rampDetailRequest.CryptoAmount ?? 0;
+            
             var rampPrice = ObjectMapper.Map<TransakRampPrice, RampPriceDto>(commonPrice);
+            rampPrice.ThirdPart = ThirdPart();
+            rampPrice.FiatAmount = fiatAmount.ToString(2, DecimalHelper.RoundingOption.Floor);
+            rampPrice.CryptoAmount = cryptoAmount.ToString(8, DecimalHelper.RoundingOption.Floor);
             rampPrice.FeeInfo = new RampFeeInfo
             {
                 NetworkFee = FeeItem.Fiat(rampDetailRequest.Fiat,

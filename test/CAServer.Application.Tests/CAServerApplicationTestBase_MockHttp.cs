@@ -36,7 +36,7 @@ public abstract partial class CAServerApplicationTestBase
         _mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
-                ItExpr.Is<HttpRequestMessage>(req => ExpressionHelper.Evaluate<bool>(expressions, ParseRequest(req))),
+                ItExpr.Is<HttpRequestMessage>(req => ExpressionHelper.Evaluate(expressions, ParseRequest(req))),
                 ItExpr.IsAny<CancellationToken>())
             .Returns((HttpRequestMessage req, CancellationToken _) =>
             {
@@ -64,31 +64,34 @@ public abstract partial class CAServerApplicationTestBase
         if (request.Content == null) return dict;
 
         var requestBody = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        dict.Add("bodyString", requestBody);
+        var bodyObj = new Dictionary<string, object>();
         try
         {
-            var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(requestBody);
-            dict.Add("bodyObject", bodyDict);
+            bodyObj = JsonConvert.DeserializeObject<Dictionary<string, object>>(requestBody);
         }
         catch (JsonException)
         {
-            dict.Add("bodyString", requestBody);
         }
-
+        dict.Add("bodyObject", bodyObj);
         return dict;
     }
 
     
     protected void MockHttpByPath(HttpMethod method, string path, object response, params string[] expressions)
     {
-        if (!expressions.IsNullOrEmpty()) expressions.AddFirst(" && ");
-        expressions.AddFirst($"method==\"{method}\" && path.Contains(\"{path}\")");
-        MockHttpByPath(JsonConvert.SerializeObject(response), expressions);
+        var expressionList = expressions.ToList();
+        if (expressionList.Any()) expressionList.Insert(0, " && ");
+        expressionList.Insert(0, $""" method=="{method}" && path.Contains("{path}") """);
+        MockHttpByPath(JsonConvert.SerializeObject(response), expressionList.ToArray());
     }
 
     protected void MockHttpByPath(ApiInfo apiInfo, object response, params string[] expressions)
     {
-        if (!expressions.IsNullOrEmpty()) expressions.AddFirst(" && ");
-        expressions.AddFirst($"method==\"{apiInfo.Method}\" && path.Contains(\"{apiInfo.Path}\")");
-        MockHttpByPath(response is string s ? s : JsonConvert.SerializeObject(response), expressions);
+        var expressionList = expressions.ToList();
+        if (expressionList.Any()) expressionList.Insert(0, " && ");
+        expressionList.Insert(0, $""" method=="{apiInfo.Method}" && path.Contains("{apiInfo.Path}") """);
+        MockHttpByPath(response is string s ? s : JsonConvert.SerializeObject(response), expressionList.ToArray());
     }
+    
 }

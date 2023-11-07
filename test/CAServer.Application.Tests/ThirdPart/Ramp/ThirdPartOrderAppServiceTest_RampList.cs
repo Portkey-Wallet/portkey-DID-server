@@ -29,6 +29,23 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """);
 
+    private readonly AlchemyCryptoDto _alchemyElf = JsonConvert.DeserializeObject<AlchemyCryptoDto>(
+        """
+        {
+        	"crypto": "ELF",
+        	"network": "ELF",
+        	"buyEnable": "1",
+        	"sellEnable": "1",
+        	"minPurchaseAmount": "15.75",
+        	"maxPurchaseAmount": "1900.00",
+        	"address": null,
+        	"icon": "https://static.alchemypay.org/alchemypay/crypto-images/ELF.png",
+        	"minSellAmount": "78.318571463",
+        	"maxSellAmount": "16051.747216122"
+        }
+        """
+    );
+
     private readonly TransakFiatItem _transakUsd = JsonConvert.DeserializeObject<TransakFiatItem>(
         """
         {
@@ -39,13 +56,33 @@ public partial class ThirdPartOrderAppServiceTest
           "logoSymbol": "US",
           "name": "US Dollar",
           "paymentOptions": [
-            {"name":"Card Payment","id":"credit_debit_card","isNftAllowed":true,"isNonCustodial":true,"processingTime":"1-3 minutes","displayText":true,"icon":"https://assets.transak.com/images/fiat-currency/visa_master_h.png","dailyLimit":5000,"limitCurrency":"USD","isActive":true,"provider":"checkout","maxAmount":1500,"minAmount":30,"defaultAmount":300,"isConverted":true}
+            {
+                "name": "Card Payment",
+                "id": "credit_debit_card",
+                "isNftAllowed": true,
+                "isNonCustodial": true,
+                "processingTime": "1-3 minutes",
+                "displayText": true,
+                "icon": "https://assets.transak.com/images/fiat-currency/visa_master_h.png",
+                "dailyLimit": 5000,
+                "limitCurrency": "USD",
+                "isActive": true,
+                "provider": "checkout",
+                "maxAmount": 1500,
+                "minAmount": 30,
+                "defaultAmount": 300,
+                "isConverted": true,
+                "isPayOutAllowed": true,
+                "minAmountForPayOut": 40,
+                "maxAmountForPayOut": 1600,
+                "defaultAmountForPayOut": 400
+            }
           ],
           "isPopular": true,
           "isAllowed": true,
           "roundOff": 2,
           "icon": "",
-          "isPayOutAllowed": false,
+          "isPayOutAllowed": true,
           "defaultCountryForNFT": "US"
         }
         """
@@ -119,9 +156,9 @@ public partial class ThirdPartOrderAppServiceTest
           "isStable": true,
           "name": "USD Coin",
           "roundOff": 2,
-          "symbol": "ELF",
+          "symbol": "ETH",
           "network": {
-            "name": "AELF",
+            "name": "ETH",
             "fiatCurrenciesNotSupported": [
               {
                 "fiatCurrency": "EUR",
@@ -130,7 +167,7 @@ public partial class ThirdPartOrderAppServiceTest
             ],
             "chainId": null
           },
-          "uniqueId": "ELF",
+          "uniqueId": "ETh",
           "isPayInAllowed": true,
           "minAmountForPayIn": 1,
           "maxAmountForPayIn": 10
@@ -145,6 +182,11 @@ public partial class ThirdPartOrderAppServiceTest
             Data = new List<AlchemyFiatDto> { _alchemyUsd }
         });
 
+        MockHttpByPath(AlchemyApi.QueryCryptoList, new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>
+        {
+            Data = new List<AlchemyCryptoDto> { _alchemyElf }
+        });
+        
         MockHttpByPath(TransakApi.GetFiatCurrencies, new TransakBaseResponse<List<TransakFiatItem>>
         {
             Response = new List<TransakFiatItem> { _transakUsd, _transakEur }
@@ -164,15 +206,14 @@ public partial class ThirdPartOrderAppServiceTest
     
     [Fact]
     public async Task RampFiatTest()
-    
     {
         MockRampLists(); 
         
         var buyFiatList = await _thirdPartOrderAppService.GetRampFiatListAsync(new RampFiatRequest
         {
             Type = OrderTransDirect.BUY.ToString(),
-            Crypto = "ELF",
-            Network = "AELF-AELF"
+            Crypto = "ETH",
+            Network = "ETH"
         });
         
         _output.WriteLine(JsonConvert.SerializeObject(buyFiatList));
@@ -188,7 +229,7 @@ public partial class ThirdPartOrderAppServiceTest
         _output.WriteLine(JsonConvert.SerializeObject(sellFiatList));
         sellFiatList.ShouldNotBeNull();
         sellFiatList.Success.ShouldBe(true);
-        sellFiatList.Data.FiatList.Count.ShouldBe(3);
+        sellFiatList.Data.FiatList.Count.ShouldBe(4);
         
     }
 
@@ -203,6 +244,8 @@ public partial class ThirdPartOrderAppServiceTest
         cryptoList.ShouldNotBeNull();
         cryptoList.Data.CryptoList.Count.ShouldBe(1);
 
+        
+        
     }
 
 

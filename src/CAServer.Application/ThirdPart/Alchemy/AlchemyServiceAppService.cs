@@ -58,7 +58,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         return _thirdPartOptions.CurrentValue.Alchemy;
     }
-    
+
     /// get Alchemy login free token
     public async Task<CommonResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
@@ -165,14 +165,29 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             var fiat = fiatListData.Data.FirstOrDefault(t => t.Currency == input.Fiat);
             AssertHelper.NotNull(fiat, "{Fiat} not found in Alchemy fiat list", input.Fiat);
 
-            var amount = input.Amount.SafeToDouble();
-            var fixedFee = fiat.FixedFee.SafeToDouble();
-            var feeRate = fiat.FeeRate.SafeToDouble();
-            var networkFee = quoteData.NetworkFee.SafeToDouble();
-            var cryptoPrice = quoteData.CryptoPrice.SafeToDouble();
-            var rampFee = fixedFee + amount * feeRate;
+            var fixedFee = fiat.FixedFee.SafeToDecimal();
+            var feeRate = fiat.FeeRate.SafeToDecimal();
+            var networkFee = quoteData.NetworkFee.SafeToDecimal();
+
+            // Exchange of [ fiat : crypto ]
+            var cryptoPrice = quoteData.CryptoPrice.SafeToDecimal();
+
+            var inputAmount = input.Amount.SafeToDecimal();
+            var fiatAmount = input.IsBuy() ? inputAmount : inputAmount * cryptoPrice;
+            var rampFee = fixedFee + fiatAmount * feeRate;
+
+            /*
+             * on-ramp: input-amount is FiatQuantity, which user will pay
+             * off-ramp: FiatQuantity = (CryptoQuantity * fiat-crypto-exchange) - fee
+             */
+            quoteData.FiatQuantity = input.IsBuy() ? input.Amount : (fiatAmount - rampFee - networkFee).ToString(2);
             quoteData.RampFee = rampFee.ToString("f2");
-            quoteData.CryptoQuantity = ((amount - rampFee - networkFee) / cryptoPrice).ToString("f8");
+
+            /*
+             * on-ramp: CryptoQuantity = (FiatQuantity - Fee ) / fiat-crypto-exchange
+             * off-ramp: input-amount is CryptoQuantity, which user will pay
+             */
+            quoteData.CryptoQuantity = input.IsBuy() ? (fiatAmount / cryptoPrice).ToString(8) : input.Amount;
             return new CommonResponseDto<AlchemyOrderQuoteDataDto>(quoteData);
         }
         catch (Exception e)
@@ -186,7 +201,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         // TODO nzc risk detect
         var cacheKey =
-            GrainIdHelper.GenerateGrainId(PriceCacheKey, input.Crypto, input.Network, input.Fiat, input.Country);
+            GrainIdHelper.GenerateGrainId(PriceCacheKey, input.Side, input.Crypto, input.Network, input.Fiat,
+                input.Country);
         return await _orderQuoteCache.GetOrAddAsync(cacheKey,
             async () => await _alchemyProvider.GetAlchemyOrderQuoteAsync(input),
             () => new DistributedCacheEntryOptions

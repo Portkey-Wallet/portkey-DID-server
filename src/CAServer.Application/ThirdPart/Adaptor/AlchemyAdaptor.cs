@@ -184,6 +184,8 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         {
             var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
+            AssertHelper.IsTrue(orderQuote.Success, "Query Alchemy order quote failed, " + orderQuote.Message);
+            
             var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, RampPriceDto>(orderQuote.Data);
             rampPrice.ThirdPart = ThirdPart();
             rampPrice.FeeInfo = new RampFeeInfo
