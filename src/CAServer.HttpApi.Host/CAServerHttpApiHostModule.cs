@@ -10,6 +10,8 @@ using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
 using CAServer.Signature;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -317,6 +319,10 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromFile("fireBase-app-check.json")
+        });
 
         StartOrleans(context.ServiceProvider);
     }
