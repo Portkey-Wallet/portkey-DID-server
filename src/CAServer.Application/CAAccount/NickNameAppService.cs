@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CAServer.Dtos;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Contacts;
@@ -10,7 +11,6 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Options;
-using DnsClient.Internal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,7 +20,6 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
-using Environment = System.Environment;
 
 namespace CAServer.CAAccount;
 
@@ -61,11 +60,11 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
 
         await UpdateImUserAsync(userId, nickNameDto.NickName);
-        
+
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
 
-    private async Task UpdateImUserAsync(Guid userId, string nickName)
+    private async Task UpdateImUserAsync(Guid userId, string nickName, string avatar = "")
     {
         if (_hostInfoOptions.Environment == Options.Environment.Development)
         {
@@ -74,7 +73,8 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
 
         var imUserUpdateDto = new ImUserUpdateDto
         {
-            Name = nickName
+            Name = nickName,
+            Avatar = avatar
         };
 
         try
@@ -84,11 +84,10 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}, {imToken}", 
-                userId.ToString(), nickName, 
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}, {imToken}",
+                userId.ToString(), nickName,
                 _httpContextAccessor?.HttpContext?.Request?.Headers[CommonConstant.ImAuthHeader]);
         }
-        
     }
 
     public async Task<CAHolderResultDto> GetCaHolderAsync()
@@ -97,13 +96,14 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         {
             q => q.Term(i => i.Field(f => f.UserId).Value(CurrentUser.GetId()))
         };
+
         //mustQuery.Add(q => q.Terms(i => i.Field(f => f.IsDeleted).Terms(false)));
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
 
         var holder = await _holderRepository.GetAsync(Filter);
-        return ObjectMapper.Map<CAHolderIndex, CAHolderResultDto>(holder);;
+        return ObjectMapper.Map<CAHolderIndex, CAHolderResultDto>(holder);
     }
-    
+
     public async Task<CAHolderResultDto> DeleteAsync()
     {
         var userId = CurrentUser.GetId();
@@ -116,6 +116,23 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, DeleteCAHolderEto>(result.Data));
+        return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
+    }
+
+    public async Task<CAHolderResultDto> UpdateHolderInfoAsync(HolderInfoDto holderInfo)
+    {
+        var userId = CurrentUser.GetId();
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+
+        var result = await grain.UpdateHolderInfo(holderInfo);
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<CAHolderGrainDto, UpdateCAHolderEto>(result.Data));
+        await UpdateImUserAsync(userId, holderInfo.NickName, holderInfo.Avatar);
+        
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
     }
 }

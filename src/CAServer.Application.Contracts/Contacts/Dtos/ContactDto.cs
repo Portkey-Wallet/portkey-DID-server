@@ -32,3 +32,11 @@ public class ImInfo
     public Guid PortkeyId { get; set; }
     public string Name { get; set; }
 }
+
+public class HolderInfoWithAvatar
+{
+    public Guid UserId { get; set; }
+    public string CaHash { get; set; }
+    public string WalletName { get; set; }
+    public string Avatar { get; set; }
+}
