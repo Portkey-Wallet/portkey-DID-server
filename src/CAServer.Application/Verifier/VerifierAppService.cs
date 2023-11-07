@@ -4,7 +4,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
@@ -273,17 +275,19 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new UserFriendlyException(e.Message);
         }
     }
+    
+
+    
 
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId)
     {
         
-        var tokenAsync = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(
-            "eyJraWQiOiJURDByRlEiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxOjMzOTMyOTk2NDcwMjppb3M6YzgxNTU4YzU4NTIzODNkZTVkZjk4ZiIsImF1ZCI6WyJwcm9qZWN0c1wvMzM5MzI5OTY0NzAyIiwicHJvamVjdHNcL3dhbGxldC10ZXN0LWRldi04OGFjZSJdLCJwcm92aWRlciI6ImRlYnVnIiwiaXNzIjoiaHR0cHM6XC9cL2ZpcmViYXNlYXBwY2hlY2suZ29vZ2xlYXBpcy5jb21cLzMzOTMyOTk2NDcwMiIsImV4cCI6MTY5ODM5NjQwMCwiaWF0IjoxNjk4MzkyODAwLCJqdGkiOiJEdWlWU1JWV1pINU1NZmlpZ1Q2UTVyNXJ3aGo1NGVTNzF6RVRYakdQa0NvIn0.ohD7t7EqFvSMrzI4L0rUr97y36rIKVM6qhg3fxMd3Fbk2nNR3h5f8h86c8tYNG3-kP4gbN20_QzEFlPGjezHW9GvPuTqDov_DgIqiotJNpMU606Crf3IXhSKm_gTXUbAx4qNBGtAadhZenh2jXaZIh07RUU0jE5dSMZWGb1zCKNXmmVtnDqe3q-W7Qx1tw7sgYG2fi1emSa4u6AgCIzGTh9qN63ETmES4z7v-tsWbSJ5vxKdaMpqPOJzJR1Y3A3tONEDDDquSzU79d7vx54pqFQUdI6Rt96Ps1QYTEiKpT8nsKc6rvPM1AKqmMsG_AEl4MAuVT5KqGtV7uKmn_95fcJRjQVDPYn5kQROliLYNXDMFYgRq5tRlk61GNLx3bjA70EChLGcYMxDWEKgoxUuAKmnc2pk9ShE-NUaLkyvVIQw4wc-7TEMO1T0F_eS3_er9DHh7YCU3q4PxpbsO7D7xdeTusUt-Bd4GKUzbr2zepGyz2_DdgyETr8s-QGhg8JP");
-        var jsonStr = "eyJzdWIiOiIxOjMzOTMyOTk2NDcwMjppb3M6YzgxNTU4YzU4NTIzODNkZTVkZjk4ZiIsImF1ZCI6WyJwcm9qZWN0c1wvMzM5MzI5OTY0NzAyIiwicHJvamVjdHNcL3dhbGxldC10ZXN0LWRldi04OGFjZSJdLCJwcm92aWRlciI6ImRlYnVnIiwiaXNzIjoiaHR0cHM6XC9cL2ZpcmViYXNlYXBwY2hlY2suZ29vZ2xlYXBpcy5jb21cLzMzOTMyOTk2NDcwMiIsImV4cCI6MTY5ODM5NjQwMCwiaWF0IjoxNjk4MzkyODAwLCJqdGkiOiJEdWlWU1JWV1pINU1NZmlpZ1Q2UTVyNXJ3aGo1NGVTNzF6RVRYakdQa0NvIn0";
-        var str = Encoding.UTF8.GetString(Base64DecodeToBytes(jsonStr));
-
-        var arg = NewtonsoftJsonSerializer.Instance.Deserialize<Args>(str);
-
+         var tokenAsync = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(
+             "eyJraWQiOiJURDByRlEiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxOjMzOTMyOTk2NDcwMjppb3M6YzgxNTU4YzU4NTIzODNkZTVkZjk4ZiIsImF1ZCI6WyJwcm9qZWN0c1wvMzM5MzI5OTY0NzAyIiwicHJvamVjdHNcL3dhbGxldC10ZXN0LWRldi04OGFjZSJdLCJwcm92aWRlciI6ImRlYnVnIiwiaXNzIjoiaHR0cHM6XC9cL2ZpcmViYXNlYXBwY2hlY2suZ29vZ2xlYXBpcy5jb21cLzMzOTMyOTk2NDcwMiIsImV4cCI6MTY5ODM5NjQwMCwiaWF0IjoxNjk4MzkyODAwLCJqdGkiOiJEdWlWU1JWV1pINU1NZmlpZ1Q2UTVyNXJ3aGo1NGVTNzF6RVRYakdQa0NvIn0.ohD7t7EqFvSMrzI4L0rUr97y36rIKVM6qhg3fxMd3Fbk2nNR3h5f8h86c8tYNG3-kP4gbN20_QzEFlPGjezHW9GvPuTqDov_DgIqiotJNpMU606Crf3IXhSKm_gTXUbAx4qNBGtAadhZenh2jXaZIh07RUU0jE5dSMZWGb1zCKNXmmVtnDqe3q-W7Qx1tw7sgYG2fi1emSa4u6AgCIzGTh9qN63ETmES4z7v-tsWbSJ5vxKdaMpqPOJzJR1Y3A3tONEDDDquSzU79d7vx54pqFQUdI6Rt96Ps1QYTEiKpT8nsKc6rvPM1AKqmMsG_AEl4MAuVT5KqGtV7uKmn_95fcJRjQVDPYn5kQROliLYNXDMFYgRq5tRlk61GNLx3bjA70EChLGcYMxDWEKgoxUuAKmnc2pk9ShE-NUaLkyvVIQw4wc-7TEMO1T0F_eS3_er9DHh7YCU3q4PxpbsO7D7xdeTusUt-Bd4GKUzbr2zepGyz2_DdgyETr8s-QGhg8JP");
+        //var jsonStr = "eyJzdWIiOiIxOjMzOTMyOTk2NDcwMjppb3M6YzgxNTU4YzU4NTIzODNkZTVkZjk4ZiIsImF1ZCI6WyJwcm9qZWN0c1wvMzM5MzI5OTY0NzAyIiwicHJvamVjdHNcL3dhbGxldC10ZXN0LWRldi04OGFjZSJdLCJwcm92aWRlciI6ImRlYnVnIiwiaXNzIjoiaHR0cHM6XC9cL2ZpcmViYXNlYXBwY2hlY2suZ29vZ2xlYXBpcy5jb21cLzMzOTMyOTk2NDcwMiIsImV4cCI6MTY5ODM5NjQwMCwiaWF0IjoxNjk4MzkyODAwLCJqdGkiOiJEdWlWU1JWV1pINU1NZmlpZ1Q2UTVyNXJ3aGo1NGVTNzF6RVRYakdQa0NvIn0";
+        //var str = Encoding.UTF8.GetString(Base64DecodeToBytes(jsonStr));
+        //var arg = NewtonsoftJsonSerializer.Instance.Deserialize<Args>(str);
+        
         
         
         GetVerifierServersOutput result;
@@ -467,21 +471,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
     
-    public static byte[] Base64DecodeToBytes(string input)
-    {
-        
-        input = input.Replace('-', '+').Replace('_', '/');
-        switch (input.Length % 4)
-        {
-            case 2:
-                input += "==";
-                break;
-            case 3:
-                input += "=";
-                break;
-        }
-        return Convert.FromBase64String(input);
-    }
+   
     
     
 }
@@ -492,33 +482,5 @@ public class GenerateSignatureOutput
     public string Signature { get; set; }
 }
 
-public class Args
-{
-    [JsonProperty("iss")]
-    internal string Issuer { get; set; }
 
-    [JsonProperty("sub")]
-    internal string Subject { get; set; }
-
-    [JsonProperty("aud")]
-    internal List<string> Audiences { get; set; }
-
-    [JsonProperty("exp")]
-    internal long ExpirationTimeSeconds { get; set; }
-
-    [JsonProperty("iat")]
-    internal long IssuedAtTimeSeconds { get; set; }
-
-    [JsonProperty("firebase")]
-    internal FirebaseInfo Firebase { get; set; }
-
-    [JsonIgnore]
-    internal IReadOnlyDictionary<string, object> Claims { get; set; }
-}
-
-public class FirebaseInfo
-{
-    [JsonProperty("tenant")]
-    internal string Tenant { get; set; }
-}
 
