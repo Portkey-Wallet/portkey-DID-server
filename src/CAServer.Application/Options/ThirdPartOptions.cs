@@ -9,7 +9,15 @@ public class ThirdPartOptions
     public AlchemyOptions Alchemy { get; set; }
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
-    
+    public OrderListAuth OrderListAuth { get; set; }
+
+}
+
+public class OrderListAuth
+{
+    public string Key { get; set; }
+    public string UserName { get; set; }
+    public string AccountTitle { get; set; }
 }
 
 public class ThirdPartTimerOptions

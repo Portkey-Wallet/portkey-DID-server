@@ -21,4 +21,12 @@ public class TimeStampHelperTest
         Assert.True(milliseconds > 0);
         Assert.True(seconds > 0);
     }
+
+
+    [Fact]
+    public void TimeParse()
+    {
+        var time = DateTime.Parse("2023-11-01");
+        time.ShouldNotBe(new DateTime());
+    }
 }

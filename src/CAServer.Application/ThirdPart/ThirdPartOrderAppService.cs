@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
+using AElf;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
@@ -13,6 +14,7 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
+using Google.Authenticator;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -239,4 +241,32 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
                 OrderIdIn = orderIdIn
             }, OrderSectionEnum.NftSection);
     }
+
+
+    public async Task<List<OrderDto>> ExportOrderList(GetThirdPartOrderConditionDto condition)
+    {
+        List<OrderDto> orderDtos = new List<OrderDto>();
+        
+        var pager = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(condition, OrderSectionEnum.NftSection);
+        // TODO nzc page-by-page query
+        orderDtos.AddRange(pager.Data);
+        return orderDtos;
+    }
+
+
+    public SetupCode GenerateOrderListSetupCode(string key, string userName, string accountTitle)
+    {
+        var tfa = new TwoFactorAuthenticator();
+        return tfa.GenerateSetupCode(userName, 
+            accountTitle,
+            HashHelper.ComputeFrom(key).ToByteArray(), 5);
+    }
+
+    public bool VerifyOrderListCode(string pin)
+    {
+        var tfa = new TwoFactorAuthenticator();
+        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.OrderListAuth.Key).ToByteArray(), pin);
+    }
+
+
 }

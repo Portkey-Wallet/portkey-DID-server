@@ -38,6 +38,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(MockThirdPartOptions());
         // services.AddSingleton(MockThirdPartOrderProvider());
         // services.AddSingleton(getMockOrderGrain());
@@ -45,6 +46,21 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
     }
 
+    [Fact]
+    public async Task GoogleCode()
+    {
+        var code = _thirdPartOrderAppService.GenerateOrderListSetupCode("authKey", "testUser", "testTitle");
+        code.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task VerifyGoogleCode()
+    {
+        var code = _thirdPartOrderAppService.VerifyOrderListCode("395653");
+        code.ShouldNotBe(false);
+    }
+    
+    
     [Fact]
     public async void DecodeManagerForwardCall()
     {

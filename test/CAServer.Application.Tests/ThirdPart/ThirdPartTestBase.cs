@@ -39,6 +39,12 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 GetTokenUri = "/merchant/getToken",
                 MerchantQueryTradeUri = "/merchant/query/trade"
             },
+            OrderListAuth = new OrderListAuth
+            {
+                Key = "test",
+                AccountTitle = "testTitle",
+                UserName = "UserNameTest"
+            },
             Timer = new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 5000,
