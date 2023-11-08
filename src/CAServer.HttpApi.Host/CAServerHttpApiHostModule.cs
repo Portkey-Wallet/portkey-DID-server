@@ -334,10 +334,10 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
         
-        FirebaseApp.Create(new AppOptions()
-        {
-            Credential = GoogleCredential.FromFile("david.json")
-        });
+        // FirebaseApp.Create(new AppOptions()
+        // {
+        //     Credential = GoogleCredential.FromFile("david.json")
+        // });
 
         StartOrleans(context.ServiceProvider);
     }

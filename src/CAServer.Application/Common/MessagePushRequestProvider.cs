@@ -19,9 +19,9 @@ public interface IMessagePushRequestProvider
 public class MessagePushRequestProvider : IMessagePushRequestProvider, ISingletonDependency
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<HttpClientService> _logger;
+    private readonly ILogger<MessagePushRequestProvider> _logger;
 
-    public MessagePushRequestProvider(IHttpClientFactory httpClientFactory, ILogger<HttpClientService> logger)
+    public MessagePushRequestProvider(IHttpClientFactory httpClientFactory, ILogger<MessagePushRequestProvider> logger)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
