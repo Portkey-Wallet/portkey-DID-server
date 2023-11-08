@@ -13,6 +13,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
 using Orleans.Concurrency;
 using Portkey.Contracts.CA;
 using Volo.Abp.ObjectMapping;
@@ -123,6 +124,32 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
+    private async Task<Transaction> GenerateTransactionAsync(IMessage param, AElfClient client, string from, string to, string methodName)
+    {
+        var transaction =
+            await client.GenerateTransactionAsync(from, to, methodName,
+                param);
+
+        var refBlockNumber = transaction.RefBlockNumber;
+
+        refBlockNumber -= _grainOptions.SafeBlockHeight;
+
+        if (refBlockNumber < 0)
+        {
+            refBlockNumber = 0;
+        }
+
+        var blockDto = await client.GetBlockByHeightAsync(refBlockNumber);
+
+        transaction.RefBlockNumber = refBlockNumber;
+        transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
+
+        var txWithSign = await _signatureProvider.SignTxMsg(from, transaction.GetHash().ToHex());
+        _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
+        transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+        return transaction;
+    }
+
     private async Task<List<TransactionInfoDto>> SendTransactionsToChainAsync(string chainId, List<IMessage> paramList,
         string methodName)
     {
@@ -140,31 +167,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 ownAddress, chainInfo.ContractAddress);
 
             var transactionList = new List<Transaction>();
-            foreach (var param in paramList)
-            {
-                var transaction =
-                    await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
-                        param);
-
-                var refBlockNumber = transaction.RefBlockNumber;
-
-                refBlockNumber -= _grainOptions.SafeBlockHeight;
-
-                if (refBlockNumber < 0)
-                {
-                    refBlockNumber = 0;
-                }
-
-                var blockDto = await client.GetBlockByHeightAsync(refBlockNumber);
-
-                transaction.RefBlockNumber = refBlockNumber;
-                transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
-
-                var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
-                _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
-                transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
-                transactionList.Add(transaction);
-            }
+            var tasks = paramList.Select(p => GenerateTransactionAsync(p, client, ownAddress, chainInfo.ContractAddress, methodName));
+            transactionList.AddRange(await tasks.WhenAll());
             
             var transactionIdList = await client.SendTransactionsAsync(new SendTransactionsInput()
             {
