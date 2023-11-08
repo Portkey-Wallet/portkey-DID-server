@@ -1,8 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
-using CAServer.Grains.Grain;
-using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
@@ -16,7 +15,7 @@ public interface IThirdPartOrderAppService
     // order
     Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input);
     Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input);
-    Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto);
+    Task<CommonResponseDto<string>> InitOrderAsync(Guid orderId, Guid userId);
     Task<CommonResponseDto<Empty>> OrderUpdateAsync(string thirdPart, IThirdPartOrder thirdPartOrder);
     Task UpdateOffRampTxHash(TransactionHashDto input);
     Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrder(OrderDto orderDto);

@@ -369,6 +369,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
             var price = await GetTransakPriceWithCache(payment.Id, rampDetailRequest);
 
             var providerRampDetail = ObjectMapper.Map<TransakRampPrice, ProviderRampDetailDto>(price);
+            providerRampDetail.ThirdPart = ThirdPart();
             providerRampDetail.FeeInfo = new RampFeeInfo
             {
                 NetworkFee = FeeItem.Fiat(rampDetailRequest.Fiat,

@@ -21,14 +21,4 @@ public interface IThirdPartAdaptor
 
     Task<ProviderRampDetailDto> GetRampDetailAsync(RampDetailRequest rampDetailRequest);
 
-    Task<RampFreeLoginDto> GetRampFreeLoginAsync(RampFreeLoginRequest input)
-    {
-        throw new UserFriendlyException("Not support action");
-    }
-
-    Task<AlchemySignatureResultDto> GetRampThirdPartSignatureAsync(RampSignatureRequest input)
-    {
-        throw new UserFriendlyException("Not support action");
-    }
-
 }

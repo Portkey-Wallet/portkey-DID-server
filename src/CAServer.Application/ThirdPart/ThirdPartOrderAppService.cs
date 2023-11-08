@@ -152,7 +152,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
             Logger.LogError(e, "UpdateTxHashAsync error, input={Json}", JsonConvert.SerializeObject(input));
         }
     }
-    
+
 
     // create base order with nft-order section
     public async Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input)
@@ -217,8 +217,21 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         }
     }
 
+    public async Task<CommonResponseDto<string>> InitOrderAsync(Guid orderId, Guid userId)
+    {
+        var order = await DoCreateOrderAsync(new OrderGrainDto
+        {
+            Id = orderId,
+            UserId = userId,
+            Status = OrderStatusType.Initialized.ToString()
+        });
+        return order.Success
+            ? new CommonResponseDto<string>(order.Data.Id.ToString())
+            : new CommonResponseDto<string>().Error(order.Message);
+    }
+
     // create ramp order
-    public async Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto)
+    private async Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto)
     {
         _logger.LogInformation("This third part order {OrderId} of user:{UserId} will be created",
             orderGrainDto.ThirdPartOrderNo, orderGrainDto.UserId);
@@ -239,7 +252,8 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         _logger.LogInformation("This nft-order {OrderId} of merchant:{MerchantName} will be created",
             nftOrderGrainDto.MerchantOrderId, nftOrderGrainDto.MerchantName);
         nftOrderGrainDto.CreateTime = DateTime.UtcNow;
-        nftOrderGrainDto.ExpireTime = DateTime.UtcNow.AddSeconds(_thirdPartOptions.CurrentValue.Timer.NftOrderExpireSeconds);
+        nftOrderGrainDto.ExpireTime =
+            DateTime.UtcNow.AddSeconds(_thirdPartOptions.CurrentValue.Timer.NftOrderExpireSeconds);
         var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(nftOrderGrainDto.Id);
         var result = await nftOrderGrain.CreateNftOrder(nftOrderGrainDto);
         AssertHelper.IsTrue(result.Success, "Create merchant nft-order fail");

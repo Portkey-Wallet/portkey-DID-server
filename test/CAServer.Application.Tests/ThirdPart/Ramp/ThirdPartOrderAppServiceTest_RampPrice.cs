@@ -195,8 +195,39 @@ public partial class ThirdPartOrderAppServiceTest
         buyLimit.ShouldNotBeNull();
         buyLimit.Success.ShouldBeTrue();
         
+    }
 
+    [Fact]
+    public async Task RampDetailTest()
+    {
+        MockRampLists();
+        MockRampPrice();
 
+        var buyDetail = await _thirdPartOrderAppService.GetRampDetailAsync(new RampDetailRequest
+        {
+            Type = OrderTransDirect.BUY.ToString(),
+            Crypto = "ELF",
+            CryptoAmount = 200,
+            Network = "AELF-AELF",
+            Fiat = "USD",
+            FiatAmount = 65,
+            Country = "US",
+        });
+        buyDetail.ShouldNotBeNull();
+        buyDetail.Success.ShouldBeTrue();
+        
+        var sellDetail = await _thirdPartOrderAppService.GetRampDetailAsync(new RampDetailRequest
+        {
+            Type = OrderTransDirect.SELL.ToString(),
+            Crypto = "ELF",
+            CryptoAmount = 200,
+            Network = "AELF-AELF",
+            Fiat = "USD",
+            FiatAmount = 65,
+            Country = "US",
+        });
+        sellDetail.ShouldNotBeNull();
+        sellDetail.Success.ShouldBeTrue();
     }
     
 }

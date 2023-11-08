@@ -17,14 +17,12 @@ namespace CAServer.ThirdPart.Adaptor;
 
 public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 {
-    private readonly AlchemyProvider _alchemyProvider;
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
 
-    public AlchemyAdaptor(AlchemyProvider alchemyProvider, IAlchemyServiceAppService alchemyServiceAppService,
+    public AlchemyAdaptor(IAlchemyServiceAppService alchemyServiceAppService,
         IOptionsMonitor<RampOptions> rampOptions)
     {
-        _alchemyProvider = alchemyProvider;
         _alchemyServiceAppService = alchemyServiceAppService;
         _rampOptions = rampOptions;
     }
