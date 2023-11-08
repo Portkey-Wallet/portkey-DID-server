@@ -14,7 +14,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Image")]
 [Route("api/app/image")]
-[Authorize]
+//[Authorize] TODO DaiYaBin
 public class ImageController : CAServerController
 {
     private readonly IImageAppService _imageAppService;
@@ -30,11 +30,14 @@ public class ImageController : CAServerController
     {
         return await _imageAppService.GetThumbnailAsync(input);
     }
-   
-    
-    
-    
-    
+
+    [HttpGet("uploadSvg")]
+
+    public async Task<string> uploadToAmozon(string filename)
+    {
+        var res = await _imageAppService.uploadSvg(filename);
+        return res;
+    }
     
     
 }

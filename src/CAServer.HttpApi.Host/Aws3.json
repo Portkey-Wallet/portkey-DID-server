@@ -1,0 +1,9 @@
+{
+  "AwsS3": {
+    "AccessKeyID":"AKIAY4SM3WWTES63JDFC",
+    "SecretKey":"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",
+    "BucketName":"forest-dev",
+    "S3Key":"SymbolMarket",
+    "ServiceURL": "https://s3.amazonaws.com"
+  }
+}

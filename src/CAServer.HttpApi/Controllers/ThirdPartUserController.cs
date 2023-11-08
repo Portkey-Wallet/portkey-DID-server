@@ -17,7 +17,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/")]
-[Authorize]
+//[Authorize] TODO REQUIRE DaiYabin
 public class ThirdPartUserController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;

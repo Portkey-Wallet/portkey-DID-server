@@ -35,53 +35,53 @@ public class RealIpMiddleware
 
     public async Task Invoke(HttpContext context)
     {
-        var headers = context.Request.Headers;
-        if (!headers.ContainsKey(_realIpOptions.HeaderKey))
-        {
-            _logger.LogDebug("Unknown ip address. no setting");
-            await _requestDelegate(context);
-            return;
-        }
-
-        var ipArr = headers["X-Forwarded-For"].ToString().Split(',');
-        if (ipArr.Length == 0)
-        {
-            _logger.LogDebug("Unknown ip address,Refused visit server.ipArr is null");
-            await _requestDelegate(context);
-            return;
-        }
-
-        var userIp = ipArr[0].Trim();
-        var userId = _currentUser.Id ?? Guid.Empty;
-        _logger.LogDebug("current user id is {id}", userId);
-        if (userId == Guid.Empty)
-        {
-            _logger.LogDebug("Unknown user id");
-            await _requestDelegate(context);
-            return;
-        }
-
-
-        var requestDto = new AddUserIpToWhiteListRequestDto(
-        );
-        var checkUrls = _addToWhiteListUrlsOptions.Urls.Distinct();
-        try
-        {
-            if (context.Request.Path.Value != null)
-            {
-                var path = context.Request.Path.Value;
-                if (checkUrls.Contains(path))
-                {
-                    requestDto.UserIp = userIp;
-                    requestDto.UserId = userId;
-                    await _ipWhiteListAppService.AddIpWhiteListAsync(requestDto);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("AddIpToWhiteList error:{error}", e);
-        }
+        // var headers = context.Request.Headers;
+        // if (!headers.ContainsKey(_realIpOptions.HeaderKey))
+        // {
+        //     _logger.LogDebug("Unknown ip address. no setting");
+        //     await _requestDelegate(context);
+        //     return;
+        // }
+        //
+        // var ipArr = headers["X-Forwarded-For"].ToString().Split(',');
+        // if (ipArr.Length == 0)
+        // {
+        //     _logger.LogDebug("Unknown ip address,Refused visit server.ipArr is null");
+        //     await _requestDelegate(context);
+        //     return;
+        // }
+        //
+        // var userIp = ipArr[0].Trim();
+        // var userId = _currentUser.Id ?? Guid.Empty;
+        // _logger.LogDebug("current user id is {id}", userId);
+        // if (userId == Guid.Empty)
+        // {
+        //     _logger.LogDebug("Unknown user id");
+        //     await _requestDelegate(context);
+        //     return;
+        // }
+        //
+        //
+        // var requestDto = new AddUserIpToWhiteListRequestDto(
+        // );
+        // var checkUrls = _addToWhiteListUrlsOptions.Urls.Distinct();
+        // try
+        // {
+        //     if (context.Request.Path.Value != null)
+        //     {
+        //         var path = context.Request.Path.Value;
+        //         if (checkUrls.Contains(path))
+        //         {
+        //             requestDto.UserIp = userIp;
+        //             requestDto.UserId = userId;
+        //             await _ipWhiteListAppService.AddIpWhiteListAsync(requestDto);
+        //         }
+        //     }
+        // }
+        // catch (Exception e)
+        // {
+        //     _logger.LogError("AddIpToWhiteList error:{error}", e);
+        // }
         await _requestDelegate(context);
     }
 }

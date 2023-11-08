@@ -10,4 +10,5 @@ public interface IImageProcessProvider
     
     Task<ThumbnailResponseDto> GetImResizeImageAsync(string imageUrl, int width, int height);
 
+    Task<string> UploadSvgAsync(string filename);
 }
