@@ -1,16 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.MultiToken;
-using AElf.Client.Service;
 using AElf.Types;
-using CAServer.Common;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
-using Google.Protobuf;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Shouldly;
@@ -19,7 +13,7 @@ using Volo.Abp.Validation;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace CAServer.ThirdPart;
+namespace CAServer.ThirdPart.Ramp;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
@@ -29,7 +23,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     private readonly ITestOutputHelper _testOutputHelper;
 
 
-    public ThirdPartOrderAppServiceTest(ITestOutputHelper testOutputHelper)
+    public ThirdPartOrderAppServiceTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
@@ -38,15 +32,15 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(MockThirdPartOptions());
-        // services.AddSingleton(MockThirdPartOrderProvider());
-        // services.AddSingleton(getMockOrderGrain());
-        // services.AddSingleton(getMockDistributedEventBus());
+        services.AddSingleton(MockMassTransitIBus());
+        services.AddSingleton(MockRampOptions());
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
     }
 
     [Fact]
-    public async void DecodeManagerForwardCall()
+    public void DecodeManagerForwardCall()
     {
         var rawTransaction =
             "0a220a203e1f7576c33fb1f8dc90f1ffd7775691d182ce99456d12f01aedf871014c22b412220a20e28c0b6c4145f3534431326f3c6d5a4bd6006632fd7551c26c103c368855531618abf9860d220411d0e8922a124d616e61676572466f727761726443616c6c3286010a220a20ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e12220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc1a085472616e7366657222320a220a20a7376d782cdf1b1caa2f8b5f56716209045cd5720b912e8441b4404427656cb91203454c461880a0be819501220082f104411d1acf81058c6a65ba0ed78368c815add80349b8e1fd7c4e5e2655c3dbde582833a475408094b486ddd14c6ad0f9c0e01788f209c2d0a1e356792e5bff1d4c2e01";
@@ -122,5 +116,9 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         var defaultVal = AlchemyHelper.GetOrderTransDirectForQuery("test");
         defaultVal.ShouldBe(OrderTransDirect.SELL.ToString());
     }
+    
+    
+    
+    
     
 }

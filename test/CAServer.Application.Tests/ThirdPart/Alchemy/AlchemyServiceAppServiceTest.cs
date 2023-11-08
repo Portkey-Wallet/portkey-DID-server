@@ -17,7 +17,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly ITestOutputHelper _testOutputHelper;
 
-    public AlchemyServiceAppServiceTest(ITestOutputHelper testOutputHelper)
+    public AlchemyServiceAppServiceTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
         _alchemyServiceAppService = GetRequiredService<IAlchemyServiceAppService>();
@@ -37,16 +37,16 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             PathMatcher(HttpMethod.Get, AlchemyApi.QueryFiatList.Path,
                 new AlchemyBaseResponseDto<List<AlchemyFiatDto>>(
                     new() { new AlchemyFiatDto { Country = "USA", Currency = "USD" } })),
-            PathMatcher(HttpMethod.Get, mockOptions.Value.Alchemy.CryptoListUri,
+            PathMatcher(HttpMethod.Get, mockOptions.CurrentValue.Alchemy.CryptoListUri,
                 new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>(
                     new() { new AlchemyCryptoDto { Crypto = "ELF" } })),
-            PathMatcher(HttpMethod.Post, mockOptions.Value.Alchemy.GetTokenUri,
+            PathMatcher(HttpMethod.Post, mockOptions.CurrentValue.Alchemy.GetTokenUri,
                 new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
                     new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
             PathMatcher(HttpMethod.Post, AlchemyApi.GetFreeLoginToken.Path,
                 new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
                     new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
-            PathMatcher(HttpMethod.Post, mockOptions.Value.Alchemy.OrderQuoteUri,
+            PathMatcher(HttpMethod.Post, mockOptions.CurrentValue.Alchemy.OrderQuoteUri,
                 new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>(
                     new AlchemyOrderQuoteDataDto
                     {

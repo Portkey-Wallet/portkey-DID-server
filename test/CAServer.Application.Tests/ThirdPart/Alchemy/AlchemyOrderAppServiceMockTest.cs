@@ -1,11 +1,12 @@
 using CAServer.Options;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace CAServer.ThirdPart.Alchemy;
 
 public sealed partial class AlchemyOrderAppServiceTest
 {
-    private static IOptions<ThirdPartOptions> GetMockThirdPartOptions()
+    private static IOptionsMonitor<ThirdPartOptions> GetMockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
@@ -15,12 +16,21 @@ public sealed partial class AlchemyOrderAppServiceTest
                 AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
             },
+            Transak = new TransakOptions
+            {
+                AppId = "transakAppId",
+                AppSecret = "transakAppSecret",
+                BaseUrl = "http://127.0.0.1:9200"
+            },
             Timer = new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,
             }
         };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+        
+        var mockOption = new Mock<IOptionsMonitor<ThirdPartOptions>>();
+        mockOption.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
+        return mockOption.Object;
     }
 }

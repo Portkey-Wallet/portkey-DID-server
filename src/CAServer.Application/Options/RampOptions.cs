@@ -6,16 +6,16 @@ namespace CAServer.Options;
 
 public class RampOptions
 {
-    private Dictionary<string, ThirdPartProviders> _providers = new();
+    private Dictionary<string, ThirdPartProvider> _providers = new();
     
     // accessor for _providers
-    public Dictionary<string, ThirdPartProviders> Providers 
+    public Dictionary<string, ThirdPartProvider> Providers 
     { 
         get 
         { 
             // copy a new dict for update
             var serialized = JsonConvert.SerializeObject(_providers);
-            return JsonConvert.DeserializeObject<Dictionary<string, ThirdPartProviders>>(serialized);
+            return JsonConvert.DeserializeObject<Dictionary<string, ThirdPartProvider>>(serialized);
         }
         set => _providers = value;
     }
@@ -32,7 +32,7 @@ public class CoverageExpression
     public List<string> OffRamp { get; set; }
 }
 
-public class ThirdPartProviders
+public class ThirdPartProvider
 {
     public string AppId { get; set; }
     public string BaseUrl { get; set; }
@@ -62,25 +62,30 @@ public class ProviderCoverage
 public class DefaultCurrencyOption
 {
     public string Crypto { get; set; } = "ELF";
-    public string CryptoAmount { get; set; } = "40000000000";
+    public string CryptoAmount { get; set; } = "400";
+    public string Network { get; set; } = "AELF-AELF";
+    
     public string Fiat { get; set; } = "USD";
     public string FiatAmount { get; set; } = "200";
+    public string Country { get; set; } = "US";
 
-    public DefaultCurrency ToCrypto()
+    public DefaultCryptoCurrency ToCrypto()
     {
-        return new DefaultCurrency
+        return new DefaultCryptoCurrency
         {
             Symbol = Crypto,
-            Amount = CryptoAmount
+            Amount = CryptoAmount,
+            Network = Network
         };
     }
 
-    public DefaultCurrency ToFiat()
+    public DefaultFiatCurrency ToFiat()
     {
-        return new DefaultCurrency
+        return new DefaultFiatCurrency
         {
             Symbol = Fiat,
-            Amount = FiatAmount
+            Amount = FiatAmount,
+            Country = Country
         };
     }
 }

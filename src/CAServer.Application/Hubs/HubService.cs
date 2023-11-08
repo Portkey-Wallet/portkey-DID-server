@@ -28,7 +28,7 @@ public class HubService : CAServerAppService, IHubService
     private readonly IHubProvider _caHubProvider;
     private readonly IHubCacheProvider _hubCacheProvider;
     private readonly IConnectionProvider _connectionProvider;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<HubService> _logger;
@@ -40,7 +40,7 @@ public class HubService : CAServerAppService, IHubService
 
     public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IHubProvider caHubProvider,
         IThirdPartOrderProvider thirdPartOrderProvider, IObjectMapper objectMapper,
-        IConnectionProvider connectionProvider, IOptions<ThirdPartOptions> thirdPartOptions,
+        IConnectionProvider connectionProvider, IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         ILogger<HubService> logger, IOrderWsNotifyProvider orderWsNotifyProvider)
     {
         _hubProvider = hubProvider;
@@ -49,7 +49,7 @@ public class HubService : CAServerAppService, IHubService
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _connectionProvider = connectionProvider;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
         _logger = logger;
         _orderWsNotifyProvider = orderWsNotifyProvider;
     }
@@ -163,7 +163,7 @@ public class HubService : CAServerAppService, IHubService
 
     private async Task RequestConditionOrderAsync(string targetClientId, string orderId, Func<OrderDto, bool> matchCondition, string callbackMethod)
     {
-        var cts = new CancellationTokenSource(_thirdPartOptions.Timer.TimeoutMillis);
+        var cts = new CancellationTokenSource(_thirdPartOptions.CurrentValue.Timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
         {
             try
@@ -189,7 +189,7 @@ public class HubService : CAServerAppService, IHubService
                 {
                     _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
                         orderId, callbackMethod);
-                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.Timer.DelaySeconds));
+                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.CurrentValue.Timer.DelaySeconds));
                     continue;
                 }
 

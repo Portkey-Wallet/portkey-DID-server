@@ -20,6 +20,7 @@ using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -69,7 +70,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         _distributedLock = distributedLock;
         _rampOptions = rampOptions;
         _thirdPartAdaptors = thirdPartAdaptors.ToDictionary(a => a.ThirdPart(), a => a);
-        _rampOrderProcessors = rampOrderProcessors.ToDictionary(p => p.MerchantName(), p => p);
+        _rampOrderProcessors = rampOrderProcessors.ToDictionary(p => p.ThirdPartName(), p => p);
     }
 
     private AbstractRampOrderProcessor GetThirdPartOrderProcessor(string thirdPart)
@@ -148,7 +149,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "UpdateTxHashAsync error");
+            Logger.LogError(e, "UpdateTxHashAsync error, input={Json}", JsonConvert.SerializeObject(input));
         }
     }
     
@@ -217,7 +218,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     }
 
     // create ramp order
-    private async Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto)
+    public async Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto)
     {
         _logger.LogInformation("This third part order {OrderId} of user:{UserId} will be created",
             orderGrainDto.ThirdPartOrderNo, orderGrainDto.UserId);

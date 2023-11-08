@@ -14,7 +14,7 @@ public class RampCryptoRequest
 public class RampCryptoDto
 {
     public List<RampCurrencyItem> CryptoList { get; set; } = new List<RampCurrencyItem>();
-    public DefaultCurrency DefaultCrypto { get; set; }
+    public DefaultCryptoCurrency DefaultCrypto { get; set; }
 }
 
 

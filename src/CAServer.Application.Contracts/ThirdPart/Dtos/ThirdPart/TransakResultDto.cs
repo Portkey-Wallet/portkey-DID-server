@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using CAServer.Commons;
+using CAServer.ThirdPart.Dtos.Ramp;
 using JetBrains.Annotations;
 
 namespace CAServer.ThirdPart.Dtos.ThirdPart;
@@ -54,12 +57,18 @@ public class TransakCryptoNetwork
 {
     public string Name { get; set; }
     public string ChainId { get; set; }
-    public List<string> FiatCurrenciesNotSupported { get; set; }
+    public List<TransakCryptoFiatNotSupported> FiatCurrenciesNotSupported { get; set; }
 
     public string ToNetworkId()
     {
         return string.Join(CommonConstant.Hyphen, Name.ToUpper(), ChainId.DefaultIfEmpty(CommonConstant.EmptyString));
     }
+}
+
+public class TransakCryptoFiatNotSupported
+{
+    public string FiatCurrency { get; set; }
+    public string PaymentMethod { get; set; }
 }
 
 public class TransakFiatItem
@@ -68,12 +77,54 @@ public class TransakFiatItem
     public List<string> SupportingCountries { get; set; }
     public string Name { get; set; }
     public string Icon { get; set; }
+    public string IconHash { get; set; }
+    public string IconUrl { get; set; }
     public string DefaultCountryForNFT { get; set; }
     public bool IsPopular { get; set; }
     public bool IsAllowed { get; set; }
     public bool IsPayOutAllowed { get; set; }
     public int RoundOff { get; set; }
     public List<TransakFiatPaymentItem> PaymentOptions { get; set; }
+
+
+    // Retrieve the entry with the maximum limit from all paymentOptions
+    public TransakFiatPaymentItem MaxLimitPayment(string type)
+    {
+        var paymentOptions = PaymentOptions
+            .Where(payment => payment.IsActive)
+            .Where(payment => type == OrderTransDirect.BUY.ToString() || payment.IsPayOutAllowed)
+            .ToList();
+        if (paymentOptions.IsNullOrEmpty()) return null;
+        return type == OrderTransDirect.BUY.ToString()
+            ? paymentOptions.MaxBy(p => p.MaxAmount - p.MinAmount)
+            : paymentOptions.MaxBy(p => p.MaxAmountForPayOut - p.MinAmount);
+    }
+
+    
+    // Get the union of all limit ranges from paymentOptions
+    public CurrencyLimit MaxLimit(string type)
+    {
+        // filter paymentOptions by type
+        var paymentOptions = PaymentOptions
+            .Where(payment => payment.IsActive)
+            .Where(payment => type == OrderTransDirect.BUY.ToString() || payment.IsPayOutAllowed)
+            .ToList();
+        if (paymentOptions.IsNullOrEmpty()) return null;
+
+        return type == OrderTransDirect.BUY.ToString()
+            ? new CurrencyLimit
+            {
+                Symbol = paymentOptions.FirstOrDefault()?.LimitCurrency,
+                MinLimit = paymentOptions.Min(p => p.MinAmount).ToString(),
+                MaxLimit = paymentOptions.Min(p => p.MaxAmount).ToString(),
+            }
+            : new CurrencyLimit
+            {
+                Symbol = paymentOptions.FirstOrDefault()?.LimitCurrency,
+                MinLimit = paymentOptions.Min(p => p.MinAmountForPayOut).ToString(),
+                MaxLimit = paymentOptions.Min(p => p.MaxAmountForPayOut).ToString(),
+            };
+    }
 }
 
 public class TransakFiatPaymentItem
@@ -93,28 +144,56 @@ public class TransakFiatPaymentItem
     public decimal? DefaultAmountForPayOut { get; set; }
     public decimal? MinAmountForPayOut { get; set; }
     public decimal? MaxAmountForPayOut { get; set; }
-    
 }
 
 public class TransakRampPrice
-{ 
+{
     public string QuoteId { get; set; }
-    
-    // Fiat : Crypto
-    public string ConversionPrice { get; set; }
-    public string MarketConversionPrice { get; set; }
+
+    // Crypto-Fiat
+    public decimal ConversionPrice { get; set; }
+    public decimal MarketConversionPrice { get; set; }
     public string Slippage { get; set; }
     public string FiatCurrency { get; set; }
     public string CryptoCurrency { get; set; }
     public string PaymentMethod { get; set; }
-    public string FiatAmount { get; set; }
-    public string CryptoAmount { get; set; }
+    public decimal FiatAmount { get; set; }
+    public decimal CryptoAmount { get; set; }
     public string IsBuyOrSell { get; set; }
     public string Network { get; set; }
-    public string FeeDecimal { get; set; }
+    public decimal FeeDecimal { get; set; }
     public string TotalFee { get; set; }
     public string Nonce { get; set; }
     public List<TransakRampFee> FeeBreakdown { get; set; }
+
+    public decimal NetworkFee()
+    {
+        return FeeBreakdown
+            .Where(fee => fee.Id == TransakFeeName.NetworkFee)
+            .Select(fee => fee.Value)
+            .FirstOrDefault(0);
+    }
+
+    public decimal TransakFee()
+    {
+        return FeeBreakdown
+            .Where(fee => fee.Id == TransakFeeName.TransakFee)
+            .Select(fee => fee.Value)
+            .FirstOrDefault(0);
+    }
+
+    public decimal TransakFeePercent()
+    {
+        return IsBuyOrSell == OrderTransDirect.BUY.ToString()
+            ? TransakFee() / FiatAmount
+            : FeeDecimal;
+    }
+
+    public decimal FiatCryptoExchange()
+    {
+        var cryptoFiatExchange = 1 / ConversionPrice;
+        return decimal.Round(cryptoFiatExchange, 6, MidpointRounding.ToZero);
+    }
 }
 
 public static class TransakFeeName
@@ -134,7 +213,6 @@ public class TransakRampFee
 public class QueryTransakOrderByIdResult
 {
     public TransakOrderDto Data { get; set; }
-    
 }
 
 public class TransakCountry

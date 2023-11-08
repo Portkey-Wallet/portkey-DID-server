@@ -71,6 +71,16 @@ public class TransakOrderDto : IThirdPartOrder
     public string PaymentOption { get; set; }
     public string AutoExpiresAt { get; set; }
     public string ReferenceCode { get; set; }
+
+    public bool IsBuy()
+    {
+        return IsBuyOrSell == OrderTransDirect.BUY.ToString();
+    }
+    
+    public bool IsSell()
+    {
+        return IsBuyOrSell == OrderTransDirect.SELL.ToString();
+    }
 }
 
 public class GetRampPriceRequest

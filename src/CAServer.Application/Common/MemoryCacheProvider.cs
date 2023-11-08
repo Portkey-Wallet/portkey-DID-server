@@ -7,17 +7,17 @@ using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Common
 {
-    public interface IMemoryCache<T>
+    public interface ILocalMemoryCache<T>
     {
         Task<T> GetOrAddAsync(string cacheKey, Func<Task<T>> factory, MemoryCacheEntryOptions options);
     }
 
-    public class MemoryCache<T> : IMemoryCache<T>, ISingletonDependency
+    public class LocalMemoryCache<T> : ILocalMemoryCache<T>, ISingletonDependency
     {
         private readonly IMemoryCache _memoryCache;
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
 
-        public MemoryCache(IMemoryCache memoryCache)
+        public LocalMemoryCache(IMemoryCache memoryCache)
         {
             _memoryCache = memoryCache;
         }

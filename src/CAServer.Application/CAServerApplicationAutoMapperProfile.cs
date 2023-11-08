@@ -431,7 +431,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
             .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));
         
-        CreateMap<ThirdPartProviders, RampCoverageDto>().ReverseMap();
+        CreateMap<ThirdPartProvider, RampCoverageDto>().ReverseMap();
         CreateMap<CryptoItem, RampCurrencyItem>().ReverseMap();
         CreateMap<AlchemyOrderQuoteDataDto, RampPriceDto>()
             .ForMember(des => des.FiatAmount, opt => opt.MapFrom(src => src.FiatQuantity))
@@ -457,13 +457,31 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.Side, opt => opt.MapFrom(src => src.Type))
             .ReverseMap();
         CreateMap<TransakRampPrice, RampPriceDto>()
-            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => 1 / src.ConversionPrice.SafeToDecimal(-1)))
+            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.FiatCryptoExchange()))
             .ReverseMap();
+        CreateMap<TransakRampPrice, ProviderRampDetailDto>()
+            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.FiatCryptoExchange()))
+            .ReverseMap();
+        CreateMap<RampExchangeRequest, RampDetailRequest>().ReverseMap();
+        CreateMap<RampLimitRequest, RampDetailRequest>().ReverseMap();
+        CreateMap<RampPriceDto, ProviderRampDetailDto>().ReverseMap();
+        CreateMap<RampFiatItem, DefaultFiatCurrency>().ReverseMap();
         CreateMap<RampDetailRequest, GetRampPriceRequest>()
             .ForMember(des => des.IsBuyOrSell, opt => opt.MapFrom(src => src.Type))
             .ForMember(des => des.FiatCurrency, opt => opt.MapFrom(src => src.Fiat))
             .ForMember(des => des.CryptoCurrency, opt => opt.MapFrom(src => src.Crypto))
             .ReverseMap();
-
+        CreateMap<TransakOrderDto, OrderDto>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => Guid.Parse(f.PartnerOrderId)))
+            .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.Id))
+            .ForMember(t => t.TransDirect, m
+                => m.MapFrom(f => f.IsBuy() ? TransferDirectionType.TokenBuy.ToString() : TransferDirectionType.TokenSell.ToString()))
+            .ForMember(t => t.Address, m => m.MapFrom(f => f.WalletAddress))
+            .ForMember(t => t.Crypto, m => m.MapFrom(f => f.Cryptocurrency))
+            .ForMember(t => t.CryptoAmount, m => m.MapFrom(f => f.CryptoAmount))
+            .ForMember(t => t.Fiat, m => m.MapFrom(f => f.FiatCurrency))
+            .ForMember(t => t.FiatAmount, m => m.MapFrom(f => f.FiatAmount))
+            .ForMember(t => t.Status, m => m.MapFrom(f => f.Status))
+            ;
     }
 }
