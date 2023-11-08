@@ -13,6 +13,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Notify")]
 [Route("api/app/notify")]
+[IgnoreAntiforgeryToken]
 public class NotifyController
 {
     private readonly INotifyAppService _notifyAppService;

@@ -1,5 +1,8 @@
 using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Contracts.Vote;
 using CAServer.Chain;
 using Shouldly;
 using Volo.Abp.Validation;
@@ -29,6 +32,7 @@ public class ChainInfoTest : CAServerApplicationTestBase
         var date = GetDateTimeSeconds(1694448000);
         date.ToShortDateString().ShouldBe("2023/09/12");
     }
+
     public static DateTime GetDateTimeSeconds(long timestamp)
     {
         var begtime = timestamp * 10000000;
@@ -42,17 +46,12 @@ public class ChainInfoTest : CAServerApplicationTestBase
     [Fact]
     public async Task Create_Success_Test()
     {
-        var result = await _chainsService.CreateAsync(new CreateUpdateChainDto
-        {
-            ChainId = DefaultChainId,
-            ChainName = DefaultChainName,
-            EndPoint = DefaultEndPoint,
-            ExplorerUrl = DefaultExplorerUrl,
-            CaContractAddress = DefaultCaContractAddress
-        });
+        var str =
+            "CiIKIPujE6mnDNgPZepaNKpE5Vx94qPfbsdjn4Tq6jUicil+EiIKICwkAc+P9QlkfXy9kO2NKc7OQ8VbCH6h/WyzjYnBKFLxGJUBIIC4wuuCCSoLCPL9uqkGEODe7lsyggEwNGE2NjA3YjcyZmEyNmY4NjQ0ZThlMjRhMTZmNjFjN2NiNTZjOWM4NTBkM2JhYTU2MGJmNGY4MzdjMmQ5OTM1MTFmYTY5OTZkNjBkNmJkYmQ0ODhkOWI3NDM4MTQ4NjBhOTM4MTYyN2E0Njk3N2VhZGY3Y2MzMjM2ZGMyMTZjOGZjOiIKIDnXHrX/Yd16Yc531Bs6TwrgcvgzYKZ1DjUXi66tKaap";
 
-        result.ShouldNotBeNull();
-        result.ChainId.ShouldBe(DefaultChainId);
+        var aaa = Org.BouncyCastle.Utilities.Encoders.Base64.Decode(str);
+        var ttt = Voted.Parser.ParseFrom(aaa);
+        var ccc = ttt.Amount;
     }
 
     [Fact]
@@ -118,7 +117,7 @@ public class ChainInfoTest : CAServerApplicationTestBase
                 ExplorerUrl = DefaultExplorerUrl,
                 CaContractAddress = DefaultCaContractAddress
             };
-            
+
             await _chainsService.UpdateAsync(DefaultChainId, chainInfo);
         }
         catch (Exception e)

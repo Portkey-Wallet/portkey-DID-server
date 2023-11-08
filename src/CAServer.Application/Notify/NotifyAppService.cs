@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Client.Service;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.Notify;
@@ -43,42 +45,9 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
 
     public async Task<PullNotifyResultDto> PullNotifyAsync(PullNotifyDto input)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<NotifyRulesIndex>, QueryContainer>>();
-        //mustQuery.Add(q => q.Term(i => i.Field(f => f.AppId).Value(input.AppId)));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceTypes).Terms(input.DeviceType.ToString())));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.AppVersions).Terms(input.AppVersion)));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.DeviceBrands).Terms(input.DeviceBrand)));
-        mustQuery.Add(q => q.Terms(i => i.Field(f => f.OperatingSystemVersions).Terms(input.OperatingSystemVersion)));
 
-        QueryContainer Filter(QueryContainerDescriptor<NotifyRulesIndex> f) => f.Bool(b => b.Must(mustQuery));
-        IPromise<IList<ISort>> Sort(SortDescriptor<NotifyRulesIndex> s) => s.Descending(t => t.NotifyId);
 
-        var (totalCount, notifyRulesIndices) = await _notifyRulesRepository.GetSortListAsync(Filter, sortFunc: Sort);
-
-        if (totalCount <= 0)
-        {
-            return null;
-        }
-
-        var notifyRules = notifyRulesIndices.First();
-        if (notifyRules.Countries is { Length: > 0 })
-        {
-            var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
-            notifyRules = notifyRulesIndices?.Where(t => t.Countries.Contains(ipInfo.Code)).FirstOrDefault();
-            if (notifyRules == null)
-            {
-                return null;
-            }
-        }
-
-        var grain = _clusterClient.GetGrain<INotifyGrain>(notifyRules.Id);
-        var resultDto = await grain.GetNotifyAsync();
-        if (!resultDto.Success)
-        {
-            throw new UserFriendlyException(resultDto.Message);
-        }
-
-        return ObjectMapper.Map<NotifyGrainDto, PullNotifyResultDto>(resultDto.Data);
+        return new PullNotifyResultDto();
     }
 
     public async Task<NotifyResultDto> CreateAsync(CreateNotifyDto notifyDto)
@@ -135,7 +104,7 @@ public class NotifyAppService : CAServerAppService, INotifyAppService
         var condition =
             "/items/upgradePush?fields=*,countries.country_id.value,deviceBrands.deviceBrand_id.value,deviceTypes.deviceType_id.value,targetVersion.value," +
             $"appVersions.appVersion_id.value,styleType.value,targetVersion.value&filter[targetVersion][value][_eq]={version}&filter[status][_eq]=published";
-        
+
         Logger.LogDebug("before get data from cms.");
         var notifyDto = await GetDataAsync(condition);
 

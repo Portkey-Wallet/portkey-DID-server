@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using CAServer.Switch;
 using CAServer.Switch.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -20,5 +21,8 @@ public class SwitchController : CAServerController
     }
 
     [HttpGet]
-    public SwitchDto GetSwitchStatus([Required] string switchName) => _switchAppService.GetSwitchStatus(switchName);
+    public SwitchDto GetSwitchStatus([Required] string switchName) => _switchAppService.GetSwitchStatus(switchName).Result;
+    
+    [HttpGet("GetSwitchStatus2")]
+    public async Task GetSwitchStatus2() => await _switchAppService.GetSwitchStatus2();
 }
