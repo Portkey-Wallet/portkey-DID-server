@@ -53,6 +53,15 @@ public class CaHolderTest : CAServerApplicationTestBase
         });
 
         result.Nickname.ShouldBe("Tom");
+
+        var newNickName = "Amy";
+        var updateResult = await _nickNameAppService.UpdateHolderInfoAsync(new HolderInfoDto()
+        {
+            NickName = newNickName,
+            Avatar = "test"
+        });
+        
+        updateResult.Nickname.ShouldBe(newNickName);
     }
 
     [Fact]

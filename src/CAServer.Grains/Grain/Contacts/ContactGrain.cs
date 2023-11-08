@@ -48,6 +48,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
 
             State.Id = this.GetPrimaryKey();
             State.Name = contactDto.Name;
+            State.Avatar = contactDto.Avatar;
             State.UserId = userId;
             State.IsDeleted = false;
             State.CreateTime = DateTime.UtcNow;
@@ -128,6 +129,11 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         if (State.ImInfo == null && contactDto.ImInfo != null)
         {
             State.ImInfo = contactDto.ImInfo;
+        }
+
+        if (!contactDto.Avatar.IsNullOrWhiteSpace())
+        {
+            State.Avatar = contactDto.Avatar;
         }
 
         SetIndex();
@@ -216,7 +222,7 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         return result;
     }
 
-    public async Task<GrainResultDto<ContactGrainDto>> UpdateWalletName(string walletName)
+    public async Task<GrainResultDto<ContactGrainDto>> UpdateContactInfo(string walletName, string avatar)
     {
         var result = new GrainResultDto<ContactGrainDto>();
         if (State.IsDeleted)
@@ -232,7 +238,12 @@ public class ContactGrain : Grain<ContactState>, IContactGrain
         }
 
         State.CaHolderInfo.WalletName = walletName;
-        
+
+        if (!avatar.IsNullOrWhiteSpace())
+        {
+            State.Avatar = avatar;
+        }
+
         SetIndex();
         State.ModificationTime = DateTime.UtcNow;
 
