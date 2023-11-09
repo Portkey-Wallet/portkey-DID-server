@@ -1,15 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Common.Dtos;
 using CAServer.Commons;
+using CAServer.Grains.Grain.Svg;
+using CAServer.Grains.Grain.Svg.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos.ThirdPart;
+using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -40,6 +44,7 @@ public class TransakProvider
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IHttpProvider _httpProvider;
     private readonly IClusterClient _clusterClient;
+    private readonly IImageProcessProvider _imageProcessProvider;
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .IgnoreNullValue()
@@ -50,7 +55,7 @@ public class TransakProvider
     public TransakProvider(
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider, IOptionsMonitor<RampOptions> rampOptions, IClusterClient clusterClient,
-        IAbpDistributedLock distributedLock, ILogger<TransakProvider> logger)
+        IAbpDistributedLock distributedLock, ILogger<TransakProvider> logger, IImageProcessProvider imageProcessProvider)
     {
         _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
@@ -58,6 +63,7 @@ public class TransakProvider
         _clusterClient = clusterClient;
         _distributedLock = distributedLock;
         _logger = logger;
+        _imageProcessProvider = imageProcessProvider;
         InitAsync().GetAwaiter().GetResult();
     }
 
@@ -207,6 +213,7 @@ public class TransakProvider
             TransakApi.GetFiatCurrencies,
             param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() }
         );
+        await SetSvgUrl(resp.Response);
         AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}",
             resp.Error?.StatusCode, resp.Error?.Message);
         return resp.Response;
@@ -280,5 +287,41 @@ public class TransakProvider
         );
 
         return resp?.Data;
+    }
+
+    /// <summary>
+    ///     if svg in amazon return amazon url else return upload to amazon url
+    /// </summary>
+    /// <param name="transakFiatItems"></param>
+    /// <returns></returns>
+    private async Task SetSvgUrl(List<TransakFiatItem> transakFiatItems)
+    {
+        foreach (var transakFiatItem in transakFiatItems)
+        {
+            string svgUrl = transakFiatItem.Icon;
+            if (string.IsNullOrWhiteSpace(svgUrl))
+            {
+                continue;
+            }
+            var svgMd5 = EncryptionHelper.MD5Encrypt32(svgUrl);
+            var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
+            var svgGrain = await grain.GetSvgAsync();
+            if (svgGrain != null)
+            {
+                continue;
+            }
+
+            string amazonUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl + svgMd5;
+            var svgGrainDto = new SvgGrainDto
+            {
+                Id = svgMd5,
+                Svg = transakFiatItem.Icon,
+                AmazonUrl = amazonUrl  
+            };
+            await grain.AddSvgAsync(svgGrainDto);
+            transakFiatItem.IconUrl = amazonUrl;
+            //async upload to Amazon 
+            _imageProcessProvider.UploadSvgAsync(transakFiatItem.IconUrl);
+        }
     }
 }

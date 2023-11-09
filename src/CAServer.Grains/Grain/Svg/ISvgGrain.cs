@@ -5,6 +5,8 @@ namespace CAServer.Grains.Grain.Svg;
 
 public interface ISvgGrain : IGrainWithStringKey
 {
-    Task<GrainResultDto<SvgGrainDto>> AddSvgAsync(SvgGrainDto contactDto);
+    Task<GrainResultDto<SvgGrainDto>> AddSvgAsync(SvgGrainDto svgGrainDto);
+
+    Task<SvgGrainDto> GetSvgAsync();
 
 }

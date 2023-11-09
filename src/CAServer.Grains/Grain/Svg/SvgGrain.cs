@@ -1,16 +1,20 @@
-using AutoMapper.Internal.Mappers;
 using CAServer.Grains.Grain.Svg.Dtos;
 using CAServer.Grains.State.SvgPart;
 using Microsoft.Extensions.Logging;
+using Volo.Abp.ObjectMapping;
+
 
 namespace CAServer.Grains.Grain.Svg;
 
 public class SvgGrain :Orleans.Grain<SvgState> , ISvgGrain
 {
     private readonly ILogger<SvgGrain> _logger;
-    public SvgGrain(ILogger<SvgGrain> logger)
+    private readonly IObjectMapper _objectMapper;
+
+    public SvgGrain(ILogger<SvgGrain> logger,IObjectMapper objectMapper)
     {
         _logger = logger;
+        _objectMapper = objectMapper;
     }
     public async Task<GrainResultDto<SvgGrainDto>> AddSvgAsync(SvgGrainDto svgGrainDto)
     {
@@ -18,13 +22,21 @@ public class SvgGrain :Orleans.Grain<SvgState> , ISvgGrain
         //amazone can be null
         
         var result = new GrainResultDto<SvgGrainDto>();
-        State.Id = svgGrainDto.Md5;
-        State.Md5 = svgGrainDto.Md5;
+        State.Svg = svgGrainDto.Svg;
+        State.AmazonUrl = svgGrainDto.AmazonUrl;
+        State.Id = svgGrainDto.Id;
         await WriteStateAsync();
         result.Success = true;
         result.Data = svgGrainDto;
       
 
         return result;
+    }
+
+    public async Task<SvgGrainDto> GetSvgAsync()
+    {
+        Console.WriteLine("12334455");
+        return  _objectMapper.Map<SvgState, SvgGrainDto>(State);
+        
     }
 }

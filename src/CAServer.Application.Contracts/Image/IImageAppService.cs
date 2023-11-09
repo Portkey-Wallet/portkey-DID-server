@@ -7,5 +7,5 @@ public interface IImageAppService
 {
     
     Task<ThumbnailResponseDto> GetThumbnailAsync(GetThumbnailInput input);
-    Task<string> uploadSvg(string filename);
+    Task<string> UploadSvg(string svgMd5);
 }

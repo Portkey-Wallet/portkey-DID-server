@@ -26,9 +26,9 @@ public class ImageAppService : CAServerAppService, IImageAppService
         return await _imageProcessProvider.GetImResizeImageAsync(input.ImageUrl, input.Width, input.Height);
     }
 
-    public async Task<string> uploadSvg(string filename)
+    public async Task<string> UploadSvg(string svgMd5)
     {
-        return await _imageProcessProvider.UploadSvgAsync(filename);
+        return await _imageProcessProvider.UploadSvgAsync(svgMd5);
         
     }
 }
