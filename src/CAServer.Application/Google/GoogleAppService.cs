@@ -1,18 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Cache;
-using CAServer.Google.Utils;
+using CAServer.Google.Dtos;
 using CAServer.Options;
 using CAServer.Verifier;
-using FirebaseAdmin.Auth;
-using Google.Apis.Auth;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -26,15 +24,20 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private readonly ILogger<GoogleAppService> _logger;
     private readonly GoogleRecaptchaOptions _googleRecaptchaOption;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
+    private readonly FireBaseAppCheckOptions _fireBaseAppCheckOptions;
 
     public GoogleAppService(
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
         ILogger<GoogleAppService> logger, IOptions<GoogleRecaptchaOptions> googleRecaptchaOption,
-        IHttpClientFactory httpClientFactory, ICacheProvider cacheProvider)
+        IHttpClientFactory httpClientFactory, ICacheProvider cacheProvider,
+        JwtSecurityTokenHandler jwtSecurityTokenHandler, IOptionsSnapshot<FireBaseAppCheckOptions> fireBaseAppCheckOptions)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _cacheProvider = cacheProvider;
+        _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
+        _fireBaseAppCheckOptions = fireBaseAppCheckOptions.Value;
         _googleRecaptchaOption = googleRecaptchaOption.Value;
         _sendVerifierCodeRequestLimitOptions = sendVerifierCodeRequestLimitOptions.Value;
     }
@@ -57,6 +60,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         {
             return false;
         }
+
         return type switch
         {
             OperationType.CreateCAHolder => true,
@@ -84,10 +88,9 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
             new KeyValuePair<string, string>("secret", secret),
             new KeyValuePair<string, string>("response", recaptchaToken)
         });
-        _logger.LogDebug("VerifyGoogleRecaptchaToken content is {content}", content.ToString());
         var client = _httpClientFactory.CreateClient();
         var response = await client.PostAsync(_googleRecaptchaOption.VerifyUrl, content);
-        _logger.LogDebug("response is {response}", response.ToString());
+        _logger.LogDebug("response is {response}", JsonConvert.SerializeObject(response));
         if (!response.IsSuccessStatusCode)
         {
             return false;
@@ -98,67 +101,83 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         return responseContent.Contains("\"success\": true");
     }
 
-    public Task<bool> VerifyFireBaseTokenAsync(string token)
+    public async Task<ValidateTokenResponse> ValidateTokenAsync(string rcToken, string acToken,
+        PlatformType platformType)
     {
-        var segments = !string.IsNullOrEmpty(token) ? token.Split(new char[1]
+        if (string.IsNullOrEmpty(rcToken) && string.IsNullOrWhiteSpace(acToken))
         {
-            '.'
-        }) : throw new ArgumentException( "token  must not be null or empty.");
-        var header = segments.Length == 3 ? JwtUtils.Decode<JsonWebSignature.Header>(segments[0]) : throw new Exception("Incorrect number of segments in token.");
-        
-        var payload = JwtUtils.Decode<PayLoad>(segments[1]);
-        
-        
-        
-        
-    }
-    
-        
-    private async Task VerifySignatureAsync(
-        string[] segments,
-        string keyId,
-        CancellationToken cancellationToken)
-    {
-       
+            return new ValidateTokenResponse();
+        }
+
+        if (!string.IsNullOrWhiteSpace(rcToken))
         {
-            byte[] hash;
-            using (SHA256 shA256 = SHA256.Create())
-                hash = shA256.ComputeHash(Encoding.ASCII.GetBytes(segments[0] + "." + segments[1]));
-            byte[] signature = JwtUtils.Base64DecodeToBytes(segments[2]);
-            if (!(await this.keySource.GetPublicKeysAsync(cancellationToken).ConfigureAwait(false)).Any<PublicKey>((Func<PublicKey, bool>) (key => key.Id == keyId && key.RSA.VerifyHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))))
-                throw new Exception("Failed to verify token signature.");
+            try
+            {
+                var isValidSuccess = await IsGoogleRecaptchaTokenValidAsync(rcToken, platformType);
+                if (isValidSuccess)
+                {
+                    return new ValidateTokenResponse
+                    {
+                        RcValidResult = true,
+                    };
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError("Google Recaptcha Token Valid Error {error}", e.Message);
+                return new ValidateTokenResponse();
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(acToken))
+        {
+            return new ValidateTokenResponse();
+        }
+
+        try
+        {
+            var securityToken = await VerifyAppCheckTokenAsync(acToken);
+            var jwtPayload = ((JwtSecurityToken)securityToken).Payload;
+            
+            return new ValidateTokenResponse
+            {
+                AcValidResult = true
+            };
+            //var firebase = jwtPayload.FirstOrDefault(t => t.Key == "firebase");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Google App Check Token Valid Error {error}", e.Message);
+            return new ValidateTokenResponse();
         }
     }
-    
-}
 
+    public async Task<SecurityToken> VerifyAppCheckTokenAsync(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            return new JwtSecurityToken();
+        }
 
-public class PayLoad
-{
-    [JsonProperty("iss")]
-    public string Issuer { get; set; }
-
-    [JsonProperty("sub")]
-    public string Subject { get; set; }
-
-    [JsonProperty("aud")]
-    public List<string> Audiences { get; set; }
-
-    [JsonProperty("exp")]
-    public long ExpirationTimeSeconds { get; set; }
-
-    [JsonProperty("iat")]
-    public long IssuedAtTimeSeconds { get; set; }
-
-    [JsonProperty("firebase")]
-    public FirebaseInfo Firebase { get; set; }
-
-    [JsonIgnore]
-    public IReadOnlyDictionary<string, object> Claims { get; set; }
-}
-
-public class FirebaseInfo
-{
-    [JsonProperty("tenant")]
-    public string Tenant { get; set; }
+        var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(token);
+        var kid = jwtToken.Header.Kid;
+        var client = new HttpClient();
+        var jwksResponse = await client.GetStringAsync(_fireBaseAppCheckOptions.RequestUrl);
+        var response = JsonConvert.DeserializeObject<Response>(jwksResponse);
+        var jwk = new JsonWebKey(
+            JsonConvert.SerializeObject(response.Keys.FirstOrDefault(t => t.Kid == kid)));
+        var validateParameter = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = _fireBaseAppCheckOptions.ValidIssuer,
+            ValidateAudience = true,
+            ValidAudiences = _fireBaseAppCheckOptions.ValidAudiences,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = jwk
+        };
+        _jwtSecurityTokenHandler.ValidateToken(token, validateParameter,
+            out SecurityToken validatedToken);
+        return validatedToken;
+    }
 }
