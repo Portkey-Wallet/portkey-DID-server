@@ -259,12 +259,13 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             // update main-order, record transactionId first
             orderGrainDto.TransactionId = txHash;
             orderGrainDto.Status = OrderStatusType.Transferring.ToString();
-            var transferringResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto,
-                new Dictionary<string, string>
-                {
-                    ["txHash"] = txHash,
-                    ["transaction"] = JsonConvert.SerializeObject(transferTx, JsonSerializerSettings)
-                });
+            var transferringExtension = OrderStatusExtensionBuilder.Create()
+                .Add(ExtensionKey.TxHash, txHash)
+                .Add(ExtensionKey.Transaction, JsonConvert.SerializeObject(transferTx, JsonSerializerSettings))
+                .Build();
+            var transferringResult =
+                await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, transferringExtension);
+
             AssertHelper.IsTrue(transferringResult.Success, "sava ramp order failed: " + transferringResult.Message);
 
             // Transfer crypto to merchant, and wait result
@@ -285,15 +286,15 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 ? OrderStatusType.Transferred.ToString()
                 : OrderStatusType.Transferring.ToString();
 
-            var extensionData = new Dictionary<string, string>
-            {
-                ["txStatus"] = txResult.Status,
-                ["txBlockHeight"] = txResult.BlockNumber.ToString()
-            };
+            var resExtensionBuilder = OrderStatusExtensionBuilder.Create()
+                .Add(ExtensionKey.TxStatus, txResult.Status)
+                .Add(ExtensionKey.TxBlockHeight, txResult.BlockNumber.ToString());
             if (txResult.Status != TransactionState.Mined)
-                extensionData["txResult"] = JsonConvert.SerializeObject(txResult, JsonSerializerSettings);
+                resExtensionBuilder.Add(ExtensionKey.TxResult,
+                    JsonConvert.SerializeObject(txResult, JsonSerializerSettings));
 
-            var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, extensionData);
+            var updateResult =
+                await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, resExtensionBuilder.Build());
             AssertHelper.IsTrue(updateResult.Success, "sava ramp order failed: " + updateResult.Message);
         }
         catch (UserFriendlyException e)
@@ -311,7 +312,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="orderId"></param>
     /// <param name="confirmedHeight"></param>
-    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long chainHeight, long confirmedHeight)
+    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long chainHeight,
+        long confirmedHeight)
     {
         try
         {
@@ -342,13 +344,15 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId,
                     orderGrainDto.TransactionId);
             _logger.LogDebug(
-                "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}", orderId,
+                "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}",
+                orderId,
                 orderGrainDto.TransactionId, rawTxResult.Status, rawTxResult.BlockNumber);
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
             // update order status
             var newStatus = rawTxResult.Status == TransactionState.Mined
-                ? rawTxResult.BlockNumber <= confirmedHeight || chainHeight >= rawTxResult.BlockNumber + _thirdPartOptions.Timer.TransactionConfirmHeight
+                ? rawTxResult.BlockNumber <= confirmedHeight || chainHeight >=
+                rawTxResult.BlockNumber + _thirdPartOptions.Timer.TransactionConfirmHeight
                     ? OrderStatusType.Finish.ToString()
                     : OrderStatusType.Transferred.ToString()
                 : OrderStatusType.TransferFailed.ToString();
@@ -358,8 +362,9 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // Record transfer data when filed
             var extraInfo = newStatus == OrderStatusType.TransferFailed.ToString()
-                ? new Dictionary<string, string>
-                    { ["txResult"] = JsonConvert.SerializeObject(rawTxResult, JsonSerializerSettings) }
+                ? OrderStatusExtensionBuilder.Create()
+                    .Add(ExtensionKey.TxResult, JsonConvert.SerializeObject(rawTxResult, JsonSerializerSettings))
+                    .Build()
                 : null;
 
             // update order status
