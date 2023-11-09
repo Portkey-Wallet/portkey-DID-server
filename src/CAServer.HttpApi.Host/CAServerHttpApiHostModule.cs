@@ -281,6 +281,7 @@ public class CAServerHttpApiHostModule : AbpModule
         context.Services.AddMassTransit(x =>
         {
             var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
+            var clientId = configuration.GetSection("ClientId").Get<string>();
             x.AddConsumer<OrderWsBroadcastConsumer>();
             x.UsingRabbitMq((ctx, cfg) =>
             {
@@ -291,7 +292,7 @@ public class CAServerHttpApiHostModule : AbpModule
                         h.Password(rabbitMqConfig.Connections.Default.Password);
                     });
                 
-                cfg.ReceiveEndpoint("SubscribeQueue_" + rabbitMqConfig.ClientId, e =>
+                cfg.ReceiveEndpoint("BroadcastClient_" + clientId, e =>
                 {
                     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
                 });

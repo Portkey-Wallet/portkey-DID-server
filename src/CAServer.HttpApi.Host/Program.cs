@@ -36,16 +36,14 @@ public class Program
 
         try
         {
-            Log.Information("Starting CAServer.HttpApi.Host.");
+            Log.Information("Starting CAServer.HttpApi.Host");
             var builder = WebApplication.CreateBuilder(args);
-// #if !DEBUG
-            // builder.Configuration.AddJsonFile("apollo.appsettings.json");
-// #endif            
-            
+            builder.Configuration.AddJsonFile("apollo.appsettings.json");
             builder.Configuration.AddJsonFile("phone.json");
             builder.Configuration.AddJsonFile("seedurl.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
+                
 // #if !DEBUG
                 // .UseApollo()
 // #endif
