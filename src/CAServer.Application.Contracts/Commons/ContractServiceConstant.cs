@@ -29,6 +29,9 @@ public static class CommonConstant
     public const string OrderStatusInfoPrefix = "OrderStatusInfo";
 
     public const string ChainName = "aelf";
+    public const string ELF = "ELF";
+    public const string USD = "USD";
+    public const string USDT = "USDT";
 
     public const string MainChainId = "AELF";
     public const string TDVVChainId = "tDVV";

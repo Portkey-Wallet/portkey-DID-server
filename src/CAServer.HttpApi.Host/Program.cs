@@ -43,11 +43,9 @@ public class Program
             builder.Configuration.AddJsonFile("seedurl.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
-                
 // #if !DEBUG
                 // .UseApollo()
 // #endif
-
                 .UseSerilog();
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();

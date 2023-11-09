@@ -107,7 +107,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<BookmarkItem, BookmarkResultDto>();
 
         CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
-        CreateMap<NftOrderGrainDto, NftOrderState>();
-        CreateMap<NftOrderState, NftOrderGrainDto>();
+        CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
+        CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
     }
 }

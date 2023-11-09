@@ -33,6 +33,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly INESTRepository<NftOrderIndex, Guid> _nftOrderRepository;
     private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
+    private readonly INESTRepository<OrderSettlementIndex, Guid> _orderSettlementRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ThirdPartOptions _thirdPartOptions;
 
@@ -41,13 +42,15 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         IObjectMapper objectMapper,
         IOptions<ThirdPartOptions> thirdPartOptions,
         INESTRepository<NftOrderIndex, Guid> nftOrderRepository,
-        ILogger<ThirdPartOrderProvider> logger, INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository)
+        ILogger<ThirdPartOrderProvider> logger, INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository,
+        INESTRepository<OrderSettlementIndex, Guid> orderSettlementRepository)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _nftOrderRepository = nftOrderRepository;
         _logger = logger;
         _orderStatusInfoRepository = orderStatusInfoRepository;
+        _orderSettlementRepository = orderSettlementRepository;
         _thirdPartOptions = thirdPartOptions.Value;
     }
 
@@ -114,7 +117,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(GetThirdPartOrderConditionDto condition,
         params OrderSectionEnum?[] withSections)
     {
-        var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>() { };
+        var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>();
         if (condition.UserId != Guid.Empty)
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(condition.UserId)));
 
@@ -161,7 +164,9 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
         if (withSections.Contains(OrderSectionEnum.SettlementSection))
         {
-            //TODO nzc
+            var orderSettlementPager =
+                await QueryOrderSettlementInfoPagerAsync(orderIdIn.Select(id => id.ToString()).ToList());
+            MergeOrderStatusSection(pager, orderSettlementPager);
         }
 
         if (withSections.Contains(OrderSectionEnum.OrderStateSection))
@@ -169,7 +174,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             var orderStatusPager = await QueryOrderStatusInfoPagerAsync(orderIdIn.Select(id => id.ToString()).ToList());
             MergeOrderStatusSection(pager, orderStatusPager);
         }
-        
+
         return pager;
     }
 
@@ -198,6 +203,17 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         QueryContainer Filter(QueryContainerDescriptor<OrderStatusInfoIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, orders) = await _orderStatusInfoRepository.GetSortListAsync(Filter, limit: ids.Count);
         return new PageResultDto<OrderStatusInfoIndex>(orders, totalCount);
+    }
+
+    public async Task<PageResultDto<OrderSettlementIndex>> QueryOrderSettlementInfoPagerAsync(List<string> ids)
+    {
+        if (ids.IsNullOrEmpty()) return new PageResultDto<OrderSettlementIndex>();
+        var mustQuery = new List<Func<QueryContainerDescriptor<OrderSettlementIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(ids)));
+
+        QueryContainer Filter(QueryContainerDescriptor<OrderSettlementIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, orders) = await _orderSettlementRepository.GetSortListAsync(Filter, limit: ids.Count);
+        return new PageResultDto<OrderSettlementIndex>(orders, totalCount);
     }
 
     // query nft-order index
@@ -270,8 +286,9 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             orderDto.NftOrderSection = nftOrderSection;
         }
     }
-    
-    private void MergeOrderStatusSection(PageResultDto<OrderDto> orderPager, PageResultDto<OrderStatusInfoIndex> orderStatusPager)
+
+    private void MergeOrderStatusSection(PageResultDto<OrderDto> orderPager,
+        PageResultDto<OrderStatusInfoIndex> orderStatusPager)
     {
         if (orderStatusPager.Data.IsNullOrEmpty()) return;
         var statusIndexes = orderStatusPager.Data.ToDictionary(order => order.OrderId, order => order);
@@ -281,6 +298,21 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             var orderStatusIndex = statusIndexes[orderDto.Id];
             var orderStatusSection = _objectMapper.Map<OrderStatusInfoIndex, OrderStatusSection>(orderStatusIndex);
             orderDto.OrderStatusSection = orderStatusSection;
+        }
+    }
+
+    private void MergeOrderStatusSection(PageResultDto<OrderDto> orderPager,
+        PageResultDto<OrderSettlementIndex> orderStatusPager)
+    {
+        if (orderStatusPager.Data.IsNullOrEmpty()) return;
+        var statusIndexes = orderStatusPager.Data.ToDictionary(order => order.Id, order => order);
+        foreach (var orderDto in orderPager.Data)
+        {
+            if (!statusIndexes.ContainsKey(orderDto.Id)) continue;
+            var orderStatusIndex = statusIndexes[orderDto.Id];
+            var orderStatusSection =
+                _objectMapper.Map<OrderSettlementIndex, OrderSettlementSectionDto>(orderStatusIndex);
+            orderDto.OrderSettlementSection = orderStatusSection;
         }
     }
 

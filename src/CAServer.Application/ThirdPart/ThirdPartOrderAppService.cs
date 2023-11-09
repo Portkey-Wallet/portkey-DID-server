@@ -63,7 +63,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     }
 
 
-    // crate user ramp order
+    /// <summary>
+    ///     crate user ramp order
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
         // var userId = input.UserId;
@@ -92,7 +96,11 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         return new OrderCreatedDto();
     }
 
-    // create base order with nft-order section
+    /// <summary>
+    ///     create base order with nft-order section
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input)
     {
         try
@@ -186,7 +194,41 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         return result;
     }
 
-    // query by merchantName & merchantId with MerchantSignature
+    /// <summary>
+    ///     get order settlement
+    /// </summary>
+    /// <param name="orderId"></param>
+    /// <returns></returns>
+    public async Task<OrderSettlementGrainDto> GetOrderSettlementAsync(Guid orderId)
+    {
+        
+        var grain = _clusterClient.GetGrain<IOrderSettlementGrain>(orderId);
+        var res = await grain.GetById(orderId);
+        AssertHelper.IsTrue(res.Success, "Get order settlement grain failed, {Msg}", res.Message);
+
+        return res.Data;
+    }
+    
+    /// <summary>
+    ///     add or updat order settlement
+    /// </summary>
+    /// <param name="grainDto"></param>
+    /// <returns></returns>
+    public async Task<GrainResultDto<OrderSettlementGrainDto>> AddUpdateOrderSettlementAsync(OrderSettlementGrainDto grainDto)
+    {
+        var grain = _clusterClient.GetGrain<IOrderSettlementGrain>(grainDto.Id);
+        var res = await grain.AddUpdate(grainDto);
+        AssertHelper.IsTrue(res.Success, "AddUpdate order settlement grain failed, {Msg}", res.Message);
+
+        await _distributedEventBus.PublishAsync(new OrderSettlementEto(res.Data));
+        return res;
+    }
+
+    /// <summary>
+    ///     query by merchantName & merchantId with MerchantSignature
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(
         OrderQueryRequestDto input)
     {
@@ -230,7 +272,12 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         }
     }
 
-    public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
+    /// <summary>
+    ///     get third part order by page
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    public async Task<PageResultDto<OrderDto>> /**/GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         // var userId = input.UserId;
         var userId = CurrentUser.Id == null ? Guid.Empty : CurrentUser.GetId();
@@ -243,7 +290,12 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             }, OrderSectionEnum.NftSection);
     }
 
-
+    /// <summary>
+    ///     Export order list
+    /// </summary>
+    /// <param name="condition"></param>
+    /// <param name="orderSectionEnums"></param>
+    /// <returns></returns>
     public async Task<List<OrderDto>> ExportOrderList(GetThirdPartOrderConditionDto condition, params OrderSectionEnum?[] orderSectionEnums)
     {
         var orderDtos = new List<OrderDto>();
@@ -260,13 +312,24 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         return orderDtos;
     }
 
-
+    /// <summary>
+    ///     Generate a google auth code by key
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="userName"></param>
+    /// <param name="accountTitle"></param>
+    /// <returns></returns>
     public SetupCode GenerateGoogleAuthCode(string key, string userName, string accountTitle)
     {
         var tfa = new TwoFactorAuthenticator();
         return tfa.GenerateSetupCode(userName, accountTitle, HashHelper.ComputeFrom(key).ToByteArray(), 5);
     }
 
+    /// <summary>
+    ///     Verify order export auth by google-auth-pin
+    /// </summary>
+    /// <param name="pin"></param>
+    /// <returns></returns>
     public bool VerifyOrderExportCode(string pin)
     {
         var tfa = new TwoFactorAuthenticator();

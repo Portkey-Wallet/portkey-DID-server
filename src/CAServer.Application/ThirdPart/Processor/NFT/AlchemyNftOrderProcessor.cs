@@ -7,6 +7,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,6 +23,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     private readonly AlchemyOptions _alchemyOptions;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
+
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .WithCamelCasePropertyNamesResolver()
         .IgnoreNullValue()
@@ -31,8 +33,11 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     public AlchemyNftOrderProcessor(ILogger<AlchemyNftOrderProcessor> logger, IClusterClient clusterClient,
         IOptions<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
-        IAbpDistributedLock distributedLock)
-        : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock)
+        IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
+        ITokenAppService tokenAppService, ExchangeProvider exchangeProvider
+    )
+        : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock,
+            thirdPartOrderAppService, tokenAppService, exchangeProvider)
     {
         _logger = logger;
         _alchemyProvider = alchemyProvider;

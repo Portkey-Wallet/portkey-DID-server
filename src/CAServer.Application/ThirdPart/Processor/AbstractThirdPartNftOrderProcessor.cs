@@ -4,20 +4,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using AElf.Kernel;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -33,6 +33,9 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly IContractProvider _contractProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
+    private readonly ITokenAppService _tokenAppService;
+    private readonly ExchangeProvider _exchangeProvider;
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .WithAElfTypesConverters()
@@ -44,13 +47,17 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         IClusterClient clusterClient,
         IOptions<ThirdPartOptions> thirdPartOptions,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
-        IAbpDistributedLock distributedLock)
+        IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
+        ITokenAppService tokenAppService, ExchangeProvider exchangeProvider)
     {
         _logger = logger;
         _clusterClient = clusterClient;
         _orderStatusProvider = orderStatusProvider;
         _contractProvider = contractProvider;
         _distributedLock = distributedLock;
+        _thirdPartOrderAppService = thirdPartOrderAppService;
+        _tokenAppService = tokenAppService;
+        _exchangeProvider = exchangeProvider;
         _thirdPartOptions = thirdPartOptions.Value;
     }
 
@@ -265,7 +272,6 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 .Build();
             var transferringResult =
                 await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, transferringExtension);
-
             AssertHelper.IsTrue(transferringResult.Success, "sava ramp order failed: " + transferringResult.Message);
 
             // Transfer crypto to merchant, and wait result
@@ -304,6 +310,51 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         catch (Exception e)
         {
             _logger.LogError(e, "Send SettlementTransfer error, orderId={OrderId}", orderId);
+        }
+    }
+
+    /// <summary>
+    ///     Save order settlement 
+    /// </summary>
+    /// <param name="orderId"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public async Task<CommonResponseDto<Empty>> SaveOrderSettlementAsync(Guid orderId)
+    {
+        try
+        {
+            // query verify order grain
+            var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
+            AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
+
+            var orderSettlementGrainDto = await _thirdPartOrderAppService.GetOrderSettlementAsync(orderId);
+
+            var tokenPrice = await _tokenAppService.GetTokenPriceListAsync(new List<string> { CommonConstant.USDT });
+            if (!tokenPrice.Items.IsNullOrEmpty())
+                orderSettlementGrainDto.ExchangeUsdUsdt = tokenPrice.Items[0].PriceInUsd;
+
+            orderSettlementGrainDto.ExchangeFiatUsd = orderGrainDto.Fiat == CommonConstant.USD
+                ? 1
+                : (await _exchangeProvider.GetMastercardExchange(orderGrainDto.Fiat, toCurrency: CommonConstant.USD))
+                .Exchange.SafeToDecimal();
+            
+            //TODO nzc calculate fee
+
+            var saveRes = await _thirdPartOrderAppService.AddUpdateOrderSettlementAsync(orderSettlementGrainDto);
+            AssertHelper.IsTrue(saveRes.Success, "Save order settlement failed, {Msg}", saveRes.Message);
+
+            return new CommonResponseDto<Empty>();
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning("NFT order SaveOrderSettlementAsync, orderId={OrderId}, msg={Msg}", orderId,
+                e.Message);
+            return new CommonResponseDto<Empty>().Error(e, e.Message);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "NFT order SaveOrderSettlementAsync error, orderId={OrderId}", orderId);
+            return new CommonResponseDto<Empty>().Error(e, e.Message);
         }
     }
 

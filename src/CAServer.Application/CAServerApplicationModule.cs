@@ -56,6 +56,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         
+        context.Services.AddSingleton<ExchangeProvider>();
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
