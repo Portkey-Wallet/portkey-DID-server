@@ -11,11 +11,9 @@ public class SvgTest : CAServerGrainTestBase
     {
         var grain = Cluster.Client.GetGrain<ISvgGrain>(Guid.NewGuid().ToString());
         SvgGrainDto svgGrainDto = new SvgGrainDto();
-        svgGrainDto.Id = new Guid();
-        svgGrainDto.Name = "USA";
-        svgGrainDto.Md5 = "test MD5";
-        svgGrainDto.SvgContent = "svgxml";
         svgGrainDto.AmazonUrl = "";
-        var result = await grain.AddSvgAsync(svgGrainDto);
+        var res = await grain.GetSvgAsync();
+        Console.WriteLine("123");
+
     }
 }
