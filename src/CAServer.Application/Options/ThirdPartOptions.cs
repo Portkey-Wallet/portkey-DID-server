@@ -9,11 +9,11 @@ public class ThirdPartOptions
     public AlchemyOptions Alchemy { get; set; }
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
-    public OrderListAuth OrderListAuth { get; set; }
+    public OrderExportAuth OrderExportAuth { get; set; }
 
 }
 
-public class OrderListAuth
+public class OrderExportAuth
 {
     public string Key { get; set; }
     public string UserName { get; set; }

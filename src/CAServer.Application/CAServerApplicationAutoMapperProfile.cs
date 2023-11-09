@@ -402,13 +402,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.Crypto, opt => opt.MapFrom(src => src.PaymentSymbol))
             .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.PaymentAmount));
 
-        CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>();
+        CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>().ReverseMap();
+        CreateMap<OrderStatusInfoIndex, OrderStatusSection>().ReverseMap();
 
 
-        CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
-        CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
+        CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>().ReverseMap();
+        CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>().ReverseMap();
         
-        CreateMap<OrderEto, RampOrderIndex>();
+        CreateMap<OrderEto, RampOrderIndex>().ReverseMap();
         CreateMap<OrderEto, NotifyOrderDto>()
             .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
 

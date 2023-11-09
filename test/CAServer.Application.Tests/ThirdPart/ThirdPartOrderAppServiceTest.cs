@@ -49,14 +49,14 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     [Fact]
     public async Task GoogleCode()
     {
-        var code = _thirdPartOrderAppService.GenerateOrderListSetupCode("authKey", "testUser", "testTitle");
+        var code = _thirdPartOrderAppService.GenerateGoogleAuthCode("authKey", "testUser", "testTitle");
         code.ShouldNotBeNull();
     }
 
     [Fact]
     public async Task VerifyGoogleCode()
     {
-        var code = _thirdPartOrderAppService.VerifyOrderListCode("395653");
+        var code = _thirdPartOrderAppService.VerifyOrderExportCode("395653");
         code.ShouldNotBe(false);
     }
     

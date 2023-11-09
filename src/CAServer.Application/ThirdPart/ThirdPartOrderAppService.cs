@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using CAServer.CAActivity.Provider;
@@ -101,7 +102,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
 
             // Query userId from caHolder
             var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
-            
+
             // query decimal of paymentSymbol via GraphQL
             var decimalsList = await _activityProvider.GetTokenDecimalsAsync(input.PaymentSymbol);
             AssertHelper.NotEmpty(decimalsList?.TokenInfo, "Price symbol of {PriceSymbol} decimal not found",
@@ -111,7 +112,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             var merchantAddress = input.MerchantAddress.DefaultIfEmpty(
                 _thirdPartOptions.Merchant.GetOption(input.MerchantName).ReceivingAddress);
             AssertHelper.NotEmpty(merchantAddress, "Merchant crypto settlement address empty");
-            
+
             // Save ramp order
             var orderGrainData = _objectMapper.Map<CreateNftOrderRequestDto, OrderGrainDto>(input);
             orderGrainData.Id = GuidHelper.UniqId(input.MerchantName, input.MerchantOrderId);
@@ -243,30 +244,33 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     }
 
 
-    public async Task<List<OrderDto>> ExportOrderList(GetThirdPartOrderConditionDto condition)
+    public async Task<List<OrderDto>> ExportOrderList(GetThirdPartOrderConditionDto condition, params OrderSectionEnum?[] orderSectionEnums)
     {
-        List<OrderDto> orderDtos = new List<OrderDto>();
-        
-        var pager = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(condition, OrderSectionEnum.NftSection);
-        // TODO nzc page-by-page query
-        orderDtos.AddRange(pager.Data);
+        var orderDtos = new List<OrderDto>();
+        while (true)
+        {
+            var pager = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(condition,
+                orderSectionEnums);
+            if (pager.Data.IsNullOrEmpty()) break;
+
+            condition.LastModifyTimeLt = pager.Data.Select(i => i.LastModifyTime).Min();
+            orderDtos.AddRange(pager.Data);
+        }
+
         return orderDtos;
     }
 
 
-    public SetupCode GenerateOrderListSetupCode(string key, string userName, string accountTitle)
+    public SetupCode GenerateGoogleAuthCode(string key, string userName, string accountTitle)
     {
         var tfa = new TwoFactorAuthenticator();
-        return tfa.GenerateSetupCode(userName, 
-            accountTitle,
-            HashHelper.ComputeFrom(key).ToByteArray(), 5);
+        return tfa.GenerateSetupCode(userName, accountTitle, HashHelper.ComputeFrom(key).ToByteArray(), 5);
     }
 
-    public bool VerifyOrderListCode(string pin)
+    public bool VerifyOrderExportCode(string pin)
     {
         var tfa = new TwoFactorAuthenticator();
-        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.OrderListAuth.Key).ToByteArray(), pin);
+        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.OrderExportAuth.Key).ToByteArray(),
+            pin);
     }
-
-
 }

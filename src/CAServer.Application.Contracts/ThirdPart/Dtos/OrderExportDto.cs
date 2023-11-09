@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using CAServer.Commons;
+using Newtonsoft.Json;
 
 namespace CAServer.ThirdPart.Dtos;
 
@@ -13,14 +14,41 @@ public class OrderExportRequestDto
     public string EndTime { get; set; }
     public List<string> Status { get; set; }
     public string ThirdPart { get; set; }
+    public string ReturnType { get; set; } = "csv";
     public string Auth { get; set; }
 }
 
 
 public class OrderExportResponseDto
 {
-    public List<OrderDto> OrderList { get; set; } = new();
+    
+    public List<OrderDto> OrderList { get; set; }
 
+    public OrderExportResponseDto(List<OrderDto> orderList)
+    {
+        OrderList = orderList;
+    }
+
+    public string ToJsonText()
+    {
+        var jsonBuilder = new StringBuilder();
+        var stringWriter = new StringWriter(jsonBuilder);
+        stringWriter.WriteLine("[");
+        for (var i = 0 ; i < OrderList.Count ; i ++)
+        {
+            var order = OrderList[i];
+            stringWriter.Write(JsonConvert.SerializeObject(order));
+            if (i < OrderList.Count - 1)
+                stringWriter.Write(",");
+            stringWriter.WriteLine();
+        }
+        
+        stringWriter.WriteLine("]");
+        stringWriter.Flush();
+        return jsonBuilder.ToString();
+    }
+    
+    
     public string ToCsvText()
     {
         var csvBuilder = new StringBuilder();

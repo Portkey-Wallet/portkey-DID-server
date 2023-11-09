@@ -6,6 +6,7 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Processors;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -35,7 +36,7 @@ public class ThirdPartOrderController : CAServerController
     public IActionResult GenerateAuthCode(string key, string userName, string title)
     {
         var result = """ <html><body><img src="IMAGE" alt="QR Code"><br/>CODE<body/><html/> """;
-        var setupCode = _thirdPartOrderAppService.GenerateOrderListSetupCode(key, userName, title);
+        var setupCode = _thirdPartOrderAppService.GenerateGoogleAuthCode(key, userName, title);
         return new ContentResult
         {
             Content = result.Replace("IMAGE", setupCode.QrCodeSetupImageUrl).Replace("CODE", setupCode.ManualEntryKey),
@@ -47,27 +48,34 @@ public class ThirdPartOrderController : CAServerController
     [HttpGet("orders/export")]
     public async Task<IActionResult> ExportOrders(OrderExportRequestDto requestDto)
     {
-        if (!_thirdPartOrderAppService.VerifyOrderListCode(requestDto.Auth))
-            return Unauthorized();
-
-        var orderList = await _thirdPartOrderAppService.ExportOrderList(new GetThirdPartOrderConditionDto(0, 100)
+        if (!_thirdPartOrderAppService.VerifyOrderExportCode(requestDto.Auth))
         {
-            LastModifyTimeLt = DateTime.Parse(requestDto.EndTime).ToUtcMilliSeconds().ToString(),
+            // 403
+            return Forbid();
+        }
+
+        var orderList = await _thirdPartOrderAppService.ExportOrderList(new GetThirdPartOrderConditionDto(0, 10)
+        {
+            LastModifyTimeLt = DateTime.Parse(requestDto.EndTime).AddDays(1).ToUtcMilliSeconds().ToString(),
             LastModifyTimeGt = DateTime.Parse(requestDto.StartTime).ToUtcMilliSeconds().ToString(),
             StatusIn = requestDto.Status,
             TransDirectIn = new List<string> { requestDto.Type }
-        });
-        
-        var orderResp = new OrderExportResponseDto
+        }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
+
+        var orderResp = new OrderExportResponseDto(orderList);
+
+        return requestDto.ReturnType switch
         {
-            OrderList = orderList
+            "csv" => File(Encoding.UTF8.GetBytes(orderResp.ToCsvText()), "text/csv",
+                string.Join(CommonConstant.Dot, "orderExport", requestDto.StartTime, requestDto.EndTime, "csv")),
+            "json" => File(Encoding.UTF8.GetBytes(orderResp.ToJsonText()), "text/json",
+                string.Join(CommonConstant.Dot, "orderExport", requestDto.StartTime, requestDto.EndTime, "json")),
+            
+            // 401
+            _ => Unauthorized()
         };
-
-        return File(Encoding.UTF8.GetBytes(orderResp.ToCsvText()), "text/csv",
-            string.Join(CommonConstant.Dot, "orderExport", requestDto.StartTime, requestDto.EndTime, "csv"));
     }
-
-
+    
     [HttpPost("order/alchemy")]
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
         AlchemyOrderUpdateDto input)

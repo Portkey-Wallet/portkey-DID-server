@@ -39,7 +39,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 GetTokenUri = "/merchant/getToken",
                 MerchantQueryTradeUri = "/merchant/query/trade"
             },
-            OrderListAuth = new OrderListAuth
+            OrderExportAuth = new OrderExportAuth
             {
                 Key = "test",
                 AccountTitle = "testTitle",

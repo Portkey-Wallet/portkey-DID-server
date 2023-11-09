@@ -81,6 +81,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
         Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
         Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
+        Configure<ExchangeApiOptions>(configuration.GetSection("ExchangeApi"));
         Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
         Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));

@@ -8,6 +8,7 @@ using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Options;
+using CAServer.Search;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using Microsoft.Extensions.Logging;
@@ -31,6 +32,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     private readonly ILogger<ThirdPartOrderProvider> _logger;
     private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly INESTRepository<NftOrderIndex, Guid> _nftOrderRepository;
+    private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ThirdPartOptions _thirdPartOptions;
 
@@ -39,13 +41,13 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         IObjectMapper objectMapper,
         IOptions<ThirdPartOptions> thirdPartOptions,
         INESTRepository<NftOrderIndex, Guid> nftOrderRepository,
-        ILogger<ThirdPartOrderProvider> logger
-    )
+        ILogger<ThirdPartOrderProvider> logger, INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _nftOrderRepository = nftOrderRepository;
         _logger = logger;
+        _orderStatusInfoRepository = orderStatusInfoRepository;
         _thirdPartOptions = thirdPartOptions.Value;
     }
 
@@ -135,6 +137,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
 
+        // order by LoastModifyTime DESC
         IPromise<IList<ISort>> Sort(SortDescriptor<RampOrderIndex> s) => s.Descending(a => a.LastModifyTime);
 
         var (totalCount, userOrders) =
@@ -143,17 +146,30 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
         var pager = new PageResultDto<OrderDto>(
             userOrders.Select(i => _objectMapper.Map<RampOrderIndex, OrderDto>(i)).ToList(), totalCount);
+        if (pager.Data.IsNullOrEmpty()) return pager;
 
-        if (!pager.Data.IsNullOrEmpty() && withSections.Contains(OrderSectionEnum.NftSection))
+        var orderIdIn = pager.Data.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id)
+            .ToList();
+        if (withSections.Contains(OrderSectionEnum.NftSection))
         {
             var nftOrderPager = await QueryNftOrderPagerAsync(new NftOrderQueryConditionDto(0, pager.Data.Count)
             {
-                IdIn = pager.Data.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id)
-                    .ToList()
+                IdIn = orderIdIn
             });
             MergeNftOrderSection(pager, nftOrderPager);
         }
 
+        if (withSections.Contains(OrderSectionEnum.SettlementSection))
+        {
+            //TODO nzc
+        }
+
+        if (withSections.Contains(OrderSectionEnum.OrderStateSection))
+        {
+            var orderStatusPager = await QueryOrderStatusInfoPagerAsync(orderIdIn.Select(id => id.ToString()).ToList());
+            MergeOrderStatusSection(pager, orderStatusPager);
+        }
+        
         return pager;
     }
 
@@ -173,6 +189,17 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     }
 
 
+    public async Task<PageResultDto<OrderStatusInfoIndex>> QueryOrderStatusInfoPagerAsync(List<string> ids)
+    {
+        if (ids.IsNullOrEmpty()) return new PageResultDto<OrderStatusInfoIndex>();
+        var mustQuery = new List<Func<QueryContainerDescriptor<OrderStatusInfoIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.OrderId).Terms(ids)));
+
+        QueryContainer Filter(QueryContainerDescriptor<OrderStatusInfoIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, orders) = await _orderStatusInfoRepository.GetSortListAsync(Filter, limit: ids.Count);
+        return new PageResultDto<OrderStatusInfoIndex>(orders, totalCount);
+    }
+
     // query nft-order index
     public async Task<PageResultDto<NftOrderIndex>> QueryNftOrderPagerAsync(NftOrderQueryConditionDto condition)
     {
@@ -189,7 +216,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         // in expire time 
         if (condition.ExpireTimeGt.NotNullOrEmpty())
             mustQuery.Add(q => q.TermRange(i => i.Field(f => f.ExpireTime).GreaterThan(condition.ExpireTimeGt)));
-        
+
         // by merchantOrderId
         if (condition.MerchantName.NotNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.MerchantName).Terms(condition.MerchantName)));
@@ -243,6 +270,19 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             orderDto.NftOrderSection = nftOrderSection;
         }
     }
+    
+    private void MergeOrderStatusSection(PageResultDto<OrderDto> orderPager, PageResultDto<OrderStatusInfoIndex> orderStatusPager)
+    {
+        if (orderStatusPager.Data.IsNullOrEmpty()) return;
+        var statusIndexes = orderStatusPager.Data.ToDictionary(order => order.OrderId, order => order);
+        foreach (var orderDto in orderPager.Data)
+        {
+            if (!statusIndexes.ContainsKey(orderDto.Id)) continue;
+            var orderStatusIndex = statusIndexes[orderDto.Id];
+            var orderStatusSection = _objectMapper.Map<OrderStatusInfoIndex, OrderStatusSection>(orderStatusIndex);
+            orderDto.OrderStatusSection = orderStatusSection;
+        }
+    }
 
 
     public void SignMerchantDto(NftMerchantBaseDto input)
@@ -258,7 +298,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         try
         {
             AssertHelper.NotEmpty(input.Signature, "Empty input signature");
-            
+
             var merchantOption = _thirdPartOptions.Merchant.GetOption(input.MerchantName);
             AssertHelper.NotEmpty(merchantOption?.PublicKey, "Merchant {Merchant} public key empty",
                 input.MerchantName);
