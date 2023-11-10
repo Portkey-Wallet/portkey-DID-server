@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.Grains.Grain;
-using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Commons;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,14 +29,10 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         services.AddSingleton(MockRampOptions());
     }
 
-    private async Task<GrainResultDto<OrderGrainDto>> InitRampOrder(Guid id)
+    private async Task<CommonResponseDto<string>> InitRampOrder(Guid id)
     {
         
-        return await _thirdPartOrderAppService.DoCreateOrderAsync(new OrderGrainDto
-        {
-            Id = id,
-            Status = OrderStatusType.Initialized.ToString()
-        });
+        return await _thirdPartOrderAppService.InitOrderAsync(id, Guid.Empty);
     }
     
 

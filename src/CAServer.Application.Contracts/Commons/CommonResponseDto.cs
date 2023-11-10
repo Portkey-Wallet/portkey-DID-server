@@ -29,6 +29,12 @@ public class CommonResponseDto<T>
         Data = data;
     }
     
+    public CommonResponseDto<T> Error(string message)
+    {
+        Code = CommonErrorCode;
+        Message = message;
+        return this;
+    }
     public CommonResponseDto<T> Error(string code, string message)
     {
         Code = code;
