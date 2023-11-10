@@ -18,9 +18,10 @@ public class OrderExportRequestDto
     public string Auth { get; set; }
 }
 
-
 public class OrderExportResponseDto
 {
+    private const string Empty = CommonConstant.EmptyString;
+    
     
     public List<OrderDto> OrderList { get; set; }
 
@@ -34,7 +35,7 @@ public class OrderExportResponseDto
         var jsonBuilder = new StringBuilder();
         var stringWriter = new StringWriter(jsonBuilder);
         stringWriter.WriteLine("[");
-        for (var i = 0 ; i < OrderList.Count ; i ++)
+        for (var i = 0; i < OrderList.Count; i++)
         {
             var order = OrderList[i];
             stringWriter.Write(JsonConvert.SerializeObject(order));
@@ -42,60 +43,138 @@ public class OrderExportResponseDto
                 stringWriter.Write(",");
             stringWriter.WriteLine();
         }
-        
+
         stringWriter.WriteLine("]");
         stringWriter.Flush();
         return jsonBuilder.ToString();
     }
-    
-    
+
+
     public string ToCsvText()
     {
         var csvBuilder = new StringBuilder();
         var stringWriter = new StringWriter(csvBuilder);
-        stringWriter.WriteLine(string.Join(CommonConstant.Comma, 
-            "OrderId",
-            "UserId",
-            "ThirdPartOrderId",
-            "ThirdPartName",
+        stringWriter.WriteLine(string.Join(CommonConstant.Comma,
+            "PortkeyOrderId",
+            "PortkeyUserId",
             "Type",
-            "Address",
             "Status",
+
+            // settlement
+            "Exchange_USD_CRYPTO",
+            "Exchange_USD_USDT",
+            "SettlementCurrency",
+            "SettlementAmount",
+            
+            // currencies
             "Crypto",
             "CryptoAmount",
             "Fiat",
             "FiatAmount",
-            "TransactionId",
+            
+            // thirdPart
+            "ThirdPartOrderId",
+            "ThirdPartName",
+            "ThirdPartCallBackTime",
+            
+            // addresses
+            "UserAddress",
+            "ThirdPartAddress",
+            "MerchantAddress",
+            
+            // transaction
+            "ReceiveCryptoTxId",
+            "SendCryptoTxId",
+            "SettlementTxId",
+            
+            // NFT
             "NFTSymbol",
             "NFTCollectionName",
+            
+            // merchant
             "MerchantName",
+            "MerchantOrderId",
+            "MerchantCallBackTime",
+            
+            // times
             "CreateTime",
+            "PaySuccessTime",
+            "FinishTime",
             "LastModifyTime"
         ));
-        
+
         foreach (var order in OrderList)
         {
-            stringWriter.WriteLine(string.Join(CommonConstant.Comma, 
+            var paySuccessTime = order.OrderStatusSection?.StateTime(OrderStatusType.Pending) ?? 0;
+            var finishTime = order.OrderStatusSection?.StateTime(OrderStatusType.Finish) ?? 0;
+
+            stringWriter.WriteLine(string.Join(CommonConstant.Comma,
                 order.Id.ToString(),
                 order.UserId.ToString(),
-                order.ThirdPartOrderNo,
-                order.MerchantName,
                 order.TransDirect,
-                order.Address,
                 order.Status,
+
+                // settlement
+                order.OrderSettlementSection?.ExchangeUsdUsdt ?? Empty,
+                order.OrderSettlementSection?.SettlementUsdt ?? Empty,
+                order.OrderSettlementSection?.SettlementCurrency ?? Empty,
+                order.OrderSettlementSection?.SettlementAmount ?? Empty,
+
+                // currencies
                 order.Crypto,
                 order.CryptoAmount,
                 order.Fiat,
                 order.FiatAmount,
-                order.TransactionId,
-                order.NftOrderSection?.NftSymbol ?? CommonConstant.EmptyString,
-                order.NftOrderSection?.NftCollectionName ?? CommonConstant.EmptyString,
-                order.NftOrderSection?.MerchantName ?? CommonConstant.EmptyString,
-                TimeHelper.GetDateTimeFromTimeStamp(order.NftOrderSection?.CreateTime ?? 0).ToUtcString(),
-                TimeHelper.GetDateTimeFromTimeStamp(order.LastModifyTime.SafeToLong()).ToUtcString()
-            ));   
+
+                // thirdPart
+                order.ThirdPartOrderNo,
+                order.MerchantName,
+                order.NftOrderSection?.ThirdPartNotifyStatus == NftOrderWebhookStatus.SUCCESS.ToString()
+                && (order.NftOrderSection?.ThirdPartNotifyTime?.NotNullOrEmpty() ?? false)
+                    ? TimeHelper.ParseFromUtcString(order.NftOrderSection?.ThirdPartNotifyTime).ToUtc8String()
+                    : Empty,
+
+                // addresses
+                order.TransDirect == TransferDirectionType.TokenBuy.ToString() ||
+                order.TransDirect == TransferDirectionType.NFTBuy.ToString()
+                    ? order.Address
+                    : Empty,
+                order.TransDirect == TransferDirectionType.TokenSell.ToString() ? order.Address : Empty,
+                order.NftOrderSection?.MerchantAddress ?? Empty,
+
+                // transaction
+                order.TransDirect == TransferDirectionType.TokenBuy.ToString() ? order.TransactionId : Empty,
+                order.TransDirect == TransferDirectionType.TokenSell.ToString() ? order.TransactionId : Empty,
+                order.TransDirect == TransferDirectionType.NFTBuy.ToString() ? order.TransactionId : Empty,
+
+                // NFT
+                order.NftOrderSection?.NftSymbol ?? Empty,
+                order.NftOrderSection?.NftCollectionName ?? Empty,
+
+                // merchant
+                order.NftOrderSection?.MerchantName ?? Empty,
+                order.NftOrderSection?.MerchantOrderId ?? Empty,
+                order.NftOrderSection?.WebhookStatus == NftOrderWebhookStatus.SUCCESS.ToString()
+                && (order.NftOrderSection?.WebhookTime.NotNullOrEmpty() ?? false)
+                    ? TimeHelper.ParseFromUtcString(order.NftOrderSection?.WebhookTime).ToUtc8String()
+                    : Empty,
+
+                // times
+                (order.NftOrderSection?.CreateTime ?? 0) > 0
+                    ? TimeHelper.GetDateTimeFromTimeStamp(order.NftOrderSection?.CreateTime ?? 0).ToUtc8String() 
+                    : Empty,
+                paySuccessTime > 0
+                    ? TimeHelper.GetDateTimeFromTimeStamp(paySuccessTime).ToUtc8String()
+                    : Empty,
+                finishTime > 0
+                    ? TimeHelper.GetDateTimeFromTimeStamp(finishTime).ToUtc8String()
+                    : Empty,
+                order.LastModifyTime.NotNullOrEmpty()
+                    ? TimeHelper.GetDateTimeFromTimeStamp(order.LastModifyTime.SafeToLong()).ToUtc8String() 
+                    : Empty
+            ));
         }
-        
+
         stringWriter.Flush();
         return csvBuilder.ToString();
     }

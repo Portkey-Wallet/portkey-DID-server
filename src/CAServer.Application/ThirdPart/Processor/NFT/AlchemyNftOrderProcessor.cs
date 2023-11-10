@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
+using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
@@ -21,6 +23,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 {
     private readonly AlchemyProvider _alchemyProvider;
     private readonly AlchemyOptions _alchemyOptions;
+    private readonly ITokenAppService _tokenAppService;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
 
@@ -34,13 +37,14 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         IOptions<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
         IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
-        ITokenAppService tokenAppService, ExchangeProvider exchangeProvider
+        ITokenAppService tokenAppService
     )
         : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock,
-            thirdPartOrderAppService, tokenAppService, exchangeProvider)
+            thirdPartOrderAppService)
     {
         _logger = logger;
         _alchemyProvider = alchemyProvider;
+        _tokenAppService = tokenAppService;
         _alchemyOptions = thirdPartOptions.Value.Alchemy;
     }
 
@@ -130,5 +134,24 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
             _logger.LogError(e, "Notify NFT release result to {ThirdPartName} fail", orderGrainDto.MerchantName);
             return new CommonResponseDto<Empty>().Error(e);
         }
+    }
+
+    public override async Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto,
+        NftOrderGrainDto nftOrderGrainDto,
+        OrderSettlementGrainDto orderSettlementGrainDto)
+    {
+        var tokenPrice = await _tokenAppService.GetTokenPriceListAsync(new List<string>
+            { CommonConstant.USDT, orderGrainDto.Crypto });
+        var cryptoExchange = tokenPrice.Items?.FirstOrDefault(i => i.Symbol == CommonConstant.ELF)?.PriceInUsd ?? -1;
+        var usdtExchange = tokenPrice.Items?.FirstOrDefault(i => i.Symbol == CommonConstant.USDT)?.PriceInUsd ?? -1;
+        AssertHelper.IsTrue(cryptoExchange > 0, "Invalid ELF exchange");
+        AssertHelper.IsTrue(usdtExchange > 0, "Invalid USDT exchange");
+
+        orderSettlementGrainDto.ExchangeUsdCrypto = cryptoExchange;
+        orderSettlementGrainDto.ExchangeUsdUsdt = usdtExchange;
+        orderSettlementGrainDto.SettlementCurrency = CommonConstant.USDT;
+        orderSettlementGrainDto.SettlementAmount = orderGrainDto.CryptoAmount.SafeToDecimal() * cryptoExchange / usdtExchange;
+
+        return orderSettlementGrainDto;
     }
 }

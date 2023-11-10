@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AElf;
@@ -34,8 +35,6 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     private readonly IContractProvider _contractProvider;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
-    private readonly ITokenAppService _tokenAppService;
-    private readonly ExchangeProvider _exchangeProvider;
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .WithAElfTypesConverters()
@@ -47,8 +46,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         IClusterClient clusterClient,
         IOptions<ThirdPartOptions> thirdPartOptions,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
-        IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
-        ITokenAppService tokenAppService, ExchangeProvider exchangeProvider)
+        IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService)
     {
         _logger = logger;
         _clusterClient = clusterClient;
@@ -56,8 +54,6 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         _contractProvider = contractProvider;
         _distributedLock = distributedLock;
         _thirdPartOrderAppService = thirdPartOrderAppService;
-        _tokenAppService = tokenAppService;
-        _exchangeProvider = exchangeProvider;
         _thirdPartOptions = thirdPartOptions.Value;
     }
 
@@ -111,6 +107,13 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// <returns></returns>
     public abstract Task<CommonResponseDto<Empty>> DoNotifyNftReleaseAsync(OrderGrainDto orderGrainDto,
         NftOrderGrainDto nftOrderGrainDto);
+
+    /// <summary>
+    ///     Calculate order settlement data of ThirdPart
+    /// </summary>
+    /// <param name="orderGrainDto"></param>
+    /// <returns></returns>
+    public abstract Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto, NftOrderGrainDto nftOrderGrainDto, OrderSettlementGrainDto orderSettlementGrainDto);
 
     /// <summary>
     ///     Verify and update nft order
@@ -327,21 +330,14 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
             AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
 
+            // query nft-order data and verify
+            var nftOrderGrainDto = await _orderStatusProvider.GetNftOrderAsync(orderId);
+            AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
+
+            // fill order settlement data and save
             var orderSettlementGrainDto = await _thirdPartOrderAppService.GetOrderSettlementAsync(orderId);
-
-            var tokenPrice = await _tokenAppService.GetTokenPriceListAsync(new List<string> { CommonConstant.USDT });
-            if (!tokenPrice.Items.IsNullOrEmpty())
-                orderSettlementGrainDto.ExchangeUsdUsdt = tokenPrice.Items[0].PriceInUsd;
-
-            orderSettlementGrainDto.ExchangeFiatUsd = orderGrainDto.Fiat == CommonConstant.USD
-                ? 1
-                : (await _exchangeProvider.GetMastercardExchange(orderGrainDto.Fiat, toCurrency: CommonConstant.USD))
-                .Exchange.SafeToDecimal();
-            
-            //TODO nzc calculate fee
-
-            var saveRes = await _thirdPartOrderAppService.AddUpdateOrderSettlementAsync(orderSettlementGrainDto);
-            AssertHelper.IsTrue(saveRes.Success, "Save order settlement failed, {Msg}", saveRes.Message);
+            await FillOrderSettlement(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto);
+            await _thirdPartOrderAppService.AddUpdateOrderSettlementAsync(orderSettlementGrainDto);
 
             return new CommonResponseDto<Empty>();
         }

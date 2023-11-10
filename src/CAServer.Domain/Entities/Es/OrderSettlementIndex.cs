@@ -9,9 +9,11 @@ public class OrderSettlementIndex : CAServerEsEntity<Guid>, IIndexBuild
 {
     [Keyword] public string TotalFee { get; set; }
     [Keyword] public string FeeCurrency { get; set; }
-    [Keyword] public decimal? ExchangeFiatUsd { get; set; }
-    [Keyword] public decimal? ExchangeUsdUsdt { get; set; }
-    [Keyword] public decimal? SettlementUsdt { get; set; }
+    public decimal? ExchangeFiatUsd { get; set; }
+    public decimal? ExchangeUsdUsdt { get; set; }
+    public decimal? ExchangeUsdCrypto { get; set; }
+    public string SettlementCurrency { get; set; }
+    public decimal? SettlementAmount { get; set; }
     public List<FeeItem> FeeDetail { get; set; }
 }
 

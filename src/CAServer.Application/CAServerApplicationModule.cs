@@ -9,6 +9,7 @@ using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Processor.NFT;
 using CAServer.ThirdPart.Processors;
@@ -56,7 +57,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         
-        context.Services.AddSingleton<ExchangeProvider>();
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();

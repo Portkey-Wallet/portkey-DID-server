@@ -10,8 +10,10 @@ public class OrderSettlementGrainDto
     public string FeeCurrency { get; set; }
     public decimal? ExchangeFiatUsd { get; set; }
     public decimal? ExchangeUsdUsdt { get; set; }
-    public decimal? SettlementUsdt { get; set; }
-    public List<FeeItem> FeeDetail { get; set; }
+    public decimal? ExchangeUsdCrypto { get; set; }
+    public string SettlementCurrency { get; set; }
+    public decimal? SettlementAmount { get; set; }
+    public List<FeeItem> FeeDetail { get; set; } = new();
 }
 
 public class FeeItem

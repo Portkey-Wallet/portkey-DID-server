@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CAServer.ThirdPart.Dtos.Order;
 
@@ -15,4 +16,15 @@ public class OrderStatusSection : BaseOrderSection
     public string ThirdPartOrderNo { get; set; }
     public List<OrderStatusInfo> OrderStatusList { get; set; }
 
+
+    public long? StateTime(OrderStatusType status)
+    {
+        return OrderStatusList
+            .Where(s => s.Status == status.ToString())
+            .OrderBy(s => s.LastModifyTime)
+            .Select(s => s.LastModifyTime)
+            .FirstOrDefault();
+    }
+    
+    
 }

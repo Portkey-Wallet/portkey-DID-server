@@ -19,7 +19,7 @@ public class NftOrderGrainDto
     public string WebhookStatus { get; set; } = NftOrderWebhookStatus.NONE.ToString();
     public string WebhookResult { get; set; }
     public string WebhookTime { get; set; }
-    public int WebhookCount { get; set; } = 0;
+    public int WebhookCount { get; set; }
     
     public string ThirdPartNotifyStatus { get; set; } = NftOrderWebhookStatus.NONE.ToString();
     
@@ -27,5 +27,5 @@ public class NftOrderGrainDto
     
     public string ThirdPartNotifyTime { get; set; }
     
-    public int ThirdPartNotifyCount { get; set; } = 0;
+    public int ThirdPartNotifyCount { get; set; }
 }

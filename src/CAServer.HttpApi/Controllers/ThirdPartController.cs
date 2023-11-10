@@ -54,10 +54,10 @@ public class ThirdPartOrderController : CAServerController
             return Forbid();
         }
 
-        var orderList = await _thirdPartOrderAppService.ExportOrderList(new GetThirdPartOrderConditionDto(0, 10)
+        var orderList = await _thirdPartOrderAppService.ExportOrderList(new GetThirdPartOrderConditionDto(0, 10) //TODO nzc
         {
-            LastModifyTimeLt = DateTime.Parse(requestDto.EndTime).AddDays(1).ToUtcMilliSeconds().ToString(),
-            LastModifyTimeGt = DateTime.Parse(requestDto.StartTime).ToUtcMilliSeconds().ToString(),
+            LastModifyTimeLt = TimeHelper.ParseFromUtc8(requestDto.EndTime, TimeHelper.DatePattern).AddDays(1).ToUtcMilliSeconds().ToString(),
+            LastModifyTimeGt = TimeHelper.ParseFromUtc8(requestDto.StartTime, TimeHelper.DatePattern).ToUtcMilliSeconds().ToString(),
             StatusIn = requestDto.Status,
             TransDirectIn = new List<string> { requestDto.Type }
         }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);

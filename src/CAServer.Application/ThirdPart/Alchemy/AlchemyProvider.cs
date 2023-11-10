@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.Common;
@@ -15,7 +14,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.ThirdPart.Provider;
+namespace CAServer.ThirdPart.Alchemy;
 
 public static class AlchemyApi
 {
