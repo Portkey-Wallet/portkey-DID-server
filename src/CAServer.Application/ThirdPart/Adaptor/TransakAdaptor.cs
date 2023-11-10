@@ -66,11 +66,19 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
             });
     }
 
+    private async Task<List<TransakFiatItem>> GetTransakFiatCurrencies()
+    {
+        var fiatList = await _transakProvider.GetFiatCurrenciesAsync();
+        await _transakProvider.SetSvgUrl(fiatList);
+        
+        return fiatList;
+    }
+    
     // cached fiat list
     private async Task<List<TransakFiatItem>> GetTransakFiatListWithCache(string type, string crypto = null)
     {
         var fiatList = await _fiatCache.GetOrAddAsync(FiatCacheKey,
-            async () => await _transakProvider.GetFiatCurrenciesAsync(), // TODO nzc save svg image
+            async () => await GetTransakFiatCurrencies(),
             new MemoryCacheEntryOptions
             {
                 AbsoluteExpiration =
@@ -384,4 +392,6 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
             return null;
         }
     }
+    
+    
 }

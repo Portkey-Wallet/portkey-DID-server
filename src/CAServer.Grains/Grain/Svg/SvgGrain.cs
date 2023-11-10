@@ -33,10 +33,9 @@ public class SvgGrain :Orleans.Grain<SvgState> , ISvgGrain
         return result;
     }
 
-    public async Task<SvgGrainDto> GetSvgAsync()
+    public Task<SvgGrainDto> GetSvgAsync()
     {
-        Console.WriteLine("12334455");
-        return  _objectMapper.Map<SvgState, SvgGrainDto>(State);
+        return  Task.FromResult(_objectMapper.Map<SvgState, SvgGrainDto>(State));
         
     }
 }

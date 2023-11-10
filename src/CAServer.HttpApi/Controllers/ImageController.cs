@@ -1,9 +1,11 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Controllers;
 using CAServer.Image;
 using CAServer.Image.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Orleans.Runtime;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
@@ -17,7 +19,6 @@ namespace CAServer.Controllers;
 public class ImageController : CAServerController
 {
     private readonly IImageAppService _imageAppService;
-
     public ImageController(IImageAppService imageAppService)
     {
         _imageAppService = imageAppService;
@@ -31,12 +32,20 @@ public class ImageController : CAServerController
         return await _imageAppService.GetThumbnailAsync(input);
     }
 
-    [HttpGet("uploadSvg")]
+    [HttpGet("uploadSvg/{svgMd5}")]
 
-    public async Task<string> UploadToAmazon(string svgMd5)
+    public async Task<IActionResult> UploadToAmazon(string svgMd5)
     {
-        var res = await _imageAppService.UploadSvg(svgMd5);
-        return res;
+        var res = string.Empty;
+        try
+        {
+            res = await _imageAppService.UploadSvg(svgMd5);
+        }
+        catch (Exception e)
+        {
+            return NotFound();
+        }
+        return Redirect(res);
     }
     
     

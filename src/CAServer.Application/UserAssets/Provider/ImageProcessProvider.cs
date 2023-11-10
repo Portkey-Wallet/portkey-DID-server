@@ -11,6 +11,7 @@ using CAServer.amazon;
 using CAServer.CAActivity;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Google;
 using CAServer.Grains.Grain.Svg;
@@ -23,6 +24,7 @@ using CAServer.UserAssets.Dtos;
 using CAServer.Verifier;
 using Elasticsearch.Net;
 using GraphQL;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
@@ -112,22 +114,22 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
         }
     }
 
-    public async Task<string> UploadSvgAsync(string svgMd5)
+    public async Task<string> UploadSvgAsync(string svgMd5, [CanBeNull] string svg = null)
     {
-        if (string.IsNullOrWhiteSpace(svgMd5))
-        {
-            throw new Exception("upload image can not be empty");
-        }
+        AssertHelper.NotEmpty(svgMd5, "upload image can not be empty");
+        
         var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
-        var svgGrainDto = grain.GetSvgAsync();
-        var svg = svgGrainDto.Result.Svg;
-        var amazonUrl = svgGrainDto.Result.AmazonUrl;
-        if (string.IsNullOrWhiteSpace(svg))
-        {
-            throw new Exception("svg is not exist");
-        }
+        var svgGrainDto = await grain.GetSvgAsync();
+        svg = svg ?? svgGrainDto.Svg;
+        var amazonUrl = svgGrainDto.AmazonUrl;
+        svgGrainDto.Id = svgMd5;
+        svgGrainDto.AmazonUrl = "";
+        svgGrainDto.Svg = svg;
+        AssertHelper.NotEmpty(svg,"svg is not exist");
+        
+        svgGrainDto.Svg = svg; 
         //if exist return result
-        if (!string.IsNullOrWhiteSpace(amazonUrl))
+        if (amazonUrl.NotNullOrEmpty())
         {
             return amazonUrl;
         }
@@ -138,14 +140,15 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
         var byteData = Encoding.UTF8.GetBytes(svg);
         try
         {
-            var res= await client.UpLoadFileAsync(new MemoryStream(byteData), svg);
-            svgGrainDto.Result.AmazonUrl = res;
+            var res= await client.UpLoadFileAsync(new MemoryStream(byteData), svgMd5);
+            svgGrainDto.AmazonUrl = res;
+            await grain.AddSvgAsync(svgGrainDto);
             return res;
         }
         catch (Exception e)
         {
             _logger.LogError("upload to amazon svg fail,exception is",e);
-            return "";
+            return "upload to amazon svg fail";
         }
     }
 

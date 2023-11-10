@@ -213,7 +213,6 @@ public class TransakProvider
             TransakApi.GetFiatCurrencies,
             param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() }
         );
-        await SetSvgUrl(resp.Response);
         AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}",
             resp.Error?.StatusCode, resp.Error?.Message);
         return resp.Response;
@@ -294,11 +293,12 @@ public class TransakProvider
     /// </summary>
     /// <param name="transakFiatItems"></param>
     /// <returns></returns>
-    private async Task SetSvgUrl(List<TransakFiatItem> transakFiatItems)
+    public async Task SetSvgUrl(List<TransakFiatItem> transakFiatItems)
     {
+        var uploadTask = new List<Task<string>>(); 
         foreach (var transakFiatItem in transakFiatItems)
         {
-            string svgUrl = transakFiatItem.Icon;
+            var svgUrl = transakFiatItem.Icon;
             if (string.IsNullOrWhiteSpace(svgUrl))
             {
                 continue;
@@ -306,22 +306,17 @@ public class TransakProvider
             var svgMd5 = EncryptionHelper.MD5Encrypt32(svgUrl);
             var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
             var svgGrain = await grain.GetSvgAsync();
-            if (svgGrain != null)
+            var portkeyUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl + svgMd5;
+
+            transakFiatItem.IconUrl = svgGrain.AmazonUrl.DefaultIfEmpty(portkeyUrl);
+            if (svgGrain.AmazonUrl.NotNullOrEmpty())
             {
                 continue;
             }
 
-            string amazonUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl + svgMd5;
-            var svgGrainDto = new SvgGrainDto
-            {
-                Id = svgMd5,
-                Svg = transakFiatItem.Icon,
-                AmazonUrl = amazonUrl  
-            };
-            await grain.AddSvgAsync(svgGrainDto);
-            transakFiatItem.IconUrl = amazonUrl;
-            //async upload to Amazon 
-            _imageProcessProvider.UploadSvgAsync(transakFiatItem.IconUrl);
+            //async upload to Amazon
+            uploadTask.Add(_imageProcessProvider.UploadSvgAsync(transakFiatItem.IconUrl, transakFiatItem.Icon));
         }
+        await Task.WhenAll(uploadTask);
     }
 }
