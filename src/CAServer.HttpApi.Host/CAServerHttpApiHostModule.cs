@@ -40,6 +40,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
 
@@ -85,6 +86,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
         context.Services.AddHttpContextAccessor();
+        ConfigureTokenCleanupService();
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -288,6 +290,11 @@ public class CAServerHttpApiHostModule : AbpModule
         });
     }
 
+    private void ConfigureTokenCleanupService()
+    {
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+    }
+    
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();

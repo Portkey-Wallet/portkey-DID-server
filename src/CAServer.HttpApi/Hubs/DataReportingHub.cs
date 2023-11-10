@@ -21,18 +21,21 @@ public class DataReportingHub : AbpHub
     private readonly IDataReportingAppService _dataReportingAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly IConnectionProvider _connectionProvider;
+    private readonly IDataReportingAuthProvider _dataReportingAuthProvider;
 
     public DataReportingHub(ILogger<DataReportingHub> logger,
         IHubService hubService,
         IDataReportingAppService dataReportingAppService,
         IObjectMapper objectMapper,
-        IConnectionProvider connectionProvider)
+        IConnectionProvider connectionProvider,
+        IDataReportingAuthProvider dataReportingAuthProvider)
     {
         _logger = logger;
         _hubService = hubService;
         _dataReportingAppService = dataReportingAppService;
         _objectMapper = objectMapper;
         _connectionProvider = connectionProvider;
+        _dataReportingAuthProvider = dataReportingAuthProvider;
     }
 
     public override Task OnConnectedAsync()
