@@ -134,20 +134,6 @@ public class CAServerHttpApiHostModule : AbpModule
                 options.Authority = configuration["AuthServer:Authority"];
                 options.RequireHttpsMetadata = Convert.ToBoolean(configuration["AuthServer:RequireHttpsMetadata"]);
                 options.Audience = "CAServer";
-
-                // options.Events = new JwtBearerEvents
-                // {
-                //     OnMessageReceived = receivedContext =>
-                //     {
-                //         var path = receivedContext.HttpContext.Request.Path;
-                //         if (path.StartsWithSegments("/dataReporting"))
-                //         {
-                //             receivedContext.Token = receivedContext.Request.Headers["Authorization"];
-                //         }
-                //
-                //         return Task.CompletedTask;
-                //     }
-                // };
             });
     }
 
