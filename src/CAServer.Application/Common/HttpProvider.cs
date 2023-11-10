@@ -22,19 +22,19 @@ public interface IHttpProvider : ISingletonDependency
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false);
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false, bool debugLog = true);
 
     Task<string> Invoke(string domain, ApiInfo apiInfo,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false);
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false, bool debugLog = true);
 
     Task<string> Invoke(HttpMethod method, string url,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, bool withLog = false);
+        Dictionary<string, string> header = null, bool withLog = false, bool debugLog = true);
 
 }
 
@@ -58,7 +58,7 @@ public class HttpProvider : IHttpProvider
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false)
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false, bool debugLog = true)
     {
         var resp = await Invoke(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, withLog);
         try
@@ -75,7 +75,7 @@ public class HttpProvider : IHttpProvider
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false)
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false, bool debugLog = true)
     {
         return await Invoke(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, withLog);
     }
@@ -85,7 +85,7 @@ public class HttpProvider : IHttpProvider
         Dictionary<string, string> param = null,
         string body = null,
         Dictionary<string, string> header = null,
-        bool withLog = false)
+        bool withLog = false, bool debugLog = true)
     {
         // url params
         var fullUrl = PathParamUrl(url, pathParams);
@@ -112,14 +112,14 @@ public class HttpProvider : IHttpProvider
         var content = await response.Content.ReadAsStringAsync();
         
         // log
-        
-        _logger.LogDebug(
-            "Request To {FullUrl}, query={Query}, header={Header}, statusCode={StatusCode}, body={Body}, resp={Content}",
-            fullUrl, builder.Query, request.Headers.ToString(), response.StatusCode, body, content);
         if (withLog)
             _logger.LogInformation(
             "Request To {FullUrl}, query={Query}, statusCode={StatusCode}, body={Body}, resp={Content}",
             fullUrl, builder.Query, response.StatusCode, body, content);
+        else if (debugLog)
+            _logger.LogDebug(
+                "Request To {FullUrl}, query={Query}, header={Header}, statusCode={StatusCode}, body={Body}, resp={Content}",
+                fullUrl, builder.Query, request.Headers.ToString(), response.StatusCode, body, content);
 
         if (!response.IsSuccessStatusCode)
         {

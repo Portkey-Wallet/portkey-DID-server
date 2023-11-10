@@ -1,12 +1,15 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using CAServer.Google;
+using Amazon;
+using Amazon.CognitoIdentity;
+using Amazon.S3;
+using Amazon.S3.Model;
+using CAServer.Amazon;
 
 namespace CAServer.amazon;
 
-using Amazon.S3;
-using Amazon.S3.Model;
+
 
 
 using System.Net;
@@ -26,15 +29,10 @@ public class AwsS3Client : ISingletonDependency
 
     private void InitAmazonS3Client()
     {
-        var accessKeyID = _awsS3Option.AccessKeyID;
-        var secretKey = _awsS3Option.SecretKey;
+        var identityPoolId = _awsS3Option.IdentityPoolId;
         var ServiceURL = _awsS3Option.ServiceURL;
-        var config = new AmazonS3Config()
-        {
-            ServiceURL = ServiceURL,
-            RegionEndpoint = Amazon.RegionEndpoint.APNortheast1
-        };
-        _amazonS3Client = new AmazonS3Client(accessKeyID, secretKey, config);
+        var cognitoCredentials = new CognitoAWSCredentials(identityPoolId, RegionEndpoint.APNortheast1);
+        _amazonS3Client = new AmazonS3Client(cognitoCredentials, RegionEndpoint.APNortheast1);
     }
     
 

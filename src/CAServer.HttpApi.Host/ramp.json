@@ -7,14 +7,15 @@
         "BaseUrl": "https://ramptest.alchemypay.org",
         "Logo": "https://ramp.alchemypay.org/static/img/6.32716249.svg",
         "CountryIconUrl": "https://static.alchemypay.org/alchemypay/flag/{ISO}.png",
+        "WebhookUrl" :"http://todo.com",
         "PaymentTags": [
           "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
           "https://ramp.alchemypay.org/static/img/2.a5406123.svg",
           "https://ramp.alchemypay.org/static/img/3.22abdb74.svg"
         ],
         "Coverage": {
-          "OnRamp": true,
-          "OffRamp": true
+          "OnRamp": false,
+          "OffRamp": false
         }
       },
       "Transak": {
@@ -23,6 +24,7 @@
         "BaseUrl": "https://global-stg.transak.com",
         "Logo": "https://assets.transak.com/images/website/transak-logo.svg",
         "CountryIconUrl": "http://127.0.0.1:5001/api/app/image/svgMd5/",
+        "WebhookUrl" :"http://todo.com",
         "PaymentTags": [
           "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
           "https://ramp.alchemypay.org/static/img/2.a5406123.svg"
@@ -54,22 +56,18 @@
     "CoverageExpressions": {
       "Alchemy": {
         "OnRamp": [
-          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-          "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
         ],
         "OffRamp": [
-          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-          "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
         ]
       },
       "Transak": {
         "OnRamp": [
-          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-          "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
         ],
         "OffRamp": [
-          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-          "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
         ]
       }
     }

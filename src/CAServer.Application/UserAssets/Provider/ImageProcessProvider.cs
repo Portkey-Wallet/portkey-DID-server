@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.amazon;
+using CAServer.Amazon;
 using CAServer.CAActivity;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
@@ -116,7 +117,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
 
     public async Task<string> UploadSvgAsync(string svgMd5, [CanBeNull] string svg = null)
     {
-        AssertHelper.NotEmpty(svgMd5, "upload image can not be empty");
+ 
         
         var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
         var svgGrainDto = await grain.GetSvgAsync();

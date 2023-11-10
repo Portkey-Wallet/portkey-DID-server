@@ -64,7 +64,7 @@ public class TransakProvider
         _distributedLock = distributedLock;
         _logger = logger;
         _imageProcessProvider = imageProcessProvider;
-        InitAsync().GetAwaiter().GetResult();
+        //TODO nzc InitAsync().GetAwaiter().GetResult();
     }
 
     private TransakOptions TransakOptions()
@@ -211,7 +211,12 @@ public class TransakProvider
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakFiatItem>>>(
             TransakOptions().BaseUrl,
             TransakApi.GetFiatCurrencies,
-            param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() }
+            header: new Dictionary<string, string>
+            {
+                ["accept"] = "application/json"
+            },
+            param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() },
+            debugLog: false
         );
         AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}",
             resp.Error?.StatusCode, resp.Error?.Message);
@@ -295,28 +300,34 @@ public class TransakProvider
     /// <returns></returns>
     public async Task SetSvgUrl(List<TransakFiatItem> transakFiatItems)
     {
-        var uploadTask = new List<Task<string>>(); 
+        var uploadTask = new List<Task>(); 
         foreach (var transakFiatItem in transakFiatItems)
         {
-            var svgUrl = transakFiatItem.Icon;
-            if (string.IsNullOrWhiteSpace(svgUrl))
-            {
-                continue;
-            }
-            var svgMd5 = EncryptionHelper.MD5Encrypt32(svgUrl);
-            var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
-            var svgGrain = await grain.GetSvgAsync();
-            var portkeyUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl + svgMd5;
-
-            transakFiatItem.IconUrl = svgGrain.AmazonUrl.DefaultIfEmpty(portkeyUrl);
-            if (svgGrain.AmazonUrl.NotNullOrEmpty())
-            {
-                continue;
-            }
-
-            //async upload to Amazon
-            uploadTask.Add(_imageProcessProvider.UploadSvgAsync(transakFiatItem.IconUrl, transakFiatItem.Icon));
+            uploadTask.Add(SingleSetSvgUrl(transakFiatItem));
         }
         await Task.WhenAll(uploadTask);
+    }
+
+    private async Task SingleSetSvgUrl(TransakFiatItem transakFiatItem)
+    {
+        var svgUrl = transakFiatItem.Icon;
+        if (string.IsNullOrWhiteSpace(svgUrl))
+        {
+            return;
+        }
+        var svgMd5 = EncryptionHelper.MD5Encrypt32(svgUrl);
+        var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
+        var svgGrain = await grain.GetSvgAsync();
+        var portkeyUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl + svgMd5;
+
+        transakFiatItem.IconUrl = svgGrain.AmazonUrl.DefaultIfEmpty(portkeyUrl);
+        if (svgGrain.AmazonUrl.NotNullOrEmpty())
+        {
+            return;
+        }
+
+        //async upload to Amazon
+        //uploadTask.Add(_imageProcessProvider.UploadSvgAsync(svgMd5, transakFiatItem.Icon));
+        _ = await _imageProcessProvider.UploadSvgAsync(svgMd5, transakFiatItem.Icon);
     }
 }

@@ -1,12 +1,10 @@
-namespace CAServer.Google;
+namespace CAServer.Amazon;
 
 public class AwsS3Option
 {
-    public string AccessKeyID { get; set; }
+    public string IdentityPoolId { get; set; }
 
-    public string SecretKey { get; set; }
-
-
+    
     public string BucketName { get; set; }
 
 

@@ -68,9 +68,14 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
 
     private async Task<List<TransakFiatItem>> GetTransakFiatCurrencies()
     {
+        
+        Console.WriteLine("daiyabin1 "+DateTime.Now.ToUtcMilliSeconds());
         var fiatList = await _transakProvider.GetFiatCurrenciesAsync();
+        
+        Console.WriteLine("daiyabin2 "+DateTime.Now.ToUtcMilliSeconds());
         await _transakProvider.SetSvgUrl(fiatList);
         
+        Console.WriteLine("daiyabin3 "+DateTime.Now.ToUtcMilliSeconds());
         return fiatList;
     }
     
@@ -176,7 +181,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
                         Country = country,
                         Symbol = f.Symbol,
                         CountryName = countryDict.GetValueOrDefault(country)?.Name ?? country,
-                        Icon = "" //TODO nzc
+                        Icon = f.IconUrl //TODO nzc
                     }))
                 .ToList();
             return fiatList;

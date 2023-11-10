@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
+using CAServer.Amazon;
 using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Google;
@@ -60,6 +61,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
+        // Configure<RampOptions>(configuration.GetSection("RampOptions"));
 
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
 
