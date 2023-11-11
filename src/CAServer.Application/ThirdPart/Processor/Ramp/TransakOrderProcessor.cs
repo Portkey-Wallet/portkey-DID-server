@@ -33,7 +33,7 @@ public class TransakOrderProcessor : AbstractRampOrderProcessor
     protected override async Task<OrderDto> VerifyOrderInputAsync<T>(T iThirdPartOrder)
     {
         if (iThirdPartOrder is not TransakEventRawDataDto dto)
-            throw new UserFriendlyException("not TransakEventRawData");
+            throw new UserFriendlyException("Not TransakEventRawData");
 
         var accessToken = await _transakProvider.GetAccessTokenWithRetry();
         var eventData = TransakHelper.DecodeJwt(dto.Data, accessToken);

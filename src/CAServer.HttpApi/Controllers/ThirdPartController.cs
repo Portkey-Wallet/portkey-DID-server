@@ -34,9 +34,8 @@ public class ThirdPartOrderController : CAServerController
     }
     
     [HttpPost("order/transak")]
-    public async Task<CommonResponseDto<Empty>> UpdateTransakOrderAsync(AlchemyOrderUpdateDto input)
+    public async Task<CommonResponseDto<Empty>> UpdateTransakOrderAsync(TransakEventRawDataDto input)
     {
-        //TODO nzc change input type
         return await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Transak.ToString(), input);
     }
 
