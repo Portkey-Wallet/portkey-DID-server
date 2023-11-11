@@ -82,9 +82,9 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
         
-        context.Services.AddTransient<IThirdPartAdaptor, AlchemyAdaptor>();
-        context.Services.AddTransient<IThirdPartAdaptor, TransakAdaptor>();
-        
+        context.Services.AddSingleton<IThirdPartAdaptor, AlchemyAdaptor>();
+        context.Services.AddSingleton<IThirdPartAdaptor, TransakAdaptor>();
+
         context.Services.AddSingleton<AbstractRampOrderProcessor, TransakOrderProcessor>();
         context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
         

@@ -193,7 +193,8 @@ public class TransakProvider
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCryptoItem>>>(
             TransakOptions().BaseUrl,
-            TransakApi.GetCryptoCurrencies
+            TransakApi.GetCryptoCurrencies,
+            debugLog: false
         );
         AssertHelper.IsTrue(resp.Success,
             "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
@@ -232,7 +233,8 @@ public class TransakProvider
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCountry>>>(
             TransakOptions().BaseUrl,
-            TransakApi.GetCountries
+            TransakApi.GetCountries,
+            debugLog: false
         );
         AssertHelper.IsTrue(resp.Success,
             "GetTransakCountriesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
@@ -303,6 +305,11 @@ public class TransakProvider
         var uploadTask = new List<Task>(); 
         foreach (var transakFiatItem in transakFiatItems)
         {
+            if (transakFiatItem.Icon.IsNullOrEmpty() || transakFiatItem.Icon.StartsWith("http"))
+            {
+                transakFiatItem.IconUrl = transakFiatItem.Icon;
+                continue;
+            }
             uploadTask.Add(SingleSetSvgUrl(transakFiatItem));
         }
         await Task.WhenAll(uploadTask);
@@ -318,8 +325,9 @@ public class TransakProvider
         var svgMd5 = EncryptionHelper.MD5Encrypt32(svgUrl);
         var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
         var svgGrain = await grain.GetSvgAsync();
-        var portkeyUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl + svgMd5;
-
+        var portkeyUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl;
+        portkeyUrl.ReplaceWithDict(new Dictionary<string, string> { ["SVG_MD5"] = svgMd5 });
+        
         transakFiatItem.IconUrl = svgGrain.AmazonUrl.DefaultIfEmpty(portkeyUrl);
         if (svgGrain.AmazonUrl.NotNullOrEmpty())
         {

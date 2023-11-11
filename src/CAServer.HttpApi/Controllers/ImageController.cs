@@ -32,7 +32,7 @@ public class ImageController : CAServerController
         return await _imageAppService.GetThumbnailAsync(input);
     }
 
-    [HttpGet("uploadSvg/{svgMd5}")]
+    [HttpGet("svg/{svgMd5}.svg")]
 
     public async Task<IActionResult> UploadToAmazon(string svgMd5)
     {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
@@ -17,11 +18,14 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using Volo.Abp.Caching;
+using Volo.Abp.DependencyInjection;
+using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Adaptor;
 
-public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
+public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 {
     private const string CryptoCacheKey = "Ramp:transak:crypto";
     private const string FiatCacheKey = "Ramp:transak:fiat";
@@ -34,11 +38,13 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
     private readonly ILocalMemoryCache<List<TransakFiatItem>> _fiatCache;
     private readonly ILocalMemoryCache<Dictionary<string, TransakCountry>> _countryCache;
     private readonly IDistributedCache<TransakRampPrice> _rampPrice;
+    private readonly ILogger<TransakAdaptor> _logger;
+    private readonly IObjectMapper _objectMapper;
 
     public TransakAdaptor(TransakProvider transakProvider, IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         ILocalMemoryCache<List<TransakCryptoItem>> cryptoCache, ILocalMemoryCache<List<TransakFiatItem>> fiatCache,
         ILocalMemoryCache<Dictionary<string, TransakCountry>> countryCache,
-        IDistributedCache<TransakRampPrice> rampPrice)
+        IDistributedCache<TransakRampPrice> rampPrice, ILogger<TransakAdaptor> logger, IObjectMapper objectMapper)
     {
         _transakProvider = transakProvider;
         _thirdPartOptions = thirdPartOptions;
@@ -46,12 +52,25 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
         _fiatCache = fiatCache;
         _countryCache = countryCache;
         _rampPrice = rampPrice;
+        _logger = logger;
+        _objectMapper = objectMapper;
+        PreHeatCaches().GetAwaiter().GetResult();
     }
 
 
     public string ThirdPart()
     {
         return ThirdPartNameType.Transak.ToString();
+    }
+
+    public async Task PreHeatCaches()
+    {
+        _logger.LogInformation("Transak adaptor pre heat start");
+        var cryptoTask = GetTransakCryptoListWithCache();
+        var fiatTask = GetTransakFiatListWithCache(OrderTransDirect.BUY.ToString());
+        var countryTask = GetTransakCountryWithCache();
+        await Task.WhenAll(cryptoTask, fiatTask, countryTask);
+        _logger.LogInformation("Transak adaptor pre heat done");
     }
 
     // cached crypto list
@@ -67,15 +86,14 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
     }
 
     private async Task<List<TransakFiatItem>> GetTransakFiatCurrencies()
-    {
-        
-        Console.WriteLine("daiyabin1 "+DateTime.Now.ToUtcMilliSeconds());
+    { 
+        _logger.LogDebug("Transak fiat query start");
         var fiatList = await _transakProvider.GetFiatCurrenciesAsync();
         
-        Console.WriteLine("daiyabin2 "+DateTime.Now.ToUtcMilliSeconds());
+        _logger.LogDebug("Transak fiat query finish");
         await _transakProvider.SetSvgUrl(fiatList);
         
-        Console.WriteLine("daiyabin3 "+DateTime.Now.ToUtcMilliSeconds());
+        _logger.LogDebug("Transak fiat upload finish");
         return fiatList;
     }
     
@@ -136,7 +154,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
     private async Task<TransakRampPrice> GetTransakPriceWithCache(string paymentMethod,
         RampDetailRequest rampPriceRequest)
     {
-        var transakPriceRequest = ObjectMapper.Map<RampDetailRequest, GetRampPriceRequest>(rampPriceRequest);
+        var transakPriceRequest = _objectMapper.Map<RampDetailRequest, GetRampPriceRequest>(rampPriceRequest);
         transakPriceRequest.PaymentMethod = paymentMethod;
         Func<RampDetailRequest, string> priceCacheKey = req => "Ramp:transak:price:" + string.Join(
             CommonConstant.Underline, req.Crypto,
@@ -181,14 +199,14 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
                         Country = country,
                         Symbol = f.Symbol,
                         CountryName = countryDict.GetValueOrDefault(country)?.Name ?? country,
-                        Icon = f.IconUrl //TODO nzc
+                        Icon = f.IconUrl
                     }))
                 .ToList();
             return fiatList;
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{ThirdPart} GetFiatListAsync error", ThirdPart());
+            _logger.LogError(e, "{ThirdPart} GetFiatListAsync error", ThirdPart());
             return new List<RampFiatItem>();
         }
     }
@@ -262,7 +280,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
                 paymentOption.LimitCurrency);
 
             // fiat price
-            var rampDetailRequest = ObjectMapper.Map<RampLimitRequest, RampDetailRequest>(rampLimitRequest);
+            var rampDetailRequest = _objectMapper.Map<RampLimitRequest, RampDetailRequest>(rampLimitRequest);
             var fiatPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
             var fiatCryptoExchange = fiatPrice.FiatCryptoExchange();
             AssertHelper.IsTrue(fiatCryptoExchange > 0, "Invalid fiat price exchange {Ex}", fiatPrice.ConversionPrice);
@@ -299,7 +317,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{ThirdPart} GetRampLimitAsync error", ThirdPart());
+            _logger.LogError(e, "{ThirdPart} GetRampLimitAsync error", ThirdPart());
             return null;
         }
     }
@@ -319,13 +337,13 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
     {
         try
         {
-            var rampDetailRequest = ObjectMapper.Map<RampExchangeRequest, RampDetailRequest>(rampExchangeRequest);
+            var rampDetailRequest = _objectMapper.Map<RampExchangeRequest, RampDetailRequest>(rampExchangeRequest);
             var commonPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
             return commonPrice.FiatCryptoExchange();
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
+            _logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
             return null;
         }
     }
@@ -349,7 +367,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
                 ? fiatAmount * commonPrice.ConversionPrice
                 : rampDetailRequest.CryptoAmount ?? 0;
             
-            var rampPrice = ObjectMapper.Map<TransakRampPrice, RampPriceDto>(commonPrice);
+            var rampPrice = _objectMapper.Map<TransakRampPrice, RampPriceDto>(commonPrice);
             rampPrice.ThirdPart = ThirdPart();
             rampPrice.FiatAmount = fiatAmount.ToString(2, DecimalHelper.RoundingOption.Floor);
             rampPrice.CryptoAmount = cryptoAmount.ToString(8, DecimalHelper.RoundingOption.Floor);
@@ -364,7 +382,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
+            _logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
             return null;
         }
     }
@@ -381,7 +399,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
 
             var price = await GetTransakPriceWithCache(payment.Id, rampDetailRequest);
 
-            var providerRampDetail = ObjectMapper.Map<TransakRampPrice, ProviderRampDetailDto>(price);
+            var providerRampDetail = _objectMapper.Map<TransakRampPrice, ProviderRampDetailDto>(price);
             providerRampDetail.ThirdPart = ThirdPart();
             providerRampDetail.FeeInfo = new RampFeeInfo
             {
@@ -394,7 +412,7 @@ public class TransakAdaptor : CAServerAppService, IThirdPartAdaptor
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
+            _logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
             return null;
         }
     }

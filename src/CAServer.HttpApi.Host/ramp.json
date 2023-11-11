@@ -14,8 +14,8 @@
           "https://ramp.alchemypay.org/static/img/3.22abdb74.svg"
         ],
         "Coverage": {
-          "OnRamp": false,
-          "OffRamp": false
+          "OnRamp": true,
+          "OffRamp": true
         }
       },
       "Transak": {
@@ -23,7 +23,7 @@
         "AppId": "09c056fd-d423-46d9-a641-e4a7a1e7de33",
         "BaseUrl": "https://global-stg.transak.com",
         "Logo": "https://assets.transak.com/images/website/transak-logo.svg",
-        "CountryIconUrl": "http://127.0.0.1:5001/api/app/image/svgMd5/",
+        "CountryIconUrl": "http://127.0.0.1:5001/api/app/image/svg/{SVG_MD5}.svg",
         "WebhookUrl" :"http://todo.com",
         "PaymentTags": [
           "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
