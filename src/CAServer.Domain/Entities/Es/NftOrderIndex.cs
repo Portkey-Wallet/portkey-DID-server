@@ -9,6 +9,7 @@ public class NftOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string NftSymbol { get; set; }
     [Keyword] public string NftCollectionName { get; set; }
     [Keyword] public string MerchantName { get; set; }
+    [Keyword] public string MerchantAddress { get; set; }
     [Keyword] public string MerchantOrderId { get; set; }
     [Keyword] public string CaHash { get; set; }
     public string NftPicture { get; set; }
