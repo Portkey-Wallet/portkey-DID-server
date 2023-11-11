@@ -10,6 +10,7 @@ using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
+using CAServer.Tokens.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -24,6 +25,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     private readonly AlchemyProvider _alchemyProvider;
     private readonly AlchemyOptions _alchemyOptions;
     private readonly ITokenAppService _tokenAppService;
+    private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
 
@@ -37,14 +39,14 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         IOptions<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
         IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
-        ITokenAppService tokenAppService
-    )
+        ITokenAppService tokenAppService, ITokenProvider tokenProvider)
         : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock,
             thirdPartOrderAppService)
     {
         _logger = logger;
         _alchemyProvider = alchemyProvider;
         _tokenAppService = tokenAppService;
+        _tokenProvider = tokenProvider;
         _alchemyOptions = thirdPartOptions.Value.Alchemy;
     }
 
@@ -144,13 +146,17 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
             { CommonConstant.USDT, orderGrainDto.Crypto });
         var cryptoExchange = tokenPrice.Items?.FirstOrDefault(i => i.Symbol == CommonConstant.ELF)?.PriceInUsd ?? -1;
         var usdtExchange = tokenPrice.Items?.FirstOrDefault(i => i.Symbol == CommonConstant.USDT)?.PriceInUsd ?? -1;
+        var cryptoToken = await _tokenProvider.GetTokenInfosAsync(CommonConstant.MainChainId, orderGrainDto.Crypto, CommonConstant.EmptyString, 0, 1);
+        AssertHelper.NotNull(cryptoToken, "Crypto token {Crypto} null", orderGrainDto.Crypto);
+        AssertHelper.NotEmpty(cryptoToken.TokenInfo, "Crypto token {Crypto} not found", orderGrainDto.Crypto);
         AssertHelper.IsTrue(cryptoExchange > 0, "Invalid ELF exchange");
         AssertHelper.IsTrue(usdtExchange > 0, "Invalid USDT exchange");
-
+        
+        var cryptoPrice = orderGrainDto.CryptoAmount.SafeToDecimal() / (decimal)Math.Pow(10, cryptoToken.TokenInfo[0].Decimals);
         orderSettlementGrainDto.ExchangeUsdCrypto = cryptoExchange;
         orderSettlementGrainDto.ExchangeUsdUsdt = usdtExchange;
         orderSettlementGrainDto.SettlementCurrency = CommonConstant.USDT;
-        orderSettlementGrainDto.SettlementAmount = orderGrainDto.CryptoAmount.SafeToDecimal() * cryptoExchange / usdtExchange;
+        orderSettlementGrainDto.SettlementAmount =cryptoPrice * cryptoExchange / usdtExchange;
 
         return orderSettlementGrainDto;
     }

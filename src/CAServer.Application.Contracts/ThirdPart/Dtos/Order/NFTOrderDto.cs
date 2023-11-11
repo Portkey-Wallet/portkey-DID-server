@@ -23,6 +23,7 @@ public class CreateNftOrderRequestDto : NftMerchantBaseDto
     [Required] public string PaymentAmount { get; set; }
     [Required] public string CaHash { get; set; }
     [Required] public string MerchantAddress { get; set; }
+    [Required] public string UserAddress { get; set; }
     public string TransDirect { get; set; } = TransferDirectionType.NFTBuy.ToString();
 }
 

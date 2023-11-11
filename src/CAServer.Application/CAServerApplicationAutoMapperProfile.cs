@@ -399,6 +399,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         
         CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
             .Ignore(des => des.MerchantName)
+            .ForMember(des => des.Address, opt => opt.MapFrom(src => src.UserAddress))
             .ForMember(des => des.Crypto, opt => opt.MapFrom(src => src.PaymentSymbol))
             .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.PaymentAmount));
 
@@ -426,6 +427,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<NftOrderGrainDto, NftOrderIndex>();
         CreateMap<NftOrderIndex, NftOrderQueryResponseDto>();
         CreateMap<NftOrderSectionDto, NftOrderQueryResponseDto>();
+        CreateMap<OrderSettlementIndex, OrderSettlementSectionDto>().ReverseMap();
         CreateMap<OrderDto, NftOrderQueryResponseDto>()
             .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
             .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));

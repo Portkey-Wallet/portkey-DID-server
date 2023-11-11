@@ -31,12 +31,15 @@ public class OrderSettlementGrain : Grain<OrderSettlementState>, IOrderSettlemen
 
     public Task<GrainResultDto<OrderSettlementGrainDto>> GetById(Guid id)
     {
+        if (State.Id == Guid.Empty)
+        {
+            State.Id = id;
+        }
+
         return Task.FromResult(new GrainResultDto<OrderSettlementGrainDto>
         {
             Success = true,
-            Data = State.Id == Guid.Empty
-                ? null
-                : _objectMapper.Map<OrderSettlementState, OrderSettlementGrainDto>(State)
+            Data = _objectMapper.Map<OrderSettlementState, OrderSettlementGrainDto>(State)
         });
     }
 }

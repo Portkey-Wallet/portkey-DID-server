@@ -337,6 +337,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             // fill order settlement data and save
             var orderSettlementGrainDto = await _thirdPartOrderAppService.GetOrderSettlementAsync(orderId);
             await FillOrderSettlement(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto);
+            
+            // save
             await _thirdPartOrderAppService.AddUpdateOrderSettlementAsync(orderSettlementGrainDto);
 
             return new CommonResponseDto<Empty>();
@@ -392,8 +394,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                     orderGrainDto.TransactionId);
             _logger.LogDebug(
                 "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}",
-                orderId,
-                orderGrainDto.TransactionId, rawTxResult.Status, rawTxResult.BlockNumber);
+                orderId, orderGrainDto.TransactionId, rawTxResult.Status, rawTxResult.BlockNumber);
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
             // update order status
