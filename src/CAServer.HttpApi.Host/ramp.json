@@ -30,15 +30,15 @@
           "https://ramp.alchemypay.org/static/img/2.a5406123.svg"
         ],
         "Coverage": {
-          "OnRamp": true,
-          "OffRamp": true
+          "OnRamp": false,
+          "OffRamp": false
         }
       }
     },
     "CryptoList": [
       {
         "symbol": "ELF",
-        "icon": "",
+        "icon": "https://explorer-test.aelf.io/favicon.test.ico",
         "decimals": "8",
         "network": "AELF-AELF",
         "address": ""

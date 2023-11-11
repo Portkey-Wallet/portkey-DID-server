@@ -8,7 +8,9 @@ using CAServer.Grains;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -58,7 +60,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         return _thirdPartOptions.CurrentValue.Alchemy;
     }
-
+    
     /// get Alchemy login free token
     public async Task<CommonResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
@@ -91,7 +93,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             throw new UserFriendlyException("Get token failed, please try again later");
         }
     }
-
+    
     /// get Alchemy fiat list
     public async Task<CommonResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListWithCacheAsync(
         GetAlchemyFiatListDto input)
@@ -156,6 +158,16 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         try
         {
+            var cryptoList = await GetAlchemyCryptoListAsync(new GetAlchemyCryptoListDto
+            {
+                Fiat = input.Fiat
+            });
+            AssertHelper.IsTrue(cryptoList.Success, "Query Alchemy crypto list fail");
+            AssertHelper.NotEmpty(cryptoList.Data, "Empty Alchemy crypto list");
+            var cryptoItem = cryptoList.Data.FirstOrDefault(c => c.Crypto == input.Crypto);
+            AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found in Alchemy list.", input.Crypto);
+
+            input.Network = cryptoItem.Network;
             var quoteData = await GetOrderQuoteWithCacheAsync(input);
             AssertHelper.NotNull(quoteData, "Cached order quote empty");
 

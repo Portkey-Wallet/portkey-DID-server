@@ -97,7 +97,7 @@ public class GetRampPriceRequest
 
 public class UpdateWebhookRequest
 {
-    public string WebhookUrl { get; set; }
+    public string WebhookURL { get; set; }
 }
 
 public class TransakAccessTokenResp

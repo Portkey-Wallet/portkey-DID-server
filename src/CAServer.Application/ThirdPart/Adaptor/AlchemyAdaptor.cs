@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Client.MultiToken;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
@@ -9,14 +11,19 @@ using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
+using JetBrains.Annotations;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orleans;
 using Serilog;
 
 namespace CAServer.ThirdPart.Adaptor;
 
 public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 {
+    private const decimal DefaultAmount = 200;
+    private const string CryptoCacheKey = "Ramp:transak:crypto:";
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
 
@@ -38,6 +45,8 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         return _rampOptions.CurrentValue.Providers[ThirdPart()];
     }
 
+
+
     /// <summary>
     ///     Get fiat list
     /// </summary>
@@ -47,10 +56,11 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     {
         try
         {
-            var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto
-            {
-                Type = rampFiatRequest.Type
-            });
+            var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(
+                new GetAlchemyFiatListDto
+                {
+                    Type = rampFiatRequest.Type
+                });
             AssertHelper.IsTrue(alchemyFiatList.Success, "GetFiatListAsync error {Msg}", alchemyFiatList.Message);
             var rampFiatList = alchemyFiatList.Data.Select(f => new RampFiatItem()
             {
@@ -94,7 +104,6 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
     private async Task<RampLimitDto> AlchemyOnRampLimit(RampLimitRequest rampDetailRequest)
     {
-        
         var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto
         {
             Type = rampDetailRequest.Type
@@ -109,7 +118,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             Fiat = new CurrencyLimit(rampDetailRequest.Fiat, fiatItem?.PayMin, fiatItem?.PayMax)
         };
     }
-    
+
 
     private async Task<RampLimitDto> AlchemyOffRampLimit(RampLimitRequest rampDetailRequest)
     {
@@ -161,12 +170,13 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
         var fiatItem = alchemyFiatList.Data.FirstOrDefault(fiat => fiat.Currency == input.Fiat);
         AssertHelper.NotNull(fiatItem, "Fiat {Currency} not found in fiat list", input.Fiat);
-            
+
         // query order quote with a valid amount
-        input.Amount = fiatItem?.PayMin;
+        var amount = (fiatItem?.PayMin ?? "0").SafeToDecimal();
+        input.Amount = (amount > 0 ? amount : DefaultAmount).ToString(CultureInfo.InvariantCulture);
         var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
         AssertHelper.IsTrue(orderQuote.Success, "Order quote empty");
-        
+
         return orderQuote.Data;
     }
 
@@ -183,7 +193,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
             AssertHelper.IsTrue(orderQuote.Success, "Query Alchemy order quote failed, " + orderQuote.Message);
-            
+
             var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, RampPriceDto>(orderQuote.Data);
             rampPrice.ThirdPart = ThirdPart();
             rampPrice.FeeInfo = new RampFeeInfo
@@ -227,5 +237,4 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             return null;
         }
     }
-    
 }

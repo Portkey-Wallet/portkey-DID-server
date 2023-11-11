@@ -29,11 +29,12 @@ public static class DecimalHelper
             _ => throw new ArgumentOutOfRangeException(nameof(roundingOption), "Invalid rounding option.")
         };
 
-        var result = decimalPlaces == 0 || roundedValue == Math.Floor(roundedValue)
-            ? roundedValue.ToString("0", CultureInfo.InvariantCulture)
-            : roundedValue.ToString($"0.{new string('0', decimalPlaces)}", CultureInfo.InvariantCulture);
-        
-        return result;
+        var isInteger = roundedValue == Math.Floor(roundedValue);
+        var formatString = isInteger
+            ? "0"
+            : $"0.{new string('#', decimalPlaces)}";
+        return roundedValue.ToString(formatString, CultureInfo.InvariantCulture);
     }
+
 
 }

@@ -228,12 +228,12 @@ public partial class ThirdPartOrderAppService
                 .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();
 
             // choose the MAX crypto-fiat exchange rate
-            var maxExchange = (await Task.WhenAll(exchangeTasks)).Where(limit => limit != null).Max();
-            AssertHelper.NotNull(maxExchange, "empty maxExchange");
+            var maxExchange = (await Task.WhenAll(exchangeTasks)).Where(limit => limit != null).Max() ?? 0;
+            AssertHelper.IsTrue(maxExchange > 0, "empty maxExchange");
 
             var exchange = new RampExchangeDto
             {
-                Exchange = maxExchange.ToString()
+                Exchange = maxExchange.ToString(8)
             };
             return new CommonResponseDto<RampExchangeDto>(exchange);
         }

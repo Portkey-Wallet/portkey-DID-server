@@ -64,7 +64,7 @@ public class TransakProvider
         _distributedLock = distributedLock;
         _logger = logger;
         _imageProcessProvider = imageProcessProvider;
-        //TODO nzc InitAsync().GetAwaiter().GetResult();
+        InitAsync().GetAwaiter().GetResult();
     }
 
     private TransakOptions TransakOptions()
@@ -91,7 +91,7 @@ public class TransakProvider
             AssertHelper.NotEmpty(webhookUrl, "Transak webhookUrl empty in ramp options");
             await UpdateWebhookAsync(new UpdateWebhookRequest
             {
-                WebhookUrl = webhookUrl
+                WebhookURL = webhookUrl
             });
         }
         else
@@ -271,7 +271,7 @@ public class TransakProvider
     {
         // Update the webhook address when the system starts.
         await _httpProvider.Invoke(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
-            body: JsonConvert.SerializeObject(input),
+            body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
             header: await GetAccessTokenHeader(),
             withLog: true
         );
