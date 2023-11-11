@@ -1,7 +1,9 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
+using CAServer.Amazon;
 using CAServer.AppleAuth;
 using CAServer.Common;
+using CAServer.Google;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Monitor;
@@ -58,6 +60,9 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
+        Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
+        // Configure<RampOptions>(configuration.GetSection("RampOptions"));
+
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
 
         context.Services.AddMemoryCache();
@@ -77,9 +82,9 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
         
-        context.Services.AddTransient<IThirdPartAdaptor, AlchemyAdaptor>();
-        context.Services.AddTransient<IThirdPartAdaptor, TransakAdaptor>();
-        
+        context.Services.AddSingleton<IThirdPartAdaptor, AlchemyAdaptor>();
+        context.Services.AddSingleton<IThirdPartAdaptor, TransakAdaptor>();
+
         context.Services.AddSingleton<AbstractRampOrderProcessor, TransakOrderProcessor>();
         context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
         

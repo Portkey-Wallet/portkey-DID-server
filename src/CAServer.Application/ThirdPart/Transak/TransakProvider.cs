@@ -1,15 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Common.Dtos;
 using CAServer.Commons;
+using CAServer.Grains.Grain.Svg;
+using CAServer.Grains.Grain.Svg.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos.ThirdPart;
+using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -40,6 +44,7 @@ public class TransakProvider
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IHttpProvider _httpProvider;
     private readonly IClusterClient _clusterClient;
+    private readonly IImageProcessProvider _imageProcessProvider;
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .IgnoreNullValue()
@@ -50,7 +55,7 @@ public class TransakProvider
     public TransakProvider(
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider, IOptionsMonitor<RampOptions> rampOptions, IClusterClient clusterClient,
-        IAbpDistributedLock distributedLock, ILogger<TransakProvider> logger)
+        IAbpDistributedLock distributedLock, ILogger<TransakProvider> logger, IImageProcessProvider imageProcessProvider)
     {
         _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
@@ -58,7 +63,8 @@ public class TransakProvider
         _clusterClient = clusterClient;
         _distributedLock = distributedLock;
         _logger = logger;
-        InitAsync().GetAwaiter().GetResult();
+        _imageProcessProvider = imageProcessProvider;
+        //TODO nzc InitAsync().GetAwaiter().GetResult();
     }
 
     private TransakOptions TransakOptions()
@@ -187,7 +193,8 @@ public class TransakProvider
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCryptoItem>>>(
             TransakOptions().BaseUrl,
-            TransakApi.GetCryptoCurrencies
+            TransakApi.GetCryptoCurrencies,
+            debugLog: false
         );
         AssertHelper.IsTrue(resp.Success,
             "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
@@ -205,7 +212,12 @@ public class TransakProvider
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakFiatItem>>>(
             TransakOptions().BaseUrl,
             TransakApi.GetFiatCurrencies,
-            param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() }
+            header: new Dictionary<string, string>
+            {
+                ["accept"] = "application/json"
+            },
+            param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() },
+            debugLog: false
         );
         AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}",
             resp.Error?.StatusCode, resp.Error?.Message);
@@ -221,7 +233,8 @@ public class TransakProvider
     {
         var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCountry>>>(
             TransakOptions().BaseUrl,
-            TransakApi.GetCountries
+            TransakApi.GetCountries,
+            debugLog: false
         );
         AssertHelper.IsTrue(resp.Success,
             "GetTransakCountriesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
@@ -280,5 +293,49 @@ public class TransakProvider
         );
 
         return resp?.Data;
+    }
+
+    /// <summary>
+    ///     if svg in amazon return amazon url else return upload to amazon url
+    /// </summary>
+    /// <param name="transakFiatItems"></param>
+    /// <returns></returns>
+    public async Task SetSvgUrl(List<TransakFiatItem> transakFiatItems)
+    {
+        var uploadTask = new List<Task>(); 
+        foreach (var transakFiatItem in transakFiatItems)
+        {
+            if (transakFiatItem.Icon.IsNullOrEmpty() || transakFiatItem.Icon.StartsWith("http"))
+            {
+                transakFiatItem.IconUrl = transakFiatItem.Icon;
+                continue;
+            }
+            uploadTask.Add(SingleSetSvgUrl(transakFiatItem));
+        }
+        await Task.WhenAll(uploadTask);
+    }
+
+    private async Task SingleSetSvgUrl(TransakFiatItem transakFiatItem)
+    {
+        var svgUrl = transakFiatItem.Icon;
+        if (string.IsNullOrWhiteSpace(svgUrl))
+        {
+            return;
+        }
+        var svgMd5 = EncryptionHelper.MD5Encrypt32(svgUrl);
+        var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
+        var svgGrain = await grain.GetSvgAsync();
+        var portkeyUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl;
+        portkeyUrl.ReplaceWithDict(new Dictionary<string, string> { ["SVG_MD5"] = svgMd5 });
+        
+        transakFiatItem.IconUrl = svgGrain.AmazonUrl.DefaultIfEmpty(portkeyUrl);
+        if (svgGrain.AmazonUrl.NotNullOrEmpty())
+        {
+            return;
+        }
+
+        //async upload to Amazon
+        //uploadTask.Add(_imageProcessProvider.UploadSvgAsync(svgMd5, transakFiatItem.Icon));
+        _ = await _imageProcessProvider.UploadSvgAsync(svgMd5, transakFiatItem.Icon);
     }
 }

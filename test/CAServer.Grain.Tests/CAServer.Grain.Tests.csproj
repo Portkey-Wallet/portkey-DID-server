@@ -24,6 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\src\CAServer.Application\CAServer.Application.csproj" />
         <ProjectReference Include="..\..\src\CAServer.Grains\CAServer.Grains.csproj" />
         <ProjectReference Include="..\CAServer.Domain.Tests\CAServer.Domain.Tests.csproj" />
 <!--        <ProjectReference Include="..\CAServer.Orleans.TestBase\CAServer.Orleans.TestBase.csproj" />-->

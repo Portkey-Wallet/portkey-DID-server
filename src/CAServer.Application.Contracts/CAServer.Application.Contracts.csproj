@@ -57,4 +57,8 @@
     <ItemGroup>
       <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Amazon\SvgConst.cs" />
+    </ItemGroup>
 </Project>

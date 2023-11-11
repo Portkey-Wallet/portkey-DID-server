@@ -150,16 +150,18 @@ public partial class ThirdPartOrderAppService
             var defaultFiatId = GrainIdHelper.GenerateGrainId(defaultCurrencyOption.Symbol, defaultCurrencyOption.Country);
             
             // ensure that default fiat in fiat-list
-            var defaultFiatExists = fiatDict.TryGetValue(defaultFiatId, out var defaultFiat);
-            if (!defaultFiatExists)
-            {
-                defaultFiat = fiatDict.Values.FirstOrDefault(f => f.Symbol == defaultCurrencyOption.Symbol,
-                    fiatDict.Values.First());
-            }
+            var defaultFiatExists = fiatDict.TryGetValue(defaultFiatId, out var defaultFiatItem);
+            defaultFiatItem = defaultFiatExists
+                ? defaultFiatItem 
+                : fiatDict.Values.FirstOrDefault(f => f.Symbol == defaultCurrencyOption.Symbol,
+                fiatDict.Values.First());
+            var defaultFiat = ObjectMapper.Map<RampFiatItem, DefaultFiatCurrency>(defaultFiatItem);
+            defaultFiat.Amount = defaultCurrencyOption.Amount;
+            
             return new CommonResponseDto<RampFiatDto>(new RampFiatDto
             {
                 FiatList = fiatDict.Values.ToList(),
-                DefaultFiat = ObjectMapper.Map<RampFiatItem, DefaultFiatCurrency>(defaultFiat)
+                DefaultFiat = defaultFiat
             });
         }
         catch (Exception e)

@@ -33,7 +33,7 @@ public class TransakCryptoItem
 {
     public string CoinId { get; set; }
     public string Address { get; set; }
-    public bool AddressAdditionalData { get; set; }
+    // public bool AddressAdditionalData { get; set; }
     public string CreatedAt { get; set; }
     public string Decimals { get; set; }
     public bool IsAllowed { get; set; }

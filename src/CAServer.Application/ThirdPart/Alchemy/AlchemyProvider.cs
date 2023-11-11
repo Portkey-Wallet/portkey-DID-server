@@ -82,7 +82,8 @@ public class AlchemyProvider
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryCryptoList,
             header: GetRampAlchemyRequestHeader(),
-            param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings))
+            param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings)),
+            debugLog: false
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "GetAlchemyCryptoList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
@@ -95,7 +96,8 @@ public class AlchemyProvider
         var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryFiatList,
             header: GetRampAlchemyRequestHeader(),
-            param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings))
+            param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings)),
+            debugLog: false
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "GetAlchemyFiatList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
@@ -178,7 +180,8 @@ public class AlchemyProvider
     {
         var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryNftFiatList,
-            header: GetNftAlchemyRequestHeader()
+            header: GetNftAlchemyRequestHeader(),
+            debugLog: false
         );
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             JsonConvert.SerializeObject(res));

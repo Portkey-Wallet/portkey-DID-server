@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using CAServer.Google;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.Hubs;
@@ -10,6 +11,7 @@ using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
 using CAServer.Signature;
+using CAServer.ThirdPart.Adaptor;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -347,6 +349,9 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseConfiguredEndpoints();
 
         StartOrleans(context.ServiceProvider);
+
+        // to start pre heat
+        _ = context.ServiceProvider.GetService<TransakAdaptor>();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
