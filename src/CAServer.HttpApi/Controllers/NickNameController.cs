@@ -3,6 +3,7 @@ using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using CAServer.CAAccount.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
 
@@ -32,5 +33,11 @@ public class NickNameController : CAServerController
     public async Task<CAHolderResultDto> GetCaHolderAsync()
     {
         return await _nickNameService.GetCaHolderAsync();
+    }
+    
+    [HttpPost("holderInfo")]
+    public async Task<CAHolderResultDto> HolderInfoAsync(HolderInfoDto holderInfo)
+    {
+        return await _nickNameService.UpdateHolderInfoAsync(holderInfo);
     }
 }

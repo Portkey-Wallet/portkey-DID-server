@@ -17,6 +17,7 @@ public class RecentTransactionUser
     public string TransactionTime { get; set; }
     public string Index { get; set; }
     public string Name { get; set; }
+    public string Avatar { get; set; }
     public List<UserContactAddressDto> Addresses { get; set; }
 }
 
