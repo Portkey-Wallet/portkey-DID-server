@@ -57,6 +57,7 @@ public class Program
                 .WithMetrics(meterProviderBuilder =>
                 {
                     meterProviderBuilder.AddAspNetCoreInstrumentation();
+                    meterProviderBuilder.AddPrometheusExporter();
                     meterProviderBuilder.AddMeter("Microsoft.AspNetCore.Hosting");
                     meterProviderBuilder.AddMeter("Microsoft.AspNetCore.Server.Kestrel");
                 });
