@@ -85,19 +85,27 @@ public class TransakProvider
 
     private async Task InitAsync()
     {
-        if(_rampOptions?.CurrentValue?.Providers.TryGetValue(ThirdPartNameType.Transak.ToString(), out var provider) == true)
+        try
         {
-            var webhookUrl = provider.WebhookUrl;
-            AssertHelper.NotEmpty(webhookUrl, "Transak webhookUrl empty in ramp options");
-            await UpdateWebhookAsync(new UpdateWebhookRequest
+            if(_rampOptions?.CurrentValue?.Providers.TryGetValue(ThirdPartNameType.Transak.ToString(), out var provider) == true)
             {
-                WebhookURL = webhookUrl
-            });
+                var webhookUrl = provider.WebhookUrl;
+                AssertHelper.NotEmpty(webhookUrl, "Transak webhookUrl empty in ramp options");
+                await UpdateWebhookAsync(new UpdateWebhookRequest
+                {
+                    WebhookURL = webhookUrl
+                });
+            }
+            else
+            {
+                _logger.LogError("Transak webhook url options not exists, skip update to Transak");            
+            }
         }
-        else
+        catch (Exception e)
         {
-            _logger.LogError("Transak webhook url options not exists, skip update to Transak");            
+            _logger.LogError(e, "init Transak provider error");
         }
+
     }
 
     private async Task<Dictionary<string, string>> GetAccessTokenHeader()
@@ -118,7 +126,7 @@ public class TransakProvider
         {
             try
             {
-                return await GetAccessTokenWithCacheAsync();
+                return await GetAccessTokenWithCacheAsync(true);
             }
             catch (RateLimitRejectedException ex)
             {
