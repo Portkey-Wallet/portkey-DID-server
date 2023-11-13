@@ -136,9 +136,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
 
         try
         {
-            var securityToken = await VerifyAppCheckTokenAsync(acToken);
-            var jwtPayload = ((JwtSecurityToken)securityToken).Payload;
-            
+            await VerifyAppCheckTokenAsync(acToken);
             return new ValidateTokenResponse
             {
                 AcValidResult = true
@@ -158,7 +156,6 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         {
             return new JwtSecurityToken();
         }
-
         var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(token);
         var kid = jwtToken.Header.Kid;
         var client = new HttpClient();
@@ -177,7 +174,23 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
             IssuerSigningKey = jwk
         };
         _jwtSecurityTokenHandler.ValidateToken(token, validateParameter,
-            out SecurityToken validatedToken);
+            out var validatedToken);
         return validatedToken;
     }
+}
+
+public class Response
+{
+    public List<GoogleKeys> Keys { get; set; }
+}
+
+public class GoogleKeys
+{
+    public string Kty { get; set; }
+    public string Kid { get; set; }
+    public string Use { get; set; }
+    public string Alg { get; set; }
+    public string N { get; set; }
+    public string E { get; set; }
+    
 }
