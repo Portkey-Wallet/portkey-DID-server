@@ -7,7 +7,7 @@
         "BaseUrl": "https://ramptest.alchemypay.org",
         "Logo": "https://ramp.alchemypay.org/static/img/6.32716249.svg",
         "CountryIconUrl": "https://static.alchemypay.org/alchemypay/flag/{ISO}.png",
-        "WebhookUrl" :"http://todo.com",
+        "WebhookUrl" :"http://127.0.0.1:5001/api/app/thirdPart/order/alchemy",
         "PaymentTags": [
           "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
           "https://ramp.alchemypay.org/static/img/2.a5406123.svg",
@@ -24,7 +24,7 @@
         "BaseUrl": "https://global-stg.transak.com",
         "Logo": "https://assets.transak.com/images/website/transak-logo.svg",
         "CountryIconUrl": "http://127.0.0.1:5001/api/app/image/svg/{SVG_MD5}.svg",
-        "WebhookUrl" :"http://todo.com",
+        "WebhookUrl" :"http://127.0.0.1:5001/api/app/thirdPart/order/transak",
         "PaymentTags": [
           "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
           "https://ramp.alchemypay.org/static/img/2.a5406123.svg"
