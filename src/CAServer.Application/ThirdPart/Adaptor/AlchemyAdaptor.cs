@@ -3,19 +3,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.Client.MultiToken;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
-using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
-using JetBrains.Annotations;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans;
 using Serilog;
 
 namespace CAServer.ThirdPart.Adaptor;
@@ -44,7 +39,6 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     {
         return _rampOptions.CurrentValue.Providers[ThirdPart()];
     }
-
 
 
     /// <summary>
@@ -91,9 +85,18 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     {
         try
         {
-            return rampLimitRequest.IsBuy()
-                ? await AlchemyOnRampLimit(rampLimitRequest)
-                : await AlchemyOffRampLimit(rampLimitRequest);
+            var (min, max) =
+                await GetRampLimit(rampLimitRequest.Fiat, rampLimitRequest.Crypto, rampLimitRequest.IsBuy());
+            
+            return new RampLimitDto
+            {
+                Fiat = rampLimitRequest.IsBuy()
+                    ? new CurrencyLimit(rampLimitRequest.Fiat, min, max)
+                    : null,
+                Crypto = rampLimitRequest.IsBuy()
+                    ? null
+                    : new CurrencyLimit(rampLimitRequest.Crypto, min, max)
+            };
         }
         catch (Exception e)
         {
@@ -102,41 +105,30 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         }
     }
 
-    private async Task<RampLimitDto> AlchemyOnRampLimit(RampLimitRequest rampDetailRequest)
+
+    public async Task<Tuple<string, string>> GetRampLimit(string fiat, string crypto, bool isBuy)
     {
-        var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto
-        {
-            Type = rampDetailRequest.Type
-        });
-        AssertHelper.IsTrue(alchemyFiatList.Success, "Fiat list query failed.");
-
-        var fiatItem = alchemyFiatList.Data.FirstOrDefault(fiat => fiat.Currency == rampDetailRequest.Fiat);
-        AssertHelper.NotNull(fiatItem, "Fiat {Currency} not found in fiat list", rampDetailRequest.Fiat);
-
-        return new RampLimitDto
-        {
-            Fiat = new CurrencyLimit(rampDetailRequest.Fiat, fiatItem?.PayMin, fiatItem?.PayMax)
-        };
-    }
-
-
-    private async Task<RampLimitDto> AlchemyOffRampLimit(RampLimitRequest rampDetailRequest)
-    {
-        var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(new GetAlchemyCryptoListDto
-        {
-            Fiat = rampDetailRequest.Fiat
-        });
+        
+        var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(
+            new GetAlchemyCryptoListDto
+            {
+                Fiat = fiat
+            });
         AssertHelper.IsTrue(alchemyCryptoList.Success, "Crypto list query failed.");
 
-        var cryptoItem = alchemyCryptoList.Data.FirstOrDefault(crypto => crypto.Crypto == rampDetailRequest.Crypto);
-        AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found", rampDetailRequest.Crypto);
+        var cryptoItem = alchemyCryptoList.Data
+            .Where(c => c.Crypto == crypto)
+            .FirstOrDefault(c => isBuy ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0);
+        AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found", crypto);
 
-        return new RampLimitDto
-        {
-            Crypto = new CurrencyLimit(rampDetailRequest.Crypto, cryptoItem?.MinSellAmount, cryptoItem?.MaxSellAmount)
-        };
+        var min = isBuy ? cryptoItem?.MinPurchaseAmount : cryptoItem?.MinSellAmount;
+        var max = isBuy ? cryptoItem?.MaxPurchaseAmount : cryptoItem?.MaxSellAmount;
+        AssertHelper.IsTrue(max.SafeToDecimal() > 0 && max.SafeToDecimal() - min.SafeToDecimal() > 0,
+            "Alchemy limit invalid, min={Min}, max={Max}, fiat={Fiat}, Crypto={Crypto}", 
+            min, max, fiat, crypto);
+        return Tuple.Create(min, max);
     }
-
+    
 
     /// <summary>
     ///     Get ramp exchange
@@ -162,17 +154,10 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
     private async Task<AlchemyOrderQuoteDataDto> GetCommonAlchemyOrderQuoteData(GetAlchemyOrderQuoteDto input)
     {
-        var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto
-        {
-            Type = input.ToString()
-        });
-        AssertHelper.IsTrue(alchemyFiatList.Success, "Fiat list empty");
-
-        var fiatItem = alchemyFiatList.Data.FirstOrDefault(fiat => fiat.Currency == input.Fiat);
-        AssertHelper.NotNull(fiatItem, "Fiat {Currency} not found in fiat list", input.Fiat);
-
+        var (min, _) = await GetRampLimit(input.Fiat, input.Crypto, input.IsBuy());
+        
         // query order quote with a valid amount
-        var amount = (fiatItem?.PayMin ?? "0").SafeToDecimal();
+        var amount = (min ?? "0").SafeToDecimal();
         input.Amount = (amount > 0 ? amount : DefaultAmount).ToString(CultureInfo.InvariantCulture);
         var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
         AssertHelper.IsTrue(orderQuote.Success, "Order quote empty");

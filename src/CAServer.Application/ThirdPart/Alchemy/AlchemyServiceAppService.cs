@@ -60,7 +60,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         return _thirdPartOptions.CurrentValue.Alchemy;
     }
-    
+
     /// get Alchemy login free token
     public async Task<CommonResponseDto<AlchemyTokenDataDto>> GetAlchemyFreeLoginTokenAsync(
         GetAlchemyFreeLoginTokenDto input)
@@ -93,14 +93,14 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             throw new UserFriendlyException("Get token failed, please try again later");
         }
     }
-    
+
     /// get Alchemy fiat list
     public async Task<CommonResponseDto<List<AlchemyFiatDto>>> GetAlchemyFiatListWithCacheAsync(
         GetAlchemyFiatListDto input)
     {
         try
         {
-            var cacheKey = GrainIdHelper.GenerateGrainId(FiatCacheKey, input.Type);
+            var cacheKey = GrainIdHelper.GenerateGrainId(FiatCacheKey + DateTime.UtcNow.ToUtcSeconds(), input.Type);
             var resp = await _fiatListCache.GetOrAddAsync(cacheKey,
                 async () => await _alchemyProvider.GetAlchemyFiatListAsync(input),
                 () => new DistributedCacheEntryOptions
@@ -164,7 +164,9 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             });
             AssertHelper.IsTrue(cryptoList.Success, "Query Alchemy crypto list fail");
             AssertHelper.NotEmpty(cryptoList.Data, "Empty Alchemy crypto list");
-            var cryptoItem = cryptoList.Data.FirstOrDefault(c => c.Crypto == input.Crypto);
+            var cryptoItem = cryptoList.Data
+                .Where(c => c.Crypto == input.Crypto)
+                .FirstOrDefault(c => input.IsBuy() ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0);
             AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found in Alchemy list.", input.Crypto);
 
             input.Network = cryptoItem.Network;

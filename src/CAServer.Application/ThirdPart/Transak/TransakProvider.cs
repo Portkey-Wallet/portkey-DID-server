@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Polly.RateLimit;
+using Volo.Abp;
 using Volo.Abp.DistributedLocking;
 
 namespace CAServer.ThirdPart.Transak;

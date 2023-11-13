@@ -17,7 +17,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("ThirdPart")]
 [Route("api/app/thirdPart/")]
-[Authorize]
+//TODO nzc [Authorize]
 public class ThirdPartUserController : CAServerController
 {
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
@@ -44,7 +44,7 @@ public class ThirdPartUserController : CAServerController
         return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
     }
 
-    [HttpGet("ramp/coverage")]
+    [HttpGet("ramp/info")]
     public async Task<CommonResponseDto<RampCoverageDto>> GetRampCoverage()
     {
         return await _thirdPartOrdersAppService.GetRampCoverageAsync();

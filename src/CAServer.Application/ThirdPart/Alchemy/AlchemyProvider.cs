@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -101,7 +102,7 @@ public class AlchemyProvider
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "GetAlchemyFiatList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
-        return result.Data;
+        return result.Data.Where(f => f.PayMax.SafeToDecimal() - f.PayMin.SafeToDecimal() > 0).ToList();
     }
 
     /// query Alchemy order info
