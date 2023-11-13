@@ -22,7 +22,7 @@ public class FeeItem
         {
             Type = CommonConstant.CurrencyFiat,
             Symbol = symbol,
-            Amount = amount
+            Amount = amount ?? "0"
         };
     }
     
@@ -32,7 +32,7 @@ public class FeeItem
         {
             Type = CommonConstant.CurrencyCrypto,
             Symbol = symbol,
-            Amount = amount
+            Amount = amount ?? "0"
         };
     }
     

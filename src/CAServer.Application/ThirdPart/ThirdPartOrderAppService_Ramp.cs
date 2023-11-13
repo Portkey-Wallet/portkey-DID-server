@@ -68,7 +68,7 @@ public partial class ThirdPartOrderAppService
             if (type == OrderTransDirect.SELL.ToString() && !provider.Coverage.OffRamp) return null;
             return provider;
         };
-            
+        
         return _rampOptions.CurrentValue.Providers
                 .Where(p => calculateCoverage(p.Key, p.Value) != null)
                 .ToDictionary(kv => kv.Key, kv => kv.Value);
