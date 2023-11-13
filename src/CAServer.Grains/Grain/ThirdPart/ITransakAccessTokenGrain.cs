@@ -3,7 +3,7 @@ using Orleans;
 
 namespace CAServer.Grains.Grain.ThirdPart;
 
-public interface ITransakGrain : IGrainWithStringKey
+public interface ITransakAccessTokenGrain : IGrainWithStringKey
 {
 
     Task<GrainResultDto<TransakAccessTokenDto>> GetAccessToken();

@@ -145,8 +145,8 @@ public class TransakProvider
         var now = DateTime.UtcNow;
         var apiKey = GetApiKey();
         var cacheKey = AccessTokenCacheKey(apiKey);
-        var tokenGrain = _clusterClient.GetGrain<ITransakGrain>(apiKey);
-        var cacheData = force ? null : (await tokenGrain.GetAccessToken()).Data;
+        var tokenAccessTokenGrain = _clusterClient.GetGrain<ITransakAccessTokenGrain>(apiKey);
+        var cacheData = force ? null : (await tokenAccessTokenGrain.GetAccessToken()).Data;
 
         var hasData = cacheData != null && !cacheData.AccessToken.IsNullOrEmpty();
         if (hasData && (containsExpire || cacheData.RefreshTime > DateTime.UtcNow))
@@ -165,7 +165,7 @@ public class TransakProvider
         var refreshDuration = (expiration - now) * TransakOptions().RefreshTokenDurationPercent;
 
         // record accessToken data to Grain
-        await tokenGrain.SetAccessToken(new TransakAccessTokenDto()
+        await tokenAccessTokenGrain.SetAccessToken(new TransakAccessTokenDto()
         {
             AccessToken = accessToken.AccessToken,
             ExpireTime = expiration,
