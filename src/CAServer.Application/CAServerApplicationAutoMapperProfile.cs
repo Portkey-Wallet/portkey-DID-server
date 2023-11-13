@@ -412,7 +412,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
         
-        CreateMap<UserDeviceReportingDto, UserDeviceReporting>();
-        CreateMap<AppStatusReportingDto, AppStatusReporting>();
+        CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
+        CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
     }
 }
