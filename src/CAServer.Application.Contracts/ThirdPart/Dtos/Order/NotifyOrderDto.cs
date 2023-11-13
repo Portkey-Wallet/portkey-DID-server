@@ -11,6 +11,7 @@ public class NotifyOrderDto
     public string Crypto { get; set; }
     public string CryptoAmount { get; set; }
     public string Status { get; set; }
+    public string DisplayStatus { get; set; }
     public string TransDirect { get; set; }
 
     public bool IsNftOrder()
@@ -18,4 +19,5 @@ public class NotifyOrderDto
         return TransDirect == TransferDirectionType.NFTBuy.ToString() ||
                TransDirect == TransferDirectionType.NFTSell.ToString();
     }
+
 }

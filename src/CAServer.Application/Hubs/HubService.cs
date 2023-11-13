@@ -122,14 +122,30 @@ public class HubService : CAServerAppService, IHubService
     {
         await _hubCacheProvider.RemoveResponseByClientId(clientId, requestId);
     }
-
+    
+    public async Task RequestRampOrderStatus(string clientId, string orderId)
+    {
+        await RequestOrderStatusAsync(clientId, orderId);
+    }
+    
     public async Task RequestNFTOrderStatusAsync(string clientId, string orderId)
+    {
+        await RequestOrderStatusAsync(clientId, orderId);
+    }
+    
+    public async Task RequestOrderStatusAsync(string clientId, string orderId)
     {
         await _orderWsNotifyProvider.RegisterOrderListenerAsync(clientId, orderId, async notifyOrderDto =>
         {
             try
             {
                 var methodName = notifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
+                notifyOrderDto.DisplayStatus =
+                    notifyOrderDto.IsNftOrder()
+                        ? OrderDisplayStatus.ToNftCheckoutRampDisplayStatus(notifyOrderDto.Status)
+                        : notifyOrderDto.TransDirect == TransferDirectionType.TokenBuy.ToString()
+                            ? OrderDisplayStatus.ToOnRampDisplayStatus(notifyOrderDto.Status)
+                            : OrderDisplayStatus.ToOffRampDisplayStatus(notifyOrderDto.Status);
                 await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(notifyOrderDto), clientId, methodName);
             }
             catch (Exception e)

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CAServer.ThirdPart;
 
@@ -34,6 +35,68 @@ public enum NftOrderWebhookStatus
     NONE,
     SUCCESS,
     FAIL,
+}
+
+public static class OrderDisplayStatus
+{
+    private const string PaySuccess = "PaySuccess";
+    
+    
+    private static Dictionary<string, List<OrderStatusType>> _onRampStatusMapping = new()
+    {
+        [OrderStatusType.Initialized.ToString()] = new List<OrderStatusType> { OrderStatusType.Initialized },
+        [OrderStatusType.Created.ToString()] = new List<OrderStatusType> { OrderStatusType.Created },
+        [PaySuccess] = new List<OrderStatusType> { OrderStatusType.Pending },
+        [OrderStatusType.Finish.ToString()] = new List<OrderStatusType> { OrderStatusType.Finish },
+        [OrderStatusType.Failed.ToString()] = new List<OrderStatusType> { OrderStatusType.Failed, OrderStatusType.Expired},
+    };
+    
+
+    private static Dictionary<string, List<OrderStatusType>> _offRampStatusMapping = new()
+    {
+        [OrderStatusType.Initialized.ToString()] = new List<OrderStatusType> { OrderStatusType.Initialized },
+        [OrderStatusType.Created.ToString()] = new List<OrderStatusType> { OrderStatusType.Created },
+        [OrderStatusType.Transferring.ToString()] = new List<OrderStatusType> { OrderStatusType.StartTransfer, OrderStatusType.Transferring, OrderStatusType.Transferred, },
+        [OrderStatusType.Transferred.ToString()] = new List<OrderStatusType> { OrderStatusType.UserCompletesCoinDeposit },
+        [OrderStatusType.StartPayment.ToString()] = new List<OrderStatusType> { OrderStatusType.StartPayment },
+        [OrderStatusType.Finish.ToString()] = new List<OrderStatusType> { OrderStatusType.Finish },
+        [OrderStatusType.Failed.ToString()] = new List<OrderStatusType> { OrderStatusType.Failed, OrderStatusType.TransferFailed, OrderStatusType.PaymentFailed, OrderStatusType.Expired}
+    };
+    
+    private static Dictionary<string, List<OrderStatusType>> _nftCheckoutStatusMapping = new()
+    {
+        [OrderStatusType.Initialized.ToString()] = new List<OrderStatusType> { OrderStatusType.Initialized },
+        [OrderStatusType.Created.ToString()] = new List<OrderStatusType> { OrderStatusType.Created },
+        [PaySuccess] = new List<OrderStatusType> { OrderStatusType.Pending },
+        [OrderStatusType.Transferring.ToString()] = new List<OrderStatusType> { OrderStatusType.StartTransfer, OrderStatusType.Transferring, },
+        [OrderStatusType.Transferred.ToString()] = new List<OrderStatusType> { OrderStatusType.Transferred },
+        [OrderStatusType.Finish.ToString()] = new List<OrderStatusType> { OrderStatusType.Finish },
+        [OrderStatusType.Failed.ToString()] = new List<OrderStatusType> { OrderStatusType.Failed, OrderStatusType.TransferFailed, OrderStatusType.Expired}
+    };
+
+    public static string ToOnRampDisplayStatus(string orderStatus)
+    {
+        return ToDisplayStatus(orderStatus, _onRampStatusMapping);
+    }
+    
+    public static string ToOffRampDisplayStatus(string orderStatus)
+    {
+        return ToDisplayStatus(orderStatus, _offRampStatusMapping);
+    }
+    
+    public static string ToNftCheckoutRampDisplayStatus(string orderStatus)
+    {
+        return ToDisplayStatus(orderStatus, _nftCheckoutStatusMapping);
+    }
+
+    private static string ToDisplayStatus(string orderStatus, Dictionary<string, List<OrderStatusType>> statusMapping)
+    {
+        return statusMapping
+            .Where(kv => kv.Value.Any(v => v.ToString() == orderStatus))
+            .Select(kv => kv.Key)
+            .FirstOrDefault(orderStatus);
+    }
+    
 }
 
 /// <summary>
