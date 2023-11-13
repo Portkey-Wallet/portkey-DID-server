@@ -156,6 +156,7 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         {
             return new JwtSecurityToken();
         }
+        
         var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(token);
         var kid = jwtToken.Header.Kid;
         var client = new HttpClient();
