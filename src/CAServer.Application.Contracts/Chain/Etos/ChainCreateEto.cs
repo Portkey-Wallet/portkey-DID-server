@@ -1,11 +1,12 @@
 using System;
 using CAServer.Chain;
+using CAServer.EventBusHandler;
 using Volo.Abp.EventBus;
 
 namespace CAServer.Etos.Chain;
 
 [EventName("ChainCreateEto")]
-public class ChainCreateEto
+public class ChainCreateEto : EtoBase
 {
     public string Id { get; set; }
     public string ChainId { get; set; }

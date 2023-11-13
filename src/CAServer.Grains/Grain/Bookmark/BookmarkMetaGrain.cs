@@ -1,6 +1,8 @@
 using CAServer.Grains.State.Bookmark;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Logging;
 using Orleans;
+using Orleans.Runtime;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.Bookmark;
@@ -9,10 +11,12 @@ public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
 {
     private const int GrainSize = 100;
     private readonly IObjectMapper _objectMapper;
+    private readonly ILogger<BookmarkGrain> _logger;
 
-    public BookmarkMetaGrain(IObjectMapper objectMapper)
+    public BookmarkMetaGrain(IObjectMapper objectMapper, ILogger<BookmarkGrain> logger)
     {
         _objectMapper = objectMapper;
+        _logger = logger;
     }
 
     public override async Task OnActivateAsync()
@@ -34,8 +38,9 @@ public class BookmarkMetaGrain : Grain<BookmarkMetaState>, IBookmarkMetaGrain
             State.Items.Add(new BookMarkMetaItem() { Index = 1 });
             await WriteStateAsync();
             return 1;
+            
         }
-
+       
         var itemDict = State.Items.ToDictionary(i => i.Index, i => i);
         var hasDataList = State.Items.Where(item => item.Size > 0).ToList();
         if (hasDataList.IsNullOrEmpty())

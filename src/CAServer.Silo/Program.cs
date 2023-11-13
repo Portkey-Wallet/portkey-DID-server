@@ -3,8 +3,10 @@ using CAServer.Silo.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Orleans.Hosting;
 using Serilog;
+using Serilog.Configuration;
 using Serilog.Events;
 using Serilog.Templates;
 
@@ -27,8 +29,11 @@ public class Program
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
 #if DEBUG
-            .WriteTo.Console(new ExpressionTemplate("[{@t:HH:mm:ss fff} {@l:u3}" +
-                                                    " Application:{Application},Module:{Module}{#if CorrelationId is not null},CorrelationId:{CorrelationId}{#end}{#if RequestPath is not null},RequestPath:{RequestPath}{#end}] {@m}\n{@x}"))
+            // .WriteTo.Console(new ExpressionTemplate("[{@t:HH:mm:ss fff} {@l:u3}" +
+            //                                         " Application:{Application},Module:{Module}{#if tracingId is not null},tracingId:{tracingId}{#end}{#if RequestPath is not null},RequestPath:{RequestPath}{#end}] {@m}\n{@x}"))
+            .WriteTo.Console(new ExpressionTemplate("[{@t:HH:mm:ss fff} {@l:u3} {tracing_id} {Application} {Module} ] {@m}\n{@x}"))
+            
+            //.WriteTo.Async(c => c.Console())
 #endif
             .CreateLogger();
 

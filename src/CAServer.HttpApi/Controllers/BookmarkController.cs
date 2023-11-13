@@ -12,7 +12,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Bookmark")]
 [Route("api/app/bookmarks/")]
-[Authorize]
+// [Authorize]
 [IgnoreAntiforgeryToken]
 public class BookmarkController : CAServerController
 {

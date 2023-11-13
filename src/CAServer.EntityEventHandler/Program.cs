@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
+using Serilog.Templates;
 
 namespace CAServer.EntityEventHandler
 {
@@ -27,7 +28,8 @@ namespace CAServer.EntityEventHandler
                 .Enrich.FromLogContext()
                 .ReadFrom.Configuration(configuration)
 #if DEBUG
-                .WriteTo.Async(c => c.Console())
+                //.WriteTo.Async(c => c.Console())
+                .WriteTo.Console(new ExpressionTemplate("[{@t:HH:mm:ss fff} {@l:u3} {Application} ] {@m}\n{@x}"))
 #endif
                 .CreateLogger();
 

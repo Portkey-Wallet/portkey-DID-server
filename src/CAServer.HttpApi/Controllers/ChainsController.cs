@@ -10,7 +10,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Chains")]
 [Route("api/app/chains")]
-[Authorize(Roles = "admin")]
+//[Authorize(Roles = "admin")]
 public class ChainsController : CAServerController
 {
     private readonly IChainAppService _chainsService;

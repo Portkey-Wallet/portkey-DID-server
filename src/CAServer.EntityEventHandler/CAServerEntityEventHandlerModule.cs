@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch.Options;
 using CAServer.Commons;
+using CAServer.EntityEventHandler;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
@@ -79,7 +80,12 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 .Build();
         });
     }
-    
+
+    public override void PreConfigureServices(ServiceConfigurationContext context)
+    {
+        context.Services.OnRegistred(TracingInterceptorRegistrar.RegisterIfNeeded);
+    }
+
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
     {        

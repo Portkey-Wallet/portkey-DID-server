@@ -30,17 +30,18 @@ public static class DashExecutionContext
           }
      
           var currentValue = ambientHolder.Value;
-          if (force || currentValue is null || currentValue.Equals(default) || valueInvalidator.Invoke(currentValue))
+          if (force || currentValue is null || valueInvalidator.Invoke(currentValue))
           {
                ambientHolder.Value = newValue;
                return true;
           }
-          else if (!currentValue.Equals(newValue))
+
+          if (!currentValue.Equals(newValue))
           {
                Log.Error($"Tried to set different value for {contextPropertyName}, but it is already set for this execution flow - " +
                          $"please, check the execution context logic! Current value: {currentValue} ; rejected value: {newValue}");
           }
-     
+
           return false;
      }
      

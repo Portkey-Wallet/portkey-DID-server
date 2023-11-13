@@ -8,6 +8,7 @@ using CAServer.Grains.Grain.Bookmark;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -32,7 +33,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public async Task<BookmarkResultDto> CreateAsync(CreateBookmarkDto input)
     {
-        var userId = CurrentUser.GetId();
+        var userId = Guid.NewGuid();
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + userId);
         if (handle == null)
@@ -41,8 +42,7 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
                 userId.ToString());
             throw new UserFriendlyException("Get lock fail");
         }
-
-        var metaGrain = GetBookmarkMetaGrain();
+        var metaGrain = GetBookmarkMetaGrain(userId);
         var index = await metaGrain.GetTailBookMarkGrainIndex();
         var grain = GetBookmarkGrain(index);
         var grainDto = ObjectMapper.Map<CreateBookmarkDto, BookmarkGrainDto>(input);
@@ -160,7 +160,12 @@ public class BookmarkAppService : CAServerAppService, IBookmarkAppService
 
     public IBookmarkMetaGrain GetBookmarkMetaGrain()
     {
-        var userId = CurrentUser.GetId();
+        var userId = Guid.NewGuid();
+        return _clusterClient.GetGrain<IBookmarkMetaGrain>(
+            GrainIdHelper.GenerateGrainId("BookmarkMeta", userId.ToString("N")));
+    }
+    public IBookmarkMetaGrain GetBookmarkMetaGrain(Guid userId)
+    {
         return _clusterClient.GetGrain<IBookmarkMetaGrain>(
             GrainIdHelper.GenerateGrainId("BookmarkMeta", userId.ToString("N")));
     }

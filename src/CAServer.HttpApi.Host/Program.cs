@@ -5,15 +5,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
 using Serilog;
 using Serilog.Events;
-using System.Diagnostics.Metrics;
-using Microsoft.AspNetCore.Http;
-using OpenTelemetry.Metrics;
-using Serilog.Context;
 using Serilog.Templates;
-using Meter = System.Diagnostics.Metrics.Meter;
 
 namespace CAServer;
 
@@ -41,7 +36,7 @@ public class Program
             //   "[{Timestamp:HH:mm:ss fff} {Level:u3} {Properties:j}] - {Message}{NewLine}{Exception}")
             .WriteTo.Console(new ExpressionTemplate(
                 "[{@t:HH:mm:ss fff} {@l:u3}" +
-                " Application:{Application},Module:{Module}{#if CorrelationId is not null},CorrelationId:{CorrelationId}{#end}{#if RequestPath is not null},RequestPath:{RequestPath}{#end}] {@m}\n{@x}"))
+                " Application:{Application},Module:{Module}{#if tracing_id is not null},tracing_id:{tracing_id}{#end}{#if RequestPath is not null},RequestPath:{RequestPath}{#end}] {@m}\n{@x}"))
             // //.WriteTo.Console(new ExpressionTemplate("[{Timestamp:HH:mm:ss fff} {Level:u3}]-{tracing_id}{Message}{NewLine}{Exception}"))
 #endif
             .CreateLogger();
@@ -59,11 +54,11 @@ public class Program
             builder.Services.AddSignalR();
             builder.Services.AddRazorPages();
             builder.Services.AddOpenTelemetry()
-                .WithMetrics(builder =>
+                .WithMetrics(meterProviderBuilder =>
                 {
-                    builder.AddAspNetCoreInstrumentation();
-                    builder.AddMeter("Microsoft.AspNetCore.Hosting");
-                    builder.AddMeter("Microsoft.AspNetCore.Server.Kestrel");
+                    meterProviderBuilder.AddAspNetCoreInstrumentation();
+                    meterProviderBuilder.AddMeter("Microsoft.AspNetCore.Hosting");
+                    meterProviderBuilder.AddMeter("Microsoft.AspNetCore.Server.Kestrel");
                 });
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();

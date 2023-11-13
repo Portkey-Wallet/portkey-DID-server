@@ -16,31 +16,41 @@ namespace CAServer.Silo.Extensions;
 
 public static class OrleansHostExtensions
 {
-     public static IHostBuilder UseOrleansSnapshot(this IHostBuilder hostBuilder)
+    public static IHostBuilder UseOrleansSnapshot(this IHostBuilder hostBuilder)
     {
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
-        if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+        if (configuration == null)
+        {
+            throw new ArgumentNullException(nameof(configuration));
+        }
+
         var configSection = configuration.GetSection("Orleans");
         if (configSection == null)
+        {
             throw new ArgumentNullException(nameof(configSection), "The OrleansServer node is missing");
+        }
+
         return hostBuilder.UseOrleans(siloBuilder =>
         {
             //Configure OrleansSnapshot
             siloBuilder
-                .ConfigureEndpoints(advertisedIP:IPAddress.Parse(configSection.GetValue<string>("AdvertisedIP")),siloPort: configSection.GetValue<int>("SiloPort"), gatewayPort: configSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
+                .ConfigureEndpoints(advertisedIP: IPAddress.Parse(configSection.GetValue<string>("AdvertisedIP")),
+                    siloPort: configSection.GetValue<int>("SiloPort"),
+                    gatewayPort: configSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
                 .UseMongoDBClient(configSection.GetValue<string>("MongoDBClient"))
                 .UseMongoDBClustering(options =>
                 {
-                    options.DatabaseName = configSection.GetValue<string>("DataBase");;
+                    options.DatabaseName = configSection.GetValue<string>("DataBase");
+                    ;
                     options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
-                .AddMongoDBGrainStorage("Default",(MongoDBGrainStorageOptions op) =>
+                .AddMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
                 {
                     op.CollectionPrefix = "GrainStorage";
                     op.DatabaseName = configSection.GetValue<string>("DataBase");
-                
+
                     op.ConfigureJsonSerializerSettings = jsonSettings =>
                     {
                         // jsonSettings.ContractResolver = new PrivateSetterContractResolver();
@@ -48,7 +58,6 @@ public static class OrleansHostExtensions
                         jsonSettings.DefaultValueHandling = DefaultValueHandling.Populate;
                         jsonSettings.ObjectCreationHandling = ObjectCreationHandling.Replace;
                     };
-                    
                 })
                 .UseMongoDBReminders(options =>
                 {
@@ -60,10 +69,10 @@ public static class OrleansHostExtensions
                     options.ClusterId = configSection.GetValue<string>("ClusterId");
                     options.ServiceId = configSection.GetValue<string>("ServiceId");
                 })
-               // .AddMemoryGrainStorage("PubSubStore")
+                // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
-                
-                .UseDashboard(options => {
+                .UseDashboard(options =>
+                {
                     options.Username = configSection.GetValue<string>("DashboardUserName");
                     options.Password = configSection.GetValue<string>("DashboardPassword");
                     options.Host = "*";
@@ -71,20 +80,28 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
-                .AddOutgoingGrainCallFilter(context=>context.Invoke())
+                .AddOutgoingGrainCallFilter(context => context.Invoke())
                 .AddIncomingGrainCallFilter(async context =>
                 {
                     var fullName = context.Grain.GetType().FullName;
-                    if (fullName != null && fullName.StartsWith("Orleans.Runtime"))
+                    if (fullName != null)
+                    {
+                        if (fullName.StartsWith("Orleans.Runtime") || fullName.Contains("DashboardGrain") ||
+                            fullName.Contains("SiloGrain"))
+                        {
+                            await context.Invoke();
+                            return;
+                        }
+                    }
+                    var correlationId = RequestContext.Get("tracing_id") != null
+                        ? RequestContext.Get("tracing_id").ToString()
+                        : Guid.NewGuid().ToString();
+                    DashExecutionContext.TrySetTraceIdentifier(correlationId);
+                    var tracingId = DashExecutionContext.TraceIdentifier;
+                    using (LogContext.PushProperty("tracing_id", tracingId))
                     {
                         await context.Invoke();
-                        return;
                     }
-                    var correlationId = RequestContext.Get("CorrelationId") != null ? RequestContext.Get("CorrelationId").ToString() : Guid.NewGuid().ToString();
-                    var id = DashExecutionContext.TrySetTraceIdentifier(correlationId);
-                    var tracingId = DashExecutionContext.TraceIdentifier;
-                    LogContext.PushProperty("CorrelationId", correlationId);
-                    await context.Invoke();
                 })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
