@@ -18,7 +18,6 @@ namespace CAServer.ThirdPart.Adaptor;
 public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 {
     private const decimal DefaultAmount = 200;
-    private const string CryptoCacheKey = "Ramp:transak:crypto:";
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
 

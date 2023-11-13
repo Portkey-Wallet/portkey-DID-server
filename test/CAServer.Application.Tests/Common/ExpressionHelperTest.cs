@@ -68,4 +68,20 @@ public class ExpressionHelperTest
                 ["param"] = param
             }).ToString());
     }
+
+    [Fact]
+    public void VersionInRangeTest()
+    {
+        var param = new Dictionary<string, object>()
+        {
+            ["version"] = "1.2.0"
+        };
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("VersionInRange(version, \"1.2.0\", \"1.2.3\")", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("VersionInRange(version, \"1.2.1\", \"1.2.3\")", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("VersionInRange(version, \"1.1.999999\", \"1.2.0\")", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("VersionInRange(version, \"1.1.999998\", \"1.1.999999\")", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("VersionInRange(version, \"1.1.999999\", null)", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("VersionInRange(version, null, \"1.2.0\")", param).ToString());
+        _testOutputHelper.WriteLine(ExpressionHelper.Evaluate("VersionInRange(version, null, null)", param).ToString());
+    }
 }

@@ -14,11 +14,24 @@ public static class ExpressionHelper
     // InList
     private static readonly Func<object, object, bool> InListFunction = (item, list) =>
         list is IEnumerable enumerable && enumerable.OfType<object>().Any(e => e.Equals(item));
-    
-    
+
+    private static readonly Func<string, string, string, bool> VersionInRangeFunction = (version, from, to) =>
+    {
+        var current = ClientVersion.Of(version);
+        if (current == null) return false;
+        
+        var fromVer = ClientVersion.Of(from);
+        var toVer = ClientVersion.Of(to);
+        var bottom = fromVer == null || current > fromVer || current == fromVer;
+        var top = toVer == null || current < toVer || current == toVer;
+        return bottom && top;
+    };
+
+
     private static readonly Dictionary<string, object> ExtensionFunctions = new()
     {
-        ["InList"] = InListFunction
+        ["InList"] = InListFunction,
+        ["VersionInRange"] = VersionInRangeFunction,
     };
 
     public static bool Evaluate(string expression, Dictionary<string, object> variables = null)

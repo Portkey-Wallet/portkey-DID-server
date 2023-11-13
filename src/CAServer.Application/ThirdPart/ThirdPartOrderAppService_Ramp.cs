@@ -44,10 +44,11 @@ public partial class ThirdPartOrderAppService
         // expression params
         var getParamDict = (bool baseCoverage) => new Dictionary<string, object>
         {
-            ["baseCoverage"] = baseCoverage,
-            ["portkeyId"] = (CurrentUser.Id ?? new Guid()).ToString(),
-            ["portkeyIdWhitelist"] = _rampOptions.CurrentValue.PortkeyIdWhiteList,
-            ["deviceType"] = "WebSDK" // TODO nzc
+            [RampConditionParams.BaseCoverage] = baseCoverage,
+            [RampConditionParams.PortkeyId] = (CurrentUser.Id ?? new Guid()).ToString(),
+            [RampConditionParams.PortkeyIdWhitelist] = _rampOptions.CurrentValue.PortkeyIdWhiteList,
+            [RampConditionParams.DeviceType] = DeviceInfoContext.CurrentDeviceInfo?.ClientType,
+            [RampConditionParams.DeviceVersion] = DeviceInfoContext.CurrentDeviceInfo?.Version,
         };
 
         var calculateCoverage = (string providerName, ThirdPartProvider provider) =>
@@ -68,10 +69,10 @@ public partial class ThirdPartOrderAppService
             if (type == OrderTransDirect.SELL.ToString() && !provider.Coverage.OffRamp) return null;
             return provider;
         };
-        
+
         return _rampOptions.CurrentValue.Providers
-                .Where(p => calculateCoverage(p.Key, p.Value) != null)
-                .ToDictionary(kv => kv.Key, kv => kv.Value);
+            .Where(p => calculateCoverage(p.Key, p.Value) != null)
+            .ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
 
@@ -146,18 +147,20 @@ public partial class ThirdPartOrderAppService
             }
 
             // default 
-            var defaultCurrencyOption = (_rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption()).ToFiat();
-            var defaultFiatId = GrainIdHelper.GenerateGrainId(defaultCurrencyOption.Symbol, defaultCurrencyOption.Country);
-            
+            var defaultCurrencyOption =
+                (_rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption()).ToFiat();
+            var defaultFiatId =
+                GrainIdHelper.GenerateGrainId(defaultCurrencyOption.Symbol, defaultCurrencyOption.Country);
+
             // ensure that default fiat in fiat-list
             var defaultFiatExists = fiatDict.TryGetValue(defaultFiatId, out var defaultFiatItem);
             defaultFiatItem = defaultFiatExists
-                ? defaultFiatItem 
+                ? defaultFiatItem
                 : fiatDict.Values.FirstOrDefault(f => f.Symbol == defaultCurrencyOption.Symbol,
-                fiatDict.Values.First());
+                    fiatDict.Values.First());
             var defaultFiat = ObjectMapper.Map<RampFiatItem, DefaultFiatCurrency>(defaultFiatItem);
             defaultFiat.Amount = defaultCurrencyOption.Amount;
-            
+
             return new CommonResponseDto<RampFiatDto>(new RampFiatDto
             {
                 FiatList = fiatDict.Values.ToList(),
@@ -191,20 +194,24 @@ public partial class ThirdPartOrderAppService
             var limitList = (await Task.WhenAll(limitTasks)).Where(limit => limit != null).ToList();
             AssertHelper.NotEmpty(limitList, "Empty limit list");
 
-            rampLimit.Crypto = request.IsBuy() ? null : new CurrencyLimit
-            {
-                Symbol = request.Crypto,
-                MinLimit = limitList.Min(limit => limit.Crypto.MinLimit.SafeToDecimal()).ToString(6),
-                MaxLimit = limitList.Max(limit => limit.Crypto.MaxLimit.SafeToDecimal()).ToString(6)
-            };
+            rampLimit.Crypto = request.IsBuy()
+                ? null
+                : new CurrencyLimit
+                {
+                    Symbol = request.Crypto,
+                    MinLimit = limitList.Min(limit => limit.Crypto.MinLimit.SafeToDecimal()).ToString(6),
+                    MaxLimit = limitList.Max(limit => limit.Crypto.MaxLimit.SafeToDecimal()).ToString(6)
+                };
 
-            rampLimit.Fiat = request.IsSell() ? null : new CurrencyLimit
-            {
-                Symbol = request.Fiat,
-                MinLimit = limitList.Min(limit => limit.Fiat.MinLimit.SafeToDecimal()).ToString(2),
-                MaxLimit = limitList.Max(limit => limit.Fiat.MaxLimit.SafeToDecimal()).ToString(2)
-            };
-            
+            rampLimit.Fiat = request.IsSell()
+                ? null
+                : new CurrencyLimit
+                {
+                    Symbol = request.Fiat,
+                    MinLimit = limitList.Min(limit => limit.Fiat.MinLimit.SafeToDecimal()).ToString(2),
+                    MaxLimit = limitList.Max(limit => limit.Fiat.MaxLimit.SafeToDecimal()).ToString(2)
+                };
+
             return new CommonResponseDto<RampLimitDto>(rampLimit);
         }
         catch (Exception e)
@@ -256,7 +263,7 @@ public partial class ThirdPartOrderAppService
         {
             AssertHelper.IsTrue(!request.IsBuy() || (request.FiatAmount ?? 0) > 0,
                 "Invalid fiat amount");
-            AssertHelper.IsTrue(!request.IsSell() || (request.CryptoAmount ?? 0)  > 0,
+            AssertHelper.IsTrue(!request.IsSell() || (request.CryptoAmount ?? 0) > 0,
                 "Invalid crypto amount");
 
             // invoke provider-adaptors ASYNC
@@ -305,11 +312,13 @@ public partial class ThirdPartOrderAppService
                 {
                     providerRampDetailDto.FiatAmount = null;
                 }
+
                 if (request.IsSell())
                 {
                     providerRampDetailDto.CryptoAmount = null;
                 }
             }
+
             return new CommonResponseDto<RampDetailDto>(new RampDetailDto
             {
                 ProvidersList = detailList
