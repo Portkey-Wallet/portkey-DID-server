@@ -24,8 +24,10 @@ using CAServer.Grains.State.ThirdPart;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
 using CAServer.PrivacyPermission.Dtos;
+using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ValidateOriginChainId.Dtos;
 using Google.Protobuf.Collections;
 using Portkey.Contracts.CA;
 
@@ -92,7 +94,9 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     { e.GuardianList.Guardians.Where(g => g.IsLoginGuardian).Select(g => g.IdentifierHash).ToList() }))
             .ForMember(d => d.ManagerInfos, opt => opt.MapFrom(g => g.ManagerInfos))
             .ForMember(d => d.CaHash,
-                opt => opt.MapFrom(g => g.CaHash));
+                opt => opt.MapFrom(g => g.CaHash))
+            .ForMember(d => d.CreateChainId,
+                opt => opt.MapFrom(g => g.CreateChainId));
 
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoState>().ReverseMap();
         CreateMap<OrderState, OrderGrainDto>();
@@ -108,6 +112,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<BookmarkItem, BookmarkResultDto>();
 
         CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
+        CreateMap<ValidateOriginChainIdState, ValidateOriginChainIdGrainDto>().ReverseMap();
         CreateMap<NftOrderGrainDto, NftOrderState>();
         CreateMap<NftOrderState, NftOrderGrainDto>();
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();

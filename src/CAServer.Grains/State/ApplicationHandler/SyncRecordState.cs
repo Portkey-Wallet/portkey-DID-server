@@ -1,3 +1,5 @@
+using CAServer.ContractEventHandler;
+
 namespace CAServer.Grains.State.ApplicationHandler;
 
 public class SyncRecordState
@@ -17,6 +19,7 @@ public class SyncRecord
     public long ValidateHeight { get; set; }
     public int RetryTimes { get; set; }
     public TransactionInfo ValidateTransactionInfoDto { get; set; }
+    public DataSyncMonitor DataSyncMonitor { get; set; }
 }
 
 public class TransactionInfo

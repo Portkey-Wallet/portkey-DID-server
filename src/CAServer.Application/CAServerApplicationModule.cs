@@ -5,6 +5,7 @@ using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Google;
 using CAServer.Grains;
+using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
 using CAServer.Monitor;
 using CAServer.Options;
@@ -44,7 +45,6 @@ namespace CAServer;
     typeof(AbpSettingManagementApplicationModule),
     typeof(CAServerGrainsModule),
     typeof(CAServerSignatureModule),
-    typeof(CAServerMonitorModule),
     typeof(AbpDistributedLockingModule)
 )]
 public class CAServerApplicationModule : AbpModule
@@ -64,6 +64,7 @@ public class CAServerApplicationModule : AbpModule
         // Configure<RampOptions>(configuration.GetSection("RampOptions"));
 
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
+        Configure<SecurityOptions>(configuration.GetSection("Security"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -122,5 +123,7 @@ public class CAServerApplicationModule : AbpModule
         
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
+        Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
+        Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
     }
 }

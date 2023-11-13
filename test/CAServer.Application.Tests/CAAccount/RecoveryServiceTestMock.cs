@@ -250,6 +250,7 @@ public partial class RecoveryServiceTests
                     new GuardianDto
                     {
                         OriginChainId = "AELF",
+                        ChainId = "AELF",
                         GuardianList = new GuardianBaseListDto
                         {
                             Guardians = new List<GuardianInfoBase>

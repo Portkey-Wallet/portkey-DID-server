@@ -19,4 +19,5 @@ public class NftItem
     public string ImageUrl { get; set; }
     public string TokenContractAddress { get; set; }
     public string ImageLargeUrl { get; set; }
+    public string Decimals { get; set; }
 }
