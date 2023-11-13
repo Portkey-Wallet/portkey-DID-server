@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -304,8 +305,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
             // TODO nzc decimals need to test 
             var fiatLimit = new CurrencyLimit(fiat.Symbol,
-                fiatMinLimit.ToString(2, DecimalHelper.RoundingOption.Ceiling),
-                fiatMaxLimit.ToString(2, DecimalHelper.RoundingOption.Floor));
+                fiatMinLimit.ToString(CultureInfo.InvariantCulture),
+                fiatMaxLimit.ToString(CultureInfo.InvariantCulture));
             var cryptoLimit = new CurrencyLimit(rampLimitRequest.Crypto,
                 (fiatMinLimit / fiatCryptoExchange).ToString(8, DecimalHelper.RoundingOption.Ceiling),
                 (fiatMaxLimit / fiatCryptoExchange).ToString(8, DecimalHelper.RoundingOption.Floor));
@@ -369,14 +370,14 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             
             var rampPrice = _objectMapper.Map<TransakRampPrice, RampPriceDto>(commonPrice);
             rampPrice.ThirdPart = ThirdPart();
-            rampPrice.FiatAmount = fiatAmount.ToString(2, DecimalHelper.RoundingOption.Floor);
+            rampPrice.FiatAmount = fiatAmount.ToString(CultureInfo.InvariantCulture);
             rampPrice.CryptoAmount = cryptoAmount.ToString(8, DecimalHelper.RoundingOption.Floor);
             rampPrice.FeeInfo = new RampFeeInfo
             {
                 NetworkFee = FeeItem.Fiat(rampDetailRequest.Fiat,
-                    networkFee.ToString(2, DecimalHelper.RoundingOption.Ceiling)),
+                    networkFee.ToString(CultureInfo.InvariantCulture)),
                 RampFee = FeeItem.Fiat(rampDetailRequest.Fiat,
-                    transakFee.ToString(2, DecimalHelper.RoundingOption.Ceiling)),
+                    transakFee.ToString(CultureInfo.InvariantCulture)),
             };
             return rampPrice;
         }
@@ -404,9 +405,9 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             providerRampDetail.FeeInfo = new RampFeeInfo
             {
                 NetworkFee = FeeItem.Fiat(rampDetailRequest.Fiat,
-                    price.NetworkFee().ToString(2, DecimalHelper.RoundingOption.Ceiling)),
+                    price.NetworkFee().ToString(CultureInfo.InvariantCulture)),
                 RampFee = FeeItem.Fiat(rampDetailRequest.Fiat,
-                    price.TransakFee().ToString(2, DecimalHelper.RoundingOption.Ceiling)),
+                    price.TransakFee().ToString(CultureInfo.InvariantCulture)),
             };
             return providerRampDetail;
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Common;
@@ -8,9 +9,7 @@ using CAServer.Grains;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -194,14 +193,14 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
              * on-ramp: input-amount is FiatQuantity, which user will pay
              * off-ramp: FiatQuantity = (CryptoQuantity * fiat-crypto-exchange) - fee
              */
-            quoteData.FiatQuantity = input.IsBuy() ? input.Amount : (fiatAmount - rampFee - networkFee).ToString(2);
+            quoteData.FiatQuantity = input.IsBuy() ? input.Amount : (fiatAmount - rampFee - networkFee).ToString(CultureInfo.InvariantCulture);
             quoteData.RampFee = rampFee.ToString("f2");
 
             /*
              * on-ramp: CryptoQuantity = (FiatQuantity - Fee ) / fiat-crypto-exchange
              * off-ramp: input-amount is CryptoQuantity, which user will pay
              */
-            quoteData.CryptoQuantity = input.IsBuy() ? (fiatAmount / cryptoPrice).ToString(8) : input.Amount;
+            quoteData.CryptoQuantity = input.IsBuy() ? (fiatAmount / cryptoPrice).ToString(CultureInfo.InvariantCulture) : input.Amount;
             return new CommonResponseDto<AlchemyOrderQuoteDataDto>(quoteData);
         }
         catch (Exception e)

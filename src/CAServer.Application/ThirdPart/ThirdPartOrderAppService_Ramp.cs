@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -208,8 +209,8 @@ public partial class ThirdPartOrderAppService
                 : new CurrencyLimit
                 {
                     Symbol = request.Fiat,
-                    MinLimit = limitList.Min(limit => limit.Fiat.MinLimit.SafeToDecimal()).ToString(2),
-                    MaxLimit = limitList.Max(limit => limit.Fiat.MaxLimit.SafeToDecimal()).ToString(2)
+                    MinLimit = limitList.Min(limit => limit.Fiat.MinLimit.SafeToDecimal()).ToString(CultureInfo.InvariantCulture),
+                    MaxLimit = limitList.Max(limit => limit.Fiat.MaxLimit.SafeToDecimal()).ToString(CultureInfo.InvariantCulture)
                 };
 
             return new CommonResponseDto<RampLimitDto>(rampLimit);
