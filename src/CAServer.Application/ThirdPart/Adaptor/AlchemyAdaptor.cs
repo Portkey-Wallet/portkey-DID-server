@@ -105,7 +105,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     }
 
 
-    public async Task<Tuple<string, string>> GetRampLimit(string fiat, string crypto, bool isBuy)
+    private async Task<Tuple<string, string>> GetRampLimit(string fiat, string crypto, bool isBuy)
     {
         
         var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(
