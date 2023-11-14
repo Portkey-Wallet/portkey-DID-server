@@ -33,7 +33,6 @@ public class CAVerifierController : CAServerController
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
-    private const int AppCheckFailedCode = 208;
 
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
@@ -119,11 +118,12 @@ public class CAVerifierController : CAServerController
 
         if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
         {
-            HttpContext.Response.StatusCode = AppCheckFailedCode;
-            return null;
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return new VerifierServerResponse();
         }
 
-        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult || !string.IsNullOrWhiteSpace(recaptchaToken) &&
+        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
+            !string.IsNullOrWhiteSpace(recaptchaToken) &&
             response.RcValidResult)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
@@ -164,11 +164,12 @@ public class CAVerifierController : CAServerController
 
         if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
         {
-            HttpContext.Response.StatusCode = AppCheckFailedCode;
-            return null;
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return new VerifierServerResponse();
         }
 
-        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult || !string.IsNullOrWhiteSpace(recaptchaToken) &&
+        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
+            !string.IsNullOrWhiteSpace(recaptchaToken) &&
             response.RcValidResult)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
