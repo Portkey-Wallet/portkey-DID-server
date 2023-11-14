@@ -99,7 +99,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         try
         {
-            var cacheKey = GrainIdHelper.GenerateGrainId(FiatCacheKey + DateTime.UtcNow.ToUtcSeconds(), input.Type);
+            var cacheKey = GrainIdHelper.GenerateGrainId(FiatCacheKey, input.Type);
             var resp = await _fiatListCache.GetOrAddAsync(cacheKey,
                 async () => await _alchemyProvider.GetAlchemyFiatListAsync(input),
                 () => new DistributedCacheEntryOptions
