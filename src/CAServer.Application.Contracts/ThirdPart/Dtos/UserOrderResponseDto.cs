@@ -16,13 +16,21 @@ public class OrderCreatedDto : BasicOrderResult
     public string Id { get; set; }
 
 
-    public CommonResponseDto<string> ToCommonResponse()
+    public CommonResponseDto<OrderCreatedResultDto> ToCommonResponse()
     {
         return Success 
-            ? new CommonResponseDto<string>().Error(Message) 
-            : new CommonResponseDto<string>(Id);
+            ? new CommonResponseDto<OrderCreatedResultDto>(new OrderCreatedResultDto
+            {
+                OrderId = Id
+            }) 
+            : new CommonResponseDto<OrderCreatedResultDto>().Error(Message);
     }
 
+}
+
+public class OrderCreatedResultDto
+{
+    public string OrderId { get; set; }
 }
 
 public class OrdersDto

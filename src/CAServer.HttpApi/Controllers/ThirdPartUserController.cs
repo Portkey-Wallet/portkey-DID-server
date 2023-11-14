@@ -47,7 +47,7 @@ public class ThirdPartUserController : CAServerController
     
     
     [HttpPost("ramp/order")]
-    public async Task<CommonResponseDto<string>> CreateRampOrderAsync(
+    public async Task<CommonResponseDto<OrderCreatedResultDto>> CreateRampOrderAsync(
         CreateUserOrderDto input)
     {
         return (await _thirdPartOrdersAppService.CreateThirdPartOrderAsync(input)).ToCommonResponse();
