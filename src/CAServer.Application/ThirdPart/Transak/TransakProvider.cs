@@ -90,7 +90,7 @@ public class TransakProvider
     {
         try
         {
-            if(_rampOptions?.CurrentValue?.Providers.TryGetValue(ThirdPartNameType.Transak.ToString(), out var provider) == true)
+            if(_rampOptions?.CurrentValue?.Providers?.TryGetValue(ThirdPartNameType.Transak.ToString(), out var provider) == true)
             {
                 var webhookUrl = provider.WebhookUrl;
                 if (webhookUrl.IsNullOrEmpty()) return; 

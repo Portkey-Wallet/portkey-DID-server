@@ -82,6 +82,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         {
             inputOrderDto = await VerifyOrderInputAsync(thirdPartOrder);
             var grainId = inputOrderDto.Id;
+            AssertHelper.NotEmpty(grainId, "Order id empty");
             await using var handle =
                 await _distributedLock.TryAcquireAsync(name: "ramp:orderUpdate:" + grainId);
             AssertHelper.NotNull(handle, "Order update processing ABORT, orderId={OrderId}", grainId.ToString());

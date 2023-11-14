@@ -66,6 +66,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
     public async Task PreHeatCaches()
     {
+        if (_thirdPartOptions?.CurrentValue?.Transak == null) return;
+        
         _logger.LogInformation("Transak adaptor pre heat start");
         var cryptoTask = GetTransakCryptoListWithCache();
         var fiatTask = GetTransakFiatListWithCache(OrderTransDirect.BUY.ToString());

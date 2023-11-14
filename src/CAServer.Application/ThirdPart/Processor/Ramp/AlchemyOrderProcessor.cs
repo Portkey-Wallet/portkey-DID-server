@@ -60,6 +60,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         var orderDto = ObjectMapper.Map<AlchemyOrderUpdateDto, OrderDto>(input);
 
         // mapping ach-order-status to Ramp-order-status
+        orderDto.Id = Guid.Parse(input.MerchantOrderNo);
         orderDto.MerchantName = ThirdPartName();
         orderDto.Status = AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
         return Task.FromResult(orderDto);
