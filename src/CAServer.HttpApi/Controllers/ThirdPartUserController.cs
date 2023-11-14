@@ -38,10 +38,19 @@ public class ThirdPartUserController : CAServerController
         return await _thirdPartOrdersAppService.CreateThirdPartOrderAsync(input);
     }
 
+
     [HttpGet("orders")]
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
+    }
+    
+    
+    [HttpPost("ramp/order")]
+    public async Task<CommonResponseDto<string>> CreateRampOrderAsync(
+        CreateUserOrderDto input)
+    {
+        return (await _thirdPartOrdersAppService.CreateThirdPartOrderAsync(input)).ToCommonResponse();
     }
 
     [HttpGet("ramp/info")]

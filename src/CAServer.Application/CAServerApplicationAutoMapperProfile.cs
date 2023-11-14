@@ -482,7 +482,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RampLimitRequest, RampDetailRequest>().ReverseMap();
         CreateMap<RampPriceDto, ProviderRampDetailDto>().ReverseMap();
         CreateMap<RampFiatItem, DefaultFiatCurrency>().ReverseMap();
-        CreateMap<ThirdPartProvider, RampProviderDto>().ReverseMap();
+        CreateMap<ThirdPartProvider, RampProviderDto>()
+            .ForMember(des => des.CallBackUrl, opt => opt.MapFrom(src => src.WebhookUrl))
+            .ReverseMap();
         CreateMap<ProviderCoverage, RampProviderCoverageDto>()
             .ForMember(des => des.Buy, opt => opt.MapFrom(src => src.OnRamp))
             .ForMember(des => des.Sell, opt => opt.MapFrom(src => src.OffRamp))

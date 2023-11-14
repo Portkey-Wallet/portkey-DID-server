@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Common;
@@ -19,7 +20,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Polly.RateLimit;
-using Volo.Abp;
 using Volo.Abp.DistributedLocking;
 
 namespace CAServer.ThirdPart.Transak;
@@ -46,6 +46,8 @@ public class TransakProvider
     private readonly IHttpProvider _httpProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IImageProcessProvider _imageProcessProvider;
+    public const int RetryCount = 2;
+    public const string ErrorTokenAcesstoken = "Access Token";
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .IgnoreNullValue()
@@ -91,7 +93,8 @@ public class TransakProvider
             if(_rampOptions?.CurrentValue?.Providers.TryGetValue(ThirdPartNameType.Transak.ToString(), out var provider) == true)
             {
                 var webhookUrl = provider.WebhookUrl;
-                AssertHelper.NotEmpty(webhookUrl, "Transak webhookUrl empty in ramp options");
+                if (webhookUrl.IsNullOrEmpty()) return; 
+                
                 await UpdateWebhookAsync(new UpdateWebhookRequest
                 {
                     WebhookURL = webhookUrl
@@ -118,16 +121,17 @@ public class TransakProvider
     /// <summary>
     ///     Get Access Token With Retry
     /// </summary>
+    /// <param name="force"></param>
     /// <param name="timeOutMillis"></param>
     /// <returns></returns>
-    public async Task<string> GetAccessTokenWithRetry(long timeOutMillis = 5000)
+    public async Task<string> GetAccessTokenWithRetry(bool force = false, long timeOutMillis = 5000)
     {
         var stopwatch = Stopwatch.StartNew();
         while (true)
         {
             try
             {
-                return await GetAccessTokenWithCacheAsync(true);
+                return await GetAccessTokenWithCacheAsync(force);
             }
             catch (RateLimitRejectedException ex)
             {
@@ -276,16 +280,37 @@ public class TransakProvider
     ///     update webhook url
     /// </summary>
     /// <param name="input"></param>
-    public async Task UpdateWebhookAsync(UpdateWebhookRequest input)
+    private async Task UpdateWebhookAsync(UpdateWebhookRequest input)
     {
-        // Update the webhook address when the system starts.
-        await _httpProvider.Invoke(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
-            body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
-            header: await GetAccessTokenHeader(),
-            withLog: true
-        );
-    }
+        // retry once
+        for (var i = 0 ; i < RetryCount ; i++)
+        {
+            // Update the webhook address when the system starts.
+            var webHookRes = await _httpProvider.InvokeResponse(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
+                body: JsonConvert.SerializeObject(input),
+                header: await GetAccessTokenHeader(),
+                withLog: true
+            );
+            AssertHelper.NotNull(webHookRes,"transak webhook http response null");
+            //right response return 
+            if (webHookRes.StatusCode.Equals(HttpStatusCode.OK))
+            {
+                return;
+            }
 
+
+            //bad response and special treat the question of token access
+            var content = await webHookRes.Content.ReadAsStringAsync();
+            
+            AssertHelper.IsTrue(!HttpStatusCode.BadRequest.Equals(webHookRes.StatusCode),
+                "transak webhook http response exception,ex is {Content}",content);
+            AssertHelper.IsTrue(content.Contains(ErrorTokenAcesstoken), 
+                "transak webhook http response exception,ex is{Content}",content);
+
+            await GetAccessTokenWithRetry(true);
+        }
+    }
+    
     /// <summary>
     ///     Get order by id
     /// </summary>

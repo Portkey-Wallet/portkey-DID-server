@@ -37,11 +37,24 @@ public interface IHttpProvider : ISingletonDependency
         string body = null,
         Dictionary<string, string> header = null, bool withLog = false, bool debugLog = true);
 
+    Task<HttpResponseMessage> InvokeResponse(HttpMethod method, string url,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null,
+        bool withLog = false, bool debugLog = true);
+
+    Task<HttpResponseMessage> InvokeResponse(string domain, ApiInfo apiInfo,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false,
+        bool debugLog = true);
 }
 
 public class HttpProvider : IHttpProvider
 {
-    private static readonly JsonSerializerSettings DefaultJsonSettings = JsonSettingsBuilder.New()
+    public static readonly JsonSerializerSettings DefaultJsonSettings = JsonSettingsBuilder.New()
             .WithCamelCasePropertyNamesResolver()
             .IgnoreNullValue()
             .Build();
@@ -72,6 +85,15 @@ public class HttpProvider : IHttpProvider
         }
     }
 
+    public async Task<HttpResponseMessage> InvokeResponse(string domain, ApiInfo apiInfo,
+        Dictionary<string, string> pathParams = null,
+        Dictionary<string, string> param = null,
+        string body = null,
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false, bool debugLog = true)
+    {
+        return await InvokeResponse(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, withLog, debugLog);
+    }
+    
     public async Task<string> Invoke(string domain, ApiInfo apiInfo,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
@@ -80,7 +102,7 @@ public class HttpProvider : IHttpProvider
     {
         return await Invoke(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, withLog, debugLog);
     }
-    
+
     public async Task<string> Invoke(HttpMethod method, string url,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
@@ -88,6 +110,23 @@ public class HttpProvider : IHttpProvider
         Dictionary<string, string> header = null,
         bool withLog = false, bool debugLog = true)
     {
+        var response = await InvokeResponse(method, url, pathParams, param, body, header, withLog, debugLog);
+        var content = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException(
+                $"Server [{url}] returned status code {response.StatusCode} : {content}");
+        }
+        return content;
+    }
+
+    public async Task<HttpResponseMessage> InvokeResponse(HttpMethod method, string url,
+            Dictionary<string, string> pathParams = null,
+            Dictionary<string, string> param = null,
+            string body = null,
+            Dictionary<string, string> header = null,
+            bool withLog = false, bool debugLog = true)
+        {
         // url params
         var fullUrl = PathParamUrl(url, pathParams);
         
@@ -126,14 +165,7 @@ public class HttpProvider : IHttpProvider
             _logger.LogDebug(
                 "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, header={Header}",
                 fullUrl, response.StatusCode, time, builder.Query, request.Headers.ToString());
-
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new HttpRequestException(
-                $"Server [{fullUrl}] returned status code {response.StatusCode} : {content}");
-        }
-
-        return content;
+        return response;
     }
     
     
