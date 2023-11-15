@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Client.Dto;
 using AElf.Types;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
+using CAServer.RedPackage.Etos;
 using CAServer.UserBehavior;
 using CAServer.UserBehavior.Etos;
 using Google.Protobuf;
@@ -25,6 +27,7 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IContractAppService
 {
+    Task<TransactionResultDto> CreateRedPackageAsync(RedPackageCreateEto message);
     Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
     Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     Task QueryAndSyncAsync();
@@ -60,6 +63,14 @@ public class ContractAppService : IContractAppService
         _logger = logger;
         _recordsBucketContainer = recordsBucketContainer;
         _indicatorLogger = indicatorLogger;
+    }
+
+    public async Task<TransactionResultDto> CreateRedPackageAsync(RedPackageCreateEto message)
+    {
+        _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
+            JsonConvert.SerializeObject(message, Formatting.Indented));
+        
+        return await _contractProvider.ForwardTransactionAsync(message.ChainId,message.RawTransaction);
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)

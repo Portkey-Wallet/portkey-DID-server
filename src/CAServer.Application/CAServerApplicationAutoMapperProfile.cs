@@ -33,6 +33,7 @@ using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
+using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
@@ -402,6 +403,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
         CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
         CreateMap<CAHolderIndex, HolderInfoResultDto>();
-        
+        CreateMap<RedPackageIndex, RedPackageDetailDto>().ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ReverseMap();
     }
 }

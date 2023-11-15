@@ -46,6 +46,7 @@ public interface IContractProvider
 
     Task<ChainStatusDto> GetChainStatusAsync(string chainId);
     Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false);
+    Task<TransactionResultDto> ForwardTransactionAsync(string chainId,string rawTransaction);
 }
 
 public class ContractProvider : IContractProvider
@@ -102,6 +103,33 @@ public class ContractProvider : IContractProvider
             }
 
             return new T();
+        }
+    }
+
+    public async Task<TransactionResultDto> ForwardTransactionAsync(string chainId, string rawTransaction)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var result = await grain.ForwardTransactionAsync(chainId, rawTransaction);
+
+            _logger.LogInformation(
+                "ForwardTransactionAsync to chain: {id} result:" +
+                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                chainId,
+                result.TransactionId, result.BlockNumber, result.Status, result.Error);
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "ForwardTransactionAsync error, chainId {chainId}",
+                JsonConvert.SerializeObject(chainId, Formatting.Indented));
+            return new TransactionResultDto
+            {
+                Status = TransactionState.Failed,
+                Error = e.Message
+            };
         }
     }
 

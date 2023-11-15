@@ -52,6 +52,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         //ConfigureEsIndexCreation();
         context.Services.AddHostedService<CAServerHostedService>();
         Configure<CAServer.Options.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
