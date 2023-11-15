@@ -16,6 +16,9 @@
         "Coverage": {
           "OnRamp": true,
           "OffRamp": true
+        },
+        "NetworkMapping": {
+          "AELF": "ELF"
         }
       },
       "Transak": {
@@ -32,21 +35,27 @@
         "Coverage": {
           "OnRamp": false,
           "OffRamp": false
+        },
+        "NetworkMapping": {
+          "AELF": "aelf"
         }
       }
     },
     "CryptoList": [
       {
-        "symbol": "ELF",
-        "icon": "https://explorer-test.aelf.io/favicon.test.ico",
-        "decimals": "8",
-        "network": "AELF-AELF",
-        "address": ""
+        "Symbol": "ELF",
+        "Icon": "https://explorer-test.aelf.io/favicon.test.ico",
+        "Decimals": "8",
+        "Network": "AELF",
+        "ChainId": "AELF",
+        "Address": ""
       }
     ],
     "DefaultCurrency": {
       "Crypto": "ELF",
       "CryptoAmount": "400",
+      "Network": "AELF",
+      "ChainId": "AELF",
       "Fiat": "USD",
       "FiatAmount": "200"
     },
