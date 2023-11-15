@@ -140,12 +140,6 @@ public class HubService : CAServerAppService, IHubService
             try
             {
                 var methodName = notifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
-                notifyOrderDto.DisplayStatus =
-                    notifyOrderDto.IsNftOrder()
-                        ? OrderDisplayStatus.ToNftCheckoutRampDisplayStatus(notifyOrderDto.Status)
-                        : notifyOrderDto.TransDirect == TransferDirectionType.TokenBuy.ToString()
-                            ? OrderDisplayStatus.ToOnRampDisplayStatus(notifyOrderDto.Status)
-                            : OrderDisplayStatus.ToOffRampDisplayStatus(notifyOrderDto.Status);
                 await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(notifyOrderDto), clientId, methodName);
             }
             catch (Exception e)

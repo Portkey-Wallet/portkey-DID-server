@@ -483,7 +483,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RampPriceDto, ProviderRampDetailDto>().ReverseMap();
         CreateMap<RampFiatItem, DefaultFiatCurrency>().ReverseMap();
         CreateMap<ThirdPartProvider, RampProviderDto>()
-            .ForMember(des => des.CallBackUrl, opt => opt.MapFrom(src => src.WebhookUrl))
+            .ForMember(des => des.CallbackUrl, opt => opt.MapFrom(src => src.WebhookUrl))
             .ReverseMap();
         CreateMap<ProviderCoverage, RampProviderCoverageDto>()
             .ForMember(des => des.Buy, opt => opt.MapFrom(src => src.OnRamp))
