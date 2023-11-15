@@ -20,8 +20,7 @@ namespace CAServer.BackGround.Provider;
 public interface INftOrderThirdPartNftResultNotifyWorker
 {
     Task Handle();
-
-    Task<bool> IsRunningJob(string key);
+    
 }
 
 public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResultNotifyWorker, ISingletonDependency
@@ -55,7 +54,9 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
     [AutomaticRetry(Attempts = 0)]
     public async Task Handle()
     {
-        if (await IsRunningJob(LockJobKey))
+        await using var handle =
+            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + LockJobKey);
+        if (handle == null)
         {
             _logger.LogWarning("NftOrderThirdPartNftResultNotifyWorker running, skip");
             return;
@@ -117,17 +118,5 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
             _logger.LogInformation("NftOrderThirdPartNftResultNotifyWorker finish, total:{Total}", total);
         }
 
-    }
-
-    public async Task<bool> IsRunningJob(string key)
-    {
-        await using var handle =
-            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + key);
-        if (handle == null)
-        {
-            return true;
-        }
-
-        return false;
     }
 }

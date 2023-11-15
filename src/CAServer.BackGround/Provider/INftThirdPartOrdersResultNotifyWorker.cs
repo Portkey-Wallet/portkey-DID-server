@@ -1,4 +1,5 @@
 using CAServer.BackGround.Consts;
+using CAServer.BackGround.Options;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Options;
 using NUglify.Helpers;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 public interface INftThirdPartOrdersResultNotifyWorker
@@ -25,6 +27,10 @@ public class NftThirdPartOrdersResultNotifyWorker : INftThirdPartOrdersResultNot
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private const string LockJobKey = "NftThirdPartOrdersResultNotifyWorker";
     private readonly INftCheckoutService _nftCheckoutService;
+    private readonly IAbpDistributedLock _distributedLock;
+    private readonly TransactionOptions _transactionOptions;
+
+
 
 
 
@@ -34,13 +40,16 @@ public class NftThirdPartOrdersResultNotifyWorker : INftThirdPartOrdersResultNot
         IOptions<ThirdPartOptions> thirdPartOptions,
         INftOrderThirdPartNftResultNotifyWorker orderThirdPartNftResultNotifyWorker,
         IThirdPartOrderProvider thirdPartOrderProvider,
-        INftCheckoutService nftCheckoutService)
+        INftCheckoutService nftCheckoutService, IAbpDistributedLock distributedLock, 
+        IOptions<TransactionOptions> transactionOptions)
     {
         _logger = logger;
         _thirdPartOptions = thirdPartOptions.Value;
         _orderThirdPartNftResultNotifyWorker = orderThirdPartNftResultNotifyWorker;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _nftCheckoutService = nftCheckoutService;
+        _distributedLock = distributedLock;
+        _transactionOptions = transactionOptions.Value;
     }
 
     /// <summary>
@@ -50,7 +59,9 @@ public class NftThirdPartOrdersResultNotifyWorker : INftThirdPartOrdersResultNot
     public async Task Handle()
     {
         
-        if (await _orderThirdPartNftResultNotifyWorker.IsRunningJob(LockJobKey))
+        await using var handle =
+            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + LockJobKey);
+        if (handle == null)
         {
             _logger.LogWarning("NftThirdPartOrdersResultNotifyWorker running, skip");
             return;
