@@ -88,6 +88,9 @@ public class AlchemyOrderQuoteDataDto
     public string RampFee { get; set; }
     public string NetworkFee { get; set; }
     public string PayWayCode { get; set; }
+    
+    // not from ach
+    public string Network { get; set; }
 }
 
 public class AlchemySignatureResultDto : AlchemyBaseResponseDto<Empty>

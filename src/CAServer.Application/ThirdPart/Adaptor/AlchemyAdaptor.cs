@@ -208,6 +208,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
             var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, ProviderRampDetailDto>(orderQuote.Data);
             rampPrice.ThirdPart = ThirdPart();
+            rampPrice.Network = orderQuote.Data.Network;
             rampPrice.FeeInfo = new RampFeeInfo
             {
                 RampFee = FeeItem.Fiat(orderQuote.Data.Fiat, orderQuote.Data.RampFee),

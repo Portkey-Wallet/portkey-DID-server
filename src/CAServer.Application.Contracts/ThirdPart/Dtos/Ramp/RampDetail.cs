@@ -12,6 +12,8 @@ public class ProviderRampDetailDto
 {
     public string ThirdPart { get; set; }
     public string CryptoAmount { get; set; }
+    
+    public string Network { get; set; }
     public string FiatAmount { get; set; }
     public string Exchange { get; set; }
     public RampFeeInfo FeeInfo { get; set; }

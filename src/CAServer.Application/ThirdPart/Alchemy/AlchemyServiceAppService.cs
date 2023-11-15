@@ -29,6 +29,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
 
     private readonly ILogger<AlchemyServiceAppService> _logger;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
+    private readonly IOptionsMonitor<RampOptions> _rampOptions;
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IDistributedCache<List<AlchemyFiatDto>> _fiatListCache;
     private readonly IDistributedCache<List<AlchemyCryptoDto>> _cryptoListCache;
@@ -44,7 +45,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         ILogger<AlchemyServiceAppService> logger, IDistributedCache<List<AlchemyFiatDto>> fiatListCache,
         IDistributedCache<AlchemyOrderQuoteDataDto> orderQuoteCache,
         IDistributedCache<List<AlchemyFiatDto>> nftFiatListCache,
-        IDistributedCache<List<AlchemyCryptoDto>> cryptoListCache)
+        IDistributedCache<List<AlchemyCryptoDto>> cryptoListCache, IOptionsMonitor<RampOptions> rampOptions)
     {
         _thirdPartOptions = thirdPartOptions;
         _alchemyProvider = alchemyProvider;
@@ -53,11 +54,20 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         _orderQuoteCache = orderQuoteCache;
         _nftFiatListCache = nftFiatListCache;
         _cryptoListCache = cryptoListCache;
+        _rampOptions = rampOptions;
     }
 
     private AlchemyOptions AlchemyOptions()
     {
         return _thirdPartOptions.CurrentValue.Alchemy;
+    }
+    
+    private ThirdPartProvider AlchemyRampOptions()
+    {
+        var exists =
+            _rampOptions.CurrentValue.Providers.TryGetValue(ThirdPartNameType.Alchemy.ToString(),
+                out var achRampOptions);
+        return exists ? achRampOptions : null;
     }
 
     /// get Alchemy login free token
@@ -163,13 +173,16 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             });
             AssertHelper.IsTrue(cryptoList.Success, "Query Alchemy crypto list fail");
             AssertHelper.NotEmpty(cryptoList.Data, "Empty Alchemy crypto list");
+            var mappingNetworkExists = AlchemyRampOptions().NetworkMapping.TryGetValue(input.Network, out var mappingNetwork);
             var cryptoItem = cryptoList.Data
+                .Where(c => !mappingNetworkExists || mappingNetwork == c.Network)
                 .Where(c => c.Crypto == input.Crypto)
                 .FirstOrDefault(c => input.IsBuy() ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0);
             AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found in Alchemy list.", input.Crypto);
 
             input.Network = cryptoItem.Network;
             var quoteData = await GetOrderQuoteWithCacheAsync(input);
+            quoteData.Network = cryptoItem.Network;
             AssertHelper.NotNull(quoteData, "Cached order quote empty");
 
             var fiatListData = await GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto { Type = input.Side });

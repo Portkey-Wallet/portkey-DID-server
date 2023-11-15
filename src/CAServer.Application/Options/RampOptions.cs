@@ -6,8 +6,8 @@ namespace CAServer.Options;
 
 public class RampOptions
 {
-    
-    public Dictionary<string, ThirdPartProvider> Providers { get; set; }
+
+    public Dictionary<string, ThirdPartProvider> Providers { get; set; } = new ();
     public List<string> PortkeyIdWhiteList { get; set; }
     public DefaultCurrencyOption DefaultCurrency { get; set; }
     public List<CryptoItem> CryptoList { get; set; }
@@ -53,8 +53,8 @@ public class DefaultCurrencyOption
 {
     public string Crypto { get; set; } = "ELF";
     public string CryptoAmount { get; set; } = "400";
-    public string Network { get; set; } = "AELF-AELF";
-    
+    public string Network { get; set; } = "AELF";
+    public string ChainId { get; set; } = "AELF";
     public string Fiat { get; set; } = "USD";
     public string FiatAmount { get; set; } = "200";
     public string Country { get; set; } = "US";
@@ -65,7 +65,8 @@ public class DefaultCurrencyOption
         {
             Symbol = Crypto,
             Amount = CryptoAmount,
-            Network = Network
+            Network = Network,
+            ChainId = ChainId
         };
     }
 
