@@ -6,20 +6,8 @@ namespace CAServer.Options;
 
 public class RampOptions
 {
-    private Dictionary<string, ThirdPartProvider> _providers = new();
     
-    // accessor for _providers
-    public Dictionary<string, ThirdPartProvider> Providers
-    { 
-            get 
-            { 
-                // copy a new dict for update
-                var serialized = JsonConvert.SerializeObject(_providers);
-                return JsonConvert.DeserializeObject<Dictionary<string, ThirdPartProvider>>(serialized);
-            }
-            set => _providers = value;
-    }
-    
+    public Dictionary<string, ThirdPartProvider> Providers { get; set; }
     public List<string> PortkeyIdWhiteList { get; set; }
     public DefaultCurrencyOption DefaultCurrency { get; set; }
     public List<CryptoItem> CryptoList { get; set; }

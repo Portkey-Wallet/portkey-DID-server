@@ -287,7 +287,7 @@ public class TransakProvider
         {
             // Update the webhook address when the system starts.
             var webHookRes = await _httpProvider.InvokeResponse(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
-                body: JsonConvert.SerializeObject(input),
+                body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
                 header: await GetAccessTokenHeader(),
                 withLog: true
             );

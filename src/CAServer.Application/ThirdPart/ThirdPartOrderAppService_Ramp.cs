@@ -16,6 +16,7 @@ using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Etos;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp;
 
 namespace CAServer.ThirdPart;
@@ -54,26 +55,31 @@ public partial class ThirdPartOrderAppService
 
         var calculateCoverage = (string providerName, ThirdPartProvider provider) =>
         {
+            
             // if off-ramp support
-            provider.Coverage.OffRamp = ExpressionHelper.Evaluate(
+            var supportOffRamp = ExpressionHelper.Evaluate(
                 _rampOptions.CurrentValue.CoverageExpressions[providerName].OffRamp,
                 getParamDict(provider.Coverage.OffRamp));
 
             // if on-ramp support
-            provider.Coverage.OnRamp = ExpressionHelper.Evaluate(
+            var supportOnRamp = ExpressionHelper.Evaluate(
                 _rampOptions.CurrentValue.CoverageExpressions[providerName].OnRamp,
                 getParamDict(provider.Coverage.OnRamp));
 
             // calculate by input-type
-            if (!provider.Coverage.OffRamp && !provider.Coverage.OnRamp) return null;
-            if (type == OrderTransDirect.BUY.ToString() && !provider.Coverage.OnRamp) return null;
-            if (type == OrderTransDirect.SELL.ToString() && !provider.Coverage.OffRamp) return null;
-            return provider;
+            if (!supportOffRamp && !supportOnRamp) return null;
+            if (type == OrderTransDirect.BUY.ToString() && !supportOnRamp) return null;
+            if (type == OrderTransDirect.SELL.ToString() && !supportOffRamp) return null;
+            var copy = JsonConvert.DeserializeObject<ThirdPartProvider>(JsonConvert.SerializeObject(provider));
+            copy.Coverage.OnRamp = supportOnRamp;
+            copy.Coverage.OffRamp = supportOffRamp;
+            return Tuple.Create(providerName, copy);
         };
 
         return _rampOptions.CurrentValue.Providers
-            .Where(p => calculateCoverage(p.Key, p.Value) != null)
-            .ToDictionary(kv => kv.Key, kv => kv.Value);
+            .Select(kv => calculateCoverage(kv.Key, kv.Value))
+            .Where(t => t != null && t.Item1.NotNullOrEmpty() && t.Item2 != null)
+            .ToDictionary(t => t.Item1, t => t.Item2);
     }
 
 
