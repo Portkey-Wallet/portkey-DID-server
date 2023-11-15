@@ -214,14 +214,13 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     /// </summary>
     /// <param name="grainDto"></param>
     /// <returns></returns>
-    public async Task<GrainResultDto<OrderSettlementGrainDto>> AddUpdateOrderSettlementAsync(OrderSettlementGrainDto grainDto)
+    public async Task AddUpdateOrderSettlementAsync(OrderSettlementGrainDto grainDto)
     {
         var grain = _clusterClient.GetGrain<IOrderSettlementGrain>(grainDto.Id);
         var res = await grain.AddUpdate(grainDto);
         AssertHelper.IsTrue(res.Success, "AddUpdate order settlement grain failed, {Msg}", res.Message);
 
         await _distributedEventBus.PublishAsync(new OrderSettlementEto(res.Data));
-        return res;
     }
 
     /// <summary>
