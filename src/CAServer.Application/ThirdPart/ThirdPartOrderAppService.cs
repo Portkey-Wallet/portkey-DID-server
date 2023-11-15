@@ -127,7 +127,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             orderGrainData.UserId = caHolder?.UserId ?? Guid.Empty;
             orderGrainData.Status = OrderStatusType.Initialized.ToString();
             orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
-            orderGrainData.CryptoPrice =
+            orderGrainData.CryptoQuantity = priceAmount.ToString(CultureInfo.InvariantCulture);
+            orderGrainData.CryptoAmount =
                 (priceAmount / Math.Pow(10, decimalsList.TokenInfo[0].Decimals)).ToString(CultureInfo.InvariantCulture);
             var createResult = await DoCreateOrderAsync(orderGrainData);
             AssertHelper.IsTrue(createResult.Success, "Create main order failed: " + createResult.Message);
@@ -214,14 +215,13 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     /// </summary>
     /// <param name="grainDto"></param>
     /// <returns></returns>
-    public async Task<GrainResultDto<OrderSettlementGrainDto>> AddUpdateOrderSettlementAsync(OrderSettlementGrainDto grainDto)
+    public async Task AddUpdateOrderSettlementAsync(OrderSettlementGrainDto grainDto)
     {
         var grain = _clusterClient.GetGrain<IOrderSettlementGrain>(grainDto.Id);
         var res = await grain.AddUpdate(grainDto);
         AssertHelper.IsTrue(res.Success, "AddUpdate order settlement grain failed, {Msg}", res.Message);
 
         await _distributedEventBus.PublishAsync(new OrderSettlementEto(res.Data));
-        return res;
     }
 
     /// <summary>
@@ -277,7 +277,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public async Task<PageResultDto<OrderDto>> /**/GetThirdPartOrdersAsync(GetUserOrdersDto input)
+    public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         // var userId = input.UserId;
         var userId = CurrentUser.Id == null ? Guid.Empty : CurrentUser.GetId();

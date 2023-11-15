@@ -152,11 +152,11 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         AssertHelper.IsTrue(cryptoExchange > 0, "Invalid ELF exchange");
         AssertHelper.IsTrue(usdtExchange > 0, "Invalid USDT exchange");
         
-        var cryptoPrice = orderGrainDto.CryptoAmount.SafeToDecimal() / (decimal)Math.Pow(10, cryptoToken.TokenInfo[0].Decimals);
+        var cryptoPrice = orderGrainDto.CryptoAmount.SafeToDecimal();
         orderSettlementGrainDto.ExchangeUsdCrypto = cryptoExchange;
         orderSettlementGrainDto.ExchangeUsdUsdt = usdtExchange;
         orderSettlementGrainDto.SettlementCurrency = CommonConstant.USDT;
-        orderSettlementGrainDto.SettlementAmount =cryptoPrice * cryptoExchange / usdtExchange;
+        orderSettlementGrainDto.SettlementAmount = cryptoPrice * cryptoExchange / usdtExchange;
 
         return orderSettlementGrainDto;
     }

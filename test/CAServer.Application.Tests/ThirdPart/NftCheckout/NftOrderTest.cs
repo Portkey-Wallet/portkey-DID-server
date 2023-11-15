@@ -41,6 +41,7 @@ public partial class NftOrderTest : ThirdPartTestBase
     private readonly INftOrderSettlementTransferWorker _nftOrderSettlementTransferWorker;
     private readonly INftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
     private readonly INftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
+    private readonly AlchemyProvider _alchemyProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private static readonly JsonSerializerSettings JsonSettings = JsonSettingsBuilder.New()
         .WithCamelCasePropertyNamesResolver()
@@ -57,6 +58,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
         _nftOrderMerchantCallbackWorker = GetRequiredService<INftOrderMerchantCallbackWorker>();
         _orderStatusProvider = GetRequiredService<IOrderStatusProvider>();
+        _alchemyProvider = GetRequiredService<AlchemyProvider>();
         _testOutputHelper.WriteLine("publicKey = " + MerchantAccount.PublicKey.ToHex());
     }
 
