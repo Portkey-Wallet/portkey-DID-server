@@ -12,7 +12,6 @@ using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.BackGround.Provider;
-//TODO change name cause all is wrong
 public interface INftThirdPartOrdersResultNotifyWorker
 {
     Task Handle();
