@@ -6,20 +6,20 @@ namespace CAServer.Options;
 
 public class RampOptions
 {
-    // private Dictionary<string, ThirdPartProvider> _providers = new();
+    private Dictionary<string, ThirdPartProvider> _providers = new();
     
     // accessor for _providers
-    public Dictionary<string, ThirdPartProvider> Providers { get; set; }
+    public Dictionary<string, ThirdPartProvider> Providers
+    { 
+            get 
+            { 
+                // copy a new dict for update
+                var serialized = JsonConvert.SerializeObject(_providers);
+                return JsonConvert.DeserializeObject<Dictionary<string, ThirdPartProvider>>(serialized);
+            }
+            set => _providers = value;
+    }
     
-    // { 
-        //     get 
-        //     { 
-        //         // copy a new dict for update
-        //         var serialized = JsonConvert.SerializeObject(_providers);
-        //         return JsonConvert.DeserializeObject<Dictionary<string, ThirdPartProvider>>(serialized);
-        //     }
-        //     set => _providers = value;
-    // }*/
     public List<string> PortkeyIdWhiteList { get; set; }
     public DefaultCurrencyOption DefaultCurrency { get; set; }
     public List<CryptoItem> CryptoList { get; set; }
@@ -41,7 +41,8 @@ public class ThirdPartProvider
     public string Logo { get; set; }
     public string WebhookUrl { get; set; }
     public string CountryIconUrl { get; set; }
-    public List<string> PaymentTags { get; set; }
+    public List<string> PaymentTags { get; set; } = new();
+    public Dictionary<string, string> NetworkMapping { get; set; } = new();
     public ProviderCoverage Coverage { get; set; }
 }
 

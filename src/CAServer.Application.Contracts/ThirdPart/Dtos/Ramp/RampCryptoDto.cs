@@ -24,5 +24,6 @@ public class RampCurrencyItem
     public string Icon { get; set; }
     public string Decimals { get; set; }
     public string Network { get; set; }
+    public string ChainId { get; set; }
     public string Address { get; set; }
 }
