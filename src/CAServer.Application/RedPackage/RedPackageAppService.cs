@@ -8,8 +8,10 @@ using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
@@ -168,6 +170,23 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         CheckLuckKing(detail);
         
         return detail; 
+    }
+
+    public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            return new RedPackageConfigOutput()
+            {
+                TokenList = _redPackageOptions.Token
+            };
+        }
+        
+        return new RedPackageConfigOutput()
+        {
+            TokenList = _redPackageOptions.Token
+                .Where(x => string.Equals(x.Symbol, token, StringComparison.OrdinalIgnoreCase)).ToList()
+        };
     }
     
     private void CheckLuckKing(RedPackageDetailDto input)

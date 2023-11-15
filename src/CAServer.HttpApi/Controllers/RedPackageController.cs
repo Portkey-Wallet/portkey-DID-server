@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -42,8 +43,14 @@ public class RedPackageController : CAServerController
     }
 
     [HttpGet("detail")]
-    public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount, int maxResultCount)
+    public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount = 0, int maxResultCount = 0)
     {
         return await _redPackageAppService.GetRedPackageDetailAsync(id, skipCount, maxResultCount);
     }
+    
+    [HttpGet("config")]
+    public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string token)
+    {
+        return await _redPackageAppService.GetRedPackageConfigAsync(token);
+    } 
 }
