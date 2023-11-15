@@ -26,6 +26,7 @@ using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
 using CAServer.Hubs;
+using CAServer.ImUser.Dto;
 using CAServer.IpInfo;
 using CAServer.Message.Dtos;
 using CAServer.Message.Etos;
@@ -396,6 +397,13 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
             .ReverseMap()
             ;
+        
+        CreateMap<CAHolderIndex, HolderInfoWithAvatar>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
+        CreateMap<CAHolderGrainDto, HolderInfoWithAvatar>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
+        CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
+        CreateMap<CAHolderIndex, HolderInfoResultDto>();
         
         CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
             .Ignore(des => des.MerchantName)
