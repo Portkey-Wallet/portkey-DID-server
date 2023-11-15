@@ -1,3 +1,4 @@
+using CAServer.BackGround.Consts;
 using CAServer.BackGround.Options;
 using CAServer.Commons;
 using CAServer.Commons.Dtos;
@@ -19,6 +20,8 @@ namespace CAServer.BackGround.Provider;
 public interface INftOrderThirdPartNftResultNotifyWorker
 {
     Task Handle();
+
+    Task<bool> IsRunningJob(string key);
 }
 
 public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResultNotifyWorker, ISingletonDependency
@@ -30,6 +33,7 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
     private readonly IAbpDistributedLock _distributedLock;
     private readonly ThirdPartOptions _thirdPartOptions;
     private readonly TransactionOptions _transactionOptions;
+    private const string LockJobKey = "NftOrderThirdPartNftResultNotifyWorker";
 
     public NftOrderThirdPartNftResultNotifyWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         INftCheckoutService nftCheckoutService, ILogger<NftOrderThirdPartNftResultNotifyWorker> logger,
@@ -51,17 +55,13 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
     [AutomaticRetry(Attempts = 0)]
     public async Task Handle()
     {
-        await using var handle =
-            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "NftOrderThirdPartNftResultNotifyWorker");
-        if (handle == null)
+        if (await IsRunningJob(LockJobKey))
         {
             _logger.LogWarning("NftOrderThirdPartNftResultNotifyWorker running, skip");
             return;
         }
 
         _logger.LogDebug("NftOrderThirdPartNftResultNotifyWorker start");
-        const int pageSize = 100;
-        const int minNotifyCount = 1;
         var maxNotifyCount = _thirdPartOptions.Timer.NftCheckoutResultThirdPartNotifyCount;
 
         // query ThirdPartNotifyCount > 0 but status is FAIL data
@@ -72,9 +72,9 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
         while (true)
         {
             var pendingData = await _thirdPartOrderProvider.QueryNftOrderPagerAsync(
-                new NftOrderQueryConditionDto(0, pageSize)
+                new NftOrderQueryConditionDto(0, BackGroundConsts.pageSize)
                 {
-                    ThirdPartNotifyCountGtEq = minNotifyCount,
+                    ThirdPartNotifyCountGtEq =  BackGroundConsts.minNotifyCount,
                     ThirdPartNotifyCountLtEq = maxNotifyCount - 1,
                     ThirdPartNotifyStatus = NftOrderWebhookStatus.FAIL.ToString(),
                     WebhookTimeLt = lastWebhookTimeLt
@@ -105,7 +105,10 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
             // All data at 'lastModifyTimeLt' may have reached max notify-count.
             var handleCount = (await Task.WhenAll(callbackResults.ToArray())).Count(resp => resp.Success);
             total += handleCount;
-            if (handleCount == 0) break;
+            if (handleCount == 0)
+            {
+                break;
+            }
         }
 
         
@@ -114,5 +117,17 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
             _logger.LogInformation("NftOrderThirdPartNftResultNotifyWorker finish, total:{Total}", total);
         }
 
+    }
+
+    public async Task<bool> IsRunningJob(string key)
+    {
+        await using var handle =
+            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + key);
+        if (handle == null)
+        {
+            return true;
+        }
+
+        return false;
     }
 }
