@@ -26,7 +26,7 @@ public class DataReportingAppService : CAServerAppService, IDataReportingAppServ
         _options = options.Value;
     }
 
-    public async Task ReportDeviceInfoAsync(UserDeviceReporting input)
+    public async Task ReportDeviceInfoAsync(UserDeviceReportingDto input)
     {
         Logger.LogDebug("reportDeviceInfo, userId: {userId}, deviceId: {deviceId}, data: {data}", input.UserId,
             input.DeviceId, JsonConvert.SerializeObject(input));
@@ -35,7 +35,7 @@ public class DataReportingAppService : CAServerAppService, IDataReportingAppServ
         await _requestProvider.PostAsync(MessagePushConstant.ReportDeviceInfoUri, input);
     }
 
-    public async Task ReportAppStatusAsync(AppStatusReporting input)
+    public async Task ReportAppStatusAsync(AppStatusReportingDto input)
     {
         Logger.LogDebug("reportAppStatus, userId: {userId}, deviceId: {deviceId}, status: {status}", input.UserId,
             input.DeviceId, input.Status.ToString());
@@ -46,13 +46,16 @@ public class DataReportingAppService : CAServerAppService, IDataReportingAppServ
 
     public async Task ExitWalletAsync(string deviceId, Guid userId)
     {
+        // delete
         Logger.LogDebug("exitWallet, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
         await _requestProvider.PostAsync(MessagePushConstant.ExitWalletUri, new { userId, deviceId, _options.Network });
     }
 
     public async Task SwitchNetworkAsync(string deviceId, Guid userId)
     {
+        // off line
         Logger.LogDebug("switchNetwork, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
-        await _requestProvider.PostAsync(MessagePushConstant.SwitchNetworkUri, new { userId, deviceId });
+        await _requestProvider.PostAsync(MessagePushConstant.SwitchNetworkUri,
+            new { userId, deviceId, networkType = _options.Network });
     }
 }

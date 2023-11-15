@@ -21,21 +21,18 @@ public class DataReportingHub : AbpHub
     private readonly IDataReportingAppService _dataReportingAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly IConnectionProvider _connectionProvider;
-    private readonly IDataReportingAuthProvider _dataReportingAuthProvider;
 
     public DataReportingHub(ILogger<DataReportingHub> logger,
         IHubService hubService,
         IDataReportingAppService dataReportingAppService,
         IObjectMapper objectMapper,
-        IConnectionProvider connectionProvider,
-        IDataReportingAuthProvider dataReportingAuthProvider)
+        IConnectionProvider connectionProvider)
     {
         _logger = logger;
         _hubService = hubService;
         _dataReportingAppService = dataReportingAppService;
         _objectMapper = objectMapper;
         _connectionProvider = connectionProvider;
-        _dataReportingAuthProvider = dataReportingAuthProvider;
     }
 
     public override Task OnConnectedAsync()
@@ -57,17 +54,17 @@ public class DataReportingHub : AbpHub
         _logger.LogInformation("clientId={ClientId} connect, userId:{userId}", clientId, id);
     }
 
-    public async Task ReportDeviceInfo(UserDeviceReportingDto input)
+    public async Task ReportDeviceInfo(UserDeviceReportingRequestDto input)
     {
-        var dto = _objectMapper.Map<UserDeviceReportingDto, UserDeviceReporting>(input);
+        var dto = _objectMapper.Map<UserDeviceReportingRequestDto, UserDeviceReportingDto>(input);
         dto.UserId = CurrentUser.GetId();
         _logger.LogInformation("report DeviceInfo, {data}", JsonConvert.SerializeObject(dto));
         await _dataReportingAppService.ReportDeviceInfoAsync(dto);
     }
 
-    public async Task ReportAppStatus(AppStatusReportingDto input)
+    public async Task ReportAppStatus(AppStatusReportingRequestDto input)
     {
-        var dto = _objectMapper.Map<AppStatusReportingDto, AppStatusReporting>(input);
+        var dto = _objectMapper.Map<AppStatusReportingRequestDto, AppStatusReportingDto>(input);
         dto.UserId = CurrentUser.GetId();
         dto.DeviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
 
@@ -106,7 +103,7 @@ public class DataReportingHub : AbpHub
         var connectionId = Context.ConnectionId;
         // offline, can I get userid if disconnected???
         var userId = CurrentUser.GetId();
-        await ReportAppStatus(new AppStatusReportingDto()
+        await ReportAppStatus(new AppStatusReportingRequestDto()
         {
             Status = AppStatus.Offline
         });

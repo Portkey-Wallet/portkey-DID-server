@@ -8,4 +8,5 @@ public class AppStatusReportingDto
     public string DeviceId { get; set; }
     public AppStatus Status { get; set; }
     public NetworkType NetworkType { get; set; }
+    public int UnreadCount { get; set; }
 }
