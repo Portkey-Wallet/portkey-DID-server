@@ -16,4 +16,5 @@ public interface IHubService : IApplicationService
     Task RequestOrderTransferredAsync(string targetClientId, string orderId);
     Task RequestAchTxAddressAsync(string targetClientId, string orderId);
     Task RequestNFTOrderStatusAsync(string clientId, string orderId);
+    Task RequestRampOrderStatus(string clientId, string orderId);
 }
