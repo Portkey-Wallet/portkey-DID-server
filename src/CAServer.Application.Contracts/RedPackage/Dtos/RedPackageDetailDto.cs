@@ -6,6 +6,7 @@ namespace CAServer.RedPackage.Dtos;
 public class RedPackageDetailDto
 {
     public Guid Id { get; set; }
+    public int TotalCount { get; set; }
     public decimal TotalAmount { get; set; }
     public decimal GrabbedAmount { get; set; }
     public decimal MinAmount { get; set; }

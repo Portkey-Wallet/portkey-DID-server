@@ -58,11 +58,13 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return result;
     }
 
-    public Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(int skip, int max)
+    public Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(int skip, int max,Guid userId)
     {
         var result = new GrainResultDto<RedPackageDetailDto>();
         result.Success = true;
         var dto = _objectMapper.Map<RedPackageState, RedPackageDetailDto>(State);
+        dto.TotalCount = State.Items.Count;
+        dto.IsCurrentUserGrabbed = State.Items.Any(item => item.UserId == userId);
         dto.Items = _objectMapper.Map<List<GrabItem>, List<GrabItemDto>>(State.Items.Skip(skip).Take(max).ToList());
         result.Data = dto;
         return Task.FromResult(result);
@@ -112,6 +114,11 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             };
             return result;
         }
+
+        if (State.Status == RedPackageStatus.NotClaimed)
+        {
+            State.Status = RedPackageStatus.Claimed;
+        }
         
         var bucket = GetBucket(userId);
         var grabItem = new GrabItem()
@@ -128,6 +135,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         if (State.Grabbed == State.Count)
         {
             State.Status = RedPackageStatus.FullyClaimed;
+            State.EndTime = DateTimeOffset.Now.ToUnixTimeSeconds();
         }
         
         result.Success = true;

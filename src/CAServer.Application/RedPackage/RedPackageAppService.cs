@@ -165,8 +165,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
         
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(id);
-        var detail =  (await grain.GetRedPackage(skipCount, maxResultCount)).Data;
-        detail.IsCurrentUserGrabbed = grain.IsUserIdGrab(CurrentUser.Id.Value).Result.Data;
+        var detail =  (await grain.GetRedPackage(skipCount, maxResultCount,CurrentUser.Id.Value)).Data;
         CheckLuckKing(detail);
         
         return detail; 
