@@ -188,7 +188,6 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                     };
             }
 
-
             return new TokenBalanceTransferCheckAsyncResultDto
                 { IsSynchronizing = isSynchronizing, AccelerateGuardians = accelerateGuardians };
         }
@@ -206,24 +205,41 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         try
         {
             var guardianInfos = new List<GuardianIndexerInfoDto>();
-            var identifierHashes = new List<string>();
+            var guardianBasicInfos = new List<GuardianBasicInfo>();
             var outputs = holderInfoOutputs?.Where(t => t is { GuardianList: { Guardians.Count: > 0 } }).ToList();
             if (outputs is { Count: 1 })
             {
-                identifierHashes = outputs
-                    .SelectMany(t => t?.GuardianList?.Guardians?.Select(f => f.IdentifierHash?.ToHex()))
+                guardianBasicInfos = outputs
+                    .SelectMany(t => t?.GuardianList?.Guardians?.Select(f => new
+                        GuardianBasicInfo
+                        { IdentifierHash = f.IdentifierHash.ToHex(), VerifierId = f.VerifierId.ToHex() }))
                     .ToList();
             }
             else
             {
-                var guardiansFirst = holderInfoOutputs[0].GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex());
-                var guardiansSecond = holderInfoOutputs[1].GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex());
+                var guardiansFirst = holderInfoOutputs[0].GuardianList.Guardians.Select(t =>
+                    new GuardianBasicInfo
+                        { IdentifierHash = t.IdentifierHash.ToHex(), VerifierId = t.VerifierId.ToHex() });
+                var guardiansSecond = holderInfoOutputs[1].GuardianList.Guardians.Select(t =>
+                    new GuardianBasicInfo
+                        { IdentifierHash = t.IdentifierHash.ToHex(), VerifierId = t.VerifierId.ToHex() });
 
-                identifierHashes.AddRange(guardiansFirst.Where(t => !guardiansSecond.Contains(t)));
-                identifierHashes.AddRange(guardiansSecond.Where(t => !guardiansFirst.Contains(t)));
+                guardianBasicInfos.AddRange(guardiansFirst.Where(t =>
+                {
+                    var info = guardiansSecond.FirstOrDefault(f =>
+                        f.IdentifierHash == t.IdentifierHash && f.VerifierId == t.VerifierId);
+                    return info == null;
+                }).ToList());
+
+                guardianBasicInfos.AddRange(guardiansSecond.Where(t =>
+                {
+                    var info = guardiansFirst.FirstOrDefault(f =>
+                        f.IdentifierHash == t.IdentifierHash && f.VerifierId == t.VerifierId);
+                    return info == null;
+                }));
             }
 
-            if (identifierHashes.IsNullOrEmpty())
+            if (guardianBasicInfos.IsNullOrEmpty())
             {
                 return guardianInfos;
             }
@@ -243,7 +259,14 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 guardianInfos.AddRange(guardians);
             }
 
-            guardianInfos = guardianInfos.Where(t => identifierHashes.Contains(t.IdentifierHash)).ToList();
+            guardianInfos = guardianInfos.Where(t =>
+            {
+                var info = guardianBasicInfos.FirstOrDefault(f =>
+                    f.IdentifierHash == t.IdentifierHash && f.VerifierId == t.VerifierId);
+
+                return info != null;
+            }).ToList();
+
             return guardianInfos;
         }
         catch (Exception e)
@@ -321,5 +344,11 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         }
 
         return transferLimit;
+    }
+
+    class GuardianBasicInfo
+    {
+        public string IdentifierHash { get; set; }
+        public string VerifierId { get; set; }
     }
 }
