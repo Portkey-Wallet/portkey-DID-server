@@ -395,7 +395,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         var typeName =
             ActivityConstants.TypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
-        if (activityDto.TransactionType == "AddGuardian")
+        if (activityDto.TransactionType == ActivityConstants.AddGuardianName)
         {
             var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
@@ -405,7 +405,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             }
             else
             {
-                activityDto.TransactionName = "new name";
+                activityDto.TransactionName = ActivityConstants.NotRegisterChainAddGuardianName;
             }
 
             return;
