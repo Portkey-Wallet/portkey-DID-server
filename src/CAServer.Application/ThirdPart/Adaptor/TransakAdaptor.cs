@@ -55,7 +55,6 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         _rampPrice = rampPrice;
         _logger = logger;
         _objectMapper = objectMapper;
-        PreHeatCaches().GetAwaiter().GetResult();
     }
 
 
