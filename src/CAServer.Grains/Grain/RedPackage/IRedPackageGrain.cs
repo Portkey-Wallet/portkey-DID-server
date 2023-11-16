@@ -9,4 +9,5 @@ public interface IRedPackageGrain : IGrainWithGuidKey
         Guid senderId);
     Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(int skip, int max);
     Task<GrainResultDto<bool>> IsUserIdGrab(Guid userId);
+    Task<GrainResultDto<bool>> DeleteRedPackage();
 }

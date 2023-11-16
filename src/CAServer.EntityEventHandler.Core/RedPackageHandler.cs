@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
-using CAServer.Account;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
-using CAServer.Etos;
-using CAServer.Options;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
@@ -62,7 +60,11 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             }
             await _redPackageRepository.UpdateAsync(redPackageIndex);
+            
+            BackgroundJob.Schedule<RedPackageTask>(x => x.DeleteRedPackageAsync(redPackageIndex.RedPackageId),
+                TimeSpan.FromSeconds(RedPackageConsts.ExpireTime));
 
+            //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();
             imSendMessageRequestDto.SendUuid = redPackageIndex.SendUuid;
             imSendMessageRequestDto.ChannelUuid = redPackageIndex.ChannelUuid;

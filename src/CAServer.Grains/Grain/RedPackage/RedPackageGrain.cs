@@ -76,6 +76,16 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return Task.FromResult(result);
     }
 
+    public async Task<GrainResultDto<bool>> DeleteRedPackage()
+    {
+        var result = new GrainResultDto<bool>();
+        result.Success = true;
+        result.Data = true;
+        State.Status = RedPackageStatus.Expired;
+        await WriteStateAsync();
+        return result;
+    }
+
     private (List<decimal>, int) GenerateBucket(int count, decimal totalAmount, decimal minAmount, RedPackageType type)
     {
         switch (type)

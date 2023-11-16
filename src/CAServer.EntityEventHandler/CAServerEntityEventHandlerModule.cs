@@ -9,9 +9,12 @@ using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
+using CAServer.RedPackage;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Hangfire;
+using Hangfire.Redis.StackExchange;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.Extensions.Caching.Distributed;
@@ -56,6 +59,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
+        ConfigureHangfire(context, configuration);
         
         context.Services.AddSingleton<IClusterClient>(o =>
         {
@@ -77,6 +81,23 @@ public class CAServerEntityEventHandlerModule : AbpModule
                 //.AddSimpleMessageStreamProvider(AElfIndexerApplicationConsts.MessageStreamName)
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
                 .Build();
+        });
+    }
+    
+    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddHangfire(config =>
+        {
+            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
+            {
+                Db = 1
+            });
+        });
+        
+        context.Services.AddHangfireServer(options =>
+        {
+            options.Queues = new[] { "redpackage" };
+            options.WorkerCount = 1;
         });
     }
     
