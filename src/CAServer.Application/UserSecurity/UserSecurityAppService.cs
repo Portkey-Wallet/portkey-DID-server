@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using CAServer.Common;
+using CAServer.Guardian;
 using CAServer.Options;
 using CAServer.Security;
 using CAServer.Security.Dtos;
@@ -14,6 +15,7 @@ using CAServer.UserAssets.Provider;
 using CAServer.UserSecurity.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 
@@ -132,10 +134,12 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         {
             var registryChainGuardianSet = new HashSet<string>();
             var nonRegistryChainGuardianSet = new HashSet<string>();
+            var holderInfoOutputs = new List<GetHolderInfoOutput>();
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
                 var info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
                     chainInfo.Value.ChainId);
+                holderInfoOutputs.Add(info);
                 if (!(info?.GuardianList?.Guardians?.Count > 0))
                 {
                     continue;
@@ -151,6 +155,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 }
             }
 
+            var accelerateGuardians = await GetAccelerateGuardiansAsync(input.CaHash, holderInfoOutputs);
+
             var registryChainGuardianCount = registryChainGuardianSet.Count();
             var nonRegistryChainGuardianCount = nonRegistryChainGuardianSet.Count();
             _logger.LogDebug("CaHash: {caHash} have {COUNT} registry count {non-registry COUNT} non-registry count.",
@@ -160,7 +166,10 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             if (registryChainGuardianCount > 1)
             {
                 return new TokenBalanceTransferCheckAsyncResultDto
-                    { IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing };
+                {
+                    IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing,
+                    AccelerateGuardians = accelerateGuardians
+                };
             }
 
             var assert = await GetUserAssetsAsync(input.CaHash);
@@ -174,16 +183,73 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
                     token.Balance > t)
                     return new TokenBalanceTransferCheckAsyncResultDto
-                        { IsTransferSafe = false, IsOriginChainSafe = false };
+                    {
+                        IsTransferSafe = false, IsOriginChainSafe = false, AccelerateGuardians = accelerateGuardians
+                    };
             }
 
-            return new TokenBalanceTransferCheckAsyncResultDto { IsSynchronizing = isSynchronizing };
+
+            return new TokenBalanceTransferCheckAsyncResultDto
+                { IsSynchronizing = isSynchronizing, AccelerateGuardians = accelerateGuardians };
         }
         catch (Exception e)
         {
             _logger.LogError(e,
                 "An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {caHash}", input.CaHash);
             throw new UserFriendlyException("An exception occurred during GetManagerApprovedListByCaHashAsync");
+        }
+    }
+
+    private async Task<List<GuardianIndexerInfoDto>> GetAccelerateGuardiansAsync(string caHash,
+        List<GetHolderInfoOutput> holderInfoOutputs)
+    {
+        try
+        {
+            var guardianInfos = new List<GuardianIndexerInfoDto>();
+            var identifierHashes = new List<string>();
+            var outputs = holderInfoOutputs?.Where(t => t is { GuardianList: { Guardians.Count: > 0 } }).ToList();
+            if (outputs is { Count: 1 })
+            {
+                identifierHashes = outputs
+                    .SelectMany(t => t?.GuardianList?.Guardians?.Select(f => f.IdentifierHash?.ToHex()))
+                    .ToList();
+            }
+            else
+            {
+                var guardiansFirst = holderInfoOutputs[0].GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex());
+                var guardiansSecond = holderInfoOutputs[1].GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex());
+
+                identifierHashes.AddRange(guardiansFirst.Where(t => !guardiansSecond.Contains(t)));
+                identifierHashes.AddRange(guardiansSecond.Where(t => !guardiansFirst.Contains(t)));
+            }
+
+            if (identifierHashes.IsNullOrEmpty())
+            {
+                return guardianInfos;
+            }
+
+            var holderInfo = await _userSecurityProvider.GetCaHolderInfoAsync(caHash);
+            foreach (var holder in holderInfo.CaHolderInfo)
+            {
+                if (holder?.GuardianList?.Guardians == null || holder.GuardianList.Guardians.Count == 0)
+                {
+                    continue;
+                }
+
+                var guardians = ObjectMapper.Map<List<GuardianInfoBase>, List<GuardianIndexerInfoDto>>(
+                    holder.GuardianList.Guardians);
+
+                guardians.ForEach(t => t.ChainId = holder.ChainId);
+                guardianInfos.AddRange(guardians);
+            }
+
+            guardianInfos = guardianInfos.Where(t => identifierHashes.Contains(t.IdentifierHash)).ToList();
+            return guardianInfos;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "GetAccelerateGuardians error, caHash:{caHash}", caHash);
+            return new List<GuardianIndexerInfoDto>();
         }
     }
 

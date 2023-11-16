@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
+using CAServer.Guardian.Provider;
 using CAServer.Security.Dtos;
 using GraphQL;
 using Nest;
@@ -85,5 +86,21 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
             f.Bool(b => b.Must(mustQuery));
 
         return await _userTransferLimitHistoryRepository.GetAsync(Filter);
+    }
+    
+    public async Task<GuardiansDto> GetCaHolderInfoAsync(string caHash, int skipCount = 0, int maxResultCount = 10)
+    {
+        return await _graphQlHelper.QueryAsync<GuardiansDto>(new GraphQLRequest
+        {
+            Query = @"
+			    query($caHash:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderInfo(dto: {caHash:$caHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                            id,chainId,caHash,caAddress,originChainId,managerInfos{address,extraData},guardianList{guardians{verifierId,identifierHash,salt,isLoginGuardian,type,transactionId}}}
+                }",
+            Variables = new
+            {
+                caHash, skipCount, maxResultCount
+            }
+        });
     }
 }

@@ -418,6 +418,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
         CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
         CreateMap<CAHolderIndex, HolderInfoResultDto>();
-        
+        CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
     }
 }
