@@ -40,6 +40,10 @@ public class InitJobsService : BackgroundService
             // fix uncompleted ELF transfer to merchant
             _recurringJobs.AddOrUpdate<INftOrderSettlementTransferWorker>("HandleUnCompletedNftOrderSettlementTransfer",
                 x => x.Handle(), _transactionOptions.HandleUnCompletedNftOrderPayTransferPeriod);
+            
+            // fix uncompleted ELF order count value
+            _recurringJobs.AddOrUpdate<INftOrdersSettlementWorker>("NftOrdersSettlementWorker",
+                x => x.Handle(), _transactionOptions.NftOrdersSettlementPeriod);
         }
         catch (Exception e)
         {
