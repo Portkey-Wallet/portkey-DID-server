@@ -313,19 +313,13 @@ public partial class ThirdPartOrderAppService
                 .ToList();
             var detailList = (await Task.WhenAll(detailTasks)).Where(detail => detail != null).ToList();
             AssertHelper.NotEmpty(detailList, "Ramp detail list empty");
+            
             foreach (var providerRampDetailDto in detailList)
             {
-                if (request.IsBuy())
-                {
-                    providerRampDetailDto.FiatAmount = null;
-                }
-
-                if (request.IsSell())
-                {
-                    providerRampDetailDto.CryptoAmount = null;
-                }
+                providerRampDetailDto.FiatAmount = request.IsBuy() ? null : providerRampDetailDto.FiatAmount;
+                providerRampDetailDto.CryptoAmount = request.IsSell() ? null : providerRampDetailDto.CryptoAmount;
             }
-
+            
             return new CommonResponseDto<RampDetailDto>(new RampDetailDto
             {
                 ProvidersList = detailList
