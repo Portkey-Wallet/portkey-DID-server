@@ -42,8 +42,8 @@ public class InitJobsService : BackgroundService
                 x => x.Handle(), _transactionOptions.HandleUnCompletedNftOrderPayTransferPeriod);
             
             // fix uncompleted ELF order count value
-            _recurringJobs.AddOrUpdate<NftThirdPartOrdersResultNotifyWorker>("NftThirdPartOrdersResultNotifyWorker",
-                x => x.Handle(), _transactionOptions.NftThirdPartOrdersResultNotifyPeriod);
+            _recurringJobs.AddOrUpdate<INftOrdersSettlementWorker>("NftOrdersSettlementWorker",
+                x => x.Handle(), _transactionOptions.NftOrdersSettlementPeriod);
         }
         catch (Exception e)
         {
