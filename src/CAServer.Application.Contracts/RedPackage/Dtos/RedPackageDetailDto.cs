@@ -10,6 +10,7 @@ public class RedPackageDetailDto
     public decimal GrabbedAmount { get; set; }
     public decimal MinAmount { get; set; }
     public string Memo { get; set; } = string.Empty;
+    public string ChainId { get; set; }
     public string PublicKey { get; set; } = string.Empty;
     public Guid SenderId { get; set; }
     public string SenderAvatar { get; set; } = string.Empty;

@@ -12,4 +12,5 @@ public interface IRedPackageAppService
     Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId);
     Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount, int maxResultCount);
     Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string token);
+    Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input);
 }

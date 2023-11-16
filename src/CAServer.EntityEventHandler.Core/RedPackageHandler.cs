@@ -5,6 +5,7 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.Grains.Grain.RedPackage;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
 using Hangfire;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Newtonsoft.Json;
+using Orleans;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.EntityEventHandler.Core;
@@ -20,6 +22,7 @@ namespace CAServer.EntityEventHandler.Core;
 public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEto>,ITransientDependency
 {
     private readonly IObjectMapper _objectMapper;
+    private readonly IClusterClient _clusterClient;
     private readonly ILogger<RedPackageHandler> _logger;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
     private readonly IImRequestProvider _imRequestProvider;
@@ -27,6 +30,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
     
     public RedPackageHandler(IObjectMapper objectMapper, ILogger<RedPackageHandler> logger,
         INESTRepository<RedPackageIndex, Guid> redPackageRepository, IImRequestProvider imRequestProvider,
+        IClusterClient clusterClient,
         IOptionsSnapshot<RedPackageOptions> redPackageOptions)
     {
         _objectMapper = objectMapper;
@@ -34,6 +38,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
         _redPackageRepository = redPackageRepository;
         _imRequestProvider = imRequestProvider;
         _redPackageOptions = redPackageOptions.Value;
+        _clusterClient = clusterClient;
     }
     
     public async Task HandleEventAsync(RedPackageCreateResultEto eventData)
@@ -54,11 +59,13 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             {
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
+                var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageIndex.RedPackageId);
+                await grain.CancelRedPackage();
+                return;
             }
-            else
-            {
-                redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
-            }
+
+            redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
+            
             await _redPackageRepository.UpdateAsync(redPackageIndex);
             
             BackgroundJob.Schedule<RedPackageTask>(x => x.DeleteRedPackageAsync(redPackageIndex.RedPackageId),

@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CAServer.RedPackage.Dtos;
 
 public class GenerateRedPackageInputDto
 {
-    public string ChainId { get; set; }
-    public string Symbol { get; set; }
+    [Required] public string ChainId { get; set; }
+    [Required] public string Symbol { get; set; }
 }

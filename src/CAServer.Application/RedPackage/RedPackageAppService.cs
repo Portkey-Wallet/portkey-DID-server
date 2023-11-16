@@ -63,7 +63,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             Id = redPackageId,
             PublicKey = await grain.GenerateKey(),
-            Signature = await grain.GenerateSignature($"{redPackageInput.Symbol}{result.MinAmount}"),
+            Signature = await grain.GenerateSignature($"{redPackageInput.Symbol}-{result.MinAmount}-{_redPackageOptions.MaxCount}"),
             MinAmount = result.MinAmount,
             Symbol = redPackageInput.Symbol,
             Decimal = result.Decimal,
@@ -80,7 +80,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             throw new UserFriendlyException("Symbol not found");
         }
 
-        var checkResult = CheckSendRedPackageInput(input, result.MinAmount);
+        var checkResult = CheckSendRedPackageInput(input, result.MinAmount,_redPackageOptions.MaxCount);
         if (!checkResult.Item1)
         {
             throw new UserFriendlyException(checkResult.Item2);
@@ -188,6 +188,28 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 .Where(x => string.Equals(x.Symbol, token, StringComparison.OrdinalIgnoreCase)).ToList()
         };
     }
+
+    public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
+    {
+        if (CurrentUser.Id == null)
+        {
+            return new GrabRedPackageOutputDto()
+            {
+                Result = RedPackageGrabStatus.Fail,
+                ErrorMessage = RedPackageConsts.UserNotExist
+            };
+        }
+        
+        var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
+        var result = await grain.GrabRedPackage(CurrentUser.Id.Value,input.UserCaAddress);
+        return  new GrabRedPackageOutputDto()
+        {
+            Result = result.Data.Result,
+            ErrorMessage = result.Data.ErrorMessage,
+            Amount = result.Data.Amount,
+            Status = result.Data.Status
+        };
+    }
     
     private void CheckLuckKing(RedPackageDetailDto input)
     {
@@ -196,8 +218,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             input.Items?.ForEach(item => item.IsLuckyKing = false);
         }
     }
-    
-    private (bool, string) CheckSendRedPackageInput(SendRedPackageInputDto input, decimal min)
+
+    private (bool, string) CheckSendRedPackageInput(SendRedPackageInputDto input, decimal min, int maxCount)
     {
         var isNotInEnum = !Enum.IsDefined(typeof(RedPackageType), input.Type);
 
@@ -213,12 +235,17 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
         if (input.Count <= 0)
         {
-            return (false, RedPackageConsts.RedPackageCountError);
+            return (false, RedPackageConsts.RedPackageCountSmallError);
         }
 
         if (input.TotalAmount < input.Count * min)
         {
             return (false, RedPackageConsts.RedPackageAmountError);
+        }
+
+        if (input.Count > maxCount)
+        {
+            return (false, RedPackageConsts.RedPackageCountBigError);
         }
 
         if (!_chainOptions.ChainInfos.TryGetValue(input.ChainId, out var chainInfo))

@@ -6,6 +6,7 @@ public class RedPackageOptions
 {
     public string CoverImage { get; set; }
     public string Link { get; set; }
+    public int MaxCount { get; set; }
     public List<RedPackageTokenInfo> Token { get; set; }
 }
 
