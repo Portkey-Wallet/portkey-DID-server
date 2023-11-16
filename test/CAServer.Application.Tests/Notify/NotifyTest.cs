@@ -133,6 +133,23 @@ public partial class NotifyTest : CAServerApplicationTestBase
 
         var createDto = await _notifyAppService.CreateAsync(dto);
 
+        var dtoFalse = new CreateNotifyDto
+        {
+            Title = "Update Portkey",
+            Content = "Update Portkey",
+            AppId = "100001",
+            TargetVersion = "1.2.3",
+            AppVersions = new[] { "1.0.0", "1.1.0" },
+            DeviceTypes = new[] { DeviceType.Android },
+            SendTypes = new[] { NotifySendType.None },
+            ReleaseTime = DateTime.UtcNow,
+            DownloadUrl = "http://127.0.0.1",
+            IsForceUpdate = false,
+            IsApproved = true,
+            NotifyId = 2
+        };
+        var createFalseDto = await _notifyAppService.CreateAsync(dtoFalse);
+
         await _notifyRulesRepository.AddOrUpdateAsync(new NotifyRulesIndex
         {
             AppId = "100001",
@@ -144,6 +161,17 @@ public partial class NotifyTest : CAServerApplicationTestBase
             NotifyId = 1
         });
 
+        await _notifyRulesRepository.AddOrUpdateAsync(new NotifyRulesIndex
+        {
+            AppId = "100001",
+            AppVersions = new[] { "1.0.0", "1.1.0", "1.2.0" },
+            DeviceTypes = new[] { "Android" },
+            SendTypes = new[] { NotifySendType.None },
+            IsApproved = true,
+            Id = createFalseDto.Id,
+            NotifyId = 2
+        });
+
         var result = await _notifyAppService.PullNotifyAsync(new PullNotifyDto()
         {
             DeviceId = "qwer",
@@ -153,5 +181,6 @@ public partial class NotifyTest : CAServerApplicationTestBase
         });
 
         result.Title.ShouldBe("Update Portkey");
+        result.IsForceUpdate.ShouldBeTrue();
     }
 }

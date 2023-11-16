@@ -28,6 +28,7 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Guardian;
 using CAServer.Hubs;
+using CAServer.ImUser.Dto;
 using CAServer.IpInfo;
 using CAServer.Message.Dtos;
 using CAServer.Message.Etos;
@@ -410,5 +411,13 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
+        
+        CreateMap<CAHolderIndex, HolderInfoWithAvatar>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
+        CreateMap<CAHolderGrainDto, HolderInfoWithAvatar>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
+        CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
+        CreateMap<CAHolderIndex, HolderInfoResultDto>();
+        
     }
 }
