@@ -146,9 +146,9 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 {
                     continue;
                 }
-    
+
                 var registryFlag = chainInfo.Value.ChainId == ChainHelper.ConvertChainIdToBase58(info.CreateChainId);
-    
+
                 foreach (var g in info.GuardianList.Guardians)
                 {
                     var guardianName = g.VerifierId + g.IdentifierHash.ToHex();
@@ -156,15 +156,15 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                     else nonRegistryChainGuardianSet.AddIfNotContains(guardianName);
                 }
             }
-    
+
             var accelerateGuardians = await GetAccelerateGuardiansAsync(input.CaHash, holderInfoOutputs);
-    
+
             var registryChainGuardianCount = registryChainGuardianSet.Count();
             var nonRegistryChainGuardianCount = nonRegistryChainGuardianSet.Count();
             _logger.LogDebug("CaHash: {caHash} have {COUNT} registry count {non-registry COUNT} non-registry count.",
                 input.CaHash, registryChainGuardianCount, nonRegistryChainGuardianCount);
             var isSynchronizing = registryChainGuardianCount != nonRegistryChainGuardianCount;
-    
+
             if (registryChainGuardianCount > 1)
             {
                 return new TokenBalanceTransferCheckAsyncResultDto
@@ -173,11 +173,11 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                     AccelerateGuardians = accelerateGuardians
                 };
             }
-    
+
             var assert = await GetUserAssetsAsync(input.CaHash);
             _logger.LogDebug("CaHash: {caHash} have {COUNT} token assert.", input.CaHash,
                 assert.CaHolderSearchTokenNFT.TotalRecordCount);
-    
+
             foreach (var token in assert.CaHolderSearchTokenNFT.Data)
             {
                 // when token is NFT, TokenInfo == null
@@ -189,7 +189,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                         IsTransferSafe = false, IsOriginChainSafe = false, AccelerateGuardians = accelerateGuardians
                     };
             }
-    
+
             return new TokenBalanceTransferCheckAsyncResultDto
                 { IsSynchronizing = isSynchronizing, AccelerateGuardians = accelerateGuardians };
         }
@@ -217,6 +217,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                     chainInfo.Value.ChainId);
 
                 if (chainInfo.Value.ChainId == ChainHelper.ConvertChainIdToBase58(info.CreateChainId) ||
+                    input.CheckTransferSafeChainId.IsNullOrWhiteSpace() ||
                     chainInfo.Value.ChainId == input.CheckTransferSafeChainId)
                 {
                     holderInfoOutputs.Add(info);
@@ -386,7 +387,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
                 var guardianIndexers = ObjectMapper.Map<List<GuardianInfoBase>, List<GuardianIndexerInfoDto>>(
                     holder.GuardianList.Guardians);
-                
+
                 guardianIndexers.ForEach(t => t.ChainId = holder.ChainId);
                 guardiansAll.AddRange(guardianIndexers);
             }

@@ -401,11 +401,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
             if (holderInfo?.OriginChainId != null && holderInfo?.OriginChainId != activityDto.FromChainId)
             {
-                activityDto.TransactionName = typeName;
+                activityDto.TransactionName = ActivityConstants.NotRegisterChainAddGuardianName;
             }
             else
             {
-                activityDto.TransactionName = ActivityConstants.NotRegisterChainAddGuardianName;
+                activityDto.TransactionName = typeName;
             }
 
             return;
