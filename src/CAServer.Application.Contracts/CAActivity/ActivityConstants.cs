@@ -75,5 +75,5 @@ public static class ActivityConstants
 
     public static readonly string Zero = "0";
     public const string AddGuardianName = "AddGuardian";
-    public const string NotRegisterChainAddGuardianName = "AddGuardian2";
+    public const string NotRegisterChainAddGuardianName = "Security upgrade-add guardian";
 }
