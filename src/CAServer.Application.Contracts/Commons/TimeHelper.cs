@@ -50,9 +50,16 @@ public static class TimeHelper
         return utcZoneTime.ToString(pattern, CultureInfo.InvariantCulture);
     }
     
-    public static DateTime ParseFromUtc8(string dateTimeString, string pattern = DefaultPattern)
+    public static DateTime? ParseFromUtc8(string dateTimeString, string pattern = DefaultPattern, DateTime? defaultDateTime = null)
     {
-        return ParseFromZone(dateTimeString, 8, pattern);
+        try
+        {
+            return ParseFromZone(dateTimeString, 8, pattern);
+        }
+        catch (Exception)
+        {
+            return defaultDateTime;
+        }
     }
     
     public static DateTime ParseFromZone(string dateTimeString, int utcOffset, string pattern = DefaultPattern)
