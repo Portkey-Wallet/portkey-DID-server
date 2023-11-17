@@ -17,10 +17,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portkey.Contracts.CA;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.UserSecurity;
 
+[RemoteService(false), DisableAuditing]
 public class UserSecurityAppService : CAServerAppService, IUserSecurityAppService
 {
     private readonly ILogger<UserSecurityAppService> _logger;
@@ -144,6 +146,86 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 {
                     continue;
                 }
+    
+                var registryFlag = chainInfo.Value.ChainId == ChainHelper.ConvertChainIdToBase58(info.CreateChainId);
+    
+                foreach (var g in info.GuardianList.Guardians)
+                {
+                    var guardianName = g.VerifierId + g.IdentifierHash.ToHex();
+                    if (registryFlag) registryChainGuardianSet.AddIfNotContains(guardianName);
+                    else nonRegistryChainGuardianSet.AddIfNotContains(guardianName);
+                }
+            }
+    
+            var accelerateGuardians = await GetAccelerateGuardiansAsync(input.CaHash, holderInfoOutputs);
+    
+            var registryChainGuardianCount = registryChainGuardianSet.Count();
+            var nonRegistryChainGuardianCount = nonRegistryChainGuardianSet.Count();
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} registry count {non-registry COUNT} non-registry count.",
+                input.CaHash, registryChainGuardianCount, nonRegistryChainGuardianCount);
+            var isSynchronizing = registryChainGuardianCount != nonRegistryChainGuardianCount;
+    
+            if (registryChainGuardianCount > 1)
+            {
+                return new TokenBalanceTransferCheckAsyncResultDto
+                {
+                    IsTransferSafe = nonRegistryChainGuardianCount > 1, IsSynchronizing = isSynchronizing,
+                    AccelerateGuardians = accelerateGuardians
+                };
+            }
+    
+            var assert = await GetUserAssetsAsync(input.CaHash);
+            _logger.LogDebug("CaHash: {caHash} have {COUNT} token assert.", input.CaHash,
+                assert.CaHolderSearchTokenNFT.TotalRecordCount);
+    
+            foreach (var token in assert.CaHolderSearchTokenNFT.Data)
+            {
+                // when token is NFT, TokenInfo == null
+                if (token.TokenInfo == null) continue;
+                if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
+                    token.Balance > t)
+                    return new TokenBalanceTransferCheckAsyncResultDto
+                    {
+                        IsTransferSafe = false, IsOriginChainSafe = false, AccelerateGuardians = accelerateGuardians
+                    };
+            }
+    
+            return new TokenBalanceTransferCheckAsyncResultDto
+                { IsSynchronizing = isSynchronizing, AccelerateGuardians = accelerateGuardians };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                "An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {caHash}", input.CaHash);
+            throw new UserFriendlyException("An exception occurred during GetManagerApprovedListByCaHashAsync");
+        }
+    }
+
+    public async Task<TokenBalanceTransferCheckAsyncResultDto> GetTokenBalanceTransferCheckAsync(
+        GetTokenBalanceTransferCheckWithChainIdDto input)
+    {
+        try
+        {
+            CheckTransferSafeChainId(input.CheckTransferSafeChainId);
+            var registryChainGuardianSet = new HashSet<string>();
+            var nonRegistryChainGuardianSet = new HashSet<string>();
+            var holderInfoOutputs = new List<GetHolderInfoOutput>();
+
+            foreach (var chainInfo in _chainOptions.ChainInfos)
+            {
+                var info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
+                    chainInfo.Value.ChainId);
+
+                if (chainInfo.Value.ChainId == ChainHelper.ConvertChainIdToBase58(info.CreateChainId) ||
+                    chainInfo.Value.ChainId == input.CheckTransferSafeChainId)
+                {
+                    holderInfoOutputs.Add(info);
+                }
+
+                if (!(info?.GuardianList?.Guardians?.Count > 0))
+                {
+                    continue;
+                }
 
                 var registryFlag = chainInfo.Value.ChainId == ChainHelper.ConvertChainIdToBase58(info.CreateChainId);
 
@@ -155,10 +237,17 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 }
             }
 
-            var accelerateGuardians = await GetAccelerateGuardiansAsync(input.CaHash, holderInfoOutputs);
-
             var registryChainGuardianCount = registryChainGuardianSet.Count();
             var nonRegistryChainGuardianCount = nonRegistryChainGuardianSet.Count();
+
+            var holderInfoOutput = holderInfoOutputs.FirstOrDefault(t => t.CreateChainId > 0);
+            var originalChainId = await GetOriginalChainIdAsync(holderInfoOutput?.CreateChainId ?? 0, input.CaHash);
+            if (input.CheckTransferSafeChainId == originalChainId)
+            {
+                return await GetOriginChainCheckAsync(registryChainGuardianCount, input.CaHash);
+            }
+
+            var accelerateGuardians = await GetAccelerateGuardiansAsync(input.CaHash, holderInfoOutputs);
             _logger.LogDebug("CaHash: {caHash} have {COUNT} registry count {non-registry COUNT} non-registry count.",
                 input.CaHash, registryChainGuardianCount, nonRegistryChainGuardianCount);
             var isSynchronizing = registryChainGuardianCount != nonRegistryChainGuardianCount;
@@ -199,30 +288,69 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         }
     }
 
+    private async Task<TokenBalanceTransferCheckAsyncResultDto> GetOriginChainCheckAsync(int registryChainGuardianCount,
+        string caHash)
+    {
+        if (registryChainGuardianCount > 1)
+        {
+            return new TokenBalanceTransferCheckAsyncResultDto();
+        }
+
+        var assert = await GetUserAssetsAsync(caHash);
+        foreach (var token in assert.CaHolderSearchTokenNFT.Data)
+        {
+            // when token is NFT, TokenInfo == null
+            if (token.TokenInfo == null) continue;
+            if (_securityOptions.TokenBalanceTransferThreshold.TryGetValue(token.TokenInfo.Symbol, out var t) &&
+                token.Balance > t)
+                return new TokenBalanceTransferCheckAsyncResultDto
+                {
+                    IsTransferSafe = false, IsOriginChainSafe = false
+                };
+        }
+
+        return new TokenBalanceTransferCheckAsyncResultDto();
+    }
+
+    private void CheckTransferSafeChainId(string transferSafeChainId)
+    {
+        if (!transferSafeChainId.IsNullOrWhiteSpace() &&
+            !_chainOptions.ChainInfos.ContainsKey(transferSafeChainId))
+        {
+            throw new UserFriendlyException("invalid CheckTransferSafeChainId");
+        }
+    }
+
+    private async Task<string> GetOriginalChainIdAsync(int createChainId, string caHash)
+    {
+        if (createChainId > 0)
+        {
+            return ChainHelper.ConvertChainIdToBase58(createChainId);
+        }
+
+        var holderInfos = await _userSecurityProvider.GetCaHolderInfoAsync(caHash);
+        var holderInfo = holderInfos.CaHolderInfo.FirstOrDefault(t => !t.OriginChainId.IsNullOrEmpty());
+        return holderInfo?.OriginChainId;
+    }
+
     private async Task<List<GuardianIndexerInfoDto>> GetAccelerateGuardiansAsync(string caHash,
         List<GetHolderInfoOutput> holderInfoOutputs)
     {
         try
         {
             var guardianInfos = new List<GuardianIndexerInfoDto>();
-            var guardianBasicInfos = new List<GuardianBasicInfo>();
+            var guardianBasicInfos = new List<Portkey.Contracts.CA.Guardian>();
             var outputs = holderInfoOutputs?.Where(t => t is { GuardianList: { Guardians.Count: > 0 } }).ToList();
             if (outputs is { Count: 1 })
             {
                 guardianBasicInfos = outputs
-                    .SelectMany(t => t?.GuardianList?.Guardians?.Select(f => new
-                        GuardianBasicInfo
-                        { IdentifierHash = f.IdentifierHash.ToHex(), VerifierId = f.VerifierId.ToHex() }))
+                    .SelectMany(t => t?.GuardianList?.Guardians)
                     .ToList();
             }
             else
             {
-                var guardiansFirst = holderInfoOutputs[0].GuardianList.Guardians.Select(t =>
-                    new GuardianBasicInfo
-                        { IdentifierHash = t.IdentifierHash.ToHex(), VerifierId = t.VerifierId.ToHex() });
-                var guardiansSecond = holderInfoOutputs[1].GuardianList.Guardians.Select(t =>
-                    new GuardianBasicInfo
-                        { IdentifierHash = t.IdentifierHash.ToHex(), VerifierId = t.VerifierId.ToHex() });
+                var guardiansFirst = holderInfoOutputs[0].GuardianList.Guardians;
+                var guardiansSecond = holderInfoOutputs[1].GuardianList.Guardians;
 
                 guardianBasicInfos.AddRange(guardiansFirst.Where(t =>
                 {
@@ -244,7 +372,11 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                 return guardianInfos;
             }
 
+            var guardians = ObjectMapper.Map<List<Portkey.Contracts.CA.Guardian>, List<GuardianIndexerInfoDto>>(
+                guardianBasicInfos);
+
             var holderInfo = await _userSecurityProvider.GetCaHolderInfoAsync(caHash);
+            var guardiansAll = new List<GuardianIndexerInfoDto>();
             foreach (var holder in holderInfo.CaHolderInfo)
             {
                 if (holder?.GuardianList?.Guardians == null || holder.GuardianList.Guardians.Count == 0)
@@ -252,22 +384,30 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
                     continue;
                 }
 
-                var guardians = ObjectMapper.Map<List<GuardianInfoBase>, List<GuardianIndexerInfoDto>>(
+                var guardianIndexers = ObjectMapper.Map<List<GuardianInfoBase>, List<GuardianIndexerInfoDto>>(
                     holder.GuardianList.Guardians);
-
-                guardians.ForEach(t => t.ChainId = holder.ChainId);
-                guardianInfos.AddRange(guardians);
+                
+                guardianIndexers.ForEach(t => t.ChainId = holder.ChainId);
+                guardiansAll.AddRange(guardianIndexers);
             }
 
-            guardianInfos = guardianInfos.Where(t =>
+            foreach (var guardian in guardians)
             {
-                var info = guardianBasicInfos.FirstOrDefault(f =>
-                    f.IdentifierHash == t.IdentifierHash && f.VerifierId == t.VerifierId);
+                var guardianInfo = guardiansAll?.FirstOrDefault(
+                    f =>
+                        f.IdentifierHash == guardian.IdentifierHash && f.VerifierId == guardian.VerifierId &&
+                        !f.TransactionId.IsNullOrEmpty());
 
-                return info != null;
-            }).ToList();
+                if (guardianInfo == null)
+                {
+                    continue;
+                }
 
-            return guardianInfos;
+                guardian.ChainId = guardianInfo.ChainId;
+                guardian.TransactionId = guardianInfo.TransactionId;
+            }
+
+            return guardians;
         }
         catch (Exception e)
         {
