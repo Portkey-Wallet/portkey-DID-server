@@ -29,27 +29,7 @@ public class OrderExportResponseDto
     {
         OrderList = orderList;
     }
-
-    public string ToJsonText()
-    {
-        var jsonBuilder = new StringBuilder();
-        var stringWriter = new StringWriter(jsonBuilder);
-        stringWriter.WriteLine("[");
-        for (var i = 0; i < OrderList.Count; i++)
-        {
-            var order = OrderList[i];
-            stringWriter.Write(JsonConvert.SerializeObject(order));
-            if (i < OrderList.Count - 1)
-                stringWriter.Write(",");
-            stringWriter.WriteLine();
-        }
-
-        stringWriter.WriteLine("]");
-        stringWriter.Flush();
-        return jsonBuilder.ToString();
-    }
-
-
+    
     public string ToCsvText()
     {
         var csvBuilder = new StringBuilder();

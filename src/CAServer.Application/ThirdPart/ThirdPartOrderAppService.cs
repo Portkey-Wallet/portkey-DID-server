@@ -202,14 +202,13 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     /// <returns></returns>
     public async Task<OrderSettlementGrainDto> GetOrderSettlementAsync(Guid orderId)
     {
-        
         var grain = _clusterClient.GetGrain<IOrderSettlementGrain>(orderId);
         var res = await grain.GetById(orderId);
         AssertHelper.IsTrue(res.Success, "Get order settlement grain failed, {Msg}", res.Message);
 
         return res.Data;
     }
-    
+
     /// <summary>
     ///     add or updat order settlement
     /// </summary>
@@ -296,8 +295,27 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     /// <param name="condition"></param>
     /// <param name="orderSectionEnums"></param>
     /// <returns></returns>
-    public async Task<List<OrderDto>> ExportOrderList(GetThirdPartOrderConditionDto condition, params OrderSectionEnum?[] orderSectionEnums)
+    public async Task<List<OrderDto>> ExportOrderList(GetThirdPartOrderConditionDto condition,
+        params OrderSectionEnum?[] orderSectionEnums)
     {
+        var lastModifyTimeLt = TimeHelper.ParseFromUtc8(condition.LastModifyTimeLt, TimeHelper.DatePattern);
+        var lastModifyTimeGt = TimeHelper.ParseFromUtc8(condition.LastModifyTimeGt, TimeHelper.DatePattern);
+        AssertHelper.NotNull(lastModifyTimeLt, "Param 'endTime' value '{Time}' invalid", condition.LastModifyTimeLt);
+        AssertHelper.NotNull(lastModifyTimeGt, "Param 'startTime' value '{Time}' invalid", condition.LastModifyTimeGt);
+        foreach (var type in condition.TransDirectIn)
+        {
+            var typeEnum = Enum.TryParse<TransferDirectionType>(type, out _);
+            AssertHelper.IsTrue(typeEnum, "Param 'type' value '{Type}' invalid", type);
+        }
+        foreach (var status in condition.StatusIn)
+        {
+            var stateEnum = Enum.TryParse<OrderStatusType>(status, out _);
+            AssertHelper.IsTrue(stateEnum, "Param 'status' value '{Status}' invalid", status);
+        }
+        
+        condition.LastModifyTimeLt = lastModifyTimeLt?.AddDays(1).ToUtcMilliSeconds().ToString();
+        condition.LastModifyTimeGt = lastModifyTimeGt?.ToUtcMilliSeconds().ToString();
+
         var orderDtos = new List<OrderDto>();
         while (true)
         {
@@ -321,8 +339,12 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     /// <returns></returns>
     public SetupCode GenerateGoogleAuthCode(string key, string userName, string accountTitle)
     {
+        const string defaultName = "noName";
+        const string defaultTitle = "orderExport";
+        AssertHelper.NotNull(key, "Param key required");
         var tfa = new TwoFactorAuthenticator();
-        return tfa.GenerateSetupCode(userName, accountTitle, HashHelper.ComputeFrom(key).ToByteArray(), 5);
+        return tfa.GenerateSetupCode(userName.DefaultIfEmpty(defaultName), accountTitle.DefaultIfEmpty(defaultTitle),
+            HashHelper.ComputeFrom(key).ToByteArray(), 5);
     }
 
     /// <summary>
