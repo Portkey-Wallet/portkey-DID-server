@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
@@ -29,6 +30,7 @@ public interface IContractProvider
 {
     Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId,
         Hash loginGuardian, string caHash);
+
     Task<int> GetChainIdAsync(string chainId);
     Task<long> GetBlockHeightAsync(string chainId);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string txId);
@@ -50,6 +52,8 @@ public interface IContractProvider
 
     Task<ChainStatusDto> GetChainStatusAsync(string chainId);
     Task<BlockDto> GetBlockByHeightAsync(string chainId, long height, bool includeTransactions = false);
+
+    Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfosInput syncHolderInfosInput);
 }
 
 public class ContractProvider : IContractProvider
@@ -426,6 +430,27 @@ public class ContractProvider : IContractProvider
         {
             _logger.LogError(e, "SyncTransaction to Chain: {id} Error: {input}", chainId,
                 JsonConvert.SerializeObject(input.ToString(), Formatting.Indented));
+            return new TransactionResultDto();
+        }
+    }
+
+    public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfosInput input)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var result = await grain.SyncTransactionAsync(chainId, input);
+
+            _logger.LogInformation(
+                "SyncHolderInfos to chain: {id} result:" +
+                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "SyncHolderInfos to Chain: {id}, data: {data}", chainId, input.ToString());
             return new TransactionResultDto();
         }
     }
