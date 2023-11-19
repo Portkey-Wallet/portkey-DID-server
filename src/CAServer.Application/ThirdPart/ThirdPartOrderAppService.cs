@@ -302,17 +302,24 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         var lastModifyTimeGt = TimeHelper.ParseFromUtc8(condition.LastModifyTimeGt, TimeHelper.DatePattern);
         AssertHelper.NotNull(lastModifyTimeLt, "Param 'endTime' value '{Time}' invalid", condition.LastModifyTimeLt);
         AssertHelper.NotNull(lastModifyTimeGt, "Param 'startTime' value '{Time}' invalid", condition.LastModifyTimeGt);
-        foreach (var type in condition.TransDirectIn)
-        {
-            var typeEnum = Enum.TryParse<TransferDirectionType>(type, out _);
-            AssertHelper.IsTrue(typeEnum, "Param 'type' value '{Type}' invalid", type);
-        }
-        foreach (var status in condition.StatusIn)
-        {
-            var stateEnum = Enum.TryParse<OrderStatusType>(status, out _);
-            AssertHelper.IsTrue(stateEnum, "Param 'status' value '{Status}' invalid", status);
-        }
         
+        if (!condition.TransDirectIn.IsNullOrEmpty())
+        {
+            foreach (var type in condition.TransDirectIn)
+            {
+                var typeEnum = Enum.TryParse<TransferDirectionType>(type, out _);
+                AssertHelper.IsTrue(typeEnum, "Param 'type' value '{Type}' invalid", type);
+            }
+        }
+        if (!condition.StatusIn.IsNullOrEmpty())
+        {
+            foreach (var status in condition.StatusIn)
+            {
+                var stateEnum = Enum.TryParse<OrderStatusType>(status, out _);
+                AssertHelper.IsTrue(stateEnum, "Param 'status' value '{Status}' invalid", status);
+            }
+        }
+
         condition.LastModifyTimeLt = lastModifyTimeLt?.AddDays(1).ToUtcMilliSeconds().ToString();
         condition.LastModifyTimeGt = lastModifyTimeGt?.ToUtcMilliSeconds().ToString();
 
