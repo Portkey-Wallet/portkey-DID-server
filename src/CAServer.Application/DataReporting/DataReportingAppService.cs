@@ -58,4 +58,11 @@ public class DataReportingAppService : CAServerAppService, IDataReportingAppServ
         await _requestProvider.PostAsync(MessagePushConstant.SwitchNetworkUri,
             new { userId, deviceId, networkType = _options.Network });
     }
+
+    public async Task OnDisconnectedAsync(string deviceId, Guid userId)
+    {
+        Logger.LogDebug("disconnected, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
+        await _requestProvider.PostAsync(MessagePushConstant.SwitchNetworkUri,
+            new { userId, deviceId, networkType = _options.Network });
+    }
 }

@@ -56,6 +56,7 @@ public class DataReportingHub : AbpHub
 
     public async Task ReportDeviceInfo(UserDeviceReportingRequestDto input)
     {
+        _logger.LogInformation("report DeviceInfo, {data}", JsonConvert.SerializeObject(input));
         var dto = _objectMapper.Map<UserDeviceReportingRequestDto, UserDeviceReportingDto>(input);
         dto.UserId = CurrentUser.GetId();
         _logger.LogInformation("report DeviceInfo, {data}", JsonConvert.SerializeObject(dto));
@@ -64,6 +65,7 @@ public class DataReportingHub : AbpHub
 
     public async Task ReportAppStatus(AppStatusReportingRequestDto input)
     {
+        _logger.LogInformation("report ReportAppStatus, {data}", JsonConvert.SerializeObject(input));
         var dto = _objectMapper.Map<AppStatusReportingRequestDto, AppStatusReportingDto>(input);
         dto.UserId = CurrentUser.GetId();
         dto.DeviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
@@ -94,21 +96,15 @@ public class DataReportingHub : AbpHub
         }
 
         var userId = CurrentUser.GetId();
-        await _dataReportingAppService.ExitWalletAsync(Context.ConnectionId, CurrentUser.GetId());
+        await _dataReportingAppService.SwitchNetworkAsync(Context.ConnectionId, CurrentUser.GetId());
         _logger.LogInformation("SwitchNetwork, deviceId:{deviceId}, userId:{userId}", deviceId, userId);
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var connectionId = Context.ConnectionId;
-        // offline, can I get userid if disconnected???
-        var userId = CurrentUser.GetId();
-        await ReportAppStatus(new AppStatusReportingRequestDto()
-        {
-            Status = AppStatus.Offline
-        });
-
         var clientId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
+        await _dataReportingAppService.OnDisconnectedAsync(Context.ConnectionId, CurrentUser.GetId());
+        
         _hubService.UnRegisterClient(Context.ConnectionId);
         _logger.LogInformation("disconnect, clientId:{clientId}", clientId ?? "");
     }
