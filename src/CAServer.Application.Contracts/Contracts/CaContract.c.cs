@@ -144,6 +144,7 @@ namespace Portkey.Contracts.CA {
       return new LoginGuardianAdded
       {
         CaAddress = CaAddress,
+        IsCreateHolder = IsCreateHolder,
       };
     }
   }
@@ -391,6 +392,27 @@ namespace Portkey.Contracts.CA {
     }
   }
 
+  public partial class RemovedToCurrentVerifierIdMapperAdded : aelf::IEvent<RemovedToCurrentVerifierIdMapperAdded>
+  {
+    public global::System.Collections.Generic.IEnumerable<RemovedToCurrentVerifierIdMapperAdded> GetIndexed()
+    {
+      return new List<RemovedToCurrentVerifierIdMapperAdded>
+      {
+      new RemovedToCurrentVerifierIdMapperAdded
+      {
+        MapperList = MapperList
+      },
+      };
+    }
+
+    public RemovedToCurrentVerifierIdMapperAdded GetNonIndexed()
+    {
+      return new RemovedToCurrentVerifierIdMapperAdded
+      {
+      };
+    }
+  }
+
   public partial class CAServerAdded : aelf::IEvent<CAServerAdded>
   {
     public global::System.Collections.Generic.IEnumerable<CAServerAdded> GetIndexed()
@@ -468,6 +490,10 @@ namespace Portkey.Contracts.CA {
       new CAHolderSynced
       {
         GuardiansRemoved = GuardiansRemoved
+      },
+      new CAHolderSynced
+      {
+        CreateChainId = CreateChainId
       },
       };
     }

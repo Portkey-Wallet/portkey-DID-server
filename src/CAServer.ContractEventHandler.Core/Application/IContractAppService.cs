@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -38,7 +39,7 @@ public interface IContractAppService
     Task QueryAndSyncAsync();
 
     Task InitializeIndexAsync();
-    
+
     Task SyncOriginChainIdAsync(UserLoginEto userLoginEto);
     // Task UpdateOriginChainIdAsync(string originChainId, string syncChainId ,UserLoginEto userLoginEto);
     // Task InitializeQueryRecordIndexAsync();
@@ -62,6 +63,7 @@ public class ContractAppService : IContractAppService
     private readonly IClusterClient _clusterClient;
     private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IUserAssetsProvider _userAssetsProvider;
+    private readonly ISyncHolderInfoProvider _syncHolderInfoProvider;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -70,7 +72,8 @@ public class ContractAppService : IContractAppService
         IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptions<SyncOriginChainIdOptions> syncOriginChainIdOptions,
         IUserAssetsProvider userAssetsProvider,
-        IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache)
+        IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
+        ISyncHolderInfoProvider syncHolderInfoProvider)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -83,6 +86,7 @@ public class ContractAppService : IContractAppService
         _indicatorLogger = indicatorLogger;
         _monitorLogProvider = monitorLogProvider;
         _distributedCache = distributedCache;
+        _syncHolderInfoProvider = syncHolderInfoProvider;
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
         _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
@@ -285,7 +289,7 @@ public class ContractAppService : IContractAppService
         _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "",
             MonitorTag.SocialRecover);
     }
-    
+
     public async Task SyncOriginChainIdAsync(UserLoginEto userLoginEto)
     {
         if (!await NeedSyncStatusAsync(userLoginEto.UserId))
@@ -321,7 +325,7 @@ public class ContractAppService : IContractAppService
         }
 
         //this will take very long time
-       await UpdateOriginChainIdAsync(originChainId, syncChainId, userLoginEto);
+        await UpdateOriginChainIdAsync(originChainId, syncChainId, userLoginEto);
     }
 
     public async Task UpdateOriginChainIdAsync(string originChainId, string syncChainId, UserLoginEto userLoginEto)
@@ -356,7 +360,7 @@ public class ContractAppService : IContractAppService
 
             holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
 
-            
+
             await validateOriginChainIdGrain.SetStatusSuccessAsync();
             _logger.LogInformation(
                 "UpdateOriginChainIdAsync success,originChainId {originChainId}:{holderInfoOutput.CreateChainId}, syncChainId:{syncChainId}:{syncHolderInfoOutput.CreateChainId},userId {uid}",
@@ -455,10 +459,12 @@ public class ContractAppService : IContractAppService
         }
         else
         {
-            if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, result.CaHash.ToHex(), validateHeight))
+            if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, result.CaHash.ToHex(),
+                    validateHeight))
             {
                 return false;
             }
+
             await _contractProvider.MainChainCheckSideChainBlockIndexAsync(chainId, validateHeight);
 
             syncHolderInfoInput =
@@ -485,7 +491,8 @@ public class ContractAppService : IContractAppService
             syncSucceed = syncResult.Status == TransactionState.Mined;
             if (syncSucceed)
             {
-                await UpdateSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, result.CaHash.ToHex(), validateHeight);
+                await UpdateSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, result.CaHash.ToHex(),
+                    validateHeight);
             }
         }
 
@@ -544,8 +551,6 @@ public class ContractAppService : IContractAppService
 
         try
         {
-            var failedRecords = new List<SyncRecord>();
-
             var records = await _recordsBucketContainer.GetValidatedRecordsAsync(chainId);
 
             if (records.IsNullOrEmpty())
@@ -557,6 +562,7 @@ public class ContractAppService : IContractAppService
             var recordsAmount = records.Count;
 
             _logger.LogInformation("Found {count} records to sync on chain: {id}", records.Count, chainId);
+            var recordDic = _syncHolderInfoProvider.RecordDic.FirstOrDefault(t => t.Key == chainId);
 
             if (chainId == ContractAppServiceConstant.MainChainId)
             {
@@ -575,39 +581,9 @@ public class ContractAppService : IContractAppService
                             record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
                             continue;
                         }
-                        _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
 
-                        var syncHolderInfoInput =
-                            await _contractProvider.GetSyncHolderInfoInputAsync(chainId,
-                                record.ValidateTransactionInfoDto);
-                        var result = await _contractProvider.SyncTransactionAsync(info.ChainId, syncHolderInfoInput);
-
+                        recordDic.Value.Enqueue(record);
                         records.Remove(record);
-
-                        if (result.Status != TransactionState.Mined)
-                        {
-                            _logger.LogError(
-                                "{type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
-                                record.ChangeType, chainId, record.CaHash, result.Error,
-                                JsonConvert.SerializeObject(syncHolderInfoInput));
-
-                            record.RetryTimes++;
-                            record.ValidateHeight = long.MaxValue;
-                            record.ValidateTransactionInfoDto = new TransactionInfo();
-
-                            failedRecords.Add(record);
-                        }
-                        else
-                        {
-                            await _monitorLogProvider.FinishAsync(record, info.ChainId, result.BlockNumber);
-                            await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId,
-                                result.BlockNumber,
-                                record.ChangeType);
-                            _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
-                                record.ChangeType, chainId, record.CaHash);
-                            await UpdateSyncHolderVersionAsync(info.ChainId, record.CaHash, record.ValidateHeight);
-                        }
-
                         record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
                     }
                 }
@@ -622,64 +598,21 @@ public class ContractAppService : IContractAppService
 
                 while (record != null)
                 {
-                    if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash, record.ValidateHeight))
+                    if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash,
+                            record.ValidateHeight))
                     {
                         records.Remove(record);
                         record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
                         continue;
                     }
-                    _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
 
-                    var retryTimes = 0;
-                    var mainHeight =
-                        await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
-                    var indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
-
-                    while (indexMainChainBlock <= mainHeight && retryTimes < _indexOptions.IndexTimes)
-                    {
-                        await Task.Delay(_indexOptions.IndexDelay);
-                        indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
-                        retryTimes++;
-                    }
-
-                    var syncHolderInfoInput =
-                        await _contractProvider.GetSyncHolderInfoInputAsync(chainId, record.ValidateTransactionInfoDto);
-                    var result =
-                        await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
-                            syncHolderInfoInput);
-
+                    recordDic.Value.Enqueue(record);
                     records.Remove(record);
-
-                    if (result.Status != TransactionState.Mined)
-                    {
-                        _logger.LogError(
-                            "{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
-                            record.ChangeType, chainId, record.CaHash, result.Error,
-                            JsonConvert.SerializeObject(syncHolderInfoInput));
-
-                        record.RetryTimes++;
-                        record.ValidateHeight = long.MaxValue;
-                        record.ValidateTransactionInfoDto = new TransactionInfo();
-
-                        failedRecords.Add(record);
-                    }
-                    else
-                    {
-                        await _monitorLogProvider.FinishAsync(record, ContractAppServiceConstant.MainChainId,
-                            result.BlockNumber);
-                        await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight,
-                            ContractAppServiceConstant.MainChainId,
-                            result.BlockNumber,
-                            record.ChangeType);
-                        await UpdateSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash, record.ValidateHeight);
-                        _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
-                            record.ChangeType, chainId, record.CaHash);
-                    }
-
                     record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
                 }
             }
 
+            var failedRecords = await _syncHolderInfoProvider.SyncHolderInfoAsync();
             await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, failedRecords);
             await _recordsBucketContainer.SetValidatedRecordsAsync(chainId, records);
 
@@ -984,21 +917,22 @@ public class ContractAppService : IContractAppService
             _logger.LogError(e, "add height index monitor log error.");
         }
     }
-    
+
     private async Task<bool> CheckSyncHolderVersionAsync(string targetChainId, string caHash, long updateVersion)
     {
         var cacheKey = $"{ContractEventConstants.SyncHolderUpdateVersionCachePrefix}:{targetChainId}:{caHash}";
         var lastUpdateVersion = await _distributedCache.GetAsync(cacheKey);
         if (!lastUpdateVersion.IsNullOrWhiteSpace() && long.Parse(lastUpdateVersion) > updateVersion)
         {
-            _logger.LogInformation("skip syncHolder targetChainId: {chainId}, caHash :{caHash},lastUpdateVersion:{version},curVersion:{curVersion}", 
+            _logger.LogInformation(
+                "skip syncHolder targetChainId: {chainId}, caHash :{caHash},lastUpdateVersion:{version},curVersion:{curVersion}",
                 targetChainId, caHash, lastUpdateVersion, updateVersion);
             return false;
         }
 
         return true;
     }
-    
+
     private async Task UpdateSyncHolderVersionAsync(string targetChainId, string caHash, long updateVersion)
     {
         var cacheKey = $"{ContractEventConstants.SyncHolderUpdateVersionCachePrefix}:{targetChainId}:{caHash}";
