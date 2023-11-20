@@ -4,5 +4,5 @@ namespace CAServer.RedPackage.Dtos;
 
 public class RedPackageConfigOutput
 {
-    public List<RedPackageTokenInfo> TokenList { get; set; }
+    public Dictionary<string, List<RedPackageTokenInfo>> TokenInfo { get; set; }
 }

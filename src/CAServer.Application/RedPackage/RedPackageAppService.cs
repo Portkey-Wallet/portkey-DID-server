@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
@@ -48,7 +49,12 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
-        var result = _redPackageOptions.Token.Where(x => string.Equals(x.Symbol, redPackageInput.Symbol, StringComparison.OrdinalIgnoreCase))
+        if (!_redPackageOptions.TokenInfo.TryGetValue(redPackageInput.ChainId, out var chainInfo))
+        {
+            throw new UserFriendlyException("Chain not found");
+        }
+        
+        var result = chainInfo.Where(x => string.Equals(x.Symbol, redPackageInput.Symbol, StringComparison.OrdinalIgnoreCase))
             .ToList().FirstOrDefault();
         if (result == null)
         {
@@ -73,7 +79,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
-        var result = _redPackageOptions.Token.Where(x => string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase))
+        if (!_redPackageOptions.TokenInfo.TryGetValue(input.ChainId, out var chainInfo))
+        {
+            throw new UserFriendlyException("Chain not found");
+        }
+        var result = chainInfo.Where(x => string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase))
             .ToList().FirstOrDefault();
         if (result == null)
         {
@@ -171,21 +181,24 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         return detail; 
     }
 
-    public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string token)
+    public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
     {
-        if (string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(token) && string.IsNullOrEmpty(chainId))
         {
             return new RedPackageConfigOutput()
             {
-                TokenList = _redPackageOptions.Token
+                TokenInfo = _redPackageOptions.TokenInfo
             };
         }
         
-        return new RedPackageConfigOutput()
+        if (!_redPackageOptions.TokenInfo.TryGetValue(chainId, out var chainInfo))
         {
-            TokenList = _redPackageOptions.Token
-                .Where(x => string.Equals(x.Symbol, token, StringComparison.OrdinalIgnoreCase)).ToList()
-        };
+            throw new UserFriendlyException("Chain not found");
+        }
+        
+        var result = new RedPackageConfigOutput();
+        result.TokenInfo.Add(chainId, chainInfo.Where(x => x.Symbol == token).ToList());
+        return result;
     }
 
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)

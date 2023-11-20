@@ -49,9 +49,10 @@ public class RedPackageController : CAServerController
     }
     
     [HttpGet("config")]
-    public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string token)
+    public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string chainId,
+        [CanBeNull] string token)
     {
-        return await _redPackageAppService.GetRedPackageConfigAsync(token);
+        return await _redPackageAppService.GetRedPackageConfigAsync(chainId,token);
     } 
     
     [HttpPost("grab")]
