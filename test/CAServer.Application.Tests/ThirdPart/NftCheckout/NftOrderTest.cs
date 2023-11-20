@@ -12,6 +12,7 @@ using CAServer.Commons;
 using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
@@ -69,6 +70,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(MockContractProvider());
         services.AddSingleton(MockGraphQlProvider());
+        services.AddSingleton(MockTokenPrivider());
 
         // mock http
         services.AddSingleton(MockHttpFactory(_testOutputHelper,
@@ -139,6 +141,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             MerchantName = MerchantName,
             MerchantOrderId = orderId,
             MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
+            UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
             WebhookUrl = "http://127.0.0.1:9200/myWebhook",
             PaymentSymbol = "ELF",
             PaymentAmount = "100000000",
@@ -237,6 +240,23 @@ public partial class NftOrderTest : ThirdPartTestBase
     }
 
     [Fact]
+    public async Task ExportTest()
+    {
+        await AlchemyOrderUpdateTest();
+
+        var orderList = await _thirdPartOrderAppService.ExportOrderList(new GetThirdPartOrderConditionDto(0, 100)
+        {
+            LastModifyTimeGt = "2023-11-01",
+            LastModifyTimeLt = DateTime.UtcNow.AddDays(1).ToUtc8String(TimeHelper.DatePattern),
+            TransDirectIn = new List<string>{ TransferDirectionType.NFTBuy.ToString() },
+            StatusIn = new List<string>{ OrderStatusType.Finish.ToString() }
+        }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
+
+        orderList.ShouldNotBeNull();
+        orderList.Count.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task AlchemyOrderUpdateTest_InvalidStatus()
     {
         await CreateTest();
@@ -320,6 +340,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             MerchantName = MerchantName,
             MerchantOrderId = orderId,
             MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
+            UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
             WebhookUrl = "http://127.0.0.1:9200/myWebhookFail",
             PaymentSymbol = "ELF",
             PaymentAmount = "100000000",

@@ -432,6 +432,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.ExpireTime, opt => opt.MapFrom(src => src.ExpireTime.ToUtcMilliSeconds()))
             .ForMember(des => des.CreateTime, opt => opt.MapFrom(src => src.CreateTime.ToUtcMilliSeconds()));
 
+        CreateMap<OrderSettlementGrainDto, OrderSettlementIndex>().ReverseMap();
         CreateMap<NftOrderGrainDto, NftOrderIndex>();
         CreateMap<NftOrderIndex, NftOrderQueryResponseDto>();
         CreateMap<NftOrderSectionDto, NftOrderQueryResponseDto>();
