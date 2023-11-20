@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Client.Dto;
 using AElf.Types;
 using CAServer.Commons;
 using CAServer.Etos;
@@ -14,6 +15,7 @@ using CAServer.Guardian.Provider;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
 using CAServer.UserAssets.Provider;
+using CAServer.RedPackage.Etos;
 using CAServer.UserBehavior;
 using CAServer.UserBehavior.Etos;
 using Google.Protobuf;
@@ -33,6 +35,7 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IContractAppService
 {
+    Task<TransactionResultDto> CreateRedPackageAsync(RedPackageCreateEto message);
     Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
     Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     Task QueryAndSyncAsync();
@@ -87,6 +90,14 @@ public class ContractAppService : IContractAppService
         _clusterClient = clusterClient;
         _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
         _userAssetsProvider = userAssetsProvider;
+    }
+
+    public async Task<TransactionResultDto> CreateRedPackageAsync(RedPackageCreateEto message)
+    {
+        _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
+            JsonConvert.SerializeObject(message, Formatting.Indented));
+        
+        return await _contractProvider.ForwardTransactionAsync(message.ChainId,message.RawTransaction);
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
@@ -187,6 +198,15 @@ public class ContractAppService : IContractAppService
         registerResult.CaHash = outputGetHolderInfo.CaHash.ToHex();
 
         await _distributedEventBus.PublishAsync(registerResult);
+        await _distributedEventBus.PublishAsync(
+            new UserBehaviorEto()
+            {
+                ChainId = createHolderDto.ChainId,
+                CaAddress = registerResult.CaAddress,
+                CaHash = registerResult.CaHash,
+                Action = UserBehaviorAction.Register,
+                SessionId = message.Id.ToString()
+            });
 
         _logger.LogInformation("Register state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(registerResult, Formatting.Indented));

@@ -7,6 +7,7 @@ using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
 using CAServer.Monitor;
 using CAServer.Options;
+using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
@@ -86,6 +87,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
+        Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();

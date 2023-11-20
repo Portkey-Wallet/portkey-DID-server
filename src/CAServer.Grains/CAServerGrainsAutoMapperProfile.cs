@@ -20,10 +20,12 @@ using CAServer.Grains.State.CrossChain;
 using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
 using CAServer.Grains.State.PrivacyPermission;
+using CAServer.Grains.State.RedPackage;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
 using CAServer.PrivacyPermission.Dtos;
 using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ValidateOriginChainId.Dtos;
 using Google.Protobuf.Collections;
@@ -110,6 +112,10 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<BookmarkItem, BookmarkResultDto>();
 
         CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
+        CreateMap<RedPackageState, SendRedPackageInputDto>().ReverseMap();
+        CreateMap<RedPackageState, RedPackageDetailDto>().ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ReverseMap();
+        CreateMap<GrabItem, GrabItemDto>().ReverseMap();
         CreateMap<ValidateOriginChainIdState, ValidateOriginChainIdGrainDto>().ReverseMap();
     }
 }
