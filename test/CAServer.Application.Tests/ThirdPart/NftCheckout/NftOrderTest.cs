@@ -103,6 +103,7 @@ public partial class NftOrderTest : ThirdPartTestBase
             MerchantName = MerchantName,
             MerchantOrderId = orderId,
             WebhookUrl = "http://127.0.0.1:9200/myWebhook",
+            UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
             PaymentSymbol = "ELF",
             PaymentAmount = "100000000",
             MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),

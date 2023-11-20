@@ -41,9 +41,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             },
             OrderExportAuth = new OrderExportAuth
             {
-                Key = "test",
-                AccountTitle = "testTitle",
-                UserName = "UserNameTest"
+                Key = "test"
             },
             Timer = new ThirdPartTimerOptions()
             {

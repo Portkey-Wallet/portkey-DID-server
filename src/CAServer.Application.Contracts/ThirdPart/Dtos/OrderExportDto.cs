@@ -95,8 +95,8 @@ public class OrderExportResponseDto
                 order.Status,
 
                 // settlement
+                order.OrderSettlementSection?.ExchangeUsdCrypto ?? Empty,
                 order.OrderSettlementSection?.ExchangeUsdUsdt ?? Empty,
-                order.OrderSettlementSection?.SettlementUsdt ?? Empty,
                 order.OrderSettlementSection?.SettlementCurrency ?? Empty,
                 order.OrderSettlementSection?.SettlementAmount ?? Empty,
 
