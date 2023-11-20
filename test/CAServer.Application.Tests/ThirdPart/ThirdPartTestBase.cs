@@ -6,6 +6,7 @@ using AElf.Client.Dto;
 using AElf.Types;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Options;
+using CAServer.Tokens.Provider;
 using GraphQL;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -96,6 +97,14 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             .Setup(p => p.GenerateTransferTransaction(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new Tuple<string, Transaction>(PendingTxId, new Transaction()));
         
+        mockContractProvider
+            .Setup(p => p.GetChainStatus(It.IsAny<string>()))
+            .ReturnsAsync(new ChainStatusDto
+            {
+                BestChainHeight = 1000,
+                LastIrreversibleBlockHeight = 960,
+            });
+        
         return mockContractProvider.Object;
     }
 
@@ -107,6 +116,27 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             .ReturnsAsync(100);
 
         return mockGraphQlClient.Object;
+    }
+
+    protected ITokenProvider MockTokenPrivider()
+    {
+        
+        var tokenProvider = new Mock<ITokenProvider>();
+        tokenProvider
+            .Setup(p => p.GetTokenInfosAsync(It.IsAny<string>(), "ELF", It.IsAny<string >(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new IndexerTokens
+            {
+                TokenInfo = new List<IndexerToken>
+                {
+                    new ()
+                    {
+                        Symbol = "ELF",
+                        Decimals = 8,
+                    }
+                }
+            });
+
+        return tokenProvider.Object;
     }
 
 }
