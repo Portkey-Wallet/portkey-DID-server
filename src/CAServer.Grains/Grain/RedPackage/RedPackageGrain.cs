@@ -29,7 +29,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
     }
 
     public async Task<GrainResultDto<RedPackageDetailDto>> CreateRedPackage(SendRedPackageInputDto input, int decimalIn,
-        decimal minAmount,
+        long minAmount,
         Guid senderId)
     {
         var result = new GrainResultDto<RedPackageDetailDto>();
@@ -40,7 +40,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             return result;
         }
 
-        var bucketResult = GenerateBucket(input.Count, decimal.Parse(input.TotalAmount), minAmount, input.Type);
+        var bucketResult = GenerateBucket(input.Count, long.Parse(input.TotalAmount), minAmount, input.Type);
         State = _objectMapper.Map<SendRedPackageInputDto, RedPackageState>(input);
         State.Status = RedPackageStatus.NotClaimed;
         State.CreateTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -49,6 +49,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         State.Decimal = decimalIn;
         State.BucketNotClaimed = bucketResult.Item1;
         State.BucketClaimed = new List<BucketItem>();
+        State.Items = new List<GrabItem>();
         State.SenderId = senderId;
 
         await WriteStateAsync();
@@ -193,7 +194,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return bucket;
     }
 
-    private (List<BucketItem>, int) GenerateBucket(int count, decimal totalAmount, decimal minAmount, RedPackageType type)
+    private (List<BucketItem>, int) GenerateBucket(int count, long totalAmount, long minAmount, RedPackageType type)
     {
         switch (type)
         {
@@ -208,7 +209,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return (new List<BucketItem>(), 0);
     }
 
-    private (List<BucketItem>, int) GenerateFixBucket(int count, decimal totalAmount)
+    private (List<BucketItem>, int) GenerateFixBucket(int count, long totalAmount)
     {
         var avg = totalAmount / count;
         var bucket = new List<BucketItem>();
@@ -236,11 +237,11 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return (bucket, 0);
     }
 
-    private (List<BucketItem>, int) GenerateRandomBucket(int count, decimal totalAmount, decimal minAmount)
+    private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount)
     {
         Random random = new Random();
         int luckyKingIndex = 0;
-        decimal luckyKingAmount = minAmount;
+        long luckyKingAmount = minAmount;
         var bucket = new List<BucketItem>();
         var rest = totalAmount;
         for (var i = 0; i < count; i++)
@@ -260,8 +261,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             }
 
             double randomNumber = random.NextDouble();
-            decimal max = (rest / (count - i)) * 2;
-            decimal money = Math.Max(minAmount, (decimal)randomNumber * max);
+            long max = (rest / (count - i)) * 2;
+            long money = Math.Max(minAmount, (long)(randomNumber * max));
             bucket[i].Amount += money;
             if (bucket[i].Amount > luckyKingAmount)
             {

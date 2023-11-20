@@ -12,4 +12,5 @@ public class GenerateRedPackageOutputDto
     public string Symbol { get; set; }
     public int Decimal { get; set; }
     public string ChainId { get; set; }
+    public long ExpireTime { get; set; }
 }

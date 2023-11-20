@@ -16,6 +16,8 @@ public partial class RedPackageTest : CAServerApplicationTestBase
 {
     private readonly IRedPackageAppService _redPackageAppService;
     protected ICurrentUser _currentUser;
+    private readonly Guid userId = Guid.NewGuid();
+    private readonly Guid redPackageId = Guid.NewGuid();
     
     public RedPackageTest()
     {
@@ -63,7 +65,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         
         //min error
         input = NewSendRedPackageInputDto();
-        input.TotalAmount = 1;
+        input.TotalAmount = "1";
         await Assert.ThrowsAsync<UserFriendlyException>(async () =>
         {
             await _redPackageAppService.SendRedPackageAsync(input);
@@ -95,7 +97,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         
         //amount error
         input = NewSendRedPackageInputDto();
-        input.TotalAmount = 10;
+        input.TotalAmount = "10";
         await Assert.ThrowsAsync<UserFriendlyException>(async () =>
         {
             await _redPackageAppService.SendRedPackageAsync(input);
@@ -124,11 +126,87 @@ public partial class RedPackageTest : CAServerApplicationTestBase
             await _redPackageAppService.SendRedPackageAsync(input);
         });
         
-        var uid = Guid.NewGuid();
-        Login(uid);
+        Login(userId);
         input = NewSendRedPackageInputDto();
         var result = await _redPackageAppService.SendRedPackageAsync(input);
         result.SessionId.ShouldNotBe(Guid.Empty);
+        
+        //get result
+        var res = await _redPackageAppService.GetCreationResultAsync(result.SessionId);
+        res.Status.ShouldBe(RedPackageTransactionStatus.Processing);
+    }
+
+    [Fact]
+    public async Task GetCreationResultAsync_test()
+    {
+        var res = await _redPackageAppService.GetCreationResultAsync(Guid.NewGuid());
+        res.Status.ShouldBe(RedPackageTransactionStatus.Fail);
+    }
+    
+    [Fact]
+    public async Task GetRedPackageDetailAsync_test()
+    {
+        var res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, 0, 0);
+        res.Id.ShouldBe(Guid.Empty);
+        
+        Login(userId);
+        var input = NewSendRedPackageInputDto();
+        await _redPackageAppService.SendRedPackageAsync(input);
+        res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, -1, -1);
+        res.Id.ShouldBe(redPackageId);
+    }
+
+    [Fact]
+    public async Task GetRedPackageConfigAsync_test()
+    {
+        var res = await _redPackageAppService.GetRedPackageConfigAsync(null, null);
+        res.TokenInfo.Count.ShouldBeGreaterThan(0);
+        
+        res = await _redPackageAppService.GetRedPackageConfigAsync("AELF", "ELF");
+        res.TokenInfo.Count.ShouldBeGreaterThan(0);
+        
+        res = await _redPackageAppService.GetRedPackageConfigAsync("AELF-1", "ELF");
+        res.TokenInfo.Count.ShouldBe(0);
+    }
+    
+    [Fact]
+    public async Task GrabRedPackageAsync_test()
+    {
+        var input = new GrabRedPackageInputDto()
+        {
+            Id = redPackageId,
+            UserCaAddress = "xxxxxxx"
+        };
+        
+        var res = await _redPackageAppService.GrabRedPackageAsync(input);
+        res.Result.ShouldBe(RedPackageGrabStatus.Fail);
+        
+        Login(userId);
+        var sendinput = NewSendRedPackageInputDto();
+        await _redPackageAppService.SendRedPackageAsync(sendinput);
+        res = await _redPackageAppService.GrabRedPackageAsync(input);
+        res.Result.ShouldBe(RedPackageGrabStatus.Success);
+        var detailDto = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, 0, 10);
+        detailDto.GrabbedAmount.ShouldBe(res.Amount);
+        detailDto.Grabbed.ShouldBe(1);
+        detailDto.Status.ShouldBe(RedPackageStatus.Claimed);
+        detailDto.Items.Count.ShouldBe(1);
+        
+        res = await _redPackageAppService.GrabRedPackageAsync(input);
+        res.Result.ShouldBe(RedPackageGrabStatus.Fail);
+
+        var newId = Guid.NewGuid();
+        sendinput.Id = newId;
+        sendinput.TotalAmount = "100";
+        sendinput.Count = 10;
+        sendinput.Type = RedPackageType.Fixed;
+        await _redPackageAppService.SendRedPackageAsync(sendinput);
+        input.Id = newId;
+        res = await _redPackageAppService.GrabRedPackageAsync(input);
+        res.Result.ShouldBe(RedPackageGrabStatus.Success);
+        res.Amount.ShouldBe("10");
+        
+        
     }
     
     private void Login(Guid userId)
@@ -141,10 +219,10 @@ public partial class RedPackageTest : CAServerApplicationTestBase
     {
         return new SendRedPackageInputDto()
         {
-            Id = Guid.NewGuid(),
+            Id = redPackageId,
             Type = RedPackageType.Random,
             Count = 500,
-            TotalAmount = 1000000,
+            TotalAmount = "1000000",
             Memo = "xxxx",
             ChainId = "AELF",
             Symbol = "ELF",

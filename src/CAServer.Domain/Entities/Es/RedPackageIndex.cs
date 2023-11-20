@@ -7,8 +7,8 @@ namespace CAServer.Entities.Es;
 public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
 {
     [Keyword] public Guid RedPackageId { get; set; }
-    public decimal TotalAmount { get; set; }
-    public decimal MinAmount { get; set; }
+    public long TotalAmount { get; set; }
+    public long MinAmount { get; set; }
     public string Memo { get; set; } = string.Empty;
     [Keyword] public Guid SenderId { get; set; }
     [Keyword] public long CreateTime { get; set; }

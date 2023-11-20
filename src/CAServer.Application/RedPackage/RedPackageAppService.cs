@@ -13,6 +13,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver.Linq;
+using Nest;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
@@ -70,7 +71,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             MinAmount = result.MinAmount,
             Symbol = redPackageInput.Symbol,
             Decimal = result.Decimal,
-            ChainId = redPackageInput.ChainId
+            ChainId = redPackageInput.ChainId,
+            ExpireTime = RedPackageConsts.ExpireTimeMs
         };
     }
 
@@ -102,7 +104,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
 
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
-        var createResult = await grain.CreateRedPackage(input, result.Decimal, decimal.Parse(result.MinAmount), CurrentUser.Id.Value);
+        var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount), CurrentUser.Id.Value);
         if (!createResult.Success)
         {
             throw new UserFriendlyException(createResult.Message);
@@ -187,8 +189,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
         
         var result = _redPackageOptions.TokenInfo.Where(x =>
-                string.Equals(x.Symbol, chainId, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(x.ChainId, token, StringComparison.OrdinalIgnoreCase))
+                string.Equals(x.Symbol, token, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.ChainId, chainId, StringComparison.OrdinalIgnoreCase))
             .ToList();
         return new RedPackageConfigOutput()
         {
@@ -256,11 +258,13 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             return (false, RedPackageConsts.RedPackageCountBigError);
         }
 
-        if (!_chainOptions.ChainInfos.TryGetValue(input.ChainId, out var chainInfo))
+        var tokenInfo = _redPackageOptions.TokenInfo.Where(x => x.ChainId == input.ChainId && x.Symbol == input.Symbol).ToList()
+            .FirstOrDefault();
+        if (tokenInfo == null)
         {
             return (false, RedPackageConsts.RedPackageChainError);
         }
-
+        
         return (true, "");
     }
 }

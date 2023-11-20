@@ -113,7 +113,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
             .ReverseMap()
             .ForMember(dest => dest.TotalAmount, 
-                opt => opt.MapFrom(src => decimal.Parse(src.TotalAmount)));
+                opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
         
         CreateMap<RedPackageState, RedPackageDetailDto>()
             .ForMember(dest => dest.TotalAmount, 
@@ -126,15 +126,15 @@ public class CAServerGrainsAutoMapperProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.Items, opt => opt.Ignore())
             .ForMember(dest => dest.TotalAmount, 
-                opt => opt.MapFrom(src => decimal.Parse(src.TotalAmount)))
+                opt => opt.MapFrom(src => long.Parse(src.TotalAmount)))
             .ForMember(dest => dest.GrabbedAmount, 
-                opt => opt.MapFrom(src => decimal.Parse(src.GrabbedAmount)))
+                opt => opt.MapFrom(src => long.Parse(src.GrabbedAmount)))
             .ForMember(dest => dest.MinAmount, 
-                opt => opt.MapFrom(src => decimal.Parse(src.MinAmount)));
+                opt => opt.MapFrom(src => long.Parse(src.MinAmount)));
 
         CreateMap<GrabItem, GrabItemDto>()
             .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount.ToString()))
             .ReverseMap()
-            .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => decimal.Parse(src.Amount)));
+            .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => long.Parse(src.Amount)));
     }
 }

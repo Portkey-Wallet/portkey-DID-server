@@ -95,7 +95,7 @@ public class CAServerApplicationTestModule : AbpModule
                 {
                     ChainId = "AELF",
                     Decimal = 8,
-                    MinAmount = 0.1m,
+                    MinAmount = "1",
                     Symbol = "ELF"
                 }
             };

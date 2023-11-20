@@ -409,6 +409,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
             .ReverseMap()
             .ForMember(dest => dest.TotalAmount, 
-                opt => opt.MapFrom(src => decimal.Parse(src.TotalAmount)));
+                opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
     }
 }
