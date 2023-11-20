@@ -6,6 +6,7 @@ using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Monitor;
 using CAServer.Options;
+using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;

@@ -7,7 +7,7 @@ public class SendRedPackageInputDto
 {
     [Required] public Guid Id { get; set; }
     [Required] public decimal TotalAmount { get; set; }
-    [Required] public RedPackageType Type { get; set; };
+    [Required] public RedPackageType Type { get; set; }
     [Required] public string Memo { get; set; } = string.Empty;
     [Required] public string Symbol { get; set; } = string.Empty;
     [Required] public int Count { get; set; }

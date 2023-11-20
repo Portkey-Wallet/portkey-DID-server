@@ -19,7 +19,7 @@ public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
     public int Count { get; set; }
     [Keyword] public string ChannelUuid { get; set; }
     public string SendUuid { get; set; }
-    [Keyword] public RedPackageType Type { get; set; } = RedPackageType.None;
+    [Keyword] public RedPackageType Type { get; set; }
     [Keyword] public string TransactionId { get; set; }
     [Keyword] public string TransactionResult { get; set; }
     public string ErrorMessage { get; set; }
