@@ -282,7 +282,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     
     public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfosInput input)
     {
-        var result = await SendTransactionToChainAsync(chainId, input, MethodName.SyncHolderInfo);
+        var result = await SendTransactionToChainAsync(chainId, input, MethodName.SyncHolderInfos);
         
         DeactivateOnIdle();
 

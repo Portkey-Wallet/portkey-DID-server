@@ -7,6 +7,7 @@ public static class MethodName
     public const string Validate = "ValidateCAHolderInfoWithManagerInfosExists";
     public const string UpdateMerkleTree = "GetBoundParentChainHeightAndMerklePathByHeight";
     public const string SyncHolderInfo = "SyncHolderInfo";
+    public const string SyncHolderInfos = "SyncHolderInfos";
     public const string GetParentChainHeight = "GetParentChainHeight";
     public const string GetSideChainHeight = "GetSideChainHeight";
     public const string GetHolderInfo = "GetHolderInfo";
