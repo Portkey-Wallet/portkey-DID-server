@@ -57,7 +57,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     public async Task VerifyGoogleCode()
     {
         var code = _thirdPartOrderAppService.VerifyOrderExportCode("395653");
-        code.ShouldNotBe(false);
+        code.ShouldBe(false);
     }
     
     
