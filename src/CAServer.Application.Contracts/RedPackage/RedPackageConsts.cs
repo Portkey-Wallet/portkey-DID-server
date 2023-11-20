@@ -2,7 +2,7 @@ namespace CAServer.RedPackage;
 
 public class RedPackageConsts
 {
-    public static int ExpireTime = 60 * 60 * 24;
+    public static int ExpireTimeMs = 60 * 60 * 24 * 1000;
     public static string RedPackageCardType = "REDPACKAGE-CARD";
     public static int MaxRedPackageGrabberCount = 100;
     public static int DefaultRedPackageGrabberCount = 10;
@@ -15,7 +15,7 @@ public class RedPackageConsts
     public const string RedPackageAmountError = "RedPackage amount too small";
     public const string RedPackageCountBigError = "RedPackage count too large";
     public const string RedPackageTypeError = "Unsupported RedPackage Type";
-    public const string RedPackageChainError = "Unsupported RedPackage chain";
+    public const string RedPackageChainError = "Unsupported RedPackage chain or symbol";
     public const string RedPackageTransactionError = "Transaction should not empty";
     public const string RedPackageChannelError = "Channel should not empty";
     

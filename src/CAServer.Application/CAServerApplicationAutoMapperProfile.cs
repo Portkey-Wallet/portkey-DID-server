@@ -425,5 +425,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
         CreateMap<RedPackageIndex, RedPackageDetailDto>().ForMember(dest => dest.Items, opt => opt.Ignore())
             .ReverseMap();
+        CreateMap<RedPackageIndex, RedPackageDetailDto>()
+            .ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => src.TotalAmount.ToString()))
+            .ReverseMap()
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
     }
 }

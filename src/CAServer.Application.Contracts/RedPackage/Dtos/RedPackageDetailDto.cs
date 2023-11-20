@@ -7,9 +7,9 @@ public class RedPackageDetailDto
 {
     public Guid Id { get; set; }
     public int TotalCount { get; set; }
-    public decimal TotalAmount { get; set; }
-    public decimal GrabbedAmount { get; set; }
-    public decimal MinAmount { get; set; }
+    public string TotalAmount { get; set; }
+    public string GrabbedAmount { get; set; }
+    public string MinAmount { get; set; }
     public string Memo { get; set; } = string.Empty;
     public string ChainId { get; set; }
     public string PublicKey { get; set; } = string.Empty;
@@ -26,7 +26,7 @@ public class RedPackageDetailDto
     public string ChannelUuid { get; set; }
     public bool IsCurrentUserGrabbed { get; set; } = false;
     public RedPackageType Type { get; set; }
-    public RedPackageStatus Status { get; set; } = RedPackageStatus.Init;
+    public RedPackageStatus Status { get; set; }
     public List<GrabItemDto> Items { get; set; }
 }
 
@@ -37,5 +37,5 @@ public class GrabItemDto
     public string Avatar { get; set; }
     public long GrabTime { get; set; }
     public bool IsLuckyKing { get; set; }
-    public decimal Amount { get; set; }
+    public string Amount { get; set; }
 }

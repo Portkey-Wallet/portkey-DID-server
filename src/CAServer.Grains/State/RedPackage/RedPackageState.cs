@@ -5,9 +5,9 @@ namespace CAServer.Grains.State.RedPackage;
 public class RedPackageState
 {
     public Guid Id { get; set; }
-    public decimal TotalAmount { get; set; }
-    public decimal GrabbedAmount { get; set; }
-    public decimal MinAmount { get; set; }
+    public long TotalAmount { get; set; }
+    public long GrabbedAmount { get; set; }
+    public long MinAmount { get; set; }
     public string Memo { get; set; } = string.Empty;
     public string ChainId { get; set; }
     public Guid SenderId { get; set; }
@@ -21,7 +21,7 @@ public class RedPackageState
     public int Grabbed { get; set; }
     public string ChannelUuid { get; set; }
     public RedPackageType Type { get; set; }
-    public RedPackageStatus Status { get; set; } = RedPackageStatus.Init;
+    public RedPackageStatus Status { get; set; }
     public List<GrabItem> Items { get; set; }
     public List<BucketItem> BucketNotClaimed { get; set; }
     public List<BucketItem> BucketClaimed { get; set; }
@@ -33,12 +33,13 @@ public class GrabItem
     public string CaAddress { get; set; } = string.Empty;
     public long GrabTime { get; set; }
     public bool IsLuckyKing { get; set; }
-    public decimal Amount { get; set; }
+    public long Amount { get; set; }
+    public int Decimal { get; set; }
 }
 
 public class BucketItem
 {
-    public decimal Amount { get; set; }
+    public long Amount { get; set; }
     public bool IsLuckyKing { get; set; }
     public Guid UserId { get; set; }
 }

@@ -13,6 +13,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver.Linq;
+using Nest;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
@@ -49,12 +50,9 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
-        if (!_redPackageOptions.TokenInfo.TryGetValue(redPackageInput.ChainId, out var chainInfo))
-        {
-            throw new UserFriendlyException("Chain not found");
-        }
-        
-        var result = chainInfo.Where(x => string.Equals(x.Symbol, redPackageInput.Symbol, StringComparison.OrdinalIgnoreCase))
+        var result = _redPackageOptions.TokenInfo.Where(x =>
+                string.Equals(x.Symbol, redPackageInput.Symbol, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.ChainId, redPackageInput.ChainId, StringComparison.OrdinalIgnoreCase))
             .ToList().FirstOrDefault();
         if (result == null)
         {
@@ -73,24 +71,22 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             MinAmount = result.MinAmount,
             Symbol = redPackageInput.Symbol,
             Decimal = result.Decimal,
-            ChainId = redPackageInput.ChainId
+            ChainId = redPackageInput.ChainId,
+            ExpireTime = RedPackageConsts.ExpireTimeMs
         };
     }
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
-        if (!_redPackageOptions.TokenInfo.TryGetValue(input.ChainId, out var chainInfo))
-        {
-            throw new UserFriendlyException("Chain not found");
-        }
-        var result = chainInfo.Where(x => string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase))
-            .ToList().FirstOrDefault();
+        var result = _redPackageOptions.TokenInfo.Where(x =>
+            string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x.ChainId, input.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
         if (result == null)
         {
             throw new UserFriendlyException("Symbol not found");
         }
 
-        var checkResult = CheckSendRedPackageInput(input, result.MinAmount,_redPackageOptions.MaxCount);
+        var checkResult = CheckSendRedPackageInput(input, long.Parse(result.MinAmount),_redPackageOptions.MaxCount);
         if (!checkResult.Item1)
         {
             throw new UserFriendlyException(checkResult.Item2);
@@ -108,7 +104,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
 
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
-        var createResult = await grain.CreateRedPackage(input, result.Decimal, result.MinAmount, CurrentUser.Id.Value);
+        var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount), CurrentUser.Id.Value);
         if (!createResult.Success)
         {
             throw new UserFriendlyException(createResult.Message);
@@ -122,6 +118,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Processing;
         redPackageIndex.SenderRelationToken = relationToken;
         redPackageIndex.SendUuid = input.SendUuid;
+        redPackageIndex.Message = input.Message;
         await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
         await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
         {
@@ -191,14 +188,14 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             };
         }
         
-        if (!_redPackageOptions.TokenInfo.TryGetValue(chainId, out var chainInfo))
+        var result = _redPackageOptions.TokenInfo.Where(x =>
+                string.Equals(x.Symbol, token, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.ChainId, chainId, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        return new RedPackageConfigOutput()
         {
-            throw new UserFriendlyException("Chain not found");
-        }
-        
-        var result = new RedPackageConfigOutput();
-        result.TokenInfo.Add(chainId, chainInfo.Where(x => x.Symbol == token).ToList());
-        return result;
+            TokenInfo = result
+        };
     }
 
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
@@ -219,6 +216,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             Result = result.Data.Result,
             ErrorMessage = result.Data.ErrorMessage,
             Amount = result.Data.Amount,
+            Decimal = result.Data.Decimal,
             Status = result.Data.Status
         };
     }
@@ -231,7 +229,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
-    private (bool, string) CheckSendRedPackageInput(SendRedPackageInputDto input, decimal min, int maxCount)
+    private (bool, string) CheckSendRedPackageInput(SendRedPackageInputDto input, long min, int maxCount)
     {
         var isNotInEnum = !Enum.IsDefined(typeof(RedPackageType), input.Type);
 
@@ -250,7 +248,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             return (false, RedPackageConsts.RedPackageCountSmallError);
         }
 
-        if (input.TotalAmount < input.Count * min)
+        if (long.Parse(input.TotalAmount) < input.Count * min)
         {
             return (false, RedPackageConsts.RedPackageAmountError);
         }
@@ -260,21 +258,13 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             return (false, RedPackageConsts.RedPackageCountBigError);
         }
 
-        if (!_chainOptions.ChainInfos.TryGetValue(input.ChainId, out var chainInfo))
+        var tokenInfo = _redPackageOptions.TokenInfo.Where(x => x.ChainId == input.ChainId && x.Symbol == input.Symbol).ToList()
+            .FirstOrDefault();
+        if (tokenInfo == null)
         {
             return (false, RedPackageConsts.RedPackageChainError);
         }
-
-        if (string.IsNullOrEmpty(input.ChannelUuid))
-        {
-            return (false, RedPackageConsts.RedPackageChannelError);
-        }
         
-        if (string.IsNullOrEmpty(input.RawTransaction))
-        {
-            return (false, RedPackageConsts.RedPackageTransactionError);
-        }
-
         return (true, "");
     }
 }

@@ -2,6 +2,6 @@ namespace CAServer;
 
 public enum RedPackageGrabStatus
 {
-    Success = 0,
-    Fail = 1,
+    Success = 1,
+    Fail = 2,
 }

@@ -69,14 +69,15 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             await _redPackageRepository.UpdateAsync(redPackageIndex);
             
             BackgroundJob.Schedule<RedPackageTask>(x => x.DeleteRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromSeconds(RedPackageConsts.ExpireTime));
+                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
 
             //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();
             imSendMessageRequestDto.SendUuid = redPackageIndex.SendUuid;
             imSendMessageRequestDto.ChannelUuid = redPackageIndex.ChannelUuid;
-            imSendMessageRequestDto.Content = CustomMessageHelper.BuildRedPackageCardContent(_redPackageOptions, redPackageIndex.SenderId,
-                redPackageIndex.Memo, redPackageIndex.RedPackageId);
+            imSendMessageRequestDto.Content = redPackageIndex.Message;
+            /*imSendMessageRequestDto.Content = CustomMessageHelper.BuildRedPackageCardContent(_redPackageOptions, redPackageIndex.SenderId,
+                redPackageIndex.Memo, redPackageIndex.RedPackageId);*/
             imSendMessageRequestDto.Type = RedPackageConsts.RedPackageCardType;
             var headers = new Dictionary<string, string>();
             headers.Add(ImConstant.RelationAuthHeader,redPackageIndex.SenderRelationToken);

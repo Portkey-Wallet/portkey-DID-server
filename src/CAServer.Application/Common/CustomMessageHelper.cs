@@ -16,8 +16,6 @@ public class CustomMessageHelper
             Memo = memo
         };
         var result = new CustomMessage<RedPackageCard>();
-        result.Image= options.CoverImage;
-        result.Link = options.Link;
         result.Data = redPackageCard;
         return JsonConvert.SerializeObject(result);
     }

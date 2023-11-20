@@ -29,7 +29,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
     }
 
     public async Task<GrainResultDto<RedPackageDetailDto>> CreateRedPackage(SendRedPackageInputDto input, int decimalIn,
-        decimal minAmount,
+        long minAmount,
         Guid senderId)
     {
         var result = new GrainResultDto<RedPackageDetailDto>();
@@ -40,15 +40,16 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             return result;
         }
 
-        var bucketResult = GenerateBucket(input.Count, input.TotalAmount, minAmount, input.Type);
+        var bucketResult = GenerateBucket(input.Count, long.Parse(input.TotalAmount), minAmount, input.Type);
         State = _objectMapper.Map<SendRedPackageInputDto, RedPackageState>(input);
         State.Status = RedPackageStatus.NotClaimed;
-        State.CreateTime = DateTimeOffset.Now.ToUnixTimeSeconds();
+        State.CreateTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         State.EndTime = 0;
-        State.ExpireTime = State.CreateTime + RedPackageConsts.ExpireTime;
+        State.ExpireTime = State.CreateTime + RedPackageConsts.ExpireTimeMs;
         State.Decimal = decimalIn;
         State.BucketNotClaimed = bucketResult.Item1;
         State.BucketClaimed = new List<BucketItem>();
+        State.Items = new List<GrabItem>();
         State.SenderId = senderId;
 
         await WriteStateAsync();
@@ -67,14 +68,6 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         dto.IsCurrentUserGrabbed = State.Items.Any(item => item.UserId == userId);
         dto.Items = _objectMapper.Map<List<GrabItem>, List<GrabItemDto>>(State.Items.Skip(skip).Take(max).ToList());
         result.Data = dto;
-        return Task.FromResult(result);
-    }
-
-    public Task<GrainResultDto<bool>> IsUserIdGrab(Guid userId)
-    {
-        var result = new GrainResultDto<bool>();
-        result.Success = true;
-        result.Data = State.Items.Any(item => item.UserId == userId);
         return Task.FromResult(result);
     }
 
@@ -109,7 +102,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             {
                 Result = RedPackageGrabStatus.Fail,
                 ErrorMessage = checkResult.Item2,
-                Amount = 0,
+                Amount = "",
                 Status = State.Status
             };
             return result;
@@ -124,7 +117,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         var grabItem = new GrabItem()
         {
             Amount = bucket.Amount,
-            GrabTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
+            Decimal = State.Decimal,
+            GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
             IsLuckyKing = bucket.IsLuckyKing,
             UserId = userId,
             CaAddress = caAddress
@@ -135,7 +129,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         if (State.Grabbed == State.Count)
         {
             State.Status = RedPackageStatus.FullyClaimed;
-            State.EndTime = DateTimeOffset.Now.ToUnixTimeSeconds();
+            State.EndTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         }
         
         result.Success = true;
@@ -143,7 +137,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         {
             Result = RedPackageGrabStatus.Success,
             ErrorMessage = "",
-            Amount = bucket.Amount,
+            Amount = bucket.Amount.ToString(),
+            Decimal = State.Decimal,
             Status = State.Status
         };
         
@@ -153,7 +148,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
 
     private (bool, string) CheckRedPackagePermissions(Guid userId)
     {
-        if (DateTimeOffset.Now.ToUnixTimeSeconds() > State.ExpireTime || State.Status == RedPackageStatus.Expired)
+        if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > State.ExpireTime || State.Status == RedPackageStatus.Expired)
         {
             return (false, RedPackageConsts.RedPackageExpired);
         }
@@ -191,7 +186,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return bucket;
     }
 
-    private (List<BucketItem>, int) GenerateBucket(int count, decimal totalAmount, decimal minAmount, RedPackageType type)
+    private (List<BucketItem>, int) GenerateBucket(int count, long totalAmount, long minAmount, RedPackageType type)
     {
         switch (type)
         {
@@ -206,7 +201,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return (new List<BucketItem>(), 0);
     }
 
-    private (List<BucketItem>, int) GenerateFixBucket(int count, decimal totalAmount)
+    private (List<BucketItem>, int) GenerateFixBucket(int count, long totalAmount)
     {
         var avg = totalAmount / count;
         var bucket = new List<BucketItem>();
@@ -234,11 +229,11 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return (bucket, 0);
     }
 
-    private (List<BucketItem>, int) GenerateRandomBucket(int count, decimal totalAmount, decimal minAmount)
+    private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount)
     {
         Random random = new Random();
         int luckyKingIndex = 0;
-        decimal luckyKingAmount = minAmount;
+        long luckyKingAmount = minAmount;
         var bucket = new List<BucketItem>();
         var rest = totalAmount;
         for (var i = 0; i < count; i++)
@@ -258,8 +253,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             }
 
             double randomNumber = random.NextDouble();
-            decimal max = (rest / (count - i)) * 2;
-            decimal money = Math.Max(minAmount, (decimal)randomNumber * max);
+            long max = (rest / (count - i)) * 2;
+            long money = Math.Max(minAmount, (long)(randomNumber * max));
             bucket[i].Amount += money;
             if (bucket[i].Amount > luckyKingAmount)
             {
