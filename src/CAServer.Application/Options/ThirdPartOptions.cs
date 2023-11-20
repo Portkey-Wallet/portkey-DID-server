@@ -29,6 +29,7 @@ public class ThirdPartTimerOptions
     public int TransactionConfirmHeight { get; set; } = 100;
     public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
     public int HandleUnCompletedSettlementTransferSecondsAgo { get; set; } = 30;
+    public int HandleUnCompletedSettlementTransferHoursAgo { get; set; } = 1;
     public int NftCheckoutMerchantCallbackCount { get; set; }  = 3;
     public int NftCheckoutResultThirdPartNotifyCount { get; set; }  = 3;
     public int NftUnCompletedMerchantCallbackMinuteAgo { get; set; }  = 2;
