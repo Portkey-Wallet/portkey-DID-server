@@ -42,7 +42,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
-        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions, IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider)
+        IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,
+        IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -342,9 +343,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                                 .GetBalanceInUsd(priceList[i] * dto.TransactionFees[i].Fee,
                                     Convert.ToInt32(dto.TransactionFees[i].Decimals)).ToString();
                         }
+
                         //this means this Transation fee is pay by manager
                         var activityOptions =
-                            _activityOptions.ActivityTransactionFeeFix?.Where(x => x.ChainId == ht.ChainId).ToList().FirstOrDefault();
+                            _activityOptions.ActivityTransactionFeeFix?.Where(x => x.ChainId == ht.ChainId).ToList()
+                                .FirstOrDefault();
                         if (activityOptions?.StartBlock > 0)
                         {
                             if (ht.IsManagerConsumer && ht.BlockHeight > activityOptions.StartBlock)
@@ -377,11 +380,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (needMap)
             {
-                var typeName = ActivityConstants.TypeMap.GetValueOrDefault(dto.TransactionType, dto.TransactionType);
-                dto.TransactionName = dto.NftInfo != null && !string.IsNullOrWhiteSpace(dto.NftInfo.NftId) &&
-                                      ActivityConstants.ShowNftTypes.Contains(dto.TransactionType)
-                    ? typeName + " NFT"
-                    : typeName;
+                await MapMethodNameAsync(caAddresses, dto);
             }
 
             getActivitiesDto.Add(dto);
@@ -390,6 +389,33 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         result.Data = getActivitiesDto;
 
         return result;
+    }
+
+    private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto)
+    {
+        var typeName =
+            ActivityConstants.TypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
+        if (activityDto.TransactionType == ActivityConstants.AddGuardianName)
+        {
+            var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
+            var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
+            if (holderInfo?.OriginChainId != null && holderInfo?.OriginChainId != activityDto.FromChainId)
+            {
+                activityDto.TransactionName = ActivityConstants.NotRegisterChainAddGuardianName;
+            }
+            else
+            {
+                activityDto.TransactionName = typeName;
+            }
+
+            return;
+        }
+
+        activityDto.TransactionName = activityDto.NftInfo != null &&
+                                      !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
+                                      ActivityConstants.ShowNftTypes.Contains(activityDto.TransactionType)
+            ? typeName + " NFT"
+            : typeName;
     }
 
     private string GetIconByType(string transactionType)

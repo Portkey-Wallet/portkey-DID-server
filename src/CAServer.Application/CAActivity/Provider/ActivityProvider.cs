@@ -6,6 +6,7 @@ using CAServer.CAActivity.Dtos;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
 using GraphQL;
 using Microsoft.Extensions.Options;
@@ -111,6 +112,23 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
             Variables = new
             {
                 symbol, skipCount = 0, maxResultCount = 1
+            }
+        });
+    }
+    
+    public async Task<GuardiansDto> GetCaHolderInfoAsync(List<string> caAddresses, string caHash, int skipCount = 0,
+        int maxResultCount = 10)
+    {
+        return await _graphQlHelper.QueryAsync<GuardiansDto>(new GraphQLRequest
+        {
+            Query = @"
+			    query($caAddresses:[String],$caHash:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderInfo(dto: {caAddresses:$caAddresses,caHash:$caHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                            id,chainId,caHash,caAddress,originChainId,managerInfos{address,extraData},guardianList{guardians{verifierId,identifierHash,salt,isLoginGuardian,type}}}
+                }",
+            Variables = new
+            {
+                caAddresses, caHash, skipCount, maxResultCount
             }
         });
     }
