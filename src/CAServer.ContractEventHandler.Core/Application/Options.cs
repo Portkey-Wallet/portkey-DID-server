@@ -42,4 +42,5 @@ public class ContractSyncOptions
 {
     public int Sync { get; set; }
     public int AutoReceive { get; set; }
+    public int SyncOnceCount { get; set; } = 5;
 }
