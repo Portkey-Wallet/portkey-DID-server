@@ -403,7 +403,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
         CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
         CreateMap<CAHolderIndex, HolderInfoResultDto>();
-        CreateMap<RedPackageIndex, RedPackageDetailDto>().ForMember(dest => dest.Items, opt => opt.Ignore())
-            .ReverseMap();
+        CreateMap<RedPackageIndex, RedPackageDetailDto>()
+            .ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => src.TotalAmount.ToString()))
+            .ReverseMap()
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => decimal.Parse(src.TotalAmount)));
     }
 }

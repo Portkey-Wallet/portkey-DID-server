@@ -34,6 +34,7 @@ public class GrabItem
     public long GrabTime { get; set; }
     public bool IsLuckyKing { get; set; }
     public decimal Amount { get; set; }
+    public int Decimal { get; set; }
 }
 
 public class BucketItem

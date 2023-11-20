@@ -40,12 +40,12 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             return result;
         }
 
-        var bucketResult = GenerateBucket(input.Count, input.TotalAmount, minAmount, input.Type);
+        var bucketResult = GenerateBucket(input.Count, decimal.Parse(input.TotalAmount), minAmount, input.Type);
         State = _objectMapper.Map<SendRedPackageInputDto, RedPackageState>(input);
         State.Status = RedPackageStatus.NotClaimed;
-        State.CreateTime = DateTimeOffset.Now.ToUnixTimeSeconds();
+        State.CreateTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         State.EndTime = 0;
-        State.ExpireTime = State.CreateTime + RedPackageConsts.ExpireTime;
+        State.ExpireTime = State.CreateTime + RedPackageConsts.ExpireTimeMs;
         State.Decimal = decimalIn;
         State.BucketNotClaimed = bucketResult.Item1;
         State.BucketClaimed = new List<BucketItem>();
@@ -109,7 +109,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             {
                 Result = RedPackageGrabStatus.Fail,
                 ErrorMessage = checkResult.Item2,
-                Amount = 0,
+                Amount = "",
                 Status = State.Status
             };
             return result;
@@ -124,7 +124,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         var grabItem = new GrabItem()
         {
             Amount = bucket.Amount,
-            GrabTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
+            Decimal = State.Decimal,
+            GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
             IsLuckyKing = bucket.IsLuckyKing,
             UserId = userId,
             CaAddress = caAddress
@@ -135,7 +136,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         if (State.Grabbed == State.Count)
         {
             State.Status = RedPackageStatus.FullyClaimed;
-            State.EndTime = DateTimeOffset.Now.ToUnixTimeSeconds();
+            State.EndTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         }
         
         result.Success = true;
@@ -143,7 +144,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         {
             Result = RedPackageGrabStatus.Success,
             ErrorMessage = "",
-            Amount = bucket.Amount,
+            Amount = bucket.Amount.ToString(),
+            Decimal = State.Decimal,
             Status = State.Status
         };
         
@@ -153,7 +155,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
 
     private (bool, string) CheckRedPackagePermissions(Guid userId)
     {
-        if (DateTimeOffset.Now.ToUnixTimeSeconds() > State.ExpireTime || State.Status == RedPackageStatus.Expired)
+        if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > State.ExpireTime || State.Status == RedPackageStatus.Expired)
         {
             return (false, RedPackageConsts.RedPackageExpired);
         }

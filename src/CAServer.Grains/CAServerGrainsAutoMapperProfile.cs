@@ -108,9 +108,33 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<BookmarkItem, BookmarkResultDto>();
 
         CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
-        CreateMap<RedPackageState, SendRedPackageInputDto>().ReverseMap();
-        CreateMap<RedPackageState, RedPackageDetailDto>().ForMember(dest => dest.Items, opt => opt.Ignore())
-            .ReverseMap();
-        CreateMap<GrabItem, GrabItemDto>().ReverseMap();
+        CreateMap<RedPackageState, SendRedPackageInputDto>()
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => src.TotalAmount.ToString()))
+            .ReverseMap()
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => decimal.Parse(src.TotalAmount)));
+        
+        CreateMap<RedPackageState, RedPackageDetailDto>()
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => src.TotalAmount.ToString()))
+            .ForMember(dest => dest.GrabbedAmount, 
+                opt => opt.MapFrom(src => src.GrabbedAmount.ToString()))
+            .ForMember(dest => dest.MinAmount, 
+                opt => opt.MapFrom(src => src.MinAmount.ToString()))
+            .ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ReverseMap()
+            .ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => decimal.Parse(src.TotalAmount)))
+            .ForMember(dest => dest.GrabbedAmount, 
+                opt => opt.MapFrom(src => decimal.Parse(src.GrabbedAmount)))
+            .ForMember(dest => dest.MinAmount, 
+                opt => opt.MapFrom(src => decimal.Parse(src.MinAmount)));
+
+        CreateMap<GrabItem, GrabItemDto>()
+            .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount.ToString()))
+            .ReverseMap()
+            .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => decimal.Parse(src.Amount)));
     }
 }

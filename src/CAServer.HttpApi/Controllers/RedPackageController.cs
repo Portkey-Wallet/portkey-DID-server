@@ -36,7 +36,7 @@ public class RedPackageController : CAServerController
         return await _redPackageAppService.SendRedPackageAsync(redPackageInput);
     }
 
-    [HttpGet("getcreationresult")]
+    [HttpGet("getCreationResult")]
     public async Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId)
     {
         return await _redPackageAppService.GetCreationResultAsync(sessionId);

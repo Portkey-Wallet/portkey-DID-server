@@ -84,7 +84,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             throw new UserFriendlyException("Symbol not found");
         }
 
-        var checkResult = CheckSendRedPackageInput(input, result.MinAmount,_redPackageOptions.MaxCount);
+        var checkResult = CheckSendRedPackageInput(input, decimal.Parse(result.MinAmount),_redPackageOptions.MaxCount);
         if (!checkResult.Item1)
         {
             throw new UserFriendlyException(checkResult.Item2);
@@ -102,7 +102,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
 
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
-        var createResult = await grain.CreateRedPackage(input, result.Decimal, result.MinAmount, CurrentUser.Id.Value);
+        var createResult = await grain.CreateRedPackage(input, result.Decimal, decimal.Parse(result.MinAmount), CurrentUser.Id.Value);
         if (!createResult.Success)
         {
             throw new UserFriendlyException(createResult.Message);
@@ -116,6 +116,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Processing;
         redPackageIndex.SenderRelationToken = relationToken;
         redPackageIndex.SendUuid = input.SendUuid;
+        redPackageIndex.Message = input.Message;
         await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
         await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
         {
@@ -213,6 +214,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             Result = result.Data.Result,
             ErrorMessage = result.Data.ErrorMessage,
             Amount = result.Data.Amount,
+            Decimal = result.Data.Decimal,
             Status = result.Data.Status
         };
     }
@@ -244,7 +246,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             return (false, RedPackageConsts.RedPackageCountSmallError);
         }
 
-        if (input.TotalAmount < input.Count * min)
+        if (decimal.Parse(input.TotalAmount) < input.Count * min)
         {
             return (false, RedPackageConsts.RedPackageAmountError);
         }
@@ -257,16 +259,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         if (!_chainOptions.ChainInfos.TryGetValue(input.ChainId, out var chainInfo))
         {
             return (false, RedPackageConsts.RedPackageChainError);
-        }
-
-        if (string.IsNullOrEmpty(input.ChannelUuid))
-        {
-            return (false, RedPackageConsts.RedPackageChannelError);
-        }
-        
-        if (string.IsNullOrEmpty(input.RawTransaction))
-        {
-            return (false, RedPackageConsts.RedPackageTransactionError);
         }
 
         return (true, "");

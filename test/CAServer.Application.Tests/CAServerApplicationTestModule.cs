@@ -88,8 +88,7 @@ public class CAServerApplicationTestModule : AbpModule
         tokenList.Add(token2);
         context.Services.Configure<RedPackageOptions>(o =>
         {
-            o.CoverImage = "www.baidu.com";
-            o.Link = "www.baidu.com";
+            o.MaxCount = 1000;
             o.TokenInfo = new List<RedPackageTokenInfo>()
             {
                 new RedPackageTokenInfo()
