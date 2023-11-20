@@ -86,7 +86,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             throw new UserFriendlyException("Symbol not found");
         }
 
-        var checkResult = CheckSendRedPackageInput(input, decimal.Parse(result.MinAmount),_redPackageOptions.MaxCount);
+        var checkResult = CheckSendRedPackageInput(input, long.Parse(result.MinAmount),_redPackageOptions.MaxCount);
         if (!checkResult.Item1)
         {
             throw new UserFriendlyException(checkResult.Item2);
@@ -229,7 +229,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
-    private (bool, string) CheckSendRedPackageInput(SendRedPackageInputDto input, decimal min, int maxCount)
+    private (bool, string) CheckSendRedPackageInput(SendRedPackageInputDto input, long min, int maxCount)
     {
         var isNotInEnum = !Enum.IsDefined(typeof(RedPackageType), input.Type);
 
@@ -248,7 +248,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             return (false, RedPackageConsts.RedPackageCountSmallError);
         }
 
-        if (decimal.Parse(input.TotalAmount) < input.Count * min)
+        if (long.Parse(input.TotalAmount) < input.Count * min)
         {
             return (false, RedPackageConsts.RedPackageAmountError);
         }

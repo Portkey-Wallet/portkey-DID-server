@@ -71,14 +71,6 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return Task.FromResult(result);
     }
 
-    public Task<GrainResultDto<bool>> IsUserIdGrab(Guid userId)
-    {
-        var result = new GrainResultDto<bool>();
-        result.Success = true;
-        result.Data = State.Items.Any(item => item.UserId == userId);
-        return Task.FromResult(result);
-    }
-
     public async Task<GrainResultDto<bool>> DeleteRedPackage()
     {
         var result = new GrainResultDto<bool>();

@@ -26,7 +26,7 @@ public class RedPackageDetailDto
     public string ChannelUuid { get; set; }
     public bool IsCurrentUserGrabbed { get; set; } = false;
     public RedPackageType Type { get; set; }
-    public RedPackageStatus Status { get; set; } = RedPackageStatus.Init;
+    public RedPackageStatus Status { get; set; }
     public List<GrabItemDto> Items { get; set; }
 }
 

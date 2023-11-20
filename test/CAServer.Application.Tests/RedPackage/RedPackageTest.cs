@@ -205,8 +205,6 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         res = await _redPackageAppService.GrabRedPackageAsync(input);
         res.Result.ShouldBe(RedPackageGrabStatus.Success);
         res.Amount.ShouldBe("10");
-        
-        
     }
     
     private void Login(Guid userId)

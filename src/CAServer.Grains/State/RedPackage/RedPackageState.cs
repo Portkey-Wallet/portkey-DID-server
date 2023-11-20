@@ -21,7 +21,7 @@ public class RedPackageState
     public int Grabbed { get; set; }
     public string ChannelUuid { get; set; }
     public RedPackageType Type { get; set; }
-    public RedPackageStatus Status { get; set; } = RedPackageStatus.Init;
+    public RedPackageStatus Status { get; set; }
     public List<GrabItem> Items { get; set; }
     public List<BucketItem> BucketNotClaimed { get; set; }
     public List<BucketItem> BucketClaimed { get; set; }
