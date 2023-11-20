@@ -90,18 +90,14 @@ public class CAServerApplicationTestModule : AbpModule
         {
             o.CoverImage = "www.baidu.com";
             o.Link = "www.baidu.com";
-            o.TokenInfo = new Dictionary<string, List<RedPackageTokenInfo>>
+            o.TokenInfo = new List<RedPackageTokenInfo>()
             {
+                new RedPackageTokenInfo()
                 {
-                    "AELF", new List<RedPackageTokenInfo>
-                    {
-                        new RedPackageTokenInfo
-                        {
-                            Symbol = "ELF",
-                            Decimal = 8,
-                            MinAmount = 0.1m
-                        }
-                    }
+                    ChainId = "AELF",
+                    Decimal = 8,
+                    MinAmount = 0.1m,
+                    Symbol = "ELF"
                 }
             };
         });
