@@ -304,12 +304,12 @@ public class CAServerHttpApiHostModule : AbpModule
         }
 
         app.UseAuthorization();
-        // if (!env.IsDevelopment())
-        // {
-        //     app.UseMiddleware<RealIpMiddleware>();
-        // }
-        //
-        // if (env.IsDevelopment())
+        if (!env.IsDevelopment())
+        {
+            app.UseMiddleware<RealIpMiddleware>();
+        }
+        
+        if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>
@@ -326,11 +326,6 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
-        
-        // FirebaseApp.Create(new AppOptions()
-        // {
-        //     Credential = GoogleCredential.FromFile("david.json")
-        // });
 
         StartOrleans(context.ServiceProvider);
     }
