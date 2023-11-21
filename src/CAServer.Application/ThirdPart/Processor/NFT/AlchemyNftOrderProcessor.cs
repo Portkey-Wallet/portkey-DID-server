@@ -144,20 +144,27 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     {
         var tokenPrice = await _tokenAppService.GetTokenPriceListAsync(new List<string>
             { CommonConstant.USDT, orderGrainDto.Crypto });
-        var cryptoExchange = tokenPrice.Items?.FirstOrDefault(i => i.Symbol == CommonConstant.ELF)?.PriceInUsd ?? -1;
-        var usdtExchange = tokenPrice.Items?.FirstOrDefault(i => i.Symbol == CommonConstant.USDT)?.PriceInUsd ?? -1;
+        var binanceExchange = await _tokenAppService.GetLatestExchange(ExchangeProviderName.Binance, orderGrainDto.Crypto, CommonConstant.USDT);
+        var okxExchange = await _tokenAppService.GetLatestExchange(ExchangeProviderName.Okx, orderGrainDto.Crypto, CommonConstant.USDT);
         var cryptoToken = await _tokenProvider.GetTokenInfosAsync(CommonConstant.MainChainId, orderGrainDto.Crypto, CommonConstant.EmptyString, 0, 1);
         AssertHelper.NotNull(cryptoToken, "Crypto token {Crypto} null", orderGrainDto.Crypto);
         AssertHelper.NotEmpty(cryptoToken.TokenInfo, "Crypto token {Crypto} not found", orderGrainDto.Crypto);
-        AssertHelper.IsTrue(cryptoExchange > 0, "Invalid ELF exchange");
-        AssertHelper.IsTrue(usdtExchange > 0, "Invalid USDT exchange");
         
         var cryptoPrice = orderGrainDto.CryptoAmount.SafeToDecimal();
-        orderSettlementGrainDto.ExchangeUsdCrypto = cryptoExchange;
-        orderSettlementGrainDto.ExchangeUsdUsdt = usdtExchange;
-        orderSettlementGrainDto.SettlementCurrency = CommonConstant.USDT;
-        orderSettlementGrainDto.SettlementAmount = cryptoPrice * cryptoExchange / usdtExchange;
 
+        if (orderSettlementGrainDto.BinanceSettlementAmount == null && binanceExchange != null)
+        {
+            orderSettlementGrainDto.BinanceExchange = binanceExchange.Exchange;
+            orderSettlementGrainDto.BinanceSettlementAmount = cryptoPrice * binanceExchange.Exchange;
+        }
+
+        if (orderSettlementGrainDto.OkxSettlementAmount != null && okxExchange != null)
+        {
+            orderSettlementGrainDto.OkxExchange = okxExchange.Exchange;
+            orderSettlementGrainDto.OkxSettlementAmount = cryptoPrice * okxExchange.Exchange;
+        }
+        
+        orderSettlementGrainDto.SettlementCurrency = CommonConstant.USDT;
         return orderSettlementGrainDto;
     }
 }
