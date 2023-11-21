@@ -87,7 +87,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "RedPackageCreateResultEto handle fail {Message}", JsonConvert.SerializeObject(eventData));
         }
     }
 }
