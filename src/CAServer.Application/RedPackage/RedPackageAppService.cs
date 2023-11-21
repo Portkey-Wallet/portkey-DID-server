@@ -20,7 +20,6 @@ using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
-using ChainOptions = CAServer.Options.ChainOptions;
 
 namespace CAServer.RedPackage;
 
