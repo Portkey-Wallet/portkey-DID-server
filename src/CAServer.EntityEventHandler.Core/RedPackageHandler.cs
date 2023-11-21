@@ -56,7 +56,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
         
             redPackageIndex.TransactionId = eventData.TransactionId;
             redPackageIndex.TransactionResult = eventData.TransactionResult;
-            if (eventData.Success == false)
+            /*if (eventData.Success == false)
             {
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
@@ -64,7 +64,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageIndex.RedPackageId);
                 await grain.CancelRedPackage();
                 return;
-            }
+            }*/
 
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             
