@@ -59,7 +59,9 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-            
+            //TODO daiyabin 
+            // BackgroundJob.Schedule<PayRedPackageTask>(x => x.PayRedPackageAsync(eventData),
+            //     TimeSpan.FromSeconds(RedPackageConsts.ExpireTime));
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);

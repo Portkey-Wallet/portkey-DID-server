@@ -127,13 +127,12 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         redPackageIndex.SendUuid = input.SendUuid;
         redPackageIndex.Message = input.Message;
         await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
-        await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
-        {
-            UserId = CurrentUser.Id,
-            ChainId = input.ChainId,
-            SessionId = sessionId,
-            RawTransaction = input.RawTransaction
-        });
+        var redPackageCreateEto = _objectMapper.Map<RedPackageIndex, RedPackageCreateEto>(redPackageIndex);
+        redPackageCreateEto.UserId = CurrentUser.Id;
+        redPackageCreateEto.ChainId = input.ChainId;
+        redPackageCreateEto.SessionId = sessionId;
+        redPackageCreateEto.RawTransaction = input.RawTransaction;
+        await _distributedEventBus.PublishAsync(redPackageIndex);
         return new SendRedPackageOutputDto()
         {
             SessionId = sessionId

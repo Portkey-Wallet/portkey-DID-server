@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using AElf.Indexing.Elasticsearch;
 using Nest;
 
@@ -26,4 +27,12 @@ public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
     public string ErrorMessage { get; set; }
     public string SenderRelationToken { get; set; }
     public RedPackageTransactionStatus TransactionStatus { get; set; }
+    
+    public List<GrabItemDto> Items { get; set; }
+    public class GrabItemDto
+    {
+        public string Amount { get; set; }
+    
+        public string CaAddress { get; set; }
+    }
 }

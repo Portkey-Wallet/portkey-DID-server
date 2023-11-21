@@ -38,4 +38,6 @@ public class GrabItemDto
     public long GrabTime { get; set; }
     public bool IsLuckyKing { get; set; }
     public string Amount { get; set; }
+    
+    public string CaAddress { get; set; }
 }
