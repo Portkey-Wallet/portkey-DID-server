@@ -125,7 +125,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         redPackageIndex.RedPackageId = createResult.Data.Id;
         redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Processing;
         redPackageIndex.SenderRelationToken = relationToken;
-        redPackageIndex.SendUuid = input.SendUuid;
         redPackageIndex.Message = input.Message;
         await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
         await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
