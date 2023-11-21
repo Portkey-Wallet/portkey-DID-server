@@ -110,7 +110,12 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             throw new UserFriendlyException("Relation token not found");
         }
-
+        var portkeyToken = _httpContextAccessor.HttpContext?.Request?.Headers[CommonConstant.AuthHeader];
+        if (string.IsNullOrEmpty(portkeyToken))
+        {
+            throw new UserFriendlyException("PortkeyToken token not found");
+        }
+        
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
         var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount), CurrentUser.Id.Value);
         if (!createResult.Success)
@@ -125,6 +130,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         redPackageIndex.RedPackageId = createResult.Data.Id;
         redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Processing;
         redPackageIndex.SenderRelationToken = relationToken;
+        redPackageIndex.SenderPortkeyToken = portkeyToken;
         redPackageIndex.Message = input.Message;
         await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
         await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
