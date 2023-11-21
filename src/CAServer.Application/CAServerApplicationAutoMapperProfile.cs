@@ -13,6 +13,7 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
+using CAServer.DataReporting.Dtos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -432,5 +433,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.TotalAmount, 
                 opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
+        
+        CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
+        CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
     }
 }

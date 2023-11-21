@@ -13,6 +13,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Notify")]
 [Route("api/app/notify")]
+[IgnoreAntiforgeryToken]
 public class NotifyController
 {
     private readonly INotifyAppService _notifyAppService;
@@ -20,13 +21,6 @@ public class NotifyController
     public NotifyController(INotifyAppService notifyAppService)
     {
         _notifyAppService = notifyAppService;
-    }
-
-    [HttpPost]
-    [Authorize(Roles = "admin")]
-    public async Task<NotifyResultDto> CreateAsync(CreateNotifyDto notifyDto)
-    {
-        return await _notifyAppService.CreateAsync(notifyDto);
     }
 
     [HttpPost("createFromCms")]
