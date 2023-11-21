@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
@@ -21,7 +22,7 @@ public class RedPackageTask
         _logger = logger;
     }
 
-    public async void DeleteRedPackageAsync(Guid redPackageId)
+    public async Task DeleteRedPackageAsync(Guid redPackageId)
     {
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
