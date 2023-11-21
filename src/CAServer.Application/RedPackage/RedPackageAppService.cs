@@ -215,13 +215,24 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             };
         }
         
-        var result = _redPackageOptions.TokenInfo.Where(x =>
-                string.Equals(x.Symbol, token, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(x.ChainId, chainId, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        var result = _redPackageOptions.TokenInfo.AsQueryable();
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            result = result.Where(x => string.Equals(x.Symbol, token, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrEmpty(chainId))
+        {
+            result = result.Where(x => string.Equals(x.ChainId, chainId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var resultList = result.ToList();
+        
+        
         return new RedPackageConfigOutput()
         {
-            TokenInfo = result
+            TokenInfo = resultList
         };
     }
 
