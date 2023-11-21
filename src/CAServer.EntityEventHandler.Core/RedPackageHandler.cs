@@ -60,7 +60,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             {
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
-                await _redPackageRepository.UpdateAsync(redPackageIndex);q
+                await _redPackageRepository.UpdateAsync(redPackageIndex);
                 var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageIndex.RedPackageId);
                 await grain.CancelRedPackage();
                 return;
