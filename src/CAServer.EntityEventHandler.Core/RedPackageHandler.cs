@@ -27,10 +27,12 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
     private readonly IImRequestProvider _imRequestProvider;
     private readonly RedPackageOptions _redPackageOptions;
+    private readonly IHttpClientProvider _httpClientProvider;
     
     public RedPackageHandler(IObjectMapper objectMapper, ILogger<RedPackageHandler> logger,
         INESTRepository<RedPackageIndex, Guid> redPackageRepository, IImRequestProvider imRequestProvider,
         IClusterClient clusterClient,
+        IHttpClientProvider httpClientProvider,
         IOptionsSnapshot<RedPackageOptions> redPackageOptions)
     {
         _objectMapper = objectMapper;
@@ -39,6 +41,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
         _imRequestProvider = imRequestProvider;
         _redPackageOptions = redPackageOptions.Value;
         _clusterClient = clusterClient;
+        _httpClientProvider = httpClientProvider;
     }
     
     public async Task HandleEventAsync(RedPackageCreateResultEto eventData)
@@ -88,7 +91,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 
             var headers = new Dictionary<string, string>();
             headers.Add(ImConstant.RelationAuthHeader,redPackageIndex.SenderRelationToken);
-            await _imRequestProvider.PostAsync<object>(ImConstant.SendMessageUrl, imSendMessageRequestDto, headers);
+            await _httpClientProvider.PostAsync<ImSendMessageResponseDto>(ImConstant.SendMessageUrl,imSendMessageRequestDto, headers);
         }
         catch (Exception ex)
         {
