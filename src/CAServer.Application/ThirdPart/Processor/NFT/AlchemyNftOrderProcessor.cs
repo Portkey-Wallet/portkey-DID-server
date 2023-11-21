@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
@@ -140,15 +139,24 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 
     public override async Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto,
         NftOrderGrainDto nftOrderGrainDto,
-        OrderSettlementGrainDto orderSettlementGrainDto)
+        OrderSettlementGrainDto orderSettlementGrainDto, long? finishTime = null)
     {
-        var tokenPrice = await _tokenAppService.GetTokenPriceListAsync(new List<string>
-            { CommonConstant.USDT, orderGrainDto.Crypto });
-        var binanceExchange = await _tokenAppService.GetLatestExchange(ExchangeProviderName.Binance, orderGrainDto.Crypto, CommonConstant.USDT);
-        var okxExchange = await _tokenAppService.GetLatestExchange(ExchangeProviderName.Okx, orderGrainDto.Crypto, CommonConstant.USDT);
-        var cryptoToken = await _tokenProvider.GetTokenInfosAsync(CommonConstant.MainChainId, orderGrainDto.Crypto, CommonConstant.EmptyString, 0, 1);
-        AssertHelper.NotNull(cryptoToken, "Crypto token {Crypto} null", orderGrainDto.Crypto);
-        AssertHelper.NotEmpty(cryptoToken.TokenInfo, "Crypto token {Crypto} not found", orderGrainDto.Crypto);
+        // When the finishTime is empty, query the latest price,
+        // otherwise query the historical price.
+        var finishTimeLong = finishTime ?? DateTime.UtcNow.ToUtcMilliSeconds();
+        var finishDateTime = finishTime == null ? (DateTime?)null : TimeHelper.GetDateTimeFromTimeStamp(finishTimeLong);
+
+        var binanceExchange = finishTime == null
+            ? await _tokenAppService.GetLatestExchange(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
+                CommonConstant.USDT)
+            : await _tokenAppService.GetHistoryExchange(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
+                CommonConstant.USDT, (DateTime)finishDateTime);
+
+        var okxExchange = finishTime == null
+            ? await _tokenAppService.GetLatestExchange(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto,
+                CommonConstant.USDT)
+            : await _tokenAppService.GetHistoryExchange(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto, 
+                CommonConstant.USDT, (DateTime)finishDateTime);
         
         var cryptoPrice = orderGrainDto.CryptoAmount.SafeToDecimal();
 
@@ -158,12 +166,12 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
             orderSettlementGrainDto.BinanceSettlementAmount = cryptoPrice * binanceExchange.Exchange;
         }
 
-        if (orderSettlementGrainDto.OkxSettlementAmount != null && okxExchange != null)
+        if (orderSettlementGrainDto.OkxSettlementAmount == null && okxExchange != null)
         {
             orderSettlementGrainDto.OkxExchange = okxExchange.Exchange;
             orderSettlementGrainDto.OkxSettlementAmount = cryptoPrice * okxExchange.Exchange;
         }
-        
+
         orderSettlementGrainDto.SettlementCurrency = CommonConstant.USDT;
         return orderSettlementGrainDto;
     }

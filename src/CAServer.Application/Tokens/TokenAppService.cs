@@ -162,15 +162,15 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
     }
 
-    public async Task<TokenExchange> GetLatestExchange(ExchangeProviderName exchangeProviderName, string fromSymbol,
+    public async Task<TokenExchange> GetLatestExchange(string exchangeProviderName, string fromSymbol,
         string toSymbol)
     {
         var providerExists =
-            _exchangeProviders.TryGetValue(exchangeProviderName.ToString(), out var exchangeProvider);
+            _exchangeProviders.TryGetValue(exchangeProviderName, out var exchangeProvider);
         AssertHelper.IsTrue(providerExists, "Provider of {Name} not exists", exchangeProviderName.ToString());
         
         return await _latestExchange.GetOrAddAsync(
-            GrainIdHelper.GenerateGrainId(exchangeProviderName.ToString(), fromSymbol, toSymbol),
+            GrainIdHelper.GenerateGrainId(exchangeProviderName, fromSymbol, toSymbol),
             async () => await exchangeProvider.Latest(fromSymbol, toSymbol),
             () => new DistributedCacheEntryOptions
             {
@@ -179,15 +179,15 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         );
     }
 
-    public async Task<TokenExchange> GetHistoryExchange(ExchangeProviderName exchangeProviderName, string fromSymbol,
+    public async Task<TokenExchange> GetHistoryExchange(string exchangeProviderName, string fromSymbol,
         string toSymbol, DateTime timestamp)
     {
         var providerExists =
-            _exchangeProviders.TryGetValue(exchangeProviderName.ToString(), out var exchangeProvider);
-        AssertHelper.IsTrue(providerExists, "Provider of {Name} not exists", exchangeProviderName.ToString());
+            _exchangeProviders.TryGetValue(exchangeProviderName, out var exchangeProvider);
+        AssertHelper.IsTrue(providerExists, "Provider of {Name} not exists", exchangeProviderName);
 
         return await _latestExchange.GetOrAddAsync(
-            GrainIdHelper.GenerateGrainId(exchangeProviderName.ToString(), fromSymbol, toSymbol),
+            GrainIdHelper.GenerateGrainId(exchangeProviderName, fromSymbol, toSymbol),
             async () => await exchangeProvider.History(fromSymbol, toSymbol, timestamp.ToUtcMilliSeconds()),
             () => new DistributedCacheEntryOptions
             {

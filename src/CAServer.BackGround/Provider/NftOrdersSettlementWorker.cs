@@ -1,5 +1,7 @@
+using System.Reflection;
 using CAServer.BackGround.Consts;
 using CAServer.BackGround.Options;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart;
@@ -79,7 +81,7 @@ public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonD
                     LastModifyTimeLt = lastModifyTimeLt,
                     LastModifyTimeGt = DateTime.UtcNow
                         .AddDays(-_thirdPartOptions.Timer.NftUnCompletedOrderSettlementDaysAgo).ToUtcMilliSeconds().ToString()
-                }, OrderSectionEnum.SettlementSection);
+                }, OrderSectionEnum.OrderStateSection, OrderSectionEnum.SettlementSection);
             if (pendingData.Data.IsNullOrEmpty())
             {
                 break;
@@ -89,15 +91,23 @@ public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonD
             
             foreach (var orderDto in pendingData.Data)
             {
-                if (orderDto.OrderSettlementSection != null && orderDto.CryptoAmount.NotNullOrEmpty())
+                if (orderDto.OrderSettlementSection != null 
+                    && orderDto.OrderSettlementSection.BinanceSettlementAmount.NotNullOrEmpty()
+                    && orderDto.OrderSettlementSection.OkxSettlementAmount.NotNullOrEmpty())
                 {
                     continue;
                 }
                 total++;
                 try
                 {
+                    var finishTime = orderDto.OrderStatusSection.OrderStatusList
+                        .Where(status => status.Status == OrderStatusType.Finish.ToString())
+                        .Select(status => status.LastModifyTime)
+                        .OrderByDescending(ts => ts)
+                        .FirstOrDefault(-1);
+                    AssertHelper.IsTrue(finishTime > 0, "Finish status not found");
                     await _nftCheckoutService.GetProcessor(orderDto.MerchantName)
-                        .SaveOrderSettlementAsync(orderDto.Id);
+                        .SaveOrderSettlementAsync(orderDto.Id, finishTime);
                     success ++;
                 }
                 catch (UserFriendlyException e)

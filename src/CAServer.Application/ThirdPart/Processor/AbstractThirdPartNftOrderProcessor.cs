@@ -113,7 +113,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="orderGrainDto"></param>
     /// <returns></returns>
-    public abstract Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto, NftOrderGrainDto nftOrderGrainDto, OrderSettlementGrainDto orderSettlementGrainDto);
+    public abstract Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto,
+        NftOrderGrainDto nftOrderGrainDto, OrderSettlementGrainDto orderSettlementGrainDto, long? finishTime = null);
 
     /// <summary>
     ///     Verify and update nft order
@@ -320,9 +321,10 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     ///     Save order settlement 
     /// </summary>
     /// <param name="orderId"></param>
+    /// <param name="finishTime"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public async Task<CommonResponseDto<Empty>> SaveOrderSettlementAsync(Guid orderId)
+    public async Task<CommonResponseDto<Empty>> SaveOrderSettlementAsync(Guid orderId, long? finishTime = null)
     {
         try
         {
@@ -336,8 +338,8 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // fill order settlement data and save
             var orderSettlementGrainDto = await _thirdPartOrderAppService.GetOrderSettlementAsync(orderId);
-            await FillOrderSettlement(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto);
-            
+            await FillOrderSettlement(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto, finishTime);
+
             // save
             await _thirdPartOrderAppService.AddUpdateOrderSettlementAsync(orderSettlementGrainDto);
 

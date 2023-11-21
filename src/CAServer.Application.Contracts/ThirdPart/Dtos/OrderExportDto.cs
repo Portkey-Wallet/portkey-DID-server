@@ -41,10 +41,10 @@ public class OrderExportResponseDto
             "Status",
 
             // settlement
-            "Exchange_USD_CRYPTO",
-            "Exchange_USD_USDT",
-            "SettlementCurrency",
-            "SettlementAmount",
+            "Binance_Crypto_USDT",
+            "BinanceSettlement_USDT",
+            "Okx_Crypto_USDT",
+            "OkxSettlement_USDT",
             
             // currencies
             "Crypto",
@@ -95,10 +95,10 @@ public class OrderExportResponseDto
                 order.Status,
 
                 // settlement
-                order.OrderSettlementSection?.ExchangeUsdCrypto ?? Empty,
-                order.OrderSettlementSection?.ExchangeUsdUsdt ?? Empty,
-                order.OrderSettlementSection?.SettlementCurrency ?? Empty,
-                order.OrderSettlementSection?.SettlementAmount ?? Empty,
+                order.OrderSettlementSection?.BinanceExchange ?? Empty,
+                order.OrderSettlementSection?.BinanceSettlementAmount ?? Empty,
+                order.OrderSettlementSection?.OkxExchange ?? Empty,
+                order.OrderSettlementSection?.OkxSettlementAmount ?? Empty,
 
                 // currencies
                 order.Crypto,
