@@ -17,7 +17,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
     private readonly IRedPackageAppService _redPackageAppService;
     protected ICurrentUser _currentUser;
     private readonly Guid userId = Guid.NewGuid();
-    private readonly Guid redPackageId = Guid.NewGuid();
+    private Guid redPackageId = Guid.NewGuid();
     
     public RedPackageTest()
     {
@@ -55,6 +55,12 @@ public partial class RedPackageTest : CAServerApplicationTestBase
     [Fact]
     public async Task SendRedPackageAsync_test()
     {
+        var redPackage = await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
+        {
+            ChainId = "AELF",
+            Symbol = "ELF"
+        });
+        redPackageId = redPackage.Id;
         var input = NewSendRedPackageInputDto();
         input.ChainId = "AELF";
         input.Symbol = "XXX";

@@ -18,6 +18,7 @@ using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using ChainOptions = CAServer.Options.ChainOptions;
 
 namespace CAServer.RedPackage;
 
@@ -59,6 +60,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             throw new UserFriendlyException("Symbol not found");
         }
 
+        if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
+        {
+            throw new UserFriendlyException("chain not found");
+        }
+
         var redPackageId = Guid.NewGuid();
 
         var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
@@ -72,7 +78,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             Symbol = redPackageInput.Symbol,
             Decimal = result.Decimal,
             ChainId = redPackageInput.ChainId,
-            ExpireTime = RedPackageConsts.ExpireTimeMs
+            ExpireTime = RedPackageConsts.ExpireTimeMs,
+            RedPackageContractAddress = chainInfo.RedPackageContractAddress
         };
     }
 
@@ -86,7 +93,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             throw new UserFriendlyException("Symbol not found");
         }
 
-        var checkResult = CheckSendRedPackageInput(input, long.Parse(result.MinAmount),_redPackageOptions.MaxCount);
+        var checkResult = await CheckSendRedPackageInputAsync(input, long.Parse(result.MinAmount),_redPackageOptions.MaxCount);
         if (!checkResult.Item1)
         {
             throw new UserFriendlyException(checkResult.Item2);
@@ -229,7 +236,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
-    private (bool, string) CheckSendRedPackageInput(SendRedPackageInputDto input, long min, int maxCount)
+    private async Task<(bool, string)> CheckSendRedPackageInputAsync(SendRedPackageInputDto input, long min, int maxCount)
     {
         var isNotInEnum = !Enum.IsDefined(typeof(RedPackageType), input.Type);
 
@@ -263,6 +270,12 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         if (tokenInfo == null)
         {
             return (false, RedPackageConsts.RedPackageChainError);
+        }
+        
+        var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(input.Id);
+        if (string.IsNullOrEmpty(await grain.GetPublicKey()))
+        { 
+            return (false, RedPackageConsts.RedPackageKeyError);
         }
         
         return (true, "");

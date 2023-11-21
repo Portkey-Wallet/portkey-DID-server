@@ -19,6 +19,11 @@ public class RedPackageKeyGrain : Orleans.Grain<RedPackageKeyState>, IRedPackage
         await WriteStateAsync();
         await base.OnDeactivateAsync();
     }
+    
+    public Task<string> GetPublicKey()
+    {
+        return Task.FromResult(State.PublicKey);
+    }
 
     public async Task<string> GenerateKey()
     {
