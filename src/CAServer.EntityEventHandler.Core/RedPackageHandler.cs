@@ -6,6 +6,7 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
+using CAServer.Options;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
 using Hangfire;
@@ -28,11 +29,13 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
     private readonly IImRequestProvider _imRequestProvider;
     private readonly RedPackageOptions _redPackageOptions;
     private readonly IHttpClientProvider _httpClientProvider;
+    private readonly ImServerOptions _imServerOptions;
     
     public RedPackageHandler(IObjectMapper objectMapper, ILogger<RedPackageHandler> logger,
         INESTRepository<RedPackageIndex, Guid> redPackageRepository, IImRequestProvider imRequestProvider,
         IClusterClient clusterClient,
         IHttpClientProvider httpClientProvider,
+        IOptionsSnapshot<ImServerOptions> imServerOptions,
         IOptionsSnapshot<RedPackageOptions> redPackageOptions)
     {
         _objectMapper = objectMapper;
@@ -40,6 +43,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
         _redPackageRepository = redPackageRepository;
         _imRequestProvider = imRequestProvider;
         _redPackageOptions = redPackageOptions.Value;
+        _imServerOptions = imServerOptions.Value;
         _clusterClient = clusterClient;
         _httpClientProvider = httpClientProvider;
     }
@@ -95,7 +99,8 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 
             var headers = new Dictionary<string, string>();
             headers.Add(ImConstant.RelationAuthHeader,redPackageIndex.SenderRelationToken);
-            await _httpClientProvider.PostAsync<ImSendMessageResponseDto>(ImConstant.SendMessageUrl,imSendMessageRequestDto, headers);
+            await _httpClientProvider.PostAsync<ImSendMessageResponseDto>(
+                _imServerOptions.BaseUrl + ImConstant.SendMessageUrl, imSendMessageRequestDto, headers);
         }
         catch (Exception ex)
         {
