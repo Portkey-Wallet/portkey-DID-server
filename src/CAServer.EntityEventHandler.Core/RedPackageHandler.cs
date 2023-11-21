@@ -45,6 +45,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
     {
         try
         {
+            _logger.LogInformation("RedPackageCreateResultEto {Message}",JsonConvert.SerializeObject(eventData));
             var sessionId = eventData.SessionId;
             var redPackageIndex = await _redPackageRepository.GetAsync(sessionId);
             if (redPackageIndex == null)
@@ -52,13 +53,14 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 _logger.LogError("RedPackageCreateResultEto not found: {Message}", JsonConvert.SerializeObject(eventData));
                 return;
             }
-
+        
             redPackageIndex.TransactionId = eventData.TransactionId;
             redPackageIndex.TransactionResult = eventData.TransactionResult;
             if (eventData.Success == false)
             {
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
+                await _redPackageRepository.UpdateAsync(redPackageIndex);
                 var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageIndex.RedPackageId);
                 await grain.CancelRedPackage();
                 return;
