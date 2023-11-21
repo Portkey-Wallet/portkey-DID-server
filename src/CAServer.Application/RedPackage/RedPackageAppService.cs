@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Commons;
+using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
@@ -19,6 +20,8 @@ using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
+using Volo.Abp.Users;
+using ChainOptions = CAServer.Options.ChainOptions;
 
 namespace CAServer.RedPackage;
 
@@ -31,13 +34,14 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
     private readonly IHttpContextAccessor _httpContextAccessor;
-
+    private readonly IContactProvider _contactProvider;
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         IHttpContextAccessor httpContextAccessor,
         IObjectMapper objectMapper,
         IOptionsSnapshot<RedPackageOptions> redPackageOptions,
+        IContactProvider contactProvider,
         IOptionsSnapshot<ChainOptions> chainOptions)
     {
         _redPackageOptions = redPackageOptions.Value;
@@ -47,6 +51,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _redPackageIndexRepository = redPackageIndexRepository;
         _objectMapper = objectMapper;
         _httpContextAccessor = httpContextAccessor;
+        _contactProvider = contactProvider;
     }
 
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
@@ -180,8 +185,20 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(id);
         var detail =  (await grain.GetRedPackage(skipCount, maxResultCount,CurrentUser.Id.Value)).Data;
+        
         CheckLuckKing(detail);
         
+        await BuildAvatarAndNameAsync(detail);
+        
+        if (detail.Status == RedPackageStatus.Expired)
+        {
+            detail.IsRedPackageExpired = true;
+        }
+        
+        if (detail.Status == RedPackageStatus.FullyClaimed || detail.Grabbed == detail.Count)
+        {
+            detail.IsRedPackageFullyClaimed = true;
+        }
         return detail; 
     }
 
@@ -233,6 +250,37 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         if (input.Type != RedPackageType.Random || input.Grabbed != input.Count)
         {
             input.Items?.ForEach(item => item.IsLuckyKing = false);
+            input.LuckKingId = Guid.Empty;
+        }
+    }
+
+    private async Task BuildAvatarAndNameAsync(RedPackageDetailDto input)
+    {
+        var userIds = new List<Guid>();
+        userIds.Add(input.SenderId);
+        userIds.AddRange(input.Items.Select(x => x.UserId));
+        var users = await _contactProvider.GetCaHoldersAsync(userIds);
+        input.SenderAvatar = users.FirstOrDefault(x => x.UserId == input.SenderId)?.Avatar;
+        input.SenderName = users.FirstOrDefault(x => x.UserId == input.SenderId)?.NickName;
+        input.Items?.ForEach(item =>
+        {
+            item.Avatar = users.FirstOrDefault(x => x.UserId == item.UserId)?.Avatar;
+            item.Username = users.FirstOrDefault(x => x.UserId == item.UserId)?.NickName;
+        });
+        
+        //fill remark
+        var tasks = input.Items?.Select(async grabItemDto =>
+        {
+            var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), input.SenderId);
+            if (contact != null)
+            {
+                grabItemDto.Username = contact.Name;
+            }
+        });
+
+        if (tasks != null)
+        {
+            await Task.WhenAll(tasks);
         }
     }
 

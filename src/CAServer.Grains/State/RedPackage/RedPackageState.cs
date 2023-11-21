@@ -11,6 +11,7 @@ public class RedPackageState
     public string Memo { get; set; } = string.Empty;
     public string ChainId { get; set; }
     public Guid SenderId { get; set; }
+    public Guid LuckKingId { get; set; } = Guid.Empty;
     public long CreateTime { get; set; }
     //this will be set when the red package is not left
     public long EndTime { get; set; }

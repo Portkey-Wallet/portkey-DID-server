@@ -119,10 +119,14 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             Amount = bucket.Amount,
             Decimal = State.Decimal,
             GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-            IsLuckyKing = bucket.IsLuckyKing,
+            IsLuckyKing = State.Type == RedPackageType.Random && bucket.IsLuckyKing,
             UserId = userId,
             CaAddress = caAddress
         };
+        if (grabItem.IsLuckyKing)
+        {
+            State.LuckKingId = userId;
+        }
         State.Items.Add(grabItem);
         State.GrabbedAmount += bucket.Amount;
         State.Grabbed += 1;
@@ -158,7 +162,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             return (false, RedPackageConsts.RedPackageCancelled);
         }
 
-        if (State.Status == RedPackageStatus.FullyClaimed || State.Grabbed == State.Count)
+        if (State.Status == RedPackageStatus.FullyClaimed || State.Grabbed == State.Count || State.BucketNotClaimed.Count == 0)
         {
             return (false, RedPackageConsts.RedPackageFullyClaimed);
         }
