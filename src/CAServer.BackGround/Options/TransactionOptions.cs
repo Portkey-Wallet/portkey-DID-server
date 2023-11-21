@@ -6,5 +6,11 @@ public class TransactionOptions
     public int RetryTime { get; set; }
     public string SendToChainId { get; set; }
     public string RecurringPeriod { get; set; }
+    public string NftOrderMerchantCallbackPeriod { get; set; } = "0 0/15 * * * ?";
+    public string NftOrderThirdPartResultPeriod { get; set; } = "0 5/15 * * * ?";
+    public string HandleUnCompletedNftOrderPayResultPeriod { get; set; } = "0 10/15 * * * ?";
+    public string HandleUnCompletedNftOrderPayTransferPeriod { get; set; } = "0/15 * * * * ?";
     public long ResendTimeInterval { get; set; }
+    public string LockKeyPrefix { get; set; } = "CAServer.BGD:NFT_Order_worker:";
+    public string NftOrdersSettlementPeriod { get; set; } = "0 0 0/1 * * ?";
 }

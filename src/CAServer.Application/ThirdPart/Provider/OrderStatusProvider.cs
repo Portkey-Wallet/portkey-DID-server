@@ -1,15 +1,22 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Commons.Dtos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
+using Google.Protobuf.WellKnownTypes;
+using MassTransit;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -18,8 +25,13 @@ namespace CAServer.ThirdPart.Provider;
 
 public interface IOrderStatusProvider
 {
+    Task<OrderGrainDto> GetRampOrderAsync(Guid orderId);
+    Task<NftOrderGrainDto> GetNftOrderAsync(Guid orderId);
     Task AddOrderStatusInfoAsync(OrderStatusInfoGrainDto grainDto);
     Task UpdateOrderStatusAsync(OrderStatusUpdateDto orderStatusDto);
+    Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated, Dictionary<string, string> extension = null);
+    Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(NftOrderGrainDto dataToBeUpdated);
+    Task<int> CallBackNftOrderPayResultAsync(Guid orderId);
 }
 
 public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
@@ -29,15 +41,164 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IHttpProvider _httpProvider;
+    private readonly IBus _broadcastBus;
 
-    public OrderStatusProvider(ILogger<OrderStatusProvider> logger, IThirdPartOrderProvider thirdPartOrderProvider,
-        IObjectMapper objectMapper, IClusterClient clusterClient, IDistributedEventBus distributedEventBus)
+    private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
+        .WithCamelCasePropertyNamesResolver()
+        .WithAElfTypesConverters()
+        .IgnoreNullValue().Build();
+
+
+    public OrderStatusProvider(
+        ILogger<OrderStatusProvider> logger,
+        IThirdPartOrderProvider thirdPartOrderProvider,
+        IObjectMapper objectMapper,
+        IClusterClient clusterClient,
+        IOptions<ThirdPartOptions> thirdPartOptions,
+        IHttpProvider httpProvider,
+        IDistributedEventBus distributedEventBus, IBus broadcastBus)
     {
         _logger = logger;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
+        _thirdPartOptions = thirdPartOptions.Value;
+        _httpProvider = httpProvider;
         _distributedEventBus = distributedEventBus;
+        _broadcastBus = broadcastBus;
+    }
+    
+    public async Task<OrderGrainDto> GetRampOrderAsync(Guid orderId)
+    {
+        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderId);
+        var orderGrainDto = await orderGrain.GetOrder();
+        AssertHelper.IsTrue(orderGrainDto.Success, "Get NFT order failed.");
+        return orderGrainDto.Data == null || orderGrainDto.Data.Id != orderId ? null : orderGrainDto.Data;
+    }
+
+    public async Task<NftOrderGrainDto> GetNftOrderAsync(Guid orderId)
+    {
+        var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(orderId);
+        var nftOrderGrainDto = await nftOrderGrain.GetNftOrder();
+        AssertHelper.IsTrue(nftOrderGrainDto.Success, "Get NFT order failed.");
+        return nftOrderGrainDto.Data == null || nftOrderGrainDto.Data.Id != orderId ? null : nftOrderGrainDto.Data;
+    }
+    
+    // update ramp order
+    public async Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated, Dictionary<string, string> extension = null)
+    {
+        AssertHelper.NotEmpty(dataToBeUpdated.Id, "Update order id can not be empty");
+        var orderGrain = _clusterClient.GetGrain<IOrderGrain>(dataToBeUpdated.Id);
+        _logger.LogInformation("This {ThirdPartName} order {OrderId} will be updated", dataToBeUpdated.MerchantName,
+            dataToBeUpdated.Id);
+
+        var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
+        AssertHelper.IsTrue(result.Success, "Update order error");
+
+        var orderStatusGrainDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
+        orderStatusGrainDto.OrderStatusInfo.Extension = extension.IsNullOrEmpty() ? null : JsonConvert.SerializeObject(extension);
+        await AddOrderStatusInfoAsync(orderStatusGrainDto);
+
+        var orderChangeEto = _objectMapper.Map<OrderGrainDto, OrderEto>(result.Data);
+        await _distributedEventBus.PublishAsync(orderChangeEto, false);
+        await _broadcastBus.Publish(orderChangeEto);
+        return new CommonResponseDto<Empty>();
+    }
+
+    // update NFT order
+    public async Task<CommonResponseDto<Empty>> UpdateNftOrderAsync(NftOrderGrainDto dataToBeUpdated)
+    {
+        AssertHelper.NotEmpty(dataToBeUpdated.Id, "Update nft order id can not be empty");
+        var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(dataToBeUpdated.Id);
+        _logger.LogInformation("This {MerchantName} nft order {OrderId} will be updated", dataToBeUpdated.MerchantName,
+            dataToBeUpdated.Id);
+
+        var result = await nftOrderGrain.UpdateNftOrder(dataToBeUpdated);
+        AssertHelper.IsTrue(result.Success, "Update nft order error");
+
+        await _distributedEventBus.PublishAsync(new NftOrderEto(result.Data), false);
+        return new CommonResponseDto<Empty>();
+    }
+
+    // call back NFT order pay result to Merchant webhookUrl
+    public async Task<int> CallBackNftOrderPayResultAsync(Guid orderId)
+    {
+        var status = string.Empty;
+        try
+        {
+            // query order grain
+            
+            var nftOrderGrainDto = await GetNftOrderAsync(orderId);
+            AssertHelper.IsTrue(nftOrderGrainDto?.WebhookStatus != NftOrderWebhookStatus.SUCCESS.ToString(),
+                "Webhook status of order {OrderId} exists", orderId);
+            if (nftOrderGrainDto?.WebhookCount >= _thirdPartOptions.Timer.NftCheckoutMerchantCallbackCount)
+                return 0;
+
+            var orderGrainDto = await GetRampOrderAsync(orderId);
+            AssertHelper.NotEmpty(orderGrainDto.TransactionId, "Settlement transactionId missing.");
+            status = orderGrainDto.Status;
+
+            // callback merchant webhook API and fill raw result
+            nftOrderGrainDto = await DoCallBackNftOrderPayResultAsync(status, nftOrderGrainDto);
+
+            nftOrderGrainDto.WebhookTime = DateTime.UtcNow.ToUtcString();
+            nftOrderGrainDto.WebhookCount ++;
+
+            var nftOrderResult = await UpdateNftOrderAsync(nftOrderGrainDto);
+            AssertHelper.IsTrue(nftOrderResult.Success,
+                "Webhook result update fail, webhookStatus={WebhookStatus}, webhookResult={WebhookResult}",
+                nftOrderGrainDto.WebhookStatus, nftOrderGrainDto.WebhookResult);
+            return 1;
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(e, "Handle nft order callback fail, Id={Id}, Status={Status}", orderId, status);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Handle nft order callback error, Id={Id}, Status={Status}", orderId, status);
+        }
+
+        return 0;
+    }
+
+    private async Task<NftOrderGrainDto> DoCallBackNftOrderPayResultAsync(string orderStatus,
+        NftOrderGrainDto nftOrderGrainDto)
+    {
+        try
+        {
+            var requestDto = new NftOrderResultRequestDto
+            {
+                MerchantName = nftOrderGrainDto.MerchantName,
+                MerchantOrderId = nftOrderGrainDto.MerchantOrderId,
+                OrderId = nftOrderGrainDto.Id.ToString(),
+                Status = orderStatus == OrderStatusType.Pending.ToString()
+                    ? NftOrderWebhookStatus.SUCCESS.ToString()
+                    : NftOrderWebhookStatus.FAIL.ToString()
+            };
+            _thirdPartOrderProvider.SignMerchantDto(requestDto);
+
+            // do callback merchant
+            var res = await _httpProvider.Invoke(HttpMethod.Post, nftOrderGrainDto.WebhookUrl,
+                body: JsonConvert.SerializeObject(requestDto, JsonSerializerSettings));
+            nftOrderGrainDto.WebhookResult = res;
+
+            var resObj = JsonConvert.DeserializeObject<CommonResponseDto<Empty>>(res);
+            nftOrderGrainDto.WebhookStatus = resObj.Success
+                ? NftOrderWebhookStatus.SUCCESS.ToString()
+                : NftOrderWebhookStatus.FAIL.ToString();
+        }
+        catch (HttpRequestException e)
+        {
+            _logger.LogWarning(e, "Do callback nft order fail, Id={Id}, Status={Status}",
+                nftOrderGrainDto.Id, orderStatus);
+            nftOrderGrainDto.WebhookStatus = NftOrderWebhookStatus.FAIL.ToString();
+            nftOrderGrainDto.WebhookResult = e.Message;
+        }
+
+        return nftOrderGrainDto;
     }
 
     public async Task UpdateOrderStatusAsync(OrderStatusUpdateDto orderStatusDto)
@@ -64,6 +225,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             {
                 grainDto.TransactionId = orderStatusDto.Order.TransactionId;
             }
+
             grainDto.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
             var result = await orderGrain.UpdateOrderAsync(grainDto);
@@ -78,7 +240,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
                 false);
 
             var statusInfoDto = _objectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data);
-            statusInfoDto.RawTransaction = orderStatusDto.RawTransaction; 
+            statusInfoDto.RawTransaction = orderStatusDto.RawTransaction;
             statusInfoDto.OrderStatusInfo.Extension =
                 JsonConvert.SerializeObject(orderStatusDto.DicExt ?? new Dictionary<string, object>());
 

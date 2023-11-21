@@ -24,6 +24,26 @@ public class InitJobsService : BackgroundService
         {
             _recurringJobs.AddOrUpdate<ITransactionProvider>("HandleUnCompletedOrdersAsync",
                 x => x.HandleUnCompletedOrdersAsync(), _transactionOptions.RecurringPeriod);
+            
+            // fix uncompleted merchant callback
+            _recurringJobs.AddOrUpdate<NftOrderMerchantCallbackWorker>("HandleNftOrdersCallbackAsync",
+                x => x.Handle(), _transactionOptions.NftOrderMerchantCallbackPeriod);
+            
+            // fix uncompleted NFT release result notify to ThirdPart
+            _recurringJobs.AddOrUpdate<NftOrderThirdPartNftResultNotifyWorker>("HandleNftThirdPartResultNotifyAsync",
+                x => x.Handle(), _transactionOptions.NftOrderThirdPartResultPeriod);
+            
+            // fix order status, witch is still Created/Initialized 
+            _recurringJobs.AddOrUpdate<INftOrderThirdPartOrderStatusWorker>("HandleUnCompletedNftOrderPayResultRefresh",
+                x => x.Handle(), _transactionOptions.HandleUnCompletedNftOrderPayResultPeriod);
+            
+            // fix uncompleted ELF transfer to merchant
+            _recurringJobs.AddOrUpdate<INftOrderSettlementTransferWorker>("HandleUnCompletedNftOrderSettlementTransfer",
+                x => x.Handle(), _transactionOptions.HandleUnCompletedNftOrderPayTransferPeriod);
+            
+            // fix uncompleted ELF order count value
+            _recurringJobs.AddOrUpdate<INftOrdersSettlementWorker>("NftOrdersSettlementWorker",
+                x => x.Handle(), _transactionOptions.NftOrdersSettlementPeriod);
         }
         catch (Exception e)
         {

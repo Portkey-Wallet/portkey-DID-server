@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CAServer.ThirdPart.Dtos.Order;
 
 namespace CAServer.ThirdPart.Dtos;
 
@@ -47,4 +48,11 @@ public class OrderDto
     public string ReceivingMethod { get; set; }
     public string ReceiptTime { get; set; }
     public string TransactionId { get; set; }
+
+    public NftOrderSectionDto NftOrderSection { get; set; }
+    
+    public OrderSettlementSectionDto OrderSettlementSection { get; set; }
+    
+    public OrderStatusSection OrderStatusSection { get; set; }
+    
 }

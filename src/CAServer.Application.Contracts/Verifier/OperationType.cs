@@ -9,5 +9,8 @@ public enum OperationType
     RemoveGuardian = 4,
     UpdateGuardian = 5,
     RemoveOtherManagerInfo = 6,
-    SetLoginGuardian = 7
+    SetLoginGuardian = 7,
+    Approve = 8,
+    ModifyTransferLimit = 9,
+    GuardianApproveTransfer = 10
 }

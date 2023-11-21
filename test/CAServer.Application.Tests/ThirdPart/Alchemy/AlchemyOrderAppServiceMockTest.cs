@@ -3,19 +3,19 @@ using Microsoft.Extensions.Options;
 
 namespace CAServer.ThirdPart.Alchemy;
 
-public partial class AlchemyOrderAppServiceTest
+public sealed partial class AlchemyOrderAppServiceTest
 {
-    private IOptions<ThirdPartOptions> getMockThirdPartOptions()
+    private static IOptions<ThirdPartOptions> GetMockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
-            alchemy = new AlchemyOptions()
+            Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
                 AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
             },
-            timer = new ThirdPartTimerOptions()
+            Timer = new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,

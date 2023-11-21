@@ -1,13 +1,7 @@
 using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
-using CAServer.Commons;
-using CAServer.Grains.Grain.ApplicationHandler;
-using CAServer.UserAssets.Dtos;
-using CAServer.UserAssets.Provider;
 using GraphQL;
-using GraphQL.Client.Http;
-using GraphQL.Client.Serializer.Newtonsoft;
 using Portkey.Contracts.CA;
 using Volo.Abp.DependencyInjection;
 

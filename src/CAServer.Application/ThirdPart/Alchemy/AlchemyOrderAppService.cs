@@ -34,7 +34,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyOptions _alchemyOptions;
-    private readonly IAlchemyProvider _alchemyProvider;
+    private readonly AlchemyProvider _alchemyProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
     private readonly JsonSerializerSettings _setting = new()
@@ -42,21 +42,23 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         ContractResolver = new CamelCasePropertyNamesContractResolver()
     };
 
-    public AlchemyOrderAppService(IClusterClient clusterClient,
+    public AlchemyOrderAppService(
+        IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus,
         ILogger<AlchemyOrderAppService> logger,
-        IOptions<ThirdPartOptions> merchantOptions,
-        IAlchemyProvider alchemyProvider,
+        IOptions<ThirdPartOptions> thirdPartOptions,
+        AlchemyProvider alchemyProvider,
         IObjectMapper objectMapper,
-        IOrderStatusProvider orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider
+    )
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
         _objectMapper = objectMapper;
         _logger = logger;
-        _alchemyOptions = merchantOptions.Value.alchemy;
+        _alchemyOptions = thirdPartOptions.Value.Alchemy;
         _alchemyProvider = alchemyProvider;
         _orderStatusProvider = orderStatusProvider;
     }
@@ -94,14 +96,15 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
-            _logger.LogInformation("This alchemy order {grainId} will be updated.", grainId);
+            _logger.LogInformation("This alchemy order {GrainId} will be updated, status={Status}", grainId,
+                dataToBeUpdated.Status);
 
             var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
 
             if (!result.Success)
             {
-                _logger.LogError("Update user order fail, third part order number: {orderId}", input.MerchantOrderNo);
-                return new BasicOrderResult() { Message = $"Update order failed,{result.Message}" };
+                _logger.LogError("Update user order fail, third part order number: {OrderId}", input.MerchantOrderNo);
+                return new BasicOrderResult { Message = $"Update order failed,{result.Message}" };
             }
 
             await _distributedEventBus.PublishAsync(_objectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
@@ -210,7 +213,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
             var queryString = string.Join("&", orderQueryDto.GetType().GetProperties()
                 .Select(p => $"{char.ToLower(p.Name[0]) + p.Name.Substring(1)}={p.GetValue(orderQueryDto)}"));
 
-            var queryResult = JsonConvert.DeserializeObject<QueryAlchemyOrderInfoResultDto>(
+            var queryResult = JsonConvert.DeserializeObject<AlchemyBaseResponseDto<QueryAlchemyOrderInfo>>(
                 await _alchemyProvider.HttpGetFromAlchemy(_alchemyOptions.MerchantQueryTradeUri + "?" + queryString));
 
             return queryResult.Data;
@@ -218,7 +221,7 @@ public class AlchemyOrderAppService : CAServerAppService, IAlchemyOrderAppServic
         catch (Exception e)
         {
             _logger.LogError(e,
-                "Error deserializing query alchemy order info. orderId:{orderId}, thirdPartOrderNo:{thirdPartOrderNo}",
+                "Error deserializing query alchemy order info. orderId:{OrderId}, thirdPartOrderNo:{ThirdPartOrderNo}",
                 input.Id.ToString(), input.ThirdPartOrderNo);
             return new QueryAlchemyOrderInfo();
         }

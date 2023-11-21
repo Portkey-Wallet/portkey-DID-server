@@ -1,32 +1,32 @@
-using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Threading.Tasks;
-using CAServer.AppleAuth.Provider;
+using CAServer.BackGround;
+using CAServer.BackGround.EventHandler;
+using CAServer.BackGround.Provider;
 using CAServer.Bookmark;
-using CAServer.Common;
+using CAServer.ContractEventHandler.Core;
 using CAServer.EntityEventHandler.Core;
+using CAServer.EntityEventHandler.Core.ThirdPart;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
+using CAServer.ThirdPart;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
-using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer;
 
 [DependsOn(
     typeof(CAServerApplicationModule),
+    typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),
     typeof(CAServerDomainTestModule)
@@ -35,16 +35,6 @@ public class CAServerApplicationTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        // load config from [appsettings.Development.json]
-        var environmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
-
-        var builder = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
-            .AddEnvironmentVariables();
-
-        var configuration = builder.Build();
-
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
@@ -54,7 +44,24 @@ public class CAServerApplicationTestModule : AbpModule
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
 
         ConfigureGraphQl(context);
+
+        context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
+        
+        context.Services.AddSingleton<INftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
+        context.Services.AddSingleton<INftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
+        context.Services.AddSingleton<INftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
+        context.Services.AddSingleton<INftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
+        
+        context.Services.AddSingleton<NftOrderMerchantCallbackHandler>();
+        context.Services.AddSingleton<NftOrderUpdateHandler>();
+        context.Services.AddSingleton<NftOrderReleaseResultHandler>();
+        context.Services.AddSingleton<NftOrderPaySuccessHandler>();
+        context.Services.AddSingleton<NftOrderTransferHandler>();
+        context.Services.AddSingleton<ThirdPartHandler>();
+        
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerContractEventHandlerCoreModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem
@@ -93,19 +100,18 @@ public class CAServerApplicationTestModule : AbpModule
             o.Language = "en";
             o.ExpirationDays = 1;
         });
-        context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
-        context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
+        context.Services.Configure<ChainOptions>(option =>
         {
-            option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
-                { { "TEST", new CAServer.Grains.Grain.ApplicationHandler.ChainInfo() } };
+            option.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
+                { { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() } };
         });
 
-        context.Services.Configure<CAServer.Options.ChainOptions>(option =>
+        context.Services.Configure<Options.ChainOptions>(option =>
         {
-            option.ChainInfos = new Dictionary<string, CAServer.Options.ChainInfo>
+            option.ChainInfos = new Dictionary<string, Options.ChainInfo>
             {
                 {
-                    "TEST", new CAServer.Options.ChainInfo()
+                    "TEST", new Options.ChainInfo()
                     {
                         BaseUrl = "http://127.0.0.1:6889",
                         ChainId = "TEST",
@@ -126,6 +132,7 @@ public class CAServerApplicationTestModule : AbpModule
             options.Code = "SG";
             options.Iso = "65";
         });
+        context.Services.Configure<SecurityOptions>(options => { options.DefaultTokenTransferLimit = 100000; });
 
         context.Services.Configure<AppleCacheOptions>(options =>
         {

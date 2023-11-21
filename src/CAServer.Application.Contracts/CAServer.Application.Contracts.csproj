@@ -9,12 +9,14 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CAServer.Domain.Shared\CAServer.Domain.Shared.csproj" />
+        <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
         <PackageReference Include="AElf.Sdk.CSharp" Version="1.2.3" />
         <PackageReference Include="AutoMapper" Version="12.0.0" />
+        <PackageReference Include="GoogleAuthenticator" Version="3.1.1" />
         <PackageReference Include="GraphQL.Client" Version="5.1.0" />
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
         <PackageReference Include="GraphQL.Primitives" Version="5.1.0" />

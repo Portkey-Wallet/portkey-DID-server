@@ -13,16 +13,25 @@ public static class AElfContractMethodName
 
 public static class CommonConstant
 {
+
+    public const string EmptyString = "";
+    public const string Dot = ".";
+    public const string Comma = ",";
+    
     public const string ResourceTokenKey = "ResourceToken";
     public const int CacheExpirationDays = 365;
 
     public const string FiatListKey = "FiatList";
+    public const string NftFiatListKey = "NftFiatList";
     public const int FiatListExpirationMinutes = 30;
     public const int OrderQuoteExpirationMinutes = 30;
     public static DateTimeOffset DefaultAbsoluteExpiration = DateTime.Parse("2099-01-01 12:00:00");
     public const string OrderStatusInfoPrefix = "OrderStatusInfo";
 
     public const string ChainName = "aelf";
+    public const string ELF = "ELF";
+    public const string USD = "USD";
+    public const string USDT = "USDT";
 
     public const string MainChainId = "AELF";
     public const string TDVVChainId = "tDVV";

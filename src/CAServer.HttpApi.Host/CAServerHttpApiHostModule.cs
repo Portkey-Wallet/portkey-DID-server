@@ -1,9 +1,11 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.Hubs;
+using CAServer.HubsEventHandler;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
@@ -12,6 +14,7 @@ using CAServer.Signature;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using MassTransit;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -38,6 +41,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
+using Volo.Abp.RabbitMQ;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
 using Volo.Abp.VirtualFileSystem;
@@ -82,6 +86,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        ConfigureMassTransit(context, configuration);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -272,6 +277,30 @@ public class CAServerHttpApiHostModule : AbpModule
         });
     }
 
+    private void ConfigureMassTransit(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddMassTransit(x =>
+        {
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
+            var clientId = configuration.GetSection("ClientId").Get<string>();
+            x.AddConsumer<OrderWsBroadcastConsumer>();
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                    "/", h =>
+                    {
+                        h.Username(rabbitMqConfig.Connections.Default.UserName);
+                        h.Password(rabbitMqConfig.Connections.Default.Password);
+                    });
+                
+                cfg.ReceiveEndpoint("BroadcastClient_" + clientId, e =>
+                {
+                    e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
+                });
+            });
+        });
+    }
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -299,6 +328,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
+
         if (env.IsDevelopment())
         {
             app.UseSwagger();

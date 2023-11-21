@@ -1,17 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Contracts.MultiToken;
+using AElf.Types;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.DependencyInjection;
+using Portkey.Contracts.CA;
 using Shouldly;
 using Volo.Abp;
 using Volo.Abp.Validation;
 using Xunit;
+using TransferInput = AElf.Client.MultiToken.TransferInput;
 
 namespace CAServer.ThirdPart.Alchemy;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
+public sealed partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 {
     private readonly IAlchemyOrderAppService _alchemyOrderAppService;
 
@@ -22,7 +27,8 @@ public partial class AlchemyOrderAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        services.AddSingleton(getMockThirdPartOptions());
+        base.AfterAddApplication(services);
+        services.AddSingleton(GetMockThirdPartOptions());
     }
 
     [Fact]
