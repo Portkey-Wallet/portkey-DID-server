@@ -13,4 +13,5 @@ public class GenerateRedPackageOutputDto
     public int Decimal { get; set; }
     public string ChainId { get; set; }
     public long ExpireTime { get; set; }
+    public string RedPackageContractAddress { get; set; }
 }

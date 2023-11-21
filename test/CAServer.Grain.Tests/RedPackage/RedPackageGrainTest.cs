@@ -16,6 +16,9 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         res.ShouldNotBeNull();
         res = await redPackageGrain.GenerateSignature("1asdasd");
         res.ShouldNotBeNull();
+
+        res = await redPackageGrain.GetPublicKey();
+        res.ShouldNotBeNull();
     }
 
     [Fact]
