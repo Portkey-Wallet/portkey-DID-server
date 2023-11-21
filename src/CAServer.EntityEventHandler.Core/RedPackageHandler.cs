@@ -77,10 +77,14 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
 
             //send redpackage Card
-            var imSendMessageRequestDto = JsonConvert.DeserializeObject<ImSendMessageRequestDto>(redPackageIndex.Message);
-            if (imSendMessageRequestDto.Type != RedPackageConsts.RedPackageCardType)
+            var imSendMessageRequestDto = new ImSendMessageRequestDto();
+            try
             {
-                _logger.LogError("RedPackageCreateResultEto Message DeserializeObject fail: {Message}", redPackageIndex.Message);
+                imSendMessageRequestDto = JsonConvert.DeserializeObject<ImSendMessageRequestDto>(redPackageIndex.Message);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e,"RedPackageCreateResultEto Message DeserializeObject fail: {Message}", redPackageIndex.Message);
                 imSendMessageRequestDto = new ImSendMessageRequestDto();
                 imSendMessageRequestDto.SendUuid = Guid.NewGuid().ToString();
                 imSendMessageRequestDto.ChannelUuid = redPackageIndex.ChannelUuid;
