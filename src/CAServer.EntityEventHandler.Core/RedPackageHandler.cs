@@ -99,6 +99,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 
             var headers = new Dictionary<string, string>();
             headers.Add(ImConstant.RelationAuthHeader,redPackageIndex.SenderRelationToken);
+            headers.Add(CommonConstant.AuthHeader,redPackageIndex.SenderPortkeyToken);
             await _httpClientProvider.PostAsync<ImSendMessageResponseDto>(
                 _imServerOptions.BaseUrl + ImConstant.SendMessageUrl, imSendMessageRequestDto, headers);
         }
