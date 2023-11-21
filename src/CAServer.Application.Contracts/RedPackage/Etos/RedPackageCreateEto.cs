@@ -18,8 +18,9 @@ public class RedPackageCreateEto
     public class GrabItemDto
     {
         public string Amount { get; set; }
-    
         public string CaAddress { get; set; }
+        public Guid UserId { get; set; }
+        public bool PaymentCompleted{ get; set; }
     }
 
 }

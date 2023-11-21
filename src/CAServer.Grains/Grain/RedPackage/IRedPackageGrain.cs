@@ -11,4 +11,6 @@ public interface IRedPackageGrain : IGrainWithGuidKey
     Task<GrainResultDto<bool>> DeleteRedPackage();
     Task<GrainResultDto<bool>> CancelRedPackage();
     Task<GrainResultDto<GrabResultDto>> GrabRedPackage(Guid userId,string caAddress);
+
+    Task<GrainResultDto<bool>> UpdateRedPackage(Guid packageId, Guid userId, string caAddress);
 }

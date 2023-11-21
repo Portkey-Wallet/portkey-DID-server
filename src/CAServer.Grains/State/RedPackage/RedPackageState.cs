@@ -30,11 +30,13 @@ public class RedPackageState
 public class GrabItem
 {
     public Guid UserId { get; set; }
+    public bool PaymentCompleted{ get; set; }
     public string CaAddress { get; set; } = string.Empty;
     public long GrabTime { get; set; }
     public bool IsLuckyKing { get; set; }
     public long Amount { get; set; }
     public int Decimal { get; set; }
+
 }
 
 public class BucketItem

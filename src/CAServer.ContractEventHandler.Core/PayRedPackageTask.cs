@@ -41,7 +41,7 @@ public class PayRedPackageTask
         _logger.Info("PayRedPackageAsync start and the redpackage id is {}",input.RedPackageId);
         var grabItemDtos = input.Items;
         Debug.Assert(grabItemDtos.IsNullOrEmpty(),"there are no one claim the red packages");
-        
+        var grain = _clusterClient.GetGrain<RedPackageGrain>(input.RedPackageId);
         foreach (var item in grabItemDtos)
         {
             //get one our account，pay aelf to user’s account 
@@ -50,10 +50,11 @@ public class PayRedPackageTask
             //red package transaction
             var result = await _contractProvider.SendTransferAsync(input.Symbol,item.Amount.ToString(),
                 item.CaAddress,input.ChainId,payRedPackageFrom);
+            
+            //if success update the payment status of red package 
+            await grain.UpdateRedPackage(input.RedPackageId, item.UserId, item.CaAddress);
         }
         _logger.Info("PayRedPackageAsync end and the redpackage id is {}",input.RedPackageId);
-
-        
 
     }
     

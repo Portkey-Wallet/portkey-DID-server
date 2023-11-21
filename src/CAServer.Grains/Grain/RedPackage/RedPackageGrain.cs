@@ -118,6 +118,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         {
             Amount = bucket.Amount,
             Decimal = State.Decimal,
+            PaymentCompleted = false,
             GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
             IsLuckyKing = bucket.IsLuckyKing,
             UserId = userId,
@@ -142,6 +143,16 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             Status = State.Status
         };
         
+        await WriteStateAsync();
+        return result;
+    }
+
+    public async Task<GrainResultDto<bool>> UpdateRedPackage(Guid packageId, Guid userId, string caAddress)
+    {
+        var result = new GrainResultDto<bool>();
+        result.Success = true;
+        result.Data = true;
+        _ = State.Items.Where(item => item.UserId.Equals(userId) && caAddress.Equals(item.CaAddress)).First(item => item.PaymentCompleted = true);
         await WriteStateAsync();
         return result;
     }

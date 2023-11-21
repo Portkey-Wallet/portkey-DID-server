@@ -32,7 +32,8 @@ public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
     public class GrabItemDto
     {
         public string Amount { get; set; }
-    
         public string CaAddress { get; set; }
+        public Guid UserId { get; set; }
+        public bool PaymentCompleted{ get; set; }
     }
 }
