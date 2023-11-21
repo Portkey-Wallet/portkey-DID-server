@@ -17,6 +17,8 @@ public class CustomMessageHelper
         };
         var result = new CustomMessage<RedPackageCard>();
         result.Data = redPackageCard;
+        result.Link = options.Link;
+        result.Image = options.CoverImage;
         return JsonConvert.SerializeObject(result);
     }
 }

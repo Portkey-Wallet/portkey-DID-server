@@ -13,7 +13,6 @@ public class SendRedPackageInputDto
     [Required] public int Count { get; set; }
     [Required] public string ChainId { get; set; }
     [Required] public string ChannelUuid { get; set; }
-    [Required] public string SendUuid { get; set; }
     [Required] public string RawTransaction { get; set; }
     [Required] public string Message { get; set; }
 }
