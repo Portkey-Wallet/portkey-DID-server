@@ -102,10 +102,10 @@ public class DataReportingHub : AbpHub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var clientId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
-        await _dataReportingAppService.OnDisconnectedAsync(Context.ConnectionId, CurrentUser.GetId());
+        var deviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
+        await _dataReportingAppService.OnDisconnectedAsync(deviceId, CurrentUser.GetId());
         
         _hubService.UnRegisterClient(Context.ConnectionId);
-        _logger.LogInformation("disconnect, clientId:{clientId}", clientId ?? "");
+        _logger.LogInformation("disconnect, clientId:{clientId}", deviceId ?? "");
     }
 }
