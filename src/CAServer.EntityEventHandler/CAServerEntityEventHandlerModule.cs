@@ -57,6 +57,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<CAServer.Options.ChainOptions>(configuration.GetSection("Chains"));
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
+        Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
