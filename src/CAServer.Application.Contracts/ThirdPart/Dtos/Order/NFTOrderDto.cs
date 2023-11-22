@@ -15,6 +15,7 @@ public class NftMerchantBaseDto
 public class CreateNftOrderRequestDto : NftMerchantBaseDto
 {
     [Required] public string NftSymbol { get; set; }
+    public string NftCollectionName { get; set; }
     [Required] public string MerchantOrderId { get; set; }
     [Required] public string WebhookUrl { get; set; }
     public string NftPicture { get; set; }
@@ -22,6 +23,7 @@ public class CreateNftOrderRequestDto : NftMerchantBaseDto
     [Required] public string PaymentAmount { get; set; }
     [Required] public string CaHash { get; set; }
     [Required] public string MerchantAddress { get; set; }
+    [Required] public string UserAddress { get; set; }
     public string TransDirect { get; set; } = TransferDirectionType.NFTBuy.ToString();
 }
 
@@ -42,6 +44,7 @@ public class OrderQueryRequestDto : NftMerchantBaseDto
 public class NftOrderQueryResponseDto : NftMerchantBaseDto
 {
     public string NftSymbol { get; set; }
+    public string NftCollectionName { get; set; }
     public string MerchantOrderId { get; set; }
     public string NftPicture { get; set; }
     public string PaymentSymbol { get; set; }

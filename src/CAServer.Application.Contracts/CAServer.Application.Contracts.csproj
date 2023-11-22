@@ -10,6 +10,7 @@
     <ItemGroup>
         <ProjectReference Include="..\CAServer.Domain.Shared\CAServer.Domain.Shared.csproj" />
         <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
+        <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -17,6 +18,7 @@
         <PackageReference Include="AElf.Sdk.CSharp" Version="1.2.3" />
         <PackageReference Include="AutoMapper" Version="12.0.0" />
         <PackageReference Include="CodingSeb.ExpressionEvaluator" Version="1.4.40" />
+        <PackageReference Include="GoogleAuthenticator" Version="3.1.1" />
         <PackageReference Include="GraphQL.Client" Version="5.1.0" />
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
         <PackageReference Include="GraphQL.Primitives" Version="5.1.0" />
@@ -57,6 +59,11 @@
 
     <ItemGroup>
       <Folder Include="UserBehavior\Dtos\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Amazon\SvgConst.cs" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,4 +1,5 @@
 {
+  "ClientId": "CAServer_HttpApi_Host_001",
   "apollo": {
     "UseApollo" : true,
     "AppId": "CAServerService",

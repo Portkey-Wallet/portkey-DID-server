@@ -1,14 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
+using CAServer.Tokens.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,7 +24,10 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 {
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
+    private readonly ITokenAppService _tokenAppService;
+    private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
+
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .WithCamelCasePropertyNamesResolver()
@@ -33,12 +38,17 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     public AlchemyNftOrderProcessor(ILogger<AlchemyNftOrderProcessor> logger, IClusterClient clusterClient,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
-        IAbpDistributedLock distributedLock)
-        : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock)
+        IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
+        ITokenAppService tokenAppService, ITokenProvider tokenProvider)
+        : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock,
+            thirdPartOrderAppService)
     {
         _logger = logger;
         _alchemyProvider = alchemyProvider;
         _thirdPartOptions = thirdPartOptions;
+        _tokenAppService = tokenAppService;
+        _tokenProvider = tokenProvider;
+        _alchemyOptions = thirdPartOptions.Value.Alchemy;
     }
 
     public override string ThirdPartName()
@@ -132,5 +142,44 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
             _logger.LogError(e, "Notify NFT release result to {ThirdPartName} fail", orderGrainDto.MerchantName);
             return new CommonResponseDto<Empty>().Error(e);
         }
+    }
+
+    public override async Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto,
+        NftOrderGrainDto nftOrderGrainDto,
+        OrderSettlementGrainDto orderSettlementGrainDto, long? finishTime = null)
+    {
+        // When the finishTime is empty, query the latest price,
+        // otherwise query the historical price.
+        var finishTimeLong = finishTime ?? DateTime.UtcNow.ToUtcMilliSeconds();
+        var finishDateTime = finishTime == null ? (DateTime?)null : TimeHelper.GetDateTimeFromTimeStamp(finishTimeLong);
+
+        var binanceExchange = finishTime == null
+            ? await _tokenAppService.GetLatestExchange(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
+                CommonConstant.USDT)
+            : await _tokenAppService.GetHistoryExchange(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
+                CommonConstant.USDT, (DateTime)finishDateTime);
+
+        var okxExchange = finishTime == null
+            ? await _tokenAppService.GetLatestExchange(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto,
+                CommonConstant.USDT)
+            : await _tokenAppService.GetHistoryExchange(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto, 
+                CommonConstant.USDT, (DateTime)finishDateTime);
+        
+        var cryptoPrice = orderGrainDto.CryptoAmount.SafeToDecimal();
+
+        if (orderSettlementGrainDto.BinanceSettlementAmount == null && binanceExchange != null)
+        {
+            orderSettlementGrainDto.BinanceExchange = binanceExchange.Exchange;
+            orderSettlementGrainDto.BinanceSettlementAmount = cryptoPrice * binanceExchange.Exchange;
+        }
+
+        if (orderSettlementGrainDto.OkxSettlementAmount == null && okxExchange != null)
+        {
+            orderSettlementGrainDto.OkxExchange = okxExchange.Exchange;
+            orderSettlementGrainDto.OkxSettlementAmount = cryptoPrice * okxExchange.Exchange;
+        }
+
+        orderSettlementGrainDto.SettlementCurrency = CommonConstant.USDT;
+        return orderSettlementGrainDto;
     }
 }

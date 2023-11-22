@@ -36,9 +36,14 @@ public static class StringHelper
         return decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
     }
     
-    public static double SafeToInt(this string s, int defaultValue = 0)
+    public static int SafeToInt(this string s, int defaultValue = 0)
     {
         return int.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
+    }
+    
+    public static long SafeToLong(this string s, long defaultValue = 0)
+    {
+        return long.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
     }
     
     /// replace all {param.key} in string

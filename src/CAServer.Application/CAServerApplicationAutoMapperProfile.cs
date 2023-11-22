@@ -417,16 +417,18 @@ public class CAServerApplicationAutoMapperProfile : Profile
         
         CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
             .Ignore(des => des.MerchantName)
+            .ForMember(des => des.Address, opt => opt.MapFrom(src => src.UserAddress))
             .ForMember(des => des.Crypto, opt => opt.MapFrom(src => src.PaymentSymbol))
             .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.PaymentAmount));
 
-        CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>();
+        CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>().ReverseMap();
+        CreateMap<OrderStatusInfoIndex, OrderStatusSection>().ReverseMap();
 
 
-        CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>();
-        CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>();
+        CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>().ReverseMap();
+        CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>().ReverseMap();
         
-        CreateMap<OrderEto, RampOrderIndex>();
+        CreateMap<OrderEto, RampOrderIndex>().ReverseMap();
         CreateMap<OrderEto, NotifyOrderDto>()
             .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
 
@@ -440,9 +442,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(des => des.ExpireTime, opt => opt.MapFrom(src => src.ExpireTime.ToUtcMilliSeconds()))
             .ForMember(des => des.CreateTime, opt => opt.MapFrom(src => src.CreateTime.ToUtcMilliSeconds()));
 
+        CreateMap<OrderSettlementGrainDto, OrderSettlementIndex>().ReverseMap();
         CreateMap<NftOrderGrainDto, NftOrderIndex>();
         CreateMap<NftOrderIndex, NftOrderQueryResponseDto>();
         CreateMap<NftOrderSectionDto, NftOrderQueryResponseDto>();
+        CreateMap<OrderSettlementIndex, OrderSettlementSectionDto>().ReverseMap();
         CreateMap<OrderDto, NftOrderQueryResponseDto>()
             .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
             .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));

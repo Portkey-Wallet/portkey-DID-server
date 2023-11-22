@@ -7,6 +7,7 @@ public class NftOrderGrainDto
     
     public Guid Id { get; set; }
     public string NftSymbol { get; set; }
+    public string NftCollectionName { get; set; }
     public string MerchantName { get; set; }
     public string MerchantOrderId { get; set; }
     public string MerchantAddress { get; set; }
@@ -18,7 +19,7 @@ public class NftOrderGrainDto
     public string WebhookStatus { get; set; } = NftOrderWebhookStatus.NONE.ToString();
     public string WebhookResult { get; set; }
     public string WebhookTime { get; set; }
-    public int WebhookCount { get; set; } = 0;
+    public int WebhookCount { get; set; }
     
     public string ThirdPartNotifyStatus { get; set; } = NftOrderWebhookStatus.NONE.ToString();
     
@@ -26,5 +27,5 @@ public class NftOrderGrainDto
     
     public string ThirdPartNotifyTime { get; set; }
     
-    public int ThirdPartNotifyCount { get; set; } = 0;
+    public int ThirdPartNotifyCount { get; set; }
 }

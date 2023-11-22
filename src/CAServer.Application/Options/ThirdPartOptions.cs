@@ -10,7 +10,15 @@ public class ThirdPartOptions
     public TransakOptions Transak { get; set; }
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
-    
+    public OrderExportAuth OrderExportAuth { get; set; }
+
+}
+
+public class OrderExportAuth
+{
+    public string Key { get; set; }
+    public string UserName { get; set; }
+    public string AccountTitle { get; set; }
 }
 
 public class ThirdPartTimerOptions
@@ -22,10 +30,16 @@ public class ThirdPartTimerOptions
     public int TransactionConfirmHeight { get; set; } = 100;
     public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
     public int HandleUnCompletedSettlementTransferSecondsAgo { get; set; } = 30;
+    public int HandleUnCompletedSettlementTransferHoursAgo { get; set; } = 1;
     public int NftCheckoutMerchantCallbackCount { get; set; }  = 3;
     public int NftCheckoutResultThirdPartNotifyCount { get; set; }  = 3;
     public int NftUnCompletedMerchantCallbackMinuteAgo { get; set; }  = 2;
     public int NftUnCompletedThirdPartCallbackMinuteAgo { get; set; }  = 2;
+    
+    // Handle un complete order settlement from days ago to minutes ago
+    public int NftUnCompletedOrderSettlementMinuteAgo { get; set; } = 2;
+    public int NftUnCompletedOrderSettlementDaysAgo { get; set; }  = 2;
+    
     public int RampUnCompletedSettlementMinuteAgo { get; set; }  = 2;
     public int NftOrderExpireSeconds { get; set; }  = 60 * 30;
 }

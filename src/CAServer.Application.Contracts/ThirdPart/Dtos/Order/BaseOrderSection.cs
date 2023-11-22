@@ -1,6 +1,4 @@
-using System;
-
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart.Dtos.Order;
 
 public interface IOrderSection{}
 
@@ -23,4 +21,6 @@ public class BaseOrderSection : IOrderSection
 public enum OrderSectionEnum
 {
     NftSection = 0,
+    SettlementSection = 1,
+    OrderStateSection = 2,
 }

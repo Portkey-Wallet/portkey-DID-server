@@ -68,4 +68,9 @@ public class OrderDto
     public string TransactionId { get; set; }
 
     public NftOrderSectionDto NftOrderSection { get; set; }
+    
+    public OrderSettlementSectionDto OrderSettlementSection { get; set; }
+    
+    public OrderStatusSection OrderStatusSection { get; set; }
+    
 }

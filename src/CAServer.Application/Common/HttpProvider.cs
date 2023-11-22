@@ -115,7 +115,7 @@ public class HttpProvider : IHttpProvider
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(
-                $"Server [{url}] returned status code {response.StatusCode} : {content}");
+                $"Server [{url}] returned status code {response.StatusCode} : {content}", null, response.StatusCode);
         }
         return content;
     }

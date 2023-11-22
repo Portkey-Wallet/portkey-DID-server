@@ -3,11 +3,8 @@ using CAServer.AccountValidator;
 using CAServer.Amazon;
 using CAServer.AppleAuth;
 using CAServer.Common;
-using CAServer.Google;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
-using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
@@ -18,8 +15,8 @@ using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Processor.NFT;
 using CAServer.ThirdPart.Processor.Ramp;
 using CAServer.ThirdPart.Processors;
-using CAServer.ThirdPart.Provider;
 using CAServer.ThirdPart.Transak;
+using CAServer.Tokens.Provider;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -90,6 +87,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
         
         context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
+        context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
+        context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
         
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
@@ -101,6 +100,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
         Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
         Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
+        Configure<ExchangeApiOptions>(configuration.GetSection("ExchangeApi"));
         Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
         Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
@@ -114,6 +114,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

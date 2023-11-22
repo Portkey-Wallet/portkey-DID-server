@@ -113,8 +113,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
 
         CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
         CreateMap<ValidateOriginChainIdState, ValidateOriginChainIdGrainDto>().ReverseMap();
-        CreateMap<NftOrderGrainDto, NftOrderState>();
-        CreateMap<NftOrderState, NftOrderGrainDto>();
+        CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
+        CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
     }
 }

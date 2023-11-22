@@ -1,23 +1,24 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using AElf.Kernel;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
@@ -33,6 +34,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IContractProvider _contractProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .WithAElfTypesConverters()
@@ -44,13 +46,14 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         IClusterClient clusterClient,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
-        IAbpDistributedLock distributedLock)
+        IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService)
     {
         _logger = logger;
         _clusterClient = clusterClient;
         _orderStatusProvider = orderStatusProvider;
         _contractProvider = contractProvider;
         _distributedLock = distributedLock;
+        _thirdPartOrderAppService = thirdPartOrderAppService;
         _thirdPartOptions = thirdPartOptions;
     }
 
@@ -104,6 +107,14 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// <returns></returns>
     public abstract Task<CommonResponseDto<Empty>> DoNotifyNftReleaseAsync(OrderGrainDto orderGrainDto,
         NftOrderGrainDto nftOrderGrainDto);
+
+    /// <summary>
+    ///     Calculate order settlement data of ThirdPart
+    /// </summary>
+    /// <param name="orderGrainDto"></param>
+    /// <returns></returns>
+    public abstract Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto,
+        NftOrderGrainDto nftOrderGrainDto, OrderSettlementGrainDto orderSettlementGrainDto, long? finishTime = null);
 
     /// <summary>
     ///     Verify and update nft order
@@ -259,12 +270,12 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             // update main-order, record transactionId first
             orderGrainDto.TransactionId = txHash;
             orderGrainDto.Status = OrderStatusType.Transferring.ToString();
-            var transferringResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto,
-                new Dictionary<string, string>
-                {
-                    ["txHash"] = txHash,
-                    ["transaction"] = JsonConvert.SerializeObject(transferTx, JsonSerializerSettings)
-                });
+            var transferringExtension = OrderStatusExtensionBuilder.Create()
+                .Add(ExtensionKey.TxHash, txHash)
+                .Add(ExtensionKey.Transaction, JsonConvert.SerializeObject(transferTx, JsonSerializerSettings))
+                .Build();
+            var transferringResult =
+                await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, transferringExtension);
             AssertHelper.IsTrue(transferringResult.Success, "sava ramp order failed: " + transferringResult.Message);
 
             // Transfer crypto to merchant, and wait result
@@ -285,15 +296,15 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 ? OrderStatusType.Transferred.ToString()
                 : OrderStatusType.Transferring.ToString();
 
-            var extensionData = new Dictionary<string, string>
-            {
-                ["txStatus"] = txResult.Status,
-                ["txBlockHeight"] = txResult.BlockNumber.ToString()
-            };
+            var resExtensionBuilder = OrderStatusExtensionBuilder.Create()
+                .Add(ExtensionKey.TxStatus, txResult.Status)
+                .Add(ExtensionKey.TxBlockHeight, txResult.BlockNumber.ToString());
             if (txResult.Status != TransactionState.Mined)
-                extensionData["txResult"] = JsonConvert.SerializeObject(txResult, JsonSerializerSettings);
+                resExtensionBuilder.Add(ExtensionKey.TxResult,
+                    JsonConvert.SerializeObject(txResult, JsonSerializerSettings));
 
-            var updateResult = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, extensionData);
+            var updateResult =
+                await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, resExtensionBuilder.Build());
             AssertHelper.IsTrue(updateResult.Success, "sava ramp order failed: " + updateResult.Message);
         }
         catch (UserFriendlyException e)
@@ -307,11 +318,53 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     }
 
     /// <summary>
+    ///     Save order settlement 
+    /// </summary>
+    /// <param name="orderId"></param>
+    /// <param name="finishTime"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public async Task<CommonResponseDto<Empty>> SaveOrderSettlementAsync(Guid orderId, long? finishTime = null)
+    {
+        try
+        {
+            // query verify order grain
+            var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
+            AssertHelper.NotNull(orderGrainDto, "No order found for {OrderId}", orderId);
+
+            // query nft-order data and verify
+            var nftOrderGrainDto = await _orderStatusProvider.GetNftOrderAsync(orderId);
+            AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
+
+            // fill order settlement data and save
+            var orderSettlementGrainDto = await _thirdPartOrderAppService.GetOrderSettlementAsync(orderId);
+            await FillOrderSettlement(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto, finishTime);
+
+            // save
+            await _thirdPartOrderAppService.AddUpdateOrderSettlementAsync(orderSettlementGrainDto);
+
+            return new CommonResponseDto<Empty>();
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning("NFT order SaveOrderSettlementAsync, orderId={OrderId}, msg={Msg}", orderId,
+                e.Message);
+            return new CommonResponseDto<Empty>().Error(e, e.Message);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "NFT order SaveOrderSettlementAsync error, orderId={OrderId}", orderId);
+            return new CommonResponseDto<Empty>().Error(e, e.Message);
+        }
+    }
+
+    /// <summary>
     ///     Invoke by worker, refresh settlement transfer transaction status
     /// </summary>
     /// <param name="orderId"></param>
     /// <param name="confirmedHeight"></param>
-    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long chainHeight, long confirmedHeight)
+    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long chainHeight,
+        long confirmedHeight)
     {
         try
         {
@@ -342,13 +395,14 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId,
                     orderGrainDto.TransactionId);
             _logger.LogDebug(
-                "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}", orderId,
-                orderGrainDto.TransactionId, rawTxResult.Status, rawTxResult.BlockNumber);
+                "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}",
+                orderId, orderGrainDto.TransactionId, rawTxResult.Status, rawTxResult.BlockNumber);
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
             // update order status
             var newStatus = rawTxResult.Status == TransactionState.Mined
-                ? rawTxResult.BlockNumber <= confirmedHeight || chainHeight >= rawTxResult.BlockNumber + _thirdPartOptions.CurrentValue.Timer.TransactionConfirmHeight
+                ? rawTxResult.BlockNumber <= confirmedHeight || chainHeight >=
+                rawTxResult.BlockNumber + _thirdPartOptions.CurrentValue.Timer.TransactionConfirmHeight
                     ? OrderStatusType.Finish.ToString()
                     : OrderStatusType.Transferred.ToString()
                 : OrderStatusType.TransferFailed.ToString();
@@ -358,8 +412,9 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // Record transfer data when filed
             var extraInfo = newStatus == OrderStatusType.TransferFailed.ToString()
-                ? new Dictionary<string, string>
-                    { ["txResult"] = JsonConvert.SerializeObject(rawTxResult, JsonSerializerSettings) }
+                ? OrderStatusExtensionBuilder.Create()
+                    .Add(ExtensionKey.TxResult, JsonConvert.SerializeObject(rawTxResult, JsonSerializerSettings))
+                    .Build()
                 : null;
 
             // update order status

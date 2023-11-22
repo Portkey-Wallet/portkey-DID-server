@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
@@ -17,6 +18,7 @@ using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Provider;
+using Google.Authenticator;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -81,7 +83,11 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         return processor;
     }
 
-    // crate user ramp order
+    /// <summary>
+    ///     crate user ramp order
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input)
     {
         // var userId = input.UserId;
@@ -154,7 +160,11 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     }
 
 
-    // create base order with nft-order section
+    /// <summary>
+    ///     create base order with nft-order section
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input)
     {
         try
@@ -181,7 +191,8 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
             orderGrainData.UserId = caHolder?.UserId ?? Guid.Empty;
             orderGrainData.Status = OrderStatusType.Initialized.ToString();
             orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
-            orderGrainData.CryptoPrice =
+            orderGrainData.CryptoQuantity = priceAmount.ToString(CultureInfo.InvariantCulture);
+            orderGrainData.CryptoAmount =
                 (priceAmount / Math.Pow(10, decimalsList.TokenInfo[0].Decimals)).ToString(CultureInfo.InvariantCulture);
             var createResult = await DoCreateOrderAsync(orderGrainData);
             AssertHelper.IsTrue(createResult.Success, "Create main order failed: " + createResult.Message);
@@ -262,7 +273,39 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         return result;
     }
 
-    // query by merchantName & merchantId with MerchantSignature
+    /// <summary>
+    ///     get order settlement
+    /// </summary>
+    /// <param name="orderId"></param>
+    /// <returns></returns>
+    public async Task<OrderSettlementGrainDto> GetOrderSettlementAsync(Guid orderId)
+    {
+        var grain = _clusterClient.GetGrain<IOrderSettlementGrain>(orderId);
+        var res = await grain.GetById(orderId);
+        AssertHelper.IsTrue(res.Success, "Get order settlement grain failed, {Msg}", res.Message);
+
+        return res.Data;
+    }
+
+    /// <summary>
+    ///     add or update order settlement
+    /// </summary>
+    /// <param name="grainDto"></param>
+    /// <returns></returns>
+    public async Task AddUpdateOrderSettlementAsync(OrderSettlementGrainDto grainDto)
+    {
+        var grain = _clusterClient.GetGrain<IOrderSettlementGrain>(grainDto.Id);
+        var res = await grain.AddUpdate(grainDto);
+        AssertHelper.IsTrue(res.Success, "AddUpdate order settlement grain failed, {Msg}", res.Message);
+
+        await _distributedEventBus.PublishAsync(new OrderSettlementEto(res.Data));
+    }
+
+    /// <summary>
+    ///     query by merchantName & merchantId with MerchantSignature
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public async Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(
         OrderQueryRequestDto input)
     {
@@ -306,6 +349,11 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         }
     }
 
+    /// <summary>
+    ///     get third part order by page
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         // var userId = input.UserId;
@@ -317,5 +365,82 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
                 UserId = userId,
                 OrderIdIn = orderIdIn
             }, OrderSectionEnum.NftSection);
+    }
+
+    /// <summary>
+    ///     Export order list
+    /// </summary>
+    /// <param name="condition"></param>
+    /// <param name="orderSectionEnums"></param>
+    /// <returns></returns>
+    public async Task<List<OrderDto>> ExportOrderList(GetThirdPartOrderConditionDto condition,
+        params OrderSectionEnum?[] orderSectionEnums)
+    {
+        var lastModifyTimeLt = TimeHelper.ParseFromUtc8(condition.LastModifyTimeLt, TimeHelper.DatePattern);
+        var lastModifyTimeGt = TimeHelper.ParseFromUtc8(condition.LastModifyTimeGt, TimeHelper.DatePattern);
+        AssertHelper.NotNull(lastModifyTimeLt, "Param 'endTime' value '{Time}' invalid", condition.LastModifyTimeLt);
+        AssertHelper.NotNull(lastModifyTimeGt, "Param 'startTime' value '{Time}' invalid", condition.LastModifyTimeGt);
+        
+        if (!condition.TransDirectIn.IsNullOrEmpty())
+        {
+            foreach (var type in condition.TransDirectIn)
+            {
+                var typeEnum = Enum.TryParse<TransferDirectionType>(type, out _);
+                AssertHelper.IsTrue(typeEnum, "Param 'type' value '{Type}' invalid", type);
+            }
+        }
+        if (!condition.StatusIn.IsNullOrEmpty())
+        {
+            foreach (var status in condition.StatusIn)
+            {
+                var stateEnum = Enum.TryParse<OrderStatusType>(status, out _);
+                AssertHelper.IsTrue(stateEnum, "Param 'status' value '{Status}' invalid", status);
+            }
+        }
+
+        condition.LastModifyTimeLt = lastModifyTimeLt?.AddDays(1).ToUtcMilliSeconds().ToString();
+        condition.LastModifyTimeGt = lastModifyTimeGt?.ToUtcMilliSeconds().ToString();
+
+        var orderDtos = new List<OrderDto>();
+        while (true)
+        {
+            var pager = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(condition,
+                orderSectionEnums);
+            if (pager.Data.IsNullOrEmpty()) break;
+
+            condition.LastModifyTimeLt = pager.Data.Select(i => i.LastModifyTime).Min();
+            orderDtos.AddRange(pager.Data);
+        }
+
+        return orderDtos;
+    }
+
+    /// <summary>
+    ///     Generate a google auth code by key
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="userName"></param>
+    /// <param name="accountTitle"></param>
+    /// <returns></returns>
+    public SetupCode GenerateGoogleAuthCode(string key, string userName, string accountTitle)
+    {
+        const string defaultName = "noName";
+        const string defaultTitle = "orderExport";
+        AssertHelper.NotNull(key, "Param key required");
+        var tfa = new TwoFactorAuthenticator();
+        return tfa.GenerateSetupCode(userName.DefaultIfEmpty(defaultName), accountTitle.DefaultIfEmpty(defaultTitle),
+            HashHelper.ComputeFrom(key).ToByteArray(), 5);
+    }
+
+    /// <summary>
+    ///     Verify order export auth by google-auth-pin
+    /// </summary>
+    /// <param name="pin"></param>
+    /// <returns></returns>
+    public bool VerifyOrderExportCode(string pin)
+    {
+        var tfa = new TwoFactorAuthenticator();
+        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.OrderExportAuth.Key).ToByteArray(),
+            pin);
     }
 }

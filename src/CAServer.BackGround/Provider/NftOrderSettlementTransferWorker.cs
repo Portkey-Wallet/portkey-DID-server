@@ -4,6 +4,7 @@ using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Hangfire;
@@ -32,7 +33,8 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
     public NftOrderSettlementTransferWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         INftCheckoutService nftCheckoutService, ILogger<NftOrderSettlementTransferWorker> logger,
         IAbpDistributedLock distributedLock,
-        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions, IContractProvider contractProvider)
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions,
+        IContractProvider contractProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _nftCheckoutService = nftCheckoutService;
@@ -42,7 +44,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
         _transactionOptions = transactionOptions.Value;
         _thirdPartOptions = thirdPartOptions;
     }
-    
+
     /// <summary>
     ///     fix uncompleted ELF transfer to merchant
     /// </summary>
@@ -52,26 +54,28 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
     {
         _logger.LogDebug("NftOrderSettlementTransferWorker start");
         await using var handle =
-            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "NftOrderSettlementTransferWorker");
+            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix +
+                                                         "NftOrderSettlementTransferWorker");
         if (handle == null)
         {
             _logger.LogWarning("NftOrderSettlementTransferWorker running, skip");
             return;
         }
-        
+
         var chainStatus = await _contractProvider.GetChainStatus(CommonConstant.MainChainId);
-        _logger.LogDebug("NftOrderSettlementTransferWorker chainHeight={Height} LIB: {LibHeight}", 
+        _logger.LogDebug("NftOrderSettlementTransferWorker chainHeight={Height} LIB: {LibHeight}",
             chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight);
-        
+
         const int pageSize = 100;
         var secondsAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds().ToString();
-        var modifyTimeGt = DateTime.UtcNow.AddHours(-1).ToUtcMilliSeconds().ToString();
+        var modifyTimeGt = DateTime.UtcNow
+            .AddHours(-_thirdPartOptions.Timer.HandleUnCompletedSettlementTransferHoursAgo).ToUtcMilliSeconds();
         var total = 0;
         var count = 0;
         while (true)
         {
-            if (string.Compare(lastModifyTimeLt, modifyTimeGt, StringComparison.Ordinal) <= 0) break;
+            if (string.Compare(lastModifyTimeLt, modifyTimeGt.ToString(), StringComparison.Ordinal) <= 0) break;
             var pendingData = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
                 new GetThirdPartOrderConditionDto(0, pageSize)
                 {
@@ -86,15 +90,25 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
                 }, OrderSectionEnum.NftSection);
             if (pendingData.Data.IsNullOrEmpty()) break;
             total += pendingData.Data.Count;
-            
+
             lastModifyTimeLt = pendingData.Data.Min(order => order.LastModifyTime);
 
             var callbackResults = new List<Task<CommonResponseDto<Empty>>>();
             foreach (var orderDto in pendingData.Data)
             {
+                var createTime = orderDto.NftOrderSection?.CreateTime;
+                if (createTime == null || createTime < modifyTimeGt)
+                {
+                    _logger.LogInformation(
+                        "NftOrderSettlementTransferWorker order too early, order={OrderId}, status={Status}",
+                        orderDto.Id, orderDto.Status);
+                    continue;
+                }
+
                 callbackResults.Add(_nftCheckoutService
                     .GetProcessor(orderDto.MerchantName)
-                    .RefreshSettlementTransfer(orderDto.Id, chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight));
+                    .RefreshSettlementTransfer(orderDto.Id, chainStatus.BestChainHeight,
+                        chainStatus.LastIrreversibleBlockHeight));
             }
 
             // non data in page was handled, stop
@@ -111,6 +125,5 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
         {
             _logger.LogDebug("NftOrderSettlementTransferWorker finish, total:{Count}/{Total}", count, total);
         }
-
     }
 }

@@ -10,6 +10,7 @@ using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Transak;
+using CAServer.Tokens.Provider;
 using GraphQL;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -71,6 +72,10 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 AppId = "transakAppId",
                 AppSecret = "transakAppSecret",
                 BaseUrl = "http://127.0.0.1:9200"
+            },
+            OrderExportAuth = new OrderExportAuth
+            {
+                Key = "test"
             },
             Timer = new ThirdPartTimerOptions()
             {
@@ -238,6 +243,27 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             .ReturnsAsync(100);
 
         return mockGraphQlClient.Object;
+    }
+
+    protected ITokenProvider MockTokenPrivider()
+    {
+        
+        var tokenProvider = new Mock<ITokenProvider>();
+        tokenProvider
+            .Setup(p => p.GetTokenInfosAsync(It.IsAny<string>(), "ELF", It.IsAny<string >(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new IndexerTokens
+            {
+                TokenInfo = new List<IndexerToken>
+                {
+                    new ()
+                    {
+                        Symbol = "ELF",
+                        Decimals = 8,
+                    }
+                }
+            });
+
+        return tokenProvider.Object;
     }
 
 }
