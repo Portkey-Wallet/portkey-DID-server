@@ -14,6 +14,7 @@ using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Processor.NFT;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens.Provider;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -70,8 +71,9 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
         
         context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
-
-
+        context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
+        context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
+        
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -96,6 +98,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

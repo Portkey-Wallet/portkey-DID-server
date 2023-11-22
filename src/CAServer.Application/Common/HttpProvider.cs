@@ -39,7 +39,7 @@ public interface IHttpProvider : ISingletonDependency
 
 public class HttpProvider : IHttpProvider
 {
-    private static readonly JsonSerializerSettings DefaultJsonSettings = JsonSettingsBuilder.New()
+    public static readonly JsonSerializerSettings DefaultJsonSettings = JsonSettingsBuilder.New()
             .WithCamelCasePropertyNamesResolver()
             .IgnoreNullValue()
             .Build();
@@ -122,7 +122,7 @@ public class HttpProvider : IHttpProvider
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException(
-                $"Server [{fullUrl}] returned status code {response.StatusCode} : {content}");
+                $"Server [{fullUrl}] returned status code {response.StatusCode} : {content}", null, response.StatusCode);
         }
 
         return content;

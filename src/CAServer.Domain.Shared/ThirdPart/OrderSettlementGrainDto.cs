@@ -8,12 +8,13 @@ public class OrderSettlementGrainDto
     public Guid Id { get; set; }
     public string TotalFee { get; set; }
     public string FeeCurrency { get; set; }
-    public decimal? ExchangeFiatUsd { get; set; }
-    public decimal? ExchangeUsdUsdt { get; set; }
-    public decimal? ExchangeUsdCrypto { get; set; }
+    public decimal? BinanceExchange { get; set; }
+    public decimal? OkxExchange { get; set; }
     public string SettlementCurrency { get; set; }
-    public decimal? SettlementAmount { get; set; }
+    public decimal? BinanceSettlementAmount { get; set; }
+    public decimal? OkxSettlementAmount { get; set; }
     public List<FeeItem> FeeDetail { get; set; } = new();
+    public Dictionary<string, string> ExtensionData { get; set; }
 }
 
 public class FeeItem
