@@ -77,7 +77,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             
             await _redPackageRepository.UpdateAsync(redPackageIndex);
             
-            BackgroundJob.Schedule<RedPackageTask>(x => x.DeleteRedPackageAsync(redPackageIndex.RedPackageId),
+            BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
                 TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
 
             //send redpackage Card

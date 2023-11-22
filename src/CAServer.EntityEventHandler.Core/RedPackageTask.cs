@@ -22,11 +22,11 @@ public class RedPackageTask
         _logger = logger;
     }
 
-    public async Task DeleteRedPackageAsync(Guid redPackageId)
+    public async Task ExpireRedPackageRedPackageAsync(Guid redPackageId)
     {
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
-        await grain.DeleteRedPackage();
-        _logger.LogInformation("delete RedPackage id:{id}", redPackageId);
+        await grain.ExpireRedPackage();
+        _logger.LogInformation("Expire RedPackage id:{id}", redPackageId);
     }
 }
