@@ -88,7 +88,6 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
-        ConfigureHangfire(context, configuration);
         context.Services.AddHttpContextAccessor();
         ConfigureTokenCleanupService();
     }
@@ -331,8 +330,6 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
         
-        app.UseHangfireServer();
-        app.UseHangfireDashboard("/hangfire", new DashboardOptions{});
         StartOrleans(context.ServiceProvider);
     }
 

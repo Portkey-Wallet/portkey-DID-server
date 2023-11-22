@@ -26,8 +26,6 @@ public class RedPackageTask
     [Queue("redpackage")]
     public async Task ExpireRedPackageRedPackageAsync(Guid redPackageId)
     {
-        _logger.LogInformation("Expire RedPackage id:{id}", redPackageId);
-
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
         await grain.ExpireRedPackage();
