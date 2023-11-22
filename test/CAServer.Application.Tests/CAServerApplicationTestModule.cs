@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NSubstitute.Extensions;
+using Org.BouncyCastle.Utilities.Collections;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
@@ -50,11 +51,12 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
-        
+
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
 
         ConfigureGraphQl(context);
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
+        // Configure<ActivityTypeOptions>(configuration.GetSection("activityOptions"));
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem
@@ -94,6 +96,19 @@ public class CAServerApplicationTestModule : AbpModule
             o.ExpirationDays = 1;
         });
         context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
+
+        context.Services.Configure<ActivityTypeOptions>(o =>
+        {
+            o.TypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
+            o.DefaultTypes = new List<string>() { "TEST" };
+            o.AllSupportTypes = new HashSet<string>() { "TEST" };
+            o.TransferTypes = new List<string>() { "TEST" };
+            o.ContractTypes = new List<string>() { "TEST" };
+            o.ShowPriceTypes = new List<string>() { "TEST" };
+            o.ShowNftTypes = new List<string>() { "TEST" };
+            o.RecentTypes = new List<string>() { "TEST" };
+            o.Zero = "0";
+        });
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
         {
             option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
@@ -149,6 +164,4 @@ public class CAServerApplicationTestModule : AbpModule
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
-    
-
 }

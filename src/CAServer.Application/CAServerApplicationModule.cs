@@ -42,7 +42,13 @@ public class CAServerApplicationModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
+        // var configFilePath = "appsettings.json";
+        // _configuration = new ConfigurationBuilder()
+        //     .SetBasePath(Directory.GetCurrentDirectory())
+        //     .AddJsonFile(configFilePath)
+        //     .Build();
         var configuration = context.Services.GetConfiguration();
+        
         Configure<TokenListOptions>(configuration.GetSection("Tokens"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfo"));
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
