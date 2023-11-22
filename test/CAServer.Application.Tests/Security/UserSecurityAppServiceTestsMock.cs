@@ -57,7 +57,7 @@ public partial class UserSecurityAppServiceTest
     {
         var mockUserSecurityProvider = new Mock<IUserSecurityProvider>();
 
-        mockUserSecurityProvider.Setup(m => m.GetTransferLimitListByCaHash(It.IsAny<string>()))
+        mockUserSecurityProvider.Setup(m => m.GetTransferLimitListByCaHashAsync(It.IsAny<string>()))
             .ReturnsAsync(
                 new IndexerTransferLimitList()
                 {
@@ -76,7 +76,7 @@ public partial class UserSecurityAppServiceTest
                         }
                     }
                 });
-        mockUserSecurityProvider.Setup(m => m.GetManagerApprovedListByCaHash(It.IsAny<string>(), It.IsAny<string>(),
+        mockUserSecurityProvider.Setup(m => m.GetManagerApprovedListByCaHashAsync(It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>(), It.IsAny<long>(), It.IsAny<long>()))
             .ReturnsAsync(
                 new IndexerManagerApprovedList()
