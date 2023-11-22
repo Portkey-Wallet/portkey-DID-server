@@ -98,7 +98,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         context.Services.AddHangfireServer(options =>
         {
             options.Queues = new[] { "redpackage" };
-            options.WorkerCount = 1;
+            options.WorkerCount = 8;
         });
     }
     

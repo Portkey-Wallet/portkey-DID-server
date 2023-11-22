@@ -31,7 +31,7 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         res.Success.ShouldBe(true);
         res = await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(redPackageId), 8, 1, userId);
         res.Success.ShouldBe(false);
-        await redPackageGrain.DeleteRedPackage();
+        await redPackageGrain.ExpireRedPackage();
         var detail = await redPackageGrain.GetRedPackage(0, 10, userId);
         detail.Data.Status.ShouldBe(RedPackageStatus.Expired);
         await redPackageGrain.CancelRedPackage();
@@ -69,7 +69,7 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
         res.Success.ShouldBe(false);
         res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageCancelled);
-        await redPackageGrain.DeleteRedPackage();
+        await redPackageGrain.ExpireRedPackage();
         res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
         res.Success.ShouldBe(false);
         res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageExpired);
@@ -94,7 +94,6 @@ public class RedPackageGrainTest : CAServerGrainTestBase
             ChainId = "AELF",
             Symbol = "ELF",
             ChannelUuid = "xxxx",
-            SendUuid = "xxx",
             RawTransaction = "xxxxx",
             Message = "xxxx"
         };
