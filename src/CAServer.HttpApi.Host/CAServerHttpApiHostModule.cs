@@ -13,6 +13,8 @@ using Google.Apis.Auth.OAuth2;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Hangfire;
+using Hangfire.Redis.StackExchange;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -73,6 +75,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
+        
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -326,7 +329,8 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
-
+        
+        app.UseHangfireDashboard();
         StartOrleans(context.ServiceProvider);
     }
 
@@ -345,5 +349,23 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         var client = serviceProvider.GetRequiredService<IClusterClient>();
         AsyncHelper.RunSync(client.Close);
+    }
+    
+    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddHangfire(config =>
+        {
+            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
+            {
+                Db = 1
+            });
+        });
+        
+        /*
+        context.Services.AddHangfireServer(options =>
+        {
+            options.Queues = new[] { "redpackage" };
+            options.WorkerCount = 1;
+        });*/
     }
 }
