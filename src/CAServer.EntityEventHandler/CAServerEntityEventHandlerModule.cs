@@ -155,6 +155,9 @@ public class CAServerEntityEventHandlerModule : AbpModule
     {
         var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<LoginGuardianChangeRecordReceiveWorker>());
+        
+        var app = context.GetApplicationBuilder();
+        app.UseHangfireDashboard();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

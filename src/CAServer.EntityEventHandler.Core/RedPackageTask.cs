@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Orleans;
 
@@ -22,8 +23,11 @@ public class RedPackageTask
         _logger = logger;
     }
 
+    [Queue("redpackage")]
     public async Task ExpireRedPackageRedPackageAsync(Guid redPackageId)
     {
+        _logger.LogInformation("Expire RedPackage id:{id}", redPackageId);
+
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
         await grain.ExpireRedPackage();
