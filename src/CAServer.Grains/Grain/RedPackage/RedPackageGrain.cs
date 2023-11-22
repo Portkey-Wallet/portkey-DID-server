@@ -71,12 +71,15 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return Task.FromResult(result);
     }
 
-    public async Task<GrainResultDto<bool>> DeleteRedPackage()
+    public async Task<GrainResultDto<bool>> ExpireRedPackage()
     {
         var result = new GrainResultDto<bool>();
         result.Success = true;
         result.Data = true;
-        State.Status = RedPackageStatus.Expired;
+        if (State.Status != RedPackageStatus.Cancelled)
+        {
+            State.Status = RedPackageStatus.Expired;
+        }
         await WriteStateAsync();
         return result;
     }
