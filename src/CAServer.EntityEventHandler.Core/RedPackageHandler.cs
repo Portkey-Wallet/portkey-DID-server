@@ -6,6 +6,7 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
+using CAServer.Options;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
 using Hangfire;
@@ -27,10 +28,14 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
     private readonly IImRequestProvider _imRequestProvider;
     private readonly RedPackageOptions _redPackageOptions;
+    private readonly IHttpClientProvider _httpClientProvider;
+    private readonly ImServerOptions _imServerOptions;
     
     public RedPackageHandler(IObjectMapper objectMapper, ILogger<RedPackageHandler> logger,
         INESTRepository<RedPackageIndex, Guid> redPackageRepository, IImRequestProvider imRequestProvider,
         IClusterClient clusterClient,
+        IHttpClientProvider httpClientProvider,
+        IOptionsSnapshot<ImServerOptions> imServerOptions,
         IOptionsSnapshot<RedPackageOptions> redPackageOptions)
     {
         _objectMapper = objectMapper;
@@ -38,13 +43,16 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
         _redPackageRepository = redPackageRepository;
         _imRequestProvider = imRequestProvider;
         _redPackageOptions = redPackageOptions.Value;
+        _imServerOptions = imServerOptions.Value;
         _clusterClient = clusterClient;
+        _httpClientProvider = httpClientProvider;
     }
     
     public async Task HandleEventAsync(RedPackageCreateResultEto eventData)
     {
         try
         {
+            _logger.LogInformation("RedPackageCreateResultEto {Message}",JsonConvert.SerializeObject(eventData));
             var sessionId = eventData.SessionId;
             var redPackageIndex = await _redPackageRepository.GetAsync(sessionId);
             if (redPackageIndex == null)
@@ -52,13 +60,14 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 _logger.LogError("RedPackageCreateResultEto not found: {Message}", JsonConvert.SerializeObject(eventData));
                 return;
             }
-
+        
             redPackageIndex.TransactionId = eventData.TransactionId;
             redPackageIndex.TransactionResult = eventData.TransactionResult;
             if (eventData.Success == false)
             {
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
+                await _redPackageRepository.UpdateAsync(redPackageIndex);
                 var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageIndex.RedPackageId);
                 await grain.CancelRedPackage();
                 return;
@@ -68,24 +77,35 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             
             await _redPackageRepository.UpdateAsync(redPackageIndex);
             
-            BackgroundJob.Schedule<RedPackageTask>(x => x.DeleteRedPackageAsync(redPackageIndex.RedPackageId),
+            BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
                 TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
 
             //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();
-            imSendMessageRequestDto.SendUuid = redPackageIndex.SendUuid;
-            imSendMessageRequestDto.ChannelUuid = redPackageIndex.ChannelUuid;
-            imSendMessageRequestDto.Content = redPackageIndex.Message;
-            /*imSendMessageRequestDto.Content = CustomMessageHelper.BuildRedPackageCardContent(_redPackageOptions, redPackageIndex.SenderId,
-                redPackageIndex.Memo, redPackageIndex.RedPackageId);*/
-            imSendMessageRequestDto.Type = RedPackageConsts.RedPackageCardType;
+            try
+            {
+                imSendMessageRequestDto = JsonConvert.DeserializeObject<ImSendMessageRequestDto>(redPackageIndex.Message);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e,"RedPackageCreateResultEto Message DeserializeObject fail: {Message}", redPackageIndex.Message);
+                imSendMessageRequestDto = new ImSendMessageRequestDto();
+                imSendMessageRequestDto.SendUuid = Guid.NewGuid().ToString();
+                imSendMessageRequestDto.ChannelUuid = redPackageIndex.ChannelUuid;
+                imSendMessageRequestDto.Content = CustomMessageHelper.BuildRedPackageCardContent(_redPackageOptions, redPackageIndex.SenderId,
+                    redPackageIndex.Memo, redPackageIndex.RedPackageId);
+                imSendMessageRequestDto.Type = RedPackageConsts.RedPackageCardType;
+            }
+                
             var headers = new Dictionary<string, string>();
             headers.Add(ImConstant.RelationAuthHeader,redPackageIndex.SenderRelationToken);
-            await _imRequestProvider.PostAsync<object>(ImConstant.SendMessageUrl, imSendMessageRequestDto, headers);
+            headers.Add(CommonConstant.AuthHeader,redPackageIndex.SenderPortkeyToken);
+            await _httpClientProvider.PostAsync<ImSendMessageResponseDto>(
+                _imServerOptions.BaseUrl + ImConstant.SendMessageUrl, imSendMessageRequestDto, headers);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "RedPackageCreateResultEto handle fail {Message}", JsonConvert.SerializeObject(eventData));
         }
     }
 }

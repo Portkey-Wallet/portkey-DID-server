@@ -14,6 +14,9 @@ public class RedPackageDetailDto
     public string ChainId { get; set; }
     public string PublicKey { get; set; } = string.Empty;
     public Guid SenderId { get; set; }
+    public Guid LuckKingId { get; set; } = Guid.Empty;
+    public bool IsRedPackageFullyClaimed { get; set; }
+    public bool IsRedPackageExpired { get; set; }
     public string SenderAvatar { get; set; } = string.Empty;
     public string SenderName { get; set; } = string.Empty;
     public long CreateTime { get; set; }

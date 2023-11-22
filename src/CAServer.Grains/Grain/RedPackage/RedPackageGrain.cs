@@ -71,12 +71,15 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return Task.FromResult(result);
     }
 
-    public async Task<GrainResultDto<bool>> DeleteRedPackage()
+    public async Task<GrainResultDto<bool>> ExpireRedPackage()
     {
         var result = new GrainResultDto<bool>();
         result.Success = true;
         result.Data = true;
-        State.Status = RedPackageStatus.Expired;
+        if (State.Status != RedPackageStatus.Cancelled)
+        {
+            State.Status = RedPackageStatus.Expired;
+        }
         await WriteStateAsync();
         return result;
     }
@@ -120,10 +123,14 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             Decimal = State.Decimal,
             PaymentCompleted = false,
             GrabTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-            IsLuckyKing = bucket.IsLuckyKing,
+            IsLuckyKing = State.Type == RedPackageType.Random && bucket.IsLuckyKing,
             UserId = userId,
             CaAddress = caAddress
         };
+        if (grabItem.IsLuckyKing)
+        {
+            State.LuckKingId = userId;
+        }
         State.Items.Add(grabItem);
         State.GrabbedAmount += bucket.Amount;
         State.Grabbed += 1;
@@ -186,7 +193,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             return (false, RedPackageConsts.RedPackageCancelled);
         }
 
-        if (State.Status == RedPackageStatus.FullyClaimed || State.Grabbed == State.Count)
+        if (State.Status == RedPackageStatus.FullyClaimed || State.Grabbed == State.Count || State.BucketNotClaimed.Count == 0)
         {
             return (false, RedPackageConsts.RedPackageFullyClaimed);
         }

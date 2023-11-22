@@ -26,6 +26,7 @@ public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string TransactionResult { get; set; }
     public string ErrorMessage { get; set; }
     public string SenderRelationToken { get; set; }
+    public string SenderPortkeyToken { get; set; }
     public RedPackageTransactionStatus TransactionStatus { get; set; }
     
     public List<GrabItemDto> Items { get; set; }
