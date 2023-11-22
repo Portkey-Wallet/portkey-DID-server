@@ -77,8 +77,8 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             
             await _redPackageRepository.UpdateAsync(redPackageIndex);
             
-            BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
+            /*BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
+                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));*/
 
             //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();
