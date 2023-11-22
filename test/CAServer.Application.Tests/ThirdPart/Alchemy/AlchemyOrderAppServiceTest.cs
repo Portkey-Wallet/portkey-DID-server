@@ -39,10 +39,10 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
     [Fact]
     public async Task UpdateAlchemyOrderAsyncTest()
     {
-        await InitRampOrder(Guid.Parse("00000000-0000-0000-0000-000000000000"));
+        await InitRampOrder(Guid.Parse("00000000-0000-0000-0000-000000000001"));
         var input = new AlchemyOrderUpdateDto
         {
-            MerchantOrderNo = "00000000-0000-0000-0000-000000000000", //MerchantOrderNo = Guid.NewGuid().ToString(),
+            MerchantOrderNo = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
             Status = "1",
             Address = "Address",
             Crypto = "Crypto",
@@ -188,7 +188,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         {
             Id = new Guid("00000000-0000-0000-0000-000000000001"),
             UserId = new Guid("00000000-0000-0000-0000-000000000001"),
-            MerchantOrderNo = "00000000-0000-0000-0000-000000000000",
+            MerchantOrderNo = "00000000-0000-0000-0000-000000000001",
             Status = "1",
             Address = "Address",
             Crypto = "Crypto",

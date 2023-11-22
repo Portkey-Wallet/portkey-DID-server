@@ -27,25 +27,32 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     {
         base.AfterAddApplication(services);
         var mockOptions = MockThirdPartOptions();
-        services.AddSingleton(MockThirdPartOptions());
+        services.AddSingleton(mockOptions);
+        services.AddSingleton(MockRampOptions());
 
         // mock http
         services.AddSingleton(MockHttpFactory(_testOutputHelper,
+            
             PathMatcher(HttpMethod.Get, AlchemyApi.QueryNftFiatList.Path,
                 new AlchemyBaseResponseDto<List<AlchemyFiatDto>>(
-                    new() { new AlchemyFiatDto { Country = "USA", Currency = "USD"} })),
+                    new() { new AlchemyFiatDto { Country = "US", Currency = "USD"} })),
+            
             PathMatcher(HttpMethod.Get, AlchemyApi.QueryFiatList.Path,
                 new AlchemyBaseResponseDto<List<AlchemyFiatDto>>(
-                    new() { new AlchemyFiatDto { Country = "USA", Currency = "USD" } })),
+                    new() { new AlchemyFiatDto { Country = "US", Currency = "USD", PayMax = "2000", PayMin = "20"} })),
+            
             PathMatcher(HttpMethod.Get, mockOptions.CurrentValue.Alchemy.CryptoListUri,
                 new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>(
-                    new() { new AlchemyCryptoDto { Crypto = "ELF" } })),
+                    new() { new AlchemyCryptoDto { Crypto = "ELF", Network = "ELF", BuyEnable = "1", SellEnable = "1" } })),
+            
             PathMatcher(HttpMethod.Post, mockOptions.CurrentValue.Alchemy.GetTokenUri,
                 new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
                     new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
+            
             PathMatcher(HttpMethod.Post, AlchemyApi.GetFreeLoginToken.Path,
                 new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
                     new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
+            
             PathMatcher(HttpMethod.Post, mockOptions.CurrentValue.Alchemy.OrderQuoteUri,
                 new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>(
                     new AlchemyOrderQuoteDataDto
@@ -56,7 +63,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
                         Fiat = "USD",
                         FiatQuantity = "1",
                         RampFee = "0.2",
-                        NetworkFee = "0.1"
+                        NetworkFee = "0.1",
                     }))
         ));
     }
@@ -66,8 +73,8 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     {
         var input = new GetAlchemyOrderQuoteDto()
         {
-            Crypto = "USDT",
-            Network = "ETH",
+            Crypto = "ELF",
+            Network = "ELF",
             Fiat = "USD",
             Country = "US",
             Amount = "201",
@@ -83,8 +90,8 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     {
         var input = new GetAlchemyOrderQuoteDto()
         {
-            Crypto = "USDT",
-            Network = "ETH",
+            Crypto = "ELF",
+            Network = "ELF",
             Fiat = "USD",
             Country = "US",
             Amount = "201",
