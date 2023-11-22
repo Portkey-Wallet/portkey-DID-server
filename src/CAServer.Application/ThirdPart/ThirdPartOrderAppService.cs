@@ -210,7 +210,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     }
 
     /// <summary>
-    ///     add or updat order settlement
+    ///     add or update order settlement
     /// </summary>
     /// <param name="grainDto"></param>
     /// <returns></returns>
