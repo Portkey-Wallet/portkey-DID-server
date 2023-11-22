@@ -99,4 +99,29 @@ public class RedPackageGrainTest : CAServerGrainTestBase
             Message = "xxxx"
         };
     }
+
+    [Fact]
+    public async Task UpdateRedPackage_test()
+    {
+        var redPackageId =  await GetNewPackageId();
+        var redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(redPackageId);
+        var userId1 = Guid.NewGuid();
+        var userId2 = Guid.NewGuid();
+        var res = await redPackageGrain.GrabRedPackage(userId1, "xxxx");
+
+        await redPackageGrain.UpdateRedPackage(redPackageId, userId1, "xxxx");
+    }
+
+    private async Task<Guid> GetNewPackageId()
+    {
+        var userId = Guid.NewGuid();
+        var redPackageId = Guid.NewGuid();
+        var redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(redPackageId);
+        var res = await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(redPackageId), 8, 1, userId);
+        res.Success.ShouldBe(true);
+        res = await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(redPackageId), 8, 1, userId);
+        res.Success.ShouldBe(false);
+        await redPackageGrain.UpdateRedPackage(redPackageId, userId, "xxxx");
+        return redPackageId;
+    }
 }

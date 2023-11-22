@@ -40,4 +40,6 @@ public class GrabItemDto
     public string Amount { get; set; }
     
     public string CaAddress { get; set; }
+
+    public bool PaymentCompleted;
 }

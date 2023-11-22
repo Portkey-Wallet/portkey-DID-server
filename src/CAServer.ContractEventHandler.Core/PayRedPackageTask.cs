@@ -17,32 +17,40 @@ using IContractProvider = CAServer.Common.IContractProvider;
 namespace CAServer.ContractEventHandler.Core;
 
 
-public class PayRedPackageTask
+public interface IPayRedPackageTask
+{
+    public Task PayRedPackageAsync(RedPackageCreateEto input);
+}
+
+public class PayRedPackageTask : IPayRedPackageTask
 {
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<PayRedPackageTask> _logger;
-    private readonly IRedPackageAppService _redPackageAppService;
     private readonly IContractProvider _contractProvider;
     private readonly PayRedPackageAccount _packageAccount;
     
 
     public PayRedPackageTask(IClusterClient clusterClient, ILogger<PayRedPackageTask> logger, 
-        IRedPackageAppService redPackageAppService, IOptionsSnapshot<PayRedPackageAccount> packageAccount, IContractProvider contractProvider)
+         IOptionsSnapshot<PayRedPackageAccount> packageAccount, IContractProvider contractProvider)
     {
         _clusterClient = clusterClient;
         _logger = logger;
-        _redPackageAppService = redPackageAppService;
         _packageAccount = packageAccount.Value;
         _contractProvider = contractProvider;
     }
 
-    public async void PayRedPackageAsync(RedPackageCreateEto input)
+    //[Queue("redpackage")]
+    public async Task PayRedPackageAsync(RedPackageCreateEto input)
     {
         _logger.Info("PayRedPackageAsync start and the redpackage id is {}",input.RedPackageId);
-        var grabItemDtos = input.Items;
-        Debug.Assert(grabItemDtos.IsNullOrEmpty(),"there are no one claim the red packages");
+        var grabItems = input.Items;
+        //if we need judge other params ?
+        if (grabItems.IsNullOrEmpty())
+        {
+            throw new Exception("there are no one claim the red packages");
+        }
         var grain = _clusterClient.GetGrain<RedPackageGrain>(input.RedPackageId);
-        foreach (var item in grabItemDtos)
+        foreach (var item in grabItems)
         {
             //get one our account，pay aelf to user’s account 
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
@@ -52,6 +60,7 @@ public class PayRedPackageTask
                 item.CaAddress,input.ChainId,payRedPackageFrom);
             
             //if success update the payment status of red package 
+            // var grain = _clusterClient.GetGrain<RedPackageGrain>(input.RedPackageId);
             await grain.UpdateRedPackage(input.RedPackageId, item.UserId, item.CaAddress);
         }
         _logger.Info("PayRedPackageAsync end and the redpackage id is {}",input.RedPackageId);

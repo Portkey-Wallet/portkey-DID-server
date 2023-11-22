@@ -152,9 +152,26 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         var result = new GrainResultDto<bool>();
         result.Success = true;
         result.Data = true;
+        if (State == null || State.Items.IsNullOrEmpty())
+        {
+            result.Success = false;
+            result.Data = false;
+            return result;
+        }
         _ = State.Items.Where(item => item.UserId.Equals(userId) && caAddress.Equals(item.CaAddress)).First(item => item.PaymentCompleted = true);
         await WriteStateAsync();
         return result;
+    }
+
+    public Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(Guid packageId)
+    {
+        var result = new GrainResultDto<RedPackageDetailDto>();
+        result.Success = true;
+        var dto = _objectMapper.Map<RedPackageState, RedPackageDetailDto>(State);
+        dto.TotalCount = State.Items.Count;
+        dto.Items = _objectMapper.Map<List<GrabItem>, List<GrabItemDto>>(State.Items);
+        result.Data = dto;
+        return Task.FromResult(result);
     }
 
     private (bool, string) CheckRedPackagePermissions(Guid userId)

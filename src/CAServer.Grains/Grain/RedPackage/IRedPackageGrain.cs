@@ -13,4 +13,7 @@ public interface IRedPackageGrain : IGrainWithGuidKey
     Task<GrainResultDto<GrabResultDto>> GrabRedPackage(Guid userId,string caAddress);
 
     Task<GrainResultDto<bool>> UpdateRedPackage(Guid packageId, Guid userId, string caAddress);
+    
+    Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(Guid packageId);
+
 }

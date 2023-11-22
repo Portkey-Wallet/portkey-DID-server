@@ -3,7 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
@@ -59,9 +61,9 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-            //TODO daiyabin 
-            // BackgroundJob.Schedule<PayRedPackageTask>(x => x.PayRedPackageAsync(eventData),
-            //     TimeSpan.FromSeconds(RedPackageConsts.ExpireTime));
+            //TODO daiyabin  how long would i excute it
+            //
+            // BackgroundJob.Schedule<PayRedPackageTask>(x => x.PayRedPackageAsync(eventData));
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);
