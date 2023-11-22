@@ -331,7 +331,8 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
         
-        app.UseHangfireDashboard();
+        app.UseHangfireServer();
+        app.UseHangfireDashboard("/hangfire", new DashboardOptions{});
         StartOrleans(context.ServiceProvider);
     }
 
