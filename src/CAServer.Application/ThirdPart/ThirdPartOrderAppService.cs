@@ -30,6 +30,7 @@ using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
+using Enum = System.Enum;
 
 namespace CAServer.ThirdPart;
 
@@ -440,7 +441,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     public bool VerifyOrderExportCode(string pin)
     {
         var tfa = new TwoFactorAuthenticator();
-        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.OrderExportAuth.Key).ToByteArray(),
+        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.CurrentValue.OrderExportAuth.Key).ToByteArray(),
             pin);
     }
 }

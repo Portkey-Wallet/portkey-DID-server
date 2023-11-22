@@ -70,7 +70,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
         var secondsAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow
-            .AddHours(-_thirdPartOptions.Timer.HandleUnCompletedSettlementTransferHoursAgo).ToUtcMilliSeconds();
+            .AddHours(-_thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferHoursAgo).ToUtcMilliSeconds();
         var total = 0;
         var count = 0;
         while (true)

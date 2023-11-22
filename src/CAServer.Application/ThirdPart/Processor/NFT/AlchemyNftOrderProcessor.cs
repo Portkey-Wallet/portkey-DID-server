@@ -25,7 +25,6 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly ITokenAppService _tokenAppService;
-    private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
 
@@ -39,7 +38,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
         IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
-        ITokenAppService tokenAppService, ITokenProvider tokenProvider)
+        ITokenAppService tokenAppService)
         : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock,
             thirdPartOrderAppService)
     {
@@ -47,8 +46,6 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         _alchemyProvider = alchemyProvider;
         _thirdPartOptions = thirdPartOptions;
         _tokenAppService = tokenAppService;
-        _tokenProvider = tokenProvider;
-        _alchemyOptions = thirdPartOptions.Value.Alchemy;
     }
 
     public override string ThirdPartName()
