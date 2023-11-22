@@ -26,8 +26,9 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly IGuardianProvider _guardianProvider;
 
-    public ImUserAppService(INESTRepository<CAHolderIndex, Guid> caHolderRepository, IGraphQLHelper graphQlHelper, 
-        INESTRepository<GuardianIndex, string> guardianRepository, IPrivacyPermissionAppService privacyPermissionAppService,
+    public ImUserAppService(INESTRepository<CAHolderIndex, Guid> caHolderRepository, IGraphQLHelper graphQlHelper,
+        INESTRepository<GuardianIndex, string> guardianRepository,
+        IPrivacyPermissionAppService privacyPermissionAppService,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, IGuardianProvider guardianProvider)
     {
         _caHolderRepository = caHolderRepository;
@@ -48,6 +49,7 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
             UserId = userId,
             CaHash = holder.CaHash,
             WalletName = holder.NickName,
+            Avatar = holder.Avatar,
             AddressInfos = new List<AddressInfoDto>()
         };
 
@@ -73,10 +75,10 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
         {
             return new List<Guid>();
         }
-        
+
         //query by email/phone from guardian
         var guidsByGuardian = await GetIdsByGuardianAsync(keyword, privacyType);
-        
+
         //query by apple/google
         var guidsByUserExtraInfo = await GetIdsByUserExtraInfoAsync(keyword);
 
@@ -84,35 +86,53 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
         return guidsByGuardian.Union(guidsByUserExtraInfo).ToList();
     }
 
+    public async Task<List<HolderInfoResultDto>> GetUserInfoAsync(List<Guid> userIds)
+    {
+        var holders = await GetHolderIndexListAsync(userIds);
+        return ObjectMapper.Map<List<CAHolderIndex>, List<HolderInfoResultDto>>(holders);
+    }
+
+    private async Task<List<CAHolderIndex>> GetHolderIndexListAsync(List<Guid> userIds)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(userIds)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var userExtraInfos = await _caHolderRepository.GetListAsync(Filter);
+
+        return userExtraInfos.Item2;
+    }
+
     private async Task<List<Guid>> GetIdsByUserExtraInfoAsync(string keyword)
     {
         var approvedAllUserIds = new List<Guid>();
         var userExtraInfos = await ListUserExtraInfoAsync(keyword);
         var guardianGroup = userExtraInfos.GroupBy(u => u.GuardianType);
-        
+
         foreach (var group in guardianGroup)
         {
             if (!Enum.TryParse<PrivacyType>(group.Key, out var privacyType))
             {
                 continue;
             }
-            
-            var ids = group.Select(u => 
+
+            var ids = group.Select(u =>
                 StringHelper.RemovePrefix(u.Id, CommonConstant.UserExtraInfoIdPrefix)).ToList();
 
             var guardianTasks = ids.Select(GetGuardianInfoAsync).ToList();
             var guardians = await Task.WhenAll(guardianTasks);
-            
+
             var identifierHashList = guardians.Select(g => g.IdentifierHash).ToList();
 
             var guardianDtos = await GetCaHashAsync(identifierHashList);
             var allCaHash = guardianDtos.Select(c => c.CaHash).ToList();
-            
+
             var caHolders = await GetCaHolderByCaHashAsync(allCaHash);
 
             var userIds = caHolders.Select(c => c.UserId).ToList();
 
-            var (approvedUserIds,rejectedUserIds) = await _privacyPermissionAppService.CheckPrivacyPermissionAsync(userIds, keyword, privacyType);
+            var (approvedUserIds, rejectedUserIds) =
+                await _privacyPermissionAppService.CheckPrivacyPermissionAsync(userIds, keyword, privacyType);
             approvedAllUserIds.AddRange(approvedUserIds);
         }
 
@@ -127,12 +147,13 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
 
         var guardianDtos = await GetCaHashAsync(identifierHashList);
         var caHashList = guardianDtos.Select(c => c.CaHash).ToList();
-        
+
         var caHolders = await GetCaHolderByCaHashAsync(caHashList);
 
         var userIds = caHolders.Select(c => c.UserId).ToList();
 
-        var (approvedUserIds,rejectedUserIds) = await _privacyPermissionAppService.CheckPrivacyPermissionAsync(userIds, keyword, privacyType);
+        var (approvedUserIds, rejectedUserIds) =
+            await _privacyPermissionAppService.CheckPrivacyPermissionAsync(userIds, keyword, privacyType);
         return approvedUserIds;
     }
 
@@ -159,7 +180,7 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
 
         return userExtraInfos.Item2;
     }
-    
+
     private async Task<List<GuardianIndex>> ListGuardianInfoAsync(string keyword)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>();
@@ -167,7 +188,7 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
         mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(keyword)));
         QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) => f.Bool(b => b.Must(mustQuery));
         var guardians = await _guardianRepository.GetListAsync(Filter);
-        
+
         return guardians.Item2;
     }
 
@@ -180,14 +201,14 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
         var guardianIndex = await _guardianRepository.GetAsync(Filter);
         return guardianIndex;
     }
-    
+
     private async Task<List<CAHolderIndex>> GetCaHolderByCaHashAsync(List<string> caHashList)
     {
         if (caHashList == null || caHashList.Count == 0)
         {
             return new List<CAHolderIndex>();
         }
-        
+
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
 
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.CaHash).Terms(caHashList)));
@@ -198,7 +219,7 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
 
         return holders.Item2;
     }
-    
+
     private static PrivacyType GetPrivacyType(string keyword)
     {
         var privacyType = PrivacyType.Unknow;
@@ -214,7 +235,7 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
 
         return privacyType;
     }
-    
+
     public async Task<CAHolderIndex> GetCaHolderAsync(Guid userId)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
