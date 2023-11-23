@@ -63,7 +63,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
         
             redPackageIndex.TransactionId = eventData.TransactionId;
             redPackageIndex.TransactionResult = eventData.TransactionResult;
-            /*if (eventData.Success == false)
+            if (eventData.Success == false)
             {
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
@@ -71,14 +71,14 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageIndex.RedPackageId);
                 await grain.CancelRedPackage();
                 return;
-            }*/
+            }
 
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             
             await _redPackageRepository.UpdateAsync(redPackageIndex);
             
-            BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromMilliseconds(60 * 1000));
+            /*BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
+                TimeSpan.FromMilliseconds(60 * 1000));*/
 
             //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();
