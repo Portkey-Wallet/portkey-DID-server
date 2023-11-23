@@ -55,12 +55,13 @@ public partial class ThirdPartOrderAppService
 
         var calculateCoverage = (string providerName, ThirdPartProvider provider) =>
         {
-            
+            var paramDict = getParamDict(provider.Coverage.OffRamp);
             // if off-ramp support
             var supportOffRamp = ExpressionHelper.Evaluate(
                 _rampOptions.CurrentValue.CoverageExpressions[providerName].OffRamp,
                 getParamDict(provider.Coverage.OffRamp));
-
+            var currentDeviceInfo = DeviceInfoContext.CurrentDeviceInfo;
+            var dictionary = getParamDict(provider.Coverage.OnRamp);
             // if on-ramp support
             var supportOnRamp = ExpressionHelper.Evaluate(
                 _rampOptions.CurrentValue.CoverageExpressions[providerName].OnRamp,
@@ -91,7 +92,7 @@ public partial class ThirdPartOrderAppService
             : _thirdPartAdaptors
                 .Where(a => providers.ContainsKey(a.Key))
                 .ToDictionary(a => a.Key, a => a.Value);
-    }
+    } 
 
     /// <summary>
     ///     Crypto list
@@ -237,6 +238,7 @@ public partial class ThirdPartOrderAppService
     {
         try
         {
+            var valueCollection = GetThirdPartAdaptors(request.Type);
             // invoke provider-adaptors ASYNC
             var exchangeTasks = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();

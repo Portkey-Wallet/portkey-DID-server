@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
@@ -13,7 +14,6 @@ namespace CAServer.ThirdPart.Ramp;
 
 public partial class ThirdPartOrderAppServiceTest
 {
-
     private AlchemyOrderQuoteDataDto _alchemyOrderQuote = new AlchemyOrderQuoteDataDto
     {
         Crypto = "ELF",
@@ -57,8 +57,8 @@ public partial class ThirdPartOrderAppServiceTest
           ]
         }
         """
-        );
-    
+    );
+
     private readonly TransakRampPrice _transaKPriceEUR = JsonConvert.DeserializeObject<TransakRampPrice>(
         """
         {
@@ -90,7 +90,7 @@ public partial class ThirdPartOrderAppServiceTest
           ]
         }
         """
-        );
+    );
 
 
     private void MockRampPrice()
@@ -99,25 +99,25 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Data = _alchemyOrderQuote
         });
-        
+
         MockHttpByPath(TransakApi.GetPrice, new TransakBaseResponse<TransakRampPrice>
         {
             Response = _transaKPriceUSD
         }, """ param["fiatCurrency"] =="USD" """);
-        
+
         MockHttpByPath(TransakApi.GetPrice, new TransakBaseResponse<TransakRampPrice>
         {
             Response = _transaKPriceEUR
         }, """ param["fiatCurrency"] =="EUR" """);
     }
-    
-    
+
+
     [Fact]
     public async Task RampPriceTest()
     {
         MockRampLists();
         MockRampPrice();
-        
+
         var price = await _thirdPartOrderAppService.GetRampPriceAsync(new RampDetailRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
@@ -129,7 +129,6 @@ public partial class ThirdPartOrderAppServiceTest
             Country = "US",
         });
         price.ShouldNotBeNull();
-
     }
 
     [Fact]
@@ -138,7 +137,8 @@ public partial class ThirdPartOrderAppServiceTest
         MockRampLists();
         MockRampPrice();
 
-        
+      
+
         var usdExchange = await _thirdPartOrderAppService.GetRampExchangeAsync(new RampExchangeRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
@@ -147,11 +147,12 @@ public partial class ThirdPartOrderAppServiceTest
             Fiat = "USD",
             Country = "US",
         });
+
         usdExchange.ShouldNotBeNull();
         usdExchange.Success.ShouldBeTrue();
         usdExchange.Data.Exchange.ShouldBe("0.355717");
-        
-        
+
+
         var eurExchange = await _thirdPartOrderAppService.GetRampExchangeAsync(new RampExchangeRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
@@ -163,7 +164,6 @@ public partial class ThirdPartOrderAppServiceTest
         eurExchange.ShouldNotBeNull();
         eurExchange.Success.ShouldBeTrue();
         eurExchange.Data.Exchange.ShouldBe("0.338841");
-
     }
 
 
@@ -183,7 +183,7 @@ public partial class ThirdPartOrderAppServiceTest
         });
         sellLimit.ShouldNotBeNull();
         sellLimit.Success.ShouldBeTrue();
-        
+
         var buyLimit = await _thirdPartOrderAppService.GetRampLimitAsync(new RampLimitRequest
         {
             Type = OrderTransDirect.BUY.ToString(),
@@ -194,7 +194,6 @@ public partial class ThirdPartOrderAppServiceTest
         });
         buyLimit.ShouldNotBeNull();
         buyLimit.Success.ShouldBeTrue();
-        
     }
 
     [Fact]
@@ -215,7 +214,7 @@ public partial class ThirdPartOrderAppServiceTest
         });
         buyDetail.ShouldNotBeNull();
         buyDetail.Success.ShouldBeTrue();
-        
+
         var sellDetail = await _thirdPartOrderAppService.GetRampDetailAsync(new RampDetailRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
@@ -229,5 +228,4 @@ public partial class ThirdPartOrderAppServiceTest
         sellDetail.ShouldNotBeNull();
         sellDetail.Success.ShouldBeTrue();
     }
-    
 }

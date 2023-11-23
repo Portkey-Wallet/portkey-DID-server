@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
@@ -201,6 +202,10 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Response = new List<TransakCryptoItem> { _transakCryptoElf } 
         });
+        DeviceInfoContext.CurrentDeviceInfo = new DeviceInfo()
+        {
+            ClientType = "WebSDK"
+        };
     }
     
     

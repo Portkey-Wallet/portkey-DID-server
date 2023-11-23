@@ -157,12 +157,12 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     OnRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
+                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     },
                     OffRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
+                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     }
                 },
                 ["Transak"] = new()
@@ -170,12 +170,12 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     OnRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
+                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     },
                     OffRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(deviceType, List(\"WebSDK\",\"Chrome\"))"
+                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     }
                 }
             }
