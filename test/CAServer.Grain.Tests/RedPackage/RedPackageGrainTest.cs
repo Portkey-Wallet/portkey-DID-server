@@ -11,11 +11,14 @@ public class RedPackageGrainTest : CAServerGrainTestBase
     [Fact]
     public async Task GenerateRedPackageAsync_test()
     {
+        var data = "1asdasd";
         var redPackageGrain = Cluster.Client.GetGrain<IRedPackageKeyGrain>(Guid.NewGuid());
         var res = await redPackageGrain.GenerateKey();
         res.ShouldNotBeNull();
-        res = await redPackageGrain.GenerateSignature("1asdasd");
+        res = await redPackageGrain.GenerateSignature(data);
         res.ShouldNotBeNull();
+        var verify = await redPackageGrain.VerifySignature(data, res);
+        verify.ShouldBe(true);
 
         res = await redPackageGrain.GetPublicKey();
         res.ShouldNotBeNull();
