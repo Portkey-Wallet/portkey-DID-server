@@ -17,9 +17,24 @@
       "Register": "Register",
       "Approve": "Approve",
       "Bingo": "BingoGame-Bingo",
-      "Play": "BingoGame-Play",
+      "Play": "Play",
       "BeanGoTown-Bingo": "BeanGo Town-Bingo",
-      "BeanGoTown-Play": "BeanGo Town-Play"
+      "BeanGoTown-Play": "BeanGo Town-Play",
+      "ManagerApprove": "Approve",
+      "MakeOffer": "Make Offer",
+      "CancelOffer": "Cancel Offer",
+      "ListWithFixedPrice": "List",
+      "DelList": "Cancel List",
+      "Deal": "Deal",
+      "PlaceBid": "Place Bid",
+      "Claim": "Claim",
+      "Buy": "Buy",
+      "CreatePair": "CreateCreatePairPair",
+      "AddLiquidity": "Add Liquidity",
+      "RemoveLiquidity": "Remove Liquidity",
+      "SwapExactTokensForTokens": "Swap",
+      "SwapTokensForExactTokens": "Swap",
+      "UpdateManagerInfos": "UpdateManagerInfos"
     },
     "DefaultTypes": [
       "Transfer",
@@ -51,13 +66,26 @@
       "Bingo",
       "Play",
       "BeanGoTown-Bingo",
-      "BeanGoTown-Play"
+      "BeanGoTown-Play",
+      "ManagerApprove",
+      "MakeOffer",
+      "CancelOffer"
     ],
     "TransferTypes": [
       "Transfer",
       "CrossChainTransfer",
       "CrossChainReceiveToken",
-      "ClaimToken"
+      "ClaimToken",
+      "MakeOffer",
+      "Deal",
+      "Claim",
+      "Buy",
+      "CreatePair",
+      "AddLiquidity",
+      "RemoveLiquidity",
+      "SwapExactTokensForTokens",
+      "SwapTokensForExactTokens",
+      "UpdateManagerInfos"
     ],
     "ContractTypes": [
       "SocialRecovery",
@@ -75,7 +103,12 @@
       "Bingo",
       "Play",
       "BeanGoTown-Bingo",
-      "BeanGoTown-Play"
+      "BeanGoTown-Play",
+      "ManagerApprove",
+      "CancelOffer",
+      "ListWithFixedPrice",
+      "DelList",
+      "PlaceBid"
     ],
     "ShowPriceTypes": [
       "Transfer",
@@ -94,7 +127,23 @@
       "Bingo",
       "Play",
       "BeanGoTown-Bingo",
-      "BeanGoTown-Play"
+      "BeanGoTown-Play",
+      "ManagerApprove",
+      "ManagerApprove",
+      "MakeOffer",
+      "CancelOffer",
+      "ListWithFixedPrice",
+      "DelList",
+      "Deal",
+      "PlaceBid",
+      "Claim",
+      "Buy",
+      "CreatePair",
+      "AddLiquidity",
+      "RemoveLiquidity",
+      "SwapExactTokensForTokens",
+      "SwapTokensForExactTokens",
+      "UpdateManagerInfos"
     ],
     "ShowNftTypes": [
       "Transfer",
