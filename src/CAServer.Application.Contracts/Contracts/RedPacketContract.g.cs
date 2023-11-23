@@ -53,25 +53,31 @@ namespace Portkey.Contracts.RedPacket {
             "ZXNzEhUKDXJlZF9wYWNrZXRfaWQYAiABKAkSGQoRcmVkX3BhY2tldF9zeW1i",
             "b2wYAyABKAkSDgoGYW1vdW50GAQgASgDEicKEHJlY2VpdmVyX2FkZHJlc3MY",
             "BSABKAsyDS5hZWxmLkFkZHJlc3MSEgoKaXNfc3VjY2VzcxgGIAEoCDoEoLsY",
-            "ASI4Cg9Jbml0aWFsaXplSW5wdXQSJQoOY29udHJhY3RfYWRtaW4YASABKAsy",
-            "DS5hZWxmLkFkZHJlc3MimgIKD1JlZFBhY2tldE91dHB1dBIVCg1yZWRfcGFj",
-            "a2V0X2lkGAEgASgJEhkKEXJlZF9wYWNrZXRfc3ltYm9sGAIgASgJEhQKDHRv",
-            "dGFsX2Ftb3VudBgDIAEoAxISCgptaW5fYW1vdW50GAQgASgDEhcKD2V4cGly",
-            "YXRpb25fdGltZRgFIAEoAxITCgt0b3RhbF9jb3VudBgGIAEoAxIcChRyZWRf",
-            "cGFja2V0X3NpZ25hdHVyZRgHIAEoCRISCgpwdWJsaWNfa2V5GAggASgJEicK",
-            "D3JlZF9wYWNrZXRfdHlwZRgJIAEoDjIOLlJlZFBhY2tldFR5cGUSIgoLZnJv",
-            "bV9zZW5kZXIYCiABKAsyDS5hZWxmLkFkZHJlc3MiKgoRR2V0UmVkUGFja2V0",
-            "SW5wdXQSFQoNcmVkX3BhY2tldF9pZBgBIAEoCSpHCg1SZWRQYWNrZXRUeXBl",
-            "EgsKB1VOS05PV04QABIJCgVGSVhFRBABEgoKBlJBTkRPTRACEhIKDlFVSUNL",
-            "X1RSQU5TRkVSEAMy0wIKEVJlZFBhY2tldENvbnRyYWN0EjgKCkluaXRpYWxp",
-            "emUSEC5Jbml0aWFsaXplSW5wdXQaFi5nb29nbGUucHJvdG9idWYuRW1wdHki",
-            "ABJCCg9DcmVhdGVSZWRQYWNrZXQSFS5DcmVhdGVSZWRQYWNrZXRJbnB1dBoW",
-            "Lmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEksKEVRyYW5zZmVyUmVkUGFja2V0",
-            "EhwuVHJhbnNmZXJSZWRQYWNrZXRCYXRjaElucHV0GhYuZ29vZ2xlLnByb3Rv",
-            "YnVmLkVtcHR5IgASOgoQR2V0UmVkUGFja2V0SW5mbxISLkdldFJlZFBhY2tl",
-            "dElucHV0GhAuUmVkUGFja2V0T3V0cHV0IgAaN7LM9gEyUG9ydGtleS5Db250",
-            "cmFjdHMuUmVkUGFja2V0LlJlZFBhY2tldENvbnRyYWN0U3RhdGVCHqoCG1Bv",
-            "cnRrZXkuQ29udHJhY3RzLlJlZFBhY2tldGIGcHJvdG8z"));
+            "ASJLCg9Jbml0aWFsaXplSW5wdXQSJQoOY29udHJhY3RfYWRtaW4YASABKAsy",
+            "DS5hZWxmLkFkZHJlc3MSEQoJbWF4X2NvdW50GAIgASgDIpoCCg9SZWRQYWNr",
+            "ZXRPdXRwdXQSFQoNcmVkX3BhY2tldF9pZBgBIAEoCRIZChFyZWRfcGFja2V0",
+            "X3N5bWJvbBgCIAEoCRIUCgx0b3RhbF9hbW91bnQYAyABKAMSEgoKbWluX2Ft",
+            "b3VudBgEIAEoAxIXCg9leHBpcmF0aW9uX3RpbWUYBSABKAMSEwoLdG90YWxf",
+            "Y291bnQYBiABKAMSHAoUcmVkX3BhY2tldF9zaWduYXR1cmUYByABKAkSEgoK",
+            "cHVibGljX2tleRgIIAEoCRInCg9yZWRfcGFja2V0X3R5cGUYCSABKA4yDi5S",
+            "ZWRQYWNrZXRUeXBlEiIKC2Zyb21fc2VuZGVyGAogASgLMg0uYWVsZi5BZGRy",
+            "ZXNzIioKEUdldFJlZFBhY2tldElucHV0EhUKDXJlZF9wYWNrZXRfaWQYASAB",
+            "KAkiLAoXUmVkUGFja2V0TWF4Q291bnRPdXRwdXQSEQoJbWF4X2NvdW50GAEg",
+            "ASgDIi4KGVNldFJlZFBhY2tldE1heENvdW50SW5wdXQSEQoJbWF4X2NvdW50",
+            "GAEgASgDKkcKDVJlZFBhY2tldFR5cGUSCwoHVU5LTk9XThAAEgkKBUZJWEVE",
+            "EAESCgoGUkFORE9NEAISEgoOUVVJQ0tfVFJBTlNGRVIQAzLtAwoRUmVkUGFj",
+            "a2V0Q29udHJhY3QSOAoKSW5pdGlhbGl6ZRIQLkluaXRpYWxpemVJbnB1dBoW",
+            "Lmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEkIKD0NyZWF0ZVJlZFBhY2tldBIV",
+            "LkNyZWF0ZVJlZFBhY2tldElucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5",
+            "IgASSwoRVHJhbnNmZXJSZWRQYWNrZXQSHC5UcmFuc2ZlclJlZFBhY2tldEJh",
+            "dGNoSW5wdXQaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABI6ChBHZXRSZWRQ",
+            "YWNrZXRJbmZvEhIuR2V0UmVkUGFja2V0SW5wdXQaEC5SZWRQYWNrZXRPdXRw",
+            "dXQiABJKChRHZXRSZWRQYWNrZXRNYXhDb3VudBIWLmdvb2dsZS5wcm90b2J1",
+            "Zi5FbXB0eRoYLlJlZFBhY2tldE1heENvdW50T3V0cHV0IgASTAoUU2V0UmVk",
+            "UGFja2V0TWF4Q291bnQSGi5TZXRSZWRQYWNrZXRNYXhDb3VudElucHV0GhYu",
+            "Z29vZ2xlLnByb3RvYnVmLkVtcHR5IgAaN7LM9gEyUG9ydGtleS5Db250cmFj",
+            "dHMuUmVkUGFja2V0LlJlZFBhY2tldENvbnRyYWN0U3RhdGVCHqoCG1BvcnRr",
+            "ZXkuQ29udHJhY3RzLlJlZFBhY2tldGIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Portkey.Contracts.RedPacket.RedPacketType), }, null, new pbr::GeneratedClrTypeInfo[] {
@@ -81,9 +87,11 @@ namespace Portkey.Contracts.RedPacket {
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketInfo), global::Portkey.Contracts.RedPacket.RedPacketInfo.Parser, new[]{ "RedPacketId", "RedPacketSymbol", "TotalAmount", "MinAmount", "ExpirationTime", "TotalCount", "RedPacketSignature", "PublicKey", "RedPacketType", "FromSender" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketCreated), global::Portkey.Contracts.RedPacket.RedPacketCreated.Parser, new[]{ "FromSender", "RedPacketId", "RedPacketSymbol", "TotalAmount", "TotalCount", "RedPacketType" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketReceived), global::Portkey.Contracts.RedPacket.RedPacketReceived.Parser, new[]{ "FromSender", "RedPacketId", "RedPacketSymbol", "Amount", "ReceiverAddress", "IsSuccess" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.InitializeInput), global::Portkey.Contracts.RedPacket.InitializeInput.Parser, new[]{ "ContractAdmin" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.InitializeInput), global::Portkey.Contracts.RedPacket.InitializeInput.Parser, new[]{ "ContractAdmin", "MaxCount" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketOutput), global::Portkey.Contracts.RedPacket.RedPacketOutput.Parser, new[]{ "RedPacketId", "RedPacketSymbol", "TotalAmount", "MinAmount", "ExpirationTime", "TotalCount", "RedPacketSignature", "PublicKey", "RedPacketType", "FromSender" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.GetRedPacketInput), global::Portkey.Contracts.RedPacket.GetRedPacketInput.Parser, new[]{ "RedPacketId" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.GetRedPacketInput), global::Portkey.Contracts.RedPacket.GetRedPacketInput.Parser, new[]{ "RedPacketId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput), global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput.Parser, new[]{ "MaxCount" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput), global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput.Parser, new[]{ "MaxCount" }, null, null, null, null)
           }));
     }
     #endregion
@@ -631,7 +639,7 @@ namespace Portkey.Contracts.RedPacket {
 
   }
 
-  internal sealed partial class TransferRedPacketInput : pb::IMessage<TransferRedPacketInput>
+  public sealed partial class TransferRedPacketInput : pb::IMessage<TransferRedPacketInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -940,7 +948,7 @@ namespace Portkey.Contracts.RedPacket {
 
   }
 
-  internal sealed partial class TransferRedPacketBatchInput : pb::IMessage<TransferRedPacketBatchInput>
+  public sealed partial class TransferRedPacketBatchInput : pb::IMessage<TransferRedPacketBatchInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -1155,7 +1163,7 @@ namespace Portkey.Contracts.RedPacket {
 
   }
 
-  internal sealed partial class RedPacketInfo : pb::IMessage<RedPacketInfo>
+  public sealed partial class RedPacketInfo : pb::IMessage<RedPacketInfo>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -1686,7 +1694,7 @@ namespace Portkey.Contracts.RedPacket {
 
   }
 
-  internal sealed partial class RedPacketCreated : pb::IMessage<RedPacketCreated>
+  public sealed partial class RedPacketCreated : pb::IMessage<RedPacketCreated>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -2069,7 +2077,7 @@ namespace Portkey.Contracts.RedPacket {
 
   }
 
-  internal sealed partial class RedPacketReceived : pb::IMessage<RedPacketReceived>
+  public sealed partial class RedPacketReceived : pb::IMessage<RedPacketReceived>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -2461,7 +2469,7 @@ namespace Portkey.Contracts.RedPacket {
 
   }
 
-  internal sealed partial class InitializeInput : pb::IMessage<InitializeInput>
+  public sealed partial class InitializeInput : pb::IMessage<InitializeInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -2496,6 +2504,7 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public InitializeInput(InitializeInput other) : this() {
       contractAdmin_ = other.contractAdmin_ != null ? other.contractAdmin_.Clone() : null;
+      maxCount_ = other.maxCount_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -2517,6 +2526,18 @@ namespace Portkey.Contracts.RedPacket {
       }
     }
 
+    /// <summary>Field number for the "max_count" field.</summary>
+    public const int MaxCountFieldNumber = 2;
+    private long maxCount_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long MaxCount {
+      get { return maxCount_; }
+      set {
+        maxCount_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -2533,6 +2554,7 @@ namespace Portkey.Contracts.RedPacket {
         return true;
       }
       if (!object.Equals(ContractAdmin, other.ContractAdmin)) return false;
+      if (MaxCount != other.MaxCount) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -2541,6 +2563,7 @@ namespace Portkey.Contracts.RedPacket {
     public override int GetHashCode() {
       int hash = 1;
       if (contractAdmin_ != null) hash ^= ContractAdmin.GetHashCode();
+      if (MaxCount != 0L) hash ^= MaxCount.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -2563,6 +2586,10 @@ namespace Portkey.Contracts.RedPacket {
         output.WriteRawTag(10);
         output.WriteMessage(ContractAdmin);
       }
+      if (MaxCount != 0L) {
+        output.WriteRawTag(16);
+        output.WriteInt64(MaxCount);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -2577,6 +2604,10 @@ namespace Portkey.Contracts.RedPacket {
         output.WriteRawTag(10);
         output.WriteMessage(ContractAdmin);
       }
+      if (MaxCount != 0L) {
+        output.WriteRawTag(16);
+        output.WriteInt64(MaxCount);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -2589,6 +2620,9 @@ namespace Portkey.Contracts.RedPacket {
       int size = 0;
       if (contractAdmin_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(ContractAdmin);
+      }
+      if (MaxCount != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(MaxCount);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -2607,6 +2641,9 @@ namespace Portkey.Contracts.RedPacket {
           ContractAdmin = new global::AElf.Types.Address();
         }
         ContractAdmin.MergeFrom(other.ContractAdmin);
+      }
+      if (other.MaxCount != 0L) {
+        MaxCount = other.MaxCount;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -2628,6 +2665,10 @@ namespace Portkey.Contracts.RedPacket {
               ContractAdmin = new global::AElf.Types.Address();
             }
             input.ReadMessage(ContractAdmin);
+            break;
+          }
+          case 16: {
+            MaxCount = input.ReadInt64();
             break;
           }
         }
@@ -2652,6 +2693,10 @@ namespace Portkey.Contracts.RedPacket {
             input.ReadMessage(ContractAdmin);
             break;
           }
+          case 16: {
+            MaxCount = input.ReadInt64();
+            break;
+          }
         }
       }
     }
@@ -2659,7 +2704,7 @@ namespace Portkey.Contracts.RedPacket {
 
   }
 
-  internal sealed partial class RedPacketOutput : pb::IMessage<RedPacketOutput>
+  public sealed partial class RedPacketOutput : pb::IMessage<RedPacketOutput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -3190,7 +3235,7 @@ namespace Portkey.Contracts.RedPacket {
 
   }
 
-  internal sealed partial class GetRedPacketInput : pb::IMessage<GetRedPacketInput>
+  public sealed partial class GetRedPacketInput : pb::IMessage<GetRedPacketInput>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
@@ -3370,6 +3415,384 @@ namespace Portkey.Contracts.RedPacket {
             break;
           case 10: {
             RedPacketId = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  public sealed partial class RedPacketMaxCountOutput : pb::IMessage<RedPacketMaxCountOutput>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<RedPacketMaxCountOutput> _parser = new pb::MessageParser<RedPacketMaxCountOutput>(() => new RedPacketMaxCountOutput());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<RedPacketMaxCountOutput> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Portkey.Contracts.RedPacket.RedPacketContractReflection.Descriptor.MessageTypes[9]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RedPacketMaxCountOutput() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RedPacketMaxCountOutput(RedPacketMaxCountOutput other) : this() {
+      maxCount_ = other.maxCount_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RedPacketMaxCountOutput Clone() {
+      return new RedPacketMaxCountOutput(this);
+    }
+
+    /// <summary>Field number for the "max_count" field.</summary>
+    public const int MaxCountFieldNumber = 1;
+    private long maxCount_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long MaxCount {
+      get { return maxCount_; }
+      set {
+        maxCount_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as RedPacketMaxCountOutput);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(RedPacketMaxCountOutput other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (MaxCount != other.MaxCount) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (MaxCount != 0L) hash ^= MaxCount.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (MaxCount != 0L) {
+        output.WriteRawTag(8);
+        output.WriteInt64(MaxCount);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (MaxCount != 0L) {
+        output.WriteRawTag(8);
+        output.WriteInt64(MaxCount);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (MaxCount != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(MaxCount);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(RedPacketMaxCountOutput other) {
+      if (other == null) {
+        return;
+      }
+      if (other.MaxCount != 0L) {
+        MaxCount = other.MaxCount;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 8: {
+            MaxCount = input.ReadInt64();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 8: {
+            MaxCount = input.ReadInt64();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  public sealed partial class SetRedPacketMaxCountInput : pb::IMessage<SetRedPacketMaxCountInput>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<SetRedPacketMaxCountInput> _parser = new pb::MessageParser<SetRedPacketMaxCountInput>(() => new SetRedPacketMaxCountInput());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<SetRedPacketMaxCountInput> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Portkey.Contracts.RedPacket.RedPacketContractReflection.Descriptor.MessageTypes[10]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public SetRedPacketMaxCountInput() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public SetRedPacketMaxCountInput(SetRedPacketMaxCountInput other) : this() {
+      maxCount_ = other.maxCount_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public SetRedPacketMaxCountInput Clone() {
+      return new SetRedPacketMaxCountInput(this);
+    }
+
+    /// <summary>Field number for the "max_count" field.</summary>
+    public const int MaxCountFieldNumber = 1;
+    private long maxCount_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long MaxCount {
+      get { return maxCount_; }
+      set {
+        maxCount_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as SetRedPacketMaxCountInput);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(SetRedPacketMaxCountInput other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (MaxCount != other.MaxCount) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (MaxCount != 0L) hash ^= MaxCount.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (MaxCount != 0L) {
+        output.WriteRawTag(8);
+        output.WriteInt64(MaxCount);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (MaxCount != 0L) {
+        output.WriteRawTag(8);
+        output.WriteInt64(MaxCount);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (MaxCount != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(MaxCount);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(SetRedPacketMaxCountInput other) {
+      if (other == null) {
+        return;
+      }
+      if (other.MaxCount != 0L) {
+        MaxCount = other.MaxCount;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 8: {
+            MaxCount = input.ReadInt64();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 8: {
+            MaxCount = input.ReadInt64();
             break;
           }
         }
