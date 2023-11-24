@@ -53,26 +53,34 @@ public class CAVerifierController : CAServerController
         [FromHeader] string version,
         VerifierServerInput verifierServerInput)
     {
-        _logger.LogInformation("SendVerificationRequest requestDto is {@requestDto}", verifierServerInput);
-        var type = verifierServerInput.OperationType;
-        ValidateOperationType(type);
-        var sendVerificationRequestInput =
-            _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
-
-        if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+        try
         {
-            return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+            _logger.LogInformation("SendVerificationRequest requestDto is {@requestDto}", verifierServerInput);
+            var type = verifierServerInput.OperationType;
+            ValidateOperationType(type);
+            var sendVerificationRequestInput =
+                _objectMapper.Map<VerifierServerInput, SendVerificationRequestInput>(verifierServerInput);
+
+            if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
+            {
+                return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
+            }
+
+            return type switch
+            {
+                OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
+                    sendVerificationRequestInput, type),
+                OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
+                    sendVerificationRequestInput, type),
+                _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
+                    type)
+            };
         }
-
-        return type switch
+        catch (Exception e)
         {
-            OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
-            OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
-            _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
-                type)
-        };
+            _logger.LogError(e, "call SendVerificationRequest error");
+            throw e;
+        }
     }
 
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
@@ -201,11 +209,19 @@ public class CAVerifierController : CAServerController
     [HttpPost("verifyCode")]
     public async Task<VerificationCodeResponse> VerifyCode(VerificationSignatureRequestDto requestDto)
     {
-        _logger.LogInformation("VerifyCode requestDto is {@requestDto}", requestDto);
-        ValidateOperationType(requestDto.OperationType);
-        var resp =  await _verifierAppService.VerifyCodeAsync(requestDto);
-        _logger.LogInformation("VerifyCode response is {@resp}", resp);
-        return resp;
+        try
+        {
+            _logger.LogInformation("VerifyCode requestDto is {@requestDto}", requestDto);
+            ValidateOperationType(requestDto.OperationType);
+            var resp =  await _verifierAppService.VerifyCodeAsync(requestDto);
+            _logger.LogInformation("VerifyCode response is {@resp}", resp);
+            return resp;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "call verifyCode error");
+            throw e;
+        }
     }
 
     [HttpPost("verifyGoogleToken")]

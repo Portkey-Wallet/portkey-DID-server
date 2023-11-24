@@ -84,42 +84,50 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
-        var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
-        var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
-        registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
-
-        _logger.LogInformation($"register dto :{JsonConvert.SerializeObject(registerDto)}");
-
-        var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.VerifierId, input.ChainId,
-            input.Manager);
-
-        registerDto.ManagerInfo.ExtraData =
-            await _deviceAppService.EncryptExtraDataAsync(registerDto.ManagerInfo.ExtraData, grainId);
-
-        var grain = _clusterClient.GetGrain<IRegisterGrain>(grainId);
-        var result = await grain.RequestAsync(ObjectMapper.Map<RegisterDto, RegisterGrainDto>(registerDto));
-
-        if (!result.Success)
+        try
         {
-            throw new UserFriendlyException(result.Message);
-        }
+            var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
+            var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
+            registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
 
-        await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data));
-        await _distributedEventBus.PublishAsync(
-            new UserBehaviorEto()
+            _logger.LogInformation($"register dto :{JsonConvert.SerializeObject(registerDto)}");
+
+            var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.VerifierId, input.ChainId,
+                input.Manager);
+
+            registerDto.ManagerInfo.ExtraData =
+                await _deviceAppService.EncryptExtraDataAsync(registerDto.ManagerInfo.ExtraData, grainId);
+
+            var grain = _clusterClient.GetGrain<IRegisterGrain>(grainId);
+            var result = await grain.RequestAsync(ObjectMapper.Map<RegisterDto, RegisterGrainDto>(registerDto));
+
+            if (!result.Success)
             {
-                Action = UserBehaviorAction.NewRecord,
-                ChainId = input.ChainId,
-                Referer = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Referer]
-                    .FirstOrDefault(),
-                UserAgent = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.UserAgent]
-                    .FirstOrDefault(),
-                Origin = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Origin]
-                    .FirstOrDefault(),
-                SessionId = registerDto.Id.ToString()
-            });
-        return new AccountResultDto(registerDto.Id.ToString());
+                throw new UserFriendlyException(result.Message);
+            }
+
+            await _distributedEventBus.PublishAsync(
+                ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data));
+            await _distributedEventBus.PublishAsync(
+                new UserBehaviorEto()
+                {
+                    Action = UserBehaviorAction.NewRecord,
+                    ChainId = input.ChainId,
+                    Referer = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Referer]
+                        .FirstOrDefault(),
+                    UserAgent = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.UserAgent]
+                        .FirstOrDefault(),
+                    Origin = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Origin]
+                        .FirstOrDefault(),
+                    SessionId = registerDto.Id.ToString()
+                });
+            return new AccountResultDto(registerDto.Id.ToString());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "call request error");
+            throw e;
+        }
     }
 
     private GuardianGrainDto GetGuardian(string guardianIdentifier)
