@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -48,7 +49,7 @@ public class HttpClientProvider : IHttpClientProvider, ISingletonDependency
             Encoding.UTF8,
             MediaTypeNames.Application.Json);
 
-        var client = _httpClientFactory.CreateClient();
+        var client = _httpClientFactory.CreateClient(HttpConstant.RetryHttpClient);
 
         if (headers is { Count: > 0 })
         {
