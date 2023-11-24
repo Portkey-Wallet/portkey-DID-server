@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Polly;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.DistributedLocking;
@@ -92,6 +93,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
         context.Services.AddHttpClient();
+        ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
@@ -123,5 +125,14 @@ public class CAServerApplicationModule : AbpModule
                     "AppId", appId);
             }
         });
+    }
+
+    private void ConfigureRetryHttpClient(IServiceCollection services)
+    {
+        //if http code = 5xx or 408,this client will retry
+        services.AddHttpClient(HttpConstant.RetryHttpClient)
+            .AddTransientHttpErrorPolicy(policyBuilder =>
+                policyBuilder.WaitAndRetryAsync(
+                    HttpConstant.RetryCount, retryNumber => TimeSpan.FromMilliseconds(HttpConstant.RetryDelayMs)));
     }
 }
