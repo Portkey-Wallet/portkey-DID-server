@@ -1,6 +1,7 @@
 using AElf;
 using AElf.Client.Service;
 using AElf.Cryptography;
+using AElf.Cryptography.ECDSA;
 using AElf.Types;
 using Google.Protobuf;
 
@@ -14,10 +15,12 @@ public class AccountHolder
     public Address Address { get; set; }
     public string PublicKey { get; set; }
     
+    private static ECKeyPair GetAElfKeyPair(string privateKeyHex) => CryptoHelper.FromPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKeyHex));
+    
     public AccountHolder(string privateKey)
     {
         _privateKey = ByteArrayHelper.HexStringToByteArray(privateKey);
-        Address = Address.FromBase58(new AElfClient("http://127.0.0.1:8000").GetAddressFromPrivateKey(privateKey));
+        Address = Address.FromPublicKey(GetAElfKeyPair(privateKey).PublicKey);
         var keyPair = CryptoHelper.FromPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey));
         PublicKey = keyPair.PublicKey.ToHex();
     }
