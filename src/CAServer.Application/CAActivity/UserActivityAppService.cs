@@ -55,7 +55,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _userAssetsProvider = userAssetsProvider;
         _chainOptions = chainOptions.Value;
         _activityOptions = activityOptions.Value;
-    }一天
+    }
 
 
     public async Task<GetActivitiesDto> GetTwoCaTransactionsAsync(GetTwoCaTransactionRequestDto request)
