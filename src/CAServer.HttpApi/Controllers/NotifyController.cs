@@ -23,12 +23,6 @@ public class NotifyController
         _notifyAppService = notifyAppService;
     }
 
-    [HttpPost("fire")]
-    public async Task<int> FireAsync(string token, string title, string content)
-    {
-        return await _notifyAppService.FireAsync(token, title, content);
-    }
-
     [HttpPost("createFromCms")]
     [Authorize(Roles = "admin")]
     public async Task<List<NotifyResultDto>> CreateFromCmsAsync([FromForm] string version)
