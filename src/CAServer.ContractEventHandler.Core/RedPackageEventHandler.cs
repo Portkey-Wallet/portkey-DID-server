@@ -33,6 +33,8 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
         try
         {
             var result = await _contractAppService.CreateRedPackageAsync(eventData);
+            _logger.LogInformation("RedPackageCreate result: " + "\n{result}",
+                JsonConvert.SerializeObject(result, Formatting.Indented));
             eto.TransactionResult = result.Status;
             eto.TransactionId = result.TransactionId;
             if (result.Status != TransactionState.Mined)
