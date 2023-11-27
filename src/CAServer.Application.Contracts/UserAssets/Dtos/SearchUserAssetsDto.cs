@@ -35,4 +35,5 @@ public class NftInfoDto
     public string CollectionName { get; set; }
     public string Balance { get; set; }
     public string TokenContractAddress { get; set; }
+    public string Decimals { get; set; }
 }

@@ -28,6 +28,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -106,19 +107,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data));
-        await _distributedEventBus.PublishAsync(
-            new UserBehaviorEto()
-            {
-                Action = UserBehaviorAction.NewRecord,
-                ChainId = input.ChainId,
-                Referer = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Referer]
-                    .FirstOrDefault(),
-                UserAgent = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.UserAgent]
-                    .FirstOrDefault(),
-                Origin = _httpContextAccessor?.HttpContext?.Request?.Headers[UserBehaviorConst.Origin]
-                    .FirstOrDefault(),
-                SessionId = registerDto.Id.ToString()
-            });
         return new AccountResultDto(registerDto.Id.ToString());
     }
 
@@ -358,7 +346,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
 
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
-                                                                       && g.GuardianList.Guardians.Count > 0);
+                                                                       && g.GuardianList.Guardians.Count > 0
+                                                                       && g.OriginChainId == g.ChainId);
 
         return guardianInfo?.GuardianList.Guardians
             .Where(t => t.Type.Equals(((int)GuardianIdentifierType.Apple).ToString()) && t.IsLoginGuardian).ToList();

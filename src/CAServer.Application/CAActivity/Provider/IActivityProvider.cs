@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
 
 namespace CAServer.CAActivity.Provider;
@@ -19,4 +20,7 @@ public interface IActivityProvider
     Task<string> GetCaHolderNickName(Guid userId);
 
     Task<IndexerSymbols> GetTokenDecimalsAsync(string symbol);
+
+    Task<GuardiansDto> GetCaHolderInfoAsync(List<string> caAddresses, string caHash, int skipCount = 0,
+        int maxResultCount = 10);
 }
