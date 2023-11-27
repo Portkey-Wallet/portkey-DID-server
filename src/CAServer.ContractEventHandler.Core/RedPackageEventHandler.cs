@@ -50,7 +50,7 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
                 return;
             }
             
-            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPackageCreated))
+            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPacketCreated))
             {
                 eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
                 eto.Success = false;
