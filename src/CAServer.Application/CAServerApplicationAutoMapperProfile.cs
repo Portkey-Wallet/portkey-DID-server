@@ -13,6 +13,7 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
+using CAServer.DataReporting.Dtos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -460,5 +461,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderDto, NftOrderQueryResponseDto>()
             .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
             .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));
+        
+        CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
+        CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
     }
 }
