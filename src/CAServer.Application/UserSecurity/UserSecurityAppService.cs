@@ -74,7 +74,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             // If the transferLimit is updated, the token transferLimit will be overwritten
             // var res = new IndexerTransferLimitList();
-            var res = await _userSecurityProvider.GetTransferLimitListByCaHash(input.CaHash);
+            var res = await _userSecurityProvider.GetTransferLimitListByCaHashAsync(input.CaHash);
             _logger.LogDebug("CaHash: {caHash} have {COUNT} transfer limit change history.", input.CaHash,
                 res.CaHolderTransferLimit.TotalRecordCount);
 
@@ -111,7 +111,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     {
         try
         {
-            var res = await _userSecurityProvider.GetManagerApprovedListByCaHash(input.CaHash, input.Spender,
+            var res = await _userSecurityProvider.GetManagerApprovedListByCaHashAsync(input.CaHash, input.Spender,
                 input.Symbol, input.SkipCount, input.MaxResultCount);
             return new ManagerApprovedListResultDto
             {
@@ -420,7 +420,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private async Task<bool> AddUserTransferLimitHistoryAsync(string caHash, IndexerSearchTokenNft token)
     {
         var history =
-            await _userSecurityProvider.GetUserTransferLimitHistory(caHash, token.ChainId, token.TokenInfo.Symbol);
+            await _userSecurityProvider.GetUserTransferLimitHistoryAsync(caHash, token.ChainId, token.TokenInfo.Symbol);
         if (history == null || string.IsNullOrEmpty(history.Symbol) || history.Symbol != token.TokenInfo.Symbol ||
             history.ChainId != token.ChainId)
         {
