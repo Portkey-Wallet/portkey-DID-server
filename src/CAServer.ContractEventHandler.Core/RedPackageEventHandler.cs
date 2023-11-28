@@ -67,7 +67,6 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);
-            return;
         }
         catch (Exception e)
         {
