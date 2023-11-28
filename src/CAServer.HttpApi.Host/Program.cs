@@ -39,6 +39,7 @@ public class Program
             var builder = WebApplication.CreateBuilder(args);
             builder.Configuration.AddJsonFile("phone.json");
             builder.Configuration.AddJsonFile("seedurl.json");
+            builder.Configuration.AddJsonFile("activity.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseSerilog();

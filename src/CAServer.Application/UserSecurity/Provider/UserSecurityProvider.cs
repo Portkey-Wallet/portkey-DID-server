@@ -24,7 +24,7 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
         _userTransferLimitHistoryRepository = userTransferLimitHistoryRepository;
     }
 
-    public async Task<IndexerTransferLimitList> GetTransferLimitListByCaHash(string caHash)
+    public async Task<IndexerTransferLimitList> GetTransferLimitListByCaHashAsync(string caHash)
     {
         return await _graphQlHelper.QueryAsync<IndexerTransferLimitList>(new GraphQLRequest
         {
@@ -48,7 +48,7 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
         });
     }
 
-    public async Task<IndexerManagerApprovedList> GetManagerApprovedListByCaHash(string caHash, string spender,
+    public async Task<IndexerManagerApprovedList> GetManagerApprovedListByCaHashAsync(string caHash, string spender,
         string symbol, long skip, long maxResultCount)
     {
         return await _graphQlHelper.QueryAsync<IndexerManagerApprovedList>(new GraphQLRequest
@@ -74,7 +74,7 @@ public class UserSecurityProvider : IUserSecurityProvider, ISingletonDependency
         });
     }
 
-    public async Task<UserTransferLimitHistoryIndex> GetUserTransferLimitHistory(string caHash, string chainId,
+    public async Task<UserTransferLimitHistoryIndex> GetUserTransferLimitHistoryAsync(string caHash, string chainId,
         string symbol)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<UserTransferLimitHistoryIndex>, QueryContainer>>();

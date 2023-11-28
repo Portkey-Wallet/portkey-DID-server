@@ -133,6 +133,14 @@ public class CAServerContractEventHandlerModule : AbpModule
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
                 })
+                .Configure<ClientMessagingOptions>(opt =>
+                {
+                    var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
+                    if (responseTimeout > 0)
+                    {
+                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
+                    }
+                })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
