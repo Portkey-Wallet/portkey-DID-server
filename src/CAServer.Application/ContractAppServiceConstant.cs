@@ -38,5 +38,5 @@ public static class LogEvent
 {
     public const string CAHolderCreated = "CAHolderCreated";
     public const string ManagerInfoSocialRecovered = "ManagerInfoSocialRecovered";
-    public const string RedPackageCreated = "RedPacketCreated";
+    public const string RedPacketCreated = "RedPacketCreated";
 }
