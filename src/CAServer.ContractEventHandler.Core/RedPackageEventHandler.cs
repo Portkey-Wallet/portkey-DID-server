@@ -35,6 +35,8 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
         try
         {
             var result = await _contractAppService.CreateRedPackageAsync(eventData);
+            _logger.LogInformation("RedPackageCreate result: " + "\n{result}",
+                JsonConvert.SerializeObject(result, Formatting.Indented));
             eto.TransactionResult = result.Status;
             eto.TransactionId = result.TransactionId;
             if (result.Status != TransactionState.Mined)
@@ -50,7 +52,7 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
                 return;
             }
             
-            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPackageCreated))
+            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPacketCreated))
             {
                 eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
                 eto.Success = false;

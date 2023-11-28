@@ -49,6 +49,7 @@ public class RedPackageController : CAServerController
     }
     
     [HttpGet("config")]
+    [AllowAnonymous]
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string chainId,
         [CanBeNull] string token)
     {
