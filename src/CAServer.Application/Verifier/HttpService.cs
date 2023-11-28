@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace CAServer.Verifier;
@@ -24,11 +25,13 @@ public class HttpService : IHttpService
     private HttpClient? Client { get; set; }
     private int TimeoutSeconds { get; }
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<VerifierServerClient> _logger;
     
-    public HttpService(int timeoutSeconds, IHttpClientFactory httpClientFactory, bool useCamelCase = false)
+    public HttpService(int timeoutSeconds, IHttpClientFactory httpClientFactory, ILogger<VerifierServerClient> logger, bool useCamelCase = false)
     {
         _useCamelCase = useCamelCase;
         TimeoutSeconds = timeoutSeconds;
+        _logger = logger;
         _httpClientFactory = httpClientFactory;
     }
 
@@ -102,6 +105,7 @@ public class HttpService : IHttpService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "http service error, url: {0}; content:{1}", url,  JsonSerializer.Serialize(content));
             throw new Exception(ex.Message);
         }
        

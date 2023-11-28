@@ -31,7 +31,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
-        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
+        _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, logger, true);
         _httpClientFactory = httpClientFactory;
     }
 
