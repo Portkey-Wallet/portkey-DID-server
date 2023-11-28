@@ -140,51 +140,8 @@ namespace Portkey.Contracts.RedPacket {
     #endregion
 
     /// <summary>Base class for the contract of RedPacketContract</summary>
-    public abstract partial class RedPacketContractBase : AElf.Sdk.CSharp.CSharpSmartContract<Portkey.Contracts.RedPacket.RedPacketContractState>
-    {
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::Portkey.Contracts.RedPacket.InitializeInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
+    
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty CreateRedPacket(global::Portkey.Contracts.RedPacket.CreateRedPacketInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty TransferRedPacket(global::Portkey.Contracts.RedPacket.TransferRedPacketBatchInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Portkey.Contracts.RedPacket.RedPacketOutput GetRedPacketInfo(global::Portkey.Contracts.RedPacket.GetRedPacketInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput GetRedPacketMaxCount(global::Google.Protobuf.WellKnownTypes.Empty input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetRedPacketMaxCount(global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-    }
-
-    public static aelf::ServerServiceDefinition BindService(RedPacketContractBase serviceImpl)
-    {
-      return aelf::ServerServiceDefinition.CreateBuilder()
-          .AddDescriptors(Descriptors)
-          .AddMethod(__Method_Initialize, serviceImpl.Initialize)
-          .AddMethod(__Method_CreateRedPacket, serviceImpl.CreateRedPacket)
-          .AddMethod(__Method_TransferRedPacket, serviceImpl.TransferRedPacket)
-          .AddMethod(__Method_GetRedPacketInfo, serviceImpl.GetRedPacketInfo)
-          .AddMethod(__Method_GetRedPacketMaxCount, serviceImpl.GetRedPacketMaxCount)
-          .AddMethod(__Method_SetRedPacketMaxCount, serviceImpl.SetRedPacketMaxCount).Build();
-    }
 
   }
 }
