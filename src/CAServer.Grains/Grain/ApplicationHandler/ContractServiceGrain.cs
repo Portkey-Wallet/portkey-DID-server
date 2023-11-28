@@ -126,42 +126,42 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private async Task<TransactionInfoDto> ForwardTransactionToChainAsync(string chainId, string rawTransaction)
     {
          try
-        {
-            if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
-            {
-                return null;
-            }
+         {
+             if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+             {
+                 return null;
+             }
 
-            var client = new AElfClient(chainInfo.BaseUrl);
-            await client.IsConnectedAsync();
+             var client = new AElfClient(chainInfo.BaseUrl);
+             await client.IsConnectedAsync();
 
-            var result = await client.SendTransactionAsync(new SendTransactionInput
-            {
-                RawTransaction = rawTransaction
-            });
+             var result = await client.SendTransactionAsync(new SendTransactionInput
+             {
+                 RawTransaction = rawTransaction
+             });
 
-            await Task.Delay(_grainOptions.Delay);
+             await Task.Delay(_grainOptions.Delay);
 
-            var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-
-            var times = 0;
-            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
-            {
-                times++;
-                await Task.Delay(_grainOptions.RetryDelay);
-                transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-            }
-
-            return new TransactionInfoDto
-            {
-                TransactionResultDto = transactionResult
-            };
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "ForwardTransactionToChainAsync error,chain:{chain}", chainId);
-            return new TransactionInfoDto();
-        }
+             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+             _logger.LogInformation("red package create start time is  {start}",DateTime.Now);
+             var times = 0;
+             while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+             {
+                 times++;
+                 await Task.Delay(_grainOptions.RetryDelay);
+                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+             }
+             _logger.LogInformation("red package create end time is  {end}",DateTime.Now);
+             return new TransactionInfoDto
+             {
+                 TransactionResultDto = transactionResult
+             };
+         }
+         catch (Exception e)
+         {
+             _logger.LogError(e, "ForwardTransactionToChainAsync error,chain:{chain}", chainId);
+             return new TransactionInfoDto();
+         }
     }
 
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
