@@ -231,7 +231,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
             ChainId = "AELF",
             Symbol = "ELF",
             ChannelUuid = "xxxx",
-            SendUuid = "xxx",
+            //SendUuid = "xxx",
             RawTransaction = "xxxxx",
             Message = "xxxx"
         };
