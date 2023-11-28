@@ -11,11 +11,14 @@ public class RedPackageGrainTest : CAServerGrainTestBase
     [Fact]
     public async Task GenerateRedPackageAsync_test()
     {
+        var data = "1asdasd";
         var redPackageGrain = Cluster.Client.GetGrain<IRedPackageKeyGrain>(Guid.NewGuid());
         var res = await redPackageGrain.GenerateKey();
         res.ShouldNotBeNull();
-        res = await redPackageGrain.GenerateSignature("1asdasd");
+        res = await redPackageGrain.GenerateSignature(data);
         res.ShouldNotBeNull();
+        var verify = await redPackageGrain.VerifySignature(data, res);
+        verify.ShouldBe(true);
 
         res = await redPackageGrain.GetPublicKey();
         res.ShouldNotBeNull();
@@ -31,7 +34,7 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         res.Success.ShouldBe(true);
         res = await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(redPackageId), 8, 1, userId);
         res.Success.ShouldBe(false);
-        await redPackageGrain.DeleteRedPackage();
+        await redPackageGrain.ExpireRedPackage();
         var detail = await redPackageGrain.GetRedPackage(0, 10, userId);
         detail.Data.Status.ShouldBe(RedPackageStatus.Expired);
         await redPackageGrain.CancelRedPackage();
@@ -69,7 +72,7 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
         res.Success.ShouldBe(false);
         res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageCancelled);
-        await redPackageGrain.DeleteRedPackage();
+        await redPackageGrain.ExpireRedPackage();
         res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
         res.Success.ShouldBe(false);
         res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageExpired);
@@ -94,7 +97,6 @@ public class RedPackageGrainTest : CAServerGrainTestBase
             ChainId = "AELF",
             Symbol = "ELF",
             ChannelUuid = "xxxx",
-            SendUuid = "xxx",
             RawTransaction = "xxxxx",
             Message = "xxxx"
         };

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using AElf;
 using AElf.Cryptography;
 using CAServer.Grains.State.RedPackage;
@@ -40,5 +41,14 @@ public class RedPackageKeyGrain : Orleans.Grain<RedPackageKeyState>, IRedPackage
         var signature =
             CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(State.PrivateKey), hashByteArray);
         return Task.FromResult(signature.ToHex());
+    }
+
+    public Task<bool> VerifySignature(string data, string sig)
+    {
+        var publicKey = ByteArrayHelper.HexStringToByteArray(State.PublicKey);
+        var signature = ByteArrayHelper.HexStringToByteArray(sig);
+        var dataBytes = Encoding.UTF8.GetBytes(data).ComputeHash();
+
+        return Task.FromResult(CryptoHelper.VerifySignature(signature, dataBytes, publicKey));
     }
 }
