@@ -14,5 +14,7 @@ public class CAServerSignatureHttpApiModule : AbpModule
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerSignatureHttpApiModule>(); });
         var configuration = context.Services.GetConfiguration();
         Configure<KeyPairInfoOptions>(configuration.GetSection("KeyPairInfo"));
+        Configure<KeyStoreOptions>(configuration.GetSection("KeyStore"));
+        context.Services.AddSingleton<IAElfKeyStoreService, AElfKeyStoreService>();
     }
 }
