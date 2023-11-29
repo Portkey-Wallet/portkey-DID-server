@@ -28,54 +28,10 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
 
     public async Task HandleEventAsync(RedPackageCreateEto eventData)
     {
-        _logger.LogInformation("RedPackageCreate HandleEventAsync start: " + "\n{eventData}",eventData);
-        var eto = new RedPackageCreateResultEto();
-        eto.SessionId = eventData.SessionId;
-        try
-        {
-            var result = await _contractAppService.CreateRedPackageAsync(eventData);
-            _logger.LogInformation("RedPackageCreate result: " + "\n{result}",
-                JsonConvert.SerializeObject(result, Formatting.Indented));
-            eto.TransactionResult = result.Status;
-            eto.TransactionId = result.TransactionId;
-            if (result.Status != TransactionState.Mined)
-            {
-                eto.Message = "Transaction status: " + result.Status + ". Error: " +
-                              result.Error;
-                eto.Success = false;
+            _logger.LogInformation("RedPackageCreate HandleEventAsync start: " + "\n{eventData}",eventData);
+      
+            _ = _contractAppService.CreateRedPackageAsync(eventData);
 
-                _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
-                    JsonConvert.SerializeObject(eto, Formatting.Indented));
-
-                await _distributedEventBus.PublishAsync(eto);
-                return;
-            }
-            
-            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPacketCreated))
-            {
-                eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
-                eto.Success = false;
-
-                _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
-                    JsonConvert.SerializeObject(eto, Formatting.Indented));
-
-                await _distributedEventBus.PublishAsync(eto);
-                return;
-            }
-            
-            eto.Success = true;
-            eto.Message = "Transaction status: " + result.Status;
-            await _distributedEventBus.PublishAsync(eto);
-            _logger.LogInformation("RedPackageCreate HandleEventAsync PublishAsync: " + "\n{eto}",eto);
-            return;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "RedPackageCreateEto Error: user:{user},sessionId:{session}", eventData.UserId,
-                eventData.SessionId);
-            eto.Success = false;
-            eto.Message = e.Message;
-            await _distributedEventBus.PublishAsync(eto);
-        }
     }
+    
 }

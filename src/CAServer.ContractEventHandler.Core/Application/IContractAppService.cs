@@ -36,7 +36,7 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IContractAppService
 {
-    Task<TransactionResultDto> CreateRedPackageAsync(RedPackageCreateEto message);
+    Task CreateRedPackageAsync(RedPackageCreateEto message);
     Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
     Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     Task QueryAndSyncAsync();
@@ -96,12 +96,59 @@ public class ContractAppService : IContractAppService
         _userAssetsProvider = userAssetsProvider;
     }
 
-    public async Task<TransactionResultDto> CreateRedPackageAsync(RedPackageCreateEto message)
+    public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
     {
-        _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
-            JsonConvert.SerializeObject(message, Formatting.Indented));
+        var eto = new RedPackageCreateResultEto();
+        try
+        {
+            _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
+                JsonConvert.SerializeObject(eventData, Formatting.Indented));
+            eto.SessionId = eventData.SessionId;
+            var result = await _contractProvider.ForwardTransactionAsync(eventData.ChainId, eventData.RawTransaction);
+            _logger.LogInformation("RedPackageCreate result: " + "\n{result}",
+                JsonConvert.SerializeObject(result, Formatting.Indented));
+            eto.TransactionResult = result.Status;
+            eto.TransactionId = result.TransactionId;
+            if (result.Status != TransactionState.Mined)
+            {
+                eto.Message = "Transaction status: " + result.Status + ". Error: " +
+                              result.Error;
+                eto.Success = false;
+
+                _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
+                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+
+                await _distributedEventBus.PublishAsync(eto);
+                return;
+            }
+            
+            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPacketCreated))
+            {
+                eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
+                eto.Success = false;
+
+                _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
+                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+
+                await _distributedEventBus.PublishAsync(eto);
+                return;
+            }
+            
+            eto.Success = true;
+            eto.Message = "Transaction status: " + result.Status;
+            await _distributedEventBus.PublishAsync(eto);
+            _logger.LogInformation("RedPackageCreate HandleEventAsync PublishAsync: " + "\n{eto}",eto);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "RedPackageCreateEto Error: user:{user},sessionId:{session}", eventData.UserId,
+                eventData.SessionId);
+            eto.Success = false;
+            eto.Message = e.Message;
+            await _distributedEventBus.PublishAsync(eto);
+        }
         
-        return await _contractProvider.ForwardTransactionAsync(message.ChainId,message.RawTransaction);
+        return;
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
