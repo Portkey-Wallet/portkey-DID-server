@@ -89,7 +89,6 @@ public class CAServerContractEventHandlerModule : AbpModule
         StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
-        context.AddBackgroundWorkerAsync<PayRedPackageWorkerTest>();
 
     }
 
