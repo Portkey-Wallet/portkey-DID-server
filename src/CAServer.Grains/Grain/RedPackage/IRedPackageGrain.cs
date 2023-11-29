@@ -11,4 +11,10 @@ public interface IRedPackageGrain : IGrainWithGuidKey
     Task<GrainResultDto<bool>> ExpireRedPackage();
     Task<GrainResultDto<bool>> CancelRedPackage();
     Task<GrainResultDto<GrabResultDto>> GrabRedPackage(Guid userId,string caAddress);
+
+    Task<GrainResultDto<bool>> UpdateRedPackage(List<GrabItemDto> grabItemDtos);
+    
+    Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(Guid packageId);
+    Task<GrainResultDto<bool>> UpdateRedPackageExpire();
+
 }

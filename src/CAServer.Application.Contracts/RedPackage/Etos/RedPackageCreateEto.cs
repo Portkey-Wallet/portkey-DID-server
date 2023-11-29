@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Volo.Abp.EventBus;
 
 namespace CAServer.RedPackage.Etos;
@@ -10,4 +11,7 @@ public class RedPackageCreateEto
     public string ChainId { get; set; }
     public Guid SessionId { get; set; }
     public string RawTransaction { get; set; }
+    public Guid RedPackageId { get; set; }
+  
+
 }

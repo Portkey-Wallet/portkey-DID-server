@@ -26,11 +26,13 @@ public class RedPackageState
     public List<GrabItem> Items { get; set; }
     public List<BucketItem> BucketNotClaimed { get; set; }
     public List<BucketItem> BucketClaimed { get; set; }
+    public bool IfRefund{ get; set; }
 }
 
 public class GrabItem
 {
     public Guid UserId { get; set; }
+    public bool PaymentCompleted{ get; set; }
     public string CaAddress { get; set; } = string.Empty;
     public string Username { get; set; }
     public string Avatar { get; set; }
@@ -38,6 +40,7 @@ public class GrabItem
     public bool IsLuckyKing { get; set; }
     public long Amount { get; set; }
     public int Decimal { get; set; }
+
 }
 
 public class BucketItem

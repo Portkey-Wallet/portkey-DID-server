@@ -10,6 +10,8 @@ public static class MethodName
     public const string GetParentChainHeight = "GetParentChainHeight";
     public const string GetSideChainHeight = "GetSideChainHeight";
     public const string GetHolderInfo = "GetHolderInfo";
+    public const string CreateRedPacket = "CreateRedPacket";
+    public const string TransferRedPacket = "TransferRedPacket";
 }
 
 public static class TransactionState
