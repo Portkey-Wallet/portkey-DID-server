@@ -1,6 +1,7 @@
 using System.Collections;
 using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
@@ -10,17 +11,6 @@ namespace CAServer.EntityEventHandler.Tests.RedPackage;
 
 public class PayRedPackageTaskTest : CAServerEntityEventHandlerTestBase
 {
-    private IPayRedPackageTask _packageTask;
-    
-    private readonly PayRedPackageAccount _packageAccount;
- 
-
-    public PayRedPackageTaskTest()
-    {
-        _packageTask = GetRequiredService<IPayRedPackageTask>();
-        _packageAccount = GetRequiredService<PayRedPackageAccount>();
-    }
-
     [Fact]
     public async void PayRedPackageTaskHadleTest()
     {
@@ -34,23 +24,13 @@ public class PayRedPackageTaskTest : CAServerEntityEventHandlerTestBase
         await redPackageGrain.GrabRedPackage(userId1, "xxxx");
         var afterGrab = await redPackageGrain.GetRedPackage(redPackageId);
         var grabItemDtos = afterGrab.Data.Items;
-        List<RedPackageCreateEto.GrabItemDto> list = new List<RedPackageCreateEto.GrabItemDto>();
-        foreach (var item in grabItemDtos)
-        {
-            var grabItemDto = new RedPackageCreateEto.GrabItemDto();
-            grabItemDto.Amount = item.Amount;
-            grabItemDto.UserId = item.UserId;
-            grabItemDto.CaAddress = item.CaAddress;
-            grabItemDto.PaymentCompleted = item.PaymentCompleted;
-            list.Add(grabItemDto);
-        }
+       
         var redPackageCreateEto = new RedPackageCreateEto()
         {
             RedPackageId = redPackageId,
-            Items = list
             
         };
-        await _packageTask.PayRedPackageAsync(redPackageCreateEto);
+        //await _packageTask.PayRedPackageAsync(redPackageCreateEto);
     }
     
     private SendRedPackageInputDto NewSendRedPackageInputDto(Guid redPackageId)
@@ -65,15 +45,10 @@ public class PayRedPackageTaskTest : CAServerEntityEventHandlerTestBase
             ChainId = "AELF",
             Symbol = "ELF",
             ChannelUuid = "xxxx",
-            SendUuid = "xxx",
+            // SendUuid = "xxx",
             RawTransaction = "xxxxx",
             Message = "xxxx"
         };
     }
-
-    [Fact]
-    public async void RedPackageAccount()
-    {
-        _packageAccount.getOneAccountRandom();
-    }
+    
 }

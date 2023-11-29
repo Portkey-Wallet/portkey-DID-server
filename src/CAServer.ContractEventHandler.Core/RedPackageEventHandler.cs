@@ -51,7 +51,7 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-            
+
             if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPacketCreated))
             {
                 eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
@@ -64,8 +64,8 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
                 return;
             }
             //TODO daiyabin  how long would i excute it
-            //
-            // BackgroundJob.Schedule<PayRedPackageTask>(x => x.PayRedPackageAsync(eventData));
+            BackgroundJob.Schedule<PayRedPackageTask>(x => x.PayRedPackageAsync(eventData.RedPackageId),
+                TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);

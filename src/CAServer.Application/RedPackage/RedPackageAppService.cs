@@ -52,22 +52,33 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _contactProvider = contactProvider;
     }
 
-    public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
+    public  RedPackageTokenInfo GetRedPackageOption(String symbol,string chainId,out long maxCount,out string redpackageContractAddress)
     {
-        var result = _redPackageOptions.TokenInfo.Where(x =>
-                string.Equals(x.Symbol, redPackageInput.Symbol, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(x.ChainId, redPackageInput.ChainId, StringComparison.OrdinalIgnoreCase))
+        var result =  _redPackageOptions.TokenInfo.Where(x =>
+                string.Equals(x.Symbol, symbol, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.ChainId, chainId, StringComparison.OrdinalIgnoreCase))
             .ToList().FirstOrDefault();
+        maxCount = _redPackageOptions.MaxCount;
         if (result == null)
         {
             throw new UserFriendlyException("Symbol not found");
         }
-
-        if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
         {
             throw new UserFriendlyException("chain not found");
         }
 
+        redpackageContractAddress = chainInfo.RedPackageContractAddress;
+        
+        return result;
+    }
+    public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
+    {
+        var result = GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId,out long maxCount,out string redpackageContractAddress);
+        if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
+        {
+            throw new UserFriendlyException("chain not found");
+        }
         var redPackageId = Guid.NewGuid();
 
         var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
@@ -76,7 +87,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             Id = redPackageId,
             PublicKey = await grain.GenerateKey(),
-            Signature = await grain.GenerateSignature($"{redPackageInput.Symbol}-{result.MinAmount}-{_redPackageOptions.MaxCount}"),
+            Signature = await grain.GenerateSignature($"{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}"),
             MinAmount = result.MinAmount,
             Symbol = redPackageInput.Symbol,
             Decimal = result.Decimal,
@@ -85,6 +96,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             RedPackageContractAddress = chainInfo.RedPackageContractAddress
         };
     }
+    
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
@@ -135,12 +147,13 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         redPackageIndex.SenderPortkeyToken = portkeyToken;
         redPackageIndex.Message = input.Message;
         await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
-        var redPackageCreateEto = _objectMapper.Map<RedPackageIndex, RedPackageCreateEto>(redPackageIndex);
-        redPackageCreateEto.UserId = CurrentUser.Id;
-        redPackageCreateEto.ChainId = input.ChainId;
-        redPackageCreateEto.SessionId = sessionId;
-        redPackageCreateEto.RawTransaction = input.RawTransaction;
-        await _distributedEventBus.PublishAsync(redPackageIndex);
+        await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
+        {
+            UserId = CurrentUser.Id,
+            ChainId = input.ChainId,
+            SessionId = sessionId,
+            RawTransaction = input.RawTransaction
+        });
         return new SendRedPackageOutputDto()
         {
             SessionId = sessionId

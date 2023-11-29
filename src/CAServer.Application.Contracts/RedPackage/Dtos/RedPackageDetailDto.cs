@@ -31,6 +31,8 @@ public class RedPackageDetailDto
     public RedPackageType Type { get; set; }
     public RedPackageStatus Status { get; set; }
     public List<GrabItemDto> Items { get; set; }
+    
+    public RedPackageStatus IfRefund{ get; set; }
 }
 
 public class GrabItemDto

@@ -89,6 +89,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
+        context.AddBackgroundWorkerAsync<PayRedPackageWorkerTest>();
+
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

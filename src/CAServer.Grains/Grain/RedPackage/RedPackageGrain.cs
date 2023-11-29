@@ -11,6 +11,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
 {
     private readonly IObjectMapper _objectMapper;
 
+    private const int RePackagePlaceMove = 2;
+
     public RedPackageGrain(IObjectMapper objectMapper)
     {
         _objectMapper = objectMapper;
@@ -40,7 +42,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             return result;
         }
 
-        var bucketResult = GenerateBucket(input.Count, long.Parse(input.TotalAmount), minAmount, input.Type);
+        var bucketResult = GenerateBucket(input.Count, long.Parse(input.TotalAmount), minAmount,decimalIn,input.Type);
         State = _objectMapper.Map<SendRedPackageInputDto, RedPackageState>(input);
         State.Status = RedPackageStatus.NotClaimed;
         State.CreateTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -50,6 +52,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         State.BucketNotClaimed = bucketResult.Item1;
         State.BucketClaimed = new List<BucketItem>();
         State.Items = new List<GrabItem>();
+        State.IfRefund = false;
         State.SenderId = senderId;
 
         await WriteStateAsync();
@@ -59,7 +62,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return result;
     }
 
-    public Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(int skip, int max,Guid userId)
+    public Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(int skip, int max, Guid userId)
     {
         var result = new GrainResultDto<RedPackageDetailDto>();
         result.Success = true;
@@ -80,6 +83,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         {
             State.Status = RedPackageStatus.Expired;
         }
+
         await WriteStateAsync();
         return result;
     }
@@ -94,7 +98,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return result;
     }
 
-    public async Task<GrainResultDto<GrabResultDto>> GrabRedPackage(Guid userId,string caAddress)
+    public async Task<GrainResultDto<GrabResultDto>> GrabRedPackage(Guid userId, string caAddress)
     {
         var result = new GrainResultDto<GrabResultDto>();
         var checkResult = CheckRedPackagePermissions(userId);
@@ -115,7 +119,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         {
             State.Status = RedPackageStatus.Claimed;
         }
-        
+
         var bucket = GetBucket(userId);
         var grabItem = new GrabItem()
         {
@@ -131,6 +135,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         {
             State.LuckKingId = userId;
         }
+
         State.Items.Add(grabItem);
         State.GrabbedAmount += bucket.Amount;
         State.Grabbed += 1;
@@ -139,7 +144,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             State.Status = RedPackageStatus.FullyClaimed;
             State.EndTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         }
-        
+
         result.Success = true;
         result.Data = new GrabResultDto()
         {
@@ -149,12 +154,12 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             Decimal = State.Decimal,
             Status = State.Status
         };
-        
+
         await WriteStateAsync();
         return result;
     }
 
-    public async Task<GrainResultDto<bool>> UpdateRedPackage(Guid packageId, Guid userId, string caAddress)
+    public async Task<GrainResultDto<bool>> UpdateRedPackage(List<GrabItemDto> grabItemDtos)
     {
         var result = new GrainResultDto<bool>();
         result.Success = true;
@@ -165,7 +170,14 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             result.Data = false;
             return result;
         }
-        _ = State.Items.Where(item => item.UserId.Equals(userId) && caAddress.Equals(item.CaAddress)).First(item => item.PaymentCompleted = true);
+
+        foreach (var grabItemDto in grabItemDtos.Where(o => !o.PaymentCompleted))
+        {
+            _ = State.Items
+                .Where(item => item.UserId.Equals(grabItemDto.UserId) && grabItemDto.CaAddress.Equals(item.CaAddress))
+                .First(item => item.PaymentCompleted = true);
+        }
+
         await WriteStateAsync();
         return result;
     }
@@ -181,6 +193,16 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return Task.FromResult(result);
     }
 
+    public async Task<GrainResultDto<bool>> UpdateRedPackageExpire()
+    {
+        var result = new GrainResultDto<bool>();
+        result.Success = true;
+        result.Data = true;
+        State.Status = RedPackageStatus.ExpiredAndRefund;
+        await WriteStateAsync();
+        return result;
+    }
+
     private (bool, string) CheckRedPackagePermissions(Guid userId)
     {
         if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > State.ExpireTime || State.Status == RedPackageStatus.Expired)
@@ -193,7 +215,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             return (false, RedPackageConsts.RedPackageCancelled);
         }
 
-        if (State.Status == RedPackageStatus.FullyClaimed || State.Grabbed == State.Count || State.BucketNotClaimed.Count == 0)
+        if (State.Status == RedPackageStatus.FullyClaimed || State.Grabbed == State.Count ||
+            State.BucketNotClaimed.Count == 0)
         {
             return (false, RedPackageConsts.RedPackageFullyClaimed);
         }
@@ -221,12 +244,13 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return bucket;
     }
 
-    private (List<BucketItem>, int) GenerateBucket(int count, long totalAmount, long minAmount, RedPackageType type)
+    private (List<BucketItem>, int) GenerateBucket(int count, long totalAmount, long minAmount, int decimalIn,
+        RedPackageType type)
     {
         switch (type)
         {
             case RedPackageType.Random:
-                return GenerateRandomBucket(count, totalAmount, minAmount);
+                return GenerateRandomBucket(count, totalAmount, minAmount,decimalIn);
             case RedPackageType.Fixed:
                 return GenerateFixBucket(count, totalAmount);
             case RedPackageType.QuickTransfer:
@@ -264,13 +288,14 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return (bucket, 0);
     }
 
-    private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount)
+    private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount,int decimalIn)
     {
-        Random random = new Random();
         int luckyKingIndex = 0;
         long luckyKingAmount = minAmount;
         var bucket = new List<BucketItem>();
         var rest = totalAmount;
+        Random random = new Random();
+        int places = BucketRandomSpecialOperation(totalAmount, count,decimalIn, out bool specialOperation);
         for (var i = 0; i < count; i++)
         {
             bucket.Add(new BucketItem()
@@ -287,7 +312,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
                 break;
             }
 
-            double randomNumber = random.NextDouble();
+            double randomNumber = GetRandomNum(places,specialOperation,random);
             long max = (rest / (count - i)) * 2;
             long money = Math.Max(minAmount, (long)(randomNumber * max));
             bucket[i].Amount += money;
@@ -310,5 +335,53 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         bucket[luckyKingIndex].IsLuckyKing = true;
 
         return (bucket, luckyKingIndex);
+    }
+    private int BucketRandomSpecialOperation(long total, int count,int decimalIn,out bool specialOperation)
+    {
+        // little point in 0~2 
+        int places = DecimalPlaces(total,decimalIn);
+        if (places < RePackagePlaceMove)
+        {
+            long baseJudgeCount = (long)Math.Pow(10, decimalIn - RePackagePlaceMove - places);
+            if (baseJudgeCount * count > total)
+            {
+                specialOperation = false;
+                return -1;
+            }
+            specialOperation = true;
+            return places + RePackagePlaceMove;
+        }
+        else
+        {
+            long baseJudgeCount = (long)Math.Pow(10, decimalIn - places);
+            if (baseJudgeCount * count > total)
+            {
+                specialOperation = false;
+                return -1;
+            }
+            specialOperation = true;
+            return places;
+        }
+    }
+
+    private int DecimalPlaces(long count,int decimalIn)
+    {
+        long baseJudgeCount = (long)Math.Pow(10, decimalIn);
+        decimal tempNum = (decimal)count / baseJudgeCount;
+        int[] bits = decimal.GetBits(tempNum);
+        int exponent = (bits[3] >> 16) & 0x1F;
+        return exponent;
+    }
+
+    private double GetRandomNum(int places, bool specialOperation,Random random)
+    {
+        if (!specialOperation)
+        {
+            return random.NextDouble();
+        }
+
+        int baseRandom = (int)Math.Pow(10, places);
+        int randomInt = random.Next(0, baseRandom);
+        return (double)randomInt /randomInt;
     }
 }

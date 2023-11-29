@@ -7,5 +7,6 @@ public enum RedPackageStatus
     Claimed,
     FullyClaimed,
     Expired,
-    Cancelled
+    Cancelled,
+    ExpiredAndRefund
 }
