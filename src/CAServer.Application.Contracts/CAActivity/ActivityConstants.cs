@@ -25,7 +25,8 @@ public static class ActivityConstants
         { "Play", "BingoGame-Play" },
         { "BeanGoTown-Bingo", "BeanGo Town-Bingo" },
         { "ManagerApprove", "Contract Approve" },
-        { "SetTransferLimit", "Transfer Settings" }
+        { "SetTransferLimit", "Transfer Settings" },
+        { "CreateRedPacket", "Create RedPacket" }
     };
 
     public static readonly List<string> DefaultTypes = new()
@@ -39,7 +40,7 @@ public static class ActivityConstants
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
         "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play",
-        "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit"
+        "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit", "CreateRedPacket"
     };
 
     public static readonly List<string> TransferTypes = new()
@@ -52,7 +53,7 @@ public static class ActivityConstants
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
         "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register",
         "Approve", "Bingo",
-        "Play", "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit"
+        "Play", "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit", "CreateRedPacket"
     };
 
     public static readonly List<string> ShowPriceTypes = new()
@@ -60,7 +61,7 @@ public static class ActivityConstants
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "RemoveManagerInfo",
         "AddManagerInfo", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
         "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play",
-        "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit"
+        "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit", "CreateRedPacket"
     };
 
     public static readonly List<string> ShowNftTypes = new()
