@@ -10,6 +10,7 @@ public class RedPackageDetailDto
     public string TotalAmount { get; set; }
     public string GrabbedAmount { get; set; }
     public string MinAmount { get; set; }
+    public string CurrentUserGrabbedAmount { get; set; }
     public string Memo { get; set; } = string.Empty;
     public string ChainId { get; set; }
     public string PublicKey { get; set; } = string.Empty;

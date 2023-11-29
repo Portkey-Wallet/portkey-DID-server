@@ -292,6 +292,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             item.Avatar = users.FirstOrDefault(x => x.UserId == item.UserId)?.Avatar;
             item.Username = users.FirstOrDefault(x => x.UserId == item.UserId)?.NickName;
+            input.CurrentUserGrabbedAmount = (item.UserId == CurrentUser.GetId()) ? item.Amount : "0";
         });
         
         //fill remark
