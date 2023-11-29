@@ -78,34 +78,16 @@ public class PayRedPackageTask : IPayRedPackageTask
         var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail,payRedPackageFrom);
         var result = res.TransactionResultDto;
         var eto = new RedPackageTransactionResultEto();
-        if (result.Status != TransactionState.Mined)
+        var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
+        if (redPackageIndex == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
         {
-            eto.Message = "Transaction status: " + result.Status + ". Error: " +
-                          result.Error;
-            eto.Success = false;
-
             _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{result}",
                 JsonConvert.SerializeObject(eto, Formatting.Indented));
-
-            await _distributedEventBus.PublishAsync(eto);
-            return;
-        }
-            
-        if (!result.Logs.Select(l => l.Name).Contains(LogEvent.TransferRedPacket))
-        {
-            eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
-            eto.Success = false;
-
-            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{result}",
-                JsonConvert.SerializeObject(eto, Formatting.Indented));
-
-            await _distributedEventBus.PublishAsync(eto);
-            return;
-        }
+            return ;
+        } 
         //if success update the payment status of red package 
         await grain.UpdateRedPackage(grabItems); 
         _logger.Info("PayRedPackageAsync end and the redpackage id is {}",redPackageId);
-        eto.Message = "Transaction status: " + result.Status;
         await _distributedEventBus.PublishAsync(eto);
     }
 
