@@ -148,7 +148,6 @@ public class ContractAppService : IContractAppService
             await _distributedEventBus.PublishAsync(eto);
         }
         
-        return;
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
