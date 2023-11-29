@@ -24,6 +24,8 @@ public class IndexerTokenInfo
 
 public class TokenInfo
 {
+    public string Id { get; set; }
+    public string ChainId { get; set; }
     public string Symbol { get; set; }
     public string TokenContractAddress { get; set; }
     public int Decimals { get; set; }

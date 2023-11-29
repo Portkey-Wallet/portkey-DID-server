@@ -9,6 +9,7 @@ public interface IIndicatorLogger
 {
     bool IsEnabled();
     void LogInformation(MonitorTag tag, string target, int latency);
+    void LogInformation(InterIndicator interIndicator);
 }
 
 public class IndicatorLogger : IIndicatorLogger, ISingletonDependency
@@ -23,6 +24,12 @@ public class IndicatorLogger : IIndicatorLogger, ISingletonDependency
     }
 
     public bool IsEnabled() => _indicatorOptions.IsEnabled;
+
+    public void LogInformation(InterIndicator interIndicator)
+    {
+        if (interIndicator == null) return;
+        LogInformation(interIndicator.Tag, interIndicator.Target, interIndicator.Value);
+    }
 
     public void LogInformation(MonitorTag tag, string target, int latency)
     {

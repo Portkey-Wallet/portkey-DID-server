@@ -59,3 +59,12 @@ public enum BlockFilterType
     TRANSACTION,
     LOG_EVENT
 }
+
+public class GuardianChangeRecords
+{
+    public List<GuardianChangeRecord> GuardianChangeRecordInfo { get; set; }
+}
+
+public class GuardianChangeRecord : ChangeRecordDto
+{
+}
