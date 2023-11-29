@@ -54,10 +54,11 @@ public class PayRedPackageTask : IPayRedPackageTask
 
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         var grabItems = redPackageDetail.Data.Items;
-        
+        var payRedPackageFrom = _packageAccount.getOneAccountRandom();
+
         //if red package expire we should refund it
-        if (await Refund(redPackageDetail.Data, grain))
-        {
+        if (await Refund(redPackageDetail.Data, grain,payRedPackageFrom))
+        { 
             _logger.Info("red package is expired and it has been refunded,red package id is{} ",redPackageId);
             return;
         }
@@ -68,7 +69,6 @@ public class PayRedPackageTask : IPayRedPackageTask
             _logger.Info("there are no one claim the red packages,red package id is{} ",redPackageId);
         }
         
-        var payRedPackageFrom = _packageAccount.getOneAccountRandom();
         var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail,payRedPackageFrom);
         var result = res.TransactionResultDto;
         var eto = new RedPackageTransactionResultEto();
@@ -78,7 +78,7 @@ public class PayRedPackageTask : IPayRedPackageTask
                           result.Error;
             eto.Success = false;
 
-            _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
+            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{result}",
                 JsonConvert.SerializeObject(eto, Formatting.Indented));
 
             await _distributedEventBus.PublishAsync(eto);
@@ -90,7 +90,7 @@ public class PayRedPackageTask : IPayRedPackageTask
             eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
             eto.Success = false;
 
-            _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
+            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{result}",
                 JsonConvert.SerializeObject(eto, Formatting.Indented));
 
             await _distributedEventBus.PublishAsync(eto);
@@ -103,15 +103,16 @@ public class PayRedPackageTask : IPayRedPackageTask
         await _distributedEventBus.PublishAsync(eto);
     }
 
-    private async Task<bool> Refund(RedPackageDetailDto redPackageDetailDto,RedPackageGrain grain )
+    private async Task<bool> Refund(RedPackageDetailDto redPackageDetail,RedPackageGrain grain,string payRedPackageFrom )
     {
-        if (redPackageDetailDto == null || grain == null)
+        if (redPackageDetail == null || grain == null)
         {
             return false;
         }
 
-        if (redPackageDetailDto.Status.Equals(RedPackageStatus.Expired) && !redPackageDetailDto.IsRedPackageFullyClaimed)
+        if (redPackageDetail.Status.Equals(RedPackageStatus.Expired) && !redPackageDetail.IsRedPackageFullyClaimed)
         {
+            var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetail,payRedPackageFrom);
             await grain.UpdateRedPackageExpire();
             return true;
         }

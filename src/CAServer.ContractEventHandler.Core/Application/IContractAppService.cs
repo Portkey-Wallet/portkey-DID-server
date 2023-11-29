@@ -50,6 +50,7 @@ public class ContractAppService : IContractAppService
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
     private readonly IIndicatorLogger _indicatorLogger;
+    private const string PayRedPackageCron = "0/30 * * * * ? ";
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -105,9 +106,9 @@ public class ContractAppService : IContractAppService
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-            BackgroundJob.Schedule<PayRedPackageTask>(x => x.PayRedPackageAsync(eventData.RedPackageId),
+            RecurringJob.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(eventData.RedPackageId),PayRedPackageCron);
+            BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
                 TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
-
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);
