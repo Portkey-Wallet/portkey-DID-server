@@ -10,7 +10,7 @@ public class RedPackageDetailDto
     public string TotalAmount { get; set; }
     public string GrabbedAmount { get; set; }
     public string MinAmount { get; set; }
-    public string CurrentUserGrabbedAmount { get; set; }
+    public string CurrentUserGrabbedAmount { get; set; } = "0";
     public string Memo { get; set; } = string.Empty;
     public string ChainId { get; set; }
     public string PublicKey { get; set; } = string.Empty;
@@ -32,7 +32,7 @@ public class RedPackageDetailDto
     public RedPackageType Type { get; set; }
     public RedPackageStatus Status { get; set; }
     public List<GrabItemDto> Items { get; set; }
-    public RedPackageStatus IfRefund{ get; set; }
+    public bool IfRefund{ get; set; }
 }
 
 public class GrabItemDto
