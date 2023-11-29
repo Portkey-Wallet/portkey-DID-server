@@ -103,9 +103,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     .ToList();
             }
 
+            _logger.LogDebug("GetActivitiesAsync {caAddressInfos}",
+                JsonConvert.SerializeObject(request.TransactionTypes));
             var filterTypes = FilterTypes(request.TransactionTypes);
             var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, request.ChainId,
-                request.Symbol, filterTypes, request.SkipCount, request.MaxResultCount);
+                request.Symbol, null, request.SkipCount, request.MaxResultCount);
             return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
                 request.Height, needMap: true);
         }
