@@ -45,6 +45,7 @@ public class CAServerApplicationModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         Configure<TokenListOptions>(configuration.GetSection("Tokens"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfo"));
+        Configure<AssetsInfoOptions>(configuration.GetSection("AssetsInfo"));
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));

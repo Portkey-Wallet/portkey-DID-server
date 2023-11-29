@@ -58,6 +58,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly SeedImageOptions _seedImageOptions;
     private readonly IUserTokenAppService _userTokenAppService;
     private readonly ITokenProvider _tokenProvider;
+    private readonly IAssetsLibraryProvider _assetsLibraryProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -66,7 +67,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IContractProvider contractProvider, IContactProvider contactProvider, IClusterClient clusterClient,
         IGuardianProvider guardianProvider, IDistributedEventBus distributedEventBus,
         IOptionsSnapshot<SeedImageOptions> seedImageOptions, IUserTokenAppService userTokenAppService,
-        ITokenProvider tokenProvider)
+        ITokenProvider tokenProvider, IAssetsLibraryProvider assetsLibraryProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -83,6 +84,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _distributedEventBus = distributedEventBus;
         _userTokenAppService = userTokenAppService;
         _tokenProvider = tokenProvider;
+        _assetsLibraryProvider = assetsLibraryProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -181,6 +183,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 if (_tokenInfoOptions.TokenInfos.ContainsKey(token.Symbol))
                 {
                     token.ImageUrl = _tokenInfoOptions.TokenInfos[token.Symbol].ImageUrl;
+                }
+                else
+                {
+                    token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
                 }
 
                 list.Add(token);
