@@ -76,7 +76,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             
             await _redPackageRepository.UpdateAsync(redPackageIndex);
-            
+            _logger.LogInformation("RedPackageCreateResultEto UpdateAsync {redPackageIndex}",redPackageIndex);
             BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
                 TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
 

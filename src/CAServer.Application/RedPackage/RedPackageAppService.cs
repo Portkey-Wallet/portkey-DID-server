@@ -10,6 +10,7 @@ using CAServer.Grains.Grain.RedPackage;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
@@ -31,6 +32,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly IObjectMapper _objectMapper;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IContactProvider _contactProvider;
+    private readonly ILogger<RedPackageAppService> _logger;
+
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -38,7 +41,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IObjectMapper objectMapper,
         IOptionsSnapshot<RedPackageOptions> redPackageOptions,
         IContactProvider contactProvider,
-        IOptionsSnapshot<ChainOptions> chainOptions)
+        IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger)
     {
         _redPackageOptions = redPackageOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -48,6 +51,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _objectMapper = objectMapper;
         _httpContextAccessor = httpContextAccessor;
         _contactProvider = contactProvider;
+        _logger = logger;
     }
 
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
@@ -86,6 +90,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
+        _logger.LogInformation("SendRedPackageAsync start input param is {}",input);
         var result = _redPackageOptions.TokenInfo.Where(x =>
             string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(x.ChainId, input.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
@@ -118,6 +123,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
         var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount), CurrentUser.Id.Value);
+        _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {}",input);
         if (!createResult.Success)
         {
             throw new UserFriendlyException(createResult.Message);
@@ -133,6 +139,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         redPackageIndex.SenderPortkeyToken = portkeyToken;
         redPackageIndex.Message = input.Message;
         await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
+        _logger.LogInformation("SendRedPackageAsync AddOrUpdateAsync redPackageIndex is {}",redPackageIndex);
         await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
         {
             UserId = CurrentUser.Id,
@@ -140,6 +147,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             SessionId = sessionId,
             RawTransaction = input.RawTransaction
         });
+        _logger.LogInformation("SendRedPackageAsync PublishAsync redPackageIndex is {}",redPackageIndex);
         return new SendRedPackageOutputDto()
         {
             SessionId = sessionId

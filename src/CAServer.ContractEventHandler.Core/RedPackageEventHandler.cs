@@ -28,6 +28,7 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
 
     public async Task HandleEventAsync(RedPackageCreateEto eventData)
     {
+        _logger.LogInformation("RedPackageCreate HandleEventAsync start: " + "\n{eventData}",eventData);
         var eto = new RedPackageCreateResultEto();
         eto.SessionId = eventData.SessionId;
         try
@@ -65,6 +66,7 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);
+            _logger.LogInformation("RedPackageCreate HandleEventAsync PublishAsync: " + "\n{eto}",eto);
             return;
         }
         catch (Exception e)
