@@ -10,11 +10,13 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
+using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
 using CAServer.UserBehavior;
 using CAServer.UserBehavior.Etos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -103,7 +105,9 @@ public class ContractAppService : IContractAppService
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-            
+            BackgroundJob.Schedule<PayRedPackageTask>(x => x.PayRedPackageAsync(eventData.RedPackageId),
+                TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
+
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);
