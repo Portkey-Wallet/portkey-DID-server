@@ -36,9 +36,13 @@ public class RedPackageDetailDto
 public class GrabItemDto
 {
     public Guid UserId { get; set; }
+    public string CaAddress { get; set; } = string.Empty;
     public string Username { get; set; }
     public string Avatar { get; set; }
     public long GrabTime { get; set; }
     public bool IsLuckyKing { get; set; }
     public string Amount { get; set; }
+    public int Decimal { get; set; }
+
+    
 }

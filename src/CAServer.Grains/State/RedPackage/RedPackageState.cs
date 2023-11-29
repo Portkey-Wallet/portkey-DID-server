@@ -32,6 +32,8 @@ public class GrabItem
 {
     public Guid UserId { get; set; }
     public string CaAddress { get; set; } = string.Empty;
+    public string Username { get; set; }
+    public string Avatar { get; set; }
     public long GrabTime { get; set; }
     public bool IsLuckyKing { get; set; }
     public long Amount { get; set; }
