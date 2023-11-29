@@ -268,15 +268,15 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Id);
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Symbol,
             redPackageDetail.ChainId, out long maxCount,out string redPackageContractAddress);
-        list.Add(new TransferRedPacketInput()
+        list.Add(new TransferRedPacketInput
         {
-            RedPacketId = redPackageId.ToString(),
             Amount = Convert.ToInt64(redPackageDetail.TotalAmount),
             ReceiverAddress = Address.FromBase58(redPackageContractAddress),
             RedPacketSignature =await redPackageKeyGrain.GenerateSignature($"{symbol}-{redPackageDetail.MinAmount}-{maxCount}")
         });
         var sendInput = new TransferRedPacketBatchInput()
         {
+            RedPacketId = redPackageId.ToString(),
             TransferRedPacketInputs = { list }
         };
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
@@ -303,19 +303,18 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     {
         //build param for transfer red package input 
         var list = new List<TransferRedPacketInput>();
-        Guid redPackageId = redPackageDetail.Data.Id;
-        string symbol = redPackageDetail.Data.Symbol;
-        string chainId = redPackageDetail.Data.ChainId;
+        var redPackageId = redPackageDetail.Data.Id;
+        var symbol = redPackageDetail.Data.Symbol;
+        var chainId = redPackageDetail.Data.ChainId;
 
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Data.Id);
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Data.Symbol,
-            redPackageDetail.Data.ChainId, out long maxCount,out string redPackageContractAddress);
+            redPackageDetail.Data.ChainId, out var maxCount,out var redPackageContractAddress);
         foreach (var item in redPackageDetail.Data.Items.Where(o => !o.PaymentCompleted).ToArray())
         {
            
             list.Add(new TransferRedPacketInput()
             {
-                RedPacketId = redPackageId.ToString(),
                 Amount = Convert.ToInt64(item.Amount),
                 ReceiverAddress = Address.FromBase58(item.CaAddress),
                 RedPacketSignature = await redPackageKeyGrain.GenerateSignature($"{symbol}-{res.MinAmount}-{maxCount}")
@@ -324,6 +323,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         var sendInput = new TransferRedPacketBatchInput()
         {
+            RedPacketId = redPackageId.ToString(),
             TransferRedPacketInputs = { list }
         };
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
