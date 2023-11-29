@@ -28,10 +28,8 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
 
     public async Task HandleEventAsync(RedPackageCreateEto eventData)
     {
-            _logger.LogInformation("RedPackageCreate HandleEventAsync start: " + "\n{eventData}",eventData);
-      
-            _ = _contractAppService.CreateRedPackageAsync(eventData);
-
+       
+        _ =  _contractAppService.CreateRedPackageAsync(eventData);
+        
     }
-    
 }

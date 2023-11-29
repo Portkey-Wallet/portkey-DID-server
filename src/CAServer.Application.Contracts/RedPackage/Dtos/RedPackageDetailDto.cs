@@ -10,6 +10,7 @@ public class RedPackageDetailDto
     public string TotalAmount { get; set; }
     public string GrabbedAmount { get; set; }
     public string MinAmount { get; set; }
+    public string CurrentUserGrabbedAmount { get; set; }
     public string Memo { get; set; } = string.Empty;
     public string ChainId { get; set; }
     public string PublicKey { get; set; } = string.Empty;
@@ -31,6 +32,8 @@ public class RedPackageDetailDto
     public RedPackageType Type { get; set; }
     public RedPackageStatus Status { get; set; }
     public List<GrabItemDto> Items { get; set; }
+    
+    public RedPackageStatus IfRefund{ get; set; }
 }
 
 public class GrabItemDto
@@ -41,4 +44,8 @@ public class GrabItemDto
     public long GrabTime { get; set; }
     public bool IsLuckyKing { get; set; }
     public string Amount { get; set; }
+    
+    public string CaAddress { get; set; }
+
+    public bool PaymentCompleted;
 }

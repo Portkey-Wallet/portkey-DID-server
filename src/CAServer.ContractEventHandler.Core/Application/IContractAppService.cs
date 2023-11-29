@@ -16,12 +16,14 @@ using CAServer.Guardian.Provider;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
 using CAServer.UserAssets.Provider;
+using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
 using CAServer.UserBehavior;
 using CAServer.UserBehavior.Etos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.Distributed;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -67,6 +69,7 @@ public class ContractAppService : IContractAppService
     private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ISyncHolderInfoProvider _syncHolderInfoProvider;
+    private const string PayRedPackageCron = "0/30 * * * * ? ";
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -98,13 +101,14 @@ public class ContractAppService : IContractAppService
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
     {
+        _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
+            JsonConvert.SerializeObject(eventData, Formatting.Indented));
+        
         var eto = new RedPackageCreateResultEto();
+        eto.SessionId = eventData.SessionId;
         try
         {
-            _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
-                JsonConvert.SerializeObject(eventData, Formatting.Indented));
-            eto.SessionId = eventData.SessionId;
-            var result = await _contractProvider.ForwardTransactionAsync(eventData.ChainId, eventData.RawTransaction);
+            var result = await _contractProvider.ForwardTransactionAsync(eventData.ChainId,eventData.RawTransaction);
             _logger.LogInformation("RedPackageCreate result: " + "\n{result}",
                 JsonConvert.SerializeObject(result, Formatting.Indented));
             eto.TransactionResult = result.Status;
@@ -133,11 +137,12 @@ public class ContractAppService : IContractAppService
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-            
+            RecurringJob.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(eventData.RedPackageId),PayRedPackageCron);
+            BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
+                TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);
-            _logger.LogInformation("RedPackageCreate HandleEventAsync PublishAsync: " + "\n{eto}",eto);
         }
         catch (Exception e)
         {
@@ -147,7 +152,7 @@ public class ContractAppService : IContractAppService
             eto.Message = e.Message;
             await _distributedEventBus.PublishAsync(eto);
         }
-        
+       
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
@@ -348,9 +353,7 @@ public class ContractAppService : IContractAppService
 
         _logger.LogInformation("Recovery state pushed: " + "\n{result}",
             JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
-
-        // _logger.LogInformation("ValidateTransactionAndSyncAsync, holderInfo: {holderInfo}",
-        //     JsonConvert.SerializeObject(outputGetHolderInfo));
+        
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
         _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "",
             MonitorTag.SocialRecover);

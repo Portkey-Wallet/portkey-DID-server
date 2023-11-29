@@ -13,7 +13,6 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("RedPackage")]
 [Route("api/app/redpackage/")]
-[Authorize]
 [IgnoreAntiforgeryToken]
 public class RedPackageController : CAServerController
 {
@@ -25,24 +24,28 @@ public class RedPackageController : CAServerController
     }
 
     [HttpPost("generate")]
+    [Authorize]
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
         return await _redPackageAppService.GenerateRedPackageAsync(redPackageInput);
     }
 
     [HttpPost("send")]
+    [Authorize]
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto redPackageInput)
     {
         return await _redPackageAppService.SendRedPackageAsync(redPackageInput);
     }
 
     [HttpGet("getCreationResult")]
+    [Authorize]
     public async Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId)
     {
         return await _redPackageAppService.GetCreationResultAsync(sessionId);
     }
 
     [HttpGet("detail")]
+    [Authorize]
     public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount = 0, int maxResultCount = 0)
     {
         return await _redPackageAppService.GetRedPackageDetailAsync(id, skipCount, maxResultCount);
@@ -57,6 +60,7 @@ public class RedPackageController : CAServerController
     } 
     
     [HttpPost("grab")]
+    [Authorize]
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
     {
         return await _redPackageAppService.GrabRedPackageAsync(input);
