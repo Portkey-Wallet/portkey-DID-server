@@ -314,7 +314,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     }
     
         public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(string chainId, IMessage param,
-            string ownAddress, string redpackageContractAddress)
+            string ownAddress, string redPackageContractAddress)
     {
         try
         {
@@ -331,7 +331,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             //"red package contract address"
             var transaction =
-                await client.GenerateTransactionAsync(ownAddress,redpackageContractAddress , MethodName.TransferRedPacket,
+                await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , MethodName.TransferRedPacket,
                     param);
 
             var refBlockNumber = transaction.RefBlockNumber;

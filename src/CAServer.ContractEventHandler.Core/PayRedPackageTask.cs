@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using CAServer.ContractEventHandler.Core.Application;
+using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.RedPackage.Dtos;
@@ -31,19 +33,23 @@ public class PayRedPackageTask : IPayRedPackageTask
     private readonly IContractProvider _contractProvider;
     private readonly PayRedPackageAccount _packageAccount;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository; 
+
 
     
 
     public PayRedPackageTask(IClusterClient clusterClient, ILogger<PayRedPackageTask> logger, 
          IOptionsSnapshot<PayRedPackageAccount> packageAccount, 
          IContractProvider contractProvider, 
-         IDistributedEventBus distributedEventBus)
+         IDistributedEventBus distributedEventBus, 
+         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
     {
         _clusterClient = clusterClient;
         _logger = logger;
         _packageAccount = packageAccount.Value;
         _contractProvider = contractProvider;
         _distributedEventBus = distributedEventBus;
+        _redPackageIndexRepository = redPackageIndexRepository;
     }
 
     [Queue("redpackage")]
@@ -113,8 +119,15 @@ public class PayRedPackageTask : IPayRedPackageTask
         if (redPackageDetail.Status.Equals(RedPackageStatus.Expired) && !redPackageDetail.IsRedPackageFullyClaimed)
         {
             var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetail,payRedPackageFrom);
-            await grain.UpdateRedPackageExpire();
-            return true;
+            var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
+            if (redPackageIndex == null)
+            {
+                return false;
+            } else if (redPackageIndex.TransactionStatus == RedPackageTransactionStatus.Success)
+            {
+                await grain.UpdateRedPackageExpire();
+                return true; 
+            }
         }
 
         return false ;
