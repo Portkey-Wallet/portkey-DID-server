@@ -106,9 +106,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                     .ToList();
             }
 
-            _logger.LogDebug("GetActivitiesAsync {caAddressInfos}",
-                JsonConvert.SerializeObject(request.TransactionTypes));
-            var filterTypes = FilterTypes(request.TransactionTypes);
             var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, request.ChainId,
                 request.Symbol, null, request.SkipCount, request.MaxResultCount);
             return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
@@ -294,6 +291,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var dto = ObjectMapper.Map<IndexerTransaction, GetActivityDto>(ht);
             if (_activityTypeOptions.NoShowTypes.Contains(dto.TransactionType))
             {
+                result.TotalRecordCount -= 1;
                 continue;
             }
 
@@ -387,7 +385,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 dto.IsDelegated = true;
             }
-
 
             if (needMap)
             {
