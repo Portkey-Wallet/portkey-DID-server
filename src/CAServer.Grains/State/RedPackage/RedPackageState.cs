@@ -1,7 +1,7 @@
 using CAServer.RedPackage.Dtos;
 
 namespace CAServer.Grains.State.RedPackage;
-
+[Serializable]
 public class RedPackageState
 {
     public Guid Id { get; set; }

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 
 namespace CAServer.RedPackage.Dtos;
-
+[Serializable]
 public class RedPackageDetailDto
 {
     public Guid Id { get; set; }
