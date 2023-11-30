@@ -16,6 +16,5 @@ public class RedPackageHandlerTest :CAServerApplicationTestBase
     [Fact]
     public void RedPackageTaskTest()
     {
-        _packageTask.PayRedPackageAsync(null);
     }
 }

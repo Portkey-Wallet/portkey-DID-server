@@ -130,7 +130,6 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         {
             new TransferRedPacketInput()
             {
-                RedPacketId = "6f720cbc-02ed-4467-92bc-76461d957745",
                 Amount = 1701075501959,
                 ReceiverAddress = Address.FromBase58("2dni1t2hmZxtEE1tTiAWQ7Fm7hrc42wWvc1jyxAzDT6KGwHhDf"),
                 RedPacketSignature = await redPackageKeyGrain.GenerateSignature("ELF--0--0.39")

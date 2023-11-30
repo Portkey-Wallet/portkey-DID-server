@@ -56,7 +56,7 @@ public class PayRedPackageTask : IPayRedPackageTask
     public async Task PayRedPackageAsync(Guid redPackageId)
     {
         _logger.Info("PayRedPackageAsync start and the redpackage id is {}",redPackageId);
-        var grain = _clusterClient.GetGrain<RedPackageGrain>(redPackageId);
+        var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         var grabItems = redPackageDetail.Data.Items;
@@ -91,7 +91,7 @@ public class PayRedPackageTask : IPayRedPackageTask
         await _distributedEventBus.PublishAsync(eto);
     }
 
-    private async Task<bool> Refund(RedPackageDetailDto redPackageDetail,RedPackageGrain grain,string payRedPackageFrom )
+    private async Task<bool> Refund(RedPackageDetailDto redPackageDetail,IRedPackageGrain grain,string payRedPackageFrom )
     {
         if (redPackageDetail == null || grain == null)
         {
