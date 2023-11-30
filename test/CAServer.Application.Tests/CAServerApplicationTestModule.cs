@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
@@ -15,6 +16,7 @@ using CAServer.ThirdPart;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
@@ -35,6 +37,16 @@ public class CAServerApplicationTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        // load config from [appsettings.Development.json]
+        var environmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
+            .AddEnvironmentVariables();
+
+        var configuration = builder.Build();
+
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
@@ -123,6 +135,27 @@ public class CAServerApplicationTestModule : AbpModule
                 }
             };
         });
+        
+        context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
+        {
+            option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
+                { { "TEST", new CAServer.Grains.Grain.ApplicationHandler.ChainInfo() } };
+        });
+        
+        context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
+
+        context.Services.Configure<ActivityTypeOptions>(o =>
+        {
+            o.TypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
+            o.DefaultTypes = new List<string>() { "TEST" };
+            o.AllSupportTypes = new HashSet<string>() { "TEST", "TransferTypes", "ContractTypes" };
+            o.TransferTypes = new List<string>() { "TEST", "TransferTypes" };
+            o.ContractTypes = new List<string>() { "TEST", "ContractTypes" };
+            o.ShowPriceTypes = new List<string>() { "TEST" };
+            o.ShowNftTypes = new List<string>() { "TEST" };
+            o.RecentTypes = new List<string>() { "TEST" };
+            o.Zero = "0";
+        });
 
         context.Services.Configure<ClaimTokenInfoOptions>(option =>
         {
@@ -158,6 +191,4 @@ public class CAServerApplicationTestModule : AbpModule
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
-    
-
 }

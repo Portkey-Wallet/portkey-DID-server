@@ -23,7 +23,7 @@ public static class ActivityConstants
         { "Approve", "Approve" },
         { "Bingo", "BingoGame-Bingo" },
         { "Play", "BingoGame-Play" },
-        { "BeanGoTown-Play", "BeanGo Town-Play" },
+        { "BeanGoTown-Bingo", "BeanGo Town-Bingo" },
         { "ManagerApprove", "Contract Approve" },
         { "SetTransferLimit", "Transfer Settings" }
     };

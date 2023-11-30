@@ -41,6 +41,7 @@ public class Program
             builder.Configuration.AddJsonFile("apollo.appsettings.json");
             builder.Configuration.AddJsonFile("phone.json");
             builder.Configuration.AddJsonFile("seedurl.json");
+            builder.Configuration.AddJsonFile("activity.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
 // #if !DEBUG
