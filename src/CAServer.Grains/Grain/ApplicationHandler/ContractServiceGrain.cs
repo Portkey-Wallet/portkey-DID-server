@@ -123,6 +123,47 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
+    private async Task<TransactionInfoDto> ForwardTransactionToChainAsync(string chainId, string rawTransaction)
+    {
+         try
+         {
+             if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+             {
+                 return null;
+             }
+
+             var client = new AElfClient(chainInfo.BaseUrl);
+             await client.IsConnectedAsync();
+
+             var result = await client.SendTransactionAsync(new SendTransactionInput
+             {
+                 RawTransaction = rawTransaction
+             });
+
+             await Task.Delay(_grainOptions.Delay);
+
+             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+             _logger.LogInformation("red package create start time is  {start}",DateTime.Now);
+             var times = 0;
+             while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+             {
+                 times++;
+                 await Task.Delay(_grainOptions.RetryDelay);
+                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+             }
+             _logger.LogInformation("red package create end time is  {end}",DateTime.Now);
+             return new TransactionInfoDto
+             {
+                 TransactionResultDto = transactionResult
+             };
+         }
+         catch (Exception e)
+         {
+             _logger.LogError(e, "ForwardTransactionToChainAsync error,chain:{chain}", chainId);
+             return new TransactionInfoDto();
+         }
+    }
+
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
     {
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderInput>(createHolderDto);
@@ -279,4 +320,107 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
         return result.TransactionResultDto;
     }
+    
+    public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfosInput input)
+    {
+        var result = await SendTransactionToChainAsync(chainId, input, MethodName.SyncHolderInfo);
+        
+        DeactivateOnIdle();
+
+        return result.TransactionResultDto;
+    }
+
+    public async Task<TransactionResultDto> ForwardTransactionAsync(string chainId, string rawTransaction)
+    {
+        try
+        {
+            // var chainInfo = _chainOptions.ChainInfos[chainId];
+            // var client = new AElfClient(chainInfo.BaseUrl);
+            // await client.IsConnectedAsync();
+
+            var result = await ForwardTransactionToChainAsync(chainId,rawTransaction);
+            DeactivateOnIdle();
+
+            return result.TransactionResultDto;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "ForwardTransactionAsync error: ");
+            
+            DeactivateOnIdle();
+            
+            return new TransactionResultDto();
+        }
+    }
+    
+        public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(string chainId, IMessage param,
+            string ownAddress, string redPackageContractAddress)
+    {
+        try
+        {
+            if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+            {
+                return null;
+            }
+
+            var client = new AElfClient(chainInfo.BaseUrl);
+            await client.IsConnectedAsync();
+            //var ownAddress = client.GetAddressFromPubKey(payRedPackageFrom); //select public key
+            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
+                ownAddress, chainInfo.ContractAddress);
+
+            //"red package contract address"
+            var transaction =
+                await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , MethodName.TransferRedPacket,
+                    param);
+
+            var refBlockNumber = transaction.RefBlockNumber;
+
+            refBlockNumber -= _grainOptions.SafeBlockHeight;
+
+            if (refBlockNumber < 0)
+            {
+                refBlockNumber = 0;
+            }
+
+            var blockDto = await client.GetBlockByHeightAsync(refBlockNumber);
+
+            transaction.RefBlockNumber = refBlockNumber;
+            transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
+
+            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
+            _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
+            transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+
+            var result = await client.SendTransactionAsync(new SendTransactionInput
+            {
+                RawTransaction = transaction.ToByteArray().ToHex()
+            });
+
+            await Task.Delay(_grainOptions.Delay);
+
+            var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+
+            var times = 0;
+            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+            {
+                times++;
+                await Task.Delay(_grainOptions.RetryDelay);
+
+                transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+            }
+
+            return new TransactionInfoDto
+            {
+                Transaction = transaction,
+                TransactionResultDto = transactionResult
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, MethodName.TransferRedPacket + " error: {param}", param);
+            return new TransactionInfoDto();
+        }
+    }
+
 }

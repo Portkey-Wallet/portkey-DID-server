@@ -9,4 +9,8 @@ public class ImConstant
     public const string ImUnFollowUrl = "api/v1/contacts/unfollow";
     public const string ImRemarkUrl = "api/v1/contacts/remark";
     public const string UpdateImUserUrl = "api/v1/users/userInfo/update";
+    public const string SendMessageUrl = "api/v1/message/send";
+
+
+    public const string RelationAuthHeader = "R-Authorization";
 }

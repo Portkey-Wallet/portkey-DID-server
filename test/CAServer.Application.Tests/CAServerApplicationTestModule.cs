@@ -10,6 +10,7 @@ using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
+using CAServer.RedPackage;
 using CAServer.Search;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -85,6 +86,20 @@ public class CAServerApplicationTestModule : AbpModule
         };
         tokenList.Add(token1);
         tokenList.Add(token2);
+        context.Services.Configure<RedPackageOptions>(o =>
+        {
+            o.MaxCount = 1000;
+            o.TokenInfo = new List<RedPackageTokenInfo>()
+            {
+                new RedPackageTokenInfo()
+                {
+                    ChainId = "AELF",
+                    Decimal = 8,
+                    MinAmount = "1",
+                    Symbol = "ELF"
+                }
+            };
+        });
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
         context.Services.Configure<IpServiceSettingOptions>(o =>
         {

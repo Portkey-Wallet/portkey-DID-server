@@ -55,6 +55,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<ContractSyncOptions>(configuration.GetSection("Sync"));
         Configure<IndexOptions>(configuration.GetSection("Index"));
+        Configure<PayRedPackageAccount>(configuration.GetSection("RedPackagePayAccount"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
@@ -109,6 +110,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
+
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
@@ -132,6 +134,14 @@ public class CAServerContractEventHandlerModule : AbpModule
                 {
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
+                })
+                .Configure<ClientMessagingOptions>(opt =>
+                {
+                    var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
+                    if (responseTimeout > 0)
+                    {
+                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
+                    }
                 })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())

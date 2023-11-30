@@ -1,4 +1,6 @@
 ﻿using AElf.Indexing.Elasticsearch.Options;
+using CAServer.ContractEventHandler.Core;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Tests.Token;
 using CAServer.Options;
@@ -32,6 +34,8 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
         context.Services.AddSingleton<IUserTokenAppService, UserTokenAppService>();
         context.Services.AddSingleton<ISearchAppService, MockSearchAppService>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
+        context.Services.AddSingleton<IPayRedPackageTask, PayRedPackageTask>();
+        context.Services.AddSingleton<IPayRedPackageTask, PayRedPackageTask>();
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem
         {
@@ -63,5 +67,9 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
         tokenList.Add(token2);
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
         context.Services.Configure<IndexSettingOptions>(o => { o.IndexPrefix = "caservertest"; });
+        var accounts = new List<string>();
+        accounts.Add("23GxsoW9TRpLqX1Z5tjrmcRMMSn5bhtLAf4HtPj8JX9BerqTqp");
+        accounts.Add("2CpKfnoWTk69u6VySHMeuJvrX2hGrMw9pTyxcD4VM6Q28dJrhk");
+        Configure<PayRedPackageAccount>(o => { o.RedPackagePayAccounts = accounts; });
     }
 }

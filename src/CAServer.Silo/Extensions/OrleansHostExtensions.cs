@@ -67,6 +67,30 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
+                .Configure<GrainCollectionOptions>(opt =>
+                {
+                    var collectionAge = configSection.GetValue<int>("CollectionAge");
+                    if (collectionAge > 0)
+                    {
+                        opt.CollectionAge = TimeSpan.FromSeconds(collectionAge);
+                    }
+                })
+                .Configure<SiloMessagingOptions>(opt =>
+                {
+                    var responseTimeout = configSection.GetValue<int>("ResponseTimeout");
+                    if (responseTimeout > 0)
+                    {
+                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
+                    }
+                })
+                .Configure<PerformanceTuningOptions>(opt =>
+                {
+                    opt.MinDotNetThreadPoolSize = 20480;
+                    opt.MinIOThreadPoolSize = 200;
+                }).Configure<SchedulingOptions>(opt => 
+                { 
+                    opt.MaxActiveThreads = 20000; 
+                })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
         });
