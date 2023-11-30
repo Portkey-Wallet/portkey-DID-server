@@ -48,7 +48,6 @@
     "AllSupportTypes": [
       "Transfer",
       "CrossChainTransfer",
-      "CrossChainReceiveToken",
       "SocialRecovery",
       "RemoveManagerInfo",
       "AddManagerInfo",
@@ -73,7 +72,6 @@
     "TransferTypes": [
       "Transfer",
       "CrossChainTransfer",
-      "CrossChainReceiveToken",
       "ClaimToken",
       "MakeOffer",
       "Deal",
@@ -112,7 +110,6 @@
     "ShowPriceTypes": [
       "Transfer",
       "CrossChainTransfer",
-      "CrossChainReceiveToken",
       "RemoveManagerInfo",
       "AddManagerInfo",
       "AddGuardian",
