@@ -4,8 +4,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
@@ -317,7 +319,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         else
         {
             salt = GetSalt();
-            identifierHash = GetHash(requestInput.GuardianIdentifier, requestInput.Salt);
+            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier), Encoding.UTF8.GetBytes(requestInput.Salt)).ToHex();
         }
 
         requestInput.Salt = salt;
@@ -347,9 +349,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
 
         var salt = GetSalt();
-        var identifierHash = GetHash(guardianIdentifier, salt);
+        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), Encoding.UTF8.GetBytes(salt));
 
-        return Tuple.Create(identifierHash, salt, false);
+        return Tuple.Create(identifierHash.ToHex(), salt, false);
     }
 
     private GrainResultDto<GuardianGrainDto> GetGuardian(string guardianIdentifier)
@@ -393,10 +395,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private string GetSalt() => Guid.NewGuid().ToString("N");
 
-    private string GetHash(string input, string salt)
+    private Hash GetHash(byte[] input, byte[] salt)
     {
-        var hash = HashHelper.ComputeFrom(input).ToHex();
-        return HashHelper.ComputeFrom(salt + hash).ToHex();
+        var hash = HashHelper.ComputeFrom(input);
+        return HashHelper.ComputeFrom(salt.Concat(hash).ToArray());
     }
 
     private async Task<GoogleUserInfoDto> GetUserInfoFromGoogleAsync(string accessToken)
