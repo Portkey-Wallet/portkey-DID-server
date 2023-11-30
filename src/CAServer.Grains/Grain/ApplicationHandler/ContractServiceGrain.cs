@@ -128,7 +128,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private async Task<string> GetOwnAddress(ChainInfo chainInfo)
     {
         var sortNum = await
-            GrainFactory.GetGrain<ISortNumGrain>(_sortNumGrainKey).GetSortNum(chainInfo.OwnerAddressList.Count);
+            GrainFactory.GetGrain<ISortNumGrain>(_sortNumGrainKey+chainInfo.ChainId).GetSortNum(chainInfo.OwnerAddressList.Count);
         var ownAddress = chainInfo.OwnerAddressList[sortNum];
         return ownAddress;
     }
