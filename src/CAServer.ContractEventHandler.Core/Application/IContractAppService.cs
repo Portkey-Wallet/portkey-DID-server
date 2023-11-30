@@ -70,6 +70,8 @@ public class ContractAppService : IContractAppService
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ISyncHolderInfoProvider _syncHolderInfoProvider;
     private const string PayRedPackageCron = "0/30 * * * * ? ";
+    private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly IRecurringJobManager _recurringJobManager;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -79,7 +81,7 @@ public class ContractAppService : IContractAppService
         IOptions<SyncOriginChainIdOptions> syncOriginChainIdOptions,
         IUserAssetsProvider userAssetsProvider,
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
-        ISyncHolderInfoProvider syncHolderInfoProvider)
+        ISyncHolderInfoProvider syncHolderInfoProvider, IBackgroundJobClient backgroundJobClient, IRecurringJobManager recurringJobManager)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -93,6 +95,8 @@ public class ContractAppService : IContractAppService
         _monitorLogProvider = monitorLogProvider;
         _distributedCache = distributedCache;
         _syncHolderInfoProvider = syncHolderInfoProvider;
+        _backgroundJobClient = backgroundJobClient;
+        _recurringJobManager = recurringJobManager;
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
         _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
@@ -137,8 +141,8 @@ public class ContractAppService : IContractAppService
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-            RecurringJob.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(eventData.RedPackageId),PayRedPackageCron);
-            BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
+            _recurringJobManager.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(eventData.RedPackageId),PayRedPackageCron);
+            _backgroundJobClient.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
                 TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
