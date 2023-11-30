@@ -16,25 +16,24 @@
       "ClaimToken": "Transfer",
       "Register": "Register",
       "Approve": "Approve",
-      "Bingo": "BingoGame-Bingo",
+      "Bingo": "Bingo",
       "Play": "Play",
-      "BeanGoTown-Bingo": "BeanGo Town-Bingo",
-      "BeanGoTown-Play": "BeanGo Town-Play",
       "ManagerApprove": "Approve",
       "MakeOffer": "Make Offer",
       "CancelOffer": "Cancel Offer",
       "ListWithFixedPrice": "List",
-      "DelList": "Cancel List",
+      "Delist": "Cancel List",
       "Deal": "Deal",
       "PlaceBid": "Place Bid",
       "Claim": "Claim",
       "Buy": "Buy",
-      "CreatePair": "CreateCreatePairPair",
+      "CreatePair": "Create Pair",
       "AddLiquidity": "Add Liquidity",
       "RemoveLiquidity": "Remove Liquidity",
       "SwapExactTokensForTokens": "Swap",
       "SwapTokensForExactTokens": "Swap",
-      "UpdateManagerInfos": "UpdateManagerInfos"
+      "UpdateManagerInfos": "UpdateManagerInfos",
+      "SetTransferLimit":"Set Transfer Limit"
     },
     "DefaultTypes": [
       "Transfer",
@@ -49,7 +48,6 @@
     "AllSupportTypes": [
       "Transfer",
       "CrossChainTransfer",
-      "CrossChainReceiveToken",
       "SocialRecovery",
       "RemoveManagerInfo",
       "AddManagerInfo",
@@ -74,7 +72,6 @@
     "TransferTypes": [
       "Transfer",
       "CrossChainTransfer",
-      "CrossChainReceiveToken",
       "ClaimToken",
       "MakeOffer",
       "Deal",
@@ -113,7 +110,6 @@
     "ShowPriceTypes": [
       "Transfer",
       "CrossChainTransfer",
-      "CrossChainReceiveToken",
       "RemoveManagerInfo",
       "AddManagerInfo",
       "AddGuardian",
@@ -133,7 +129,7 @@
       "MakeOffer",
       "CancelOffer",
       "ListWithFixedPrice",
-      "DelList",
+      "Delist",
       "Deal",
       "PlaceBid",
       "Claim",
@@ -143,7 +139,8 @@
       "RemoveLiquidity",
       "SwapExactTokensForTokens",
       "SwapTokensForExactTokens",
-      "UpdateManagerInfos"
+      "UpdateManagerInfos",
+      "SetTransferLimit"
     ],
     "ShowNftTypes": [
       "Transfer",
@@ -154,7 +151,9 @@
       "CrossChainTransfer",
       "ClaimToken"
     ],
+    "NoShowTypes": [
+      "CrossChainReceiveToken"
+    ],
     "Zero": "0"
   }
 }
-
