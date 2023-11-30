@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
@@ -15,6 +16,7 @@ using CAServer.ThirdPart;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
