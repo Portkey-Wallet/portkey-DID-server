@@ -292,6 +292,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
             var dto = ObjectMapper.Map<IndexerTransaction, GetActivityDto>(ht);
+            if (_activityTypeOptions.NoShowTypes.Contains(dto.TransactionType))
+            {
+                continue;
+            }
 
             var transactionTime = MsToDateTime(ht.Timestamp * 1000);
 
@@ -383,6 +387,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 dto.IsDelegated = true;
             }
+
 
             if (needMap)
             {

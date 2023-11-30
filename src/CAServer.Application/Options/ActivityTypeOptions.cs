@@ -12,5 +12,7 @@ public class ActivityTypeOptions
     public List<string> ShowPriceTypes { get; set; }
     public List<string> ShowNftTypes { get; set; }
     public List<string> RecentTypes { get; set; }
+
+    public List<string> NoShowTypes { get; set; }
     public string Zero { get; set; }
 }
