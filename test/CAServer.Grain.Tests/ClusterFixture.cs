@@ -84,7 +84,12 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     CrossChainContractAddress =
                                         Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
-                                    PublicKey = HashHelper.ComputeFrom("private").ToHex(),
+                                    OwnerAddressList = new List<string>()
+                                    {
+                                        Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                        Address.FromPublicKey("BBB".HexToByteArray()).ToBase58(),
+                                        Address.FromPublicKey("CCC".HexToByteArray()).ToBase58()
+                                    },
                                     IsMainChain = true
                                 }
                             },
@@ -97,7 +102,12 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     CrossChainContractAddress =
                                         Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
-                                    PublicKey = "private",
+                                    OwnerAddressList = new List<string>()
+                                    {
+                                        Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
+                                        Address.FromPublicKey("BBB".HexToByteArray()).ToBase58(),
+                                        Address.FromPublicKey("CCC".HexToByteArray()).ToBase58()
+                                    },
                                     IsMainChain = false
                                 }
                             }

@@ -93,8 +93,10 @@ public class ChainInfoTest : CAServerApplicationTestBase
                         ChainId = "AELF",
                         BaseUrl = "http://192.168.67.18:8000",
                         ContractAddress = "2u6Dd139bHvZJdZ835XnNKL5y6cxqzV9PEWD5fZdQXdFZLgevc",
-                        PublicKey =
-                            "0438ad713d76220ddfdac35e2b978f645cf254946d310b0e891201a7d8d36ef3341077d8a40b2fd79b1cfa91b3f3d675933d2ef761af9fa693cf2e36903404a32e",
+                        OwnerAddressList = new List<string>
+                        {
+                            "21mEqQqL1L79QDcryCCbFPv9nYjj7SCefsBrXMMkajE7iFmgkD"
+                        },
                         IsMainChain = true
                     },
                     ["tDVW"] = new Grains.Grain.ApplicationHandler.ChainInfo()
@@ -102,8 +104,10 @@ public class ChainInfoTest : CAServerApplicationTestBase
                         ChainId = "tDVW",
                         BaseUrl = "http://192.168.66.106:8000",
                         ContractAddress = "2ptQUF1mm1cmF3v8uwB83iFCD46ynHLt4fxYoPNpCWRSBXwAEJ",
-                        PublicKey =
-                            "0438ad713d76220ddfdac35e2b978f645cf254946d310b0e891201a7d8d36ef3341077d8a40b2fd79b1cfa91b3f3d675933d2ef761af9fa693cf2e36903404a32e"
+                        OwnerAddressList = new List<string>
+                        {
+                            "21mEqQqL1L79QDcryCCbFPv9nYjj7SCefsBrXMMkajE7iFmgkD"
+                        }
                     }
                 }
             });

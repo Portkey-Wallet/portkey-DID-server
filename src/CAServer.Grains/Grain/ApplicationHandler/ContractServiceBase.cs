@@ -18,7 +18,7 @@ public class ChainInfo
     public string ContractAddress { get; set; }
     public string TokenContractAddress { get; set; }
     public string CrossChainContractAddress { get; set; }
-    public string PublicKey { get; set; }
+    public List<string> OwnerAddressList { get; set; }
     public bool IsMainChain { get; set; }
 }
 

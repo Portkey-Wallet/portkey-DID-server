@@ -28,6 +28,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private readonly ILogger<ContractServiceGrain> _logger;
     private readonly ISignatureProvider _signatureProvider;
     private readonly IIndicatorScope _indicatorScope;
+    private readonly string _sortNumGrainKey = "TransactionSortNum";
 
     public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions,
         IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractServiceGrain> logger, IIndicatorScope indicatorScope)
@@ -43,16 +44,17 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
         string methodName)
     {
+        
+       
         try
         {
             if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
             {
                 return null;
             }
-
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
-            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            var ownAddress = await GetOwnAddress(chainInfo);
             _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
 
@@ -121,6 +123,14 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             _logger.LogError(e, methodName + " error: {param}", param);
             return new TransactionInfoDto();
         }
+    }
+
+    private async Task<string> GetOwnAddress(ChainInfo chainInfo)
+    {
+        var sortNum = await
+            GrainFactory.GetGrain<ISortNumGrain>(_sortNumGrainKey).GetSortNum(chainInfo.OwnerAddressList.Count);
+        var ownAddress = chainInfo.OwnerAddressList[sortNum];
+        return ownAddress;
     }
 
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
@@ -231,7 +241,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         {
             var chainInfo = _chainOptions.ChainInfos[chainId];
 
-            var ownAddress = client.GetAddressFromPubKey(chainInfo.PublicKey);
+            var ownAddress = await GetOwnAddress(chainInfo);
             var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                 MonitorAelfClientType.GenerateTransactionAsync.ToString());
             
