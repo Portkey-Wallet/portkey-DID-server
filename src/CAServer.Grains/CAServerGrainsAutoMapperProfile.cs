@@ -115,7 +115,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<RedPackageState, SendRedPackageInputDto>()
             .ForMember(dest => dest.TotalAmount, 
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
-            .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalAmount.ToString()));
+            .ForMember(dest => dest.TotalAmount,
+                opt => opt.MapFrom(src => src.TotalAmount)).ReverseMap();
         CreateMap<RedPackageState, RedPackageDetailDto>()
             .ForMember(dest => dest.TotalAmount, 
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
