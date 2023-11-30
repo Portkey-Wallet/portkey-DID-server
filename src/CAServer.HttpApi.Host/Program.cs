@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Text.Json;
 using System.Threading.Tasks;
 using CAServer.Hubs;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 
@@ -27,26 +28,31 @@ public class Program
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-            
+
 #if DEBUG
             .WriteTo.Async(c => c.Console())
-#endif          
+#endif
             .CreateLogger();
 
         try
         {
-            Log.Information("Starting CAServer.HttpApi.Host.");
+            Log.Information("Starting CAServer.HttpApi.Host");
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("apollo.appsettings.json");
             builder.Configuration.AddJsonFile("phone.json");
             builder.Configuration.AddJsonFile("seedurl.json");
             builder.Configuration.AddJsonFile("activity.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
+// #if !DEBUG
+                // .UseApollo()
+// #endif
                 .UseSerilog();
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
+            //app.MapHub<DataReportingHub>("dataReporting");
             await app.InitializeApplicationAsync();
             await app.RunAsync();
             return 0;

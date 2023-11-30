@@ -279,4 +279,13 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
         return result.TransactionResultDto;
     }
+    
+    public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfosInput input)
+    {
+        var result = await SendTransactionToChainAsync(chainId, input, MethodName.SyncHolderInfos);
+        
+        DeactivateOnIdle();
+
+        return result.TransactionResultDto;
+    }
 }

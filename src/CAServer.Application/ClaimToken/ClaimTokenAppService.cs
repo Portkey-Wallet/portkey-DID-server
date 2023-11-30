@@ -59,7 +59,7 @@ public class ClaimTokenAppService : IClaimTokenAppService, ISingletonDependency
         }
 
         var result = await _contractProvider.SendTransferAsync(claimTokenRequestDto.Symbol, claimTokenRequestDto.Amount,
-            claimTokenRequestDto.Address, chainId);
+            claimTokenRequestDto.Address, chainId, _claimTokenInfoOption.PublicKey);
 
         await _cacheProvider.Increase(GetClaimTokenAddressCacheKey + claimTokenRequestDto.Address, 1,
             TimeSpan.FromHours(_claimTokenInfoOption.ExpireTime));

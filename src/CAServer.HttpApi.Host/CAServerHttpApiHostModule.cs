@@ -1,18 +1,20 @@
 using System;
-using System.IO;
 using System.Linq;
-using System.Net;
+using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.Hubs;
+using CAServer.HubsEventHandler;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
-using CAServer.Signature;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using MassTransit;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -33,15 +35,17 @@ using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Serilog;
+using Volo.Abp.AspNetCore.SignalR;
 using Volo.Abp.Autofac;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
+using Volo.Abp.RabbitMQ;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
-using Volo.Abp.VirtualFileSystem;
 
 namespace CAServer;
 
@@ -56,7 +60,8 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
-    typeof(AbpSwashbuckleModule)
+    typeof(AbpSwashbuckleModule),
+    typeof(AbpAspNetCoreSignalRModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
 {
@@ -84,6 +89,9 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        ConfigureMassTransit(context, configuration);
+        context.Services.AddHttpContextAccessor();
+        ConfigureTokenCleanupService();
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -186,7 +194,6 @@ public class CAServerHttpApiHostModule : AbpModule
                 .UseMongoDBClustering(options =>
                 {
                     options.DatabaseName = configuration["Orleans:DataBase"];
-                    ;
                     options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
                 .Configure<ClusterOptions>(options =>
@@ -274,6 +281,35 @@ public class CAServerHttpApiHostModule : AbpModule
         });
     }
 
+    private void ConfigureMassTransit(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddMassTransit(x =>
+        {
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
+            var clientId = configuration.GetSection("ClientId").Get<string>();
+            x.AddConsumer<OrderWsBroadcastConsumer>();
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                    "/", h =>
+                    {
+                        h.Username(rabbitMqConfig.Connections.Default.UserName);
+                        h.Password(rabbitMqConfig.Connections.Default.Password);
+                    });
+                
+                cfg.ReceiveEndpoint("BroadcastClient_" + clientId, e =>
+                {
+                    e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
+                });
+            });
+        });
+    }
+
+    private void ConfigureTokenCleanupService()
+    {
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+    }
+    
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -301,6 +337,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
+        
 
         if (env.IsDevelopment())
         {

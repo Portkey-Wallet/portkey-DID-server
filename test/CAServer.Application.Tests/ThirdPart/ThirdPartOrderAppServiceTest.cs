@@ -15,13 +15,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Shouldly;
 using Volo.Abp;
+using Volo.Abp.Validation;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace CAServer.ThirdPart;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
-public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
+public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
 {
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
@@ -37,11 +38,29 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        services.AddSingleton(getMockTokenPriceGrain());
-        services.AddSingleton(getMockOrderGrain());
-        services.AddSingleton(getMockDistributedEventBus());
+        base.AfterAddApplication(services);
+        services.AddSingleton(MockThirdPartOptions());
+        // services.AddSingleton(MockThirdPartOrderProvider());
+        // services.AddSingleton(getMockOrderGrain());
+        // services.AddSingleton(getMockDistributedEventBus());
+        services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
     }
 
+    [Fact]
+    public async Task GoogleCode()
+    {
+        var code = _thirdPartOrderAppService.GenerateGoogleAuthCode("authKey", "testUser", "testTitle");
+        code.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task VerifyGoogleCode()
+    {
+        var code = _thirdPartOrderAppService.VerifyOrderExportCode("395653");
+        code.ShouldBe(false);
+    }
+    
+    
     [Fact]
     public async void DecodeManagerForwardCall()
     {
@@ -62,76 +81,19 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         exception.Result.Message.ShouldContain("Convert rawTransaction FAILED");
     }
 
-    // [Fact]
-    public async void MakeManagerForwardCal()
-    {
-        var tokenAddress = "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE";
-        var caAddress = "2u6Dd139bHvZJdZ835XnNKL5y6cxqzV9PEWD5fZdQXdFZLgevc";
-
-        var caHash = "ffc98c7be1a50ada7ca839da2ecd94834525bdcea392792957cc7f1b2a0c3a1e";
-        var pk = "191912fcda8996fda0397daf3b0b1eee840b1592c6756a1751723f98cd54812c";
-        var user = new UserWrapper(new AElfClient("http://192.168.67.18:8000"), pk);
-        var orderId = "857569b8-7b73-e65d-36d3-3a0c7f872113";
-        var transferRawTransaction = await user.CreateRawTransactionAsync(
-            tokenAddress,
-            "Transfer",
-            new Dictionary<string, object>()
-            {
-                ["to"] = AelfAddressHelper.ToAddressObj("jj4LacoSa95nFjdFUjsGy8NFk97Ss1RLebee5QnefY7zTYQNT"),
-                ["symbol"] = "ELF",
-                ["amount"] = 1_0000_0000,
-            });
-        var transferTx =
-            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(transferRawTransaction.RawTransaction));
-
-        var rawTransaction = await user.CreateRawTransactionAsync(
-            caAddress,
-            "ManagerForwardCall",
-            new Dictionary<string, object>
-            {
-                ["ca_hash"] = new HashObj(caHash),
-                ["contract_address"] = AelfAddressHelper.ToAddressObj(tokenAddress),
-                ["method_name"] = "Transfer",
-                ["args"] = UserWrapper.StringToByteArray(transferTx.Params.ToHex())
-            });
-
-        var transaction =
-            Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction.RawTransaction));
-        transaction.Signature = user.GetSignatureWith(transaction.GetHash().ToByteArray());
-        var rawTransactionHex = transaction.ToByteArray().ToHex();
-
-        var data = orderId + rawTransactionHex;
-        var md5 = EncryptionHelper.MD5Encrypt32(data);
-        var text = Encoding.UTF8.GetBytes(md5).ComputeHash();
-        var sign = user.GetSignatureWith(text).ToHex();
-
-        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(new Dictionary<string, object>()
-        {
-            ["merchantName"] = "Alchemy",
-            ["orderId"] = orderId,
-            ["rawTransaction"] = rawTransactionHex,
-            ["publicKey"] = user.PublicKey,
-            ["signature"] = sign
-        }));
-    }
-
-
     [Fact]
     public async Task GetThirdPartOrderListAsyncTest()
     {
+        await CreateThirdPartOrderAsyncTest();
         var result = await _thirdPartOrderAppService.GetThirdPartOrdersAsync(new GetUserOrdersDto()
         {
-            SkipCount = 1,
+            SkipCount = 0,
             MaxResultCount = 10
         });
         var data = result.Data.First();
-        data.Address.ShouldBe("Address");
-        data.MerchantName.ShouldBe("MerchantName");
-        data.Crypto.ShouldBe("Crypto");
-        data.CryptoPrice.ShouldBe("CryptoPrice");
-        data.Fiat.ShouldBe("Fiat");
-        data.FiatAmount.ShouldBe("FiatAmount");
-        data.LastModifyTime.ShouldBe("LastModifyTime");
+        // data.Address.ShouldBe("Address");
+        data.MerchantName.ShouldBe(ThirdPartNameType.Alchemy.ToString());
+        data.TransDirect.ShouldBe(TransferDirectionType.TokenBuy.ToString());
     }
 
     [Fact]
@@ -139,23 +101,31 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
     {
         var input = new CreateUserOrderDto
         {
-            MerchantName = "123",
-            TransDirect = "123"
+            MerchantName = ThirdPartNameType.Alchemy.ToString(),
+            TransDirect = TransferDirectionType.TokenBuy.ToString()
         };
 
-        var result = _thirdPartOrderAppService.CreateThirdPartOrderAsync(input);
-        result.Result.Success.ShouldBe(true);
+        var result = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(input);
+        result.Success.ShouldBe(true);
+        result.Id.ShouldNotBeEmpty();
     }
 
     [Fact]
-    public async Task GetThirdPartOrdersByPageAsyncTest()
+    public async Task CreateThirdPartOrderAsyncTest_invalidParam()
     {
-        var userId = Guid.NewGuid();
-        var skipCount = 1;
-        var maxResultCount = 10;
+        var result = await Assert.ThrowsAsync<AbpValidationException>(() =>
+            _thirdPartOrderAppService.CreateThirdPartOrderAsync(new CreateUserOrderDto()));
+        result.ShouldNotBeNull();
+        result.Message.ShouldContain("arguments are not valid");
 
-        var orderList = _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(userId, skipCount, maxResultCount);
-        orderList.Result.Count.ShouldBe(1);
+        result = await Assert.ThrowsAsync<AbpValidationException>(() =>
+            _thirdPartOrderAppService.CreateThirdPartOrderAsync(new CreateUserOrderDto
+            {
+                MerchantName = "111",
+                TransDirect = TransferDirectionType.TokenBuy.ToString()
+            }));
+        result.ShouldNotBeNull();
+        result.Message.ShouldContain("arguments are not valid");
     }
 
     [Fact]
@@ -168,4 +138,5 @@ public partial class ThirdPartOrderAppServiceTest : CAServerApplicationTestBase
         var defaultVal = AlchemyHelper.GetOrderTransDirectForQuery("test");
         defaultVal.ShouldBe(OrderTransDirect.SELL.ToString());
     }
+    
 }

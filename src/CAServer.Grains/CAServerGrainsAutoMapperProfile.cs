@@ -23,6 +23,7 @@ using CAServer.Grains.State.PrivacyPermission;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
 using CAServer.PrivacyPermission.Dtos;
+using CAServer.ThirdPart;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ValidateOriginChainId.Dtos;
@@ -111,5 +112,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
 
         CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
         CreateMap<ValidateOriginChainIdState, ValidateOriginChainIdGrainDto>().ReverseMap();
+        CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
+        CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
     }
 }

@@ -1,32 +1,32 @@
-using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Threading.Tasks;
-using CAServer.AppleAuth.Provider;
+using CAServer.BackGround;
+using CAServer.BackGround.EventHandler;
+using CAServer.BackGround.Provider;
 using CAServer.Bookmark;
-using CAServer.Common;
+using CAServer.ContractEventHandler.Core;
 using CAServer.EntityEventHandler.Core;
+using CAServer.EntityEventHandler.Core.ThirdPart;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
 using CAServer.Search;
+using CAServer.ThirdPart;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
-using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer;
 
 [DependsOn(
     typeof(CAServerApplicationModule),
+    typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),
     typeof(CAServerDomainTestModule)
@@ -54,7 +54,27 @@ public class CAServerApplicationTestModule : AbpModule
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
 
         ConfigureGraphQl(context);
+
+        context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
+        
+        context.Services.AddSingleton<INftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
+        context.Services.AddSingleton<INftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
+        context.Services.AddSingleton<INftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
+        context.Services.AddSingleton<INftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
+        context.Services.AddSingleton<INftOrdersSettlementWorker, NftOrdersSettlementWorker>();
+        
+        context.Services.AddSingleton<NftOrderMerchantCallbackHandler>();
+        context.Services.AddSingleton<NftOrderUpdateHandler>();
+        context.Services.AddSingleton<NftOrderReleaseResultHandler>();
+        context.Services.AddSingleton<NftOrderPaySuccessHandler>();
+        context.Services.AddSingleton<NftOrderTransferHandler>();
+        context.Services.AddSingleton<NftOrderSettlementHandler>();
+        context.Services.AddSingleton<OrderSettlementUpdateHandler>();
+        context.Services.AddSingleton<ThirdPartHandler>();
+        
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
+        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerContractEventHandlerCoreModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem
@@ -93,6 +113,33 @@ public class CAServerApplicationTestModule : AbpModule
             o.Language = "en";
             o.ExpirationDays = 1;
         });
+        context.Services.Configure<ChainOptions>(option =>
+        {
+            option.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
+                { { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() } };
+        });
+
+        context.Services.Configure<Options.ChainOptions>(option =>
+        {
+            option.ChainInfos = new Dictionary<string, Options.ChainInfo>
+            {
+                {
+                    "TEST", new Options.ChainInfo()
+                    {
+                        BaseUrl = "http://127.0.0.1:6889",
+                        ChainId = "TEST",
+                        PrivateKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91"
+                    }
+                }
+            };
+        });
+        
+        context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
+        {
+            option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
+                { { "TEST", new CAServer.Grains.Grain.ApplicationHandler.ChainInfo() } };
+        });
+        
         context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
 
         context.Services.Configure<ActivityTypeOptions>(o =>
@@ -106,26 +153,6 @@ public class CAServerApplicationTestModule : AbpModule
             o.ShowNftTypes = new List<string>() { "TEST" };
             o.RecentTypes = new List<string>() { "TEST" };
             o.Zero = "0";
-        });
-        context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
-        {
-            option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
-                { { "TEST", new CAServer.Grains.Grain.ApplicationHandler.ChainInfo() } };
-        });
-
-        context.Services.Configure<CAServer.Options.ChainOptions>(option =>
-        {
-            option.ChainInfos = new Dictionary<string, CAServer.Options.ChainInfo>
-            {
-                {
-                    "TEST", new CAServer.Options.ChainInfo()
-                    {
-                        BaseUrl = "http://127.0.0.1:6889",
-                        ChainId = "TEST",
-                        PrivateKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91"
-                    }
-                }
-            };
         });
 
         context.Services.Configure<ClaimTokenInfoOptions>(option =>

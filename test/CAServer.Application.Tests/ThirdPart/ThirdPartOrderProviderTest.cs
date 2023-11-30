@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Shouldly;
 using Xunit;
@@ -16,10 +17,18 @@ public class ThirdPartOrderProviderTest : CAServerApplicationTestBase
         _orderProvider = GetRequiredService<IThirdPartOrderProvider>();
     }
 
+
+    [Fact]
+    private async Task AddOrder()
+    {
+        
+    }
+    
+    
     [Fact]
     public async Task GetThirdPartOrdersByPageAsyncTest()
     {
-        var result = await _orderProvider.GetThirdPartOrdersByPageAsync(Guid.Empty, 0, 10);
-        result.Count.ShouldBe(0);
+        var result = await _orderProvider.GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto(0, 10));
+        result.TotalRecordCount.ShouldBe(0);
     }
 }

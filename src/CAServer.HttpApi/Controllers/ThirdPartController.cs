@@ -1,7 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
+using CAServer.Common;
+using CAServer.Commons;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
-using Microsoft.AspNetCore.Authorization;
+using CAServer.ThirdPart.Dtos.Order;
+using CAServer.ThirdPart.Processors;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -15,31 +22,65 @@ namespace CAServer.Controllers;
 public class ThirdPartOrderController : CAServerController
 {
     private readonly IAlchemyOrderAppService _alchemyOrderService;
-    private readonly IThirdPartOrderAppService _thirdPartOrdersAppService;
+    private readonly INftCheckoutService _nftCheckoutService;
+    private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
 
     public ThirdPartOrderController(IAlchemyOrderAppService alchemyOrderService,
-        IThirdPartOrderAppService thirdPartOrderAppService
-    )
+        INftCheckoutService nftCheckoutService, IThirdPartOrderAppService thirdPartOrderAppService)
     {
         _alchemyOrderService = alchemyOrderService;
-        _thirdPartOrdersAppService = thirdPartOrderAppService;
+        _nftCheckoutService = nftCheckoutService;
+        _thirdPartOrderAppService = thirdPartOrderAppService;
     }
 
-    [Authorize]
-    [HttpGet("orders")]
-    public async Task<OrdersDto> GetThirdPartOrdersAsync(GetUserOrdersDto input)
+    [HttpGet("tfa/generate")]
+    public IActionResult GenerateAuthCode(string key, string userName, string title)
     {
-        return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
+        var setupCode = _thirdPartOrderAppService.GenerateGoogleAuthCode(key, userName, title);
+        
+        var result = """ <html><body><img src="IMAGE" alt="QR Code"><br/>CODE<body/><html/> """;
+        return new ContentResult
+        {
+            Content = result.Replace("IMAGE", setupCode.QrCodeSetupImageUrl).Replace("CODE", setupCode.ManualEntryKey),
+            ContentType = "text/html",
+            StatusCode = 200
+        };
     }
 
-    [Authorize]
-    [HttpPost("order")]
-    public async Task<OrderCreatedDto> CreateThirdPartOrderAsync(
-        CreateUserOrderDto input)
+    [HttpGet("orders/export")]
+    public async Task<IActionResult> ExportOrders(OrderExportRequestDto requestDto)
     {
-        return await _thirdPartOrdersAppService.CreateThirdPartOrderAsync(input);
-    }
+        if (!_thirdPartOrderAppService.VerifyOrderExportCode(requestDto.Auth))
+        {
+            // 403
+            return Forbid();
+        }
 
+        try
+        {
+            var orderList = await _thirdPartOrderAppService.ExportOrderList(new GetThirdPartOrderConditionDto(0, 100)
+            {
+                LastModifyTimeLt = requestDto.EndTime,
+                LastModifyTimeGt = requestDto.StartTime,
+                StatusIn = requestDto.Status,
+                TransDirectIn = new List<string> { requestDto.Type }
+            }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
+
+            var orderResp = new OrderExportResponseDto(orderList);
+
+            return File(Encoding.UTF8.GetBytes(orderResp.ToCsvText()), "text/csv",
+                string.Join(CommonConstant.Dot, "orderExport", requestDto.StartTime, requestDto.EndTime, "csv"));
+        }
+        catch (UserFriendlyException e)
+        {
+            return BadRequest(e.Message);
+        }
+        catch (Exception e)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, "Internal error, please try again later");
+        }
+    }
+    
     [HttpPost("order/alchemy")]
     public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
         AlchemyOrderUpdateDto input)
@@ -47,63 +88,13 @@ public class ThirdPartOrderController : CAServerController
         return await _alchemyOrderService.UpdateAlchemyOrderAsync(input);
     }
 
-    [Authorize]
-    [HttpPost("alchemy/txHash")]
-    public async Task SendAlchemyTxHashAsync(SendAlchemyTxHashDto request)
+    [HttpPost("nftorder/alchemy")]
+    public async Task<string> UpdateAlchemyNftOrderAsync(
+        AlchemyNftOrderRequestDto input)
     {
-        await _alchemyOrderService.UpdateAlchemyTxHashAsync(request);
-    }
-    
-    [Authorize]
-    [HttpPost("alchemy/transaction")]
-    public async Task TransactionAsync(TransactionDto input)
-    {
-        await _alchemyOrderService.TransactionAsync(input);
-    }
-}
-
-[RemoteService]
-[Area("app")]
-[ControllerName("ThirdPart")]
-[Route("api/app/thirdPart/alchemy")]
-[Authorize]
-public class AlchemyController : CAServerController
-{
-    private readonly IAlchemyServiceAppService _alchemyServiceAppService;
-
-    public AlchemyController(IAlchemyServiceAppService alchemyServiceAppService)
-    {
-        _alchemyServiceAppService = alchemyServiceAppService;
-    }
-
-    [HttpPost("token")]
-    public async Task<AlchemyTokenDto> GetAlchemyFreeLoginTokenAsync(
-        GetAlchemyFreeLoginTokenDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input);
-    }
-
-    [HttpGet("fiatList")]
-    public async Task<AlchemyFiatListDto> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
-    }
-
-    [HttpGet("cryptoList")]
-    public async Task<AlchemyCryptoListDto> GetAchCryptoListAsync(GetAlchemyCryptoListDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemyCryptoListAsync(input);
-    }
-
-    [HttpPost("order/quote")]
-    public async Task<AlchemyOrderQuoteResultDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-    }
-
-    [HttpGet("signature")]
-    public async Task<AlchemySignatureResultDto> GetAlchemySignatureAsync(GetAlchemySignatureDto input)
-    {
-        return await _alchemyServiceAppService.GetAlchemySignatureAsync(input);
+        var res = await _nftCheckoutService
+            .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+            .UpdateThirdPartNftOrderAsync(input);
+        return res.Success ? "success" : "fail";
     }
 }

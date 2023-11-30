@@ -1,17 +1,25 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
-using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.ThirdPart.Alchemy;
+using CAServer.ThirdPart.Processor;
+using CAServer.ThirdPart.Processor.NFT;
+using CAServer.ThirdPart.Processors;
+using CAServer.ThirdPart.Provider;
+using CAServer.Tokens.Provider;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.DistributedLocking;
@@ -51,6 +59,8 @@ public class CAServerApplicationModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
+        
+        context.Services.AddSingleton<AlchemyProvider>();
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
@@ -62,8 +72,11 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
-
-
+        
+        context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
+        context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
+        context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
+        
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -74,6 +87,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
         Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
         Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
+        Configure<ExchangeApiOptions>(configuration.GetSection("ExchangeApi"));
         Configure<DefaultIpInfoOptions>(configuration.GetSection("DefaultIpInfo"));
         Configure<ContractAddressOptions>(configuration.GetSection("ContractAddress"));
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
@@ -87,6 +101,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
@@ -96,5 +111,28 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
+        Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        AddMessagePushService(context, configuration);
+    }
+
+    private void AddMessagePushService(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var baseUrl = configuration["MessagePush:BaseUrl"];
+        var appId = configuration["MessagePush:AppId"];
+        if (baseUrl.IsNullOrWhiteSpace())
+        {
+            return;
+        }
+
+        context.Services.AddHttpClient(MessagePushConstant.MessagePushServiceName, httpClient =>
+        {
+            httpClient.BaseAddress = new Uri(baseUrl);
+
+            if (!appId.IsNullOrWhiteSpace())
+            {
+                httpClient.DefaultRequestHeaders.Add(
+                    "AppId", appId);
+            }
+        });
     }
 }

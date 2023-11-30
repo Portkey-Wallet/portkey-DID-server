@@ -8,13 +8,14 @@ using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
-namespace CAServer.EntityEventHandler.Core;
+namespace CAServer.EntityEventHandler.Core.ThirdPart;
 
 public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributedEventHandler<OrderStatusInfoEto>,
     ITransientDependency
 {
     private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
+    private readonly INESTRepository<NftOrderIndex, Guid> _nftOrderRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ThirdPartHandler> _logger;
 
@@ -22,12 +23,14 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
         INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         ILogger<ThirdPartHandler> logger,
-        INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository)
+        INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository,
+        INESTRepository<NftOrderIndex, Guid> nftOrderRepository)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _logger = logger;
         _orderStatusInfoRepository = orderStatusInfoRepository;
+        _nftOrderRepository = nftOrderRepository;
     }
 
     public async Task HandleEventAsync(OrderEto eventData)
@@ -59,8 +62,10 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while processing the event, statusId:{id}, orderId:{orderId}", eventData.Id,
+            _logger.LogError(ex, "An error occurred while processing the event, statusId:{id}, orderId:{orderId}",
+                eventData.Id,
                 eventData.OrderId);
         }
     }
+
 }

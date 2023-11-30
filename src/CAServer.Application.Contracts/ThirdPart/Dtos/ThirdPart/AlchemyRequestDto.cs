@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Google.Protobuf.WellKnownTypes;
 
 namespace CAServer.ThirdPart.Dtos;
 
@@ -108,11 +110,6 @@ public class OrderQueryDto
     public string Side { get; set; }
 }
 
-public class QueryAlchemyOrderInfoResultDto : AlchemyBaseResponseDto
-{
-    public QueryAlchemyOrderInfo Data { get; set; }
-}
-
 public class QueryAlchemyOrderInfo
 {
     public string OrderNo { get; set; }
@@ -143,4 +140,41 @@ public class QueryAlchemyOrderInfo
     public string Networkfee { get; set; }
     public string PayType { get; set; }
     public string CryptoQuantity { get; set; }
+}
+
+
+public class AlchemyNftOrderDto : IThirdPartValidOrderUpdateRequest
+{
+    public Guid Id { get; set; }
+    public string Status { get; set; }
+    
+    public string Amount { get; set; }
+    public string Fiat { get; set; }
+    public string OrderNo { get; set; }
+    public string PayTime { get; set; }
+    public string PayType { get; set; }
+    public string Type { get; set; }
+    public string Name { get; set; }
+    public string Quantity { get; set; }
+    public string UniqueId { get; set; }
+    public string AppId { get; set; }
+    public string MerchantOrderNo { get; set; }
+    public string Message { get; set; }
+}
+
+public class AlchemyNftOrderRequestDto : Dictionary<string, string>, IThirdPartNftOrderUpdateRequest
+{
+}
+
+public class AlchemyNftReleaseNoticeRequestDto
+{
+    public string MerchantOrderNo { get; set; }
+    public string OrderNo { get; set; }
+    public string ReleaseStatus { get; set; }
+    public string TransactionHash { get; set; }
+    public string ReleaseTime { get; set; }
+    public string Contract { get; set; }
+    public string UniqueId { get; set; }
+    public string Picture { get; set; }
+    public string PictureNumber { get; set; }
 }

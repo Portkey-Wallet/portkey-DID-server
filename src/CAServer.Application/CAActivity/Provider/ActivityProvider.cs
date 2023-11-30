@@ -19,15 +19,12 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
-    private readonly ChainOptions _chainOptions;
 
 
-    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
-        IOptions<ChainOptions> chainOptions)
+    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
     {
         _graphQlHelper = graphQlHelper;
         _caHolderIndexRepository = caHolderIndexRepository;
-        _chainOptions = chainOptions.Value;
     }
 
 
@@ -134,5 +131,15 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
                 caAddresses, caHash, skipCount, maxResultCount
             }
         });
+    }
+
+    public async Task<CAHolderIndex> GetCaHolder(string caHash)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.CaHash).Value(caHash)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
+        return caHolder;
     }
 }

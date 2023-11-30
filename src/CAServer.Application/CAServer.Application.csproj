@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="GoogleAuthenticator" Version="3.1.1" />
     <PackageReference Include="Volo.Abp.Account.Application" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.DistributedLocking" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="7.0.0" />
@@ -25,6 +26,11 @@
     <PackageReference Include="Volo.Abp.FeatureManagement.Application" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.SettingManagement.Application" Version="7.0.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
+    
+    <PackageReference Include="MassTransit" Version="8.1.0" />
+    <PackageReference Include="MassTransit.Abstractions" Version="8.1.0" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.1.0" />
+
   </ItemGroup>
 
   <ItemGroup>

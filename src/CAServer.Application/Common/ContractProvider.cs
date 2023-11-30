@@ -2,8 +2,8 @@ using System;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using AElf.Contracts.MultiToken;
 using AElf.Client.Service;
+using AElf.Contracts.MultiToken;
 using AElf.Types;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -31,9 +31,13 @@ public interface IContractProvider
     public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
-    public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
+    public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId,
+        string fromPublicKey);
     Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
+    Task<ChainStatusDto> GetChainStatus(string chainId);
+    Task<Tuple<string, Transaction>> GenerateTransferTransaction(string symbol, string amount, string address,
+        string chainId, string senderPubKey);
     Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfo transactionInfo);
 
     Task<TransactionResultDto> SyncTransactionAsync(string chainId,
@@ -44,7 +48,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 {
     private readonly ChainOptions _chainOptions;
     private readonly ILogger<ContractProvider> _logger;
-    private readonly ClaimTokenInfoOptions _claimTokenInfoOption;
+    private readonly ClaimTokenInfoOptions _claimTokenInfoOption; 
     private readonly ISignatureProvider _signatureProvider;
     private readonly ContractOptions _contractOptions;
     private readonly IClusterClient _clusterClient;
@@ -150,6 +154,48 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return value;
     }
 
+    public async Task<ChainStatusDto> GetChainStatus(string chainId)
+    {
+        var client = await GetAElfClientAsync(chainId);
+        AssertHelper.NotNull(client, "Send RawTransaction FAILED!, client of ChainId={ChainId} NOT FOUND", chainId);
+        return await client.GetChainStatusAsync();
+    }
+
+    /// <summary>
+    ///     Generate transfer-transaction
+    /// </summary>
+    /// <param name="symbol"></param>
+    /// <param name="amount"></param>
+    /// <param name="address"></param>
+    /// <param name="chainId"></param>
+    /// <param name="senderPubKey"></param>
+    /// <returns> Tuple( transactionId -> transaction ) </returns>
+    public async Task<Tuple<string, Transaction>> GenerateTransferTransaction(string symbol, string amount, string address,
+        string chainId, string senderPubKey)
+    {
+        AssertHelper.IsTrue(_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo), "ChainInfo not found : " + chainId);
+        var methodName = AElfContractMethodName.Transfer;
+        var transferParam = new TransferInput
+        {
+            Symbol = symbol,
+            Amount = long.Parse(amount),
+            To = Address.FromBase58(address)
+        };
+        
+        var client = new AElfClient(chainInfo.BaseUrl);
+        await client.IsConnectedAsync();
+        var ownAddress = client.GetAddressFromPubKey(senderPubKey);
+
+        var transaction = await client.GenerateTransactionAsync(ownAddress, chainInfo.TokenContractAddress, methodName, transferParam);
+        var transactionId = transaction.GetHash().ToHex();
+        _logger.LogDebug("Send tx methodName is: {MethodName} param is: {Transaction}, publicKey is:{PublicKey} ",
+            methodName, transaction, senderPubKey);
+        
+        var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transactionId);
+        transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
+        return new Tuple<string, Transaction>(transactionId, transaction);
+    }
+
     private async Task<SendTransactionOutput> SendTransactionAsync<T>(string methodName, IMessage param,
         string senderPubKey, string contractAddress, string chainId)
         where T : class, IMessage<T>, new()
@@ -237,7 +283,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     }
 
     public async Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address,
-        string chainId)
+        string chainId, string fromPublicKey)
     {
         var transferParam = new TransferInput
         {
@@ -247,7 +293,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         };
 
         return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
-            _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
+            fromPublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
 
     public async Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction)

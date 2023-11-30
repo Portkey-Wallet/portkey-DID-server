@@ -64,7 +64,7 @@ public partial class ClaimTokenTests
             .Returns(Task.CompletedTask);
 
         mockContractProvider.Setup(o =>
-                o.SendTransferAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                o.SendTransferAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new SendTransactionOutput() { TransactionId = "" });
 
         return mockContractProvider.Object;

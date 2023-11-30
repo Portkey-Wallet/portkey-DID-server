@@ -13,6 +13,7 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
+using CAServer.DataReporting.Dtos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -36,7 +37,9 @@ using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
@@ -422,5 +425,44 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<Portkey.Contracts.CA.Guardian, GuardianIndexerInfoDto>()
             .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
+        
+        CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
+            .Ignore(des => des.MerchantName)
+            .ForMember(des => des.Address, opt => opt.MapFrom(src => src.UserAddress))
+            .ForMember(des => des.Crypto, opt => opt.MapFrom(src => src.PaymentSymbol))
+            .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.PaymentAmount));
+
+        CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>().ReverseMap();
+        CreateMap<OrderStatusInfoIndex, OrderStatusSection>().ReverseMap();
+
+
+        CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>().ReverseMap();
+        CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>().ReverseMap();
+        
+        CreateMap<OrderEto, RampOrderIndex>().ReverseMap();
+        CreateMap<OrderEto, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
+
+        CreateMap<RampOrderIndex, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
+
+        CreateMap<OrderGrainDto, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
+
+        CreateMap<NftOrderIndex, NftOrderSectionDto>()
+            .ForMember(des => des.ExpireTime, opt => opt.MapFrom(src => src.ExpireTime.ToUtcMilliSeconds()))
+            .ForMember(des => des.CreateTime, opt => opt.MapFrom(src => src.CreateTime.ToUtcMilliSeconds()));
+
+        CreateMap<OrderSettlementGrainDto, OrderSettlementIndex>().ReverseMap();
+        CreateMap<NftOrderGrainDto, NftOrderIndex>();
+        CreateMap<NftOrderIndex, NftOrderQueryResponseDto>();
+        CreateMap<NftOrderSectionDto, NftOrderQueryResponseDto>();
+        CreateMap<OrderSettlementIndex, OrderSettlementSectionDto>().ReverseMap();
+        CreateMap<OrderDto, NftOrderQueryResponseDto>()
+            .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
+            .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));
+        
+        CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
+        CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
     }
 }
