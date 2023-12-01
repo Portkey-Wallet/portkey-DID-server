@@ -206,7 +206,23 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(id);
         var detail =  (await grain.GetRedPackage(skipCount, maxResultCount,CurrentUser.Id.Value)).Data;
-        
+        try
+        {
+            var allResult = (await grain.GetRedPackage(detail.Id)).Data;
+            allResult.Items?.ForEach(item =>
+            {
+                if (item.UserId == CurrentUser.GetId())
+                {
+                    detail.CurrentUserGrabbedAmount = item.Amount;
+
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+       
         CheckLuckKing(detail);
         
         await BuildAvatarAndNameAsync(detail);
@@ -298,7 +314,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             item.Avatar = users.FirstOrDefault(x => x.UserId == item.UserId)?.Avatar;
             item.Username = users.FirstOrDefault(x => x.UserId == item.UserId)?.NickName;
-            input.CurrentUserGrabbedAmount = (item.UserId == CurrentUser.GetId()) ? item.Amount : "0";
         });
         
         //fill remark
