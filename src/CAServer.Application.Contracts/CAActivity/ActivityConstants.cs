@@ -53,7 +53,7 @@ public static class ActivityConstants
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
         "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register",
         "Approve", "Bingo",
-        "Play", "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit", "CreateRedPacket"
+        "Play", "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit"
     };
 
     public static readonly List<string> ShowPriceTypes = new()
@@ -73,7 +73,13 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer", "ClaimToken"
     };
-
+    
+    
+    public static readonly List<string> RedPacketTypes = new()
+    {
+        "CreateRedPacket", "TransferRedPacket", "RefundRedPacket"
+    };
+    
     public static readonly string Zero = "0";
     public const string AddGuardianName = "AddGuardian";
     public const string NotRegisterChainAddGuardianName = "Security upgrade-add guardian";

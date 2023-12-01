@@ -428,7 +428,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
     private string GetIconByType(string transactionType)
     {
-        string icon = string.Empty;
+        var icon = string.Empty;
         if (_activityTypeOptions.ContractTypes.Contains(transactionType))
         {
             icon = _activitiesIcon.Contract;
@@ -436,6 +436,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         else if (_activityTypeOptions.TransferTypes.Contains(transactionType))
         {
             icon = _activitiesIcon.Transfer;
+        }
+        else if (ActivityConstants.RedPacketTypes.Contains(transactionType))
+        {
+            icon = _activitiesIcon.RedPacket;
         }
 
         return icon;
