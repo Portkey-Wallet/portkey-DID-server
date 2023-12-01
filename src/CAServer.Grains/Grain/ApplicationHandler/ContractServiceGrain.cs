@@ -354,7 +354,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     }
     
         public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(string chainId, IMessage param,
-            string ownAddress, string redPackageContractAddress)
+            string payRedPackageFrom, string redPackageContractAddress)
     {
         try
         {
@@ -365,7 +365,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
-            //var ownAddress = client.GetAddressFromPubKey(payRedPackageFrom); //select public key
+            var ownAddress = client.GetAddressFromPubKey(payRedPackageFrom); //select public key
             _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
 
@@ -388,7 +388,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.RefBlockNumber = refBlockNumber;
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
-            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
+            var txWithSign = await _signatureProvider.SignTxMsg(payRedPackageFrom, transaction.GetHash().ToHex());
             _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 

@@ -141,9 +141,20 @@ public class ContractAppService : IContractAppService
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-            _recurringJobManager.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(eventData.RedPackageId),PayRedPackageCron);
-            _backgroundJobClient.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
-                TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
+
+            try
+            {
+                _logger.LogInformation("RedPackageCreate end pay job start");
+                _recurringJobManager.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(eventData.RedPackageId),PayRedPackageCron);
+                _backgroundJobClient.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
+                    TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation("pay job star pushed and RedPackageCreate is: " + "\n{result}",
+                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+            }
+
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);

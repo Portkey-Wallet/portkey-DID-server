@@ -55,7 +55,7 @@ public class PayRedPackageTask : IPayRedPackageTask
     [Queue("redpackage")]
     public async Task PayRedPackageAsync(Guid redPackageId)
     {
-        _logger.Info("PayRedPackageAsync start and the redpackage id is {}",redPackageId);
+        _logger.Info("PayRedPackageAsync start and the redpackage id is {}",redPackageId.ToString());
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -65,14 +65,14 @@ public class PayRedPackageTask : IPayRedPackageTask
         //if red package expire we should refund it
         if (await Refund(redPackageDetail.Data, grain,payRedPackageFrom))
         { 
-            _logger.Info("red package is expired and it has been refunded,red package id is{} ",redPackageId);
+            _logger.Info("red package is expired and it has been refunded,red package id is{} ",redPackageId.ToString());
             return;
         }
         
         //if we need judge other params ?
         if (grabItems.IsNullOrEmpty())
         {
-            _logger.Info("there are no one claim the red packages,red package id is{} ",redPackageId);
+            _logger.Info("there are no one claim the red packages,red package id is{} ",redPackageId.ToString());
         }
         
         var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail,payRedPackageFrom);
