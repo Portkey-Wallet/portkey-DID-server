@@ -81,7 +81,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
-            _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
+            _logger.LogDebug("signature provider method {MethodName} sign result: {TxWithSign}",transaction.MethodName, txWithSign);
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var sendIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
