@@ -55,7 +55,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = await GetOwnAddress(chainInfo);
-            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
+            _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
 
             var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
@@ -81,7 +81,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
-            _logger.LogDebug("signature provider sign result: {TxWithSign}", txWithSign);
+            _logger.LogInformation("signature provider sign result: {TxWithSign}", txWithSign);
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var sendIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
@@ -114,7 +114,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             if (transactionResult.Status != TransactionState.Mined)
             {
-                _logger.LogWarning("SendTransactionToChainAsync {Method} fail,param {Param}, ErrorMsg {ErrorMsg}",transaction.MethodName,transaction.Params,transactionResult.Error);
+                _logger.LogWarning("SendTransactionToChainAsync {Method} fail,param {Param}, Status {Status} ErrorMsg {ErrorMsg}",transaction.MethodName,transaction.Params.ToString(),
+                    transactionResult.Status,  transactionResult.Error);
             }
 
             return new TransactionInfoDto
