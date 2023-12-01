@@ -81,7 +81,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
             var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
-            _logger.LogDebug("signature provider method {MethodName} sign result: {TxWithSign}",transaction.MethodName, txWithSign);
+            _logger.LogDebug("signature provider sign result: {TxWithSign}", txWithSign);
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var sendIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
@@ -110,6 +110,11 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
                 
                 _indicatorScope.End(retryGetIndicator);
+            }
+
+            if (transactionResult.Status != TransactionState.Mined)
+            {
+                _logger.LogWarning("SendTransactionToChainAsync {Method} fail,param {Param}, ErrorMsg {ErrorMsg}",transaction.MethodName,transaction.Params,transactionResult.Error);
             }
 
             return new TransactionInfoDto
