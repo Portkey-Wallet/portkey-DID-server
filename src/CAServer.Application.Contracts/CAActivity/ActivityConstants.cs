@@ -26,7 +26,9 @@ public static class ActivityConstants
         { "BeanGoTown-Bingo", "BeanGo Town-Bingo" },
         { "ManagerApprove", "Contract Approve" },
         { "SetTransferLimit", "Transfer Settings" },
-        { "CreateRedPacket", "Create RedPacket" }
+        { "CreateRedPacket", "Create RedPacket" },
+        { "RefundRedPacket", "Refund RedPacket" },
+        { "ReceiveRedPacket", "Receive RedPacket" }
     };
 
     public static readonly List<string> DefaultTypes = new()
@@ -40,7 +42,8 @@ public static class ActivityConstants
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
         "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play",
-        "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit", "CreateRedPacket"
+        "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit", "CreateRedPacket",
+        "RefundRedPacket", "ReceiveRedPacket"
     };
 
     public static readonly List<string> TransferTypes = new()
@@ -73,13 +76,13 @@ public static class ActivityConstants
     {
         "Transfer", "CrossChainTransfer", "ClaimToken"
     };
-    
-    
+
+
     public static readonly List<string> RedPacketTypes = new()
     {
         "CreateRedPacket", "TransferRedPacket", "RefundRedPacket"
     };
-    
+
     public static readonly string Zero = "0";
     public const string AddGuardianName = "AddGuardian";
     public const string NotRegisterChainAddGuardianName = "Security upgrade-add guardian";
