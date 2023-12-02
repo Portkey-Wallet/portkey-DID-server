@@ -6,6 +6,8 @@ using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
 using CAServer.Signature;
+using Hangfire;
+using Hangfire.Redis.StackExchange;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.DataProtection;
@@ -21,6 +23,7 @@ using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
+using Volo.Abp.BackgroundJobs.Hangfire;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.BackgroundWorkers.Quartz;
 using Volo.Abp.Caching;
@@ -43,7 +46,8 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
     typeof(AbpCachingStackExchangeRedisModule),
-    typeof(CAServerMongoDbModule)
+    typeof(CAServerMongoDbModule),
+    typeof(AbpBackgroundJobsHangfireModule)
 )]
 public class CAServerContractEventHandlerModule : AbpModule
 {
@@ -68,6 +72,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
+        ConfigureHangfire(context, configuration);
+
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -167,5 +173,22 @@ public class CAServerContractEventHandlerModule : AbpModule
     private void ConfigureTokenCleanupService()
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+    }
+    
+    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddHangfire(config =>
+        {
+            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
+            {
+                Db = 1
+            });
+        });
+        
+        context.Services.AddHangfireServer(options =>
+        {
+            options.Queues = new[] { "redpackage" };
+            options.WorkerCount = 8;
+        });
     }
 }
