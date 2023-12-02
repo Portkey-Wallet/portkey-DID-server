@@ -241,15 +241,20 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
     {
+
+        var contractAddressList = _redPackageOptions.RedPackageContractAddress;
+
         if (string.IsNullOrEmpty(token) && string.IsNullOrEmpty(chainId))
         {
             return new RedPackageConfigOutput()
             {
-                TokenInfo = _redPackageOptions.TokenInfo
+                TokenInfo = _redPackageOptions.TokenInfo,
+                RedPackageContractAddress = contractAddressList
             };
         }
-        
         var result = _redPackageOptions.TokenInfo.AsQueryable();
+
+        
 
         if (!string.IsNullOrEmpty(token))
         {
@@ -266,7 +271,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         return new RedPackageConfigOutput()
         {
-            TokenInfo = resultList
+            TokenInfo = resultList,
+            RedPackageContractAddress = contractAddressList
         };
     }
 
