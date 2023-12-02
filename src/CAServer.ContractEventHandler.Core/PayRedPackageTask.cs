@@ -61,6 +61,7 @@ public class PayRedPackageTask : IPayRedPackageTask
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         var grabItems = redPackageDetail.Data.Items;
         var payRedPackageFrom = _packageAccount.getOneAccountRandom();
+        _logger.Info("red package payRedPackageFrom,payRedPackageFrom{} ",payRedPackageFrom);
 
         //if red package expire we should refund it
         if (await Refund(redPackageDetail.Data, grain,payRedPackageFrom))

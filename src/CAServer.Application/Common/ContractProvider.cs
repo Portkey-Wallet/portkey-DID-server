@@ -301,6 +301,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(
         GrainResultDto<RedPackageDetailDto> redPackageDetail, string payRedPackageFrom)
     {
+        _logger.LogInformation("SendTransferRedPacketToChainAsync message: " + "\n{redPackageDetail}",
+            JsonConvert.SerializeObject(redPackageDetail, Formatting.Indented));        
         //build param for transfer red package input 
         var list = new List<TransferRedPacketInput>();
         var redPackageId = redPackageDetail.Data.Id;
@@ -310,6 +312,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Data.Id);
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Data.Symbol,
             redPackageDetail.Data.ChainId, out var maxCount,out var redPackageContractAddress);
+        _logger.LogInformation("GetRedPackageOption message: " + "\n{res}",
+            JsonConvert.SerializeObject(res, Formatting.Indented)); 
         foreach (var item in redPackageDetail.Data.Items.Where(o => !o.PaymentCompleted).ToArray())
         {
            
@@ -326,6 +330,8 @@ public class ContractProvider : IContractProvider, ISingletonDependency
             RedPacketId = redPackageId.ToString(),
             TransferRedPacketInputs = { list }
         };
+        _logger.LogInformation("SendTransferRedPacketToChainAsync sendInput: " + "\n{sendInput}",
+            JsonConvert.SerializeObject(sendInput, Formatting.Indented)); 
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress);
