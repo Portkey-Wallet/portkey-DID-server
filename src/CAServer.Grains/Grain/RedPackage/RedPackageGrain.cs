@@ -198,7 +198,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         var result = new GrainResultDto<bool>();
         result.Success = true;
         result.Data = true;
-        State.Status = RedPackageStatus.ExpiredAndRefund;
+        State.IfRefund = true;
         await WriteStateAsync();
         return result;
     }
