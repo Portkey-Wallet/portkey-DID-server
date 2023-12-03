@@ -55,25 +55,25 @@ public class PayRedPackageTask : IPayRedPackageTask
     [Queue("redpackage")]
     public async Task PayRedPackageAsync(Guid redPackageId)
     {
-        _logger.Info("PayRedPackageAsync start and the redpackage id is {}",redPackageId.ToString());
+        _logger.Info($"PayRedPackageAsync start and the redpackage id is {redPackageId}",redPackageId.ToString());
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
         var grabItems = redPackageDetail.Data.Items;
         var payRedPackageFrom = _packageAccount.getOneAccountRandom();
-        _logger.Info("red package payRedPackageFrom,payRedPackageFrom{} ",payRedPackageFrom);
+        _logger.Info("red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",payRedPackageFrom.ToString());
 
         //if red package expire we should refund it
-        if (await Refund(redPackageDetail.Data, grain,payRedPackageFrom))
-        { 
-            _logger.Info("red package is expired and it has been refunded,red package id is{} ",redPackageId.ToString());
-            return;
-        }
+        // if (await Refund(redPackageDetail.Data, grain,payRedPackageFrom))
+        // { 
+        //     _logger.Info("red package is expired and it has been refunded,red package id is{} ",redPackageId.ToString());
+        //     return;
+        // }
         
         //if we need judge other params ?
         if (grabItems.IsNullOrEmpty())
         {
-            _logger.Info("there are no one claim the red packages,red package id is{} ",redPackageId.ToString());
+            _logger.Info("there are no one claim the red packages,red package id is{redPackageId} ",redPackageId.ToString());
         }
         
         var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail,payRedPackageFrom);
@@ -88,7 +88,7 @@ public class PayRedPackageTask : IPayRedPackageTask
         } 
         //if success update the payment status of red package 
         await grain.UpdateRedPackage(grabItems); 
-        _logger.Info("PayRedPackageAsync end and the redpackage id is {}",redPackageId);
+        _logger.Info("PayRedPackageAsync end and the redpackage id is {redPackageId}",redPackageId.ToString());
         await _distributedEventBus.PublishAsync(eto);
     }
 

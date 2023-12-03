@@ -12,9 +12,11 @@ using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.Grains.Grain.CrossChain;
 using CAServer.Grains.State.CrossChain;
+using CAServer.RedPackage;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -44,6 +46,8 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
     private const int MaxTransferQueryCount = 100;
     private const int MaxRetryTimes = 5;
+    private const string PayRedPackageCron = "*/2 * * * * ";
+
 
     public CrossChainTransferAppService(IContractProvider contractProvider, IOptionsSnapshot<ChainOptions> chainOptions,
         ILogger<CrossChainTransferAppService> logger, IGraphQLProvider graphQlProvider,
@@ -62,8 +66,14 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
     public async Task AutoReceiveAsync()
     {
+        // _logger.LogInformation("RedPackageCreate end pay job start");
+        // RecurringJob.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(Guid.Parse("30ecbc04-fb76-40df-9609-c5f8b39da603")),PayRedPackageCron);
+        // BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
+        //     TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
+        // _logger.LogInformation("RedPackageCreate end job  start end");
         foreach (var chain in _chainOptions.ChainInfos)
         {
+
             _logger.LogDebug($"Processing chain: {chain.Key}");
             var txs = await GetToReceiveTransactionsAsync(chain.Value.ChainId);
             await HandleTransferTransactionsAsync(txs);
