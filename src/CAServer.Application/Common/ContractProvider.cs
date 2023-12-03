@@ -268,9 +268,10 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Id);
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Symbol,
             redPackageDetail.ChainId, out long maxCount,out string redPackageContractAddress);
+        var grab = redPackageDetail.Items.Sum(item => long.Parse(item.Amount));
         list.Add(new TransferRedPacketInput
         {
-            Amount = Convert.ToInt64(redPackageDetail.TotalAmount),
+            Amount = Convert.ToInt64((long.Parse(redPackageDetail.TotalAmount) - grab).ToString()),
             ReceiverAddress = Address.FromBase58(redPackageContractAddress),
             RedPacketSignature =await redPackageKeyGrain.GenerateSignature($"{symbol}-{redPackageDetail.MinAmount}-{maxCount}")
         });
