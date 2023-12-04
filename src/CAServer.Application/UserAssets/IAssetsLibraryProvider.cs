@@ -12,10 +12,13 @@ public interface IAssetsLibraryProvider
 
 public class AssetsLibraryProvider : IAssetsLibraryProvider, ISingletonDependency
 {
+    private readonly TokenInfoOptions _tokenInfoOptions;
     private readonly AssetsInfoOptions _assetsInfoOptions;
 
-    public AssetsLibraryProvider(IOptions<AssetsInfoOptions> assetsInfoOptions)
+    public AssetsLibraryProvider(IOptions<TokenInfoOptions> tokenInfoOptions,
+        IOptions<AssetsInfoOptions> assetsInfoOptions)
     {
+        _tokenInfoOptions = tokenInfoOptions.Value;
         _assetsInfoOptions = assetsInfoOptions.Value;
     }
 
@@ -23,7 +26,17 @@ public class AssetsLibraryProvider : IAssetsLibraryProvider, ISingletonDependenc
     {
         if (symbol.IsNullOrWhiteSpace())
         {
-            return String.Empty;
+            return string.Empty;
+        }
+        
+        if (_tokenInfoOptions.TokenInfos.ContainsKey(symbol))
+        {
+            return _tokenInfoOptions.TokenInfos[symbol].ImageUrl;
+        }
+
+        if (_assetsInfoOptions.ImageUrlPrefix.IsNullOrWhiteSpace() || _assetsInfoOptions.ImageUrlSuffix.IsNullOrWhiteSpace())
+        {
+            return string.Empty;
         }
 
         return $"{_assetsInfoOptions.ImageUrlPrefix}{symbol}{_assetsInfoOptions.ImageUrlSuffix}";

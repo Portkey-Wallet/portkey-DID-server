@@ -32,12 +32,13 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
     private readonly IUserAssetsProvider _assetsProvider;
     private readonly IUserSecurityProvider _userSecurityProvider;
     private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IAssetsLibraryProvider _assetsLibraryProvider;
     private const string _defaultSymbol = "ELF";
 
     public UserSecurityAppService(IOptionsSnapshot<SecurityOptions> securityOptions,
         IUserSecurityProvider userSecurityProvider, IOptionsSnapshot<ChainOptions> chainOptions,
         IContractProvider contractProvider, ILogger<UserSecurityAppService> logger, IUserAssetsProvider assetsProvider,
-        IDistributedEventBus distributedEventBus)
+        IDistributedEventBus distributedEventBus, IAssetsLibraryProvider assetsLibraryProvider)
     {
         _logger = logger;
         _assetsProvider = assetsProvider;
@@ -46,6 +47,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         _securityOptions = securityOptions.Value;
         _contractProvider = contractProvider;
         _userSecurityProvider = userSecurityProvider;
+        _assetsLibraryProvider = assetsLibraryProvider;
     }
 
     public async Task<TransferLimitListResultDto> GetTransferLimitListByCaHashAsync(
@@ -461,6 +463,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
             Decimals = token.TokenInfo.Decimals,
             Restricted = true
         };
+
+        transferLimit.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.TokenInfo.Symbol);
 
         if (_securityOptions.TokenTransferLimitDict[token.ChainId].SingleTransferLimit
             .TryGetValue(token.TokenInfo.Symbol, out var singleLimit))
