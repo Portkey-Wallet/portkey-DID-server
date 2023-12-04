@@ -419,6 +419,21 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
+        if (activityDto.TransactionType == ActivityConstants.TransferName)
+        {
+            var eTransConfig = _activityOptions.ETransConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
+            if (eTransConfig != null && eTransConfig.Accounts.Contains(activityDto.FromAddress))
+            {
+                typeName = ActivityConstants.DepositName;
+            }
+        }
+
+        if (typeName == ActivityConstants.DepositName || typeName == ActivityConstants.WithdrawalName)
+        {
+            activityDto.TransactionName = typeName + " " + activityDto.Symbol;
+            return;
+        }
+
         activityDto.TransactionName = activityDto.NftInfo != null &&
                                       !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
                                       ActivityConstants.ShowNftTypes.Contains(activityDto.TransactionType)
