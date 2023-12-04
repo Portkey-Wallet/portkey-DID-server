@@ -83,7 +83,8 @@
       "RemoveLiquidity",
       "SwapExactTokensForTokens",
       "SwapTokensForExactTokens",
-      "UpdateManagerInfos"
+      "UpdateManagerInfos",
+      "TransferToken"
     ],
     "ContractTypes": [
       "SocialRecovery",
@@ -141,7 +142,8 @@
       "SwapExactTokensForTokens",
       "SwapTokensForExactTokens",
       "UpdateManagerInfos",
-      "SetTransferLimit"
+      "SetTransferLimit",
+      "TransferToken"
     ],
     "ShowNftTypes": [
       "Transfer",
