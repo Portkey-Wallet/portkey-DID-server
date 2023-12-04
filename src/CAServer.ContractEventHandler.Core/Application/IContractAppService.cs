@@ -143,8 +143,8 @@ public class ContractAppService : IContractAppService
             {
                 _logger.LogInformation("RedPackageCreate end pay job start");
                 RecurringJob.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(eventData.RedPackageId),PayRedPackageCron);
-                BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
-                    TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
+                // BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
+                //     TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
                 _logger.LogInformation("RedPackageCreate end job  start end");
 
             }
