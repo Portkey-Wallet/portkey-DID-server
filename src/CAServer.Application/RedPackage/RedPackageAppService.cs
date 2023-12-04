@@ -230,6 +230,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         if (detail.Status == RedPackageStatus.Expired || DateTimeOffset.Now.ToUnixTimeMilliseconds() > detail.ExpireTime)
         {
             detail.IsRedPackageExpired = true;
+            detail.Status = RedPackageStatus.Expired;
         }
         
         if (detail.Status == RedPackageStatus.FullyClaimed || detail.Grabbed == detail.Count)
