@@ -419,6 +419,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
+        if (activityDto.TransactionType == ActivityConstants.TransferName)
+        {
+            var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
+            if (eTransferConfig != null && eTransferConfig.Accounts.Contains(activityDto.FromAddress))
+            {
+                activityDto.TransactionName = ActivityConstants.DepositName;
+                return;
+            }
+        }
+
         activityDto.TransactionName = activityDto.NftInfo != null &&
                                       !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
                                       ActivityConstants.ShowNftTypes.Contains(activityDto.TransactionType)
