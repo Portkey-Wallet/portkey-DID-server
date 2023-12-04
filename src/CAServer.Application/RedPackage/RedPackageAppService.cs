@@ -102,7 +102,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
-        _logger.LogInformation("SendRedPackageAsync start input param is {}",input);
+        _logger.LogInformation("SendRedPackageAsync start input param is {input}",input);
         var result = _redPackageOptions.TokenInfo.Where(x =>
             string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(x.ChainId, input.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
@@ -135,7 +135,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
         var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount), CurrentUser.Id.Value);
-        _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {}",input);
+        _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {input}",input);
         if (!createResult.Success)
         {
             throw new UserFriendlyException(createResult.Message);
@@ -151,7 +151,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         redPackageIndex.SenderPortkeyToken = portkeyToken;
         redPackageIndex.Message = input.Message;
         await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
-        _logger.LogInformation("SendRedPackageAsync AddOrUpdateAsync redPackageIndex is {}",redPackageIndex);
+        _logger.LogInformation("SendRedPackageAsync AddOrUpdateAsync redPackageIndex is {redPackageIndex}",redPackageIndex);
         await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
         {
             UserId = CurrentUser.Id,
@@ -159,7 +159,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             SessionId = sessionId,
             RawTransaction = input.RawTransaction
         });
-        _logger.LogInformation("SendRedPackageAsync PublishAsync redPackageIndex is {}",redPackageIndex);
+        _logger.LogInformation("SendRedPackageAsync PublishAsync redPackageIndex is {redPackageIndex}",redPackageIndex);
         return new SendRedPackageOutputDto()
         {
             SessionId = sessionId
