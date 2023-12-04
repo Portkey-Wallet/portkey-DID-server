@@ -152,7 +152,8 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             ErrorMessage = "",
             Amount = bucket.Amount.ToString(),
             Decimal = State.Decimal,
-            Status = State.Status
+            Status = State.Status,
+            ExpireTime = State.ExpireTime
         };
 
         await WriteStateAsync();
