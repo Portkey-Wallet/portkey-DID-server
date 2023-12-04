@@ -52,7 +52,6 @@ public class PayRedPackageTask : IPayRedPackageTask
         _redPackageIndexRepository = redPackageIndexRepository;
     }
 
-    [Queue("redpackage")]
     public async Task PayRedPackageAsync(Guid redPackageId)
     {
         _logger.Info($"PayRedPackageAsync start and the redpackage id is {redPackageId}",redPackageId.ToString());

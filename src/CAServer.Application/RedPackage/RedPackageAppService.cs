@@ -287,10 +287,14 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 ErrorMessage = RedPackageConsts.UserNotExist
             };
         }
-        
+
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
-        var result = await grain.GrabRedPackage(CurrentUser.Id.Value,input.UserCaAddress);
-        return  new GrabRedPackageOutputDto()
+        var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
+        await _distributedEventBus.PublishAsync(new PayRedPackageEto() { 
+        RedPackageId = input.Id
+
+    });
+    return new GrabRedPackageOutputDto()
         {
             Result = result.Data.Result,
             ErrorMessage = result.Data.ErrorMessage,
