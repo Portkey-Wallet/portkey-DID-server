@@ -30,7 +30,6 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
     private readonly RedPackageOptions _redPackageOptions;
     private readonly IHttpClientProvider _httpClientProvider;
     private readonly ImServerOptions _imServerOptions;
-    private const string PayRedPackageCron = "0/30 * * * * ? ";
 
     
     public RedPackageHandler(IObjectMapper objectMapper, ILogger<RedPackageHandler> logger,
@@ -81,10 +80,6 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             await _redPackageRepository.UpdateAsync(redPackageIndex);
             _logger.LogInformation("RedPackageCreateResultEto UpdateAsync {redPackageIndex}",redPackageIndex);
             _logger.LogInformation("RedPackageCreate end pay job start");
-            RecurringJob.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(redPackageIndex.RedPackageId),PayRedPackageCron);
-            // BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
-            //      TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
-            _logger.LogInformation("RedPackageCreate end job  start end");
             BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
                 TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
 
