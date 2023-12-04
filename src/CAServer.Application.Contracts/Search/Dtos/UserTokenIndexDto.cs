@@ -4,6 +4,7 @@ namespace CAServer.Search.Dtos;
 
 public class UserTokenIndexDto
 {
+    public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public bool IsDisplay { get; set; }
     public bool IsDefault { get; set; }
