@@ -429,6 +429,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             }
         }
 
+        if (activityDto.TransactionType == ActivityConstants.TransferTokenName)
+        {
+            activityDto.TransactionType = ActivityConstants.TransferName;
+            return;
+        }
+
         activityDto.TransactionName = activityDto.NftInfo != null &&
                                       !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
                                       ActivityConstants.ShowNftTypes.Contains(activityDto.TransactionType)
