@@ -34,7 +34,7 @@
       "SwapTokensForExactTokens": "Swap",
       "UpdateManagerInfos": "UpdateManagerInfos",
       "SetTransferLimit":"Set Transfer Limit",
-      "TransferToken": "Withdrawal"
+      "TransferToken": "Withdraw"
     },
     "DefaultTypes": [
       "Transfer",
