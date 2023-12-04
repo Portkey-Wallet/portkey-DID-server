@@ -105,6 +105,7 @@ public class CAServerApplicationTestModule : AbpModule
             o.ShowPriceTypes = new List<string>() { "TEST" };
             o.ShowNftTypes = new List<string>() { "TEST" };
             o.RecentTypes = new List<string>() { "TEST" };
+            o.NoShowTypes = new List<string>() { "no show" };
             o.Zero = "0";
         });
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>

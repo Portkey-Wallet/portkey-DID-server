@@ -225,7 +225,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         result.TotalRecordCount.ShouldBe(1);
 
         var data = result.Data[0];
-        data.TransactionType.ShouldBe("ContractTypes");
+        data.TransactionType.ShouldBe("methodName");
         //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         data.TransactionFees.First().Decimals.ShouldBe("8");
     }
@@ -246,7 +246,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         result.TotalRecordCount.ShouldBe(1);
 
         var data = result.Data[0];
-        data.TransactionType.ShouldBe("TransferTypes");
+        data.TransactionType.ShouldBe("methodName");
         //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         data.TransactionFees.First().Decimals.ShouldBe("8");
     }
