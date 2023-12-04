@@ -36,6 +36,7 @@ using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
+using CAServer.Search.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
@@ -422,5 +423,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<Portkey.Contracts.CA.Guardian, GuardianIndexerInfoDto>()
             .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
+        CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
+        CreateMap<UserTokenIndex, UserTokenIndexDto>()
+            .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
     }
 }

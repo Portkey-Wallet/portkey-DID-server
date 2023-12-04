@@ -180,14 +180,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
 
-                if (_tokenInfoOptions.TokenInfos.ContainsKey(token.Symbol))
-                {
-                    token.ImageUrl = _tokenInfoOptions.TokenInfos[token.Symbol].ImageUrl;
-                }
-                else
-                {
-                    token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
-                }
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
 
                 list.Add(token);
             }
@@ -605,7 +598,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     var tokenInfo = ObjectMapper.Map<IndexerSearchTokenNft, TokenInfoDto>(searchItem);
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
                         .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
-
+                    
+                    tokenInfo.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(item.Symbol);
+                    
                     item.TokenInfo = tokenInfo;
                 }
 
