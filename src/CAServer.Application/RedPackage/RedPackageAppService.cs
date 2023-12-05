@@ -179,7 +179,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
             _logger.LogInformation("SendRedPackageAsync AddOrUpdateAsync redPackageIndex is {redPackageIndex}",
                 redPackageIndex);
-            await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
+            _ = _distributedEventBus.PublishAsync(new RedPackageCreateEto()
             {
                 UserId = CurrentUser.Id,
                 ChainId = input.ChainId,

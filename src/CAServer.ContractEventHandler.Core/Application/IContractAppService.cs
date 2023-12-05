@@ -140,7 +140,7 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                await _distributedEventBus.PublishAsync(eto);
+                _ = _distributedEventBus.PublishAsync(eto);
                 return;
             }
             
@@ -152,12 +152,12 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                await _distributedEventBus.PublishAsync(eto);
+                _ = _distributedEventBus.PublishAsync(eto);
                 return;
             }
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
-            await _distributedEventBus.PublishAsync(eto);
+            _ = _distributedEventBus.PublishAsync(eto);
         }
         catch (Exception e)
         {
