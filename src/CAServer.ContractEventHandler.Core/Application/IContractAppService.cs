@@ -6,10 +6,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
+using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.RedPackage;
 using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Guardian.Provider;
@@ -17,6 +20,7 @@ using CAServer.Monitor;
 using CAServer.Monitor.Logger;
 using CAServer.UserAssets.Provider;
 using CAServer.RedPackage;
+using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
 using CAServer.UserBehavior;
 using CAServer.UserBehavior.Etos;
@@ -29,7 +33,9 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 using Orleans;
+using Orleans.Runtime;
 using Portkey.Contracts.CA;
+using Portkey.Contracts.RedPacket;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -49,6 +55,10 @@ public interface IContractAppService
     // Task UpdateOriginChainIdAsync(string originChainId, string syncChainId ,UserLoginEto userLoginEto);
     // Task InitializeQueryRecordIndexAsync();
     // Task InitializeIndexAsync(long blockHeight);
+    Task PayRedPackageAsync(Guid eventDataRedPackageId);
+    
+
+
 }
 
 public class ContractAppService : IContractAppService
@@ -69,10 +79,14 @@ public class ContractAppService : IContractAppService
     private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ISyncHolderInfoProvider _syncHolderInfoProvider;
-    private const string PayRedPackageCron = "0/30 * * * * ? ";
+    private readonly PayRedPackageAccount _packageAccount;
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository; 
 
 
-    public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
+
+
+    public ContractAppService(IDistributedEventBus distributedEventBus,IOptionsSnapshot<PayRedPackageAccount> packageAccount, 
+        IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
         IContractProvider contractProvider, IObjectMapper objectMapper, ILogger<ContractAppService> logger,
         IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger,
@@ -80,7 +94,7 @@ public class ContractAppService : IContractAppService
         IOptions<SyncOriginChainIdOptions> syncOriginChainIdOptions,
         IUserAssetsProvider userAssetsProvider,
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
-        ISyncHolderInfoProvider syncHolderInfoProvider)
+        ISyncHolderInfoProvider syncHolderInfoProvider, INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -94,10 +108,13 @@ public class ContractAppService : IContractAppService
         _monitorLogProvider = monitorLogProvider;
         _distributedCache = distributedCache;
         _syncHolderInfoProvider = syncHolderInfoProvider;
+        _redPackageIndexRepository = redPackageIndexRepository;
         _guardianProvider = guardianProvider;
         _clusterClient = clusterClient;
         _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
         _userAssetsProvider = userAssetsProvider;
+        _packageAccount = packageAccount.Value;
+
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
@@ -138,22 +155,6 @@ public class ContractAppService : IContractAppService
                 await _distributedEventBus.PublishAsync(eto);
                 return;
             }
-
-            try
-            {
-                _logger.LogInformation("RedPackageCreate end pay job start");
-                RecurringJob.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(eventData.RedPackageId),PayRedPackageCron);
-                // BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
-                //     TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
-                _logger.LogInformation("RedPackageCreate end job  start end");
-
-            }
-            catch (Exception e)
-            {
-                _logger.LogInformation("pay job star pushed and RedPackageCreate is: " + "\n{result}",
-                    JsonConvert.SerializeObject(eto, Formatting.Indented));
-            }
-
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             await _distributedEventBus.PublishAsync(eto);
@@ -409,6 +410,69 @@ public class ContractAppService : IContractAppService
 
         //this will take very long time
         await UpdateOriginChainIdAsync(originChainId, syncChainId, userLoginEto);
+    }
+
+    public async Task PayRedPackageAsync(Guid redPackageId)
+    {
+        _logger.Info($"PayRedPackageAsync start and the redpackage id is {redPackageId}",redPackageId.ToString());
+        var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
+
+        var redPackageDetail = await grain.GetRedPackage(redPackageId);
+        var grabItems = redPackageDetail.Data.Items;
+        var payRedPackageFrom = _packageAccount.getOneAccountRandom();
+        _logger.Info("red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",payRedPackageFrom.ToString());
+
+        //if red package expire we should refund it
+        // if (await Refund(redPackageDetail.Data, grain,payRedPackageFrom))
+        // { 
+        //     _logger.Info("red package is expired and it has been refunded,red package id is{} ",redPackageId.ToString());
+        //     return;
+        // }
+        
+        //if we need judge other params ?
+        if (grabItems.IsNullOrEmpty())
+        {
+            _logger.Info("there are no one claim the red packages,red package id is{redPackageId} ",redPackageId.ToString());
+        }
+        
+        var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail,payRedPackageFrom);
+        var result = res.TransactionResultDto;
+        var eto = new RedPackageTransactionResultEto();
+        var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
+        if (result == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
+        {
+            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{result}",
+                JsonConvert.SerializeObject(eto, Formatting.Indented));
+            return ;
+        } 
+        //if success update the payment status of red package 
+        await grain.UpdateRedPackage(grabItems); 
+        _logger.Info("PayRedPackageAsync end and the redpackage id is {redPackageId}",redPackageId.ToString());
+        await _distributedEventBus.PublishAsync(eto);
+    }
+
+    private async Task<bool> Refund(RedPackageDetailDto redPackageDetail,IRedPackageGrain grain,string payRedPackageFrom )
+    {
+        if (redPackageDetail == null || grain == null)
+        {
+            return false;
+        }
+
+        if (redPackageDetail.Status.Equals(RedPackageStatus.Expired) && !redPackageDetail.IsRedPackageFullyClaimed)
+        {
+            var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetail,payRedPackageFrom);
+            var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
+            if (redPackageIndex == null)
+            {
+                return false;
+            } else if (redPackageIndex.TransactionStatus == RedPackageTransactionStatus.Success)
+            {
+                await grain.UpdateRedPackageExpire();
+                return true; 
+            }
+        }
+
+        return false ;
     }
 
     public async Task UpdateOriginChainIdAsync(string originChainId, string syncChainId, UserLoginEto userLoginEto)
@@ -1029,4 +1093,6 @@ public class ContractAppService : IContractAppService
             });
         }
     }
+    
+
 }

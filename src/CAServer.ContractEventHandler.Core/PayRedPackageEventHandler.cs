@@ -10,15 +10,13 @@ namespace CAServer.ContractEventHandler.Core;
 public class PayRedPackageEventHandler : IDistributedEventHandler<PayRedPackageEto>, ITransientDependency
 {
     private readonly ILogger<RedPackageEventHandler> _logger;
-    private readonly IPayRedPackageTask _packageTask;
-    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IContractAppService _contractAppService;
 
-    public PayRedPackageEventHandler(IDistributedEventBus distributedEventBus,
-        ILogger<RedPackageEventHandler> logger, IPayRedPackageTask packageTask)
+
+    public PayRedPackageEventHandler(ILogger<RedPackageEventHandler> logger,  IContractAppService contractAppService)
     {
-        _distributedEventBus = distributedEventBus;
         _logger = logger;
-        _packageTask = packageTask;
+        _contractAppService = contractAppService;
     }
 
     public async Task HandleEventAsync(PayRedPackageEto eventData)
@@ -26,6 +24,6 @@ public class PayRedPackageEventHandler : IDistributedEventHandler<PayRedPackageE
       
         _logger.LogInformation($"PayRedPackageAsync start and the red package id is {eventData.RedPackageId}",eventData.RedPackageId.ToString());
 
-        await _packageTask.PayRedPackageAsync(eventData.RedPackageId);
+        await _contractAppService.PayRedPackageAsync(eventData.RedPackageId);
     }
 }
