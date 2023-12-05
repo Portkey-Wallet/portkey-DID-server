@@ -120,15 +120,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var request =
                 _objectMapper.Map<VerificationSignatureRequestDto, VierifierCodeRequestInput>(signatureRequestDto);
-            
+            var indicator = _indicatorScope.Begin(MonitorTag.VerifyCodeAsync, "AddGuardianAsync");
+            var guardianGrainResult = GetSaltAndHash(request);
             var response = await _verifierServerClient.VerifyCodeAsync(request);
             if (!response.Success)
             {
                 throw new UserFriendlyException("Validate VerifierCode Failed :" + response.Message);
             }
 
-            var indicator = _indicatorScope.Begin(MonitorTag.VerifyCodeAsync, "AddGuardianAsync");
-            var guardianGrainResult = GetSaltAndHash(request);
             if (!guardianGrainResult.Success)
             {
                 await AddGuardianAsync(signatureRequestDto.GuardianIdentifier, request.Salt,
