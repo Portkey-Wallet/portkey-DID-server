@@ -23,8 +23,6 @@ public class PayRedPackageEventHandler : IDistributedEventHandler<PayRedPackageE
     {
       
         _logger.LogInformation($"PayRedPackageAsync start and the red package id is {eventData.RedPackageId}",eventData.RedPackageId.ToString());
-
-        //async excute daiyabin 
-        await _contractAppService.PayRedPackageAsync(eventData.RedPackageId);
+        _ = _contractAppService.PayRedPackageAsync(eventData.RedPackageId);
     }
 }
