@@ -444,7 +444,7 @@ public class ContractAppService : IContractAppService
 
         if (redPackageIndex == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
         {
-            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{result}",
+            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{redPackageIndex}",
                 JsonConvert.SerializeObject(eto, Formatting.Indented));
             return ;
         } 
