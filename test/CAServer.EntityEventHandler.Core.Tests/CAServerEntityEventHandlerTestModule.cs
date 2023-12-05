@@ -34,8 +34,6 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
         context.Services.AddSingleton<IUserTokenAppService, UserTokenAppService>();
         context.Services.AddSingleton<ISearchAppService, MockSearchAppService>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
-        context.Services.AddSingleton<IPayRedPackageTask, PayRedPackageTask>();
-        context.Services.AddSingleton<IPayRedPackageTask, PayRedPackageTask>();
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem
         {
