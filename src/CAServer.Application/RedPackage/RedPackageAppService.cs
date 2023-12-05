@@ -98,7 +98,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             {
                 Id = redPackageId,
                 PublicKey = await grain.GenerateKey(),
-                Signature = await grain.GenerateSignature($"{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}"),
+                Signature = await grain.GenerateSignature($"{redPackageId}-{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}"),
                 MinAmount = result.MinAmount,
                 Symbol = redPackageInput.Symbol,
                 Decimal = result.Decimal,
