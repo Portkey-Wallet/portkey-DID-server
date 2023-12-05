@@ -554,7 +554,7 @@ public class ContractProvider : IContractProvider
         {
             Amount = Convert.ToInt64((long.Parse(redPackageDetail.TotalAmount) - grab).ToString()),
             ReceiverAddress = Address.FromBase58(redPackageContractAddress),
-            RedPacketSignature =await redPackageKeyGrain.GenerateSignature($"{symbol}-{redPackageDetail.MinAmount}-{maxCount}")
+            RedPacketSignature =await redPackageKeyGrain.GenerateSignature($"{redPackageId}-{redPackageContractAddress}-{long.Parse(redPackageDetail.TotalAmount) - grab}")
         });
         var sendInput = new TransferRedPacketBatchInput()
         {
@@ -589,7 +589,7 @@ public class ContractProvider : IContractProvider
             {
                 Amount = Convert.ToInt64(item.Amount),
                 ReceiverAddress = Address.FromBase58(item.CaAddress),
-                RedPacketSignature = await redPackageKeyGrain.GenerateSignature($"{symbol}-{res.MinAmount}-{maxCount}")
+                RedPacketSignature = await redPackageKeyGrain.GenerateSignature($"{redPackageId}-{item.CaAddress}-{item.Amount}")
             });
         }
 
