@@ -442,7 +442,7 @@ public class ContractAppService : IContractAppService
         var redPackageIndex =  await _redPackageIndexRepository.GetAsync(redPackageId);
         _logger.LogInformation("_redPackageIndexRepository result is {redPackageIndex}",JsonConvert.SerializeObject(redPackageIndex));
 
-        if (result == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
+        if (redPackageIndex == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
         {
             _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{result}",
                 JsonConvert.SerializeObject(eto, Formatting.Indented));
