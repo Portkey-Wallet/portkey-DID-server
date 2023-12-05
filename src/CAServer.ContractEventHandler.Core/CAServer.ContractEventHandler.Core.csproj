@@ -23,4 +23,8 @@
         <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
         <ProjectReference Include="..\CAServer.Signature\CAServer.Signature.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Worker\PayRedPackageWorker.cs" />
+    </ItemGroup>
 </Project>
