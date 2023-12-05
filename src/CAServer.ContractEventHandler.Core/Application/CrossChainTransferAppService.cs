@@ -46,7 +46,6 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
     private const int MaxTransferQueryCount = 100;
     private const int MaxRetryTimes = 5;
-    private const string PayRedPackageCron = "*/2 * * * * ";
 
 
     public CrossChainTransferAppService(IContractProvider contractProvider, IOptionsSnapshot<ChainOptions> chainOptions,
@@ -66,11 +65,6 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
     public async Task AutoReceiveAsync()
     {
-        // _logger.LogInformation("RedPackageCreate end pay job start");
-        // RecurringJob.AddOrUpdate<PayRedPackageTask>("PayRedPackageTaskJobId",x => x.PayRedPackageAsync(Guid.Parse("30ecbc04-fb76-40df-9609-c5f8b39da603")),PayRedPackageCron);
-        // BackgroundJob.Schedule(() => RecurringJob.RemoveIfExists("PayRedPackageTaskJobId"),
-        //     TimeSpan.FromSeconds(RedPackageConsts.ExpireTimeMs));
-        // _logger.LogInformation("RedPackageCreate end job  start end");
         foreach (var chain in _chainOptions.ChainInfos)
         {
 
