@@ -14,6 +14,7 @@ using CAServer.RedPackage.Etos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
@@ -208,6 +209,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         Stopwatch watcher = Stopwatch.StartNew();
         try
         {
+            _logger.LogInformation("GetCreationResultAsync sessionId is {sessionId}",sessionId.ToByteArray());
+            
             redPackageIndex = await _redPackageIndexRepository.GetAsync(sessionId);
             if (redPackageIndex == null)
             {
@@ -217,6 +220,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                     Message = "Session not found"
                 };
             }
+            _logger.LogInformation("GetCreationResultAsync redPackageIndex is {redPackageIndex}",JsonConvert.SerializeObject(redPackageIndex));
 
             res = new GetCreationResultOutputDto()
             {

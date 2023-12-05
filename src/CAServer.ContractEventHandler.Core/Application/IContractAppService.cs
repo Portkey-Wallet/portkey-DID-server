@@ -436,12 +436,15 @@ public class ContractAppService : IContractAppService
         }
         
         var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail,payRedPackageFrom);
+        _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",JsonConvert.SerializeObject(res));
         var result = res.TransactionResultDto;
         var eto = new RedPackageTransactionResultEto();
-        var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
-        if (result == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
+        var redPackageIndex =  await _redPackageIndexRepository.GetAsync(redPackageId);
+        _logger.LogInformation("_redPackageIndexRepository result is {redPackageIndex}",JsonConvert.SerializeObject(redPackageIndex));
+
+        if (redPackageIndex == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
         {
-            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{result}",
+            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{redPackageIndex}",
                 JsonConvert.SerializeObject(eto, Formatting.Indented));
             return ;
         } 
