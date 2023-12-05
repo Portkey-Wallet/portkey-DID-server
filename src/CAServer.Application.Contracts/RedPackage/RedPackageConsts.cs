@@ -2,7 +2,10 @@ namespace CAServer.RedPackage;
 
 public class RedPackageConsts
 {
-    public static int ExpireTimeMs = 60 * 60 * 24 * 1000;
+    //TODO change to one day daiyabin
+    // public static int ExpireTimeMs = 60 * 60 * 24 * 1000;
+    public static int ExpireTimeMs = 60* 20 *  1000;
+
     public static string RedPackageCardType = "REDPACKAGE-CARD";
     public static int MaxRedPackageGrabberCount = 100;
     public static int DefaultRedPackageGrabberCount = 10;
