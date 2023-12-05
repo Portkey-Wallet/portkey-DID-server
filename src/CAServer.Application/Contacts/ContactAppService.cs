@@ -712,7 +712,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private async Task ImPostAsync(string url, object param)
     {
         if (_hostInfoOptions.Environment == Environment.Development) return;
-        
+
         if (!_httpContextAccessor.HttpContext.Request.Headers.Keys.Contains(CommonConstant.ImAuthHeader,
                 StringComparer.OrdinalIgnoreCase))
         {

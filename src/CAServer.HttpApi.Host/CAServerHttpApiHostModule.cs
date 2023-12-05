@@ -1,15 +1,11 @@
 using System;
-using System.IO;
 using System.Linq;
-using System.Net;
 using CAServer.Grains;
 using CAServer.Hub;
-using CAServer.Hubs;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
-using CAServer.Signature;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -41,7 +37,6 @@ using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
-using Volo.Abp.VirtualFileSystem;
 
 namespace CAServer;
 
@@ -68,7 +63,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
-        Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));

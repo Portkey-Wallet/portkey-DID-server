@@ -45,8 +45,5 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Hubs\ICAHubProvider.cs" />
-  </ItemGroup>
 
 </Project>

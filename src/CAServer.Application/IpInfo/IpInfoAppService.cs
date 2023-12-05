@@ -67,7 +67,7 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
         }
         catch (Exception e)
         {
-            Logger.LogError(e, "Get ipInfo fail, ip:{ip}", ip);
+            Logger.LogError(e, "Get ipInfo fail, ip is {ip}", ip.IsNullOrWhiteSpace() ? "empty" : ip);
             return ObjectMapper.Map<DefaultIpInfoOptions, IpInfoResultDto>(_defaultIpInfoOptions);
         }
     }
@@ -89,7 +89,7 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
 
         if (!Match(ip))
         {
-            throw new UserFriendlyException("Unknown ip address: {ip}.", ip);
+            throw new UserFriendlyException($"Unknown ip address: {ip}.");
         }
 
         return ip;

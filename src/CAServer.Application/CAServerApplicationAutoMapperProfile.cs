@@ -36,7 +36,6 @@ using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
-using CAServer.Search.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
@@ -412,19 +411,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
-
         CreateMap<CAHolderIndex, HolderInfoWithAvatar>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
         CreateMap<CAHolderGrainDto, HolderInfoWithAvatar>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
         CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
         CreateMap<CAHolderIndex, HolderInfoResultDto>();
-        CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
-        CreateMap<Portkey.Contracts.CA.Guardian, GuardianIndexerInfoDto>()
-            .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
-            .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
-        CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
-        CreateMap<UserTokenIndex, UserTokenIndexDto>()
-            .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
     }
 }
