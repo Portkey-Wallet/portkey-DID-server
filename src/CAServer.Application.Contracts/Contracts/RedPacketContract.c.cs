@@ -33,6 +33,7 @@ namespace Portkey.Contracts.RedPacket {
         TotalAmount = TotalAmount,
         TotalCount = TotalCount,
         RedPacketType = RedPacketType,
+        ReceiverAddress = ReceiverAddress,
       };
     }
   }
@@ -60,6 +61,27 @@ namespace Portkey.Contracts.RedPacket {
     }
   }
 
+  public partial class RedPacketRefunded : aelf::IEvent<RedPacketRefunded>
+  {
+    public global::System.Collections.Generic.IEnumerable<RedPacketRefunded> GetIndexed()
+    {
+      return new List<RedPacketRefunded>
+      {
+      };
+    }
+
+    public RedPacketRefunded GetNonIndexed()
+    {
+      return new RedPacketRefunded
+      {
+        RedPacketId = RedPacketId,
+        RefundAddress = RefundAddress,
+        RedPacketSymbol = RedPacketSymbol,
+        Amount = Amount,
+      };
+    }
+  }
+
   #endregion
   public static partial class RedPacketContractContainer
   {
@@ -74,6 +96,7 @@ namespace Portkey.Contracts.RedPacket {
     static readonly aelf::Marshaller<global::Portkey.Contracts.RedPacket.RedPacketOutput> __Marshaller_RedPacketOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.RedPacket.RedPacketOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput> __Marshaller_RedPacketMaxCountOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput> __Marshaller_SetRedPacketMaxCountInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.RedPacket.RefundRedPacketInput> __Marshaller_RefundRedPacketInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.RedPacket.RefundRedPacketInput.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -119,6 +142,13 @@ namespace Portkey.Contracts.RedPacket {
         __Marshaller_SetRedPacketMaxCountInput,
         __Marshaller_google_protobuf_Empty);
 
+    static readonly aelf::Method<global::Portkey.Contracts.RedPacket.RefundRedPacketInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RefundRedPacket = new aelf::Method<global::Portkey.Contracts.RedPacket.RefundRedPacketInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+        aelf::MethodType.Action,
+        __ServiceName,
+        "RefundRedPacket",
+        __Marshaller_RefundRedPacketInput,
+        __Marshaller_google_protobuf_Empty);
+
     #endregion
 
     #region Descriptors
@@ -140,51 +170,57 @@ namespace Portkey.Contracts.RedPacket {
     #endregion
 
     /// <summary>Base class for the contract of RedPacketContract</summary>
-    /*public abstract partial class RedPacketContractBase : AElf.Sdk.CSharp.CSharpSmartContract<Portkey.Contracts.RedPacket.RedPacketContractState>
-    {
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::Portkey.Contracts.RedPacket.InitializeInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
+    // public abstract partial class RedPacketContractBase : AElf.Sdk.CSharp.CSharpSmartContract<Portkey.Contracts.RedPacket.RedPacketContractState>
+    // {
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty Initialize(global::Portkey.Contracts.RedPacket.InitializeInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty CreateRedPacket(global::Portkey.Contracts.RedPacket.CreateRedPacketInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty TransferRedPacket(global::Portkey.Contracts.RedPacket.TransferRedPacketBatchInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Portkey.Contracts.RedPacket.RedPacketOutput GetRedPacketInfo(global::Portkey.Contracts.RedPacket.GetRedPacketInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput GetRedPacketMaxCount(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty SetRedPacketMaxCount(global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty RefundRedPacket(global::Portkey.Contracts.RedPacket.RefundRedPacketInput input)
+    //   {
+    //     throw new global::System.NotImplementedException();
+    //   }
+    //
+    // }
 
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty CreateRedPacket(global::Portkey.Contracts.RedPacket.CreateRedPacketInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty TransferRedPacket(global::Portkey.Contracts.RedPacket.TransferRedPacketBatchInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Portkey.Contracts.RedPacket.RedPacketOutput GetRedPacketInfo(global::Portkey.Contracts.RedPacket.GetRedPacketInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput GetRedPacketMaxCount(global::Google.Protobuf.WellKnownTypes.Empty input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-      public virtual global::Google.Protobuf.WellKnownTypes.Empty SetRedPacketMaxCount(global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput input)
-      {
-        throw new global::System.NotImplementedException();
-      }
-
-    }*/
-
-    /*public static aelf::ServerServiceDefinition BindService(RedPacketContractBase serviceImpl)
-    {
-      return aelf::ServerServiceDefinition.CreateBuilder()
-          .AddDescriptors(Descriptors)
-          .AddMethod(__Method_Initialize, serviceImpl.Initialize)
-          .AddMethod(__Method_CreateRedPacket, serviceImpl.CreateRedPacket)
-          .AddMethod(__Method_TransferRedPacket, serviceImpl.TransferRedPacket)
-          .AddMethod(__Method_GetRedPacketInfo, serviceImpl.GetRedPacketInfo)
-          .AddMethod(__Method_GetRedPacketMaxCount, serviceImpl.GetRedPacketMaxCount)
-          .AddMethod(__Method_SetRedPacketMaxCount, serviceImpl.SetRedPacketMaxCount).Build();
-    }*/
+    // public static aelf::ServerServiceDefinition BindService(RedPacketContractBase serviceImpl)
+    // {
+    //   return aelf::ServerServiceDefinition.CreateBuilder()
+    //       .AddDescriptors(Descriptors)
+    //       .AddMethod(__Method_Initialize, serviceImpl.Initialize)
+    //       .AddMethod(__Method_CreateRedPacket, serviceImpl.CreateRedPacket)
+    //       .AddMethod(__Method_TransferRedPacket, serviceImpl.TransferRedPacket)
+    //       .AddMethod(__Method_GetRedPacketInfo, serviceImpl.GetRedPacketInfo)
+    //       .AddMethod(__Method_GetRedPacketMaxCount, serviceImpl.GetRedPacketMaxCount)
+    //       .AddMethod(__Method_SetRedPacketMaxCount, serviceImpl.SetRedPacketMaxCount)
+    //       .AddMethod(__Method_RefundRedPacket, serviceImpl.RefundRedPacket).Build();
+    // }
 
   }
 }
