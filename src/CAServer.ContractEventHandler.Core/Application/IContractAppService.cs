@@ -436,6 +436,7 @@ public class ContractAppService : IContractAppService
         }
         
         var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail,payRedPackageFrom);
+        _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",JsonConvert.SerializeObject(res));
         var result = res.TransactionResultDto;
         var eto = new RedPackageTransactionResultEto();
         var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
