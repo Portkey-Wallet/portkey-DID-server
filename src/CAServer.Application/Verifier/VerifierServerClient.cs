@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AElf;
 using CAServer.Common;
 using CAServer.Dtos;
+using CAServer.Monitor;
 using CAServer.Settings;
 using CAServer.Switch;
 using CAServer.Verifier.Dtos;
@@ -24,17 +25,20 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IIndicatorScope _indicatorScope;
 
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IIndicatorScope indicatorScope)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
         _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
+        _indicatorScope = indicatorScope;
     }
 
     private bool _disposed;
@@ -57,7 +61,9 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     public async Task<ResponseResultDto<VerifierServerResponse>> SendVerificationRequestAsync(
         VerifierCodeRequestDto dto)
     {
+        var indicator = _indicatorScope.Begin(MonitorTag.SendVerificationRequestAsync,"GetVerifierServerEndPointsAsync");
         var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
+        _indicatorScope.End(indicator);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)
         {
@@ -68,7 +74,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 Message = "No Available Service Tips."
             };
         }
-
+        indicator = _indicatorScope.Begin(MonitorTag.SendVerificationRequestAsync,"sendVerificationRequest");
         var url = endPoint + "/api/app/account/sendVerificationRequest";
         var parameters = new Dictionary<string, string>
         {
@@ -76,13 +82,17 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", dto.GuardianIdentifier },
             { "verifierSessionId", dto.VerifierSessionId.ToString() },
         };
-        return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        var verifierServerResponse =await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        _indicatorScope.End(indicator);
+        return verifierServerResponse;
     }
 
     public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input)
     {
+        var indicator = _indicatorScope.Begin(MonitorTag.VerifyCodeAsync,"GetVerifierServerEndPointsAsync");
         var endPoint =
             await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+        _indicatorScope.End(indicator);
         if (null == endPoint)
         {
             _logger.LogInformation("No Available Service Tips.{VerifierId}", input.VerifierId);
@@ -111,8 +121,11 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             }
         };
 
-
-        return await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
+        indicator = _indicatorScope.Begin(MonitorTag.VerifyCodeAsync,"verifyCode");
+        var responseAsync =
+            await _httpService.PostResponseAsync<ResponseResultDto<VerificationCodeResponse>>(url, parameters);
+        _indicatorScope.End(indicator);
+        return responseAsync;
     }
 
     public async Task<ResponseResultDto<VerifyGoogleTokenDto>> VerifyGoogleTokenAsync(VerifyTokenRequestDto input,

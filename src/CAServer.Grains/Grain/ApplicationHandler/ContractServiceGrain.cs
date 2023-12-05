@@ -114,7 +114,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             if (transactionResult.Status != TransactionState.Mined)
             {
-                _logger.LogWarning("SendTransactionToChainAsync {Method} fail,param {Param}, Status {Status} ErrorMsg {ErrorMsg}",transaction.MethodName,transaction.Params.ToString(),
+                _logger.LogWarning("SendTransactionToChainAsync {Method} fail,param {Param}, Status {Status} ErrorMsg {ErrorMsg}",transaction.MethodName,transaction.Params.ToBase64(),
                     transactionResult.Status,  transactionResult.Error);
             }
 

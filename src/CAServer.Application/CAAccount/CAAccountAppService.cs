@@ -19,6 +19,7 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Monitor;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
 using CAServer.UserBehavior;
@@ -52,6 +53,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly ICAAccountProvider _accountProvider;
     private readonly INickNameAppService _caHolderAppService;
     private readonly IAppleAuthProvider _appleAuthProvider;
+    private readonly IIndicatorScope _indicatorScope;
     private const int MaxResultCount = 10;
     public const string DefaultSymbol = "ELF";
     public const double MinBanlance = 0.05 * 100000000;
@@ -66,7 +68,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         ICAAccountProvider accountProvider,
         INickNameAppService caHolderAppService,
         IAppleAuthProvider appleAuthProvider,
-        IHttpContextAccessor httpContextAccessor
+        IHttpContextAccessor httpContextAccessor,
+        IIndicatorScope indicatorScope
     )
     {
         _distributedEventBus = distributedEventBus;
@@ -81,6 +84,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _appleAuthProvider = appleAuthProvider;
         _chainOptions = chainOptions.Value;
         _httpContextAccessor = httpContextAccessor;
+        _indicatorScope = indicatorScope;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -90,23 +94,24 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
 
         _logger.LogInformation($"register dto :{JsonConvert.SerializeObject(registerDto)}");
-
+        
         var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.VerifierId, input.ChainId,
             input.Manager);
 
         registerDto.ManagerInfo.ExtraData =
             await _deviceAppService.EncryptExtraDataAsync(registerDto.ManagerInfo.ExtraData, grainId);
-
+        var indicator = _indicatorScope.Begin(MonitorTag.RegisterRequestAsync, "RequestAsync");
         var grain = _clusterClient.GetGrain<IRegisterGrain>(grainId);
         var result = await grain.RequestAsync(ObjectMapper.Map<RegisterDto, RegisterGrainDto>(registerDto));
-
+        _indicatorScope.End(indicator);
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
         }
-
+        indicator = _indicatorScope.Begin(MonitorTag.RegisterRequestAsync, "PublishAsync");
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<RegisterGrainDto, AccountRegisterCreateEto>(result.Data));
+        _indicatorScope.End(indicator);
         return new AccountResultDto(registerDto.Id.ToString());
     }
 

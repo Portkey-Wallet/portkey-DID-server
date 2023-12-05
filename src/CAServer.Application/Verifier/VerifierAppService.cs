@@ -17,6 +17,7 @@ using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
+using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
@@ -47,7 +48,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
     private readonly VerifierAccountOptions _verifierAccountOptions;
-
+    private readonly IIndicatorScope _indicatorScope;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -63,7 +64,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider, IOptionsSnapshot<VerifierAccountOptions> verifierAccountOptions)
+        ICacheProvider cacheProvider, IContractProvider contractProvider, IOptionsSnapshot<VerifierAccountOptions> verifierAccountOptions,
+        IIndicatorScope indicatorScope)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -77,6 +79,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _contractProvider = contractProvider;
         _verifierAccountOptions = verifierAccountOptions.Value;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
+        _indicatorScope = indicatorScope;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -117,21 +120,21 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             var request =
                 _objectMapper.Map<VerificationSignatureRequestDto, VierifierCodeRequestInput>(signatureRequestDto);
-
-            var guardianGrainResult = GetSaltAndHash(request);
-
+            
             var response = await _verifierServerClient.VerifyCodeAsync(request);
             if (!response.Success)
             {
                 throw new UserFriendlyException("Validate VerifierCode Failed :" + response.Message);
             }
 
+            var indicator = _indicatorScope.Begin(MonitorTag.VerifyCodeAsync, "AddGuardianAsync");
+            var guardianGrainResult = GetSaltAndHash(request);
             if (!guardianGrainResult.Success)
             {
                 await AddGuardianAsync(signatureRequestDto.GuardianIdentifier, request.Salt,
                     request.GuardianIdentifierHash);
             }
-
+            _indicatorScope.End(indicator);
             return new VerificationCodeResponse
             {
                 VerificationDoc = response.Data.VerificationDoc,

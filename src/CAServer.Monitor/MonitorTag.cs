@@ -9,5 +9,8 @@ public enum MonitorTag
     SocialRecover,
     LoginSync,
     ChainDataSync,
-    DataSyncHeightIndex
+    DataSyncHeightIndex,
+    SendVerificationRequestAsync,
+    VerifyCodeAsync,
+    RegisterRequestAsync
 }
