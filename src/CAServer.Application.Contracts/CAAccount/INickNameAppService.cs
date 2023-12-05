@@ -11,5 +11,4 @@ public interface INickNameAppService
     Task<CAHolderResultDto> GetCaHolderAsync();
     Task<CAHolderResultDto> UpdateHolderInfoAsync(HolderInfoDto holderInfo);
     Task<CAHolderResultDto> DeleteAsync();
-    Task<CAHolderResultDto> UpdateHolderInfoAsync(HolderInfoDto holderInfo);
 }
