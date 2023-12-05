@@ -584,7 +584,9 @@ public class ContractProvider : IContractProvider
             JsonConvert.SerializeObject(res, Formatting.Indented)); 
         foreach (var item in redPackageDetail.Data.Items.Where(o => !o.PaymentCompleted).ToArray())
         {
-           
+
+            _logger.LogInformation("redPackageKeyGrain GenerateSignature input{param}",
+                $"{redPackageId}-{item.CaAddress}-{item.Amount}");
             list.Add(new TransferRedPacketInput()
             {
                 Amount = Convert.ToInt64(item.Amount),
