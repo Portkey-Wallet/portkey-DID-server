@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.VerifierCode;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -33,12 +34,13 @@ public class SignatureProviderTest : CAServerApplicationTestBase
     {
         var publicKey = "test";
         var hexMsg = "test";
+        
 
         var sendDto = new SignResponseDto
         {
             Signature = string.Empty
         };
-
+        
         var result = await _signatureProvider.SignTxMsg(publicKey, hexMsg);
         result.ShouldNotBeNull();
     }
