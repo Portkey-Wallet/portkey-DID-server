@@ -80,6 +80,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
         Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
         GenerateRedPackageOutputDto res = null;
         try
         {
@@ -113,8 +114,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             watcher.Stop();
             if (res != null)
             {
-                _logger.LogInformation("**RedPackage generate: id:{0},cost:{1}", res.Id.ToString(),watcher.Elapsed.Milliseconds.ToString());
                 _logger.LogInformation("generate start:{0},{1}:", res.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                _logger.LogInformation("#monitor# generate:{redpackageId},{cost},{startTime}:", res.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
             }
         }
     }
@@ -123,6 +124,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
         Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
         try
         {
             _logger.LogInformation("SendRedPackageAsync start input param is {input}", input);
@@ -196,9 +198,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         finally
         {
             watcher.Stop();
-            _logger.LogInformation("**RedPackage send: id:{0},cost:{1}",
-                input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString());
             _logger.LogInformation("send end:{0},{1}:", input.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+            _logger.LogInformation("#monitor# send:{redpackageId},{cost},{startTime}:", input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
         }
     }
 
@@ -236,12 +237,15 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             watcher.Stop();
             if (redPackageIndex != null)
             {
-                _logger.LogInformation("**RedPackage getCreationResult: id:{0},cost:{1}",
-                    redPackageIndex.RedPackageId.ToString(), watcher.Elapsed.Milliseconds.ToString());
                 if (res != null && res.Status == RedPackageTransactionStatus.Success)
                 {
                     _logger.LogInformation("getCreationResult success:{0},{1}:",redPackageIndex.RedPackageId.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
-                }                
+                    _logger.LogInformation("#monitor# getCreationResult success:{redpackageId}, {status},{cost},{endTime}:", redPackageIndex.RedPackageId.ToString(), res.Status.ToString(), watcher.Elapsed.Milliseconds.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                }
+                else
+                {
+                    _logger.LogInformation("#monitor# getCreationResult other:{redpackageId},{status},{cost},{endTime}:", redPackageIndex.RedPackageId.ToString(), res.Status.ToString(), watcher.Elapsed.Milliseconds.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                }             
             }
         }
     }
