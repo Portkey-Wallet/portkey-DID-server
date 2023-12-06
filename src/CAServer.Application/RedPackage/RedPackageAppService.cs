@@ -237,10 +237,10 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             if (redPackageIndex != null)
             {
                 _logger.LogInformation("**RedPackage getCreationResult: id:{0},cost:{1}",
-                    redPackageIndex.Id.ToString(), watcher.Elapsed.Milliseconds.ToString());
+                    redPackageIndex.RedPackageId.ToString(), watcher.Elapsed.Milliseconds.ToString());
                 if (res != null && res.Status == RedPackageTransactionStatus.Success)
                 {
-                    _logger.LogInformation("getCreationResult success:{0},{1}:",redPackageIndex.Id.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                    _logger.LogInformation("getCreationResult success:{0},{1}:",redPackageIndex.RedPackageId.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
                 }                
             }
         }
