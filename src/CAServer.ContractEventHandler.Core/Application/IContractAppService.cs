@@ -414,6 +414,9 @@ public class ContractAppService : IContractAppService
 
     public async Task PayRedPackageAsync(Guid redPackageId)
     {
+        Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
+        
         _logger.Info($"PayRedPackageAsync start and the redpackage id is {redPackageId}",redPackageId.ToString());
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
@@ -452,6 +455,9 @@ public class ContractAppService : IContractAppService
         await grain.UpdateRedPackage(grabItems); 
         _logger.Info("PayRedPackageAsync end and the redpackage id is {redPackageId}",redPackageId.ToString());
         await _distributedEventBus.PublishAsync(eto);
+        
+        watcher.Stop();
+        _logger.LogInformation("#monitor# payRedPackage:{redpackageId},{cost},{endTime}:", redPackageId.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
     }
 
     private async Task<bool> Refund(RedPackageDetailDto redPackageDetail,IRedPackageGrain grain,string payRedPackageFrom )

@@ -240,7 +240,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 if (res != null && res.Status == RedPackageTransactionStatus.Success)
                 {
                     _logger.LogInformation("getCreationResult success:{0},{1}:",redPackageIndex.RedPackageId.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
-                    _logger.LogInformation("#monitor# getCreationResult success:{redpackageId}, {status},{cost},{endTime}:", redPackageIndex.RedPackageId.ToString(), res.Status.ToString(), watcher.Elapsed.Milliseconds.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                    _logger.LogInformation("#monitor# getCreationResult success:{redpackageId},{status},{cost},{endTime}:", redPackageIndex.RedPackageId.ToString(), res.Status.ToString(), watcher.Elapsed.Milliseconds.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
                 }
                 else
                 {
@@ -342,31 +342,44 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
     {
-        if (CurrentUser.Id == null)
+        Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
+
+        try
         {
+            if (CurrentUser.Id == null)
+            {
+                return new GrabRedPackageOutputDto()
+                {
+                    Result = RedPackageGrabStatus.Fail,
+                    ErrorMessage = RedPackageConsts.UserNotExist
+                };
+            }
+
+            var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
+            var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
+            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+            {
+                RedPackageId = input.Id
+
+            });
             return new GrabRedPackageOutputDto()
             {
-                Result = RedPackageGrabStatus.Fail,
-                ErrorMessage = RedPackageConsts.UserNotExist
+                Result = result.Data.Result,
+                ErrorMessage = result.Data.ErrorMessage,
+                Amount = result.Data.Amount,
+                Decimal = result.Data.Decimal,
+                Status = (result.Data.Status == RedPackageStatus.Expired
+                          || DateTimeOffset.Now.ToUnixTimeMilliseconds() > result.Data.ExpireTime)
+                    ? RedPackageStatus.Expired
+                    : result.Data.Status
             };
         }
-
-        var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
-        var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
-        await _distributedEventBus.PublishAsync(new PayRedPackageEto() { 
-        RedPackageId = input.Id
-
-    });
-    return new GrabRedPackageOutputDto()
+        finally
         {
-            Result = result.Data.Result,
-            ErrorMessage = result.Data.ErrorMessage,
-            Amount = result.Data.Amount,
-            Decimal = result.Data.Decimal,        
-            Status = (result.Data.Status == RedPackageStatus.Expired 
-                      || DateTimeOffset.Now.ToUnixTimeMilliseconds() > result.Data.ExpireTime) 
-                ? RedPackageStatus.Expired: result.Data.Status
-        };
+            watcher.Stop();
+            _logger.LogInformation("#monitor# grabRedPackage:{redpackageId},{cost},{endTime}:", input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
+        }
     }
     
     private void CheckLuckKing(RedPackageDetailDto input)
