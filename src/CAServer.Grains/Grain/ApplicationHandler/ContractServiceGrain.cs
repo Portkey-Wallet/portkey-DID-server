@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans.Concurrency;
 using Portkey.Contracts.CA;
+using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
@@ -136,8 +137,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
     private async Task<string> GetOwnAddress(ChainInfo chainInfo)
     {
-        var sortNum = await
-            GrainFactory.GetGrain<ISortNumGrain>(_sortNumGrainKey+chainInfo.ChainId).GetSortNum(chainInfo.OwnerAddressList.Count);
+        var sortNum = RandomHelper.GetRandom(chainInfo.OwnerAddressList.Count);
+          //  GrainFactory.GetGrain<ISortNumGrain>(_sortNumGrainKey+chainInfo.ChainId).GetSortNum();
         var ownAddress = chainInfo.OwnerAddressList[sortNum];
         return ownAddress;
     }
