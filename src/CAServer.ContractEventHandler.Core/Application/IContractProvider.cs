@@ -586,7 +586,7 @@ public class ContractProvider : IContractProvider
         {
 
             _logger.LogInformation("redPackageKeyGrain GenerateSignature input{param}",
-                $"{redPackageId}-{item.CaAddress}-{item.Amount}");
+                $"{redPackageId}-{Address.FromBase58(item.CaAddress)}-{item.Amount}");
             list.Add(new TransferRedPacketInput()
             {
                 //daiyabin
