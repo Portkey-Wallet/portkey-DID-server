@@ -89,18 +89,20 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
+        var indicator = _indicatorScope.Begin(MonitorTag.RegisterRequestAsync, "EncryptExtraDataAsync");
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
+        _indicatorScope.End(indicator);
         var registerDto = ObjectMapper.Map<RegisterRequestDto, RegisterDto>(input);
         registerDto.GuardianInfo.IdentifierHash = guardianGrainDto.IdentifierHash;
 
         _logger.LogInformation($"register dto :{JsonConvert.SerializeObject(registerDto)}");
-        
+        indicator = _indicatorScope.Begin(MonitorTag.RegisterRequestAsync, "EncryptExtraDataAsync");
         var grainId = GrainIdHelper.GenerateGrainId(guardianGrainDto.IdentifierHash, input.VerifierId, input.ChainId,
             input.Manager);
-
         registerDto.ManagerInfo.ExtraData =
             await _deviceAppService.EncryptExtraDataAsync(registerDto.ManagerInfo.ExtraData, grainId);
-        var indicator = _indicatorScope.Begin(MonitorTag.RegisterRequestAsync, "RequestAsync");
+        _indicatorScope.End(indicator);
+        indicator = _indicatorScope.Begin(MonitorTag.RegisterRequestAsync, "RequestAsync");
         var grain = _clusterClient.GetGrain<IRegisterGrain>(grainId);
         var result = await grain.RequestAsync(ObjectMapper.Map<RegisterDto, RegisterGrainDto>(registerDto));
         _indicatorScope.End(indicator);
