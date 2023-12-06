@@ -54,11 +54,14 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             }
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
+            var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+                "GetOwnAddress");
             var ownAddress = await GetOwnAddress(chainInfo);
+            _indicatorScope.End(interIndicator); 
             _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
 
-            var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                 MonitorAelfClientType.GenerateTransactionAsync.ToString());
             
             var transaction =
