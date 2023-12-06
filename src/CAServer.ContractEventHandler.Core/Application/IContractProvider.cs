@@ -592,7 +592,7 @@ public class ContractProvider : IContractProvider
                 //daiyabin
                 Amount = Convert.ToInt64(item.Amount),
                 ReceiverAddress = Address.FromBase58(item.CaAddress),
-                RedPacketSignature = await redPackageKeyGrain.GenerateSignature($"{redPackageId}-{Address.FromBase58(item.CaAddress)}-{item.Amount}")
+                RedPacketSignature = await redPackageKeyGrain.GenerateSignature($"{redPackageId}-{item.CaAddress}-{item.Amount}")
             });
         }
 
