@@ -91,7 +91,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
         var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
         var (publicKey, signature) = await grain.GenerateKeyAndSignature(
-            $"{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}");
+            $"{redPackageId}-{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}");
         return new GenerateRedPackageOutputDto
         {
             Id = redPackageId,
