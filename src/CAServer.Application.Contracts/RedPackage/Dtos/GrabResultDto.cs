@@ -7,4 +7,6 @@ public class GrabResultDto
     public string Amount { get; set; }
     public int Decimal { get; set; }
     public RedPackageStatus Status { get; set; }
+    
+    public long ExpireTime { get; set; }
 }

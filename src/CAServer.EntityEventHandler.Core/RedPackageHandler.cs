@@ -30,6 +30,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
     private readonly RedPackageOptions _redPackageOptions;
     private readonly IHttpClientProvider _httpClientProvider;
     private readonly ImServerOptions _imServerOptions;
+
     
     public RedPackageHandler(IObjectMapper objectMapper, ILogger<RedPackageHandler> logger,
         INESTRepository<RedPackageIndex, Guid> redPackageRepository, IImRequestProvider imRequestProvider,
@@ -52,6 +53,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
     {
         try
         {
+            
             _logger.LogInformation("RedPackageCreateResultEto {Message}",JsonConvert.SerializeObject(eventData));
             var sessionId = eventData.SessionId;
             var redPackageIndex = await _redPackageRepository.GetAsync(sessionId);
@@ -76,9 +78,10 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             
             await _redPackageRepository.UpdateAsync(redPackageIndex);
-            
-            /*BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));*/
+            _logger.LogInformation("RedPackageCreateResultEto UpdateAsync {redPackageIndex}",redPackageIndex);
+            _logger.LogInformation("RedPackageCreate end pay job start");
+            BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
+                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
 
             //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();

@@ -110,8 +110,6 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         var userId1 = Guid.NewGuid();
         var userId2 = Guid.NewGuid();
         var res = await redPackageGrain.GrabRedPackage(userId1, "xxxx");
-
-        await redPackageGrain.UpdateRedPackage(redPackageId, userId1, "xxxx");
     }
 
     private async Task<Guid> GetNewPackageId()
@@ -123,7 +121,6 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         res.Success.ShouldBe(true);
         res = await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(redPackageId), 8, 1, userId);
         res.Success.ShouldBe(false);
-        await redPackageGrain.UpdateRedPackage(redPackageId, userId, "xxxx");
         return redPackageId;
     }
 }
