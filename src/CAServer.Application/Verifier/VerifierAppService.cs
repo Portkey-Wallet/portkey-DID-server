@@ -320,7 +320,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             salt = GetSalt().ToHex();
             identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),  
-                ByteStringHelper.FromHexString(requestInput.Salt).ToByteArray()).ToHex();
+                ByteArrayHelper.HexStringToByteArray(requestInput.Salt)).ToHex();
         }
 
         requestInput.Salt = salt;
