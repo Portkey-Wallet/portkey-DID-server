@@ -316,9 +316,9 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         {
             bucket.Add(new BucketItem()
             {
-                Amount = minAmount
+                Amount = 0
             });
-            rest -= minAmount;
+            // rest -= minAmount;
         }
 
         for (var i = 0; i < count; i++)
