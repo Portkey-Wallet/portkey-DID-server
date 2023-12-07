@@ -7,11 +7,11 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.RedPackage;
 
-public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
+public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
 {
     private readonly IObjectMapper _objectMapper;
 
-    private const int RePackagePlaceMove = 2;
+    private const int RePackagePlaceMove = 3;
 
     public RedPackageGrain(IObjectMapper objectMapper)
     {
@@ -112,21 +112,6 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
                 Amount = "",
                 Status = State.Status
             };
-            //repeated claim should return true 
-            if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
-            {
-                result.Success = true;
-                result.Data = new GrabResultDto()
-                {
-                    Result = RedPackageGrabStatus.Success,
-                    ErrorMessage = "",
-                    Amount = State.Items.First(item => item.UserId.Equals(userId))?.Amount.ToString(),
-                    Decimal = State.Decimal,
-                    Status = State.Status,
-                    ExpireTime = State.ExpireTime
-                };
-            }
-            
             return result;
         }
 
@@ -167,8 +152,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             ErrorMessage = "",
             Amount = bucket.Amount.ToString(),
             Decimal = State.Decimal,
-            Status = State.Status,
-            ExpireTime = State.ExpireTime
+            Status = State.Status
         };
 
         await WriteStateAsync();
@@ -214,7 +198,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         var result = new GrainResultDto<bool>();
         result.Success = true;
         result.Data = true;
-        State.IfRefund = true;
+        State.Status = RedPackageStatus.ExpiredAndRefund;
         await WriteStateAsync();
         return result;
     }
@@ -260,7 +244,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return bucket;
     }
 
-    private (List<BucketItem>, int) GenerateBucket(int count, long totalAmount, long minAmount, int decimalIn,
+    public (List<BucketItem>, int) GenerateBucket(int count, long totalAmount, long minAmount, int decimalIn,
         RedPackageType type)
     {
         switch (type)
@@ -352,6 +336,56 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
 
         return (bucket, luckyKingIndex);
     }
+    
+    public async Task<String> GenerateRandomBucketTest(int count, long totalAmount, long minAmount,int decimalIn)
+    {
+        int luckyKingIndex = 0;
+        long luckyKingAmount = minAmount;
+        var bucket = new List<BucketItem>();
+        var rest = totalAmount;
+        Random random = new Random();
+        int places = BucketRandomSpecialOperation(totalAmount, count,decimalIn, out bool specialOperation);
+        for (var i = 0; i < count; i++)
+        {
+            bucket.Add(new BucketItem()
+            {
+                Amount = minAmount
+            });
+            rest -= minAmount;
+        }
+
+        for (var i = 0; i < count; i++)
+        {
+            if (rest <= minAmount)
+            {
+                break;
+            }
+
+            double randomNumber = GetRandomNum(places,specialOperation,random);
+            long max = (rest / (count - i)) * 2;
+            long money = Math.Max(minAmount, (long)(randomNumber * max));
+            bucket[i].Amount += money;
+            if (bucket[i].Amount > luckyKingAmount)
+            {
+                luckyKingAmount = bucket[i].Amount;
+                luckyKingIndex = i;
+            }
+
+            rest -= money;
+        }
+
+        bucket[count - 1].Amount += rest;
+        if (bucket[count - 1].Amount > luckyKingAmount)
+        {
+            luckyKingAmount = bucket[count - 1].Amount;
+            luckyKingIndex = count - 1;
+        }
+
+        bucket[luckyKingIndex].IsLuckyKing = true;
+        return "";
+
+    }
+
     private int BucketRandomSpecialOperation(long total, int count,int decimalIn,out bool specialOperation)
     {
         // little point in 0~2 
