@@ -18,6 +18,7 @@ public class RedPackageEventHandler : IDistributedEventHandler<RedPackageCreateE
     private readonly IContractAppService _contractAppService;
     private readonly IDistributedEventBus _distributedEventBus;
 
+
     public RedPackageEventHandler(IContractAppService contractAppService, IDistributedEventBus distributedEventBus,
         ILogger<RedPackageEventHandler> logger)
     {
