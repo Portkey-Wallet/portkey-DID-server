@@ -5,10 +5,15 @@ using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
+using CAServer.MongoDB;
 using CAServer.Options;
 using CAServer.Monitor;
 using CAServer.RedPackage;
 using CAServer.Signature;
+using Hangfire;
+using Hangfire.Redis.StackExchange;
+using Medallion.Threading;
+using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +27,7 @@ using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
+using Volo.Abp.BackgroundJobs.Hangfire;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.BackgroundWorkers.Quartz;
 using Volo.Abp.Caching;
@@ -47,6 +53,8 @@ namespace CAServer.ContractEventHandler;
     typeof(CAServerSignatureModule),
     typeof(CAServerMonitorModule),
     typeof(AbpCachingStackExchangeRedisModule),
+    typeof(CAServerMongoDbModule),
+    typeof(AbpBackgroundJobsHangfireModule),
     typeof(AElfIndexingElasticsearchModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {
@@ -73,13 +81,28 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.Services.AddHttpClient();
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
+        ConfigureDistributedLocking(context, configuration);
+        ConfigureHangfire(context, configuration);
+
     }
 
     private void ConfigureCache(IConfiguration configuration)
     {
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
     }
-
+    
+    private void ConfigureDistributedLocking(
+        ServiceConfigurationContext context,
+        IConfiguration configuration)
+    {
+        context.Services.AddSingleton<IDistributedLockProvider>(sp =>
+        {
+            var connection = ConnectionMultiplexer
+                .Connect(configuration["Redis:Configuration"]);
+            return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
+        });
+    }
+    
     private void ConfigureDataProtection(
         ServiceConfigurationContext context,
         IConfiguration configuration,
@@ -93,12 +116,16 @@ public class CAServerContractEventHandlerModule : AbpModule
         }
     }
 
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
         StartOrleans(context.ServiceProvider);
+    }
+
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
-
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
@@ -122,6 +149,14 @@ public class CAServerContractEventHandlerModule : AbpModule
                 {
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
+                })
+                .Configure<ClientMessagingOptions>(opt =>
+                {
+                    var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
+                    if (responseTimeout > 0)
+                    {
+                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
+                    }
                 })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
@@ -147,5 +182,22 @@ public class CAServerContractEventHandlerModule : AbpModule
     private void ConfigureTokenCleanupService()
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+    }
+    
+    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddHangfire(config =>
+        {
+            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
+            {
+                Db = 1
+            });
+        });
+        
+        context.Services.AddHangfireServer(options =>
+        {
+            options.Queues = new[] { "redpackage" };
+            options.WorkerCount = 8;
+        });
     }
 }
