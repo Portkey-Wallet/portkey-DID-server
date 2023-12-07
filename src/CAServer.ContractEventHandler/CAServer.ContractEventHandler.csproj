@@ -9,7 +9,7 @@
         <ProjectReference Include="..\CAServer.ContractEventHandler.Core\CAServer.ContractEventHandler.Core.csproj" />
         <PackageReference Include="DistributedLock.Redis" Version="1.0.2" />
         <PackageReference Include="Hangfire" Version="1.8.6" />
-        <PackageReference Include="Hangfire.Redis.StackExchange" Version="1.9.2" />
+        <PackageReference Include="Hangfire.Redis.StackExchange" Version="1.9.3" />
         <ProjectReference Include="..\CAServer.MongoDB\CAServer.MongoDB.csproj" />
     </ItemGroup>
 
