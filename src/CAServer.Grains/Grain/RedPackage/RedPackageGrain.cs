@@ -337,6 +337,10 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
             } else if (specialOperation)
             {
                 money= (money/(long)Math.Pow(10, decimalIn - places))*(long)Math.Pow(10, decimalIn - places);
+                if (money == 0)
+                {
+                    money = (long)Math.Pow(10, decimalIn - places);
+                }
 
             }
             bucket[i].Amount += money;

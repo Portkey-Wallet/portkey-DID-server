@@ -358,6 +358,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
+            
             _logger.LogInformation("SendTransferRedPacketToChainAsync, methodName：{methodName}, redPackageContractAddress: {redPackageContractAddress} ",methodName,redPackageContractAddress);
 
             if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
@@ -376,7 +377,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , methodName,
                     param);
 
-            _logger.LogInformation("GenerateTransactionAsync transaction：{transaction}",JsonConvert.SerializeObject(transaction));
+            _logger.LogInformation("GenerateTransactionAsync transaction：{transaction}, param : {param}"
+                ,JsonConvert.SerializeObject(transaction),JsonConvert.SerializeObject(param));
             var refBlockNumber = transaction.RefBlockNumber;
 
             refBlockNumber -= _grainOptions.SafeBlockHeight;
