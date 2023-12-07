@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.ContractEventHandler.Core.Application;
+using CAServer.Grains.State.RedPackage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -28,6 +30,8 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     {
 
         // await _contractAppService.QueryAndSyncAsync();
-        await _contractAppService.Refund(new Guid("285395d6-f084-41ef-908f-ace09eb771cb"));
+        await _contractAppService.Refund(new Guid("b9674a6c-2c71-4dd7-ba12-428a118c253e"));
     }
+    
+
 }

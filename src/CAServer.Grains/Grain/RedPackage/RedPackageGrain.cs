@@ -304,7 +304,7 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return (bucket, 0);
     }
 
-    private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount,int decimalIn)
+      private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount,int decimalIn)
     {
         int luckyKingIndex = 0;
         long luckyKingAmount = minAmount;
@@ -328,9 +328,17 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
                 break;
             }
 
-            double randomNumber = GetRandomNum(places,specialOperation,random);
+            double randomNumber = random.NextDouble();
             long max = (rest / (count - i)) * 2;
             long money = Math.Max(minAmount, (long)(randomNumber * max));
+            if (i == count - 1)
+            {
+                money = rest;
+            } else if (specialOperation)
+            {
+                money= (money/(long)Math.Pow(10, decimalIn - places))*(long)Math.Pow(10, decimalIn - places);
+
+            }
             bucket[i].Amount += money;
             if (bucket[i].Amount > luckyKingAmount)
             {
@@ -340,8 +348,6 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
 
             rest -= money;
         }
-
-        bucket[count - 1].Amount += rest;
         if (bucket[count - 1].Amount > luckyKingAmount)
         {
             luckyKingAmount = bucket[count - 1].Amount;
@@ -356,16 +362,16 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
     {
         // little point in 0~2 
         int places = DecimalPlaces(total,decimalIn);
-        if (places < RePackagePlaceMove)
+        if (places < 2)
         {
-            long baseJudgeCount = (long)Math.Pow(10, decimalIn - RePackagePlaceMove - places);
+            long baseJudgeCount = (long)Math.Pow(10, decimalIn - 2 - places);
             if (baseJudgeCount * count > total)
             {
                 specialOperation = false;
                 return -1;
             }
             specialOperation = true;
-            return places + RePackagePlaceMove;
+            return places + 2;
         }
         else
         {
@@ -387,17 +393,5 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         int[] bits = decimal.GetBits(tempNum);
         int exponent = (bits[3] >> 16) & 0x1F;
         return exponent;
-    }
-
-    private double GetRandomNum(int places, bool specialOperation,Random random)
-    {
-        if (!specialOperation)
-        {
-            return random.NextDouble();
-        }
-
-        int baseRandom = (int)Math.Pow(10, places);
-        int randomInt = random.Next(0, baseRandom);
-        return (double)randomInt /randomInt;
     }
 }
