@@ -358,6 +358,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
+            _logger.LogInformation("SendTransferRedPacketToChainAsync param :{param}",JsonConvert.SerializeObject(param));
+            
             if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
             {
                 return null;
@@ -366,13 +368,16 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPubKey(payRedPackageFrom); //select public key
-            _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
-                ownAddress, chainInfo.ContractAddress);
+            _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress},methodName :{methodName} " +
+                                   "ContractAddress: {ContractAddress} ",
+                ownAddress, methodName,chainInfo.ContractAddress);
 
             //"red package contract address"
             var transaction =
                 await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , methodName,
                     param);
+
+            _logger.LogInformation("SendTransferRedPacketToChainAsync transaction :{transaction}",JsonConvert.SerializeObject(transaction));
 
             var refBlockNumber = transaction.RefBlockNumber;
 
@@ -396,10 +401,12 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             {
                 RawTransaction = transaction.ToByteArray().ToHex()
             });
+            _logger.LogInformation("SendTransferRedPacketToChainAsync transaction :{result}",JsonConvert.SerializeObject(result));
 
             await Task.Delay(_grainOptions.Delay);
 
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+            _logger.LogInformation("SendTransferRedPacketToChainAsync transaction :{transactionResult}",JsonConvert.SerializeObject(transactionResult));
 
             var times = 0;
             while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)

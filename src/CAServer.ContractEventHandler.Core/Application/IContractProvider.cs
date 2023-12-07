@@ -547,6 +547,8 @@ public class ContractProvider : IContractProvider
     public async Task<TransactionInfoDto> SendTransferRedPacketRefundAsync(RedPackageDetailDto redPackageDetail,
         string payRedPackageFrom)
     {
+        _logger.LogInformation("SendTransferRedPacketRefundAsync redPackageDetail:{redPackageDetail},payRedPackageFrom:{payRedPackageFrom}",
+            JsonConvert.SerializeObject(redPackageDetail),redPackageDetail);
         Guid redPackageId = redPackageDetail.Id;
         string symbol = redPackageDetail.Symbol;
         string chainId = redPackageDetail.ChainId;
@@ -560,6 +562,7 @@ public class ContractProvider : IContractProvider
             Amount = long.Parse(redPackageDetail.TotalAmount) - grab,
             RedPacketSignature =await redPackageKeyGrain.GenerateSignature($"{redPackageId}-{long.Parse(redPackageDetail.TotalAmount) - grab}")
         };
+        _logger.LogInformation("SendTransferRedPacketRefundAsync send input : {sendInput}",JsonConvert.SerializeObject(sendInput));
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress,MethodName.RefundRedPacket);
