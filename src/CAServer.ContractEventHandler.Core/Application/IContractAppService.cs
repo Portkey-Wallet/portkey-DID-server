@@ -66,11 +66,19 @@ public class ContractAppService : IContractAppService
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository; 
 
 
-    public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
-        IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
-        IContractProvider contractProvider, IObjectMapper objectMapper, ILogger<ContractAppService> logger,
-        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger, IClusterClient clusterClient, IOptionsSnapshot<PayRedPackageAccount> packageAccount, INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
+    public ContractAppService(IDistributedEventBus distributedEventBus, 
+        IOptionsSnapshot<ChainOptions> chainOptions,
+        IOptionsSnapshot<IndexOptions> indexOptions, 
+        IGraphQLProvider graphQLProvider,
+        IContractProvider contractProvider, IObjectMapper objectMapper, 
+        ILogger<ContractAppService> logger,
+        IRecordsBucketContainer recordsBucketContainer, 
+        IIndicatorLogger indicatorLogger, 
+        IClusterClient clusterClient, 
+        IOptionsSnapshot<PayRedPackageAccount> packageAccount, 
+        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
     {
+        _redPackageIndexRepository = redPackageIndexRepository;
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -82,7 +90,6 @@ public class ContractAppService : IContractAppService
         _indicatorLogger = indicatorLogger;
         _clusterClient = clusterClient;
         _packageAccount = packageAccount.Value;
-        _redPackageIndexRepository = redPackageIndexRepository;
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
