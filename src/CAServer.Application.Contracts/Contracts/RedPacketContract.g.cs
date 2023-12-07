@@ -26,72 +26,76 @@ namespace Portkey.Contracts.RedPacket {
           string.Concat(
             "ChlyZWRfcGFja2V0X2NvbnRyYWN0LnByb3RvGg9hZWxmL2NvcmUucHJvdG8a",
             "EmFlbGYvb3B0aW9ucy5wcm90bxobZ29vZ2xlL3Byb3RvYnVmL2VtcHR5LnBy",
-            "b3RvIp8CChRDcmVhdGVSZWRQYWNrZXRJbnB1dBIVCg1yZWRfcGFja2V0X2lk",
+            "b3RvIqICChRDcmVhdGVSZWRQYWNrZXRJbnB1dBIVCg1yZWRfcGFja2V0X2lk",
             "GAEgASgJEhkKEXJlZF9wYWNrZXRfc3ltYm9sGAIgASgJEhQKDHRvdGFsX2Ft",
             "b3VudBgDIAEoAxISCgptaW5fYW1vdW50GAQgASgDEhcKD2V4cGlyYXRpb25f",
             "dGltZRgFIAEoAxITCgt0b3RhbF9jb3VudBgGIAEoAxInCg9yZWRfcGFja2V0",
             "X3R5cGUYByABKA4yDi5SZWRQYWNrZXRUeXBlEhIKCnB1YmxpY19rZXkYCCAB",
-            "KAkSHAoUcmVkX3BhY2tldF9zaWduYXR1cmUYCSABKAkSIgoLZnJvbV9zZW5k",
-            "ZXIYCiABKAsyDS5hZWxmLkFkZHJlc3MihgEKFlRyYW5zZmVyUmVkUGFja2V0",
-            "SW5wdXQSFQoNcmVkX3BhY2tldF9pZBgBIAEoCRIOCgZhbW91bnQYAiABKAMS",
-            "JwoQcmVjZWl2ZXJfYWRkcmVzcxgDIAEoCzINLmFlbGYuQWRkcmVzcxIcChRy",
-            "ZWRfcGFja2V0X3NpZ25hdHVyZRgEIAEoCSJxChtUcmFuc2ZlclJlZFBhY2tl",
-            "dEJhdGNoSW5wdXQSFQoNcmVkX3BhY2tldF9pZBgBIAEoCRI7Chp0cmFuc2Zl",
-            "cl9yZWRfcGFja2V0X2lucHV0cxgCIAMoCzIXLlRyYW5zZmVyUmVkUGFja2V0",
-            "SW5wdXQimAIKDVJlZFBhY2tldEluZm8SFQoNcmVkX3BhY2tldF9pZBgBIAEo",
-            "CRIZChFyZWRfcGFja2V0X3N5bWJvbBgCIAEoCRIUCgx0b3RhbF9hbW91bnQY",
-            "AyABKAMSEgoKbWluX2Ftb3VudBgEIAEoAxIXCg9leHBpcmF0aW9uX3RpbWUY",
-            "BSABKAMSEwoLdG90YWxfY291bnQYBiABKAMSHAoUcmVkX3BhY2tldF9zaWdu",
-            "YXR1cmUYByABKAkSEgoKcHVibGljX2tleRgIIAEoCRInCg9yZWRfcGFja2V0",
-            "X3R5cGUYCSABKA4yDi5SZWRQYWNrZXRUeXBlEiIKC2Zyb21fc2VuZGVyGAog",
-            "ASgLMg0uYWVsZi5BZGRyZXNzIsIBChBSZWRQYWNrZXRDcmVhdGVkEiIKC2Zy",
-            "b21fc2VuZGVyGAEgASgLMg0uYWVsZi5BZGRyZXNzEhUKDXJlZF9wYWNrZXRf",
-            "aWQYAiABKAkSGQoRcmVkX3BhY2tldF9zeW1ib2wYAyABKAkSFAoMdG90YWxf",
-            "YW1vdW50GAQgASgDEhMKC3RvdGFsX2NvdW50GAUgASgDEicKD3JlZF9wYWNr",
-            "ZXRfdHlwZRgGIAEoDjIOLlJlZFBhY2tldFR5cGU6BKC7GAEivAEKEVJlZFBh",
-            "Y2tldFJlY2VpdmVkEiIKC2Zyb21fc2VuZGVyGAEgASgLMg0uYWVsZi5BZGRy",
-            "ZXNzEhUKDXJlZF9wYWNrZXRfaWQYAiABKAkSGQoRcmVkX3BhY2tldF9zeW1i",
-            "b2wYAyABKAkSDgoGYW1vdW50GAQgASgDEicKEHJlY2VpdmVyX2FkZHJlc3MY",
-            "BSABKAsyDS5hZWxmLkFkZHJlc3MSEgoKaXNfc3VjY2VzcxgGIAEoCDoEoLsY",
-            "ASJLCg9Jbml0aWFsaXplSW5wdXQSJQoOY29udHJhY3RfYWRtaW4YASABKAsy",
-            "DS5hZWxmLkFkZHJlc3MSEQoJbWF4X2NvdW50GAIgASgDIpoCCg9SZWRQYWNr",
-            "ZXRPdXRwdXQSFQoNcmVkX3BhY2tldF9pZBgBIAEoCRIZChFyZWRfcGFja2V0",
-            "X3N5bWJvbBgCIAEoCRIUCgx0b3RhbF9hbW91bnQYAyABKAMSEgoKbWluX2Ft",
-            "b3VudBgEIAEoAxIXCg9leHBpcmF0aW9uX3RpbWUYBSABKAMSEwoLdG90YWxf",
-            "Y291bnQYBiABKAMSHAoUcmVkX3BhY2tldF9zaWduYXR1cmUYByABKAkSEgoK",
-            "cHVibGljX2tleRgIIAEoCRInCg9yZWRfcGFja2V0X3R5cGUYCSABKA4yDi5S",
-            "ZWRQYWNrZXRUeXBlEiIKC2Zyb21fc2VuZGVyGAogASgLMg0uYWVsZi5BZGRy",
-            "ZXNzIioKEUdldFJlZFBhY2tldElucHV0EhUKDXJlZF9wYWNrZXRfaWQYASAB",
-            "KAkiLAoXUmVkUGFja2V0TWF4Q291bnRPdXRwdXQSEQoJbWF4X2NvdW50GAEg",
-            "ASgDIi4KGVNldFJlZFBhY2tldE1heENvdW50SW5wdXQSEQoJbWF4X2NvdW50",
-            "GAEgASgDKkcKDVJlZFBhY2tldFR5cGUSCwoHVU5LTk9XThAAEgkKBUZJWEVE",
-            "EAESCgoGUkFORE9NEAISEgoOUVVJQ0tfVFJBTlNGRVIQAzLtAwoRUmVkUGFj",
-            "a2V0Q29udHJhY3QSOAoKSW5pdGlhbGl6ZRIQLkluaXRpYWxpemVJbnB1dBoW",
-            "Lmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEkIKD0NyZWF0ZVJlZFBhY2tldBIV",
-            "LkNyZWF0ZVJlZFBhY2tldElucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5",
-            "IgASSwoRVHJhbnNmZXJSZWRQYWNrZXQSHC5UcmFuc2ZlclJlZFBhY2tldEJh",
-            "dGNoSW5wdXQaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABI6ChBHZXRSZWRQ",
-            "YWNrZXRJbmZvEhIuR2V0UmVkUGFja2V0SW5wdXQaEC5SZWRQYWNrZXRPdXRw",
-            "dXQiABJKChRHZXRSZWRQYWNrZXRNYXhDb3VudBIWLmdvb2dsZS5wcm90b2J1",
-            "Zi5FbXB0eRoYLlJlZFBhY2tldE1heENvdW50T3V0cHV0IgASTAoUU2V0UmVk",
-            "UGFja2V0TWF4Q291bnQSGi5TZXRSZWRQYWNrZXRNYXhDb3VudElucHV0GhYu",
-            "Z29vZ2xlLnByb3RvYnVmLkVtcHR5IgAaN7LM9gEyUG9ydGtleS5Db250cmFj",
-            "dHMuUmVkUGFja2V0LlJlZFBhY2tldENvbnRyYWN0U3RhdGVCHqoCG1BvcnRr",
-            "ZXkuQ29udHJhY3RzLlJlZFBhY2tldGIGcHJvdG8z"));
+            "KAkSHAoUcmVkX3BhY2tldF9zaWduYXR1cmUYCSABKAkSJQoOc2VuZGVyX2Fk",
+            "ZHJlc3MYCiABKAsyDS5hZWxmLkFkZHJlc3MibwoWVHJhbnNmZXJSZWRQYWNr",
+            "ZXRJbnB1dBIOCgZhbW91bnQYASABKAMSJwoQcmVjZWl2ZXJfYWRkcmVzcxgC",
+            "IAEoCzINLmFlbGYuQWRkcmVzcxIcChRyZWRfcGFja2V0X3NpZ25hdHVyZRgD",
+            "IAEoCSJxChtUcmFuc2ZlclJlZFBhY2tldEJhdGNoSW5wdXQSFQoNcmVkX3Bh",
+            "Y2tldF9pZBgBIAEoCRI7Chp0cmFuc2Zlcl9yZWRfcGFja2V0X2lucHV0cxgC",
+            "IAMoCzIXLlRyYW5zZmVyUmVkUGFja2V0SW5wdXQi6QEKDVJlZFBhY2tldElu",
+            "Zm8SFQoNcmVkX3BhY2tldF9pZBgBIAEoCRIZChFyZWRfcGFja2V0X3N5bWJv",
+            "bBgCIAEoCRIUCgx0b3RhbF9hbW91bnQYAyABKAMSFwoPZXhwaXJhdGlvbl90",
+            "aW1lGAQgASgDEhMKC3RvdGFsX2NvdW50GAUgASgDEicKD3JlZF9wYWNrZXRf",
+            "dHlwZRgGIAEoDjIOLlJlZFBhY2tldFR5cGUSJQoOc2VuZGVyX2FkZHJlc3MY",
+            "ByABKAsyDS5hZWxmLkFkZHJlc3MSEgoKcHVibGljX2tleRgIIAEoCSLuAQoQ",
+            "UmVkUGFja2V0Q3JlYXRlZBIlCg5zZW5kZXJfYWRkcmVzcxgBIAEoCzINLmFl",
+            "bGYuQWRkcmVzcxIVCg1yZWRfcGFja2V0X2lkGAIgASgJEhkKEXJlZF9wYWNr",
+            "ZXRfc3ltYm9sGAMgASgJEhQKDHRvdGFsX2Ftb3VudBgEIAEoAxITCgt0b3Rh",
+            "bF9jb3VudBgFIAEoAxInCg9yZWRfcGFja2V0X3R5cGUYBiABKA4yDi5SZWRQ",
+            "YWNrZXRUeXBlEicKEHJlY2VpdmVyX2FkZHJlc3MYByABKAsyDS5hZWxmLkFk",
+            "ZHJlc3M6BKC7GAEivwEKEVJlZFBhY2tldFJlY2VpdmVkEiUKDnNlbmRlcl9h",
+            "ZGRyZXNzGAEgASgLMg0uYWVsZi5BZGRyZXNzEhUKDXJlZF9wYWNrZXRfaWQY",
+            "AiABKAkSGQoRcmVkX3BhY2tldF9zeW1ib2wYAyABKAkSDgoGYW1vdW50GAQg",
+            "ASgDEicKEHJlY2VpdmVyX2FkZHJlc3MYBSABKAsyDS5hZWxmLkFkZHJlc3MS",
+            "EgoKaXNfc3VjY2VzcxgGIAEoCDoEoLsYASJLCg9Jbml0aWFsaXplSW5wdXQS",
+            "JQoOY29udHJhY3RfYWRtaW4YASABKAsyDS5hZWxmLkFkZHJlc3MSEQoJbWF4",
+            "X2NvdW50GAIgASgDIjoKD1JlZFBhY2tldE91dHB1dBInCg9yZWRfcGFja2V0",
+            "X2luZm8YASABKAsyDi5SZWRQYWNrZXRJbmZvIioKEUdldFJlZFBhY2tldElu",
+            "cHV0EhUKDXJlZF9wYWNrZXRfaWQYASABKAkiLAoXUmVkUGFja2V0TWF4Q291",
+            "bnRPdXRwdXQSEQoJbWF4X2NvdW50GAEgASgDIi4KGVNldFJlZFBhY2tldE1h",
+            "eENvdW50SW5wdXQSEQoJbWF4X2NvdW50GAEgASgDIoIBChRSZWZ1bmRSZWRQ",
+            "YWNrZXRJbnB1dBIVCg1yZWRfcGFja2V0X2lkGAEgASgJEg4KBmFtb3VudBgC",
+            "IAEoAxIlCg5yZWZ1bmRfYWRkcmVzcxgDIAEoCzINLmFlbGYuQWRkcmVzcxIc",
+            "ChRyZWRfcGFja2V0X3NpZ25hdHVyZRgEIAEoCSKCAQoRUmVkUGFja2V0UmVm",
+            "dW5kZWQSFQoNcmVkX3BhY2tldF9pZBgBIAEoCRIlCg5yZWZ1bmRfYWRkcmVz",
+            "cxgCIAEoCzINLmFlbGYuQWRkcmVzcxIZChFyZWRfcGFja2V0X3N5bWJvbBgD",
+            "IAEoCRIOCgZhbW91bnQYBCABKAM6BKC7GAEqRwoNUmVkUGFja2V0VHlwZRIL",
+            "CgdVTktOT1dOEAASCQoFRklYRUQQARIKCgZSQU5ET00QAhISCg5RVUlDS19U",
+            "UkFOU0ZFUhADMrEEChFSZWRQYWNrZXRDb250cmFjdBI4CgpJbml0aWFsaXpl",
+            "EhAuSW5pdGlhbGl6ZUlucHV0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgAS",
+            "QgoPQ3JlYXRlUmVkUGFja2V0EhUuQ3JlYXRlUmVkUGFja2V0SW5wdXQaFi5n",
+            "b29nbGUucHJvdG9idWYuRW1wdHkiABJLChFUcmFuc2ZlclJlZFBhY2tldBIc",
+            "LlRyYW5zZmVyUmVkUGFja2V0QmF0Y2hJbnB1dBoWLmdvb2dsZS5wcm90b2J1",
+            "Zi5FbXB0eSIAEjoKEEdldFJlZFBhY2tldEluZm8SEi5HZXRSZWRQYWNrZXRJ",
+            "bnB1dBoQLlJlZFBhY2tldE91dHB1dCIAEkoKFEdldFJlZFBhY2tldE1heENv",
+            "dW50EhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5GhguUmVkUGFja2V0TWF4Q291",
+            "bnRPdXRwdXQiABJMChRTZXRSZWRQYWNrZXRNYXhDb3VudBIaLlNldFJlZFBh",
+            "Y2tldE1heENvdW50SW5wdXQaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiABJC",
+            "Cg9SZWZ1bmRSZWRQYWNrZXQSFS5SZWZ1bmRSZWRQYWNrZXRJbnB1dBoWLmdv",
+            "b2dsZS5wcm90b2J1Zi5FbXB0eSIAGjeyzPYBMlBvcnRrZXkuQ29udHJhY3Rz",
+            "LlJlZFBhY2tldC5SZWRQYWNrZXRDb250cmFjdFN0YXRlQh6qAhtQb3J0a2V5",
+            "LkNvbnRyYWN0cy5SZWRQYWNrZXRiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, global::AElf.OptionsReflection.Descriptor, global::Google.Protobuf.WellKnownTypes.EmptyReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::Portkey.Contracts.RedPacket.RedPacketType), }, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.CreateRedPacketInput), global::Portkey.Contracts.RedPacket.CreateRedPacketInput.Parser, new[]{ "RedPacketId", "RedPacketSymbol", "TotalAmount", "MinAmount", "ExpirationTime", "TotalCount", "RedPacketType", "PublicKey", "RedPacketSignature", "FromSender" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.TransferRedPacketInput), global::Portkey.Contracts.RedPacket.TransferRedPacketInput.Parser, new[]{ "RedPacketId", "Amount", "ReceiverAddress", "RedPacketSignature" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.CreateRedPacketInput), global::Portkey.Contracts.RedPacket.CreateRedPacketInput.Parser, new[]{ "RedPacketId", "RedPacketSymbol", "TotalAmount", "MinAmount", "ExpirationTime", "TotalCount", "RedPacketType", "PublicKey", "RedPacketSignature", "SenderAddress" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.TransferRedPacketInput), global::Portkey.Contracts.RedPacket.TransferRedPacketInput.Parser, new[]{ "Amount", "ReceiverAddress", "RedPacketSignature" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.TransferRedPacketBatchInput), global::Portkey.Contracts.RedPacket.TransferRedPacketBatchInput.Parser, new[]{ "RedPacketId", "TransferRedPacketInputs" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketInfo), global::Portkey.Contracts.RedPacket.RedPacketInfo.Parser, new[]{ "RedPacketId", "RedPacketSymbol", "TotalAmount", "MinAmount", "ExpirationTime", "TotalCount", "RedPacketSignature", "PublicKey", "RedPacketType", "FromSender" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketCreated), global::Portkey.Contracts.RedPacket.RedPacketCreated.Parser, new[]{ "FromSender", "RedPacketId", "RedPacketSymbol", "TotalAmount", "TotalCount", "RedPacketType" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketReceived), global::Portkey.Contracts.RedPacket.RedPacketReceived.Parser, new[]{ "FromSender", "RedPacketId", "RedPacketSymbol", "Amount", "ReceiverAddress", "IsSuccess" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketInfo), global::Portkey.Contracts.RedPacket.RedPacketInfo.Parser, new[]{ "RedPacketId", "RedPacketSymbol", "TotalAmount", "ExpirationTime", "TotalCount", "RedPacketType", "SenderAddress", "PublicKey" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketCreated), global::Portkey.Contracts.RedPacket.RedPacketCreated.Parser, new[]{ "SenderAddress", "RedPacketId", "RedPacketSymbol", "TotalAmount", "TotalCount", "RedPacketType", "ReceiverAddress" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketReceived), global::Portkey.Contracts.RedPacket.RedPacketReceived.Parser, new[]{ "SenderAddress", "RedPacketId", "RedPacketSymbol", "Amount", "ReceiverAddress", "IsSuccess" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.InitializeInput), global::Portkey.Contracts.RedPacket.InitializeInput.Parser, new[]{ "ContractAdmin", "MaxCount" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketOutput), global::Portkey.Contracts.RedPacket.RedPacketOutput.Parser, new[]{ "RedPacketId", "RedPacketSymbol", "TotalAmount", "MinAmount", "ExpirationTime", "TotalCount", "RedPacketSignature", "PublicKey", "RedPacketType", "FromSender" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketOutput), global::Portkey.Contracts.RedPacket.RedPacketOutput.Parser, new[]{ "RedPacketInfo" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.GetRedPacketInput), global::Portkey.Contracts.RedPacket.GetRedPacketInput.Parser, new[]{ "RedPacketId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput), global::Portkey.Contracts.RedPacket.RedPacketMaxCountOutput.Parser, new[]{ "MaxCount" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput), global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput.Parser, new[]{ "MaxCount" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput), global::Portkey.Contracts.RedPacket.SetRedPacketMaxCountInput.Parser, new[]{ "MaxCount" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RefundRedPacketInput), global::Portkey.Contracts.RedPacket.RefundRedPacketInput.Parser, new[]{ "RedPacketId", "Amount", "RefundAddress", "RedPacketSignature" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Portkey.Contracts.RedPacket.RedPacketRefunded), global::Portkey.Contracts.RedPacket.RedPacketRefunded.Parser, new[]{ "RedPacketId", "RefundAddress", "RedPacketSymbol", "Amount" }, null, null, null, null)
           }));
     }
     #endregion
@@ -151,7 +155,7 @@ namespace Portkey.Contracts.RedPacket {
       redPacketType_ = other.redPacketType_;
       publicKey_ = other.publicKey_;
       redPacketSignature_ = other.redPacketSignature_;
-      fromSender_ = other.fromSender_ != null ? other.fromSender_.Clone() : null;
+      senderAddress_ = other.senderAddress_ != null ? other.senderAddress_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -269,15 +273,15 @@ namespace Portkey.Contracts.RedPacket {
       }
     }
 
-    /// <summary>Field number for the "from_sender" field.</summary>
-    public const int FromSenderFieldNumber = 10;
-    private global::AElf.Types.Address fromSender_;
+    /// <summary>Field number for the "sender_address" field.</summary>
+    public const int SenderAddressFieldNumber = 10;
+    private global::AElf.Types.Address senderAddress_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::AElf.Types.Address FromSender {
-      get { return fromSender_; }
+    public global::AElf.Types.Address SenderAddress {
+      get { return senderAddress_; }
       set {
-        fromSender_ = value;
+        senderAddress_ = value;
       }
     }
 
@@ -305,7 +309,7 @@ namespace Portkey.Contracts.RedPacket {
       if (RedPacketType != other.RedPacketType) return false;
       if (PublicKey != other.PublicKey) return false;
       if (RedPacketSignature != other.RedPacketSignature) return false;
-      if (!object.Equals(FromSender, other.FromSender)) return false;
+      if (!object.Equals(SenderAddress, other.SenderAddress)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -322,7 +326,7 @@ namespace Portkey.Contracts.RedPacket {
       if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) hash ^= RedPacketType.GetHashCode();
       if (PublicKey.Length != 0) hash ^= PublicKey.GetHashCode();
       if (RedPacketSignature.Length != 0) hash ^= RedPacketSignature.GetHashCode();
-      if (fromSender_ != null) hash ^= FromSender.GetHashCode();
+      if (senderAddress_ != null) hash ^= SenderAddress.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -377,9 +381,9 @@ namespace Portkey.Contracts.RedPacket {
         output.WriteRawTag(74);
         output.WriteString(RedPacketSignature);
       }
-      if (fromSender_ != null) {
+      if (senderAddress_ != null) {
         output.WriteRawTag(82);
-        output.WriteMessage(FromSender);
+        output.WriteMessage(SenderAddress);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -427,9 +431,9 @@ namespace Portkey.Contracts.RedPacket {
         output.WriteRawTag(74);
         output.WriteString(RedPacketSignature);
       }
-      if (fromSender_ != null) {
+      if (senderAddress_ != null) {
         output.WriteRawTag(82);
-        output.WriteMessage(FromSender);
+        output.WriteMessage(SenderAddress);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -468,8 +472,8 @@ namespace Portkey.Contracts.RedPacket {
       if (RedPacketSignature.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketSignature);
       }
-      if (fromSender_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(FromSender);
+      if (senderAddress_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(SenderAddress);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -510,11 +514,11 @@ namespace Portkey.Contracts.RedPacket {
       if (other.RedPacketSignature.Length != 0) {
         RedPacketSignature = other.RedPacketSignature;
       }
-      if (other.fromSender_ != null) {
-        if (fromSender_ == null) {
-          FromSender = new global::AElf.Types.Address();
+      if (other.senderAddress_ != null) {
+        if (senderAddress_ == null) {
+          SenderAddress = new global::AElf.Types.Address();
         }
-        FromSender.MergeFrom(other.FromSender);
+        SenderAddress.MergeFrom(other.SenderAddress);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -568,10 +572,10 @@ namespace Portkey.Contracts.RedPacket {
             break;
           }
           case 82: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
+            if (senderAddress_ == null) {
+              SenderAddress = new global::AElf.Types.Address();
             }
-            input.ReadMessage(FromSender);
+            input.ReadMessage(SenderAddress);
             break;
           }
         }
@@ -626,10 +630,10 @@ namespace Portkey.Contracts.RedPacket {
             break;
           }
           case 82: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
+            if (senderAddress_ == null) {
+              SenderAddress = new global::AElf.Types.Address();
             }
-            input.ReadMessage(FromSender);
+            input.ReadMessage(SenderAddress);
             break;
           }
         }
@@ -673,7 +677,6 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public TransferRedPacketInput(TransferRedPacketInput other) : this() {
-      redPacketId_ = other.redPacketId_;
       amount_ = other.amount_;
       receiverAddress_ = other.receiverAddress_ != null ? other.receiverAddress_.Clone() : null;
       redPacketSignature_ = other.redPacketSignature_;
@@ -686,20 +689,8 @@ namespace Portkey.Contracts.RedPacket {
       return new TransferRedPacketInput(this);
     }
 
-    /// <summary>Field number for the "red_packet_id" field.</summary>
-    public const int RedPacketIdFieldNumber = 1;
-    private string redPacketId_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string RedPacketId {
-      get { return redPacketId_; }
-      set {
-        redPacketId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
     /// <summary>Field number for the "amount" field.</summary>
-    public const int AmountFieldNumber = 2;
+    public const int AmountFieldNumber = 1;
     private long amount_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -711,7 +702,7 @@ namespace Portkey.Contracts.RedPacket {
     }
 
     /// <summary>Field number for the "receiver_address" field.</summary>
-    public const int ReceiverAddressFieldNumber = 3;
+    public const int ReceiverAddressFieldNumber = 2;
     private global::AElf.Types.Address receiverAddress_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -723,7 +714,7 @@ namespace Portkey.Contracts.RedPacket {
     }
 
     /// <summary>Field number for the "red_packet_signature" field.</summary>
-    public const int RedPacketSignatureFieldNumber = 4;
+    public const int RedPacketSignatureFieldNumber = 3;
     private string redPacketSignature_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -749,7 +740,6 @@ namespace Portkey.Contracts.RedPacket {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (RedPacketId != other.RedPacketId) return false;
       if (Amount != other.Amount) return false;
       if (!object.Equals(ReceiverAddress, other.ReceiverAddress)) return false;
       if (RedPacketSignature != other.RedPacketSignature) return false;
@@ -760,7 +750,6 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (RedPacketId.Length != 0) hash ^= RedPacketId.GetHashCode();
       if (Amount != 0L) hash ^= Amount.GetHashCode();
       if (receiverAddress_ != null) hash ^= ReceiverAddress.GetHashCode();
       if (RedPacketSignature.Length != 0) hash ^= RedPacketSignature.GetHashCode();
@@ -782,20 +771,16 @@ namespace Portkey.Contracts.RedPacket {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (RedPacketId.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(RedPacketId);
-      }
       if (Amount != 0L) {
-        output.WriteRawTag(16);
+        output.WriteRawTag(8);
         output.WriteInt64(Amount);
       }
       if (receiverAddress_ != null) {
-        output.WriteRawTag(26);
+        output.WriteRawTag(18);
         output.WriteMessage(ReceiverAddress);
       }
       if (RedPacketSignature.Length != 0) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(26);
         output.WriteString(RedPacketSignature);
       }
       if (_unknownFields != null) {
@@ -808,20 +793,16 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (RedPacketId.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(RedPacketId);
-      }
       if (Amount != 0L) {
-        output.WriteRawTag(16);
+        output.WriteRawTag(8);
         output.WriteInt64(Amount);
       }
       if (receiverAddress_ != null) {
-        output.WriteRawTag(26);
+        output.WriteRawTag(18);
         output.WriteMessage(ReceiverAddress);
       }
       if (RedPacketSignature.Length != 0) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(26);
         output.WriteString(RedPacketSignature);
       }
       if (_unknownFields != null) {
@@ -834,9 +815,6 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (RedPacketId.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketId);
-      }
       if (Amount != 0L) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(Amount);
       }
@@ -857,9 +835,6 @@ namespace Portkey.Contracts.RedPacket {
     public void MergeFrom(TransferRedPacketInput other) {
       if (other == null) {
         return;
-      }
-      if (other.RedPacketId.Length != 0) {
-        RedPacketId = other.RedPacketId;
       }
       if (other.Amount != 0L) {
         Amount = other.Amount;
@@ -888,22 +863,18 @@ namespace Portkey.Contracts.RedPacket {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
-          case 10: {
-            RedPacketId = input.ReadString();
-            break;
-          }
-          case 16: {
+          case 8: {
             Amount = input.ReadInt64();
             break;
           }
-          case 26: {
+          case 18: {
             if (receiverAddress_ == null) {
               ReceiverAddress = new global::AElf.Types.Address();
             }
             input.ReadMessage(ReceiverAddress);
             break;
           }
-          case 34: {
+          case 26: {
             RedPacketSignature = input.ReadString();
             break;
           }
@@ -922,22 +893,18 @@ namespace Portkey.Contracts.RedPacket {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
-          case 10: {
-            RedPacketId = input.ReadString();
-            break;
-          }
-          case 16: {
+          case 8: {
             Amount = input.ReadInt64();
             break;
           }
-          case 26: {
+          case 18: {
             if (receiverAddress_ == null) {
               ReceiverAddress = new global::AElf.Types.Address();
             }
             input.ReadMessage(ReceiverAddress);
             break;
           }
-          case 34: {
+          case 26: {
             RedPacketSignature = input.ReadString();
             break;
           }
@@ -1200,13 +1167,11 @@ namespace Portkey.Contracts.RedPacket {
       redPacketId_ = other.redPacketId_;
       redPacketSymbol_ = other.redPacketSymbol_;
       totalAmount_ = other.totalAmount_;
-      minAmount_ = other.minAmount_;
       expirationTime_ = other.expirationTime_;
       totalCount_ = other.totalCount_;
-      redPacketSignature_ = other.redPacketSignature_;
-      publicKey_ = other.publicKey_;
       redPacketType_ = other.redPacketType_;
-      fromSender_ = other.fromSender_ != null ? other.fromSender_.Clone() : null;
+      senderAddress_ = other.senderAddress_ != null ? other.senderAddress_.Clone() : null;
+      publicKey_ = other.publicKey_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1252,20 +1217,8 @@ namespace Portkey.Contracts.RedPacket {
       }
     }
 
-    /// <summary>Field number for the "min_amount" field.</summary>
-    public const int MinAmountFieldNumber = 4;
-    private long minAmount_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public long MinAmount {
-      get { return minAmount_; }
-      set {
-        minAmount_ = value;
-      }
-    }
-
     /// <summary>Field number for the "expiration_time" field.</summary>
-    public const int ExpirationTimeFieldNumber = 5;
+    public const int ExpirationTimeFieldNumber = 4;
     private long expirationTime_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1277,7 +1230,7 @@ namespace Portkey.Contracts.RedPacket {
     }
 
     /// <summary>Field number for the "total_count" field.</summary>
-    public const int TotalCountFieldNumber = 6;
+    public const int TotalCountFieldNumber = 5;
     private long totalCount_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1288,15 +1241,27 @@ namespace Portkey.Contracts.RedPacket {
       }
     }
 
-    /// <summary>Field number for the "red_packet_signature" field.</summary>
-    public const int RedPacketSignatureFieldNumber = 7;
-    private string redPacketSignature_ = "";
+    /// <summary>Field number for the "red_packet_type" field.</summary>
+    public const int RedPacketTypeFieldNumber = 6;
+    private global::Portkey.Contracts.RedPacket.RedPacketType redPacketType_ = global::Portkey.Contracts.RedPacket.RedPacketType.Unknown;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string RedPacketSignature {
-      get { return redPacketSignature_; }
+    public global::Portkey.Contracts.RedPacket.RedPacketType RedPacketType {
+      get { return redPacketType_; }
       set {
-        redPacketSignature_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        redPacketType_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "sender_address" field.</summary>
+    public const int SenderAddressFieldNumber = 7;
+    private global::AElf.Types.Address senderAddress_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::AElf.Types.Address SenderAddress {
+      get { return senderAddress_; }
+      set {
+        senderAddress_ = value;
       }
     }
 
@@ -1309,30 +1274,6 @@ namespace Portkey.Contracts.RedPacket {
       get { return publicKey_; }
       set {
         publicKey_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    /// <summary>Field number for the "red_packet_type" field.</summary>
-    public const int RedPacketTypeFieldNumber = 9;
-    private global::Portkey.Contracts.RedPacket.RedPacketType redPacketType_ = global::Portkey.Contracts.RedPacket.RedPacketType.Unknown;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::Portkey.Contracts.RedPacket.RedPacketType RedPacketType {
-      get { return redPacketType_; }
-      set {
-        redPacketType_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "from_sender" field.</summary>
-    public const int FromSenderFieldNumber = 10;
-    private global::AElf.Types.Address fromSender_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::AElf.Types.Address FromSender {
-      get { return fromSender_; }
-      set {
-        fromSender_ = value;
       }
     }
 
@@ -1354,13 +1295,11 @@ namespace Portkey.Contracts.RedPacket {
       if (RedPacketId != other.RedPacketId) return false;
       if (RedPacketSymbol != other.RedPacketSymbol) return false;
       if (TotalAmount != other.TotalAmount) return false;
-      if (MinAmount != other.MinAmount) return false;
       if (ExpirationTime != other.ExpirationTime) return false;
       if (TotalCount != other.TotalCount) return false;
-      if (RedPacketSignature != other.RedPacketSignature) return false;
-      if (PublicKey != other.PublicKey) return false;
       if (RedPacketType != other.RedPacketType) return false;
-      if (!object.Equals(FromSender, other.FromSender)) return false;
+      if (!object.Equals(SenderAddress, other.SenderAddress)) return false;
+      if (PublicKey != other.PublicKey) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1371,13 +1310,11 @@ namespace Portkey.Contracts.RedPacket {
       if (RedPacketId.Length != 0) hash ^= RedPacketId.GetHashCode();
       if (RedPacketSymbol.Length != 0) hash ^= RedPacketSymbol.GetHashCode();
       if (TotalAmount != 0L) hash ^= TotalAmount.GetHashCode();
-      if (MinAmount != 0L) hash ^= MinAmount.GetHashCode();
       if (ExpirationTime != 0L) hash ^= ExpirationTime.GetHashCode();
       if (TotalCount != 0L) hash ^= TotalCount.GetHashCode();
-      if (RedPacketSignature.Length != 0) hash ^= RedPacketSignature.GetHashCode();
-      if (PublicKey.Length != 0) hash ^= PublicKey.GetHashCode();
       if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) hash ^= RedPacketType.GetHashCode();
-      if (fromSender_ != null) hash ^= FromSender.GetHashCode();
+      if (senderAddress_ != null) hash ^= SenderAddress.GetHashCode();
+      if (PublicKey.Length != 0) hash ^= PublicKey.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1408,33 +1345,25 @@ namespace Portkey.Contracts.RedPacket {
         output.WriteRawTag(24);
         output.WriteInt64(TotalAmount);
       }
-      if (MinAmount != 0L) {
-        output.WriteRawTag(32);
-        output.WriteInt64(MinAmount);
-      }
       if (ExpirationTime != 0L) {
-        output.WriteRawTag(40);
+        output.WriteRawTag(32);
         output.WriteInt64(ExpirationTime);
       }
       if (TotalCount != 0L) {
-        output.WriteRawTag(48);
+        output.WriteRawTag(40);
         output.WriteInt64(TotalCount);
       }
-      if (RedPacketSignature.Length != 0) {
+      if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
+        output.WriteRawTag(48);
+        output.WriteEnum((int) RedPacketType);
+      }
+      if (senderAddress_ != null) {
         output.WriteRawTag(58);
-        output.WriteString(RedPacketSignature);
+        output.WriteMessage(SenderAddress);
       }
       if (PublicKey.Length != 0) {
         output.WriteRawTag(66);
         output.WriteString(PublicKey);
-      }
-      if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
-        output.WriteRawTag(72);
-        output.WriteEnum((int) RedPacketType);
-      }
-      if (fromSender_ != null) {
-        output.WriteRawTag(82);
-        output.WriteMessage(FromSender);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -1458,33 +1387,25 @@ namespace Portkey.Contracts.RedPacket {
         output.WriteRawTag(24);
         output.WriteInt64(TotalAmount);
       }
-      if (MinAmount != 0L) {
-        output.WriteRawTag(32);
-        output.WriteInt64(MinAmount);
-      }
       if (ExpirationTime != 0L) {
-        output.WriteRawTag(40);
+        output.WriteRawTag(32);
         output.WriteInt64(ExpirationTime);
       }
       if (TotalCount != 0L) {
-        output.WriteRawTag(48);
+        output.WriteRawTag(40);
         output.WriteInt64(TotalCount);
       }
-      if (RedPacketSignature.Length != 0) {
+      if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
+        output.WriteRawTag(48);
+        output.WriteEnum((int) RedPacketType);
+      }
+      if (senderAddress_ != null) {
         output.WriteRawTag(58);
-        output.WriteString(RedPacketSignature);
+        output.WriteMessage(SenderAddress);
       }
       if (PublicKey.Length != 0) {
         output.WriteRawTag(66);
         output.WriteString(PublicKey);
-      }
-      if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
-        output.WriteRawTag(72);
-        output.WriteEnum((int) RedPacketType);
-      }
-      if (fromSender_ != null) {
-        output.WriteRawTag(82);
-        output.WriteMessage(FromSender);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -1505,26 +1426,20 @@ namespace Portkey.Contracts.RedPacket {
       if (TotalAmount != 0L) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(TotalAmount);
       }
-      if (MinAmount != 0L) {
-        size += 1 + pb::CodedOutputStream.ComputeInt64Size(MinAmount);
-      }
       if (ExpirationTime != 0L) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(ExpirationTime);
       }
       if (TotalCount != 0L) {
         size += 1 + pb::CodedOutputStream.ComputeInt64Size(TotalCount);
       }
-      if (RedPacketSignature.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketSignature);
-      }
-      if (PublicKey.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(PublicKey);
-      }
       if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
         size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) RedPacketType);
       }
-      if (fromSender_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(FromSender);
+      if (senderAddress_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(SenderAddress);
+      }
+      if (PublicKey.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(PublicKey);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1547,29 +1462,23 @@ namespace Portkey.Contracts.RedPacket {
       if (other.TotalAmount != 0L) {
         TotalAmount = other.TotalAmount;
       }
-      if (other.MinAmount != 0L) {
-        MinAmount = other.MinAmount;
-      }
       if (other.ExpirationTime != 0L) {
         ExpirationTime = other.ExpirationTime;
       }
       if (other.TotalCount != 0L) {
         TotalCount = other.TotalCount;
       }
-      if (other.RedPacketSignature.Length != 0) {
-        RedPacketSignature = other.RedPacketSignature;
-      }
-      if (other.PublicKey.Length != 0) {
-        PublicKey = other.PublicKey;
-      }
       if (other.RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
         RedPacketType = other.RedPacketType;
       }
-      if (other.fromSender_ != null) {
-        if (fromSender_ == null) {
-          FromSender = new global::AElf.Types.Address();
+      if (other.senderAddress_ != null) {
+        if (senderAddress_ == null) {
+          SenderAddress = new global::AElf.Types.Address();
         }
-        FromSender.MergeFrom(other.FromSender);
+        SenderAddress.MergeFrom(other.SenderAddress);
+      }
+      if (other.PublicKey.Length != 0) {
+        PublicKey = other.PublicKey;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1599,34 +1508,26 @@ namespace Portkey.Contracts.RedPacket {
             break;
           }
           case 32: {
-            MinAmount = input.ReadInt64();
-            break;
-          }
-          case 40: {
             ExpirationTime = input.ReadInt64();
             break;
           }
-          case 48: {
+          case 40: {
             TotalCount = input.ReadInt64();
             break;
           }
+          case 48: {
+            RedPacketType = (global::Portkey.Contracts.RedPacket.RedPacketType) input.ReadEnum();
+            break;
+          }
           case 58: {
-            RedPacketSignature = input.ReadString();
+            if (senderAddress_ == null) {
+              SenderAddress = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(SenderAddress);
             break;
           }
           case 66: {
             PublicKey = input.ReadString();
-            break;
-          }
-          case 72: {
-            RedPacketType = (global::Portkey.Contracts.RedPacket.RedPacketType) input.ReadEnum();
-            break;
-          }
-          case 82: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
-            }
-            input.ReadMessage(FromSender);
             break;
           }
         }
@@ -1657,34 +1558,26 @@ namespace Portkey.Contracts.RedPacket {
             break;
           }
           case 32: {
-            MinAmount = input.ReadInt64();
-            break;
-          }
-          case 40: {
             ExpirationTime = input.ReadInt64();
             break;
           }
-          case 48: {
+          case 40: {
             TotalCount = input.ReadInt64();
             break;
           }
+          case 48: {
+            RedPacketType = (global::Portkey.Contracts.RedPacket.RedPacketType) input.ReadEnum();
+            break;
+          }
           case 58: {
-            RedPacketSignature = input.ReadString();
+            if (senderAddress_ == null) {
+              SenderAddress = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(SenderAddress);
             break;
           }
           case 66: {
             PublicKey = input.ReadString();
-            break;
-          }
-          case 72: {
-            RedPacketType = (global::Portkey.Contracts.RedPacket.RedPacketType) input.ReadEnum();
-            break;
-          }
-          case 82: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
-            }
-            input.ReadMessage(FromSender);
             break;
           }
         }
@@ -1728,12 +1621,13 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public RedPacketCreated(RedPacketCreated other) : this() {
-      fromSender_ = other.fromSender_ != null ? other.fromSender_.Clone() : null;
+      senderAddress_ = other.senderAddress_ != null ? other.senderAddress_.Clone() : null;
       redPacketId_ = other.redPacketId_;
       redPacketSymbol_ = other.redPacketSymbol_;
       totalAmount_ = other.totalAmount_;
       totalCount_ = other.totalCount_;
       redPacketType_ = other.redPacketType_;
+      receiverAddress_ = other.receiverAddress_ != null ? other.receiverAddress_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1743,15 +1637,15 @@ namespace Portkey.Contracts.RedPacket {
       return new RedPacketCreated(this);
     }
 
-    /// <summary>Field number for the "from_sender" field.</summary>
-    public const int FromSenderFieldNumber = 1;
-    private global::AElf.Types.Address fromSender_;
+    /// <summary>Field number for the "sender_address" field.</summary>
+    public const int SenderAddressFieldNumber = 1;
+    private global::AElf.Types.Address senderAddress_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::AElf.Types.Address FromSender {
-      get { return fromSender_; }
+    public global::AElf.Types.Address SenderAddress {
+      get { return senderAddress_; }
       set {
-        fromSender_ = value;
+        senderAddress_ = value;
       }
     }
 
@@ -1815,6 +1709,18 @@ namespace Portkey.Contracts.RedPacket {
       }
     }
 
+    /// <summary>Field number for the "receiver_address" field.</summary>
+    public const int ReceiverAddressFieldNumber = 7;
+    private global::AElf.Types.Address receiverAddress_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::AElf.Types.Address ReceiverAddress {
+      get { return receiverAddress_; }
+      set {
+        receiverAddress_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -1830,12 +1736,13 @@ namespace Portkey.Contracts.RedPacket {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (!object.Equals(FromSender, other.FromSender)) return false;
+      if (!object.Equals(SenderAddress, other.SenderAddress)) return false;
       if (RedPacketId != other.RedPacketId) return false;
       if (RedPacketSymbol != other.RedPacketSymbol) return false;
       if (TotalAmount != other.TotalAmount) return false;
       if (TotalCount != other.TotalCount) return false;
       if (RedPacketType != other.RedPacketType) return false;
+      if (!object.Equals(ReceiverAddress, other.ReceiverAddress)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1843,12 +1750,13 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (fromSender_ != null) hash ^= FromSender.GetHashCode();
+      if (senderAddress_ != null) hash ^= SenderAddress.GetHashCode();
       if (RedPacketId.Length != 0) hash ^= RedPacketId.GetHashCode();
       if (RedPacketSymbol.Length != 0) hash ^= RedPacketSymbol.GetHashCode();
       if (TotalAmount != 0L) hash ^= TotalAmount.GetHashCode();
       if (TotalCount != 0L) hash ^= TotalCount.GetHashCode();
       if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) hash ^= RedPacketType.GetHashCode();
+      if (receiverAddress_ != null) hash ^= ReceiverAddress.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1867,9 +1775,9 @@ namespace Portkey.Contracts.RedPacket {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (fromSender_ != null) {
+      if (senderAddress_ != null) {
         output.WriteRawTag(10);
-        output.WriteMessage(FromSender);
+        output.WriteMessage(SenderAddress);
       }
       if (RedPacketId.Length != 0) {
         output.WriteRawTag(18);
@@ -1890,6 +1798,10 @@ namespace Portkey.Contracts.RedPacket {
       if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
         output.WriteRawTag(48);
         output.WriteEnum((int) RedPacketType);
+      }
+      if (receiverAddress_ != null) {
+        output.WriteRawTag(58);
+        output.WriteMessage(ReceiverAddress);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -1901,9 +1813,9 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (fromSender_ != null) {
+      if (senderAddress_ != null) {
         output.WriteRawTag(10);
-        output.WriteMessage(FromSender);
+        output.WriteMessage(SenderAddress);
       }
       if (RedPacketId.Length != 0) {
         output.WriteRawTag(18);
@@ -1925,6 +1837,10 @@ namespace Portkey.Contracts.RedPacket {
         output.WriteRawTag(48);
         output.WriteEnum((int) RedPacketType);
       }
+      if (receiverAddress_ != null) {
+        output.WriteRawTag(58);
+        output.WriteMessage(ReceiverAddress);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -1935,8 +1851,8 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (fromSender_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(FromSender);
+      if (senderAddress_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(SenderAddress);
       }
       if (RedPacketId.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketId);
@@ -1953,6 +1869,9 @@ namespace Portkey.Contracts.RedPacket {
       if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
         size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) RedPacketType);
       }
+      if (receiverAddress_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(ReceiverAddress);
+      }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -1965,11 +1884,11 @@ namespace Portkey.Contracts.RedPacket {
       if (other == null) {
         return;
       }
-      if (other.fromSender_ != null) {
-        if (fromSender_ == null) {
-          FromSender = new global::AElf.Types.Address();
+      if (other.senderAddress_ != null) {
+        if (senderAddress_ == null) {
+          SenderAddress = new global::AElf.Types.Address();
         }
-        FromSender.MergeFrom(other.FromSender);
+        SenderAddress.MergeFrom(other.SenderAddress);
       }
       if (other.RedPacketId.Length != 0) {
         RedPacketId = other.RedPacketId;
@@ -1985,6 +1904,12 @@ namespace Portkey.Contracts.RedPacket {
       }
       if (other.RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
         RedPacketType = other.RedPacketType;
+      }
+      if (other.receiverAddress_ != null) {
+        if (receiverAddress_ == null) {
+          ReceiverAddress = new global::AElf.Types.Address();
+        }
+        ReceiverAddress.MergeFrom(other.ReceiverAddress);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -2002,10 +1927,10 @@ namespace Portkey.Contracts.RedPacket {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 10: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
+            if (senderAddress_ == null) {
+              SenderAddress = new global::AElf.Types.Address();
             }
-            input.ReadMessage(FromSender);
+            input.ReadMessage(SenderAddress);
             break;
           }
           case 18: {
@@ -2026,6 +1951,13 @@ namespace Portkey.Contracts.RedPacket {
           }
           case 48: {
             RedPacketType = (global::Portkey.Contracts.RedPacket.RedPacketType) input.ReadEnum();
+            break;
+          }
+          case 58: {
+            if (receiverAddress_ == null) {
+              ReceiverAddress = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(ReceiverAddress);
             break;
           }
         }
@@ -2044,10 +1976,10 @@ namespace Portkey.Contracts.RedPacket {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
           case 10: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
+            if (senderAddress_ == null) {
+              SenderAddress = new global::AElf.Types.Address();
             }
-            input.ReadMessage(FromSender);
+            input.ReadMessage(SenderAddress);
             break;
           }
           case 18: {
@@ -2068,6 +2000,13 @@ namespace Portkey.Contracts.RedPacket {
           }
           case 48: {
             RedPacketType = (global::Portkey.Contracts.RedPacket.RedPacketType) input.ReadEnum();
+            break;
+          }
+          case 58: {
+            if (receiverAddress_ == null) {
+              ReceiverAddress = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(ReceiverAddress);
             break;
           }
         }
@@ -2111,7 +2050,7 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public RedPacketReceived(RedPacketReceived other) : this() {
-      fromSender_ = other.fromSender_ != null ? other.fromSender_.Clone() : null;
+      senderAddress_ = other.senderAddress_ != null ? other.senderAddress_.Clone() : null;
       redPacketId_ = other.redPacketId_;
       redPacketSymbol_ = other.redPacketSymbol_;
       amount_ = other.amount_;
@@ -2126,15 +2065,15 @@ namespace Portkey.Contracts.RedPacket {
       return new RedPacketReceived(this);
     }
 
-    /// <summary>Field number for the "from_sender" field.</summary>
-    public const int FromSenderFieldNumber = 1;
-    private global::AElf.Types.Address fromSender_;
+    /// <summary>Field number for the "sender_address" field.</summary>
+    public const int SenderAddressFieldNumber = 1;
+    private global::AElf.Types.Address senderAddress_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::AElf.Types.Address FromSender {
-      get { return fromSender_; }
+    public global::AElf.Types.Address SenderAddress {
+      get { return senderAddress_; }
       set {
-        fromSender_ = value;
+        senderAddress_ = value;
       }
     }
 
@@ -2213,7 +2152,7 @@ namespace Portkey.Contracts.RedPacket {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (!object.Equals(FromSender, other.FromSender)) return false;
+      if (!object.Equals(SenderAddress, other.SenderAddress)) return false;
       if (RedPacketId != other.RedPacketId) return false;
       if (RedPacketSymbol != other.RedPacketSymbol) return false;
       if (Amount != other.Amount) return false;
@@ -2226,7 +2165,7 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (fromSender_ != null) hash ^= FromSender.GetHashCode();
+      if (senderAddress_ != null) hash ^= SenderAddress.GetHashCode();
       if (RedPacketId.Length != 0) hash ^= RedPacketId.GetHashCode();
       if (RedPacketSymbol.Length != 0) hash ^= RedPacketSymbol.GetHashCode();
       if (Amount != 0L) hash ^= Amount.GetHashCode();
@@ -2250,9 +2189,9 @@ namespace Portkey.Contracts.RedPacket {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (fromSender_ != null) {
+      if (senderAddress_ != null) {
         output.WriteRawTag(10);
-        output.WriteMessage(FromSender);
+        output.WriteMessage(SenderAddress);
       }
       if (RedPacketId.Length != 0) {
         output.WriteRawTag(18);
@@ -2284,9 +2223,9 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (fromSender_ != null) {
+      if (senderAddress_ != null) {
         output.WriteRawTag(10);
-        output.WriteMessage(FromSender);
+        output.WriteMessage(SenderAddress);
       }
       if (RedPacketId.Length != 0) {
         output.WriteRawTag(18);
@@ -2318,8 +2257,8 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (fromSender_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(FromSender);
+      if (senderAddress_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(SenderAddress);
       }
       if (RedPacketId.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketId);
@@ -2348,11 +2287,11 @@ namespace Portkey.Contracts.RedPacket {
       if (other == null) {
         return;
       }
-      if (other.fromSender_ != null) {
-        if (fromSender_ == null) {
-          FromSender = new global::AElf.Types.Address();
+      if (other.senderAddress_ != null) {
+        if (senderAddress_ == null) {
+          SenderAddress = new global::AElf.Types.Address();
         }
-        FromSender.MergeFrom(other.FromSender);
+        SenderAddress.MergeFrom(other.SenderAddress);
       }
       if (other.RedPacketId.Length != 0) {
         RedPacketId = other.RedPacketId;
@@ -2388,10 +2327,10 @@ namespace Portkey.Contracts.RedPacket {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 10: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
+            if (senderAddress_ == null) {
+              SenderAddress = new global::AElf.Types.Address();
             }
-            input.ReadMessage(FromSender);
+            input.ReadMessage(SenderAddress);
             break;
           }
           case 18: {
@@ -2433,10 +2372,10 @@ namespace Portkey.Contracts.RedPacket {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
           case 10: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
+            if (senderAddress_ == null) {
+              SenderAddress = new global::AElf.Types.Address();
             }
-            input.ReadMessage(FromSender);
+            input.ReadMessage(SenderAddress);
             break;
           }
           case 18: {
@@ -2738,16 +2677,7 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public RedPacketOutput(RedPacketOutput other) : this() {
-      redPacketId_ = other.redPacketId_;
-      redPacketSymbol_ = other.redPacketSymbol_;
-      totalAmount_ = other.totalAmount_;
-      minAmount_ = other.minAmount_;
-      expirationTime_ = other.expirationTime_;
-      totalCount_ = other.totalCount_;
-      redPacketSignature_ = other.redPacketSignature_;
-      publicKey_ = other.publicKey_;
-      redPacketType_ = other.redPacketType_;
-      fromSender_ = other.fromSender_ != null ? other.fromSender_.Clone() : null;
+      redPacketInfo_ = other.redPacketInfo_ != null ? other.redPacketInfo_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -2757,123 +2687,15 @@ namespace Portkey.Contracts.RedPacket {
       return new RedPacketOutput(this);
     }
 
-    /// <summary>Field number for the "red_packet_id" field.</summary>
-    public const int RedPacketIdFieldNumber = 1;
-    private string redPacketId_ = "";
+    /// <summary>Field number for the "red_packet_info" field.</summary>
+    public const int RedPacketInfoFieldNumber = 1;
+    private global::Portkey.Contracts.RedPacket.RedPacketInfo redPacketInfo_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string RedPacketId {
-      get { return redPacketId_; }
+    public global::Portkey.Contracts.RedPacket.RedPacketInfo RedPacketInfo {
+      get { return redPacketInfo_; }
       set {
-        redPacketId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    /// <summary>Field number for the "red_packet_symbol" field.</summary>
-    public const int RedPacketSymbolFieldNumber = 2;
-    private string redPacketSymbol_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string RedPacketSymbol {
-      get { return redPacketSymbol_; }
-      set {
-        redPacketSymbol_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    /// <summary>Field number for the "total_amount" field.</summary>
-    public const int TotalAmountFieldNumber = 3;
-    private long totalAmount_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public long TotalAmount {
-      get { return totalAmount_; }
-      set {
-        totalAmount_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "min_amount" field.</summary>
-    public const int MinAmountFieldNumber = 4;
-    private long minAmount_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public long MinAmount {
-      get { return minAmount_; }
-      set {
-        minAmount_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "expiration_time" field.</summary>
-    public const int ExpirationTimeFieldNumber = 5;
-    private long expirationTime_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public long ExpirationTime {
-      get { return expirationTime_; }
-      set {
-        expirationTime_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "total_count" field.</summary>
-    public const int TotalCountFieldNumber = 6;
-    private long totalCount_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public long TotalCount {
-      get { return totalCount_; }
-      set {
-        totalCount_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "red_packet_signature" field.</summary>
-    public const int RedPacketSignatureFieldNumber = 7;
-    private string redPacketSignature_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string RedPacketSignature {
-      get { return redPacketSignature_; }
-      set {
-        redPacketSignature_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    /// <summary>Field number for the "public_key" field.</summary>
-    public const int PublicKeyFieldNumber = 8;
-    private string publicKey_ = "";
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string PublicKey {
-      get { return publicKey_; }
-      set {
-        publicKey_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-      }
-    }
-
-    /// <summary>Field number for the "red_packet_type" field.</summary>
-    public const int RedPacketTypeFieldNumber = 9;
-    private global::Portkey.Contracts.RedPacket.RedPacketType redPacketType_ = global::Portkey.Contracts.RedPacket.RedPacketType.Unknown;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::Portkey.Contracts.RedPacket.RedPacketType RedPacketType {
-      get { return redPacketType_; }
-      set {
-        redPacketType_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "from_sender" field.</summary>
-    public const int FromSenderFieldNumber = 10;
-    private global::AElf.Types.Address fromSender_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::AElf.Types.Address FromSender {
-      get { return fromSender_; }
-      set {
-        fromSender_ = value;
+        redPacketInfo_ = value;
       }
     }
 
@@ -2892,16 +2714,7 @@ namespace Portkey.Contracts.RedPacket {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if (RedPacketId != other.RedPacketId) return false;
-      if (RedPacketSymbol != other.RedPacketSymbol) return false;
-      if (TotalAmount != other.TotalAmount) return false;
-      if (MinAmount != other.MinAmount) return false;
-      if (ExpirationTime != other.ExpirationTime) return false;
-      if (TotalCount != other.TotalCount) return false;
-      if (RedPacketSignature != other.RedPacketSignature) return false;
-      if (PublicKey != other.PublicKey) return false;
-      if (RedPacketType != other.RedPacketType) return false;
-      if (!object.Equals(FromSender, other.FromSender)) return false;
+      if (!object.Equals(RedPacketInfo, other.RedPacketInfo)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -2909,16 +2722,7 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      if (RedPacketId.Length != 0) hash ^= RedPacketId.GetHashCode();
-      if (RedPacketSymbol.Length != 0) hash ^= RedPacketSymbol.GetHashCode();
-      if (TotalAmount != 0L) hash ^= TotalAmount.GetHashCode();
-      if (MinAmount != 0L) hash ^= MinAmount.GetHashCode();
-      if (ExpirationTime != 0L) hash ^= ExpirationTime.GetHashCode();
-      if (TotalCount != 0L) hash ^= TotalCount.GetHashCode();
-      if (RedPacketSignature.Length != 0) hash ^= RedPacketSignature.GetHashCode();
-      if (PublicKey.Length != 0) hash ^= PublicKey.GetHashCode();
-      if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) hash ^= RedPacketType.GetHashCode();
-      if (fromSender_ != null) hash ^= FromSender.GetHashCode();
+      if (redPacketInfo_ != null) hash ^= RedPacketInfo.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -2937,45 +2741,9 @@ namespace Portkey.Contracts.RedPacket {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (RedPacketId.Length != 0) {
+      if (redPacketInfo_ != null) {
         output.WriteRawTag(10);
-        output.WriteString(RedPacketId);
-      }
-      if (RedPacketSymbol.Length != 0) {
-        output.WriteRawTag(18);
-        output.WriteString(RedPacketSymbol);
-      }
-      if (TotalAmount != 0L) {
-        output.WriteRawTag(24);
-        output.WriteInt64(TotalAmount);
-      }
-      if (MinAmount != 0L) {
-        output.WriteRawTag(32);
-        output.WriteInt64(MinAmount);
-      }
-      if (ExpirationTime != 0L) {
-        output.WriteRawTag(40);
-        output.WriteInt64(ExpirationTime);
-      }
-      if (TotalCount != 0L) {
-        output.WriteRawTag(48);
-        output.WriteInt64(TotalCount);
-      }
-      if (RedPacketSignature.Length != 0) {
-        output.WriteRawTag(58);
-        output.WriteString(RedPacketSignature);
-      }
-      if (PublicKey.Length != 0) {
-        output.WriteRawTag(66);
-        output.WriteString(PublicKey);
-      }
-      if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
-        output.WriteRawTag(72);
-        output.WriteEnum((int) RedPacketType);
-      }
-      if (fromSender_ != null) {
-        output.WriteRawTag(82);
-        output.WriteMessage(FromSender);
+        output.WriteMessage(RedPacketInfo);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -2987,45 +2755,9 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (RedPacketId.Length != 0) {
+      if (redPacketInfo_ != null) {
         output.WriteRawTag(10);
-        output.WriteString(RedPacketId);
-      }
-      if (RedPacketSymbol.Length != 0) {
-        output.WriteRawTag(18);
-        output.WriteString(RedPacketSymbol);
-      }
-      if (TotalAmount != 0L) {
-        output.WriteRawTag(24);
-        output.WriteInt64(TotalAmount);
-      }
-      if (MinAmount != 0L) {
-        output.WriteRawTag(32);
-        output.WriteInt64(MinAmount);
-      }
-      if (ExpirationTime != 0L) {
-        output.WriteRawTag(40);
-        output.WriteInt64(ExpirationTime);
-      }
-      if (TotalCount != 0L) {
-        output.WriteRawTag(48);
-        output.WriteInt64(TotalCount);
-      }
-      if (RedPacketSignature.Length != 0) {
-        output.WriteRawTag(58);
-        output.WriteString(RedPacketSignature);
-      }
-      if (PublicKey.Length != 0) {
-        output.WriteRawTag(66);
-        output.WriteString(PublicKey);
-      }
-      if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
-        output.WriteRawTag(72);
-        output.WriteEnum((int) RedPacketType);
-      }
-      if (fromSender_ != null) {
-        output.WriteRawTag(82);
-        output.WriteMessage(FromSender);
+        output.WriteMessage(RedPacketInfo);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -3037,35 +2769,8 @@ namespace Portkey.Contracts.RedPacket {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      if (RedPacketId.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketId);
-      }
-      if (RedPacketSymbol.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketSymbol);
-      }
-      if (TotalAmount != 0L) {
-        size += 1 + pb::CodedOutputStream.ComputeInt64Size(TotalAmount);
-      }
-      if (MinAmount != 0L) {
-        size += 1 + pb::CodedOutputStream.ComputeInt64Size(MinAmount);
-      }
-      if (ExpirationTime != 0L) {
-        size += 1 + pb::CodedOutputStream.ComputeInt64Size(ExpirationTime);
-      }
-      if (TotalCount != 0L) {
-        size += 1 + pb::CodedOutputStream.ComputeInt64Size(TotalCount);
-      }
-      if (RedPacketSignature.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketSignature);
-      }
-      if (PublicKey.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(PublicKey);
-      }
-      if (RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
-        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) RedPacketType);
-      }
-      if (fromSender_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(FromSender);
+      if (redPacketInfo_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(RedPacketInfo);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -3079,38 +2784,11 @@ namespace Portkey.Contracts.RedPacket {
       if (other == null) {
         return;
       }
-      if (other.RedPacketId.Length != 0) {
-        RedPacketId = other.RedPacketId;
-      }
-      if (other.RedPacketSymbol.Length != 0) {
-        RedPacketSymbol = other.RedPacketSymbol;
-      }
-      if (other.TotalAmount != 0L) {
-        TotalAmount = other.TotalAmount;
-      }
-      if (other.MinAmount != 0L) {
-        MinAmount = other.MinAmount;
-      }
-      if (other.ExpirationTime != 0L) {
-        ExpirationTime = other.ExpirationTime;
-      }
-      if (other.TotalCount != 0L) {
-        TotalCount = other.TotalCount;
-      }
-      if (other.RedPacketSignature.Length != 0) {
-        RedPacketSignature = other.RedPacketSignature;
-      }
-      if (other.PublicKey.Length != 0) {
-        PublicKey = other.PublicKey;
-      }
-      if (other.RedPacketType != global::Portkey.Contracts.RedPacket.RedPacketType.Unknown) {
-        RedPacketType = other.RedPacketType;
-      }
-      if (other.fromSender_ != null) {
-        if (fromSender_ == null) {
-          FromSender = new global::AElf.Types.Address();
+      if (other.redPacketInfo_ != null) {
+        if (redPacketInfo_ == null) {
+          RedPacketInfo = new global::Portkey.Contracts.RedPacket.RedPacketInfo();
         }
-        FromSender.MergeFrom(other.FromSender);
+        RedPacketInfo.MergeFrom(other.RedPacketInfo);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -3128,46 +2806,10 @@ namespace Portkey.Contracts.RedPacket {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 10: {
-            RedPacketId = input.ReadString();
-            break;
-          }
-          case 18: {
-            RedPacketSymbol = input.ReadString();
-            break;
-          }
-          case 24: {
-            TotalAmount = input.ReadInt64();
-            break;
-          }
-          case 32: {
-            MinAmount = input.ReadInt64();
-            break;
-          }
-          case 40: {
-            ExpirationTime = input.ReadInt64();
-            break;
-          }
-          case 48: {
-            TotalCount = input.ReadInt64();
-            break;
-          }
-          case 58: {
-            RedPacketSignature = input.ReadString();
-            break;
-          }
-          case 66: {
-            PublicKey = input.ReadString();
-            break;
-          }
-          case 72: {
-            RedPacketType = (global::Portkey.Contracts.RedPacket.RedPacketType) input.ReadEnum();
-            break;
-          }
-          case 82: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
+            if (redPacketInfo_ == null) {
+              RedPacketInfo = new global::Portkey.Contracts.RedPacket.RedPacketInfo();
             }
-            input.ReadMessage(FromSender);
+            input.ReadMessage(RedPacketInfo);
             break;
           }
         }
@@ -3186,46 +2828,10 @@ namespace Portkey.Contracts.RedPacket {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
           case 10: {
-            RedPacketId = input.ReadString();
-            break;
-          }
-          case 18: {
-            RedPacketSymbol = input.ReadString();
-            break;
-          }
-          case 24: {
-            TotalAmount = input.ReadInt64();
-            break;
-          }
-          case 32: {
-            MinAmount = input.ReadInt64();
-            break;
-          }
-          case 40: {
-            ExpirationTime = input.ReadInt64();
-            break;
-          }
-          case 48: {
-            TotalCount = input.ReadInt64();
-            break;
-          }
-          case 58: {
-            RedPacketSignature = input.ReadString();
-            break;
-          }
-          case 66: {
-            PublicKey = input.ReadString();
-            break;
-          }
-          case 72: {
-            RedPacketType = (global::Portkey.Contracts.RedPacket.RedPacketType) input.ReadEnum();
-            break;
-          }
-          case 82: {
-            if (fromSender_ == null) {
-              FromSender = new global::AElf.Types.Address();
+            if (redPacketInfo_ == null) {
+              RedPacketInfo = new global::Portkey.Contracts.RedPacket.RedPacketInfo();
             }
-            input.ReadMessage(FromSender);
+            input.ReadMessage(RedPacketInfo);
             break;
           }
         }
@@ -3793,6 +3399,624 @@ namespace Portkey.Contracts.RedPacket {
             break;
           case 8: {
             MaxCount = input.ReadInt64();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  public sealed partial class RefundRedPacketInput : pb::IMessage<RefundRedPacketInput>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<RefundRedPacketInput> _parser = new pb::MessageParser<RefundRedPacketInput>(() => new RefundRedPacketInput());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<RefundRedPacketInput> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Portkey.Contracts.RedPacket.RedPacketContractReflection.Descriptor.MessageTypes[11]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RefundRedPacketInput() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RefundRedPacketInput(RefundRedPacketInput other) : this() {
+      redPacketId_ = other.redPacketId_;
+      amount_ = other.amount_;
+      refundAddress_ = other.refundAddress_ != null ? other.refundAddress_.Clone() : null;
+      redPacketSignature_ = other.redPacketSignature_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RefundRedPacketInput Clone() {
+      return new RefundRedPacketInput(this);
+    }
+
+    /// <summary>Field number for the "red_packet_id" field.</summary>
+    public const int RedPacketIdFieldNumber = 1;
+    private string redPacketId_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string RedPacketId {
+      get { return redPacketId_; }
+      set {
+        redPacketId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "amount" field.</summary>
+    public const int AmountFieldNumber = 2;
+    private long amount_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long Amount {
+      get { return amount_; }
+      set {
+        amount_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "refund_address" field.</summary>
+    public const int RefundAddressFieldNumber = 3;
+    private global::AElf.Types.Address refundAddress_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::AElf.Types.Address RefundAddress {
+      get { return refundAddress_; }
+      set {
+        refundAddress_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "red_packet_signature" field.</summary>
+    public const int RedPacketSignatureFieldNumber = 4;
+    private string redPacketSignature_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string RedPacketSignature {
+      get { return redPacketSignature_; }
+      set {
+        redPacketSignature_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as RefundRedPacketInput);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(RefundRedPacketInput other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (RedPacketId != other.RedPacketId) return false;
+      if (Amount != other.Amount) return false;
+      if (!object.Equals(RefundAddress, other.RefundAddress)) return false;
+      if (RedPacketSignature != other.RedPacketSignature) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (RedPacketId.Length != 0) hash ^= RedPacketId.GetHashCode();
+      if (Amount != 0L) hash ^= Amount.GetHashCode();
+      if (refundAddress_ != null) hash ^= RefundAddress.GetHashCode();
+      if (RedPacketSignature.Length != 0) hash ^= RedPacketSignature.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (RedPacketId.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(RedPacketId);
+      }
+      if (Amount != 0L) {
+        output.WriteRawTag(16);
+        output.WriteInt64(Amount);
+      }
+      if (refundAddress_ != null) {
+        output.WriteRawTag(26);
+        output.WriteMessage(RefundAddress);
+      }
+      if (RedPacketSignature.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteString(RedPacketSignature);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (RedPacketId.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(RedPacketId);
+      }
+      if (Amount != 0L) {
+        output.WriteRawTag(16);
+        output.WriteInt64(Amount);
+      }
+      if (refundAddress_ != null) {
+        output.WriteRawTag(26);
+        output.WriteMessage(RefundAddress);
+      }
+      if (RedPacketSignature.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteString(RedPacketSignature);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (RedPacketId.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketId);
+      }
+      if (Amount != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(Amount);
+      }
+      if (refundAddress_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(RefundAddress);
+      }
+      if (RedPacketSignature.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketSignature);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(RefundRedPacketInput other) {
+      if (other == null) {
+        return;
+      }
+      if (other.RedPacketId.Length != 0) {
+        RedPacketId = other.RedPacketId;
+      }
+      if (other.Amount != 0L) {
+        Amount = other.Amount;
+      }
+      if (other.refundAddress_ != null) {
+        if (refundAddress_ == null) {
+          RefundAddress = new global::AElf.Types.Address();
+        }
+        RefundAddress.MergeFrom(other.RefundAddress);
+      }
+      if (other.RedPacketSignature.Length != 0) {
+        RedPacketSignature = other.RedPacketSignature;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            RedPacketId = input.ReadString();
+            break;
+          }
+          case 16: {
+            Amount = input.ReadInt64();
+            break;
+          }
+          case 26: {
+            if (refundAddress_ == null) {
+              RefundAddress = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(RefundAddress);
+            break;
+          }
+          case 34: {
+            RedPacketSignature = input.ReadString();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            RedPacketId = input.ReadString();
+            break;
+          }
+          case 16: {
+            Amount = input.ReadInt64();
+            break;
+          }
+          case 26: {
+            if (refundAddress_ == null) {
+              RefundAddress = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(RefundAddress);
+            break;
+          }
+          case 34: {
+            RedPacketSignature = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  public sealed partial class RedPacketRefunded : pb::IMessage<RedPacketRefunded>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<RedPacketRefunded> _parser = new pb::MessageParser<RedPacketRefunded>(() => new RedPacketRefunded());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<RedPacketRefunded> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Portkey.Contracts.RedPacket.RedPacketContractReflection.Descriptor.MessageTypes[12]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RedPacketRefunded() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RedPacketRefunded(RedPacketRefunded other) : this() {
+      redPacketId_ = other.redPacketId_;
+      refundAddress_ = other.refundAddress_ != null ? other.refundAddress_.Clone() : null;
+      redPacketSymbol_ = other.redPacketSymbol_;
+      amount_ = other.amount_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public RedPacketRefunded Clone() {
+      return new RedPacketRefunded(this);
+    }
+
+    /// <summary>Field number for the "red_packet_id" field.</summary>
+    public const int RedPacketIdFieldNumber = 1;
+    private string redPacketId_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string RedPacketId {
+      get { return redPacketId_; }
+      set {
+        redPacketId_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "refund_address" field.</summary>
+    public const int RefundAddressFieldNumber = 2;
+    private global::AElf.Types.Address refundAddress_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::AElf.Types.Address RefundAddress {
+      get { return refundAddress_; }
+      set {
+        refundAddress_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "red_packet_symbol" field.</summary>
+    public const int RedPacketSymbolFieldNumber = 3;
+    private string redPacketSymbol_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string RedPacketSymbol {
+      get { return redPacketSymbol_; }
+      set {
+        redPacketSymbol_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "amount" field.</summary>
+    public const int AmountFieldNumber = 4;
+    private long amount_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long Amount {
+      get { return amount_; }
+      set {
+        amount_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as RedPacketRefunded);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(RedPacketRefunded other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (RedPacketId != other.RedPacketId) return false;
+      if (!object.Equals(RefundAddress, other.RefundAddress)) return false;
+      if (RedPacketSymbol != other.RedPacketSymbol) return false;
+      if (Amount != other.Amount) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (RedPacketId.Length != 0) hash ^= RedPacketId.GetHashCode();
+      if (refundAddress_ != null) hash ^= RefundAddress.GetHashCode();
+      if (RedPacketSymbol.Length != 0) hash ^= RedPacketSymbol.GetHashCode();
+      if (Amount != 0L) hash ^= Amount.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (RedPacketId.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(RedPacketId);
+      }
+      if (refundAddress_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(RefundAddress);
+      }
+      if (RedPacketSymbol.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(RedPacketSymbol);
+      }
+      if (Amount != 0L) {
+        output.WriteRawTag(32);
+        output.WriteInt64(Amount);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (RedPacketId.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(RedPacketId);
+      }
+      if (refundAddress_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(RefundAddress);
+      }
+      if (RedPacketSymbol.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(RedPacketSymbol);
+      }
+      if (Amount != 0L) {
+        output.WriteRawTag(32);
+        output.WriteInt64(Amount);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (RedPacketId.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketId);
+      }
+      if (refundAddress_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(RefundAddress);
+      }
+      if (RedPacketSymbol.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(RedPacketSymbol);
+      }
+      if (Amount != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(Amount);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(RedPacketRefunded other) {
+      if (other == null) {
+        return;
+      }
+      if (other.RedPacketId.Length != 0) {
+        RedPacketId = other.RedPacketId;
+      }
+      if (other.refundAddress_ != null) {
+        if (refundAddress_ == null) {
+          RefundAddress = new global::AElf.Types.Address();
+        }
+        RefundAddress.MergeFrom(other.RefundAddress);
+      }
+      if (other.RedPacketSymbol.Length != 0) {
+        RedPacketSymbol = other.RedPacketSymbol;
+      }
+      if (other.Amount != 0L) {
+        Amount = other.Amount;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            RedPacketId = input.ReadString();
+            break;
+          }
+          case 18: {
+            if (refundAddress_ == null) {
+              RefundAddress = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(RefundAddress);
+            break;
+          }
+          case 26: {
+            RedPacketSymbol = input.ReadString();
+            break;
+          }
+          case 32: {
+            Amount = input.ReadInt64();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            RedPacketId = input.ReadString();
+            break;
+          }
+          case 18: {
+            if (refundAddress_ == null) {
+              RefundAddress = new global::AElf.Types.Address();
+            }
+            input.ReadMessage(RefundAddress);
+            break;
+          }
+          case 26: {
+            RedPacketSymbol = input.ReadString();
+            break;
+          }
+          case 32: {
+            Amount = input.ReadInt64();
             break;
           }
         }
