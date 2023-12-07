@@ -318,6 +318,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
+            _logger.LogInformation("SendTransferRedPacketToChainAsync param: {param}", JsonConvert.SerializeObject(param));
+
             if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
             {
                 return null;
@@ -326,8 +328,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPubKey(payRedPackageFrom); //select public key
-            _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
-                ownAddress, chainInfo.ContractAddress);
+            _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ,methodName:{methodName}",
+                ownAddress, chainInfo.ContractAddress,methodName);
 
             //"red package contract address"
             var transaction =
@@ -356,10 +358,12 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             {
                 RawTransaction = transaction.ToByteArray().ToHex()
             });
+            _logger.LogInformation("SendTransferRedPacketToChainAsync result: {result}", JsonConvert.SerializeObject(result));
 
             await Task.Delay(_grainOptions.Delay);
 
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+            _logger.LogInformation("SendTransferRedPacketToChainAsync transactionResult: {transactionResult}", JsonConvert.SerializeObject(transactionResult));
 
             var times = 0;
             while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)

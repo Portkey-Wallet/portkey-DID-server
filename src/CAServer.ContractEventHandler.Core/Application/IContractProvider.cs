@@ -482,8 +482,8 @@ public class ContractProvider : IContractProvider
                 await redPackageKeyGrain.GenerateSignature(
                     $"{redPackageId}-{long.Parse(redPackageDetail.TotalAmount) - grab}")
         };
+        _logger.LogInformation("SendTransferRedPacketRefundAsync input {input}",JsonConvert.SerializeObject(sendInput));
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             redPackageContractAddress, MethodName.RefundRedPacket);
     }
