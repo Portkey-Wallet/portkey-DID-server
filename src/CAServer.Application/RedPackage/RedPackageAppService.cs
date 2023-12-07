@@ -94,22 +94,22 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
             var redPackageId = Guid.NewGuid();
 
-            var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
-            var (publicKey, signature) = await grain.GenerateKeyAndSignature(
-                $"{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}");
-            res = new GenerateRedPackageOutputDto
-            {
-                Id = redPackageId,
-                PublicKey = publicKey,
-                Signature = signature,
-                MinAmount = result.MinAmount,
-                Symbol = redPackageInput.Symbol,
-                Decimal = result.Decimal,
-                ChainId = redPackageInput.ChainId,
-                ExpireTime = RedPackageConsts.ExpireTimeMs,
-                RedPackageContractAddress = chainInfo.RedPackageContractAddress
-            };
-            return res;
+        var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
+        var (publicKey, signature) = await grain.GenerateKeyAndSignature(
+            $"{redPackageId}-{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}");
+        res = new GenerateRedPackageOutputDto
+        {
+            Id = redPackageId,
+            PublicKey = publicKey,
+            Signature = signature,
+            MinAmount = result.MinAmount,
+            Symbol = redPackageInput.Symbol,
+            Decimal = result.Decimal,
+            ChainId = redPackageInput.ChainId,
+            ExpireTime = RedPackageConsts.ExpireTimeMs,
+            RedPackageContractAddress = chainInfo.RedPackageContractAddress
+        };
+        return res;
         }
         finally
         {
