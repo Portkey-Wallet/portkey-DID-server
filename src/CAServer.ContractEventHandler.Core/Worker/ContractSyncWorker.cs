@@ -27,7 +27,7 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
 
-        await _contractAppService.QueryAndSyncAsync();
-        // await _contractAppService.Refund(new Guid("375442ae-f5fb-4c2b-a809-a971dcf12680"));
+        // await _contractAppService.QueryAndSyncAsync();
+        await _contractAppService.Refund(new Guid("285395d6-f084-41ef-908f-ace09eb771cb"));
     }
 }
