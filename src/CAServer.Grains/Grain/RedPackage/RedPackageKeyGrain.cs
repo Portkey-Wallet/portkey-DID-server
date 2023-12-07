@@ -42,6 +42,13 @@ public class RedPackageKeyGrain : Orleans.Grain<RedPackageKeyState>, IRedPackage
             CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(State.PrivateKey), hashByteArray);
         return Task.FromResult(signature.ToHex());
     }
+    
+    public async Task<Tuple<string, string>> GenerateKeyAndSignature(string input)
+    {
+        var publicKey = await GenerateKey();
+        var signature = GenerateSignature(input);
+        return Tuple.Create(publicKey, signature.Result);
+    }
 
     public Task<bool> VerifySignature(string data, string sig)
     {

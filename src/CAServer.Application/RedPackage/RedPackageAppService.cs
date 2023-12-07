@@ -77,6 +77,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         return result;
     }
+
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
         Stopwatch watcher = Stopwatch.StartNew();
@@ -94,12 +95,13 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             var redPackageId = Guid.NewGuid();
 
             var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
-
+            var (publicKey, signature) = await grain.GenerateKeyAndSignature(
+                $"{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}");
             res = new GenerateRedPackageOutputDto
             {
                 Id = redPackageId,
-                PublicKey = await grain.GenerateKey(),
-                Signature = await grain.GenerateSignature($"{redPackageId}-{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}"),
+                PublicKey = publicKey,
+                Signature = signature,
                 MinAmount = result.MinAmount,
                 Symbol = redPackageInput.Symbol,
                 Decimal = result.Decimal,
@@ -119,7 +121,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             }
         }
     }
-    
+
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {

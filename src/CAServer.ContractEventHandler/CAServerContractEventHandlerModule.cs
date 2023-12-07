@@ -1,10 +1,14 @@
 using System;
+using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
 using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
+using CAServer.Monitor;
+using CAServer.RedPackage;
 using CAServer.Signature;
 using Hangfire;
 using Hangfire.Redis.StackExchange;
@@ -33,6 +37,8 @@ using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Threading;
 using ChainOptions = CAServer.ContractEventHandler.Core.Application.ChainOptions;
+using ContractProvider = CAServer.ContractEventHandler.Core.Application.ContractProvider;
+using IContractProvider = CAServer.ContractEventHandler.Core.Application.IContractProvider;
 
 namespace CAServer.ContractEventHandler;
 
@@ -45,9 +51,9 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
+    typeof(CAServerMonitorModule),
     typeof(AbpCachingStackExchangeRedisModule),
-    typeof(CAServerMongoDbModule)
-)]
+    typeof(AElfIndexingElasticsearchModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -56,6 +62,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
         //ConfigureEsIndexCreation();   
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<ContractSyncOptions>(configuration.GetSection("Sync"));
         Configure<IndexOptions>(configuration.GetSection("Index"));
         Configure<PayRedPackageAccount>(configuration.GetSection("RedPackagePayAccount"));
@@ -67,6 +74,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.Services.AddSingleton<IContractProvider, ContractProvider>();
         context.Services.AddSingleton<IGraphQLProvider, GraphQLProvider>();
         context.Services.AddSingleton<IRecordsBucketContainer, RecordsBucketContainer>();
+        context.Services.AddSingleton<IRedPackageCreateResultService, RedPackageCreateResultService>();
+        context.Services.AddSingleton<IHttpClientProvider, HttpClientProvider>();
         context.Services.AddHttpClient();
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
