@@ -1,24 +1,26 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using AElf.Types;
 using CAServer.Commons;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
-using CAServer.Options;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
-using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
-using Nest;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using ChainOptions = CAServer.Options.ChainOptions;
+using Volo.Abp.Users;
 using Volo.Abp.Users;
 
 namespace CAServer.RedPackage;
@@ -33,6 +35,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly IObjectMapper _objectMapper;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IContactProvider _contactProvider;
+    private readonly ILogger<RedPackageAppService> _logger;
+
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -40,7 +44,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IObjectMapper objectMapper,
         IOptionsSnapshot<RedPackageOptions> redPackageOptions,
         IContactProvider contactProvider,
-        IOptionsSnapshot<ChainOptions> chainOptions)
+        IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger)
     {
         _redPackageOptions = redPackageOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -50,6 +54,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _objectMapper = objectMapper;
         _httpContextAccessor = httpContextAccessor;
         _contactProvider = contactProvider;
+        _logger = logger;
     }
 
     public  RedPackageTokenInfo GetRedPackageOption(String symbol,string chainId,out long maxCount,out string redpackageContractAddress)
@@ -74,111 +79,175 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     }
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
-        var result = GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId,out long maxCount,out string redpackageContractAddress);
-        if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
+        Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
+        GenerateRedPackageOutputDto res = null;
+        try
         {
-            throw new UserFriendlyException("chain not found");
+            var result = GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId, out long maxCount,
+                out string redpackageContractAddress);
+            if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
+            {
+                throw new UserFriendlyException("chain not found");
+            }
+
+            var redPackageId = Guid.NewGuid();
+
+            var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
+
+            res = new GenerateRedPackageOutputDto
+            {
+                Id = redPackageId,
+                PublicKey = await grain.GenerateKey(),
+                Signature = await grain.GenerateSignature($"{redPackageId}-{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}"),
+                MinAmount = result.MinAmount,
+                Symbol = redPackageInput.Symbol,
+                Decimal = result.Decimal,
+                ChainId = redPackageInput.ChainId,
+                ExpireTime = RedPackageConsts.ExpireTimeMs,
+                RedPackageContractAddress = chainInfo.RedPackageContractAddress
+            };
+            return res;
         }
-        var redPackageId = Guid.NewGuid();
-
-        var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
-
-        return new GenerateRedPackageOutputDto
+        finally
         {
-            Id = redPackageId,
-            PublicKey = await grain.GenerateKey(),
-            Signature = await grain.GenerateSignature($"{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}"),
-            MinAmount = result.MinAmount,
-            Symbol = redPackageInput.Symbol,
-            Decimal = result.Decimal,
-            ChainId = redPackageInput.ChainId,
-            ExpireTime = RedPackageConsts.ExpireTimeMs,
-            RedPackageContractAddress = chainInfo.RedPackageContractAddress
-        };
+            watcher.Stop();
+            if (res != null)
+            {
+                _logger.LogInformation("generate start:{0},{1}:", res.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                _logger.LogInformation("#monitor# generate:{redpackageId},{cost},{startTime}:", res.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
+            }
+        }
     }
     
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
-        var result = _redPackageOptions.TokenInfo.Where(x =>
-            string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(x.ChainId, input.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
-        if (result == null)
+        Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
+        try
         {
-            throw new UserFriendlyException("Symbol not found");
-        }
+            _logger.LogInformation("SendRedPackageAsync start input param is {input}", input);
+            var result = _redPackageOptions.TokenInfo.Where(x =>
+                string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.ChainId, input.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
+            if (result == null)
+            {
+                throw new UserFriendlyException("Symbol not found");
+            }
 
-        var checkResult = await CheckSendRedPackageInputAsync(input, long.Parse(result.MinAmount),_redPackageOptions.MaxCount);
-        if (!checkResult.Item1)
-        {
-            throw new UserFriendlyException(checkResult.Item2);
-        }
+            var checkResult =
+                await CheckSendRedPackageInputAsync(input, long.Parse(result.MinAmount), _redPackageOptions.MaxCount);
+            if (!checkResult.Item1)
+            {
+                throw new UserFriendlyException(checkResult.Item2);
+            }
 
-        if (CurrentUser.Id == null)
-        {
-            throw new UserFriendlyException("auth fail");
-        }
+            if (CurrentUser.Id == null)
+            {
+                throw new UserFriendlyException("auth fail");
+            }
 
-        var relationToken = _httpContextAccessor.HttpContext?.Request?.Headers[ImConstant.RelationAuthHeader];
-        if (string.IsNullOrEmpty(relationToken))
-        {
-            throw new UserFriendlyException("Relation token not found");
+            var relationToken = _httpContextAccessor.HttpContext?.Request?.Headers[ImConstant.RelationAuthHeader];
+            if (string.IsNullOrEmpty(relationToken))
+            {
+                throw new UserFriendlyException("Relation token not found");
+            }
+
+            var portkeyToken = _httpContextAccessor.HttpContext?.Request?.Headers[CommonConstant.AuthHeader];
+            if (string.IsNullOrEmpty(portkeyToken))
+            {
+                throw new UserFriendlyException("PortkeyToken token not found");
+            }
+
+            var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
+            var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
+                CurrentUser.Id.Value);
+            _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {input}", input);
+            if (!createResult.Success)
+            {
+                throw new UserFriendlyException(createResult.Message);
+            }
+
+            var sessionId = Guid.NewGuid();
+
+            var redPackageIndex = _objectMapper.Map<RedPackageDetailDto, RedPackageIndex>(createResult.Data);
+            redPackageIndex.Id = sessionId;
+            redPackageIndex.RedPackageId = createResult.Data.Id;
+            redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Processing;
+            redPackageIndex.SenderRelationToken = relationToken;
+            redPackageIndex.SenderPortkeyToken = portkeyToken;
+            redPackageIndex.Message = input.Message;
+            await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
+            _logger.LogInformation("SendRedPackageAsync AddOrUpdateAsync redPackageIndex is {redPackageIndex}",
+                redPackageIndex);
+            _ = _distributedEventBus.PublishAsync(new RedPackageCreateEto()
+            {
+                UserId = CurrentUser.Id,
+                ChainId = input.ChainId,
+                SessionId = sessionId,
+                RawTransaction = input.RawTransaction
+            });
+            _logger.LogInformation("SendRedPackageAsync PublishAsync redPackageIndex is {redPackageIndex}",
+                redPackageIndex);
+            return new SendRedPackageOutputDto()
+            {
+                SessionId = sessionId
+            };
         }
-        var portkeyToken = _httpContextAccessor.HttpContext?.Request?.Headers[CommonConstant.AuthHeader];
-        if (string.IsNullOrEmpty(portkeyToken))
+        finally
         {
-            throw new UserFriendlyException("PortkeyToken token not found");
+            watcher.Stop();
+            _logger.LogInformation("send end:{0},{1}:", input.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+            _logger.LogInformation("#monitor# send:{redpackageId},{cost},{startTime}:", input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
         }
-        
-        var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
-        var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount), CurrentUser.Id.Value);
-        if (!createResult.Success)
-        {
-            throw new UserFriendlyException(createResult.Message);
-        }
-        
-        var sessionId = Guid.NewGuid();
-        
-        var redPackageIndex = _objectMapper.Map<RedPackageDetailDto, RedPackageIndex>(createResult.Data);
-        redPackageIndex.Id = sessionId;
-        redPackageIndex.RedPackageId = createResult.Data.Id;
-        redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Processing;
-        redPackageIndex.SenderRelationToken = relationToken;
-        redPackageIndex.SenderPortkeyToken = portkeyToken;
-        redPackageIndex.Message = input.Message;
-        await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
-        await _distributedEventBus.PublishAsync(new RedPackageCreateEto()
-        {
-            UserId = CurrentUser.Id,
-            ChainId = input.ChainId,
-            SessionId = sessionId,
-            RawTransaction = input.RawTransaction
-        });
-        return new SendRedPackageOutputDto()
-        {
-            SessionId = sessionId
-        };
     }
 
     public async Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId)
     {
-        var redPackageIndex =  await _redPackageIndexRepository.GetAsync(sessionId);
-        if (redPackageIndex == null)
+        GetCreationResultOutputDto res = null;
+        RedPackageIndex redPackageIndex = null;
+        Stopwatch watcher = Stopwatch.StartNew();
+        try
         {
-            return new GetCreationResultOutputDto()
+            _logger.LogInformation("GetCreationResultAsync sessionId is {sessionId}",sessionId.ToByteArray());
+            
+            redPackageIndex = await _redPackageIndexRepository.GetAsync(sessionId);
+            if (redPackageIndex == null)
             {
-                Status = RedPackageTransactionStatus.Fail,
-                Message = "Session not found"
+                return new GetCreationResultOutputDto()
+                {
+                    Status = RedPackageTransactionStatus.Fail,
+                    Message = "Session not found"
+                };
+            }
+            _logger.LogInformation("GetCreationResultAsync redPackageIndex is {redPackageIndex}",JsonConvert.SerializeObject(redPackageIndex));
+
+            res = new GetCreationResultOutputDto()
+            {
+                Status = redPackageIndex.TransactionStatus,
+                Message = redPackageIndex.ErrorMessage,
+                TransactionId = redPackageIndex.TransactionId,
+                TransactionResult = redPackageIndex.TransactionResult
             };
+            return res;
         }
-        
-        return new GetCreationResultOutputDto()
+        finally
         {
-            Status = redPackageIndex.TransactionStatus,
-            Message = redPackageIndex.ErrorMessage,
-            TransactionId = redPackageIndex.TransactionId,
-            TransactionResult = redPackageIndex.TransactionResult
-        };
+            watcher.Stop();
+            if (redPackageIndex != null)
+            {
+                if (res != null && res.Status == RedPackageTransactionStatus.Success)
+                {
+                    _logger.LogInformation("getCreationResult success:{0},{1}:",redPackageIndex.RedPackageId.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                    _logger.LogInformation("#monitor# getCreationResult success:{redpackageId},{status},{cost},{endTime}:", redPackageIndex.RedPackageId.ToString(), res.Status.ToString(), watcher.Elapsed.Milliseconds.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                }
+                else
+                {
+                    _logger.LogInformation("#monitor# getCreationResult other:{redpackageId},{status},{cost},{endTime}:", redPackageIndex.RedPackageId.ToString(), res.Status.ToString(), watcher.Elapsed.Milliseconds.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                }             
+            }
+        }
     }
 
     public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount, int maxResultCount)
@@ -200,14 +269,31 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(id);
         var detail =  (await grain.GetRedPackage(skipCount, maxResultCount,CurrentUser.Id.Value)).Data;
-        
+        try
+        {
+            var allResult = (await grain.GetRedPackage(detail.Id)).Data;
+            allResult.Items?.ForEach(item =>
+            {
+                if (item.UserId == CurrentUser.GetId())
+                {
+                    detail.CurrentUserGrabbedAmount = item.Amount;
+
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+       
         CheckLuckKing(detail);
         
         await BuildAvatarAndNameAsync(detail);
         
-        if (detail.Status == RedPackageStatus.Expired)
+        if (detail.Status == RedPackageStatus.Expired || DateTimeOffset.Now.ToUnixTimeMilliseconds() > detail.ExpireTime)
         {
             detail.IsRedPackageExpired = true;
+            detail.Status = RedPackageStatus.Expired;
         }
         
         if (detail.Status == RedPackageStatus.FullyClaimed || detail.Grabbed == detail.Count)
@@ -219,15 +305,20 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
     {
+
+        var contractAddressList = _redPackageOptions.RedPackageContractAddress;
+
         if (string.IsNullOrEmpty(token) && string.IsNullOrEmpty(chainId))
         {
             return new RedPackageConfigOutput()
             {
-                TokenInfo = _redPackageOptions.TokenInfo
+                TokenInfo = _redPackageOptions.TokenInfo,
+                RedPackageContractAddress = contractAddressList
             };
         }
-        
         var result = _redPackageOptions.TokenInfo.AsQueryable();
+
+        
 
         if (!string.IsNullOrEmpty(token))
         {
@@ -244,31 +335,51 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         return new RedPackageConfigOutput()
         {
-            TokenInfo = resultList
+            TokenInfo = resultList,
+            RedPackageContractAddress = contractAddressList
         };
     }
 
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
     {
-        if (CurrentUser.Id == null)
+        Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
+
+        try
         {
+            if (CurrentUser.Id == null)
+            {
+                return new GrabRedPackageOutputDto()
+                {
+                    Result = RedPackageGrabStatus.Fail,
+                    ErrorMessage = RedPackageConsts.UserNotExist
+                };
+            }
+
+            var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
+            var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
+            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+            {
+                RedPackageId = input.Id
+
+            });
             return new GrabRedPackageOutputDto()
             {
-                Result = RedPackageGrabStatus.Fail,
-                ErrorMessage = RedPackageConsts.UserNotExist
+                Result = result.Data.Result,
+                ErrorMessage = result.Data.ErrorMessage,
+                Amount = result.Data.Amount,
+                Decimal = result.Data.Decimal,
+                Status = (result.Data.Status == RedPackageStatus.Expired
+                          || DateTimeOffset.Now.ToUnixTimeMilliseconds() > result.Data.ExpireTime)
+                    ? RedPackageStatus.Expired
+                    : result.Data.Status
             };
         }
-        
-        var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
-        var result = await grain.GrabRedPackage(CurrentUser.Id.Value,input.UserCaAddress);
-        return  new GrabRedPackageOutputDto()
+        finally
         {
-            Result = result.Data.Result,
-            ErrorMessage = result.Data.ErrorMessage,
-            Amount = result.Data.Amount,
-            Decimal = result.Data.Decimal,
-            Status = result.Data.Status
-        };
+            watcher.Stop();
+            _logger.LogInformation("#monitor# grabRedPackage:{redpackageId},{cost},{endTime}:", input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
+        }
     }
     
     private void CheckLuckKing(RedPackageDetailDto input)
@@ -292,7 +403,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             item.Avatar = users.FirstOrDefault(x => x.UserId == item.UserId)?.Avatar;
             item.Username = users.FirstOrDefault(x => x.UserId == item.UserId)?.NickName;
-            input.CurrentUserGrabbedAmount = (item.UserId == CurrentUser.GetId()) ? item.Amount : "0";
         });
         
         //fill remark

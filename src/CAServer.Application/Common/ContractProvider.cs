@@ -35,13 +35,6 @@ public interface IContractProvider
     public Task<GetVerifierServersOutput> GetVerifierServersListAsync(string chainId);
     public Task<GetBalanceOutput> GetBalanceAsync(string symbol, string address, string chainId);
     public Task ClaimTokenAsync(string symbol, string address, string chainId);
-
-    public Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(
-        GrainResultDto<RedPackageDetailDto> redPackageDetail, string payRedPackageFrom);
-    
-    public Task<TransactionInfoDto> SendTransferRedPacketRefundAsync(RedPackageDetailDto redPackageDetail,
-        string payRedPackageFrom);
-
     public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
     Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
@@ -186,33 +179,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         await SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken, claimTokenParam,
             _claimTokenInfoOption.PublicKey, address, chainId);
     }
-
-    public async Task<TransactionInfoDto> SendTransferRedPacketRefundAsync(RedPackageDetailDto redPackageDetail,
-        string payRedPackageFrom)
-    {
-        var list = new List<TransferRedPacketInput>();
-
-        Guid redPackageId = redPackageDetail.Id;
-        string symbol = redPackageDetail.Symbol;
-        string chainId = redPackageDetail.ChainId;
-        var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Id);
-        var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Symbol,
-            redPackageDetail.ChainId, out long maxCount,out string redPackageContractAddress);
-        list.Add(new TransferRedPacketInput()
-        {
-            RedPacketId = redPackageId.ToString(),
-            Amount = Convert.ToInt64(redPackageDetail.TotalAmount),
-            ReceiverAddress = Address.FromBase58(redPackageContractAddress),
-            RedPacketSignature =await redPackageKeyGrain.GenerateSignature($"{symbol}-{redPackageDetail.MinAmount}-{maxCount}")
-        });
-        var sendInput = new TransferRedPacketBatchInput()
-        {
-            TransferRedPacketInputs = { list }
-        };
-        var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-
-        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress);
-    }
+    
 
     public async Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address,
         string chainId)
@@ -227,41 +194,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
             _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
-
-    public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(
-        GrainResultDto<RedPackageDetailDto> redPackageDetail, string payRedPackageFrom)
-    {
-        //build param for transfer red package input 
-        var list = new List<TransferRedPacketInput>();
-        Guid redPackageId = redPackageDetail.Data.Id;
-        string symbol = redPackageDetail.Data.Symbol;
-        string chainId = redPackageDetail.Data.ChainId;
-
-        var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Data.Id);
-        var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Data.Symbol,
-            redPackageDetail.Data.ChainId, out long maxCount,out string redPackageContractAddress);
-        foreach (var item in redPackageDetail.Data.Items.Where(o => !o.PaymentCompleted).ToArray())
-        {
-           
-            list.Add(new TransferRedPacketInput()
-            {
-                RedPacketId = redPackageId.ToString(),
-                Amount = Convert.ToInt64(item.Amount),
-                ReceiverAddress = Address.FromBase58(item.CaAddress),
-                RedPacketSignature = await redPackageKeyGrain.GenerateSignature($"{symbol}-{res.MinAmount}-{maxCount}")
-            });
-        }
-
-        var sendInput = new TransferRedPacketBatchInput()
-        {
-            TransferRedPacketInputs = { list }
-        };
-        var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-
-        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress);
-    }
-
-
     public async Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction)
     {
         var client = await GetAElfClientAsync(chainId);
