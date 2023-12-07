@@ -5,10 +5,12 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.EntityEventHandler.Core;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -75,8 +77,8 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);
         
-            /*BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));*/
+            BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
+                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs + 30 * 1000));
         
             //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();
