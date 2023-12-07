@@ -81,7 +81,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             _logger.LogInformation("RedPackageCreateResultEto UpdateAsync {redPackageIndex}",redPackageIndex);
             _logger.LogInformation("RedPackageCreate end pay job start");
             BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs));
+                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs + 30 *1000));
 
             //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();
