@@ -196,6 +196,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             };
         }
         finally
+        
         {
             watcher.Stop();
             _logger.LogInformation("send end:{0},{1}:", input.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
