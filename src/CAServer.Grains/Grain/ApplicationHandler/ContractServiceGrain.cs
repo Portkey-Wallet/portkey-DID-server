@@ -418,7 +418,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
         catch (Exception e)
         {
-            _logger.LogError(e, MethodName.RefundRedPacket + " error: {param}", param);
+            _logger.LogError(e, methodName + " error: {param}", param);
             return new TransactionInfoDto();
         }
     }

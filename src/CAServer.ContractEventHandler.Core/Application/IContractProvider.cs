@@ -605,6 +605,6 @@ public class ContractProvider : IContractProvider
             JsonConvert.SerializeObject(sendInput, Formatting.Indented)); 
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
-        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress,MethodName.RefundRedPacket);
+        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress,MethodName.TransferRedPacket);
     }
 }
