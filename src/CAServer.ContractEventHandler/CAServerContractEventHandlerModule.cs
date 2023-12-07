@@ -53,6 +53,8 @@ namespace CAServer.ContractEventHandler;
     typeof(CAServerSignatureModule),
     typeof(CAServerMonitorModule),
     typeof(AbpCachingStackExchangeRedisModule),
+    typeof(CAServerMongoDbModule),
+    typeof(AbpBackgroundJobsHangfireModule),
     typeof(AElfIndexingElasticsearchModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {
@@ -80,6 +82,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
+        ConfigureHangfire(context, configuration);
 
     }
 
@@ -179,5 +182,22 @@ public class CAServerContractEventHandlerModule : AbpModule
     private void ConfigureTokenCleanupService()
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+    }
+    
+    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddHangfire(config =>
+        {
+            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
+            {
+                Db = 1
+            });
+        });
+        
+        context.Services.AddHangfireServer(options =>
+        {
+            options.Queues = new[] { "redpackage" };
+            options.WorkerCount = 8;
+        });
     }
 }
