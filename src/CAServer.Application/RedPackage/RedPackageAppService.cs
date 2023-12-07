@@ -399,6 +399,12 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         var users = await _contactProvider.GetCaHoldersAsync(userIds);
         input.SenderAvatar = users.FirstOrDefault(x => x.UserId == input.SenderId)?.Avatar;
         input.SenderName = users.FirstOrDefault(x => x.UserId == input.SenderId)?.NickName;
+        var sendContract = await _contactProvider.GetContactAsync(CurrentUser.GetId(), input.SenderId);
+        if (sendContract != null && !string.IsNullOrWhiteSpace(sendContract.Name))
+        {
+            input.SenderName = sendContract.Name;
+        }
+
         input.Items?.ForEach(item =>
         {
             item.Avatar = users.FirstOrDefault(x => x.UserId == item.UserId)?.Avatar;
@@ -408,8 +414,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         //fill remark
         var tasks = input.Items?.Select(async grabItemDto =>
         {
-            var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), input.SenderId);
-            if (contact != null)
+            var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), grabItemDto.UserId);
+            if (contact != null && !string.IsNullOrWhiteSpace(contact.Name))
             {
                 grabItemDto.Username = contact.Name;
             }
