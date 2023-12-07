@@ -318,8 +318,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         else
         {
-            salt = GetSalt();
-            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier), Encoding.UTF8.GetBytes(requestInput.Salt)).ToHex();
+            salt = GetSalt().ToHex();
+            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),  
+                ByteStringHelper.FromHexString(requestInput.Salt).ToByteArray()).ToHex();
         }
 
         requestInput.Salt = salt;
@@ -349,9 +350,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
 
         var salt = GetSalt();
-        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), Encoding.UTF8.GetBytes(salt));
+        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt);
 
-        return Tuple.Create(identifierHash.ToHex(), salt, false);
+        return Tuple.Create(identifierHash.ToHex(), salt.ToHex(), false);
     }
 
     private GrainResultDto<GuardianGrainDto> GetGuardian(string guardianIdentifier)
@@ -393,12 +394,32 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private string GetSalt() => Guid.NewGuid().ToString("N");
+    private byte[] GetSalt() => Guid.NewGuid().ToByteArray();
 
-    private Hash GetHash(byte[] input, byte[] salt)
+    private Hash GetHash(byte[] identifier, byte[] salt)
     {
-        var hash = HashHelper.ComputeFrom(input);
+        const int maxIdentifierLength = 256;
+        const int requiredSaltLength = 16;
+
+        if (identifier.Length > maxIdentifierLength)
+        {
+            throw new Exception("Identifier is too long");
+        }
+
+        if (salt.Length != requiredSaltLength)
+        {
+            throw new Exception($"Salt has to be {requiredSaltLength} bytes.");
+        }
+        var hash = HashHelper.ComputeFrom(PadByteArrayToLength(identifier, maxIdentifierLength));
         return HashHelper.ComputeFrom(salt.Concat(hash).ToArray());
+        
+        byte[] PadByteArrayToLength(byte[] originalArray, int targetLength)
+        {
+            var paddedArray = new byte[targetLength];
+            Array.Copy(originalArray, paddedArray, Math.Min(originalArray.Length, targetLength));
+
+            return paddedArray;
+        }
     }
 
     private async Task<GoogleUserInfoDto> GetUserInfoFromGoogleAsync(string accessToken)
