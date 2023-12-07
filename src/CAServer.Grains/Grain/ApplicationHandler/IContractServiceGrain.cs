@@ -20,6 +20,5 @@ public interface IContractServiceGrain : IGrainWithGuidKey
     Task<TransactionResultDto> ForwardTransactionAsync(string chainId, string rawTransaction);
 
     Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(string chainId, IMessage param, string payRedPackageFrom,
-        string redPackageContractAddress);
-
+        string redPackageContractAddress,string methodName);
 }

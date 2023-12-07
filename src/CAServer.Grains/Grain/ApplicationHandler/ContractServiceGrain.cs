@@ -314,7 +314,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     }
     
         public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(string chainId, IMessage param,
-            string ownAddress, string redPackageContractAddress)
+            string payRedPackageFrom, string redPackageContractAddress,string methodName)
     {
         try
         {
@@ -325,13 +325,13 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             var client = new AElfClient(chainInfo.BaseUrl);
             await client.IsConnectedAsync();
-            //var ownAddress = client.GetAddressFromPubKey(payRedPackageFrom); //select public key
-            _logger.LogDebug("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
+            var ownAddress = client.GetAddressFromPubKey(payRedPackageFrom); //select public key
+            _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ",
                 ownAddress, chainInfo.ContractAddress);
 
             //"red package contract address"
             var transaction =
-                await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , MethodName.TransferRedPacket,
+                await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , methodName,
                     param);
 
             var refBlockNumber = transaction.RefBlockNumber;
@@ -348,8 +348,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             transaction.RefBlockNumber = refBlockNumber;
             transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
-            var txWithSign = await _signatureProvider.SignTxMsg(ownAddress, transaction.GetHash().ToHex());
-            _logger.LogDebug("signature provider sign result: {txWithSign}", txWithSign);
+            var txWithSign = await _signatureProvider.SignTxMsg(payRedPackageFrom, transaction.GetHash().ToHex());
+            _logger.LogInformation("signature provider sign result: {txWithSign}", txWithSign);
             transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
             var result = await client.SendTransactionAsync(new SendTransactionInput
@@ -378,7 +378,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
         catch (Exception e)
         {
-            _logger.LogError(e, MethodName.TransferRedPacket + " error: {param}", param);
+            _logger.LogError(e, methodName + " error: {param}", param);
             return new TransactionInfoDto();
         }
     }

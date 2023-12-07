@@ -12,6 +12,8 @@ public static class MethodName
     public const string GetHolderInfo = "GetHolderInfo";
     public const string CreateRedPacket = "CreateRedPacket";
     public const string TransferRedPacket = "TransferRedPacket";
+    public const string RefundRedPacket = "RefundRedPacket";
+
 }
 
 public static class TransactionState
