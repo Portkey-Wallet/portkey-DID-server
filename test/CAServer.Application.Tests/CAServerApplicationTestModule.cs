@@ -113,13 +113,10 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.Configure<ActivityTypeOptions>(o =>
         {
             o.TypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
-            o.DefaultTypes = new List<string>() { "TEST" };
-            o.AllSupportTypes = new HashSet<string>() { "TEST", "TransferTypes", "ContractTypes" };
             o.TransferTypes = new List<string>() { "TEST", "TransferTypes" };
             o.ContractTypes = new List<string>() { "TEST", "ContractTypes" };
             o.ShowPriceTypes = new List<string>() { "TEST" };
-            o.ShowNftTypes = new List<string>() { "TEST" };
-            o.RecentTypes = new List<string>() { "TEST" };
+            o.NoShowTypes = new List<string>() { "no show" };
             o.Zero = "0";
         });
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
@@ -177,4 +174,6 @@ public class CAServerApplicationTestModule : AbpModule
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
+    
+
 }
