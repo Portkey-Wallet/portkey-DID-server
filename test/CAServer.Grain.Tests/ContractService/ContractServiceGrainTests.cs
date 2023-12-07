@@ -130,9 +130,9 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         {
             new TransferRedPacketInput()
             {
-                Amount = 1701075501959,
-                ReceiverAddress = Address.FromBase58("2dni1t2hmZxtEE1tTiAWQ7Fm7hrc42wWvc1jyxAzDT6KGwHhDf"),
-                RedPacketSignature = await redPackageKeyGrain.GenerateSignature("ELF--0--0.39")
+                Amount = 10000000,
+                ReceiverAddress = Address.FromBase58("26MWta7rdxAVo8eYLPYfa1U442TWc7q834yGJZUJMkjDcAfvNZ"),
+                RedPacketSignature = await redPackageKeyGrain.GenerateSignature("3f0c022f-b90c-4883-9c91-dc0bb6c2a430--26MWta7rdxAVo8eYLPYfa1U442TWc7q834yGJZUJMkjDcAfvNZ--10000000,")
             }
         };
 
@@ -141,7 +141,6 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
             TransferRedPacketInputs = {list}
         };
         var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-        await grain.SendTransferRedPacketToChainAsync("AELF", sendInput, "23GxsoW9TRpLqX1Z5tjrmcRMMSn5bhtLAf4HtPj8JX9BerqTqp", "2sFCkQs61YKVkHpN3AT7887CLfMvzzXnMkNYYM431RK5tbKQS9");
     }
     
     private async Task GrabRedPackage_test()

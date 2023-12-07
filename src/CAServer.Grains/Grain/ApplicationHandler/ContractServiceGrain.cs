@@ -354,7 +354,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     }
     
         public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(string chainId, IMessage param,
-            string payRedPackageFrom, string redPackageContractAddress)
+            string payRedPackageFrom, string redPackageContractAddress,string methodName)
     {
         try
         {
@@ -371,7 +371,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             //"red package contract address"
             var transaction =
-                await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , MethodName.TransferRedPacket,
+                await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , methodName,
                     param);
 
             var refBlockNumber = transaction.RefBlockNumber;
@@ -418,7 +418,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
         catch (Exception e)
         {
-            _logger.LogError(e, MethodName.TransferRedPacket + " error: {param}", param);
+            _logger.LogError(e, MethodName.RefundRedPacket + " error: {param}", param);
             return new TransactionInfoDto();
         }
     }

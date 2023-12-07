@@ -56,7 +56,9 @@ public interface IContractAppService
     // Task InitializeQueryRecordIndexAsync();
     // Task InitializeIndexAsync(long blockHeight);
     Task PayRedPackageAsync(Guid eventDataRedPackageId);
-    
+
+    Task<bool> Refund(Guid redPackageId);
+
 
 
 }
@@ -414,6 +416,7 @@ public class ContractAppService : IContractAppService
 
     public async Task PayRedPackageAsync(Guid redPackageId)
     {
+        // TODO daiyabin  batch pay so sleep a little moment        Thread.Sleep(30000);
         Stopwatch watcher = Stopwatch.StartNew();
         var startTime = DateTime.Now.Ticks;
         
@@ -424,14 +427,6 @@ public class ContractAppService : IContractAppService
         var grabItems = redPackageDetail.Data.Items;
         var payRedPackageFrom = _packageAccount.getOneAccountRandom();
         _logger.Info("red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",payRedPackageFrom.ToString());
-
-        //if red package expire we should refund it
-        // if (await Refund(redPackageDetail.Data, grain,payRedPackageFrom))
-        // { 
-        //     _logger.Info("red package is expired and it has been refunded,red package id is{} ",redPackageId.ToString());
-        //     return;
-        // }
-        
         //if we need judge other params ?
         if (grabItems.IsNullOrEmpty())
         {
@@ -460,16 +455,20 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("#monitor# payRedPackage:{redpackageId},{cost},{endTime}:", redPackageId.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
     }
 
-    private async Task<bool> Refund(RedPackageDetailDto redPackageDetail,IRedPackageGrain grain,string payRedPackageFrom )
+    public async Task<bool> Refund(Guid redPackageId)
     {
-        if (redPackageDetail == null || grain == null)
-        {
-            return false;
-        }
+        _logger.Info($"Refund start and the redpackage id is {redPackageId}",redPackageId.ToString());
+        var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
 
-        if (redPackageDetail.Status.Equals(RedPackageStatus.Expired) && !redPackageDetail.IsRedPackageFullyClaimed)
+        var redPackageDetail = await grain.GetRedPackage(redPackageId);
+        var redPackageDetailDto = redPackageDetail.Data;
+        var payRedPackageFrom = _packageAccount.getOneAccountRandom();
+        _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",payRedPackageFrom.ToString());
+        
+
+        if (redPackageDetailDto.Status.Equals(RedPackageStatus.Expired) && !redPackageDetailDto.IsRedPackageFullyClaimed)
         {
-            var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetail,payRedPackageFrom);
+            var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetailDto,payRedPackageFrom);
             var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
             if (redPackageIndex == null)
             {

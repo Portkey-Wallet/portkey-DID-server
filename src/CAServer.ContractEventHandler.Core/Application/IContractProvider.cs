@@ -7,6 +7,7 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Commons;
+using CAServer.Contacts.Provider;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.RedPackage;
@@ -22,12 +23,14 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.RedPacket;
 using Volo.Abp;
 using Volo.Abp.Caching;
+using Volo.Abp.Users;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
@@ -81,12 +84,14 @@ public class ContractProvider : IContractProvider
     private readonly IDistributedCache<BlockDto> _distributedCache;
     private readonly BlockInfoOptions _blockInfoOptions;
     private readonly IRedPackageAppService _redPackageAppService;
+    private readonly IContactProvider _contactProvider;
+
 
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
         IGraphQLProvider graphQlProvider, IIndicatorScope indicatorScope, IDistributedCache<BlockDto> distributedCache,
-        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, IRedPackageAppService redPackageAppService)
+        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, IRedPackageAppService redPackageAppService, IContactProvider contactProvider)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
@@ -97,6 +102,7 @@ public class ContractProvider : IContractProvider
         _indicatorScope = indicatorScope;
         _distributedCache = distributedCache;
         _redPackageAppService = redPackageAppService;
+        _contactProvider = contactProvider;
         _blockInfoOptions = blockInfoOptions.Value;
     }
 
@@ -541,8 +547,6 @@ public class ContractProvider : IContractProvider
     public async Task<TransactionInfoDto> SendTransferRedPacketRefundAsync(RedPackageDetailDto redPackageDetail,
         string payRedPackageFrom)
     {
-        var list = new List<TransferRedPacketInput>();
-
         Guid redPackageId = redPackageDetail.Id;
         string symbol = redPackageDetail.Symbol;
         string chainId = redPackageDetail.ChainId;
@@ -550,21 +554,17 @@ public class ContractProvider : IContractProvider
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Symbol,
             redPackageDetail.ChainId, out long maxCount,out string redPackageContractAddress);
         var grab = redPackageDetail.Items.Sum(item => long.Parse(item.Amount));
-        list.Add(new TransferRedPacketInput
-        {
-            Amount = Convert.ToInt64((long.Parse(redPackageDetail.TotalAmount) - grab).ToString()),
-            ReceiverAddress = Address.FromBase58(redPackageContractAddress),
-            RedPacketSignature =await redPackageKeyGrain.GenerateSignature($"{redPackageId}-{redPackageContractAddress}-{long.Parse(redPackageDetail.TotalAmount) - grab}")
-        });
-        var sendInput = new TransferRedPacketBatchInput()
+        var sendInput = new RefundRedPacketInput()
         {
             RedPacketId = redPackageId.ToString(),
-            TransferRedPacketInputs = { list }
+            Amount = long.Parse(redPackageDetail.TotalAmount) - grab,
+            RedPacketSignature =await redPackageKeyGrain.GenerateSignature($"{redPackageId}-{long.Parse(redPackageDetail.TotalAmount) - grab}")
         };
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
-        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress);
+        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress,MethodName.RefundRedPacket);
     }
+
     
         public async Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(
         GrainResultDto<RedPackageDetailDto> redPackageDetail, string payRedPackageFrom)
@@ -605,6 +605,6 @@ public class ContractProvider : IContractProvider
             JsonConvert.SerializeObject(sendInput, Formatting.Indented)); 
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
-        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress);
+        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,redPackageContractAddress,MethodName.RefundRedPacket);
     }
 }

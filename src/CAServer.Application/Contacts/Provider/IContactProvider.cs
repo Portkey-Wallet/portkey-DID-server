@@ -61,16 +61,18 @@ public class ContactProvider : IContactProvider, ISingletonDependency
     public async Task<CAHolderIndex> GetCaHolderAsync(Guid userId, string caHash)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.CaHash).Value(caHash)));
+         // mustQuery.Add(q => q.Term(i => i.Field(f => f.CaHash).Value(caHash)));
         //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         if (userId != Guid.Empty)
         {
-            mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+            //mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
         }
 
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
-        var holder = await _caHolderRepository.GetAsync(Filter);
+        
+        // var holder = (await _caHolderRepository.GetListAsync(Filter)).Item2.FirstOrDefault();
+        var holder = await _caHolderRepository.GetAsync(userId);
         if (holder == null || holder.IsDeleted) return null;
 
         return holder;

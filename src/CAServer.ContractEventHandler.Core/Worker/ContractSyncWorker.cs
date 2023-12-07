@@ -28,5 +28,6 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     {
 
         await _contractAppService.QueryAndSyncAsync();
+        // await _contractAppService.Refund(new Guid("375442ae-f5fb-4c2b-a809-a971dcf12680"));
     }
 }

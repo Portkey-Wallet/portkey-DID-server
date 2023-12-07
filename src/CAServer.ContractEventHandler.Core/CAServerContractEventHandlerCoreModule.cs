@@ -16,7 +16,7 @@ using Volo.Abp.Threading;
 
 namespace CAServer.ContractEventHandler.Core;
 
-[DependsOn(typeof(AbpAutoMapperModule), typeof(CAServerSignatureModule), typeof(CAServerApplicationModule),typeof(AbpBackgroundJobsHangfireModule))]
+[DependsOn(typeof(AbpAutoMapperModule), typeof(CAServerSignatureModule), typeof(CAServerApplicationModule))]
 
 public class CAServerContractEventHandlerCoreModule : AbpModule
 {
@@ -35,9 +35,7 @@ public class CAServerContractEventHandlerCoreModule : AbpModule
         context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
-        ConfigureHangfire(context, configuration);
         
-
     }
 
     public override void OnPostApplicationInitialization(ApplicationInitializationContext context)
@@ -45,20 +43,5 @@ public class CAServerContractEventHandlerCoreModule : AbpModule
         // var service = context.ServiceProvider.GetRequiredService<ICrossChainTransferAppService>();
         // AsyncHelper.RunSync(async () => await service.ResetRetryTimesAsync());
     }
-    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        context.Services.AddHangfire(config =>
-        {
-            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
-            {
-                Db = 1
-            });
-        });
-        
-        context.Services.AddHangfireServer(options =>
-        {
-            options.Queues = new[] { "redpackage" };
-            options.WorkerCount = 8;
-        });
-    }
+   
 }

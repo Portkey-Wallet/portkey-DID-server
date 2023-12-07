@@ -46,8 +46,7 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
     typeof(AbpCachingStackExchangeRedisModule),
-    typeof(CAServerMongoDbModule),
-    typeof(AbpBackgroundJobsHangfireModule)
+    typeof(CAServerMongoDbModule)
 )]
 public class CAServerContractEventHandlerModule : AbpModule
 {
@@ -72,7 +71,6 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
-        ConfigureHangfire(context, configuration);
 
     }
 
@@ -116,7 +114,6 @@ public class CAServerContractEventHandlerModule : AbpModule
         //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
-
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
@@ -173,22 +170,5 @@ public class CAServerContractEventHandlerModule : AbpModule
     private void ConfigureTokenCleanupService()
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
-    }
-    
-    private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
-    {
-        context.Services.AddHangfire(config =>
-        {
-            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
-            {
-                Db = 1
-            });
-        });
-        
-        context.Services.AddHangfireServer(options =>
-        {
-            options.Queues = new[] { "redpackage" };
-            options.WorkerCount = 8;
-        });
     }
 }
