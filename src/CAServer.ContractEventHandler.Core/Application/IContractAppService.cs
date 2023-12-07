@@ -61,7 +61,6 @@ public class ContractAppService : IContractAppService
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ContractAppService> _logger;
     private readonly IIndicatorLogger _indicatorLogger;
-    private const string PayRedPackageCron = "0/30 * * * * ? ";
     private readonly IClusterClient _clusterClient;
     private readonly PayRedPackageAccount _packageAccount;
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository; 
@@ -70,7 +69,7 @@ public class ContractAppService : IContractAppService
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
         IContractProvider contractProvider, IObjectMapper objectMapper, ILogger<ContractAppService> logger,
-        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger, IClusterClient clusterClient, PayRedPackageAccount packageAccount, INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
+        IRecordsBucketContainer recordsBucketContainer, IIndicatorLogger indicatorLogger, IClusterClient clusterClient, IOptionsSnapshot<PayRedPackageAccount> packageAccount, INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
     {
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
@@ -82,7 +81,7 @@ public class ContractAppService : IContractAppService
         _recordsBucketContainer = recordsBucketContainer;
         _indicatorLogger = indicatorLogger;
         _clusterClient = clusterClient;
-        _packageAccount = packageAccount;
+        _packageAccount = packageAccount.Value;
         _redPackageIndexRepository = redPackageIndexRepository;
     }
 
