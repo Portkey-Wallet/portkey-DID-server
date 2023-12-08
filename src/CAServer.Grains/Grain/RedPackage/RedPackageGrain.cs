@@ -290,128 +290,72 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
 
     private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount,int decimalIn)
     {
+        var buckets = new List<BucketItem>();
+        var remainAmount = totalAmount;
+        int decimalPlaces = BucketRandomSpecialOperation(totalAmount, count, decimalIn);
+        long realMinAmount = (long)Math.Pow(10, decimalIn - decimalPlaces);
+        
         int luckyKingIndex = 0;
-        long luckyKingAmount = minAmount;
-        var bucket = new List<BucketItem>();
-        var rest = totalAmount;
-        Random random = new Random();
-        int places = BucketRandomSpecialOperation(totalAmount, count,decimalIn, out bool specialOperation);
+        long luckyKingAmount = realMinAmount;
+        
         for (var i = 0; i < count; i++)
         {
-            bucket.Add(new BucketItem()
+            buckets.Add(new BucketItem()
             {
-                Amount = minAmount
+                Amount = realMinAmount
             });
-            rest -= minAmount;
+            remainAmount -= realMinAmount;
         }
-
+        
+        Random random = new Random();
         for (var i = 0; i < count; i++)
         {
-            if (rest <= minAmount)
+            if (remainAmount <= 0)
             {
                 break;
             }
 
-            double randomNumber = GetRandomNum(places,specialOperation,random);
-            long max = (rest / (count - i)) * 2;
-            long money = Math.Max(minAmount, (long)(randomNumber * max));
-            bucket[i].Amount += money;
-            if (bucket[i].Amount > luckyKingAmount)
+            long allocationAmount;
+            if (i == count - 1)
             {
-                luckyKingAmount = bucket[i].Amount;
+                allocationAmount = remainAmount;
+            }
+            else
+            {
+                long maxAllocationAmount = remainAmount / (count - i) * 2;
+                double randomNumber = random.NextDouble();
+                allocationAmount = (long)(randomNumber * maxAllocationAmount) / realMinAmount * realMinAmount;
+            }
+            buckets[i].Amount += allocationAmount;
+            
+            if (buckets[i].Amount > luckyKingAmount)
+            {
+                luckyKingAmount = buckets[i].Amount;
                 luckyKingIndex = i;
             }
 
-            rest -= money;
+            remainAmount -= allocationAmount;
         }
+        
+        buckets[luckyKingIndex].IsLuckyKing = true;
 
-        bucket[count - 1].Amount += rest;
-        if (bucket[count - 1].Amount > luckyKingAmount)
-        {
-            luckyKingAmount = bucket[count - 1].Amount;
-            luckyKingIndex = count - 1;
-        }
-
-        bucket[luckyKingIndex].IsLuckyKing = true;
-
-        return (bucket, luckyKingIndex);
+        return (buckets, luckyKingIndex);
     }
     
-    public async Task<String> GenerateRandomBucketTest(int count, long totalAmount, long minAmount,int decimalIn)
-    {
-        int luckyKingIndex = 0;
-        long luckyKingAmount = minAmount;
-        var bucket = new List<BucketItem>();
-        var rest = totalAmount;
-        Random random = new Random();
-        int places = BucketRandomSpecialOperation(totalAmount, count,decimalIn, out bool specialOperation);
-        for (var i = 0; i < count; i++)
-        {
-            bucket.Add(new BucketItem()
-            {
-                Amount = minAmount
-            });
-            rest -= minAmount;
-        }
-
-        for (var i = 0; i < count; i++)
-        {
-            if (rest <= minAmount)
-            {
-                break;
-            }
-
-            double randomNumber = GetRandomNum(places,specialOperation,random);
-            long max = (rest / (count - i)) * 2;
-            long money = Math.Max(minAmount, (long)(randomNumber * max));
-            bucket[i].Amount += money;
-            if (bucket[i].Amount > luckyKingAmount)
-            {
-                luckyKingAmount = bucket[i].Amount;
-                luckyKingIndex = i;
-            }
-
-            rest -= money;
-        }
-
-        bucket[count - 1].Amount += rest;
-        if (bucket[count - 1].Amount > luckyKingAmount)
-        {
-            luckyKingAmount = bucket[count - 1].Amount;
-            luckyKingIndex = count - 1;
-        }
-
-        bucket[luckyKingIndex].IsLuckyKing = true;
-        return "";
-
-    }
-
-    private int BucketRandomSpecialOperation(long total, int count,int decimalIn,out bool specialOperation)
+    private int BucketRandomSpecialOperation(long total, int count,int decimalIn)
     {
         // little point in 0~2 
         int places = DecimalPlaces(total,decimalIn);
         if (places < RePackagePlaceMove)
         {
-            long baseJudgeCount = (long)Math.Pow(10, decimalIn - RePackagePlaceMove - places);
-            if (baseJudgeCount * count > total)
-            {
-                specialOperation = false;
-                return -1;
-            }
-            specialOperation = true;
-            return places + RePackagePlaceMove;
+            places += 2;
         }
-        else
+        long baseJudgeCount = (long)Math.Pow(10, decimalIn - places);
+        if (baseJudgeCount * count > total)
         {
-            long baseJudgeCount = (long)Math.Pow(10, decimalIn - places);
-            if (baseJudgeCount * count > total)
-            {
-                specialOperation = false;
-                return -1;
-            }
-            specialOperation = true;
-            return places;
+            return decimalIn;
         }
+        return places;
     }
 
     private int DecimalPlaces(long count,int decimalIn)
