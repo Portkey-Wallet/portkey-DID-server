@@ -7,11 +7,11 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.RedPackage;
 
-public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
+public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
 {
     private readonly IObjectMapper _objectMapper;
 
-    private const int RePackagePlaceMove = 2;
+    private const int RePackagePlaceMove = 3;
 
     public RedPackageGrain(IObjectMapper objectMapper)
     {
@@ -304,90 +304,74 @@ public class RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
         return (bucket, 0);
     }
 
-      private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount,int decimalIn)
+    private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount,int decimalIn)
     {
+        var buckets = new List<BucketItem>();
+        var remainAmount = totalAmount;
+        int decimalPlaces = BucketRandomSpecialOperation(totalAmount, count, decimalIn);
+        long realMinAmount = (long)Math.Pow(10, decimalIn - decimalPlaces);
+        
         int luckyKingIndex = 0;
-        long luckyKingAmount = minAmount;
-        var bucket = new List<BucketItem>();
-        var rest = totalAmount;
-        Random random = new Random();
-        int places = BucketRandomSpecialOperation(totalAmount, count,decimalIn, out bool specialOperation);
+        long luckyKingAmount = realMinAmount;
+        
         for (var i = 0; i < count; i++)
         {
-            bucket.Add(new BucketItem()
+            buckets.Add(new BucketItem()
             {
-                Amount = 0
+                Amount = realMinAmount
             });
-            // rest -= minAmount;
+            remainAmount -= realMinAmount;
         }
-
+        
+        Random random = new Random();
         for (var i = 0; i < count; i++)
         {
-            if (rest <= minAmount)
+            if (remainAmount <= 0)
             {
                 break;
             }
 
-            double randomNumber = random.NextDouble();
-            long max = (rest / (count - i)) * 2;
-            long money = Math.Max(minAmount, (long)(randomNumber * max));
+            long allocationAmount;
             if (i == count - 1)
             {
-                money = rest;
-            } else if (specialOperation)
-            {
-                money= (money/(long)Math.Pow(10, decimalIn - places))*(long)Math.Pow(10, decimalIn - places);
-                if (money == 0)
-                {
-                    money = (long)Math.Pow(10, decimalIn - places);
-                }
-
+                allocationAmount = remainAmount;
             }
-            bucket[i].Amount += money;
-            if (bucket[i].Amount > luckyKingAmount)
+            else
             {
-                luckyKingAmount = bucket[i].Amount;
+                long maxAllocationAmount = remainAmount / (count - i) * 2;
+                double randomNumber = random.NextDouble();
+                allocationAmount = (long)(randomNumber * maxAllocationAmount) / realMinAmount * realMinAmount;
+            }
+            buckets[i].Amount += allocationAmount;
+            
+            if (buckets[i].Amount > luckyKingAmount)
+            {
+                luckyKingAmount = buckets[i].Amount;
                 luckyKingIndex = i;
             }
 
-            rest -= money;
+            remainAmount -= allocationAmount;
         }
-        if (bucket[count - 1].Amount > luckyKingAmount)
-        {
-            luckyKingAmount = bucket[count - 1].Amount;
-            luckyKingIndex = count - 1;
-        }
+        
+        buckets[luckyKingIndex].IsLuckyKing = true;
 
-        bucket[luckyKingIndex].IsLuckyKing = true;
-
-        return (bucket, luckyKingIndex);
+        return (buckets, luckyKingIndex);
     }
-    private int BucketRandomSpecialOperation(long total, int count,int decimalIn,out bool specialOperation)
+    
+    private int BucketRandomSpecialOperation(long total, int count,int decimalIn)
     {
         // little point in 0~2 
         int places = DecimalPlaces(total,decimalIn);
-        if (places < 2)
+        if (places < RePackagePlaceMove)
         {
-            long baseJudgeCount = (long)Math.Pow(10, decimalIn - 2 - places);
-            if (baseJudgeCount * count > total)
-            {
-                specialOperation = false;
-                return -1;
-            }
-            specialOperation = true;
-            return places + 2;
+            places += 2;
         }
-        else
+        long baseJudgeCount = (long)Math.Pow(10, decimalIn - places);
+        if (baseJudgeCount * count > total)
         {
-            long baseJudgeCount = (long)Math.Pow(10, decimalIn - places);
-            if (baseJudgeCount * count > total)
-            {
-                specialOperation = false;
-                return -1;
-            }
-            specialOperation = true;
-            return places;
+            return decimalIn;
         }
+        return places;
     }
 
     private int DecimalPlaces(long count,int decimalIn)
