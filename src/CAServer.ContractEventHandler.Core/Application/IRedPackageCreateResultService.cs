@@ -61,6 +61,10 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
                     JsonConvert.SerializeObject(eventData));
                 return;
             }
+            
+            //TODO testcode
+            // BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
+            //     TimeSpan.FromMilliseconds(30 * 1000));
 
             redPackageIndex.TransactionId = eventData.TransactionId;
             redPackageIndex.TransactionResult = eventData.TransactionResult;
