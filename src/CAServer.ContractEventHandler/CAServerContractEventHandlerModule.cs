@@ -8,7 +8,6 @@ using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
 using CAServer.Monitor;
-using CAServer.RedPackage;
 using CAServer.Signature;
 using Hangfire;
 using Hangfire.Redis.StackExchange;
@@ -23,13 +22,10 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
-using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
-using Volo.Abp.BackgroundJobs.Hangfire;
 using Volo.Abp.BackgroundWorkers;
-using Volo.Abp.BackgroundWorkers.Quartz;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.EventBus.RabbitMq;
@@ -39,22 +35,25 @@ using Volo.Abp.Threading;
 using ChainOptions = CAServer.ContractEventHandler.Core.Application.ChainOptions;
 using ContractProvider = CAServer.ContractEventHandler.Core.Application.ContractProvider;
 using IContractProvider = CAServer.ContractEventHandler.Core.Application.IContractProvider;
+using StackExchange.Redis;
+using Volo.Abp.BackgroundJobs.Hangfire;
 
 namespace CAServer.ContractEventHandler;
+
 
 [DependsOn(
     typeof(CAServerContractEventHandlerCoreModule),
     typeof(CAServerGrainsModule),
     typeof(AbpAutofacModule),
-    typeof(AbpBackgroundWorkersQuartzModule),
-    typeof(AbpBackgroundWorkersModule),
+    //typeof(AbpBackgroundWorkersQuartzModule),
+    // typeof(AbpBackgroundWorkersModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
     typeof(CAServerMonitorModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(CAServerMongoDbModule),
-    typeof(AbpBackgroundJobsHangfireModule),
+    //typeof(AbpBackgroundJobsHangfireModule),
     typeof(AElfIndexingElasticsearchModule))]
 public class CAServerContractEventHandlerModule : AbpModule
 {
@@ -83,7 +82,6 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
         ConfigureHangfire(context, configuration);
-
     }
 
     private void ConfigureCache(IConfiguration configuration)

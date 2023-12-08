@@ -49,6 +49,9 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
     {
         try
         {
+            // BackgroundJob.Schedule<MyTask>(x => new MyTask(_logger).test(),
+            //     TimeSpan.FromMilliseconds(30 * 1000));
+            //
             _logger.LogInformation("RedPackageCreateResultEto {Message}", JsonConvert.SerializeObject(eventData));
             var sessionId = eventData.SessionId;
             var redPackageIndex = await _redPackageRepository.GetAsync(sessionId);
@@ -58,12 +61,11 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
                     JsonConvert.SerializeObject(eventData));
                 return;
             }
-        
+
             redPackageIndex.TransactionId = eventData.TransactionId;
             redPackageIndex.TransactionResult = eventData.TransactionResult;
             if (eventData.Success == false)
             {
-                //TODO P3 updating ES data and updating Grain data can be done in parallel.
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
                 var updateRedPackageTask = _redPackageRepository.UpdateAsync(redPackageIndex);
@@ -73,7 +75,6 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
                 return;
             }
         
-            //TODO P1 updating ES data and sending IM messages can be executed in parallel.
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);
         
@@ -115,3 +116,19 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
         }
     }
 }
+
+// //TODO delete
+// public class MyTask
+// {
+//     private readonly ILogger<RedPackageCreateResultService> _loggerrr;
+//     public MyTask(ILogger<RedPackageCreateResultService> logger)
+//     {
+//         _loggerrr = logger;
+//     }
+//     
+//     [Queue("redpackage")]
+//     public void test()
+//     {
+//         _loggerrr.LogInformation("daiyabinasdfasdffsadsssssssssssssssssssssssssssssssssssssssssssssssssssss");
+//     }
+// }
