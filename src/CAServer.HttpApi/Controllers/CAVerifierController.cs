@@ -34,6 +34,7 @@ public class CAVerifierController : CAServerController
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
 
+
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
         ICurrentUser currentUser, IIpWhiteListAppService ipWhiteListAppService)
@@ -239,6 +240,7 @@ public class CAVerifierController : CAServerController
 
         return await _googleAppService.IsGoogleRecaptchaOpenAsync(userIpAddress,
             type);
+
     }
 
     [HttpPost("getVerifierServer")]
@@ -273,7 +275,7 @@ public class CAVerifierController : CAServerController
     private void ValidateOperationType(OperationType operationType)
     {
         var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(operationType))
+        if (!values.Contains(operationType) || operationType == OperationType.Unknown)
         {
             throw new UserFriendlyException("OperationType is invalid");
         }

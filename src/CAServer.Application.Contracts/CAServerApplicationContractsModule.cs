@@ -1,4 +1,5 @@
-﻿using Volo.Abp.Account;
+﻿using CAServer.Monitor;
+using Volo.Abp.Account;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
@@ -17,7 +18,8 @@ namespace CAServer;
     typeof(AbpPermissionManagementApplicationContractsModule),
     typeof(AbpSettingManagementApplicationContractsModule),
     typeof(AbpTenantManagementApplicationContractsModule),
-    typeof(AbpObjectExtendingModule)
+    typeof(AbpObjectExtendingModule),
+    typeof(CAServerMonitorModule)
 )]
 public class CAServerApplicationContractsModule : AbpModule
 {

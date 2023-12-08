@@ -135,6 +135,7 @@ public class CAServerApplicationTestModule : AbpModule
             options.Code = "SG";
             options.Iso = "65";
         });
+        context.Services.Configure<SecurityOptions>(options => { options.DefaultTokenTransferLimit = 100000; });
 
         context.Services.Configure<AppleCacheOptions>(options =>
         {

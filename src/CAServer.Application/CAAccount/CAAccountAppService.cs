@@ -28,6 +28,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -345,7 +346,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
 
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
-                                                                       && g.GuardianList.Guardians.Count > 0);
+                                                                       && g.GuardianList.Guardians.Count > 0
+                                                                       && g.OriginChainId == g.ChainId);
 
         return guardianInfo?.GuardianList.Guardians
             .Where(t => t.Type.Equals(((int)GuardianIdentifierType.Apple).ToString()) && t.IsLoginGuardian).ToList();

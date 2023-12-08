@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CAServer.Domain.Shared\CAServer.Domain.Shared.csproj" />
+        <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAActivity.Provider;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Options;
 using GraphQL;
@@ -31,6 +32,11 @@ public interface IGraphQLProvider
         long endHeight);
 
     Task<IndexerTransaction> GetReceiveTransactionAsync(string chainId, string transferTxId, long endHeight);
+    
+    Task<List<QueryEventDto>> GetGuardianTransactionInfosAsync(string chainId,
+        long startBlockHeight, long endBlockHeight);
+
+    Task<CaHolderQueryDto> GetCaHolderInfoAsync(string caHash, int skipCount = 0, int maxResultCount = 1);
 }
 
 public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
@@ -254,5 +260,73 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         });
 
         return txs.Data.CaHolderTransactionInfo.Data.FirstOrDefault();
+    }
+
+    public async Task<List<QueryEventDto>> GetGuardianTransactionInfosAsync(string chainId, long startBlockHeight, long endBlockHeight)
+    {
+        try
+        {
+            if (startBlockHeight >= endBlockHeight)
+            {
+                _logger.LogError("EndBlockHeight should be higher than StartBlockHeight");
+                return new List<QueryEventDto>();
+            }
+
+            var graphQLResponse = await _graphQLClient.SendQueryAsync<GuardianChangeRecords>(new GraphQLRequest
+            {
+                Query = @"
+			    query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!) {
+                    guardianChangeRecordInfo(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight}){
+                        caAddress, caHash, changeType, blockHeight, blockHash}
+                    }",
+                Variables = new
+                {
+                    chainId,
+                    startBlockHeight,
+                    endBlockHeight
+                }
+            });
+
+            if (graphQLResponse.Data.GuardianChangeRecordInfo.IsNullOrEmpty())
+            {
+                return new List<QueryEventDto>();
+            }
+
+            var result = new List<QueryEventDto>();
+            foreach (var record in graphQLResponse.Data.GuardianChangeRecordInfo)
+            {
+                result.Add(new QueryEventDto
+                {
+                    CaHash = record.CaHash,
+                    ChangeType = record.ChangeType,
+                    BlockHeight = record.BlockHeight,
+                    BlockHash = record.BlockHash
+                });
+            }
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            return new List<QueryEventDto>();
+        }
+    }
+    
+    public async Task<CaHolderQueryDto> GetCaHolderInfoAsync(string caHash, int skipCount = 0, int maxResultCount = 1)
+    {
+        var response = await _graphQLClient.SendQueryAsync<CaHolderQueryDto>(new GraphQLRequest
+        {
+            Query = @"
+			    query($caHash:String,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderInfo(dto: {caHash:$caHash,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                            chainId,caHash,caAddress,originChainId}
+                }",
+            Variables = new
+            {
+                caHash, skipCount, maxResultCount
+            }
+        });
+
+        return response?.Data;
     }
 }

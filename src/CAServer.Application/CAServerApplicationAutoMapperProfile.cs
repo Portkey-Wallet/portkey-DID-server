@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AElf;
 using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
@@ -24,6 +25,7 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.ImUser.Dto;
@@ -34,6 +36,7 @@ using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.ThirdPart;
+using CAServer.PrivacyPolicy.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
@@ -43,6 +46,7 @@ using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
+using CAServer.ValidateOriginChainId.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
@@ -170,7 +174,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.CollectionName))
             .ForMember(t => t.Balance, m => m.MapFrom(f => f.NftInfo == null ? null : f.Balance.ToString()))
             .ForMember(t => t.TokenContractAddress,
-                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.TokenContractAddress));
+                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.TokenContractAddress))
+            .ForMember(t => t.Decimals,
+                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.Decimals.ToString()));
 
         // user activity
         CreateMap<IndexerTransaction, GetActivityDto>()
@@ -214,7 +220,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<GetHolderInfoOutput, GuardianResultDto>()
             .ForMember(t => t.CaHash, m => m.MapFrom(f => f.CaHash.ToHex()))
-            .ForMember(t => t.CaAddress, m => m.MapFrom(f => f.CaAddress.ToBase58()));
+            .ForMember(t => t.CaAddress, m => m.MapFrom(f => f.CaAddress.ToBase58()))
+            .ForMember(t => t.CreateChainId,
+                m => m.MapFrom(f =>
+                    f.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(f.CreateChainId) : string.Empty));
         // .ForPath(t => t.GuardianList, m => m.MapFrom(f => f.GuardianList.Guardians));
 
         CreateMap<RegisterRequestDto, RegisterDto>().BeforeMap((src, dest) =>
@@ -390,14 +399,21 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
             ;
         CreateMap<ImInfo, ImInfos>()
-            .ForMember(t => t.PortkeyId, m => m.MapFrom(f => f.PortkeyId == Guid.Empty ? string.Empty : f.PortkeyId.ToString()))
+            .ForMember(t => t.PortkeyId,
+                m => m.MapFrom(f => f.PortkeyId == Guid.Empty ? string.Empty : f.PortkeyId.ToString()))
             ;
         CreateMap<ContactResultDto, ContactListDto>()
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id == Guid.Empty ? string.Empty : f.Id.ToString()))
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
             .ReverseMap()
             ;
-        
+
+        CreateMap<ValidateOriginChainIdGrainDto, ValidateOriginChainIdState>().ReverseMap();
+
+
+        CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
+        CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
+
         CreateMap<CAHolderIndex, HolderInfoWithAvatar>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
         CreateMap<CAHolderGrainDto, HolderInfoWithAvatar>()
@@ -440,5 +456,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderDto, NftOrderQueryResponseDto>()
             .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
             .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));
+        CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
+        CreateMap<Portkey.Contracts.CA.Guardian, GuardianIndexerInfoDto>()
+            .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
+            .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
     }
 }
