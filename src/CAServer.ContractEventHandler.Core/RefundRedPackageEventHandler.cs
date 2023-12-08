@@ -23,7 +23,7 @@ public class RefundRedPackageEventHandler : IDistributedEventHandler<RefundRedPa
     {
       
         _logger.LogInformation($"RefundRedPackageAsync start and the red package id is {eventData.RedPackageId}",eventData.RedPackageId.ToString());
-        _ = await _contractAppService.RefundAsync(eventData.RedPackageId);
+        _ = _contractAppService.RefundAsync(eventData.RedPackageId);
         _logger.LogInformation($"RefundRedPackageAsync end and the red package id is {eventData.RedPackageId}",eventData.RedPackageId.ToString());
 
     }
