@@ -107,6 +107,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 ExpireTime = RedPackageConsts.ExpireTimeMs,
                 RedPackageContractAddress = chainInfo.RedPackageContractAddress
             };
+            _logger.LogInformation("generate result:{0}", JsonConvert.SerializeObject(res));
             return res;
         }
         finally
@@ -114,7 +115,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             watcher.Stop();
             if (res != null)
             {
-                _logger.LogInformation("generate start:{0},{1}:", res.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
                 _logger.LogInformation("#monitor# generate:{redpackageId},{cost},{startTime}:", res.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
             }
         }
