@@ -111,7 +111,8 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
                 Result = RedPackageGrabStatus.Fail,
                 ErrorMessage = checkResult.Item2,
                 Amount = "",
-                Status = State.Status
+                Status = State.Status,
+                ExpireTime = State.ExpireTime
             };
             //repeated claim should return true 
             if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
