@@ -57,7 +57,7 @@ public interface IContractAppService
     // Task InitializeIndexAsync(long blockHeight);
     Task PayRedPackageAsync(Guid eventDataRedPackageId);
 
-    Task<bool> Refund(Guid redPackageId);
+    Task<bool> RefundAsync(Guid redPackageId);
 
 
 
@@ -455,7 +455,7 @@ public class ContractAppService : IContractAppService
         _logger.LogInformation("#monitor# payRedPackage:{redpackageId},{cost},{endTime}:", redPackageId.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
     }
 
-    public async Task<bool> Refund(Guid redPackageId)
+    public async Task<bool> RefundAsync(Guid redPackageId)
     {
         _logger.Info($"Refund start and the redpackage id is {redPackageId}",redPackageId.ToString());
         var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
