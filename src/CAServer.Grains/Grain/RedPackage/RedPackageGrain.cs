@@ -260,7 +260,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
         return bucket;
     }
 
-    private (List<BucketItem>, int) GenerateBucket(int count, long totalAmount, long minAmount, int decimalIn,
+    public (List<BucketItem>, int) GenerateBucket(int count, long totalAmount, long minAmount, int decimalIn,
         RedPackageType type)
     {
         switch (type)
