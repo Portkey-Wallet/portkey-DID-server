@@ -399,27 +399,19 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private Hash GetHash(byte[] identifier, byte[] salt)
     {
         const int maxIdentifierLength = 256;
-        const int requiredSaltLength = 16;
+        const int maxSaltLength = 16;
 
         if (identifier.Length > maxIdentifierLength)
         {
             throw new Exception("Identifier is too long");
         }
 
-        if (salt.Length != requiredSaltLength)
+        if (salt.Length != maxSaltLength)
         {
-            throw new Exception($"Salt has to be {requiredSaltLength} bytes.");
+            throw new Exception($"Salt has to be {maxSaltLength} bytes.");
         }
-        var hash = HashHelper.ComputeFrom(PadByteArrayToLength(identifier, maxIdentifierLength));
-        return HashHelper.ComputeFrom(salt.Concat(hash).ToArray());
-        
-        byte[] PadByteArrayToLength(byte[] originalArray, int targetLength)
-        {
-            var paddedArray = new byte[targetLength];
-            Array.Copy(originalArray, paddedArray, Math.Min(originalArray.Length, targetLength));
-
-            return paddedArray;
-        }
+        var hash = HashHelper.ComputeFrom(identifier);
+        return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }
 
     private async Task<GoogleUserInfoDto> GetUserInfoFromGoogleAsync(string accessToken)
