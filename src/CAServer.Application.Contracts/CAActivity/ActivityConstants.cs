@@ -24,19 +24,22 @@ public static class ActivityConstants
         { "Bingo", "BingoGame-Bingo" },
         { "Play", "BingoGame-Play" },
         { "BeanGoTown-Bingo", "BeanGo Town-Bingo" },
-        { "BeanGoTown-Play", "BeanGo Town-Play" }
+        { "ManagerApprove", "Contract Approve" },
+        { "SetTransferLimit", "Transfer Settings" }
     };
 
     public static readonly List<string> DefaultTypes = new()
     {
-        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "Bingo", "Play","BeanGoTown-Bingo","BeanGoTown-Play"
+        "Transfer", "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "Bingo", "Play", "BeanGoTown-Bingo",
+        "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit"
     };
 
     public static readonly HashSet<string> AllSupportTypes = new()
     {
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "SocialRecovery", "RemoveManagerInfo",
         "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
-        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play","BeanGoTown-Bingo","BeanGoTown-Play"
+        "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Register", "Approve", "Bingo", "Play",
+        "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit"
     };
 
     public static readonly List<string> TransferTypes = new()
@@ -49,7 +52,7 @@ public static class ActivityConstants
         "SocialRecovery", "RemoveManagerInfo", "AddManagerInfo", "CreateCAHolder", "AddGuardian", "RemoveGuardian",
         "UpdateGuardian", "SetGuardianForLogin", "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "Register",
         "Approve", "Bingo",
-        "Play","BeanGoTown-Bingo","BeanGoTown-Play"
+        "Play", "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit"
     };
 
     public static readonly List<string> ShowPriceTypes = new()
@@ -57,7 +60,7 @@ public static class ActivityConstants
         "Transfer", "CrossChainTransfer", "CrossChainReceiveToken", "RemoveManagerInfo",
         "AddManagerInfo", "AddGuardian", "RemoveGuardian", "UpdateGuardian", "SetGuardianForLogin",
         "UnsetGuardianForLogin", "RemoveOtherManagerInfo", "ClaimToken", "Approve", "Bingo", "Play",
-        "BeanGoTown-Bingo","BeanGoTown-Play"
+        "BeanGoTown-Bingo", "BeanGoTown-Play", "ManagerApprove", "SetTransferLimit"
     };
 
     public static readonly List<string> ShowNftTypes = new()
@@ -71,4 +74,9 @@ public static class ActivityConstants
     };
 
     public static readonly string Zero = "0";
+    public const string DepositName = "Deposit";
+    public const string TransferName = "Transfer";
+    public const string TransferTokenName = "TransferToken";
+    public const string AddGuardianName = "AddGuardian";
+    public const string NotRegisterChainAddGuardianName = "Security upgrade-add guardian";
 }

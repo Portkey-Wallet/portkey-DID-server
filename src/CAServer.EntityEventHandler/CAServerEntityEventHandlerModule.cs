@@ -55,6 +55,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         //ConfigureEsIndexCreation();
         context.Services.AddHostedService<CAServerHostedService>();
         Configure<CAServer.Options.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         ConfigureCache(configuration);
