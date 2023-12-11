@@ -358,8 +358,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
-            _logger.LogInformation("SendTransferRedPacketToChainAsync param :{param}",JsonConvert.SerializeObject(param));
             
+            _logger.LogInformation("SendTransferRedPacketToChainAsync, methodName：{methodName}, redPackageContractAddress: {redPackageContractAddress} ",methodName,redPackageContractAddress);
+
             if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
             {
                 return null;
@@ -377,8 +378,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
                 await client.GenerateTransactionAsync(ownAddress,redPackageContractAddress , methodName,
                     param);
 
-            _logger.LogInformation("SendTransferRedPacketToChainAsync transaction :{transaction}",JsonConvert.SerializeObject(transaction));
-
+            _logger.LogInformation("GenerateTransactionAsync transaction：{transaction}, param : {param}"
+                ,JsonConvert.SerializeObject(transaction),JsonConvert.SerializeObject(param));
             var refBlockNumber = transaction.RefBlockNumber;
 
             refBlockNumber -= _grainOptions.SafeBlockHeight;
@@ -403,10 +404,12 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             });
             _logger.LogInformation("SendTransferRedPacketToChainAsync transaction :{result}",JsonConvert.SerializeObject(result));
 
+            _logger.LogInformation("GenerateTransactionAsync result：{result} , methodName：{methodName}",JsonConvert.SerializeObject(result),methodName);
+
             await Task.Delay(_grainOptions.Delay);
 
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-            _logger.LogInformation("SendTransferRedPacketToChainAsync transaction :{transactionResult}",JsonConvert.SerializeObject(transactionResult));
+            _logger.LogInformation("GenerateTransactionAsync transactionResult：{transactionResult}, methodName：{methodName}",JsonConvert.SerializeObject(transactionResult),methodName);
 
             var times = 0;
             while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)

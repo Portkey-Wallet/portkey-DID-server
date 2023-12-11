@@ -109,6 +109,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             ExpireTime = RedPackageConsts.ExpireTimeMs,
             RedPackageContractAddress = chainInfo.RedPackageContractAddress
         };
+        _logger.LogInformation("generate result:{0}", JsonConvert.SerializeObject(res));
         return res;
         }
         finally
@@ -116,7 +117,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             watcher.Stop();
             if (res != null)
             {
-                _logger.LogInformation("generate start:{0},{1}:", res.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
                 _logger.LogInformation("#monitor# generate:{redpackageId},{cost},{startTime}:", res.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
             }
         }
@@ -198,6 +198,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             };
         }
         finally
+        
         {
             watcher.Stop();
             _logger.LogInformation("send end:{0},{1}:", input.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
@@ -401,6 +402,12 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         var users = await _contactProvider.GetCaHoldersAsync(userIds);
         input.SenderAvatar = users.FirstOrDefault(x => x.UserId == input.SenderId)?.Avatar;
         input.SenderName = users.FirstOrDefault(x => x.UserId == input.SenderId)?.NickName;
+        var sendContract = await _contactProvider.GetContactAsync(CurrentUser.GetId(), input.SenderId);
+        if (sendContract != null && !string.IsNullOrWhiteSpace(sendContract.Name))
+        {
+            input.SenderName = sendContract.Name;
+        }
+
         input.Items?.ForEach(item =>
         {
             item.Avatar = users.FirstOrDefault(x => x.UserId == item.UserId)?.Avatar;
@@ -410,8 +417,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         //fill remark
         var tasks = input.Items?.Select(async grabItemDto =>
         {
-            var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), input.SenderId);
-            if (contact != null)
+            var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), grabItemDto.UserId);
+            if (contact != null && !string.IsNullOrWhiteSpace(contact.Name))
             {
                 grabItemDto.Username = contact.Name;
             }

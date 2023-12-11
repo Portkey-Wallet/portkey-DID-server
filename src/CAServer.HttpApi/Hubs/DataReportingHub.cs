@@ -5,7 +5,7 @@ using CAServer.DataReporting.Dtos;
 using CAServer.Hub;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Microsoft.Extensions.Options;
 using Volo.Abp.AspNetCore.SignalR;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
@@ -21,31 +21,39 @@ public class DataReportingHub : AbpHub
     private readonly IDataReportingAppService _dataReportingAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly IConnectionProvider _connectionProvider;
+    private readonly MessagePushOptions _messagePushOptions;
 
     public DataReportingHub(ILogger<DataReportingHub> logger,
         IHubService hubService,
         IDataReportingAppService dataReportingAppService,
         IObjectMapper objectMapper,
-        IConnectionProvider connectionProvider)
+        IConnectionProvider connectionProvider,
+        IOptionsSnapshot<MessagePushOptions> messagePushOptions)
     {
         _logger = logger;
         _hubService = hubService;
         _dataReportingAppService = dataReportingAppService;
         _objectMapper = objectMapper;
         _connectionProvider = connectionProvider;
+        _messagePushOptions = messagePushOptions.Value;
     }
 
     public override Task OnConnectedAsync()
     {
-        _logger.LogInformation("connected!!!!");
-
+        _logger.LogInformation("user connected");
         return base.OnConnectedAsync();
     }
 
     public async Task Connect(string clientId)
     {
+        if (!CheckIsOpen())
+        {
+            return;
+        }
+        
         if (string.IsNullOrEmpty(clientId))
         {
+            _logger.LogWarning("connect, clientId is empty, userId:{userId}", CurrentUser.GetId());
             return;
         }
 
@@ -56,28 +64,45 @@ public class DataReportingHub : AbpHub
 
     public async Task ReportDeviceInfo(UserDeviceReportingRequestDto input)
     {
-        _logger.LogInformation("report DeviceInfo, {data}", JsonConvert.SerializeObject(input));
-        var dto = _objectMapper.Map<UserDeviceReportingRequestDto, UserDeviceReportingDto>(input);
-        dto.UserId = CurrentUser.GetId();
-        _logger.LogInformation("report DeviceInfo, {data}", JsonConvert.SerializeObject(dto));
-        await _dataReportingAppService.ReportDeviceInfoAsync(dto);
+        if (!CheckIsOpen())
+        {
+            return;
+        }
+        
+        var deviceDto = _objectMapper.Map<UserDeviceReportingRequestDto, UserDeviceReportingDto>(input);
+        deviceDto.UserId = CurrentUser.GetId();
+
+        await _dataReportingAppService.ReportDeviceInfoAsync(deviceDto);
+        _logger.LogInformation("report deviceInfo, userId:{userId}, deviceId:{deviceId}", deviceDto.UserId,
+            input.DeviceId);
     }
 
     public async Task ReportAppStatus(AppStatusReportingRequestDto input)
     {
-        _logger.LogInformation("report ReportAppStatus, {data}", JsonConvert.SerializeObject(input));
-        var dto = _objectMapper.Map<AppStatusReportingRequestDto, AppStatusReportingDto>(input);
-        dto.UserId = CurrentUser.GetId();
-        dto.DeviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
+        if (!CheckIsOpen())
+        {
+            return;
+        }
+        
+        var deviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
+        if (!CheckDeviceId(deviceId))
+        {
+            return;
+        }
+        var appStatusDto = _objectMapper.Map<AppStatusReportingRequestDto, AppStatusReportingDto>(input);
+        appStatusDto.UserId = CurrentUser.GetId();
+        appStatusDto.DeviceId = deviceId;
 
-        _logger.LogInformation("report status, {data}", JsonConvert.SerializeObject(dto));
-        await _dataReportingAppService.ReportAppStatusAsync(dto);
+        await _dataReportingAppService.ReportAppStatusAsync(appStatusDto);
+        _logger.LogDebug(
+            "report status, userId: {userId}, deviceId:{deviceId}, appStatus:{appStatus}, unreadCount:{unreadCount}",
+            appStatusDto.UserId, appStatusDto.DeviceId ?? string.Empty, input.Status, input.UnreadCount);
     }
 
     public async Task ExitWallet()
     {
         var deviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
-        if (deviceId.IsNullOrWhiteSpace())
+        if (!CheckDeviceId(deviceId))
         {
             return;
         }
@@ -89,8 +114,13 @@ public class DataReportingHub : AbpHub
 
     public async Task SwitchNetwork()
     {
+        if (!CheckIsOpen())
+        {
+            return;
+        }
+        
         var deviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
-        if (deviceId.IsNullOrWhiteSpace())
+        if (!CheckDeviceId(deviceId))
         {
             return;
         }
@@ -103,9 +133,26 @@ public class DataReportingHub : AbpHub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var deviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
-        await _dataReportingAppService.OnDisconnectedAsync(deviceId, CurrentUser.GetId());
-        
         _hubService.UnRegisterClient(Context.ConnectionId);
-        _logger.LogInformation("disconnect, clientId:{clientId}", deviceId ?? "");
+        
+        if (!CheckIsOpen())
+        {
+            return;
+        }
+        await _dataReportingAppService.OnDisconnectedAsync(deviceId, CurrentUser.GetId());
+        _logger.LogInformation("disconnected, clientId:{clientId}", deviceId ?? "");
+    }
+
+    private bool CheckIsOpen() => _messagePushOptions.IsOpen;
+
+    private bool CheckDeviceId(string deviceId)
+    {
+        if (!deviceId.IsNullOrWhiteSpace())
+        {
+            return true;
+        }
+
+        _logger.LogWarning("device id is empty, userId:{userId}", CurrentUser.GetId());
+        return false;
     }
 }
