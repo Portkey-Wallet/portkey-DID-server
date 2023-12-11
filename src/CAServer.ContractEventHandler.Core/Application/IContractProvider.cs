@@ -24,6 +24,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.RedPacket;
 using Volo.Abp;
@@ -550,6 +551,7 @@ public class ContractProvider : IContractProvider
         var chainId = redPackageDetail.Data.ChainId;
 
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Data.Id);
+        _logger.Debug("SendTransferRedPacketToChainAsync message: {redPackageId}", redPackageDetail.Data.Id.ToString());
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Data.Symbol,
             redPackageDetail.Data.ChainId, out var maxCount, out var redPackageContractAddress);
         _logger.LogInformation("GetRedPackageOption message: " + "\n{res}",
