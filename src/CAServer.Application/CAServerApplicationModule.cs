@@ -1,17 +1,21 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
 using CAServer.Monitor;
 using CAServer.Options;
+using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.DistributedLocking;
@@ -87,7 +91,9 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         context.Services.AddHttpClient();
+        ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
@@ -96,5 +102,14 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
+    }
+
+    private void ConfigureRetryHttpClient(IServiceCollection services)
+    {
+        //if http code = 5xx or 408,this client will retry
+        services.AddHttpClient(HttpConstant.RetryHttpClient)
+            .AddTransientHttpErrorPolicy(policyBuilder =>
+                policyBuilder.WaitAndRetryAsync(
+                    HttpConstant.RetryCount, retryNumber => TimeSpan.FromMilliseconds(HttpConstant.RetryDelayMs)));
     }
 }

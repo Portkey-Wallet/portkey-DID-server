@@ -4,26 +4,34 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Client.Dto;
+using AElf.Indexing.Elasticsearch;
 using AElf.Types;
+using CAServer.Entities.Es;
 using CAServer.Commons;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ValidateOriginChainId;
+using CAServer.Grains.Grain.RedPackage;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Guardian.Provider;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
 using CAServer.UserAssets.Provider;
+using CAServer.RedPackage;
+using CAServer.RedPackage.Etos;
 using CAServer.UserBehavior;
 using CAServer.UserBehavior.Etos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.Distributed;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 using Orleans;
+using Orleans.Runtime;
 using Portkey.Contracts.CA;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
@@ -33,6 +41,7 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IContractAppService
 {
+    Task CreateRedPackageAsync(RedPackageCreateEto message);
     Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
     Task SocialRecoveryAsync(AccountRecoverCreateEto message);
     Task QueryAndSyncAsync();
@@ -43,6 +52,12 @@ public interface IContractAppService
     // Task UpdateOriginChainIdAsync(string originChainId, string syncChainId ,UserLoginEto userLoginEto);
     // Task InitializeQueryRecordIndexAsync();
     // Task InitializeIndexAsync(long blockHeight);
+    Task PayRedPackageAsync(Guid eventDataRedPackageId);
+
+    Task<bool> Refund(Guid redPackageId);
+
+
+
 }
 
 public class ContractAppService : IContractAppService
@@ -62,6 +77,8 @@ public class ContractAppService : IContractAppService
     private readonly IClusterClient _clusterClient;
     private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IUserAssetsProvider _userAssetsProvider;
+    private readonly PayRedPackageAccount _packageAccount;
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository; 
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -70,8 +87,11 @@ public class ContractAppService : IContractAppService
         IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptions<SyncOriginChainIdOptions> syncOriginChainIdOptions,
         IUserAssetsProvider userAssetsProvider,
-        IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache)
+        IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
+        IOptionsSnapshot<PayRedPackageAccount> packageAccount, 
+        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
     {
+        _redPackageIndexRepository = redPackageIndexRepository;
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -87,6 +107,60 @@ public class ContractAppService : IContractAppService
         _clusterClient = clusterClient;
         _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
         _userAssetsProvider = userAssetsProvider;
+        _packageAccount = packageAccount.Value;
+    }
+
+    public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
+    {
+        _logger.LogInformation("CreateRedPackage message: " + "\n{message}",
+            JsonConvert.SerializeObject(eventData, Formatting.Indented));
+        
+        var eto = new RedPackageCreateResultEto();
+        eto.SessionId = eventData.SessionId;
+        try
+        {
+            var result = await _contractProvider.ForwardTransactionAsync(eventData.ChainId,eventData.RawTransaction);
+            _logger.LogInformation("RedPackageCreate result: " + "\n{result}",
+                JsonConvert.SerializeObject(result, Formatting.Indented));
+            eto.TransactionResult = result.Status;
+            eto.TransactionId = result.TransactionId;
+            if (result.Status != TransactionState.Mined)
+            {
+                eto.Message = "Transaction status: " + result.Status + ". Error: " +
+                              result.Error;
+                eto.Success = false;
+
+                _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
+                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+
+                await _distributedEventBus.PublishAsync(eto);
+                return;
+            }
+            
+            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPacketCreated))
+            {
+                eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
+                eto.Success = false;
+
+                _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
+                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+
+                await _distributedEventBus.PublishAsync(eto);
+                return;
+            }
+            eto.Success = true;
+            eto.Message = "Transaction status: " + result.Status;
+            await _distributedEventBus.PublishAsync(eto);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "RedPackageCreateEto Error: user:{user},sessionId:{session}", eventData.UserId,
+                eventData.SessionId);
+            eto.Success = false;
+            eto.Message = e.Message;
+            await _distributedEventBus.PublishAsync(eto);
+        }
+       
     }
 
     public async Task CreateHolderInfoAsync(AccountRegisterCreateEto message)
@@ -395,6 +469,75 @@ public class ContractAppService : IContractAppService
         }
 
         return true;
+    }
+    
+   public async Task PayRedPackageAsync(Guid redPackageId)
+    {
+        // TODO daiyabin  batch pay so sleep a little moment        Thread.Sleep(30000);
+        Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
+        
+        _logger.Info($"PayRedPackageAsync start and the redpackage id is {redPackageId}",redPackageId.ToString());
+        var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
+
+        var redPackageDetail = await grain.GetRedPackage(redPackageId);
+        var grabItems = redPackageDetail.Data.Items;
+        var payRedPackageFrom = _packageAccount.getOneAccountRandom();
+        _logger.Info("red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",payRedPackageFrom.ToString());
+        //if we need judge other params ?
+        if (grabItems.IsNullOrEmpty())
+        {
+            _logger.Info("there are no one claim the red packages,red package id is{redPackageId} ",redPackageId.ToString());
+        }
+        
+        var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail,payRedPackageFrom);
+        _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",JsonConvert.SerializeObject(res));
+        var result = res.TransactionResultDto;
+        var eto = new RedPackageTransactionResultEto();
+        var redPackageIndex =  await _redPackageIndexRepository.GetAsync(redPackageId);
+        _logger.LogInformation("_redPackageIndexRepository result is {redPackageIndex}",JsonConvert.SerializeObject(redPackageIndex));
+
+        if (redPackageIndex == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
+        {
+            _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{redPackageIndex}",
+                JsonConvert.SerializeObject(eto, Formatting.Indented));
+            return ;
+        } 
+        //if success update the payment status of red package 
+        await grain.UpdateRedPackage(grabItems); 
+        _logger.Info("PayRedPackageAsync end and the redpackage id is {redPackageId}",redPackageId.ToString());
+        await _distributedEventBus.PublishAsync(eto);
+        
+        watcher.Stop();
+        _logger.LogInformation("#monitor# payRedPackage:{redpackageId},{cost},{endTime}:", redPackageId.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
+    }
+
+    public async Task<bool> Refund(Guid redPackageId)
+    {
+        _logger.Info($"Refund start and the redpackage id is {redPackageId}",redPackageId.ToString());
+        var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
+
+        var redPackageDetail = await grain.GetRedPackage(redPackageId);
+        var redPackageDetailDto = redPackageDetail.Data;
+        var payRedPackageFrom = _packageAccount.getOneAccountRandom();
+        _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",payRedPackageFrom.ToString());
+        
+
+        if (redPackageDetailDto.Status.Equals(RedPackageStatus.Expired) && !redPackageDetailDto.IsRedPackageFullyClaimed)
+        {
+            var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetailDto,payRedPackageFrom);
+            var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
+            if (redPackageIndex == null)
+            {
+                return false;
+            } else if (redPackageIndex.TransactionStatus == RedPackageTransactionStatus.Success)
+            {
+                await grain.UpdateRedPackageExpire();
+                return true; 
+            }
+        }
+
+        return false ;
     }
 
     private async Task ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
