@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -13,6 +14,7 @@ using CAServer.Options;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -49,11 +51,13 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ContractOptions _contractOptions;
     private readonly IClusterClient _clusterClient;
     private readonly IIndicatorScope _indicatorScope;
+    private readonly IMemoryCache _memoryCache;
+
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         IClusterClient clusterClient,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope)
+        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope,IMemoryCache memoryCache)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
@@ -62,6 +66,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         _indicatorScope = indicatorScope;
         _contractOptions = contractOptions.Value;
         _clusterClient = clusterClient;
+        _memoryCache = memoryCache;
     }
 
     public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)
@@ -127,8 +132,11 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
-        var transaction =
-            await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
+       
+        var chain = await GetChainStatusDtoAsync(chainId,client);
+        var transaction = GenerateTransaction(chain,addressFromPrivateKey, contractAddress,
+            methodName,
+            param);
         _indicatorScope.End(generateIndicator);
 
         _logger.LogDebug("Call tx methodName is: {methodName} param is: {transaction}", methodName, transaction);
@@ -165,8 +173,10 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
-        var transaction = await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName, param);
-        
+        var chain = await GetChainStatusDtoAsync(chainId,client);
+        var transaction = GenerateTransaction(chain,ownAddress, contractAddress,
+            methodName,
+            param);
         _indicatorScope.End(generateIndicator);
         _logger.LogDebug("Send tx methodName is: {methodName} param is: {transaction}, publicKey is:{publicKey} ",
             methodName, transaction, _claimTokenInfoOption.PublicKey);
@@ -291,5 +301,41 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
         return client;
+    }
+    
+    public  Transaction GenerateTransaction(ChainStatusDto chainStatusAsync, string from,
+        string to,
+        string methodName,
+        IMessage input)
+    {
+        return new Transaction()
+        {
+            From = Address.FromBase58(from),
+            To = Address.FromBase58(to),
+            MethodName = methodName,
+            Params = input.ToByteString(),
+            RefBlockNumber = chainStatusAsync.BestChainHeight,
+            RefBlockPrefix = ByteString.CopyFrom(Hash.LoadFromHex(chainStatusAsync.BestChainHash).Value.Take<byte>(4).ToArray<byte>())
+        };
+    }
+    
+    private async Task<ChainStatusDto> GetChainStatusDtoAsync(string chainId, AElfClient client)
+    {
+        var chainStatusCacheKey = "ChainStatus";
+        var key = string.Join(":", chainStatusCacheKey, chainId);
+        // GetOrCreateAsync only execute once when method parallel 
+        if (_memoryCache.TryGetValue<ChainStatusDto>(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        return await _memoryCache.GetOrCreateAsync(
+            key,
+            entry =>
+            {
+                entry.SetSlidingExpiration(TimeSpan.FromSeconds(4));
+                return  client.GetChainStatusAsync();
+            }
+        );
     }
 }

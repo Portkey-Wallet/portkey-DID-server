@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CAServer.Commons;
 using CAServer.Settings;
 using CAServer.Verifier;
-using Google.Protobuf.WellKnownTypes;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUglify.Helpers;
@@ -27,19 +25,20 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
     private readonly AdaptableVariableOptions _adaptableVariableOptions;
     private readonly ILogger<GetVerifierServerProvider> _logger;
     private readonly IContractProvider _contractProvider;
-
+    private readonly IMemoryCache _memoryCache;
 
     private const string VerifierServerListCacheKey = "CAVerifierServer";
 
     public GetVerifierServerProvider(
         IDistributedCache<GuardianVerifierServerCacheItem> distributedCache,
         IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions, ILogger<GetVerifierServerProvider> logger,
-        IContractProvider contractProvider)
+        IContractProvider contractProvider,IMemoryCache memoryCache)
     {
         _adaptableVariableOptions = adaptableVariableOptions.Value;
         _distributedCache = distributedCache;
         _logger = logger;
         _contractProvider = contractProvider;
+        _memoryCache = memoryCache;
     }
 
 
@@ -104,12 +103,19 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
 
     private async Task<GuardianVerifierServerCacheItem> GetVerifierServerAsync(string chainId)
     {
-        return await _distributedCache.GetOrAddAsync(
-            string.Join(":", VerifierServerListCacheKey, chainId),
-            async () => await GetVerifierServerListAsync(chainId),
-            () => new DistributedCacheEntryOptions
+        var key = string.Join(":", VerifierServerListCacheKey, chainId);
+        // GetOrCreateAsync only execute once when method parallel 
+        if (_memoryCache.TryGetValue<GuardianVerifierServerCacheItem>(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        return await _memoryCache.GetOrCreateAsync(
+            key,
+            entry =>
             {
-                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_adaptableVariableOptions.VerifierServerExpireTime)
+                entry.SetSlidingExpiration(TimeSpan.FromMinutes(_adaptableVariableOptions.VerifierServerExpireTime));
+                return  GetVerifierServerListAsync(chainId);
             }
         );
     }

@@ -5,13 +5,13 @@ namespace CAServer.Grains.Grain.ApplicationHandler;
 
 public class SortNumGrain  : Grain<SortNumState>, ISortNumGrain
 {
-    public async Task SetStateAsync(long height)
+    public override async Task OnActivateAsync()
     {
         await ReadStateAsync();
         await base.OnActivateAsync();
     }
 
-    public async Task GetStateAsync()
+    public override async Task OnDeactivateAsync()
     {
         await WriteStateAsync();
         await base.OnDeactivateAsync();
