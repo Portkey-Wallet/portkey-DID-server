@@ -290,7 +290,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         await BuildAvatarAndNameAsync(detail);
         
-        if (detail.Status == RedPackageStatus.Expired || DateTimeOffset.Now.ToUnixTimeMilliseconds() > detail.ExpireTime)
+        if (detail.Status == RedPackageStatus.Expired)
         {
             detail.IsRedPackageExpired = true;
             detail.Status = RedPackageStatus.Expired;
