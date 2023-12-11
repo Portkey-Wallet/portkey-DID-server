@@ -112,14 +112,11 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<BookmarkItem, BookmarkResultDto>();
 
         CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
-        CreateMap<ValidateOriginChainIdState, ValidateOriginChainIdGrainDto>().ReverseMap();
         CreateMap<RedPackageState, SendRedPackageInputDto>()
             .ForMember(dest => dest.TotalAmount, 
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
-            .ReverseMap()
-            .ForMember(dest => dest.TotalAmount, 
-                opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
-        
+            .ForMember(dest => dest.TotalAmount,
+                opt => opt.MapFrom(src => src.TotalAmount)).ReverseMap();
         CreateMap<RedPackageState, RedPackageDetailDto>()
             .ForMember(dest => dest.TotalAmount, 
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
@@ -136,7 +133,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 opt => opt.MapFrom(src => long.Parse(src.GrabbedAmount)))
             .ForMember(dest => dest.MinAmount, 
                 opt => opt.MapFrom(src => long.Parse(src.MinAmount)));
-
         CreateMap<GrabItem, GrabItemDto>()
             .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount.ToString()))
             .ReverseMap()
