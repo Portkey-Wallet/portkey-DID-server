@@ -114,21 +114,6 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
                 Status = State.Status,
                 ExpireTime = State.ExpireTime
             };
-            //repeated claim should return true 
-            if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
-            {
-                result.Success = true;
-                result.Data = new GrabResultDto()
-                {
-                    Result = RedPackageGrabStatus.Success,
-                    ErrorMessage = "",
-                    Amount = State.Items.First(item => item.UserId.Equals(userId))?.Amount.ToString(),
-                    Decimal = State.Decimal,
-                    Status = State.Status,
-                    ExpireTime = State.ExpireTime
-                };
-            }
-            
             return result;
         }
 
@@ -169,8 +154,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
             ErrorMessage = "",
             Amount = bucket.Amount.ToString(),
             Decimal = State.Decimal,
-            Status = State.Status,
-            ExpireTime = State.ExpireTime
+            Status = State.Status
         };
 
         await WriteStateAsync();
@@ -216,7 +200,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
         var result = new GrainResultDto<bool>();
         result.Success = true;
         result.Data = true;
-        State.IfRefund = true;
+        State.Status = RedPackageStatus.ExpiredAndRefund;
         await WriteStateAsync();
         return result;
     }
