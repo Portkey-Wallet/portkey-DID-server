@@ -10,6 +10,7 @@ using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -30,9 +31,11 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     private readonly ISignatureProvider _signatureProvider;
     private readonly IIndicatorScope _indicatorScope;
     private readonly string _sortNumGrainKey = "TransactionSortNum";
+    private readonly IMemoryCache _memoryCache;
 
     public ContractServiceGrain(IOptions<ChainOptions> chainOptions, IOptions<GrainOptions> grainOptions,
-        IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractServiceGrain> logger, IIndicatorScope indicatorScope)
+        IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractServiceGrain> logger, IIndicatorScope indicatorScope,
+        IMemoryCache memoryCache)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -40,6 +43,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         _grainOptions = grainOptions.Value;
         _chainOptions = chainOptions.Value;
         _signatureProvider = signatureProvider;
+        _memoryCache = memoryCache;
     }
 
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
@@ -64,10 +68,10 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
             interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                 MonitorAelfClientType.GenerateTransactionAsync.ToString());
-            
-            var transaction =
-                await client.GenerateTransactionAsync(ownAddress, chainInfo.ContractAddress, methodName,
-                    param);
+            var chain = await GetChainStatusDtoAsync(chainId,client);
+            var transaction = GenerateTransaction(chain,ownAddress, chainInfo.ContractAddress,
+                methodName,
+                param);
             _indicatorScope.End(interIndicator);
             
             var refBlockNumber = transaction.RefBlockNumber;
@@ -254,8 +258,9 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             var ownAddress = await GetOwnAddress(chainInfo);
             var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
                 MonitorAelfClientType.GenerateTransactionAsync.ToString());
-            
-            var transaction = await client.GenerateTransactionAsync(ownAddress, chainInfo.CrossChainContractAddress,
+
+            var chain = await GetChainStatusDtoAsync(chainId,client);
+            var transaction = GenerateTransaction(chain,ownAddress, chainInfo.CrossChainContractAddress,
                 MethodName.UpdateMerkleTree,
                 new Int64Value
                 {
@@ -299,4 +304,41 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
         return result.TransactionResultDto;
     }
+    
+    public  Transaction GenerateTransaction(ChainStatusDto chainStatusAsync, string from,
+        string to,
+        string methodName,
+        IMessage input)
+    {
+        return new Transaction()
+        {
+            From = Address.FromBase58(from),
+            To = Address.FromBase58(to),
+            MethodName = methodName,
+            Params = input.ToByteString(),
+            RefBlockNumber = chainStatusAsync.BestChainHeight,
+            RefBlockPrefix = ByteString.CopyFrom(Hash.LoadFromHex(chainStatusAsync.BestChainHash).Value.Take<byte>(4).ToArray<byte>())
+        };
+    }
+    
+    private async Task<ChainStatusDto> GetChainStatusDtoAsync(string chainId, AElfClient client)
+    {
+        var chainStatusCacheKey = "ChainStatus";
+        var key = string.Join(":", chainStatusCacheKey, chainId);
+        // GetOrCreateAsync only execute once when method parallel 
+        if (_memoryCache.TryGetValue<ChainStatusDto>(key, out var cachedValue))
+        {
+            return cachedValue;
+        }
+
+        return await _memoryCache.GetOrCreateAsync(
+            key,
+            entry =>
+            {
+                entry.SetSlidingExpiration(TimeSpan.FromSeconds(4));
+                return  client.GetChainStatusAsync();
+            }
+        );
+    }
+    
 }
