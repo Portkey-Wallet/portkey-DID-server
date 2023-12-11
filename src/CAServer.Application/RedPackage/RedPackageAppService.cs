@@ -113,7 +113,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         var startTime = DateTime.Now.Ticks;
         try
         {
-            _logger.LogInformation("SendRedPackageAsync start input param is {input}", input);
+            _logger.LogInformation("SendRedPackageAsync start input param is {input}", JsonConvert.SerializeObject(input));
             var result = _redPackageOptions.TokenInfo.Where(x =>
                 string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(x.ChainId, input.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
