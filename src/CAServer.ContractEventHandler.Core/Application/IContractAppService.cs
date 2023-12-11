@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
-using AElf.Client.Dto;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.Entities.Es;
@@ -18,14 +17,10 @@ using CAServer.Guardian.Provider;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
 using CAServer.UserAssets.Provider;
-using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
-using CAServer.UserBehavior;
-using CAServer.UserBehavior.Etos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.Distributed;
-using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -78,7 +73,8 @@ public class ContractAppService : IContractAppService
     private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly PayRedPackageAccount _packageAccount;
-    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository; 
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
+    private readonly IRedPackageCreateResultService _redPackageCreateResultService;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -89,7 +85,8 @@ public class ContractAppService : IContractAppService
         IUserAssetsProvider userAssetsProvider,
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount, 
-        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
+        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
+        IRedPackageCreateResultService redPackageCreateResultService)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
         _distributedEventBus = distributedEventBus;
@@ -108,6 +105,7 @@ public class ContractAppService : IContractAppService
         _syncOriginChainIdOptions = syncOriginChainIdOptions.Value;
         _userAssetsProvider = userAssetsProvider;
         _packageAccount = packageAccount.Value;
+        _redPackageCreateResultService = redPackageCreateResultService;
     }
 
     public async Task CreateRedPackageAsync(RedPackageCreateEto eventData)
@@ -133,7 +131,7 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                await _distributedEventBus.PublishAsync(eto);
+                _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
                 return;
             }
             
@@ -145,20 +143,20 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                await _distributedEventBus.PublishAsync(eto);
+                _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
                 return;
             }
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
-            await _distributedEventBus.PublishAsync(eto);
+            _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "RedPackageCreateEto Error: user:{user},sessionId:{session}", eventData.UserId,
-                eventData.SessionId);
+            _logger.LogError(e, "RedPackageCreateEto Error: user:{user},sessionId:{session}", eventData.UserId?.ToString(),
+                eventData.SessionId.ToString());
             eto.Success = false;
             eto.Message = e.Message;
-            await _distributedEventBus.PublishAsync(eto);
+            _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
         }
        
     }

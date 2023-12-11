@@ -77,49 +77,35 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         return result;
     }
+
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
-        Stopwatch watcher = Stopwatch.StartNew();
-        var startTime = DateTime.Now.Ticks;
-        GenerateRedPackageOutputDto res = null;
-        try
-        {
-            var result = GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId, out long maxCount,
+        var result = GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId, out long maxCount,
                 out string redpackageContractAddress);
-            if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
-            {
-                throw new UserFriendlyException("chain not found");
-            }
-
-            var redPackageId = Guid.NewGuid();
-
-            var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
-
-            res = new GenerateRedPackageOutputDto
-            {
-                Id = redPackageId,
-                PublicKey = await grain.GenerateKey(),
-                Signature = await grain.GenerateSignature($"{redPackageId}-{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}"),
-                MinAmount = result.MinAmount,
-                Symbol = redPackageInput.Symbol,
-                Decimal = result.Decimal,
-                ChainId = redPackageInput.ChainId,
-                ExpireTime = RedPackageConsts.ExpireTimeMs,
-                RedPackageContractAddress = chainInfo.RedPackageContractAddress
-            };
-            return res;
-        }
-        finally
+        if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
         {
-            watcher.Stop();
-            if (res != null)
-            {
-                _logger.LogInformation("generate start:{0},{1}:", res.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
-                _logger.LogInformation("#monitor# generate:{redpackageId},{cost},{startTime}:", res.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
-            }
+            throw new UserFriendlyException("chain not found");
         }
+
+        var redPackageId = Guid.NewGuid();
+
+        var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
+        var (publicKey, signature) = await grain.GenerateKeyAndSignature(
+            $"{redPackageId}-{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}");
+        return new GenerateRedPackageOutputDto
+        {
+            Id = redPackageId,
+            PublicKey = publicKey,
+            Signature = signature,
+            MinAmount = result.MinAmount,
+            Symbol = redPackageInput.Symbol,
+            Decimal = result.Decimal,
+            ChainId = redPackageInput.ChainId,
+            ExpireTime = RedPackageConsts.ExpireTimeMs,
+            RedPackageContractAddress = chainInfo.RedPackageContractAddress
+        };
     }
-    
+
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CAServer.ContractEventHandler.Core.Application;
+using CAServer.RedPackage.Etos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

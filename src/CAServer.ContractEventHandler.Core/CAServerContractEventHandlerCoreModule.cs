@@ -12,7 +12,9 @@ using Volo.Abp.Threading;
 
 namespace CAServer.ContractEventHandler.Core;
 
-[DependsOn(typeof(AbpAutoMapperModule), typeof(CAServerSignatureModule), typeof(CAServerApplicationModule))]
+[DependsOn(typeof(AbpAutoMapperModule), typeof(CAServerSignatureModule),
+    typeof(CAServerApplicationModule),
+    typeof(CAServerApplicationContractsModule))]
 public class CAServerContractEventHandlerCoreModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
