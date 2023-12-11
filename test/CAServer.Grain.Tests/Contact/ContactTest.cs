@@ -50,7 +50,7 @@ public class ContactTest : CAServerGrainTestBase
         result.Success.ShouldBeTrue();
         result.Data.Name.ShouldBe("John");
     }
-    
+
     [Fact]
     public async Task Update_Contact_Name_Test()
     {
@@ -125,11 +125,11 @@ public class ContactTest : CAServerGrainTestBase
 
         var walletName = "test";
 
-        var result = await grain.UpdateWalletName(walletName);
+        var result = await grain.UpdateContactInfo(walletName, string.Empty);
         result.Success.ShouldBeTrue();
         result.Data.CaHolderInfo.WalletName.ShouldBe(walletName);
     }
-    
+
     [Fact]
     public async Task UpdateWalletName_CaHolderInfo_Null_Test()
     {
@@ -149,7 +149,7 @@ public class ContactTest : CAServerGrainTestBase
 
         var walletName = "test";
 
-        var result = await grain.UpdateWalletName(walletName);
+        var result = await grain.UpdateContactInfo(walletName, string.Empty);
         result.Success.ShouldBeFalse();
         result.Message.ShouldBe(ContactMessage.HolderNullMessage);
     }

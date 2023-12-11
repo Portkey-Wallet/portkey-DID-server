@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.Guardian;
 
 namespace CAServer.Security.Dtos;
 
@@ -19,4 +20,6 @@ public class TokenBalanceTransferCheckAsyncResultDto
     public bool IsTransferSafe { get; set; } = true;
     public bool IsSynchronizing { get; set; }
     public bool IsOriginChainSafe { get; set; } = true;
+    
+    public List<GuardianIndexerInfoDto> AccelerateGuardians { get; set; } = new();
 }

@@ -12,5 +12,5 @@ public interface IUserSecurityAppService
         GetManagerApprovedListByCaHashDto input);
 
     public Task<TokenBalanceTransferCheckAsyncResultDto> GetTokenBalanceTransferCheckAsync(
-        GetTokenBalanceTransferCheckDto input);
+        GetTokenBalanceTransferCheckWithChainIdDto input);
 }
