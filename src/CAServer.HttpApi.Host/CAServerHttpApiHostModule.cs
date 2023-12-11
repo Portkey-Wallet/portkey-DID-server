@@ -29,12 +29,14 @@ using Volo.Abp;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Serilog;
+using Volo.Abp.AspNetCore.SignalR;
 using Volo.Abp.Autofac;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
 
@@ -51,7 +53,8 @@ namespace CAServer;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
-    typeof(AbpSwashbuckleModule)
+    typeof(AbpSwashbuckleModule),
+    typeof(AbpAspNetCoreSignalRModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
 {
@@ -79,6 +82,8 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        context.Services.AddHttpContextAccessor();
+        ConfigureTokenCleanupService();
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -181,7 +186,6 @@ public class CAServerHttpApiHostModule : AbpModule
                 .UseMongoDBClustering(options =>
                 {
                     options.DatabaseName = configuration["Orleans:DataBase"];
-                    ;
                     options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
                 .Configure<ClusterOptions>(options =>
@@ -269,6 +273,11 @@ public class CAServerHttpApiHostModule : AbpModule
         });
     }
 
+    private void ConfigureTokenCleanupService()
+    {
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+    }
+    
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -310,7 +319,7 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();
+        app.UseAuditing();      
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
