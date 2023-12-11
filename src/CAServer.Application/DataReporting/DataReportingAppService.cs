@@ -6,7 +6,6 @@ using CAServer.DataReporting.Dtos;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 
@@ -29,6 +28,7 @@ public class DataReportingAppService : CAServerAppService, IDataReportingAppServ
     {
         input.NetworkType = _options.Network;
         await _requestProvider.PostAsync(MessagePushConstant.ReportDeviceInfoUri, input);
+        Logger.LogDebug("report deviceInfo, userId: {userId}, deviceId: {deviceId}", input.UserId, input.DeviceId);
     }
 
     public async Task ReportAppStatusAsync(AppStatusReportingDto input)
@@ -39,22 +39,22 @@ public class DataReportingAppService : CAServerAppService, IDataReportingAppServ
 
     public async Task ExitWalletAsync(string deviceId, Guid userId)
     {
-        Logger.LogDebug("exitWallet, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
         await _requestProvider.PostAsync(MessagePushConstant.ExitWalletUri, new { userId, deviceId, _options.Network });
+        Logger.LogDebug("exitWallet, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
     }
 
     public async Task SwitchNetworkAsync(string deviceId, Guid userId)
     {
         // off line
-        Logger.LogDebug("switchNetwork, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
         await _requestProvider.PostAsync(MessagePushConstant.SwitchNetworkUri,
             new { userId, deviceId, networkType = _options.Network });
+        Logger.LogDebug("switchNetwork, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
     }
 
     public async Task OnDisconnectedAsync(string deviceId, Guid userId)
     {
-        Logger.LogDebug("disconnected, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
         await _requestProvider.PostAsync(MessagePushConstant.SwitchNetworkUri,
             new { userId, deviceId, networkType = _options.Network });
+        Logger.LogDebug("disconnected, userId: {userId}, deviceId: {deviceId}", userId, deviceId);
     }
 }

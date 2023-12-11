@@ -15,8 +15,4 @@
       <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="DataReporting" />
-    </ItemGroup>
-
 </Project>
