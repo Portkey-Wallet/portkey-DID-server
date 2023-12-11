@@ -5,8 +5,8 @@ namespace CAServer.Options;
 public class ActivityTypeOptions
 {
     public Dictionary<string, string> TypeMap { get; set; }
-    public List<string> DefaultTypes { get; set; }
-    public HashSet<string> AllSupportTypes { get; set; }
+    
+    public Dictionary<string, string> TransactionTypeMap { get; set; }
     public List<string> TransferTypes { get; set; }
     public List<string> ContractTypes { get; set; }
     public List<string> ShowPriceTypes { get; set; }
