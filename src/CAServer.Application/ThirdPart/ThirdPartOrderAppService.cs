@@ -7,7 +7,6 @@ using AElf;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
@@ -20,6 +19,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
@@ -107,6 +107,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         {
             AssertHelper.NotNull(input, "create Param null");
             _thirdPartOrderProvider.VerifyMerchantSignature(input);
+            input.TransDirect = input.TransDirect.DefaultIfEmpty(TransferDirectionType.NFTBuy.ToString());
 
             // Query userId from caHolder
             var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
@@ -276,7 +277,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
+    public async Task<PagedResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         // var userId = input.UserId;
         var userId = CurrentUser.Id == null ? Guid.Empty : CurrentUser.GetId();
@@ -295,7 +296,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     /// <param name="condition"></param>
     /// <param name="orderSectionEnums"></param>
     /// <returns></returns>
-    public async Task<List<OrderDto>> ExportOrderList(GetThirdPartOrderConditionDto condition,
+    public async Task<List<OrderDto>> ExportOrderListAsync(GetThirdPartOrderConditionDto condition,
         params OrderSectionEnum?[] orderSectionEnums)
     {
         var lastModifyTimeLt = TimeHelper.ParseFromUtc8(condition.LastModifyTimeLt, TimeHelper.DatePattern);

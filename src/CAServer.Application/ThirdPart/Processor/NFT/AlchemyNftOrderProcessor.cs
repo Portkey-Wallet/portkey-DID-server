@@ -147,15 +147,15 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         var finishDateTime = finishTime == null ? (DateTime?)null : TimeHelper.GetDateTimeFromTimeStamp(finishTimeLong);
 
         var binanceExchange = finishTime == null
-            ? await _tokenAppService.GetLatestExchange(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
+            ? await _tokenAppService.GetLatestExchangeAsync(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
                 CommonConstant.USDT)
-            : await _tokenAppService.GetHistoryExchange(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
+            : await _tokenAppService.GetHistoryExchangeAsync(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
                 CommonConstant.USDT, (DateTime)finishDateTime);
 
         var okxExchange = finishTime == null
-            ? await _tokenAppService.GetLatestExchange(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto,
+            ? await _tokenAppService.GetLatestExchangeAsync(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto,
                 CommonConstant.USDT)
-            : await _tokenAppService.GetHistoryExchange(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto, 
+            : await _tokenAppService.GetHistoryExchangeAsync(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto, 
                 CommonConstant.USDT, (DateTime)finishDateTime);
         
         var cryptoPrice = orderGrainDto.CryptoAmount.SafeToDecimal();

@@ -123,13 +123,13 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="input"> UNVERIFIED and UNTRUSTED order data.</param>
     /// <returns></returns>
-    public async Task<CommonResponseDto<Empty>> UpdateThirdPartNftOrderAsync(IThirdPartNftOrderUpdateRequest input)
+    public async Task<CommonResponseDto<Empty>> UpdateThirdPartNftOrderAsync(IThirdPartNftOrderUpdateRequest request)
     {
         var updateRequest = (IThirdPartValidOrderUpdateRequest)null;
         try
         {
             // verify webhook input
-            updateRequest = VerifyNftOrderAsync(input);
+            updateRequest = VerifyNftOrderAsync(request);
             AssertHelper.NotEmpty(updateRequest.Id, "Order id missing");
             AssertHelper.NotEmpty(updateRequest.Status, "Order status missing");
 
@@ -237,7 +237,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     ///     Send settlement transfer to merchant receiving address
     /// </summary>
     /// <param name="orderId"></param>
-    public async Task SettlementTransfer(Guid orderId)
+    public async Task SettlementTransferAsync(Guid orderId)
     {
         const string lockKeyPrefix = "nft_order:settlement_transfer:";
         try
@@ -262,7 +262,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "NFT order merchant address missing");
 
             // generate transfer transaction
-            var (txHash, transferTx) = await _contractProvider.GenerateTransferTransaction(orderGrainDto.Crypto,
+            var (txHash, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
                 orderGrainDto.CryptoAmount,
                 nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
                 _thirdPartOptions.Merchant.NftOrderSettlementPublicKey);
@@ -309,11 +309,11 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning(e, "Send SettlementTransfer failed, orderId={OrderId}", orderId);
+            _logger.LogWarning(e, "Send SettlementTransferAsync failed, orderId={OrderId}", orderId);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Send SettlementTransfer error, orderId={OrderId}", orderId);
+            _logger.LogError(e, "Send SettlementTransferAsync error, orderId={OrderId}", orderId);
         }
     }
 
@@ -363,7 +363,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="orderId"></param>
     /// <param name="confirmedHeight"></param>
-    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransfer(Guid orderId, long chainHeight,
+    public async Task<CommonResponseDto<Empty>> RefreshSettlementTransferAsync(Guid orderId, long chainHeight,
         long confirmedHeight)
     {
         try
@@ -377,7 +377,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             // something wrong before transfer sent, status will be stay StartTransfer
             if (currentStatus == OrderStatusType.StartTransfer)
             {
-                await SettlementTransfer(orderId);
+                await SettlementTransferAsync(orderId);
                 return new CommonResponseDto<Empty>();
             }
 
@@ -395,7 +395,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId,
                     orderGrainDto.TransactionId);
             _logger.LogDebug(
-                "RefreshSettlementTransfer, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}",
+                "RefreshSettlementTransferAsync, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}",
                 orderId, orderGrainDto.TransactionId, rawTxResult.Status, rawTxResult.BlockNumber);
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
 
@@ -426,13 +426,13 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning("NFT order RefreshSettlementTransfer not change, orderId={OrderId}, msg={Msg}", orderId,
+            _logger.LogWarning("NFT order RefreshSettlementTransferAsync not change, orderId={OrderId}, msg={Msg}", orderId,
                 e.Message);
             return new CommonResponseDto<Empty>().Error(e, e.Message);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "NFT order RefreshSettlementTransfer error, orderId={OrderId}", orderId);
+            _logger.LogError(e, "NFT order RefreshSettlementTransferAsync error, orderId={OrderId}", orderId);
             return new CommonResponseDto<Empty>().Error(e, e.Message);
         }
     }

@@ -1,14 +1,11 @@
-using System;
 using System.Collections.Generic;
-using CAServer.Commons.Dtos;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Moq;
-using Nest;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.EventBus.Distributed;
-using Volo.Abp.Users;
 
 namespace CAServer.ThirdPart;
 
@@ -19,10 +16,10 @@ public partial class ThirdPartOrderAppServiceTest
         var mockThirdPartOrderProvider = new Mock<IThirdPartOrderProvider>();
         mockThirdPartOrderProvider.Setup(o => o.GetThirdPartOrdersByPageAsync(It.IsAny<GetThirdPartOrderConditionDto>()))
             .ReturnsAsync(
-                new PageResultDto<OrderDto>()
+                new PagedResultDto<OrderDto>()
                 {
-                    TotalRecordCount = 1,
-                    Data = new List<OrderDto>()
+                    TotalCount = 1,
+                    Items = new List<OrderDto>()
                     {
                         new OrderDto()
                         {

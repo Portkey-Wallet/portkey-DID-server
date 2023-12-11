@@ -1,7 +1,6 @@
 using CAServer.BackGround.Consts;
 using CAServer.BackGround.Options;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.ThirdPart;
