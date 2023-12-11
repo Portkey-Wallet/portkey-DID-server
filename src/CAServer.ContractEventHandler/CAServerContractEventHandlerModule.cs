@@ -6,6 +6,7 @@ using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
+using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Signature;
 using Hangfire;
@@ -44,7 +45,7 @@ namespace CAServer.ContractEventHandler;
     typeof(CAServerContractEventHandlerCoreModule),
     typeof(CAServerGrainsModule),
     typeof(AbpAutofacModule),
-    typeof(AbpBackgroundWorkersQuartzModule),
+    // typeof(AbpBackgroundWorkersQuartzModule),
     typeof(AbpBackgroundWorkersModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
