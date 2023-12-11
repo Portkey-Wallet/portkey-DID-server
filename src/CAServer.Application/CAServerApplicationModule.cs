@@ -5,6 +5,7 @@ using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains;
+using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
 using CAServer.Monitor;
 using CAServer.Options;
@@ -38,7 +39,6 @@ namespace CAServer;
     typeof(AbpSettingManagementApplicationModule),
     typeof(CAServerGrainsModule),
     typeof(CAServerSignatureModule),
-    typeof(CAServerMonitorModule),
     typeof(AbpDistributedLockingModule)
 )]
 public class CAServerApplicationModule : AbpModule
@@ -55,6 +55,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
+        Configure<SecurityOptions>(configuration.GetSection("Security"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
@@ -89,6 +90,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
+        Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         context.Services.AddHttpClient();
         ConfigureRetryHttpClient(context.Services);
@@ -98,6 +100,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
+        Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
+        Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
     }
 
     private void ConfigureRetryHttpClient(IServiceCollection services)

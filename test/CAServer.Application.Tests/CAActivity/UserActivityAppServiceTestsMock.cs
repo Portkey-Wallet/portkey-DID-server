@@ -52,12 +52,80 @@ public partial class UserActivityAppServiceTests
                                     Symbol = "ELF",
                                     Amount = 100
                                 }
+                            },
+                            NftInfo = new NftInfo()
+                            {
+                             Symbol   = "ELF"
                             }
                         }
                     }
                 }
             });
 
+        mockActivityProvider.Setup(m => m.GetActivitiesAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(),
+            It.IsAny<string>(), new List<string>() { "ContractTypes" }, It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            new IndexerTransactions
+            {
+                CaHolderTransaction = new CaHolderTransaction
+                {
+                    TotalRecordCount = 1,
+                    Data = new List<IndexerTransaction>
+                    {
+                        new()
+                        {
+                            BlockHash = "BlockHash",
+                            BlockHeight = 100,
+                            ChainId = "AELF",
+                            FromAddress = "From",
+                            Id = "id",
+                            MethodName = "ContractTypes",
+                            Status = "status",
+                            Timestamp = 1000,
+                            TransactionId = "id",
+                            TransactionFees = new List<IndexerTransactionFee>
+                            {
+                                new()
+                                {
+                                    Symbol = "ELF",
+                                    Amount = 100
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        mockActivityProvider.Setup(m => m.GetActivitiesAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(),
+            It.IsAny<string>(), new List<string>() { "TransferTypes" }, It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            new IndexerTransactions
+            {
+                CaHolderTransaction = new CaHolderTransaction
+                {
+                    TotalRecordCount = 1,
+                    Data = new List<IndexerTransaction>
+                    {
+                        new()
+                        {
+                            BlockHash = "BlockHash",
+                            BlockHeight = 100,
+                            ChainId = "AELF",
+                            FromAddress = "From",
+                            Id = "id",
+                            MethodName = "TransferTypes",
+                            Status = "status",
+                            Timestamp = 1000,
+                            TransactionId = "id",
+                            TransactionFees = new List<IndexerTransactionFee>
+                            {
+                                new()
+                                {
+                                    Symbol = "ELF",
+                                    Amount = 100
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         mockActivityProvider.Setup(m => m.GetActivityAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(
             new IndexerTransactions
             {

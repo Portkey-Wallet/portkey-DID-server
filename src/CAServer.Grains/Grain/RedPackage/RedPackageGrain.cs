@@ -79,7 +79,8 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
         var result = new GrainResultDto<bool>();
         result.Success = true;
         result.Data = true;
-        if (State.Status != RedPackageStatus.Cancelled)
+        if (State.Status != RedPackageStatus.Cancelled
+            || State.Status != RedPackageStatus.FullyClaimed)
         {
             State.Status = RedPackageStatus.Expired;
         }
@@ -110,7 +111,8 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
                 Result = RedPackageGrabStatus.Fail,
                 ErrorMessage = checkResult.Item2,
                 Amount = "",
-                Status = State.Status
+                Status = State.Status,
+                ExpireTime = State.ExpireTime
             };
             return result;
         }

@@ -7,7 +7,6 @@ using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
-using CAServer.Monitor;
 using CAServer.Signature;
 using Hangfire;
 using Hangfire.Redis.StackExchange;
@@ -45,16 +44,16 @@ namespace CAServer.ContractEventHandler;
     typeof(CAServerContractEventHandlerCoreModule),
     typeof(CAServerGrainsModule),
     typeof(AbpAutofacModule),
-    //typeof(AbpBackgroundWorkersQuartzModule),
-    // typeof(AbpBackgroundWorkersModule),
+    typeof(AbpBackgroundWorkersQuartzModule),
+    typeof(AbpBackgroundWorkersModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpEventBusRabbitMqModule),
     typeof(CAServerSignatureModule),
-    typeof(CAServerMonitorModule),
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(CAServerMongoDbModule),
-    //typeof(AbpBackgroundJobsHangfireModule),
-    typeof(AElfIndexingElasticsearchModule))]
+    typeof(CAServerMonitorModule),
+    typeof(AElfIndexingElasticsearchModule)
+)]
 public class CAServerContractEventHandlerModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)

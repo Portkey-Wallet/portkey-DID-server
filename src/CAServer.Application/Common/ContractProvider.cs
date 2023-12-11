@@ -8,8 +8,10 @@ using AElf.Contracts.MultiToken;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Commons;
-using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Monitor;
+using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
 using CAServer.RedPackage;
@@ -19,6 +21,7 @@ using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.RedPacket;
@@ -38,6 +41,10 @@ public interface IContractProvider
     public Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address, string chainId);
     Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
+    Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfo transactionInfo);
+
+    Task<TransactionResultDto> SyncTransactionAsync(string chainId,
+        SyncHolderInfoInput syncHolderInfoInput);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -48,6 +55,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ISignatureProvider _signatureProvider;
     private readonly ContractOptions _contractOptions;
     private readonly IClusterClient _clusterClient;
+    private readonly IIndicatorScope _indicatorScope;
     private readonly IRedPackageAppService _redPackageAppService;
     private readonly GrainOptions _grainOptions;
     
@@ -55,20 +63,69 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
+        IClusterClient clusterClient,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        IOptionsSnapshot<ContractOptions> contractOptions, IClusterClient clusterClient,
+        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope,
         IRedPackageAppService redPackageAppService, IOptions<GrainOptions> grainOptions)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
+        _indicatorScope = indicatorScope;
         _clusterClient = clusterClient;
         _redPackageAppService = redPackageAppService;
         _grainOptions = grainOptions.Value;
         _contractOptions = contractOptions.Value;
     }
 
+    public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var result = await grain.SyncTransactionAsync(chainId, input);
+
+            _logger.LogInformation(
+                "SyncTransaction to chain: {id} result:" +
+                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                chainId, result.TransactionId, result.BlockNumber, result.Status, result.Error);
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "SyncTransaction to Chain: {id} Error: {input}", chainId,
+                JsonConvert.SerializeObject(input.ToString(), Formatting.Indented));
+            return new TransactionResultDto();
+        }
+    }
+
+    public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId,
+        TransactionInfo transactionInfo)
+    {
+        try
+        {
+            if (transactionInfo == null)
+            {
+                return new SyncHolderInfoInput();
+            }
+
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var syncHolderInfoInput = await grain.GetSyncHolderInfoInputAsync(chainId, transactionInfo);
+
+            _logger.LogInformation("GetSyncHolderInfoInput on chain {id} succeed", chainId);
+
+            return syncHolderInfoInput;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetSyncHolderInfoInput on chain: {id} error: {dto}", chainId,
+                JsonConvert.SerializeObject(transactionInfo ?? new TransactionInfo(),
+                    Formatting.Indented));
+            return new SyncHolderInfoInput();
+        }
+    }
 
     private async Task<T> CallTransactionAsync<T>(string methodName, IMessage param, string contractAddress,
         string chainId) where T : class, IMessage<T>, new()
@@ -83,16 +140,24 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
 
+        var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction =
             await client.GenerateTransactionAsync(addressFromPrivateKey, contractAddress, methodName, param);
+        _indicatorScope.End(generateIndicator);
 
         _logger.LogDebug("Call tx methodName is: {methodName} param is: {transaction}", methodName, transaction);
 
         var txWithSign = client.SignTransaction(_contractOptions.CommonPrivateKeyForCallTx, transaction);
+
+        var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            MonitorAelfClientType.ExecuteTransactionAsync.ToString());
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSign.ToByteArray().ToHex()
         });
+
+        _indicatorScope.End(interIndicator);
 
         var value = new T();
         value.MergeFrom(ByteArrayHelper.HexStringToByteArray(result));
@@ -113,8 +178,11 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         await client.IsConnectedAsync();
         var ownAddress = client.GetAddressFromPubKey(senderPubKey);
 
+        var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction = await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName, param);
-
+        
+        _indicatorScope.End(generateIndicator);
         _logger.LogDebug("Send tx methodName is: {methodName} param is: {transaction}, publicKey is:{publicKey} ",
             methodName, transaction, _claimTokenInfoOption.PublicKey);
 
@@ -122,11 +190,14 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         transaction.Signature = ByteStringHelper.FromHexString(txWithSign);
 
+        var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            MonitorAelfClientType.SendTransactionAsync.ToString());
+
         var result = await client.SendTransactionAsync(new SendTransactionInput
         {
             RawTransaction = transaction.ToByteArray().ToHex()
         });
-
+        _indicatorScope.End(interIndicator);
         return result;
     }
 
@@ -179,7 +250,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         await SendTransactionAsync<ClaimTokenInput>(AElfContractMethodName.ClaimToken, claimTokenParam,
             _claimTokenInfoOption.PublicKey, address, chainId);
     }
-    
 
     public async Task<SendTransactionOutput> SendTransferAsync(string symbol, string amount, string address,
         string chainId)
@@ -194,16 +264,22 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return await SendTransactionAsync<TransferInput>(AElfContractMethodName.Transfer, transferParam,
             _claimTokenInfoOption.PublicKey, _chainOptions.ChainInfos[chainId].TokenContractAddress, chainId);
     }
+
     public async Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction)
     {
         var client = await GetAElfClientAsync(chainId);
         if (client == null)
             throw new UserFriendlyException("Send RawTransaction FAILED!, client of ChainId={ChainId} NOT FOUND");
 
+        var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            MonitorAelfClientType.SendTransactionAsync.ToString());
+        
         var result = await client.SendTransactionAsync(new SendTransactionInput
         {
             RawTransaction = rawTransaction
         });
+        
+        _indicatorScope.End(generateIndicator);
 
         return result;
     }
@@ -211,7 +287,12 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId)
     {
         var client = await GetAElfClientAsync(chainId);
+        
+        var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
+            MonitorAelfClientType.GetTransactionResultAsync.ToString());
         var result = await client.GetTransactionResultAsync(transactionId);
+        
+        _indicatorScope.End(generateIndicator);
         return result;
     }
 
@@ -226,5 +307,4 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         await client.IsConnectedAsync();
         return client;
     }
-
 }

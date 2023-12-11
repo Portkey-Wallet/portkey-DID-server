@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.Hubs;
@@ -70,6 +71,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
+        Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -299,6 +301,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
+
         if (env.IsDevelopment())
         {
             app.UseSwagger();
