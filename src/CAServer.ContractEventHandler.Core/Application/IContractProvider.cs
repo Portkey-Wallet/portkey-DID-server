@@ -560,7 +560,6 @@ public class ContractProvider : IContractProvider
                 $"{redPackageId}-{Address.FromBase58(item.CaAddress)}-{item.Amount}");
             list.Add(new TransferRedPacketInput()
             {
-                //daiyabin
                 Amount = Convert.ToInt64(item.Amount),
                 ReceiverAddress = Address.FromBase58(item.CaAddress),
                 RedPacketSignature =
