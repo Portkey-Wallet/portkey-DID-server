@@ -73,7 +73,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             distributedEventBus: GetRequiredService<IDistributedEventBus>(),
             seedImageOptions:  seedImageOptionsMock.Object,
             userTokenAppService: userTokenAppServiceMock.Object,
-            tokenProvider: tokenProvider.Object);
+            tokenProvider: tokenProvider.Object,
+            assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>());
         return userAssetsAppService;
     }
 
@@ -85,6 +86,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockTokenAppService());
         services.AddSingleton(GetUserContactProvider());
         services.AddSingleton(GetMockTokenInfoOptions());
+        services.AddSingleton(GetMockAssetsInfoOptions());
         services.AddSingleton(GetContractProvider());
         services.AddSingleton(GetMockSeedImageOptions());
     }

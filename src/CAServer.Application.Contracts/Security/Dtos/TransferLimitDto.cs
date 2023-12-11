@@ -13,6 +13,7 @@ public class TransferLimitDto
     public string DefaultDailyLimit { get; set; }
 
     public bool Restricted { get; set; }
+    public string ImageUrl { get; set; }
 }
 
 public class IndexerTransferLimitList

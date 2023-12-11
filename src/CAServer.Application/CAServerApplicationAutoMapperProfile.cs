@@ -38,6 +38,7 @@ using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
 using CAServer.PrivacyPolicy.Dtos;
+using CAServer.Search.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
@@ -434,5 +435,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.TotalAmount, 
                 opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
+        CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
+        CreateMap<UserTokenIndex, UserTokenIndexDto>()
+            .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
     }
 }
