@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -9,7 +11,11 @@ using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
+using CAServer.Grains.Grain;
+using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
+using CAServer.RedPackage;
+using CAServer.RedPackage.Dtos;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -18,6 +24,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
+using Portkey.Contracts.RedPacket;
 using Portkey.Contracts.TokenClaim;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -49,19 +56,27 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ContractOptions _contractOptions;
     private readonly IClusterClient _clusterClient;
     private readonly IIndicatorScope _indicatorScope;
+    private readonly IRedPackageAppService _redPackageAppService;
+    private readonly GrainOptions _grainOptions;
+    
+
+
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         IClusterClient clusterClient,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope)
+        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope,
+        IRedPackageAppService redPackageAppService, IOptions<GrainOptions> grainOptions)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
         _indicatorScope = indicatorScope;
-        _contractOptions = contractOptions.Value;
         _clusterClient = clusterClient;
+        _redPackageAppService = redPackageAppService;
+        _grainOptions = grainOptions.Value;
+        _contractOptions = contractOptions.Value;
     }
 
     public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)

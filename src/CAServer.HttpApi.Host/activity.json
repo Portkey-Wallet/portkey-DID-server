@@ -34,42 +34,17 @@
       "SwapTokensForExactTokens": "Swap",
       "UpdateManagerInfos": "UpdateManagerInfos",
       "SetTransferLimit":"Set Transfer Limit",
-      "TransferToken": "Withdraw"
+      "TransferToken": "Withdraw",
+      "CreateRedPacket": "Crypto Box Send",
+      "TransferRedPacket": "Crypto Box Claimed",
+      "RefundRedPacket": "Crypto Box Returned"
     },
-    "DefaultTypes": [
-      "Transfer",
-      "SocialRecovery",
-      "RemoveManagerInfo",
-      "AddManagerInfo",
-      "Bingo",
-      "Play",
-      "BeanGoTown-Bingo",
-      "BeanGoTown-Play"
-    ],
-    "AllSupportTypes": [
-      "Transfer",
-      "CrossChainTransfer",
-      "SocialRecovery",
-      "RemoveManagerInfo",
-      "AddManagerInfo",
-      "CreateCAHolder",
-      "AddGuardian",
-      "RemoveGuardian",
-      "UpdateGuardian",
-      "SetGuardianForLogin",
-      "UnsetGuardianForLogin",
-      "RemoveOtherManagerInfo",
-      "ClaimToken",
-      "Register",
-      "Approve",
-      "Bingo",
-      "Play",
-      "BeanGoTown-Bingo",
-      "BeanGoTown-Play",
-      "ManagerApprove",
-      "MakeOffer",
-      "CancelOffer"
-    ],
+    "TransactionTypeMap": {
+      "TransferToken": "Transfer",
+      "CreateRedPacket": "Transfer",
+      "TransferRedPacket": "Transfer",
+      "RefundRedPacket": "Transfer"
+    },
     "TransferTypes": [
       "Transfer",
       "CrossChainTransfer",
