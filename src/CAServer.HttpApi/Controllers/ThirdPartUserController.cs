@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -38,9 +39,9 @@ public class ThirdPartUserController : CAServerController
     }
     
     [HttpGet("orders")]
-    public async Task<PagedResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
+    public async Task<PageResult<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
-        return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
+        return PagerHelper.ToPageResult(await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input));
     }
     
     [HttpPost("alchemy/txHash")]
