@@ -13,6 +13,7 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
+using CAServer.DataReporting.Dtos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -412,6 +413,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
+        
+        CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
+        CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
 
         CreateMap<CAHolderIndex, HolderInfoWithAvatar>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
