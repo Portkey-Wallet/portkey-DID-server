@@ -9,5 +9,5 @@ public interface IImUserAppService
 {
     Task<HolderInfoResultDto> GetHolderInfoAsync(Guid userId);
     Task<List<Guid>> ListHolderInfoAsync(string keyword);
-    Task<List<HolderInfoResultDto>> GetHolderInfosAsync(List<Guid> userIds);
+    Task<List<HolderInfoResultDto>> GetUserInfoAsync(List<Guid> userIds);
 }

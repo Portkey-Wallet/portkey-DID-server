@@ -86,7 +86,7 @@ public class ImUserAppService : CAServerAppService, IImUserAppService
         return guidsByGuardian.Union(guidsByUserExtraInfo).ToList();
     }
 
-    public async Task<List<HolderInfoResultDto>> GetHolderInfosAsync(List<Guid> userIds)
+    public async Task<List<HolderInfoResultDto>> GetUserInfoAsync(List<Guid> userIds)
     {
         var holders = await GetHolderIndexListAsync(userIds);
         return ObjectMapper.Map<List<CAHolderIndex>, List<HolderInfoResultDto>>(holders);

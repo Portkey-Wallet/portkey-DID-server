@@ -21,3 +21,9 @@ public class GetTokenBalanceTransferCheckDto
 {
     [Required] public string CaHash { get; set; }
 }
+
+public class GetTokenBalanceTransferCheckWithChainIdDto
+{
+    [Required] public string CaHash { get; set; }
+    public string CheckTransferSafeChainId { get; set; }
+}

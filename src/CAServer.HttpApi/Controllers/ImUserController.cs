@@ -46,8 +46,8 @@ public class ImUserController : CAServerController
     }
     
     [HttpGet("holders")]
-    public async Task<List<HolderInfoResultDto>> GetHolderInfosAsync(List<Guid> userIds)
+    public async Task<List<HolderInfoResultDto>> GetUserInfoAsync(List<Guid> userIds)
     {
-        return await _imUserAppService.GetHolderInfosAsync(userIds);
+        return await _imUserAppService.GetUserInfoAsync(userIds);
     }
 }

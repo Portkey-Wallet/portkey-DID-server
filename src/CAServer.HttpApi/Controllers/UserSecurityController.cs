@@ -36,7 +36,7 @@ public class UserSecurityController : CAServerController
     }
 
     [HttpGet("balanceCheck")]
-    public async Task<TokenBalanceTransferCheckAsyncResultDto> GetTokenBalanceTransferCheckAsync(GetTokenBalanceTransferCheckDto input)
+    public async Task<TokenBalanceTransferCheckAsyncResultDto> GetTokenBalanceTransferCheckAsync(GetTokenBalanceTransferCheckWithChainIdDto input)
     {
         return await _userSecurityAppService.GetTokenBalanceTransferCheckAsync(input);
     }
