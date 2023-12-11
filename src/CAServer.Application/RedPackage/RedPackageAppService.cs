@@ -57,7 +57,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _logger = logger;
     }
 
-    public  RedPackageTokenInfo GetRedPackageOption(String symbol,string chainId,out long maxCount,out string redpackageContractAddress)
+    public  RedPackageTokenInfo GetRedPackageOption(string symbol,string chainId,out long maxCount,out string redpackageContractAddress)
     {
         var result =  _redPackageOptions.TokenInfo.Where(x =>
                 string.Equals(x.Symbol, symbol, StringComparison.OrdinalIgnoreCase) &&
@@ -104,7 +104,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 Symbol = redPackageInput.Symbol,
                 Decimal = result.Decimal,
                 ChainId = redPackageInput.ChainId,
-                ExpireTime = RedPackageConsts.ExpireTimeMs,
+                ExpireTime = _redPackageOptions.ExpireTimeMs,
                 RedPackageContractAddress = chainInfo.RedPackageContractAddress
             };
             return res;
@@ -162,7 +162,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
             var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
             var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
-                CurrentUser.Id.Value);
+                CurrentUser.Id.Value,_redPackageOptions.ExpireTimeMs);
             _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {input}", input);
             if (!createResult.Success)
             {

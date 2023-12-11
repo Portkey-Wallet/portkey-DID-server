@@ -5,8 +5,9 @@ namespace CAServer.Grains.Grain.RedPackage;
 
 public interface IRedPackageGrain : IGrainWithGuidKey
 {
-    Task<GrainResultDto<RedPackageDetailDto>> CreateRedPackage(SendRedPackageInputDto input, int decimalIn, long minAmount,
-        Guid senderId);
+    Task<GrainResultDto<RedPackageDetailDto>> CreateRedPackage(SendRedPackageInputDto input, int decimalIn,
+        long minAmount,
+        Guid senderId, long expireTimeMs);
     Task<GrainResultDto<RedPackageDetailDto>> GetRedPackage(int skip, int max,Guid userId);
     Task<GrainResultDto<bool>> ExpireRedPackage();
     Task<GrainResultDto<bool>> CancelRedPackage();

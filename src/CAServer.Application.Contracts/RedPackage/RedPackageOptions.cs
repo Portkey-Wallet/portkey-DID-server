@@ -5,6 +5,8 @@ namespace CAServer.RedPackage;
 public class RedPackageOptions
 {
     public int MaxCount { get; set; }
+    
+    public long ExpireTimeMs{ get; set; }
     public List<RedPackageTokenInfo> TokenInfo { get; set; }
     
     public List<ContractAddressInfo>RedPackageContractAddress{ get; set; }

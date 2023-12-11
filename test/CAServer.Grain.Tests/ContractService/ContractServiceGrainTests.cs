@@ -152,7 +152,7 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         var redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(redPackageId);
         var input = NewSendRedPackageInputDto(redPackageId);
         input.Count = 2;
-        await redPackageGrain.CreateRedPackage(input, 8, 1, userId1);
+        await redPackageGrain.CreateRedPackage(input, 8, 1, userId1,86400000);
         var res = await redPackageGrain.GrabRedPackage(userId1, "xxxx");
         res.Success.ShouldBe(true);
         await redPackageGrain.GrabRedPackage(userId2, "xxxx");
@@ -161,7 +161,7 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageFullyClaimed);
         
         redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(Guid.NewGuid());
-        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1);
+        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1,86400000);
         await redPackageGrain.CancelRedPackage();
         res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
         res.Success.ShouldBe(false);
@@ -172,7 +172,7 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageExpired);
 
         redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(Guid.NewGuid());
-        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1);
+        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1,86400000);
         await redPackageGrain.GrabRedPackage(userId2, "xxxx");
         res = await redPackageGrain.GrabRedPackage(userId2, "xxxx");
         res.Success.ShouldBe(false);

@@ -32,7 +32,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
 
     public async Task<GrainResultDto<RedPackageDetailDto>> CreateRedPackage(SendRedPackageInputDto input, int decimalIn,
         long minAmount,
-        Guid senderId)
+        Guid senderId, long expireTimeMs)
     {
         var result = new GrainResultDto<RedPackageDetailDto>();
         if (State.Status != RedPackageStatus.Init)
@@ -47,7 +47,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
         State.Status = RedPackageStatus.NotClaimed;
         State.CreateTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         State.EndTime = 0;
-        State.ExpireTime = State.CreateTime + RedPackageConsts.ExpireTimeMs;
+        State.ExpireTime = State.CreateTime + expireTimeMs;
         State.Decimal = decimalIn;
         State.BucketNotClaimed = bucketResult.Item1;
         State.BucketClaimed = new List<BucketItem>();
