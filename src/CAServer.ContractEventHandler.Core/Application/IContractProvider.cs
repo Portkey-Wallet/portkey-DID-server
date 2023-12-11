@@ -82,7 +82,7 @@ public class ContractProvider : IContractProvider
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
         IGraphQLProvider graphQlProvider, IIndicatorScope indicatorScope, IDistributedCache<BlockDto> distributedCache,
-        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions)
+        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, IRedPackageAppService redPackageAppService)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
@@ -92,6 +92,7 @@ public class ContractProvider : IContractProvider
         _graphQlProvider = graphQlProvider;
         _indicatorScope = indicatorScope;
         _distributedCache = distributedCache;
+        _redPackageAppService = redPackageAppService;
         _blockInfoOptions = blockInfoOptions.Value;
     }
 
