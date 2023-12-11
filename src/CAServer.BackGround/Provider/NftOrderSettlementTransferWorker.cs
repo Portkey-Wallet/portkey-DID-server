@@ -64,7 +64,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
             return;
         }
 
-        var chainStatus = await _contractProvider.GetChainStatus(CommonConstant.MainChainId);
+        var chainStatus = await _contractProvider.GetChainStatusAsync(CommonConstant.MainChainId);
         _logger.LogDebug("NftOrderSettlementTransferWorker chainHeight={Height} LIB: {LibHeight}",
             chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight);
 
@@ -109,7 +109,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
 
                 callbackResults.Add(_nftCheckoutService
                     .GetProcessor(orderDto.MerchantName)
-                    .RefreshSettlementTransfer(orderDto.Id, chainStatus.BestChainHeight,
+                    .RefreshSettlementTransferAsync(orderDto.Id, chainStatus.BestChainHeight,
                         chainStatus.LastIrreversibleBlockHeight));
             }
 

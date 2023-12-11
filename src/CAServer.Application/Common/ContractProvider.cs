@@ -35,8 +35,8 @@ public interface IContractProvider
         string fromPublicKey);
     Task<SendTransactionOutput> SendRawTransactionAsync(string chainId, string rawTransaction);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId);
-    Task<ChainStatusDto> GetChainStatus(string chainId);
-    Task<Tuple<string, Transaction>> GenerateTransferTransaction(string symbol, string amount, string address,
+    Task<ChainStatusDto> GetChainStatusAsync(string chainId);
+    Task<Tuple<string, Transaction>> GenerateTransferTransactionAsync(string symbol, string amount, string address,
         string chainId, string senderPubKey);
     Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId, TransactionInfo transactionInfo);
 
@@ -154,7 +154,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         return value;
     }
 
-    public async Task<ChainStatusDto> GetChainStatus(string chainId)
+    public async Task<ChainStatusDto> GetChainStatusAsync(string chainId)
     {
         var client = await GetAElfClientAsync(chainId);
         AssertHelper.NotNull(client, "Send RawTransaction FAILED!, client of ChainId={ChainId} NOT FOUND", chainId);
@@ -170,7 +170,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     /// <param name="chainId"></param>
     /// <param name="senderPubKey"></param>
     /// <returns> Tuple( transactionId -> transaction ) </returns>
-    public async Task<Tuple<string, Transaction>> GenerateTransferTransaction(string symbol, string amount, string address,
+    public async Task<Tuple<string, Transaction>> GenerateTransferTransactionAsync(string symbol, string amount, string address,
         string chainId, string senderPubKey)
     {
         AssertHelper.IsTrue(_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo), "ChainInfo not found : " + chainId);

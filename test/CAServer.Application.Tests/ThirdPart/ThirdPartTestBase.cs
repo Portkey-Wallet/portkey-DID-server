@@ -94,11 +94,11 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             });
         
         mockContractProvider
-            .Setup(p => p.GenerateTransferTransaction(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Setup(p => p.GenerateTransferTransactionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(new Tuple<string, Transaction>(PendingTxId, new Transaction()));
         
         mockContractProvider
-            .Setup(p => p.GetChainStatus(It.IsAny<string>()))
+            .Setup(p => p.GetChainStatusAsync(It.IsAny<string>()))
             .ReturnsAsync(new ChainStatusDto
             {
                 BestChainHeight = 1000,

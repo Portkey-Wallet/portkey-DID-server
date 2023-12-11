@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CAServer.Commons.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Controllers;
 
@@ -38,7 +38,7 @@ public class ThirdPartUserController : CAServerController
     }
     
     [HttpGet("orders")]
-    public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
+    public async Task<PagedResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input)
     {
         return await _thirdPartOrdersAppService.GetThirdPartOrdersAsync(input);
     }

@@ -162,7 +162,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
     }
 
-    public async Task<TokenExchange> GetLatestExchange(string exchangeProviderName, string fromSymbol,
+    public async Task<TokenExchange> GetLatestExchangeAsync(string exchangeProviderName, string fromSymbol,
         string toSymbol)
     {
         var providerExists =
@@ -179,7 +179,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         );
     }
 
-    public async Task<TokenExchange> GetHistoryExchange(string exchangeProviderName, string fromSymbol,
+    public async Task<TokenExchange> GetHistoryExchangeAsync(string exchangeProviderName, string fromSymbol,
         string toSymbol, DateTime timestamp)
     {
         var providerExists =

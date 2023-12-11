@@ -44,7 +44,7 @@ public class NftOrderTransferHandler : IDistributedEventHandler<OrderEto>, ITran
         var thirdPart = eventData.MerchantName;
         try
         {
-            await _nftCheckoutService.GetProcessor(thirdPart).SettlementTransfer(orderId);
+            await _nftCheckoutService.GetProcessor(thirdPart).SettlementTransferAsync(orderId);
         }
         catch (UserFriendlyException e)
         {

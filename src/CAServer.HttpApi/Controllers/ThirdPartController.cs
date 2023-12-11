@@ -58,7 +58,7 @@ public class ThirdPartOrderController : CAServerController
 
         try
         {
-            var orderList = await _thirdPartOrderAppService.ExportOrderList(new GetThirdPartOrderConditionDto(0, 100)
+            var orderList = await _thirdPartOrderAppService.ExportOrderListAsync(new GetThirdPartOrderConditionDto(0, 100)
             {
                 LastModifyTimeLt = requestDto.EndTime,
                 LastModifyTimeGt = requestDto.StartTime,

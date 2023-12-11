@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Search;
@@ -16,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -114,7 +114,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     }
 
 
-    public async Task<PageResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(GetThirdPartOrderConditionDto condition,
+    public async Task<PagedResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(GetThirdPartOrderConditionDto condition,
         params OrderSectionEnum?[] withSections)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>();
@@ -147,15 +147,15 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             await _orderRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: condition.MaxResultCount,
                 skip: condition.SkipCount);
 
-        var pager = new PageResultDto<OrderDto>(
-            userOrders.Select(i => _objectMapper.Map<RampOrderIndex, OrderDto>(i)).ToList(), totalCount);
-        if (pager.Data.IsNullOrEmpty()) return pager;
+        var pager = new PagedResultDto<OrderDto>(totalCount,
+            userOrders.Select(i => _objectMapper.Map<RampOrderIndex, OrderDto>(i)).ToList());
+        if (pager.Items.IsNullOrEmpty()) return pager;
 
-        var orderIdIn = pager.Data.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id)
+        var orderIdIn = pager.Items.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id)
             .ToList();
         if (withSections.Contains(OrderSectionEnum.NftSection))
         {
-            var nftOrderPager = await QueryNftOrderPagerAsync(new NftOrderQueryConditionDto(0, pager.Data.Count)
+            var nftOrderPager = await QueryNftOrderPagerAsync(new NftOrderQueryConditionDto(0, pager.Items.Count)
             {
                 IdIn = orderIdIn
             });
@@ -179,12 +179,12 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     }
 
     // query full order with nft-order section
-    public async Task<PageResultDto<OrderDto>> GetNftOrdersByPageAsync(NftOrderQueryConditionDto condition)
+    public async Task<PagedResultDto<OrderDto>> GetNftOrdersByPageAsync(NftOrderQueryConditionDto condition)
     {
         var nftOrderPager = await QueryNftOrderPagerAsync(condition);
-        if (nftOrderPager.Data.IsNullOrEmpty()) return new PageResultDto<OrderDto>();
+        if (nftOrderPager.Items.IsNullOrEmpty()) return new PagedResultDto<OrderDto>();
 
-        var orderIds = nftOrderPager.Data.Select(order => order.Id).ToList();
+        var orderIds = nftOrderPager.Items.Select(order => order.Id).ToList();
         var orderPager = await GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto(0, orderIds.Count)
         {
             OrderIdIn = orderIds
@@ -194,30 +194,30 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     }
 
 
-    public async Task<PageResultDto<OrderStatusInfoIndex>> QueryOrderStatusInfoPagerAsync(List<string> ids)
+    public async Task<PagedResultDto<OrderStatusInfoIndex>> QueryOrderStatusInfoPagerAsync(List<string> ids)
     {
-        if (ids.IsNullOrEmpty()) return new PageResultDto<OrderStatusInfoIndex>();
+        if (ids.IsNullOrEmpty()) return new PagedResultDto<OrderStatusInfoIndex>();
         var mustQuery = new List<Func<QueryContainerDescriptor<OrderStatusInfoIndex>, QueryContainer>>();
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.OrderId).Terms(ids)));
 
         QueryContainer Filter(QueryContainerDescriptor<OrderStatusInfoIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, orders) = await _orderStatusInfoRepository.GetSortListAsync(Filter, limit: ids.Count);
-        return new PageResultDto<OrderStatusInfoIndex>(orders, totalCount);
+        return new PagedResultDto<OrderStatusInfoIndex>(totalCount, orders);
     }
 
-    public async Task<PageResultDto<OrderSettlementIndex>> QueryOrderSettlementInfoPagerAsync(List<string> ids)
+    public async Task<PagedResultDto<OrderSettlementIndex>> QueryOrderSettlementInfoPagerAsync(List<string> ids)
     {
-        if (ids.IsNullOrEmpty()) return new PageResultDto<OrderSettlementIndex>();
+        if (ids.IsNullOrEmpty()) return new PagedResultDto<OrderSettlementIndex>();
         var mustQuery = new List<Func<QueryContainerDescriptor<OrderSettlementIndex>, QueryContainer>>();
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(ids)));
 
         QueryContainer Filter(QueryContainerDescriptor<OrderSettlementIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, orders) = await _orderSettlementRepository.GetSortListAsync(Filter, limit: ids.Count);
-        return new PageResultDto<OrderSettlementIndex>(orders, totalCount);
+        return new PagedResultDto<OrderSettlementIndex>(totalCount, orders);
     }
 
     // query nft-order index
-    public async Task<PageResultDto<NftOrderIndex>> QueryNftOrderPagerAsync(NftOrderQueryConditionDto condition)
+    public async Task<PagedResultDto<NftOrderIndex>> QueryNftOrderPagerAsync(NftOrderQueryConditionDto condition)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<NftOrderIndex>, QueryContainer>>();
 
@@ -271,14 +271,14 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         QueryContainer Filter(QueryContainerDescriptor<NftOrderIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, nftOrders) = await _nftOrderRepository.GetSortListAsync(Filter, sortFunc: Sort,
             limit: condition.MaxResultCount, skip: condition.SkipCount);
-        return new PageResultDto<NftOrderIndex>(nftOrders, totalCount);
+        return new PagedResultDto<NftOrderIndex>(totalCount, nftOrders);
     }
 
-    private void MergeNftOrderSection(PageResultDto<OrderDto> orderPager, PageResultDto<NftOrderIndex> nftOrderPager)
+    private void MergeNftOrderSection(PagedResultDto<OrderDto> orderPager, PagedResultDto<NftOrderIndex> nftOrderPager)
     {
-        if (nftOrderPager.Data.IsNullOrEmpty()) return;
-        var nftOrderIndices = nftOrderPager.Data.ToDictionary(order => order.Id, order => order);
-        foreach (var orderDto in orderPager.Data)
+        if (nftOrderPager.Items.IsNullOrEmpty()) return;
+        var nftOrderIndices = nftOrderPager.Items.ToDictionary(order => order.Id, order => order);
+        foreach (var orderDto in orderPager.Items)
         {
             if (!nftOrderIndices.ContainsKey(orderDto.Id)) continue;
             var nftOrderIndex = nftOrderIndices[orderDto.Id];
@@ -287,12 +287,12 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         }
     }
 
-    private void MergeOrderStatusSection(PageResultDto<OrderDto> orderPager,
-        PageResultDto<OrderStatusInfoIndex> orderStatusPager)
+    private void MergeOrderStatusSection(PagedResultDto<OrderDto> orderPager,
+        PagedResultDto<OrderStatusInfoIndex> orderStatusPager)
     {
-        if (orderStatusPager.Data.IsNullOrEmpty()) return;
-        var statusIndexes = orderStatusPager.Data.ToDictionary(order => order.OrderId, order => order);
-        foreach (var orderDto in orderPager.Data)
+        if (orderStatusPager.Items.IsNullOrEmpty()) return;
+        var statusIndexes = orderStatusPager.Items.ToDictionary(order => order.OrderId, order => order);
+        foreach (var orderDto in orderPager.Items)
         {
             if (!statusIndexes.ContainsKey(orderDto.Id)) continue;
             var orderStatusIndex = statusIndexes[orderDto.Id];
@@ -301,12 +301,12 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         }
     }
 
-    private void MergeOrderStatusSection(PageResultDto<OrderDto> orderPager,
-        PageResultDto<OrderSettlementIndex> orderStatusPager)
+    private void MergeOrderStatusSection(PagedResultDto<OrderDto> orderPager,
+        PagedResultDto<OrderSettlementIndex> orderStatusPager)
     {
-        if (orderStatusPager.Data.IsNullOrEmpty()) return;
-        var statusIndexes = orderStatusPager.Data.ToDictionary(order => order.Id, order => order);
-        foreach (var orderDto in orderPager.Data)
+        if (orderStatusPager.Items.IsNullOrEmpty()) return;
+        var statusIndexes = orderStatusPager.Items.ToDictionary(order => order.Id, order => order);
+        foreach (var orderDto in orderPager.Items)
         {
             if (!statusIndexes.ContainsKey(orderDto.Id)) continue;
             var orderStatusIndex = statusIndexes[orderDto.Id];

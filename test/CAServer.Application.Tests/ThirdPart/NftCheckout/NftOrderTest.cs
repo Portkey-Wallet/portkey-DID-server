@@ -7,13 +7,10 @@ using AElf.Cryptography;
 using AElf.Cryptography.ECDSA;
 using AElf.Types;
 using CAServer.BackGround.Provider;
-using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Commons.Dtos;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
-using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.DependencyInjection;
@@ -244,7 +241,7 @@ public partial class NftOrderTest : ThirdPartTestBase
     {
         await AlchemyOrderUpdateTest();
 
-        var orderList = await _thirdPartOrderAppService.ExportOrderList(new GetThirdPartOrderConditionDto(0, 100)
+        var orderList = await _thirdPartOrderAppService.ExportOrderListAsync(new GetThirdPartOrderConditionDto(0, 100)
         {
             LastModifyTimeGt = "2023-11-01",
             LastModifyTimeLt = DateTime.UtcNow.AddDays(1).ToUtc8String(TimeHelper.DatePattern),

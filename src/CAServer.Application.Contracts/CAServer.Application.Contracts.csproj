@@ -52,6 +52,7 @@
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateRequestDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateResponseDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\IAppleMigrateAppService.cs" />
+      <Orleans_CodeGenInputs Remove="Commons\Dtos\PageResultDto.cs" />
     </ItemGroup>
 
     <ItemGroup>
