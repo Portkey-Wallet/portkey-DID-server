@@ -157,6 +157,8 @@ public class TransakRampPrice
     public string FiatCurrency { get; set; }
     public string CryptoCurrency { get; set; }
     public string PaymentMethod { get; set; }
+    
+    
     public decimal FiatAmount { get; set; }
     public decimal CryptoAmount { get; set; }
     public string IsBuyOrSell { get; set; }

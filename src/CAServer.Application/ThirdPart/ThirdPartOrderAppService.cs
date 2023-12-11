@@ -246,7 +246,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     private async Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto)
     {
         _logger.LogInformation("This third part order {OrderId} of user:{UserId} will be created",
-            orderGrainDto.ThirdPartOrderNo, orderGrainDto.UserId);
+            orderGrainDto.Id, orderGrainDto.UserId);
 
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderGrainDto.Id);
         var result = await orderGrain.CreateUserOrderAsync(orderGrainDto);

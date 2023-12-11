@@ -101,7 +101,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
 
             var dataToBeUpdated = MergeEsAndInput2GrainModel(inputOrderDto, esOrderData);
             var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
-            dataToBeUpdated.Status = inputState.ToString();
+            dataToBeUpdated.Status = inputState.ToString(); 
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();

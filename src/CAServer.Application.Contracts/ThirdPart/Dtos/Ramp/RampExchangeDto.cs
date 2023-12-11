@@ -15,14 +15,20 @@ public class RampExchangeRequest
     public string Network { get; set; }
     [Required] public string Fiat { get; set; }
     [Required] public string Country { get; set; }
-    
+
     public bool IsBuy()
     {
         return Type == OrderTransDirect.BUY.ToString();
     }
-    
+
     public bool IsSell()
     {
         return Type == OrderTransDirect.SELL.ToString();
+    }
+    
+    
+    public override string ToString()
+    {
+        return $"RampExchangeRequest(type={Type}, Crypto={Crypto}，Network={Network},Fiat={Fiat},Country:{Country})";
     }
 }

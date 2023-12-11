@@ -11,6 +11,7 @@ using CAServer.Commons;
 using CAServer.Grains.Grain.Svg;
 using CAServer.Grains.Grain.Svg.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos.ThirdPart;
@@ -58,7 +59,8 @@ public class TransakProvider
     public TransakProvider(
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider, IOptionsMonitor<RampOptions> rampOptions, IClusterClient clusterClient,
-        IAbpDistributedLock distributedLock, ILogger<TransakProvider> logger, IImageProcessProvider imageProcessProvider)
+        IAbpDistributedLock distributedLock, ILogger<TransakProvider> logger,
+        IImageProcessProvider imageProcessProvider)
     {
         _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
@@ -90,11 +92,12 @@ public class TransakProvider
     {
         try
         {
-            if(_rampOptions?.CurrentValue?.Providers?.TryGetValue(ThirdPartNameType.Transak.ToString(), out var provider) == true)
+            if (_rampOptions?.CurrentValue?.Providers?.TryGetValue(ThirdPartNameType.Transak.ToString(),
+                    out var provider) == true)
             {
                 var webhookUrl = provider.WebhookUrl;
-                if (webhookUrl.IsNullOrEmpty()) return; 
-                
+                if (webhookUrl.IsNullOrEmpty()) return;
+
                 await UpdateWebhookAsync(new UpdateWebhookRequest
                 {
                     WebhookURL = webhookUrl
@@ -102,19 +105,19 @@ public class TransakProvider
             }
             else
             {
-                _logger.LogError("Transak webhook url options not exists, skip update to Transak");            
+                _logger.LogError("Transak webhook url options not exists, skip update to Transak");
             }
         }
         catch (Exception e)
         {
             _logger.LogError(e, "init Transak provider error");
         }
-
     }
 
     private async Task<Dictionary<string, string>> GetAccessTokenHeader()
     {
-        var accessToken = await GetAccessTokenWithRetry();
+        var accessToken = await GetAccessTokenWithRetry(true);
+        _logger.LogInformation("------test ac token:" + accessToken);
         return new Dictionary<string, string> { ["access-token"] = accessToken };
     }
 
@@ -283,7 +286,7 @@ public class TransakProvider
     private async Task UpdateWebhookAsync(UpdateWebhookRequest input)
     {
         // retry once
-        for (var i = 0 ; i < RetryCount ; i++)
+        for (var i = 0; i < RetryCount; i++)
         {
             // Update the webhook address when the system starts.
             var webHookRes = await _httpProvider.InvokeResponse(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
@@ -291,7 +294,7 @@ public class TransakProvider
                 header: await GetAccessTokenHeader(),
                 withLog: true
             );
-            AssertHelper.NotNull(webHookRes,"transak webhook http response null");
+            AssertHelper.NotNull(webHookRes, "transak webhook http response null");
             //right response return 
             if (webHookRes.StatusCode.Equals(HttpStatusCode.OK))
             {
@@ -301,16 +304,16 @@ public class TransakProvider
 
             //bad response and special treat the question of token access
             var content = await webHookRes.Content.ReadAsStringAsync();
-            
+
             AssertHelper.IsTrue(!HttpStatusCode.BadRequest.Equals(webHookRes.StatusCode),
-                "transak webhook http response exception,ex is {Content}",content);
-            AssertHelper.IsTrue(content.Contains(ErrorTokenAcesstoken), 
-                "transak webhook http response exception,ex is{Content}",content);
+                "transak webhook http response exception,ex is {Content}", content);
+            AssertHelper.IsTrue(content.Contains(ErrorTokenAcesstoken),
+                "transak webhook http response exception,ex is{Content}", content);
 
             await GetAccessTokenWithRetry(true);
         }
     }
-    
+
     /// <summary>
     ///     Get order by id
     /// </summary>
@@ -336,7 +339,7 @@ public class TransakProvider
     /// <returns></returns>
     public async Task SetSvgUrl(List<TransakFiatItem> transakFiatItems)
     {
-        var uploadTask = new List<Task>(); 
+        var uploadTask = new List<Task>();
         foreach (var transakFiatItem in transakFiatItems)
         {
             if (transakFiatItem.Icon.IsNullOrEmpty() || transakFiatItem.Icon.StartsWith("http"))
@@ -344,8 +347,10 @@ public class TransakProvider
                 transakFiatItem.IconUrl = transakFiatItem.Icon;
                 continue;
             }
+
             uploadTask.Add(SingleSetSvgUrl(transakFiatItem));
         }
+
         await Task.WhenAll(uploadTask);
     }
 
@@ -356,12 +361,13 @@ public class TransakProvider
         {
             return;
         }
+
         var svgMd5 = EncryptionHelper.MD5Encrypt32(svgUrl);
         var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
         var svgGrain = await grain.GetSvgAsync();
         var portkeyUrl = _rampOptions.CurrentValue.Providers[ThirdPartNameType.Transak.ToString()].CountryIconUrl;
-        portkeyUrl.ReplaceWithDict(new Dictionary<string, string> { ["SVG_MD5"] = svgMd5 });
-        
+        portkeyUrl = portkeyUrl.ReplaceWithDict(new Dictionary<string, string> { ["SVG_MD5"] = svgMd5 });
+
         transakFiatItem.IconUrl = svgGrain.AmazonUrl.DefaultIfEmpty(portkeyUrl);
         if (svgGrain.AmazonUrl.NotNullOrEmpty())
         {

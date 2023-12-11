@@ -14,8 +14,8 @@
           "https://ramp.alchemypay.org/static/img/3.22abdb74.svg"
         ],
         "Coverage": {
-          "OnRamp": true,
-          "OffRamp": true
+          "OnRamp": false,
+          "OffRamp": false
         },
         "NetworkMapping": {
           "AELF": "ELF"
@@ -33,8 +33,8 @@
           "https://ramp.alchemypay.org/static/img/2.a5406123.svg"
         ],
         "Coverage": {
-          "OnRamp": false,
-          "OffRamp": false
+          "OnRamp": true,
+          "OffRamp": true
         },
         "NetworkMapping": {
           "AELF": "aelf"
@@ -46,7 +46,7 @@
         "Symbol": "ELF",
         "Icon": "https://explorer-test.aelf.io/favicon.test.ico",
         "Decimals": "8",
-        "Network": "AELF",
+        "Network": "aelf",
         "ChainId": "AELF",
         "Address": ""
       }
@@ -54,7 +54,7 @@
     "DefaultCurrency": {
       "Crypto": "ELF",
       "CryptoAmount": "400",
-      "Network": "AELF",
+      "Network": "aelf",
       "ChainId": "AELF",
       "Fiat": "USD",
       "FiatAmount": "200"

@@ -66,7 +66,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     public async Task PreHeatCaches()
     {
         if (_thirdPartOptions?.CurrentValue?.Transak == null) return;
-        
+
         _logger.LogInformation("Transak adaptor pre heat start");
         var cryptoTask = GetTransakCryptoListWithCache();
         var fiatTask = GetTransakFiatListWithCache(OrderTransDirect.BUY.ToString());
@@ -88,19 +88,20 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     }
 
     private async Task<List<TransakFiatItem>> GetTransakFiatCurrencies()
-    { 
+    {
         _logger.LogDebug("Transak fiat query start");
         var fiatList = await _transakProvider.GetFiatCurrenciesAsync();
-        
+
         _logger.LogDebug("Transak fiat query finish");
         await _transakProvider.SetSvgUrl(fiatList);
-        
+
         _logger.LogDebug("Transak fiat upload finish");
         return fiatList;
     }
-    
+
     // cached fiat list
-    private async Task<List<TransakFiatItem>> GetTransakFiatListWithCache(string type, string crypto = null)
+    private async Task<List<TransakFiatItem>> GetTransakFiatListWithCache(string type,
+        string crypto = null)
     {
         var fiatList = await _fiatCache.GetOrAddAsync(FiatCacheKey,
             async () => await GetTransakFiatCurrencies(),
@@ -158,19 +159,14 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     {
         var transakPriceRequest = _objectMapper.Map<RampDetailRequest, GetRampPriceRequest>(rampPriceRequest);
         transakPriceRequest.PaymentMethod = paymentMethod;
+
+
         Func<RampDetailRequest, string> priceCacheKey = req => "Ramp:transak:price:" + string.Join(
             CommonConstant.Underline, req.Crypto,
             req.Network, req.CryptoAmount ?? 0, req.Fiat,
             req.Country, req.FiatAmount ?? 0);
-        // query transak price
-        var transakPrice = await _rampPrice.GetOrAddAsync(priceCacheKey(rampPriceRequest),
-            async () => await _transakProvider.GetRampPriceAsync(transakPriceRequest),
-            () => new DistributedCacheEntryOptions
-            {
-                AbsoluteExpiration =
-                    DateTimeOffset.Now.AddMinutes(_thirdPartOptions.CurrentValue.Transak.OrderQuoteExpirationMinutes)
-            });
 
+        var transakPrice = await _transakProvider.GetRampPriceAsync(transakPriceRequest);
         return transakPrice;
     }
 
@@ -229,17 +225,18 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             .Where(payment => rampDetailRequest.IsBuy() || payment.IsPayOutAllowed)
             .FirstOrDefault(payment => payment.IsActive);
 
-        // USD price
+        // USD price·
         var defaultAmount = rampDetailRequest.IsBuy()
             ? paymentOption.DefaultAmount ?? DefaultFiatAccount
             : paymentOption.DefaultAmountForPayOut ?? DefaultFiatAccount;
         rampDetailRequest.Fiat = paymentOption.LimitCurrency;
         rampDetailRequest.FiatAmount = defaultAmount;
+        rampDetailRequest.Country = null;
         var limitCurrencyPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
         if (paymentOption.LimitCurrency == fiat.Symbol) return limitCurrencyPrice;
 
         // Input other fiat, calculate cryptoAmount via USD-price
-        var cryptoAmount = limitCurrencyPrice.FiatAmount / limitCurrencyPrice.ConversionPrice;
+        var cryptoAmount = limitCurrencyPrice.FiatAmount * limitCurrencyPrice.ConversionPrice;
         rampDetailRequest.Fiat = fiat.Symbol;
         rampDetailRequest.FiatAmount = null;
         rampDetailRequest.CryptoAmount = cryptoAmount;
@@ -271,51 +268,148 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
             // find any payment option
             var paymentOption = fiat.MaxLimitPayment(rampLimitRequest.Type);
+
             AssertHelper.NotNull(paymentOption, "Fiat {Fiat} paymentOption missing", rampLimitRequest.Fiat);
 
-            // query fiat
-            var limitCurrencyFiat = paymentOption?.LimitCurrency == fiat.Symbol
-                ? fiat
-                : await GetTransakFiatItem(rampLimitRequest.Type, paymentOption.LimitCurrency);
-            AssertHelper.NotNull(fiat, "LimitCurrencyFiat {Fiat} not found", paymentOption.LimitCurrency);
-            AssertHelper.NotEmpty(fiat.SupportingCountries, "LimitCurrencyFiat {Fiat} support country empty",
-                paymentOption.LimitCurrency);
-
-            // fiat price
             var rampDetailRequest = _objectMapper.Map<RampLimitRequest, RampDetailRequest>(rampLimitRequest);
-            var fiatPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
-            var fiatCryptoExchange = fiatPrice.FiatCryptoExchange();
-            AssertHelper.IsTrue(fiatCryptoExchange > 0, "Invalid fiat price exchange {Ex}", fiatPrice.ConversionPrice);
 
-            // limit currency price
-            rampDetailRequest.Fiat = limitCurrencyFiat?.Symbol;
-            rampDetailRequest.Country = limitCurrencyFiat?.SupportingCountries.FirstOrDefault();
-            var limitCurrencyPrice = fiat.Symbol == paymentOption.LimitCurrency
-                ? fiatPrice
-                : await GetCommonRampPriceWithCache(rampDetailRequest);
-            var limitCurrencyCryptoFiatExchange = limitCurrencyPrice.FiatCryptoExchange();
-            AssertHelper.IsTrue(limitCurrencyCryptoFiatExchange > 0, "Invalid limitCurrency fiat price exchange {Ex}",
-                limitCurrencyPrice.FiatCryptoExchange());
+            if (rampDetailRequest.IsBuy())
+            {
+                rampDetailRequest.FiatAmount = paymentOption.MinAmount;
+            }
+            else
+            {
+                rampDetailRequest.FiatAmount = paymentOption.MinAmountForPayOut;
+            }
 
-            // calculate limit amount by two exchanges
-            var limitCurrencyMaxLimit = fiat.MaxLimit(rampLimitRequest.Type);
-            var fiatMinLimit = CalculateLimit(limitCurrencyCryptoFiatExchange, fiatCryptoExchange,
-                limitCurrencyMaxLimit.MinLimit.SafeToDecimal());
-            var fiatMaxLimit = CalculateLimit(limitCurrencyCryptoFiatExchange, fiatCryptoExchange,
-                limitCurrencyMaxLimit.MaxLimit.SafeToDecimal());
 
-            // TODO nzc decimals need to test 
-            var fiatLimit = new CurrencyLimit(fiat.Symbol,
-                fiatMinLimit.ToString(CultureInfo.InvariantCulture),
-                fiatMaxLimit.ToString(CultureInfo.InvariantCulture));
-            var cryptoLimit = new CurrencyLimit(rampLimitRequest.Crypto,
-                (fiatMinLimit / fiatCryptoExchange).ToString(8, DecimalHelper.RoundingOption.Ceiling),
-                (fiatMaxLimit / fiatCryptoExchange).ToString(8, DecimalHelper.RoundingOption.Floor));
+            var priceInfo = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+
+
+            var fiatLimit = new CurrencyLimit(fiat.Symbol, "", "");
+            var cryptoLimit = new CurrencyLimit(rampLimitRequest.Crypto, "", "");
+
+            if (rampDetailRequest.IsBuy())
+            {
+                fiatLimit.MinLimit = paymentOption.MinAmount.ToString();
+                fiatLimit.MaxLimit = paymentOption.MaxAmount.ToString();
+
+                cryptoLimit.MinLimit = (paymentOption.MinAmount * priceInfo.ConversionPrice).ToString();
+                cryptoLimit.MaxLimit = (paymentOption.MaxAmount * priceInfo.ConversionPrice).ToString();
+            }
+            else
+            {
+                fiatLimit.MinLimit = paymentOption.MinAmountForPayOut.ToString();
+                fiatLimit.MaxLimit = paymentOption.MaxAmountForPayOut.ToString();
+
+                cryptoLimit.MinLimit = (paymentOption.MinAmountForPayOut * priceInfo.ConversionPrice).ToString();
+                cryptoLimit.MaxLimit = (paymentOption.MaxAmountForPayOut * priceInfo.ConversionPrice).ToString();
+            }
+
+
             return new RampLimitDto
             {
                 Fiat = fiatLimit,
                 Crypto = cryptoLimit
             };
+
+            
+            // rampDetailRequest.Crypto = "USDT";
+            // rampDetailRequest.Network = "ethereum";
+            //
+            //
+            // if (rampDetailRequest.IsBuy())
+            // {
+            //     rampDetailRequest.CryptoAmount = paymentOption.MinAmount * (decimal?)1.25;
+            // }
+            // else
+            // {
+            //     rampDetailRequest.CryptoAmount = paymentOption.MinAmountForPayOut * (decimal?)1.25;
+            // }
+            //
+            // var usdtPriceInfo = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+            //
+            //
+            // decimal? fiatMinLimit = 0;
+            // decimal? fiatMaxLimit = 0;
+            // if (rampDetailRequest.IsBuy())
+            // {
+            //     fiatMinLimit = paymentOption.MinAmount / usdtPriceInfo.ConversionPrice;
+            //     fiatMaxLimit = paymentOption.MaxAmount / usdtPriceInfo.ConversionPrice;
+            // }
+            // else
+            // {
+            //     fiatMinLimit = paymentOption.MinAmountForPayOut / usdtPriceInfo.ConversionPrice;
+            //     fiatMaxLimit = paymentOption.MaxAmountForPayOut / usdtPriceInfo.ConversionPrice;
+            // }
+            //
+            //
+            // rampDetailRequest.FiatAmount = fiatMinLimit * (decimal?)1.25;
+            // rampDetailRequest.Crypto = rampLimitRequest.Crypto;
+            // rampDetailRequest.Network = rampLimitRequest.Network;
+            // rampDetailRequest.CryptoAmount = null;
+            //
+            // var priceInfo = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+            //
+            // var cryptoMaxLimit = fiatMaxLimit * priceInfo.ConversionPrice;
+            // var cryptoMinLimit = fiatMinLimit * priceInfo.ConversionPrice;
+            //
+            // var fiatLimit = new CurrencyLimit(fiat.Symbol,
+            //     fiatMinLimit.ToString(),
+            //     fiatMaxLimit.ToString());
+            // var cryptoLimit = new CurrencyLimit(rampLimitRequest.Crypto,
+            //     cryptoMinLimit.ToString(),
+            //     cryptoMaxLimit.ToString());
+            // return new RampLimitDto
+            // {
+            //     Fiat = fiatLimit,
+            //     Crypto = cryptoLimit
+            // };
+
+            // // query fiat
+            // var limitCurrencyFiat = paymentOption?.LimitCurrency == fiat.Symbol
+            //     ? fiat
+            //     : await GetTransakFiatItem(rampLimitRequest.Type, paymentOption.LimitCurrency);
+            // AssertHelper.NotNull(fiat, "LimitCurrencyFiat {Fiat} not found", paymentOption.LimitCurrency);
+            // AssertHelper.NotEmpty(fiat.SupportingCountries, "LimitCurrencyFiat {Fiat} support country empty",
+            //     paymentOption.LimitCurrency);
+            //
+            // // fiat price
+            // var rampDetailRequest = _objectMapper.Map<RampLimitRequest, RampDetailRequest>(rampLimitRequest);
+            //   
+            // var fiatPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
+            // var fiatCryptoExchange = fiatPrice.FiatCryptoExchange();
+            // AssertHelper.IsTrue(fiatCryptoExchange > 0, "Invalid fiat price exchange {Ex}", fiatPrice.ConversionPrice);
+            //
+            // // limit currency price
+            // rampDetailRequest.Fiat = limitCurrencyFiat?.Symbol;
+            // rampDetailRequest.Country = limitCurrencyFiat?.SupportingCountries.FirstOrDefault();
+            // var limitCurrencyPrice = fiat.Symbol == paymentOption.LimitCurrency
+            //     ? fiatPrice
+            //     : await GetCommonRampPriceWithCache(rampDetailRequest);
+            // var limitCurrencyCryptoFiatExchange = limitCurrencyPrice.FiatCryptoExchange();
+            // AssertHelper.IsTrue(limitCurrencyCryptoFiatExchange > 0, "Invalid limitCurrency fiat price exchange {Ex}",
+            //     limitCurrencyPrice.FiatCryptoExchange());
+            //
+            // // calculate limit amount by two exchanges
+            // var limitCurrencyMaxLimit = fiat.MaxLimit(rampLimitRequest.Type);
+            // var fiatMinLimit = CalculateLimit(limitCurrencyCryptoFiatExchange, fiatCryptoExchange,
+            //     limitCurrencyMaxLimit.MinLimit.SafeToDecimal());
+            // var fiatMaxLimit = CalculateLimit(limitCurrencyCryptoFiatExchange, fiatCryptoExchange,
+            //     limitCurrencyMaxLimit.MaxLimit.SafeToDecimal());
+            //
+            // // TODO nzc decimals need to test 
+            // var fiatLimit = new CurrencyLimit(fiat.Symbol,
+            //     fiatMinLimit.ToString(CultureInfo.InvariantCulture),
+            //     fiatMaxLimit.ToString(CultureInfo.InvariantCulture));
+            // var cryptoLimit = new CurrencyLimit(rampLimitRequest.Crypto,
+            //     (fiatMinLimit / fiatCryptoExchange).ToString(8, DecimalHelper.RoundingOption.Ceiling),
+            //     (fiatMaxLimit / fiatCryptoExchange).ToString(8, DecimalHelper.RoundingOption.Floor));
+            // return new RampLimitDto
+            // {
+            //     Fiat = fiatLimit,
+            //     Crypto = cryptoLimit
+            // };
         }
         catch (Exception e)
         {
@@ -340,8 +434,92 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         try
         {
             var rampDetailRequest = _objectMapper.Map<RampExchangeRequest, RampDetailRequest>(rampExchangeRequest);
-            var commonPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
-            return commonPrice.FiatCryptoExchange();
+            // var commonPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
+
+            var cryptoList = await GetTransakCryptoListWithCache();
+            var theCrypto = cryptoList
+                .Where(c => c.Network.Name == rampDetailRequest.Network)
+                // .Where(c => c.Network.ToNetworkId() == rampFiatRequest.Network)
+                .FirstOrDefault(c => c.Symbol == rampDetailRequest.Crypto);
+            if (theCrypto == null)
+            {
+                _logger.LogWarning($"Crypto is invalid,param:{rampDetailRequest}");
+                return null;
+            }
+
+            var notSupportedFiat = new ConcurrentDictionary<string, List<string>>();
+            foreach (var transakCryptoFiatNotSupported in theCrypto.Network.FiatCurrenciesNotSupported)
+            {
+                notSupportedFiat
+                    .GetOrAdd(transakCryptoFiatNotSupported.FiatCurrency, k => new List<string>())
+                    .Add(transakCryptoFiatNotSupported.PaymentMethod);
+            }
+
+
+            var fiatList = await _fiatCache.GetOrAddAsync(FiatCacheKey,
+                async () => await GetTransakFiatCurrencies(),
+                new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpiration =
+                        DateTimeOffset.Now.AddMinutes(10)
+                });
+
+
+            var fiat = fiatList.Where(a => a.Symbol == rampDetailRequest.Fiat)
+                .Where(f => !f.SupportingCountries.IsNullOrEmpty())
+                .FirstOrDefault(f => f.SupportingCountries.Contains(rampDetailRequest.Country));
+
+            if (fiat == null)
+            {
+                _logger.LogWarning($"fiat is no find,param:{rampDetailRequest}");
+                return null;
+            }
+
+            var paymentOption = fiat.PaymentOptions.Where(p =>
+                    !notSupportedFiat.TryGetValue(fiat.Symbol, out var payment) || !payment.Contains(p.Id))
+                .FirstOrDefault(payment => payment.IsActive);
+
+            if (paymentOption == null)
+            {
+                _logger.LogWarning($"paymentOption is no find,param:{rampDetailRequest}");
+                return null;
+            }
+
+
+            decimal minFiatAmount = 0;
+            rampDetailRequest.Crypto = "USDT";
+            rampDetailRequest.Network = "ethereum";
+            rampDetailRequest.Country = null;
+            if (rampDetailRequest.IsBuy())
+            {
+                rampDetailRequest.CryptoAmount = paymentOption.MinAmount;
+
+                var limiPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+
+                rampDetailRequest.Crypto = rampExchangeRequest.Crypto;
+                rampDetailRequest.FiatAmount = limiPrice.FiatAmount;
+                rampDetailRequest.Network = rampExchangeRequest.Network;
+                rampDetailRequest.CryptoAmount = null;
+            }
+            else if (rampDetailRequest.IsSell())
+            {
+                if (!paymentOption.IsPayOutAllowed)
+                {
+                    _logger.LogWarning($"fiat is no support payout,{rampDetailRequest}");
+                    return null;
+                }
+
+                rampDetailRequest.CryptoAmount = paymentOption.MinAmountForPayOut;
+                var limiPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+
+                rampDetailRequest.Crypto = rampExchangeRequest.Crypto;
+                rampDetailRequest.FiatAmount = limiPrice.FiatAmount;
+                rampDetailRequest.Network = rampExchangeRequest.Network;
+                rampDetailRequest.CryptoAmount = null;
+            }
+
+            var limitCurrencyPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+            return limitCurrencyPrice.FiatCryptoExchange();
         }
         catch (Exception e)
         {
@@ -354,21 +532,32 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     {
         try
         {
-            var commonPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
-            var transakFeePercent = commonPrice.TransakFeePercent();
             
+            var fiat = await GetTransakFiatItem(rampDetailRequest.Type, rampDetailRequest.Fiat, rampDetailRequest.Country);
+            
+            var paymentOption = fiat.MaxLimitPayment(rampDetailRequest.Type);
+            
+            AssertHelper.NotNull(paymentOption, "Fiat {Fiat} paymentOption missing", rampDetailRequest.Fiat);
+            
+            var commonPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+            
+            // var commonPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
+            
+            
+            var transakFeePercent = commonPrice.TransakFeePercent();
+
             var fiatAmount = rampDetailRequest.IsBuy()
                 ? rampDetailRequest.FiatAmount ?? 0
                 : rampDetailRequest.CryptoAmount / commonPrice.ConversionPrice ?? 0;
-            
+
             var networkFee = commonPrice.NetworkFee();
             var transakFee = fiatAmount * transakFeePercent;
             fiatAmount = fiatAmount - transakFee - networkFee;
-            
+
             var cryptoAmount = rampDetailRequest.IsBuy()
                 ? fiatAmount * commonPrice.ConversionPrice
                 : rampDetailRequest.CryptoAmount ?? 0;
-            
+
             var rampPrice = _objectMapper.Map<TransakRampPrice, RampPriceDto>(commonPrice);
             rampPrice.ThirdPart = ThirdPart();
             rampPrice.FiatAmount = fiatAmount.ToString(CultureInfo.InvariantCulture);
@@ -418,6 +607,4 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             return null;
         }
     }
-    
-    
 }

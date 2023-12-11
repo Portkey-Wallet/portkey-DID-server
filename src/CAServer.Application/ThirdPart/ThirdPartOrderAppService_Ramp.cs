@@ -238,7 +238,6 @@ public partial class ThirdPartOrderAppService
     {
         try
         {
-            var valueCollection = GetThirdPartAdaptors(request.Type);
             // invoke provider-adaptors ASYNC
             var exchangeTasks = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();
