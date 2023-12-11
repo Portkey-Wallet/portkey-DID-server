@@ -20,6 +20,8 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.EntityEventHandler.Core;
 
+[Obsolete("The methods of this class have been migrated to ContractEventHandler for execution." +
+          " The changes made here need to be synchronized with the IRedPackageCreateResultService class.")]
 public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEto>,ITransientDependency
 {
     private readonly IObjectMapper _objectMapper;
@@ -67,7 +69,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             redPackageIndex.TransactionResult = eventData.TransactionResult;
             if (eventData.Success == false)
             {
-                //TODO P3 updating ES data and updating Grain data can be done in parallel.
+                //updating ES data and updating Grain data can be done in parallel.
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
                 var updateRedPackageTask = _redPackageRepository.UpdateAsync(redPackageIndex);
@@ -77,7 +79,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 return;
             }
 
-            //TODO P1 updating ES data and sending IM messages can be executed in parallel.
+            //updating ES data and sending IM messages can be executed in parallel.
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             
             var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);

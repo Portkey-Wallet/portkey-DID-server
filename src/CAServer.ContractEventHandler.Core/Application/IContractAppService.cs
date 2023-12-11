@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
-using AElf.Client.Dto;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.Entities.Es;
@@ -18,14 +17,10 @@ using CAServer.Guardian.Provider;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
 using CAServer.UserAssets.Provider;
-using CAServer.RedPackage;
 using CAServer.RedPackage.Etos;
-using CAServer.UserBehavior;
-using CAServer.UserBehavior.Etos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.Distributed;
-using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -136,7 +131,6 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                //await _distributedEventBus.PublishAsync(eto);
                 _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
                 return;
             }
@@ -149,14 +143,12 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                //await _distributedEventBus.PublishAsync(eto);
                 _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
                 return;
             }
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
             _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
-            //await _distributedEventBus.PublishAsync(eto);
         }
         catch (Exception e)
         {
@@ -165,7 +157,6 @@ public class ContractAppService : IContractAppService
             eto.Success = false;
             eto.Message = e.Message;
             _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
-            //await _distributedEventBus.PublishAsync(eto);
         }
        
     }

@@ -49,9 +49,6 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
     {
         try
         {
-            // BackgroundJob.Schedule<MyTask>(x => new MyTask(_logger).test(),
-            //     TimeSpan.FromMilliseconds(30 * 1000));
-            //
             _logger.LogInformation("RedPackageCreateResultEto {Message}", JsonConvert.SerializeObject(eventData));
             var sessionId = eventData.SessionId;
             var redPackageIndex = await _redPackageRepository.GetAsync(sessionId);
@@ -116,19 +113,3 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
         }
     }
 }
-
-// //TODO delete
-// public class MyTask
-// {
-//     private readonly ILogger<RedPackageCreateResultService> _loggerrr;
-//     public MyTask(ILogger<RedPackageCreateResultService> logger)
-//     {
-//         _loggerrr = logger;
-//     }
-//     
-//     [Queue("redpackage")]
-//     public void test()
-//     {
-//         _loggerrr.LogInformation("daiyabinasdfasdffsadsssssssssssssssssssssssssssssssssssssssssssssssssssss");
-//     }
-// }
