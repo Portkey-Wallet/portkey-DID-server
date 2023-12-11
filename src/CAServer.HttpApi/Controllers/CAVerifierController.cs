@@ -181,6 +181,7 @@ public class CAVerifierController : CAServerController
     private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
         SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
+        
         //check guardian isExists;
         var guardianExists =
             await _verifierAppService.GuardianExistsAsync(sendVerificationRequestInput.GuardianIdentifier);
