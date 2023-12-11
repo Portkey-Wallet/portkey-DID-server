@@ -1,11 +1,15 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Hub;
+using CAServer.Hubs;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -66,7 +70,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
-        Configure<Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
