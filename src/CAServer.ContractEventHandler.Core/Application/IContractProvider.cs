@@ -536,7 +536,7 @@ public class ContractProvider : IContractProvider
         _logger.LogInformation("SendTransferRedPacketRefundAsync input {input}",JsonConvert.SerializeObject(sendInput));
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
-            redPackageContractAddress, MethodName.RefundRedPacket);
+            redPackageContractAddress, MethodName.RefundCryptoBox);
     }
 
 
@@ -581,6 +581,6 @@ public class ContractProvider : IContractProvider
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
-            redPackageContractAddress, MethodName.TransferRedPacket);
+            redPackageContractAddress, MethodName.TransferCryptoBoxBatch);
     }
 }
