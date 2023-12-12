@@ -13,6 +13,7 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
+using CAServer.DataReporting.Dtos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -35,7 +36,9 @@ using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
+using CAServer.RedPackage.Dtos;
 using CAServer.PrivacyPolicy.Dtos;
+using CAServer.Search.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
@@ -411,6 +414,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
+        
+        CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
+        CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
 
         CreateMap<CAHolderIndex, HolderInfoWithAvatar>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
@@ -422,5 +428,15 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<Portkey.Contracts.CA.Guardian, GuardianIndexerInfoDto>()
             .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
+        CreateMap<RedPackageIndex, RedPackageDetailDto>()
+            .ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => src.TotalAmount.ToString()))
+            .ReverseMap()
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
+        CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
+        CreateMap<UserTokenIndex, UserTokenIndexDto>()
+            .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
     }
 }
