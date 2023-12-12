@@ -394,7 +394,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var rawTxResult =
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId,
                     orderGrainDto.TransactionId);
-            _logger.LogDebug(
+            _logger.LogInformation(
                 "RefreshSettlementTransferAsync, orderId={OrderId}, transactionId={TransactionId}, status={Status}, block={Height}",
                 orderId, orderGrainDto.TransactionId, rawTxResult.Status, rawTxResult.BlockNumber);
             AssertHelper.IsTrue(rawTxResult.Status != TransactionState.Pending, "Transaction still pending status.");
