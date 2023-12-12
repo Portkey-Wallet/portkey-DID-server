@@ -572,6 +572,7 @@ public class ContractAppService : IContractAppService
     private async Task<bool> ValidateTransactionAndSyncAsync(string chainId, GetHolderInfoOutput result,
         string optionChainId)
     {
+        await Task.Delay(180000);
         var chainInfo = _chainOptions.ChainInfos[chainId];
         var transactionDto =
             await _contractProvider.ValidateTransactionAsync(chainId, result, null);
