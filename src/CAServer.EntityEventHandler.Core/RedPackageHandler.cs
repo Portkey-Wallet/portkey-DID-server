@@ -95,7 +95,7 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
                 imSendMessageRequestDto = new ImSendMessageRequestDto();
                 imSendMessageRequestDto.SendUuid = Guid.NewGuid().ToString();
                 imSendMessageRequestDto.ChannelUuid = redPackageIndex.ChannelUuid;
-                imSendMessageRequestDto.Content = CustomMessageHelper.BuildRedPackageCardContent(_redPackageOptions, redPackageIndex.SenderId,
+                imSendMessageRequestDto.Content = CustomMessageHelper.BuildRedPackageCardContent(redPackageIndex.SenderId,
                     redPackageIndex.Memo, redPackageIndex.RedPackageId);
                 imSendMessageRequestDto.Type = RedPackageConsts.RedPackageCardType;
             }
