@@ -45,6 +45,11 @@
       "TransferCryptoBoxBatch": "Transfer",
       "RefundCryptoBox": "Transfer"
     },
+    "RedPacketTypes": [
+      "CreateCryptoBox",
+      "TransferCryptoBoxBatch",
+      "RefundCryptoBox"
+    ],
     "TransferTypes": [
       "Transfer",
       "CrossChainTransfer",
