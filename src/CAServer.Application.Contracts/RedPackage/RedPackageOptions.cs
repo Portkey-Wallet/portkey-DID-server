@@ -8,8 +8,6 @@ public class RedPackageOptions
     
     public long ExpireTimeMs{ get; set; }
     public List<RedPackageTokenInfo> TokenInfo { get; set; }
-    
-    public List<ContractAddressInfo>RedPackageContractAddress{ get; set; }
 }
 
 public class RedPackageTokenInfo
