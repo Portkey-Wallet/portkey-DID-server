@@ -306,7 +306,15 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
     {
 
-        var contractAddressList = _redPackageOptions.RedPackageContractAddress;
+        var contractAddressList = new List<ContractAddressInfo>();
+        foreach (var item in _chainOptions.ChainInfos)
+        {
+            contractAddressList.Add(new ContractAddressInfo()
+            {
+                ChainId = item.Key,
+                ContractAddress = item.Value.RedPackageContractAddress
+            });
+        }
 
         if (string.IsNullOrEmpty(token) && string.IsNullOrEmpty(chainId))
         {
