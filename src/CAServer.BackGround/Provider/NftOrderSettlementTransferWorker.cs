@@ -9,6 +9,7 @@ using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Hangfire;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 
@@ -90,13 +91,13 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
                     },
                     TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() }
                 }, OrderSectionEnum.NftSection);
-            if (pendingData.Data.IsNullOrEmpty()) break;
-            total += pendingData.Data.Count;
+            if (pendingData.Items.IsNullOrEmpty()) break;
+            total += pendingData.Items.Count;
 
-            lastModifyTimeLt = pendingData.Data.Min(order => order.LastModifyTime);
+            lastModifyTimeLt = pendingData.Items.Min(order => order.LastModifyTime);
 
             var callbackResults = new List<Task<CommonResponseDto<Empty>>>();
-            foreach (var orderDto in pendingData.Data)
+            foreach (var orderDto in pendingData.Items)
             {
                 var createTime = orderDto.NftOrderSection?.CreateTime;
                 if (createTime == null || createTime < modifyTimeGt)

@@ -120,8 +120,8 @@ public partial class NftOrderTest : ThirdPartTestBase
             SkipCount = 0,
             MaxResultCount = 10
         });
-        result.Data.Count.ShouldBe(1);
-        result.Data[0].NftOrderSection.ShouldNotBeNull();
+        result.Items.Count.ShouldBe(1);
+        result.Items[0].NftOrderSection.ShouldNotBeNull();
         _testOutputHelper.WriteLine(JsonConvert.SerializeObject(result, JsonSettings));
     }
 

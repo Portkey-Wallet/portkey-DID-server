@@ -10,6 +10,7 @@ using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Provider;
 using Hangfire;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -82,14 +83,14 @@ public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonD
                     LastModifyTimeGt = DateTime.UtcNow
                         .AddDays(-_thirdPartOptions.Timer.NftUnCompletedOrderSettlementDaysAgo).ToUtcMilliSeconds().ToString()
                 }, OrderSectionEnum.OrderStateSection, OrderSectionEnum.SettlementSection);
-            if (pendingData.Data.IsNullOrEmpty())
+            if (pendingData.Items.IsNullOrEmpty())
             {
                 break;
             }
 
-            lastModifyTimeLt = pendingData.Data.Min(order => order.LastModifyTime);
+            lastModifyTimeLt = pendingData.Items.Min(order => order.LastModifyTime);
             
-            foreach (var orderDto in pendingData.Data)
+            foreach (var orderDto in pendingData.Items)
             {
                 if (orderDto.OrderSettlementSection != null 
                     && orderDto.OrderSettlementSection.BinanceSettlementAmount.NotNullOrEmpty()

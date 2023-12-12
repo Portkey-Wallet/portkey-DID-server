@@ -17,6 +17,7 @@ using CAServer.ThirdPart.Provider;
 using Google.Authenticator;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -243,10 +244,10 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
                 MerchantName = input.MerchantName,
                 MerchantOrderIdIn = new List<string> { input.MerchantOrderId }
             });
-            if (orderPager.Data.IsNullOrEmpty()) return new CommonResponseDto<NftOrderQueryResponseDto>();
+            if (orderPager.Items.IsNullOrEmpty()) return new CommonResponseDto<NftOrderQueryResponseDto>();
 
             // get and verify nft-order-section
-            var orderDto = orderPager.Data[0];
+            var orderDto = orderPager.Items[0];
             var nftOrderSection = orderDto.NftOrderSection;
             AssertHelper.NotNull(nftOrderSection, "invalid nft order data, orderId={OrderId}", orderDto.Id);
 
@@ -329,10 +330,10 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         {
             var pager = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(condition,
                 orderSectionEnums);
-            if (pager.Data.IsNullOrEmpty()) break;
+            if (pager.Items.IsNullOrEmpty()) break;
 
-            condition.LastModifyTimeLt = pager.Data.Select(i => i.LastModifyTime).Min();
-            orderDtos.AddRange(pager.Data);
+            condition.LastModifyTimeLt = pager.Items.Select(i => i.LastModifyTime).Min();
+            orderDtos.AddRange(pager.Items);
         }
 
         return orderDtos;
