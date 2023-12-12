@@ -368,16 +368,4 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
         int exponent = (bits[3] >> 16) & 0x1F;
         return exponent;
     }
-
-    private double GetRandomNum(int places, bool specialOperation,Random random)
-    {
-        if (!specialOperation)
-        {
-            return random.NextDouble();
-        }
-
-        int baseRandom = (int)Math.Pow(10, places);
-        int randomInt = random.Next(0, baseRandom);
-        return (double)randomInt /randomInt;
-    }
 }
