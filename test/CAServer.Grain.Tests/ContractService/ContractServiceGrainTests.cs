@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Portkey.Contracts.CA;
-using Portkey.Contracts.RedPacket;
+using Portkey.Contracts.CryptoBox;
 using Shouldly;
 using Xunit;
 
@@ -121,24 +121,24 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
     }
     
     [Fact]
-    public async void SendTransferRedPacketToChainAsyncTest()
+    public async void SendTransferCryptoBoxToChainAsyncTest()
     {
         var redPackageKeyGrain = Cluster.Client.GetGrain<IRedPackageKeyGrain>(Guid.Parse("6f720cbc-02ed-4467-92bc-76461d957745"));
         var res = await redPackageKeyGrain.GenerateKey();
 
-        var list = new List<TransferRedPacketInput>()
+        var list = new List<TransferCryptoBoxInput>()
         {
-            new TransferRedPacketInput()
+            new TransferCryptoBoxInput()
             {
                 Amount = 1701075501959,
-                ReceiverAddress = Address.FromBase58("2dni1t2hmZxtEE1tTiAWQ7Fm7hrc42wWvc1jyxAzDT6KGwHhDf"),
-                RedPacketSignature = await redPackageKeyGrain.GenerateSignature("ELF--0--0.39")
+                Receiver = Address.FromBase58("2dni1t2hmZxtEE1tTiAWQ7Fm7hrc42wWvc1jyxAzDT6KGwHhDf"),
+                CryptoBoxSignature = await redPackageKeyGrain.GenerateSignature("ELF--0--0.39")
             }
         };
 
-        var sendInput = new TransferRedPacketBatchInput()
+        var sendInput = new TransferCryptoBoxBatchInput()
         {
-            TransferRedPacketInputs = {list}
+            TransferCryptoBoxInputs = {list}
         };
         var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
     }

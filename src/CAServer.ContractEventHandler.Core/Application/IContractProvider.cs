@@ -26,7 +26,7 @@ using Newtonsoft.Json;
 using Orleans;
 using Orleans.Runtime;
 using Portkey.Contracts.CA;
-using Portkey.Contracts.RedPacket;
+using Portkey.Contracts.CryptoBox;
 using Volo.Abp;
 using Volo.Abp.Caching;
 
@@ -525,11 +525,11 @@ public class ContractProvider : IContractProvider
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Symbol,
             redPackageDetail.ChainId, out long maxCount, out string redPackageContractAddress);
         var grab = redPackageDetail.Items.Sum(item => long.Parse(item.Amount));
-        var sendInput = new RefundRedPacketInput()
+        var sendInput = new RefundCryptoBoxInput
         {
-            RedPacketId = redPackageId.ToString(),
+            CryptoBoxId = redPackageId.ToString(),
             Amount = long.Parse(redPackageDetail.TotalAmount) - grab,
-            RedPacketSignature =
+            CryptoBoxSignature =
                 await redPackageKeyGrain.GenerateSignature(
                     $"{redPackageId}-{long.Parse(redPackageDetail.TotalAmount) - grab}")
         };
@@ -546,7 +546,7 @@ public class ContractProvider : IContractProvider
         _logger.LogInformation("SendTransferRedPacketToChainAsync message: " + "\n{redPackageDetail}",
             JsonConvert.SerializeObject(redPackageDetail, Formatting.Indented));
         //build param for transfer red package input 
-        var list = new List<TransferRedPacketInput>();
+        var list = new List<TransferCryptoBoxInput>();
         var redPackageId = redPackageDetail.Data.Id;
         var symbol = redPackageDetail.Data.Symbol;
         var chainId = redPackageDetail.Data.ChainId;
@@ -561,20 +561,20 @@ public class ContractProvider : IContractProvider
         {
             _logger.LogInformation("redPackageKeyGrain GenerateSignature input{param}",
                 $"{redPackageId}-{Address.FromBase58(item.CaAddress)}-{item.Amount}");
-            list.Add(new TransferRedPacketInput()
+            list.Add(new TransferCryptoBoxInput()
             {
                 Amount = Convert.ToInt64(item.Amount),
-                ReceiverAddress = Address.FromBase58(item.CaAddress),
-                RedPacketSignature =
+                Receiver = Address.FromBase58(item.CaAddress),
+                CryptoBoxSignature =
                     await redPackageKeyGrain.GenerateSignature(
                         $"{redPackageId}-{Address.FromBase58(item.CaAddress)}-{item.Amount}")
             });
         }
 
-        var sendInput = new TransferRedPacketBatchInput()
+        var sendInput = new TransferCryptoBoxBatchInput()
         {
-            RedPacketId = redPackageId.ToString(),
-            TransferRedPacketInputs = { list }
+            CryptoBoxId = redPackageId.ToString(),
+            TransferCryptoBoxInputs = { list }
         };
         _logger.LogInformation("SendTransferRedPacketToChainAsync sendInput: " + "\n{sendInput}",
             JsonConvert.SerializeObject(sendInput, Formatting.Indented));
