@@ -8,6 +8,7 @@ using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Hangfire;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 
@@ -77,12 +78,12 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
                     },
                     TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() }
                 }, OrderSectionEnum.NftSection);
-            if (pendingData.Data.IsNullOrEmpty()) break;
+            if (pendingData.Items.IsNullOrEmpty()) break;
 
-            lastModifyTimeLt = pendingData.Data.Min(order => order.LastModifyTime);
+            lastModifyTimeLt = pendingData.Items.Min(order => order.LastModifyTime);
 
             var callbackResults = new List<Task<CommonResponseDto<Empty>>>();
-            foreach (var orderDto in pendingData.Data)
+            foreach (var orderDto in pendingData.Items)
             {
                 callbackResults.Add(_nftCheckoutService
                     .GetProcessor(orderDto.MerchantName)

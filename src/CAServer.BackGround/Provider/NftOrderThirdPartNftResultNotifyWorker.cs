@@ -11,6 +11,7 @@ using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Hangfire;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 
@@ -79,15 +80,15 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
                     ThirdPartNotifyStatus = NftOrderWebhookStatus.FAIL.ToString(),
                     WebhookTimeLt = lastWebhookTimeLt
                 });
-            if (pendingData.Data.IsNullOrEmpty()) break;
+            if (pendingData.Items.IsNullOrEmpty()) break;
 
-            lastWebhookTimeLt = pendingData.Data.Min(order => order.WebhookTime);
+            lastWebhookTimeLt = pendingData.Items.Min(order => order.WebhookTime);
 
             Dictionary<Guid, RampOrderIndex> baseOrderDict = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(
-                pendingData.Data.Select(nftOrder => nftOrder.Id.ToString()).ToList());
+                pendingData.Items.Select(nftOrder => nftOrder.Id.ToString()).ToList());
 
             var callbackResults = new List<Task<CommonResponseDto<Empty>>>();
-            foreach (var orderDto in pendingData.Data)
+            foreach (var orderDto in pendingData.Items)
             {
                 var orderFound = baseOrderDict.TryGetValue(orderDto.Id, out var baseOrder);
                 if (!orderFound || baseOrder == null)

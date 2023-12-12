@@ -90,7 +90,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
             SkipCount = 0,
             MaxResultCount = 10
         });
-        var data = result.Data.First();
+        var data = result.Items.First();
         // data.Address.ShouldBe("Address");
         data.MerchantName.ShouldBe(ThirdPartNameType.Alchemy.ToString());
         data.TransDirect.ShouldBe(TransferDirectionType.TokenBuy.ToString());

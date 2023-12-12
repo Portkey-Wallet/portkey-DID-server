@@ -10,6 +10,7 @@ using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Hangfire;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 
@@ -77,12 +78,12 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
                     WebhookStatus = NftOrderWebhookStatus.FAIL.ToString(),
                     WebhookTimeLt = lastWebhookTimeLt
                 });
-            if (pendingData.Data.IsNullOrEmpty()) break;
+            if (pendingData.Items.IsNullOrEmpty()) break;
 
-            lastWebhookTimeLt = pendingData.Data.Min(order => order.WebhookTime);
+            lastWebhookTimeLt = pendingData.Items.Min(order => order.WebhookTime);
 
             var callbackResults = new List<Task<int>>();
-            foreach (var orderDto in pendingData.Data)
+            foreach (var orderDto in pendingData.Items)
             {
                 callbackResults.Add(_orderStatusProvider.CallBackNftOrderPayResultAsync(orderDto.Id));
             }
