@@ -11,12 +11,14 @@ using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
+using CAServer.Search;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
@@ -36,6 +38,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IContactProvider _contactProvider;
     private readonly ILogger<RedPackageAppService> _logger;
+    private readonly ISearchAppService _searchAppService;
+
 
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
@@ -44,7 +48,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IObjectMapper objectMapper,
         IOptionsSnapshot<RedPackageOptions> redPackageOptions,
         IContactProvider contactProvider,
-        IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger)
+        IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger, ISearchAppService searchAppService)
     {
         _redPackageOptions = redPackageOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -55,15 +59,19 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _httpContextAccessor = httpContextAccessor;
         _contactProvider = contactProvider;
         _logger = logger;
+        _searchAppService = searchAppService;
     }
 
-    public  RedPackageTokenInfo GetRedPackageOption(string symbol,string chainId,out long maxCount,out string redpackageContractAddress)
+    public async Task<UserTokenIndex> GetRedPackageOption(string symbol, string chainId)
     {
-        var result =  _redPackageOptions.TokenInfo.Where(x =>
-                string.Equals(x.Symbol, symbol, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(x.ChainId, chainId, StringComparison.OrdinalIgnoreCase))
-            .ToList().FirstOrDefault();
-        maxCount = _redPackageOptions.MaxCount;
+        var tokenString = await _searchAppService.GetListByLucenceAsync("usertokenindex", new GetListInput()
+        {
+            MaxResultCount = 1000
+        });
+        var tokenEsResult = JsonConvert.DeserializeObject<PagedResultDto<UserTokenIndex>>(tokenString);
+        var result = tokenEsResult.Items.Where(x =>
+            string.Equals(x.Token.Symbol, symbol, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x.Token.ChainId, chainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
         if (result == null)
         {
             throw new UserFriendlyException("Symbol not found");
@@ -73,7 +81,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             throw new UserFriendlyException("chain not found");
         }
 
-        redpackageContractAddress = chainInfo.RedPackageContractAddress;
         
         return result;
     }
@@ -84,25 +91,26 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         GenerateRedPackageOutputDto res = null;
         try
         {
-            var result = GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId, out long maxCount,
-                out string redpackageContractAddress);
+            var result = await GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId);
             if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
             {
                 throw new UserFriendlyException("chain not found");
             }
-
+            
             var redPackageId = Guid.NewGuid();
 
             var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
-
+            var tokenOption = _redPackageOptions.TokenInfo.Where(x =>
+                string.Equals(x.Symbol, redPackageInput.Symbol, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.ChainId, redPackageInput.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
             res = new GenerateRedPackageOutputDto
             {
                 Id = redPackageId,
                 PublicKey = await grain.GenerateKey(),
-                Signature = await grain.GenerateSignature($"{redPackageId}-{redPackageInput.Symbol}-{result.MinAmount}-{maxCount}"),
-                MinAmount = result.MinAmount,
+                Signature = await grain.GenerateSignature($"{redPackageId}-{redPackageInput.Symbol}-{(tokenOption == null ?result.Token.Decimals:tokenOption.MinAmount)}-{_redPackageOptions.MaxCount}"),
+                MinAmount = tokenOption == null ?result.Token.Decimals.ToString():tokenOption.MinAmount,
                 Symbol = redPackageInput.Symbol,
-                Decimal = result.Decimal,
+                Decimal = result.Token.Decimals,
                 ChainId = redPackageInput.ChainId,
                 ExpireTime = _redPackageOptions.ExpireTimeMs,
                 RedPackageContractAddress = chainInfo.RedPackageContractAddress

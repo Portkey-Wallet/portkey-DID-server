@@ -522,7 +522,7 @@ public class ContractProvider : IContractProvider
         string chainId = redPackageDetail.ChainId;
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Id);
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Symbol,
-            redPackageDetail.ChainId, out long maxCount, out string redPackageContractAddress);
+            redPackageDetail.ChainId);
         var grab = redPackageDetail.Items.Sum(item => long.Parse(item.Amount));
         var sendInput = new RefundRedPacketInput()
         {
@@ -534,8 +534,12 @@ public class ContractProvider : IContractProvider
         };
         _logger.LogInformation("SendTransferRedPacketRefundAsync input {input}",JsonConvert.SerializeObject(sendInput));
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+        if (!_chainOptions.ChainInfos.TryGetValue(redPackageDetail.ChainId, out var chainInfo))
+        {
+            throw new UserFriendlyException("chain not found");
+        }
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
-            redPackageContractAddress, MethodName.RefundRedPacket);
+            chainInfo.RedPackageContractAddress, MethodName.RefundRedPacket);
     }
 
 
@@ -552,7 +556,7 @@ public class ContractProvider : IContractProvider
 
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Data.Id);
         var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Data.Symbol,
-            redPackageDetail.Data.ChainId, out var maxCount, out var redPackageContractAddress);
+            redPackageDetail.Data.ChainId);
         _logger.LogInformation("GetRedPackageOption message: " + "\n{res}",
             JsonConvert.SerializeObject(res, Formatting.Indented));
         foreach (var item in redPackageDetail.Data.Items.Where(o => !o.PaymentCompleted).ToArray())
@@ -561,7 +565,6 @@ public class ContractProvider : IContractProvider
                 $"{redPackageId}-{Address.FromBase58(item.CaAddress)}-{item.Amount}");
             list.Add(new TransferRedPacketInput()
             {
-                //daiyabin
                 Amount = Convert.ToInt64(item.Amount),
                 ReceiverAddress = Address.FromBase58(item.CaAddress),
                 RedPacketSignature =
@@ -578,8 +581,11 @@ public class ContractProvider : IContractProvider
         _logger.LogInformation("SendTransferRedPacketToChainAsync sendInput: " + "\n{sendInput}",
             JsonConvert.SerializeObject(sendInput, Formatting.Indented));
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-
+        if (!_chainOptions.ChainInfos.TryGetValue(redPackageDetail.Data.ChainId, out var chainInfo))
+        {
+            throw new UserFriendlyException("chain not found");
+        }
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
-            redPackageContractAddress, MethodName.TransferRedPacket);
+            chainInfo.RedPackageContractAddress, MethodName.TransferRedPacket);
     }
 }

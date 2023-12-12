@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Entities.Es;
 using CAServer.RedPackage.Dtos;
 using JetBrains.Annotations;
 
@@ -15,5 +16,5 @@ public interface IRedPackageAppService
         [CanBeNull] string token);
     Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input);
 
-    RedPackageTokenInfo GetRedPackageOption(String symbol, string chainId,out long maxCount,out string redpackageContractAddress);
+    Task<UserTokenIndex> GetRedPackageOption(string symbol, string chainId);
 }
