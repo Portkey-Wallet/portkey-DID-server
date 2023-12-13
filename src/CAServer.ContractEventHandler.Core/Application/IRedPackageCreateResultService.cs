@@ -20,7 +20,7 @@ namespace CAServer.ContractEventHandler.Core.Application;
 
 public interface IRedPackageCreateResultService
 {
-    Task updateRedPackageAndSengMessageAsync(RedPackageCreateResultEto redPackageCreateResult);
+    Task UpdateRedPackageAndSendMessageAsync(RedPackageCreateResultEto redPackageCreateResult);
 }
 
 public class RedPackageCreateResultService : IRedPackageCreateResultService
@@ -32,23 +32,23 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
     private readonly ImServerOptions _imServerOptions;
     private readonly RedPackageOptions _redPackageOptions;
 
-
     public RedPackageCreateResultService(
         ILogger<RedPackageCreateResultService> logger,
         INESTRepository<RedPackageIndex, Guid> redPackageRepository,
         IClusterClient clusterClient,
         IHttpClientProvider httpClientProvider,
-        IOptionsSnapshot<ImServerOptions> imServerOptions, RedPackageOptions redPackageOptions)
+        IOptionsSnapshot<ImServerOptions> imServerOptions,
+        IOptionsSnapshot<RedPackageOptions> redPackageOptions)
     {
         _logger = logger;
         _redPackageRepository = redPackageRepository;
         _imServerOptions = imServerOptions.Value;
         _clusterClient = clusterClient;
         _httpClientProvider = httpClientProvider;
-        _redPackageOptions = redPackageOptions;
+        _redPackageOptions = redPackageOptions.Value;
     }
 
-    public async Task updateRedPackageAndSengMessageAsync(RedPackageCreateResultEto eventData)
+    public async Task UpdateRedPackageAndSendMessageAsync(RedPackageCreateResultEto eventData)
     {
         try
         {

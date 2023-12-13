@@ -73,7 +73,6 @@ public class ContractAppService : IContractAppService
     private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly PayRedPackageAccount _packageAccount;
-    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
@@ -85,10 +84,8 @@ public class ContractAppService : IContractAppService
         IUserAssetsProvider userAssetsProvider,
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount, 
-        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         IRedPackageCreateResultService redPackageCreateResultService)
     {
-        _redPackageIndexRepository = redPackageIndexRepository;
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -131,7 +128,7 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
+                _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
                 return;
             }
             
@@ -143,12 +140,12 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
+                _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
                 return;
             }
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
-            _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
+            _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
         }
         catch (Exception e)
         {
@@ -156,7 +153,7 @@ public class ContractAppService : IContractAppService
                 eventData.SessionId.ToString());
             eto.Success = false;
             eto.Message = e.Message;
-            _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
+            _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
         }
        
     }
