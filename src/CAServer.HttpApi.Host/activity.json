@@ -35,7 +35,7 @@
       "UpdateManagerInfos": "UpdateManagerInfos",
       "SetTransferLimit":"Set Transfer Limit",
       "TransferToken": "Withdraw",
-      "CreateCryptoBox": "Crypto Box Send",
+      "CreateCryptoBox": "Crypto Box Sent",
       "TransferCryptoBoxBatch": "Crypto Box Claimed",
       "RefundCryptoBox": "Crypto Box Returned"
     },
