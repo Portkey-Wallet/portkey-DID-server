@@ -135,7 +135,7 @@ public class ContractAppService : IContractAppService
                 return;
             }
             
-            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPacketCreated))
+            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.CryptoBoxCreated))
             {
                 eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
                 eto.Success = false;
