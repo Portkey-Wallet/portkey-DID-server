@@ -109,7 +109,7 @@ public class GetVerifierServerProvider : IGetVerifierServerProvider, ISingletonD
         {
             return cachedValue;
         }
-
+        _logger.LogInformation("GetVerifierServerAsync cachedValue is expired chainId : {ChainId} ExpireTime: {ExpireTime}" ,chainId,_adaptableVariableOptions.VerifierServerExpireTime);
         return await _memoryCache.GetOrCreateAsync(
             key,
             entry =>
