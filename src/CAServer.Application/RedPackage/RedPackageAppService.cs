@@ -145,7 +145,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 throw new UserFriendlyException("PortkeyToken token not found");
             }
 
-            var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
                 CurrentUser.Id.Value,_redPackageOptions.ExpireTimeMs);
             _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {input}", input);
@@ -252,7 +252,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             maxResultCount = RedPackageConsts.DefaultRedPackageGrabberCount;
         }
         
-        var grain = _clusterClient.GetGrain<IRedPackageGrain>(id);
+        var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(id);
         var detail =  (await grain.GetRedPackage(skipCount, maxResultCount,CurrentUser.Id.Value)).Data;
         try
         {
@@ -349,7 +349,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 };
             }
 
-            var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
             if (result.Success)
             {

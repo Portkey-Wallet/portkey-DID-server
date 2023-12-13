@@ -472,7 +472,7 @@ public class ContractAppService : IContractAppService
             var startTime = DateTime.Now.Ticks;
 
             _logger.Info($"PayRedPackageAsync start and the redpackage id is {redPackageId}", redPackageId.ToString());
-            var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
 
             var redPackageDetail = await grain.GetRedPackage(redPackageId);
             var grabItems = redPackageDetail.Data.Items;
@@ -516,7 +516,7 @@ public class ContractAppService : IContractAppService
         _logger.Info($"Refund start and the redpackage id is {redPackageId}",redPackageId.ToString());
         try
         {
-            var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
 
             var redPackageDetail = await grain.GetRedPackage(redPackageId);
             var redPackageDetailDto = redPackageDetail.Data;

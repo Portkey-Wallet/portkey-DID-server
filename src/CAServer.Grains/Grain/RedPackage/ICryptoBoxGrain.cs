@@ -3,7 +3,7 @@ using Orleans;
 
 namespace CAServer.Grains.Grain.RedPackage;
 
-public interface IRedPackageGrain : IGrainWithGuidKey
+public interface ICryptoBoxGrain : IGrainWithGuidKey
 {
     Task<GrainResultDto<RedPackageDetailDto>> CreateRedPackage(SendRedPackageInputDto input, int decimalIn,
         long minAmount,

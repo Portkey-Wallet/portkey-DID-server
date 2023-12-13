@@ -7,13 +7,13 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.RedPackage;
 
-public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrain
+public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
 {
     private readonly IObjectMapper _objectMapper;
 
     private const int RePackagePlaceMove = 3;
 
-    public RedPackageGrain(IObjectMapper objectMapper)
+    public CryptoBoxGrain(IObjectMapper objectMapper)
     {
         _objectMapper = objectMapper;
     }
@@ -42,7 +42,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
             return result;
         }
 
-        var bucketResult = GenerateBucket(input.Count, long.Parse(input.TotalAmount), minAmount,decimalIn,input.Type);
+        var bucketResult = GenerateBucket(input.Count, long.Parse(input.TotalAmount), minAmount, decimalIn, input.Type);
         State = _objectMapper.Map<SendRedPackageInputDto, RedPackageState>(input);
         State.Status = RedPackageStatus.NotClaimed;
         State.CreateTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -84,6 +84,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
         {
             return result;
         }
+
         State.Status = RedPackageStatus.Expired;
 
         await WriteStateAsync();
@@ -253,7 +254,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
         switch (type)
         {
             case RedPackageType.Random:
-                return GenerateRandomBucket(count, totalAmount, minAmount,decimalIn);
+                return GenerateRandomBucket(count, totalAmount, minAmount, decimalIn);
             case RedPackageType.Fixed:
                 return GenerateFixBucket(count, totalAmount);
             case RedPackageType.QuickTransfer:
@@ -291,16 +292,16 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
         return (bucket, 0);
     }
 
-    private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount,int decimalIn)
+    private (List<BucketItem>, int) GenerateRandomBucket(int count, long totalAmount, long minAmount, int decimalIn)
     {
         var buckets = new List<BucketItem>();
         var remainAmount = totalAmount;
         int decimalPlaces = BucketRandomSpecialOperation(totalAmount, count, decimalIn);
-        long realMinAmount = (long)Math.Pow(10, decimalIn - decimalPlaces);
-        
+        long realMinAmount = (long) Math.Pow(10, decimalIn - decimalPlaces);
+
         int luckyKingIndex = 0;
         long luckyKingAmount = realMinAmount;
-        
+
         for (var i = 0; i < count; i++)
         {
             buckets.Add(new BucketItem()
@@ -309,7 +310,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
             });
             remainAmount -= realMinAmount;
         }
-        
+
         Random random = new Random();
         for (var i = 0; i < count; i++)
         {
@@ -327,10 +328,11 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
             {
                 long maxAllocationAmount = remainAmount / (count - i) * 2;
                 double randomNumber = random.NextDouble();
-                allocationAmount = (long)(randomNumber * maxAllocationAmount) / realMinAmount * realMinAmount;
+                allocationAmount = (long) (randomNumber * maxAllocationAmount) / realMinAmount * realMinAmount;
             }
+
             buckets[i].Amount += allocationAmount;
-            
+
             if (buckets[i].Amount > luckyKingAmount)
             {
                 luckyKingAmount = buckets[i].Amount;
@@ -339,32 +341,34 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
 
             remainAmount -= allocationAmount;
         }
-        
+
         buckets[luckyKingIndex].IsLuckyKing = true;
 
         return (buckets, luckyKingIndex);
     }
-    
-    private int BucketRandomSpecialOperation(long total, int count,int decimalIn)
+
+    private int BucketRandomSpecialOperation(long total, int count, int decimalIn)
     {
         // little point in 0~2 
-        int places = DecimalPlaces(total,decimalIn);
+        int places = DecimalPlaces(total, decimalIn);
         if (places < RePackagePlaceMove)
         {
             places += 2;
         }
-        long baseJudgeCount = (long)Math.Pow(10, decimalIn - places);
+
+        long baseJudgeCount = (long) Math.Pow(10, decimalIn - places);
         if (baseJudgeCount * count > total)
         {
             return decimalIn;
         }
+
         return places;
     }
 
-    private int DecimalPlaces(long count,int decimalIn)
+    private int DecimalPlaces(long count, int decimalIn)
     {
-        long baseJudgeCount = (long)Math.Pow(10, decimalIn);
-        decimal tempNum = (decimal)count / baseJudgeCount;
+        long baseJudgeCount = (long) Math.Pow(10, decimalIn);
+        decimal tempNum = (decimal) count / baseJudgeCount;
         int[] bits = decimal.GetBits(tempNum);
         int exponent = (bits[3] >> 16) & 0x1F;
         return exponent;

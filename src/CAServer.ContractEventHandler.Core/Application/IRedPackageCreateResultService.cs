@@ -69,7 +69,7 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
                 var updateRedPackageTask = _redPackageRepository.UpdateAsync(redPackageIndex);
-                var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageIndex.RedPackageId);
+                var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageIndex.RedPackageId);
                 var cancelRedPackageTask = grain.CancelRedPackage();
                 await Task.WhenAll(updateRedPackageTask, cancelRedPackageTask);
                 return;
