@@ -30,19 +30,22 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
     private readonly INESTRepository<RedPackageIndex, Guid> _redPackageRepository;
     private readonly IHttpClientProvider _httpClientProvider;
     private readonly ImServerOptions _imServerOptions;
+    private readonly RedPackageOptions _redPackageOptions;
+
 
     public RedPackageCreateResultService(
         ILogger<RedPackageCreateResultService> logger,
         INESTRepository<RedPackageIndex, Guid> redPackageRepository,
         IClusterClient clusterClient,
         IHttpClientProvider httpClientProvider,
-        IOptionsSnapshot<ImServerOptions> imServerOptions)
+        IOptionsSnapshot<ImServerOptions> imServerOptions, RedPackageOptions redPackageOptions)
     {
         _logger = logger;
         _redPackageRepository = redPackageRepository;
         _imServerOptions = imServerOptions.Value;
         _clusterClient = clusterClient;
         _httpClientProvider = httpClientProvider;
+        _redPackageOptions = redPackageOptions;
     }
 
     public async Task updateRedPackageAndSengMessageAsync(RedPackageCreateResultEto eventData)
@@ -76,7 +79,7 @@ public class RedPackageCreateResultService : IRedPackageCreateResultService
             var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);
         
             BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
-                TimeSpan.FromMilliseconds(RedPackageConsts.ExpireTimeMs + 30 * 1000));
+                TimeSpan.FromMilliseconds(_redPackageOptions.ExpireTimeMs + 30 * 1000));
         
             //send redpackage Card
             var imSendMessageRequestDto = new ImSendMessageRequestDto();

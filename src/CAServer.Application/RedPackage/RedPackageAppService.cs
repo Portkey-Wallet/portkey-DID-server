@@ -101,7 +101,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             Symbol = redPackageInput.Symbol,
             Decimal = result.Decimal,
             ChainId = redPackageInput.ChainId,
-            ExpireTime = RedPackageConsts.ExpireTimeMs,
+            ExpireTime = _redPackageOptions.ExpireTimeMs,
             RedPackageContractAddress = chainInfo.RedPackageContractAddress
         };
     }
