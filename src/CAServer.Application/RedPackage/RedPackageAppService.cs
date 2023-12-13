@@ -87,33 +87,48 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
-        var result = await GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId);
-        if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
+        Stopwatch watcher = Stopwatch.StartNew();
+        var startTime = DateTime.Now.Ticks;
+        GenerateRedPackageOutputDto res = null;
+        try
         {
-            throw new UserFriendlyException("chain not found");
-        }
+            var result = await GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId);
+            if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
+            {
+                throw new UserFriendlyException("chain not found");
+            }
             
-        var redPackageId = Guid.NewGuid();
+            var redPackageId = Guid.NewGuid();
 
             var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
             var tokenOption = _redPackageOptions.TokenInfo.Where(x =>
                 string.Equals(x.Symbol, redPackageInput.Symbol, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(x.ChainId, redPackageInput.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();
-            res = new GenerateRedPackageOutputDto
+            var (publicKey, signature) = await grain.GenerateKeyAndSignature(
+                $"{redPackageId}-{redPackageInput.Symbol}-{(tokenOption == null ?result.Token.Decimals:tokenOption.MinAmount)}-{_redPackageOptions.MaxCount}");
+            if (result != null && result.Token != null)
             {
-                Id = redPackageId,
-                PublicKey = await grain.GenerateKey(),
-                Signature = await grain.GenerateSignature($"{redPackageId}-{redPackageInput.Symbol}-{(tokenOption == null ?result.Token.Decimals:tokenOption.MinAmount)}-{_redPackageOptions.MaxCount}"),
-                MinAmount = tokenOption == null ?result.Token.Decimals.ToString():tokenOption.MinAmount,
-                Symbol = redPackageInput.Symbol,
-                Decimal = result.Token.Decimals,
-                ChainId = redPackageInput.ChainId,
-                ExpireTime = _redPackageOptions.ExpireTimeMs,
-                RedPackageContractAddress = chainInfo.RedPackageContractAddress
-            };
+                res = new GenerateRedPackageOutputDto
+                {
+                    Id = redPackageId,
+                    PublicKey = publicKey,
+                    Signature = signature,
+                    MinAmount = tokenOption == null ? result.Token.Decimals.ToString() : tokenOption.MinAmount,
+                    Symbol = redPackageInput.Symbol,
+                    Decimal = tokenOption?.Decimal ?? 1,
+                    ChainId = redPackageInput.ChainId,
+                    ExpireTime = RedPackageConsts.ExpireTimeMs,
+                    RedPackageContractAddress = chainInfo.RedPackageContractAddress
+                };
+            }
+
             return res;
         }
-        finally
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }finally
         {
             watcher.Stop();
             if (res != null)
