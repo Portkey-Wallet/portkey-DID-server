@@ -136,7 +136,7 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
             }
         };
 
-        var sendInput = new TransferCryptoBoxBatchInput()
+        var sendInput = new TransferCryptoBoxesInput()
         {
             TransferCryptoBoxInputs = {list}
         };

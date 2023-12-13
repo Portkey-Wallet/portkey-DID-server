@@ -82,43 +82,22 @@ namespace Portkey.Contracts.CryptoBox {
     }
   }
 
-  public partial class TransferControllerAdded : aelf::IEvent<TransferControllerAdded>
+  public partial class AdminChanged : aelf::IEvent<AdminChanged>
   {
-    public global::System.Collections.Generic.IEnumerable<TransferControllerAdded> GetIndexed()
+    public global::System.Collections.Generic.IEnumerable<AdminChanged> GetIndexed()
     {
-      return new List<TransferControllerAdded>
+      return new List<AdminChanged>
       {
-      new TransferControllerAdded
+      new AdminChanged
       {
         Address = Address
       },
       };
     }
 
-    public TransferControllerAdded GetNonIndexed()
+    public AdminChanged GetNonIndexed()
     {
-      return new TransferControllerAdded
-      {
-      };
-    }
-  }
-
-  public partial class TransferControllerRemoved : aelf::IEvent<TransferControllerRemoved>
-  {
-    public global::System.Collections.Generic.IEnumerable<TransferControllerRemoved> GetIndexed()
-    {
-      return new List<TransferControllerRemoved>
-      {
-      new TransferControllerRemoved
-      {
-        Address = Address
-      },
-      };
-    }
-
-    public TransferControllerRemoved GetNonIndexed()
-    {
-      return new TransferControllerRemoved
+      return new AdminChanged
       {
       };
     }
@@ -133,14 +112,14 @@ namespace Portkey.Contracts.CryptoBox {
     static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.InitializeInput> __Marshaller_InitializeInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.InitializeInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Google.Protobuf.WellKnownTypes.Empty> __Marshaller_google_protobuf_Empty = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Google.Protobuf.WellKnownTypes.Empty.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.CreateCryptoBoxInput> __Marshaller_CreateCryptoBoxInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.CreateCryptoBoxInput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.TransferCryptoBoxBatchInput> __Marshaller_TransferCryptoBoxBatchInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.TransferCryptoBoxBatchInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.TransferCryptoBoxesInput> __Marshaller_TransferCryptoBoxesInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.TransferCryptoBoxesInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.GetCryptoBoxInput> __Marshaller_GetCryptoBoxInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.GetCryptoBoxInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.GetCryptoBoxOutput> __Marshaller_GetCryptoBoxOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.GetCryptoBoxOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.GetCryptoBoxMaxCountOutput> __Marshaller_GetCryptoBoxMaxCountOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.GetCryptoBoxMaxCountOutput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.SetCryptoBoxMaxCountInput> __Marshaller_SetCryptoBoxMaxCountInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.SetCryptoBoxMaxCountInput.Parser.ParseFrom);
     static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.RefundCryptoBoxInput> __Marshaller_RefundCryptoBoxInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.RefundCryptoBoxInput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.ControllerInput> __Marshaller_ControllerInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.ControllerInput.Parser.ParseFrom);
-    static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.ControllerOutput> __Marshaller_ControllerOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.ControllerOutput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.AdminInput> __Marshaller_AdminInput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.AdminInput.Parser.ParseFrom);
+    static readonly aelf::Marshaller<global::Portkey.Contracts.CryptoBox.AdminOutput> __Marshaller_AdminOutput = aelf::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::Portkey.Contracts.CryptoBox.AdminOutput.Parser.ParseFrom);
     #endregion
 
     #region Methods
@@ -158,11 +137,11 @@ namespace Portkey.Contracts.CryptoBox {
         __Marshaller_CreateCryptoBoxInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CryptoBox.TransferCryptoBoxBatchInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_TransferCryptoBoxBatch = new aelf::Method<global::Portkey.Contracts.CryptoBox.TransferCryptoBoxBatchInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::Portkey.Contracts.CryptoBox.TransferCryptoBoxesInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_TransferCryptoBoxes = new aelf::Method<global::Portkey.Contracts.CryptoBox.TransferCryptoBoxesInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
-        "TransferCryptoBoxBatch",
-        __Marshaller_TransferCryptoBoxBatchInput,
+        "TransferCryptoBoxes",
+        __Marshaller_TransferCryptoBoxesInput,
         __Marshaller_google_protobuf_Empty);
 
     static readonly aelf::Method<global::Portkey.Contracts.CryptoBox.GetCryptoBoxInput, global::Portkey.Contracts.CryptoBox.GetCryptoBoxOutput> __Method_GetCryptoBoxInfo = new aelf::Method<global::Portkey.Contracts.CryptoBox.GetCryptoBoxInput, global::Portkey.Contracts.CryptoBox.GetCryptoBoxOutput>(
@@ -193,26 +172,19 @@ namespace Portkey.Contracts.CryptoBox {
         __Marshaller_RefundCryptoBoxInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CryptoBox.ControllerInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_AddTransferController = new aelf::Method<global::Portkey.Contracts.CryptoBox.ControllerInput, global::Google.Protobuf.WellKnownTypes.Empty>(
+    static readonly aelf::Method<global::Portkey.Contracts.CryptoBox.AdminInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_ChangeAdmin = new aelf::Method<global::Portkey.Contracts.CryptoBox.AdminInput, global::Google.Protobuf.WellKnownTypes.Empty>(
         aelf::MethodType.Action,
         __ServiceName,
-        "AddTransferController",
-        __Marshaller_ControllerInput,
+        "ChangeAdmin",
+        __Marshaller_AdminInput,
         __Marshaller_google_protobuf_Empty);
 
-    static readonly aelf::Method<global::Portkey.Contracts.CryptoBox.ControllerInput, global::Google.Protobuf.WellKnownTypes.Empty> __Method_RemoveTransferController = new aelf::Method<global::Portkey.Contracts.CryptoBox.ControllerInput, global::Google.Protobuf.WellKnownTypes.Empty>(
-        aelf::MethodType.Action,
-        __ServiceName,
-        "RemoveTransferController",
-        __Marshaller_ControllerInput,
-        __Marshaller_google_protobuf_Empty);
-
-    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CryptoBox.ControllerOutput> __Method_GetTransferControllers = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CryptoBox.ControllerOutput>(
+    static readonly aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CryptoBox.AdminOutput> __Method_GetAdmin = new aelf::Method<global::Google.Protobuf.WellKnownTypes.Empty, global::Portkey.Contracts.CryptoBox.AdminOutput>(
         aelf::MethodType.View,
         __ServiceName,
-        "GetTransferControllers",
+        "GetAdmin",
         __Marshaller_google_protobuf_Empty,
-        __Marshaller_ControllerOutput);
+        __Marshaller_AdminOutput);
 
     #endregion
 
@@ -248,7 +220,7 @@ namespace Portkey.Contracts.CryptoBox {
     //     throw new global::System.NotImplementedException();
     //   }
     //
-    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty TransferCryptoBoxBatch(global::Portkey.Contracts.CryptoBox.TransferCryptoBoxBatchInput input)
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty TransferCryptoBoxes(global::Portkey.Contracts.CryptoBox.TransferCryptoBoxesInput input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
@@ -273,37 +245,31 @@ namespace Portkey.Contracts.CryptoBox {
     //     throw new global::System.NotImplementedException();
     //   }
     //
-    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty AddTransferController(global::Portkey.Contracts.CryptoBox.ControllerInput input)
+    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty ChangeAdmin(global::Portkey.Contracts.CryptoBox.AdminInput input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
     //
-    //   public virtual global::Google.Protobuf.WellKnownTypes.Empty RemoveTransferController(global::Portkey.Contracts.CryptoBox.ControllerInput input)
-    //   {
-    //     throw new global::System.NotImplementedException();
-    //   }
-    //
-    //   public virtual global::Portkey.Contracts.CryptoBox.ControllerOutput GetTransferControllers(global::Google.Protobuf.WellKnownTypes.Empty input)
+    //   public virtual global::Portkey.Contracts.CryptoBox.AdminOutput GetAdmin(global::Google.Protobuf.WellKnownTypes.Empty input)
     //   {
     //     throw new global::System.NotImplementedException();
     //   }
     //
     // }
-
+    //
     // public static aelf::ServerServiceDefinition BindService(CryptoBoxContractBase serviceImpl)
     // {
     //   return aelf::ServerServiceDefinition.CreateBuilder()
     //       .AddDescriptors(Descriptors)
     //       .AddMethod(__Method_Initialize, serviceImpl.Initialize)
     //       .AddMethod(__Method_CreateCryptoBox, serviceImpl.CreateCryptoBox)
-    //       .AddMethod(__Method_TransferCryptoBoxBatch, serviceImpl.TransferCryptoBoxBatch)
+    //       .AddMethod(__Method_TransferCryptoBoxes, serviceImpl.TransferCryptoBoxes)
     //       .AddMethod(__Method_GetCryptoBoxInfo, serviceImpl.GetCryptoBoxInfo)
     //       .AddMethod(__Method_GetCryptoBoxMaxCount, serviceImpl.GetCryptoBoxMaxCount)
     //       .AddMethod(__Method_SetCryptoBoxMaxCount, serviceImpl.SetCryptoBoxMaxCount)
     //       .AddMethod(__Method_RefundCryptoBox, serviceImpl.RefundCryptoBox)
-    //       .AddMethod(__Method_AddTransferController, serviceImpl.AddTransferController)
-    //       .AddMethod(__Method_RemoveTransferController, serviceImpl.RemoveTransferController)
-    //       .AddMethod(__Method_GetTransferControllers, serviceImpl.GetTransferControllers).Build();
+    //       .AddMethod(__Method_ChangeAdmin, serviceImpl.ChangeAdmin)
+    //       .AddMethod(__Method_GetAdmin, serviceImpl.GetAdmin).Build();
     // }
 
   }

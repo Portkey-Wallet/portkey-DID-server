@@ -571,7 +571,7 @@ public class ContractProvider : IContractProvider
             });
         }
 
-        var sendInput = new TransferCryptoBoxBatchInput()
+        var sendInput = new TransferCryptoBoxesInput()
         {
             CryptoBoxId = redPackageId.ToString(),
             TransferCryptoBoxInputs = { list }
@@ -581,6 +581,6 @@ public class ContractProvider : IContractProvider
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
-            redPackageContractAddress, MethodName.TransferCryptoBoxBatch);
+            redPackageContractAddress, MethodName.TransferCryptoBoxes);
     }
 }

@@ -96,7 +96,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             Id = redPackageId,
             PublicKey = publicKey,
-            Signature = signature,
             MinAmount = result.MinAmount,
             Symbol = redPackageInput.Symbol,
             Decimal = result.Decimal,
