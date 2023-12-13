@@ -527,21 +527,18 @@ public class ContractAppService : IContractAppService
             var redPackageDetail = await grain.GetRedPackage(redPackageId);
             var redPackageDetailDto = redPackageDetail.Data;
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
-            _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",payRedPackageFrom.ToString());
+            _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom:{payRedPackageFrom} ",payRedPackageFrom.ToString());
         
 
             if (redPackageDetailDto.Status.Equals(RedPackageStatus.Expired) && !redPackageDetailDto.IsRedPackageFullyClaimed)
             {
                 var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetailDto,payRedPackageFrom);
-                var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
-                if (redPackageIndex == null)
-                {
-                    return false;
-                } else if (redPackageIndex.TransactionStatus == RedPackageTransactionStatus.Success)
+                if (res.TransactionResultDto.Status == TransactionState.Mined)
                 {
                     await grain.UpdateRedPackageExpire();
-                    return true; 
+                    return true;
                 }
+                _logger.LogError("Refund red package fail {message}", res.TransactionResultDto.Error);
             }
         }
         catch (Exception e)
