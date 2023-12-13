@@ -24,7 +24,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
-using Portkey.Contracts.RedPacket;
+using Portkey.Contracts.CryptoBox;
 using Portkey.Contracts.TokenClaim;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;

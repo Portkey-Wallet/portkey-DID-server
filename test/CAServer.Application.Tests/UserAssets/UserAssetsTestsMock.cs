@@ -326,7 +326,16 @@ public partial class UserAssetsTests
             TokenInfos = dict
         });
     }
-
+    
+    private IOptions<AssetsInfoOptions> GetMockAssetsInfoOptions()
+    {
+        return new OptionsWrapper<AssetsInfoOptions>(new AssetsInfoOptions()
+        {
+            ImageUrlPrefix = "https://raw.githubusercontent.com/Portkey-Wallet/assets/master/blockchains/",
+            ImageUrlSuffix = "/info/logo.png"
+        });
+    }
+    
     private IOptionsSnapshot<SeedImageOptions> GetMockSeedImageOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsSnapshot<SeedImageOptions>>();

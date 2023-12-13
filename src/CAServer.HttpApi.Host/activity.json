@@ -35,16 +35,21 @@
       "UpdateManagerInfos": "UpdateManagerInfos",
       "SetTransferLimit":"Set Transfer Limit",
       "TransferToken": "Withdraw",
-      "CreateRedPacket": "Crypto Box Send",
-      "TransferRedPacket": "Crypto Box Claimed",
-      "RefundRedPacket": "Crypto Box Returned"
+      "CreateCryptoBox": "Crypto Box Send",
+      "TransferCryptoBoxBatch": "Crypto Box Claimed",
+      "RefundCryptoBox": "Crypto Box Returned"
     },
     "TransactionTypeMap": {
       "TransferToken": "Transfer",
-      "CreateRedPacket": "Transfer",
-      "TransferRedPacket": "Transfer",
-      "RefundRedPacket": "Transfer"
+      "CreateCryptoBox": "Transfer",
+      "TransferCryptoBoxBatch": "Transfer",
+      "RefundCryptoBox": "Transfer"
     },
+    "RedPacketTypes": [
+      "CreateCryptoBox",
+      "TransferCryptoBoxBatch",
+      "RefundCryptoBox"
+    ],
     "TransferTypes": [
       "Transfer",
       "CrossChainTransfer",
@@ -86,6 +91,7 @@
     ],
     "ShowPriceTypes": [
       "Transfer",
+      "CreateCryptoBox",
       "CrossChainTransfer",
       "RemoveManagerInfo",
       "AddManagerInfo",

@@ -20,6 +20,8 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.EntityEventHandler.Core;
 
+[Obsolete("The methods of this class have been migrated to ContractEventHandler for execution." +
+          " The changes made here need to be synchronized with the IRedPackageCreateResultService class.")]
 public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEto>,ITransientDependency
 {
     private readonly IObjectMapper _objectMapper;
@@ -67,17 +69,20 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             redPackageIndex.TransactionResult = eventData.TransactionResult;
             if (eventData.Success == false)
             {
+                //updating ES data and updating Grain data can be done in parallel.
                 redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Fail;
                 redPackageIndex.ErrorMessage = eventData.Message;
-                await _redPackageRepository.UpdateAsync(redPackageIndex);
+                var updateRedPackageTask = _redPackageRepository.UpdateAsync(redPackageIndex);
                 var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageIndex.RedPackageId);
-                await grain.CancelRedPackage();
+                var cancelRedPackageTask = grain.CancelRedPackage();
+                await Task.WhenAll(updateRedPackageTask, cancelRedPackageTask);
                 return;
             }
 
+            //updating ES data and sending IM messages can be executed in parallel.
             redPackageIndex.TransactionStatus = RedPackageTransactionStatus.Success;
             
-            await _redPackageRepository.UpdateAsync(redPackageIndex);
+            var updateTask = _redPackageRepository.UpdateAsync(redPackageIndex);
             _logger.LogInformation("RedPackageCreateResultEto UpdateAsync {redPackageIndex}",redPackageIndex);
             _logger.LogInformation("RedPackageCreate end pay job start");
             BackgroundJob.Schedule<RedPackageTask>(x => x.ExpireRedPackageRedPackageAsync(redPackageIndex.RedPackageId),
@@ -103,8 +108,10 @@ public class RedPackageHandler:IDistributedEventHandler<RedPackageCreateResultEt
             var headers = new Dictionary<string, string>();
             headers.Add(ImConstant.RelationAuthHeader,redPackageIndex.SenderRelationToken);
             headers.Add(CommonConstant.AuthHeader,redPackageIndex.SenderPortkeyToken);
-            await _httpClientProvider.PostAsync<ImSendMessageResponseDto>(
+            var sendMessageTask =  _httpClientProvider.PostAsync<ImSendMessageResponseDto>(
                 _imServerOptions.BaseUrl + ImConstant.SendMessageUrl, imSendMessageRequestDto, headers);
+            
+            await Task.WhenAll(updateTask, sendMessageTask);
         }
         catch (Exception ex)
         {

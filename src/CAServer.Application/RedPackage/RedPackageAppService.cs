@@ -84,20 +84,16 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         return result;
     }
+
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
-        Stopwatch watcher = Stopwatch.StartNew();
-        var startTime = DateTime.Now.Ticks;
-        GenerateRedPackageOutputDto res = null;
-        try
+        var result = await GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId);
+        if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
         {
-            var result = await GetRedPackageOption(redPackageInput.Symbol, redPackageInput.ChainId);
-            if (!_chainOptions.ChainInfos.TryGetValue(redPackageInput.ChainId, out var chainInfo))
-            {
-                throw new UserFriendlyException("chain not found");
-            }
+            throw new UserFriendlyException("chain not found");
+        }
             
-            var redPackageId = Guid.NewGuid();
+        var redPackageId = Guid.NewGuid();
 
             var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageId);
             var tokenOption = _redPackageOptions.TokenInfo.Where(x =>
@@ -127,7 +123,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             }
         }
     }
-    
+
 
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
@@ -135,7 +131,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         var startTime = DateTime.Now.Ticks;
         try
         {
-            _logger.LogInformation("SendRedPackageAsync start input param is {input}", input);
+            _logger.LogInformation("SendRedPackageAsync start input param is {input}", JsonConvert.SerializeObject(input));
             var result = _redPackageOptions.TokenInfo.Where(x =>
                 string.Equals(x.Symbol, input.Symbol, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(x.ChainId, input.ChainId, StringComparison.OrdinalIgnoreCase)).ToList().FirstOrDefault();

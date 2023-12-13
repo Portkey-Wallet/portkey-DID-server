@@ -4,16 +4,16 @@ using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.DataReporting;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
-using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Volo.Abp.Account;
@@ -49,6 +49,7 @@ public class CAServerApplicationModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         Configure<TokenListOptions>(configuration.GetSection("Tokens"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfo"));
+        Configure<AssetsInfoOptions>(configuration.GetSection("AssetsInfo"));
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
@@ -56,6 +57,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
+        Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
@@ -102,6 +104,29 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
+        Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        AddMessagePushService(context, configuration);
+    }
+
+    private void AddMessagePushService(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var baseUrl = configuration["MessagePush:BaseUrl"];
+        var appId = configuration["MessagePush:AppId"];
+        if (baseUrl.IsNullOrWhiteSpace())
+        {
+            return;
+        }
+
+        context.Services.AddHttpClient(MessagePushConstant.MessagePushServiceName, httpClient =>
+        {
+            httpClient.BaseAddress = new Uri(baseUrl);
+
+            if (!appId.IsNullOrWhiteSpace())
+            {
+                httpClient.DefaultRequestHeaders.Add(
+                    "AppId", appId);
+            }
+        });
     }
 
     private void ConfigureRetryHttpClient(IServiceCollection services)
