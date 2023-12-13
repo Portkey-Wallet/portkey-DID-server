@@ -360,7 +360,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             await client.IsConnectedAsync();
             var ownAddress = client.GetAddressFromPubKey(payRedPackageFrom); //select public key
             _logger.LogInformation("Get Address From PubKey, ownAddress：{ownAddress}, ContractAddress: {ContractAddress} ,methodName:{methodName}",
-                ownAddress, chainInfo.ContractAddress,methodName);
+                ownAddress, redPackageContractAddress, methodName);
 
             //"red package contract address"
             var transaction =

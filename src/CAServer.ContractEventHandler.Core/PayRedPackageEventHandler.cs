@@ -21,8 +21,6 @@ public class PayRedPackageEventHandler : IDistributedEventHandler<PayRedPackageE
 
     public async Task HandleEventAsync(PayRedPackageEto eventData)
     {
-      
-        _logger.LogInformation($"PayRedPackageAsync start and the red package id is {eventData.RedPackageId}",eventData.RedPackageId.ToString());
         _ = _contractAppService.PayRedPackageAsync(eventData.RedPackageId);
     }
 }

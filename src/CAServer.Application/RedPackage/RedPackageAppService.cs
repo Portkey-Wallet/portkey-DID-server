@@ -352,11 +352,14 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
             var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
             var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
-            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+            if (result.Success)
             {
-                RedPackageId = input.Id
+                await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+                {
+                    RedPackageId = input.Id
 
-            });
+                });
+            }
             return new GrabRedPackageOutputDto()
             {
                 Result = result.Data.Result,

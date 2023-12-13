@@ -49,10 +49,7 @@ public interface IContractAppService
     // Task InitializeIndexAsync(long blockHeight);
     Task PayRedPackageAsync(Guid eventDataRedPackageId);
 
-    Task<bool> Refund(Guid redPackageId);
-
-
-
+    Task<bool> RefundAsync(Guid redPackageId);
 }
 
 public class ContractAppService : IContractAppService
@@ -481,14 +478,14 @@ public class ContractAppService : IContractAppService
             var grabItems = redPackageDetail.Data.Items;
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
             _logger.Info("red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",
-                payRedPackageFrom.ToString());
-            //if we need judge other params ?
+                payRedPackageFrom);
             if (grabItems.IsNullOrEmpty())
             {
                 _logger.Info("there are no one claim the red packages,red package id is{redPackageId} ",
                     redPackageId.ToString());
+                return;
             }
-
+            grabItems = grabItems.Where(t => !t.PaymentCompleted).ToList();
             var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail, payRedPackageFrom);
             _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",
                 JsonConvert.SerializeObject(res));
@@ -514,7 +511,7 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    public async Task<bool> Refund(Guid redPackageId)
+    public async Task<bool> RefundAsync(Guid redPackageId)
     {
         _logger.Info($"Refund start and the redpackage id is {redPackageId}",redPackageId.ToString());
         try
@@ -524,9 +521,8 @@ public class ContractAppService : IContractAppService
             var redPackageDetail = await grain.GetRedPackage(redPackageId);
             var redPackageDetailDto = redPackageDetail.Data;
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
-            _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom:{payRedPackageFrom} ",payRedPackageFrom.ToString());
-        
-
+            _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom:{payRedPackageFrom} ",payRedPackageFrom);
+            
             if (redPackageDetailDto.Status.Equals(RedPackageStatus.Expired) && !redPackageDetailDto.IsRedPackageFullyClaimed)
             {
                 var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetailDto,payRedPackageFrom);

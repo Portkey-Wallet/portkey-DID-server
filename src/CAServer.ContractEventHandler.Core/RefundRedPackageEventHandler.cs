@@ -21,10 +21,6 @@ public class RefundRedPackageEventHandler : IDistributedEventHandler<RefundRedPa
 
     public async Task HandleEventAsync(RefundRedPackageEto eventData)
     {
-      
-        _logger.LogInformation($"RefundRedPackageAsync start and the red package id is {eventData.RedPackageId}",eventData.RedPackageId.ToString());
-        _ = _contractAppService.Refund(eventData.RedPackageId);
-        _logger.LogInformation($"RefundRedPackageAsync end and the red package id is {eventData.RedPackageId}",eventData.RedPackageId.ToString());
-
+        _ = _contractAppService.RefundAsync(eventData.RedPackageId);
     }
 }
