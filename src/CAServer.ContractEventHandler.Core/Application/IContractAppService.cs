@@ -495,23 +495,17 @@ public class ContractAppService : IContractAppService
             var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail, payRedPackageFrom);
             _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",
                 JsonConvert.SerializeObject(res));
-            var result = res.TransactionResultDto;
-            var eto = new RedPackageTransactionResultEto();
-            var redPackageIndex = await _redPackageIndexRepository.GetAsync(redPackageId);
-            _logger.LogInformation("_redPackageIndexRepository result is {redPackageIndex}",
-                JsonConvert.SerializeObject(redPackageIndex));
 
-            if (redPackageIndex == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
+            if (res.TransactionResultDto.Status != TransactionState.Mined)
             {
-                _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{redPackageIndex}",
-                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+                _logger.LogError("PayRedPackageAsync fail: " + "\n{res}",
+                    JsonConvert.SerializeObject(res, Formatting.Indented));
                 return;
             }
 
             //if success update the payment status of red package 
             await grain.UpdateRedPackage(grabItems);
             _logger.Info("PayRedPackageAsync end and the redpackage id is {redPackageId}", redPackageId.ToString());
-            await _distributedEventBus.PublishAsync(eto);
 
             watcher.Stop();
             _logger.LogInformation("#monitor# payRedPackage:{redpackageId},{cost},{endTime}:", redPackageId.ToString(),
