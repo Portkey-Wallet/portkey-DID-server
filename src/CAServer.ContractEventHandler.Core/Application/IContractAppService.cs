@@ -468,7 +468,7 @@ public class ContractAppService : IContractAppService
     {
         try
         {
-            Thread.Sleep(30000);
+            //TODO Thread.Sleep(30000);
             Stopwatch watcher = Stopwatch.StartNew();
             var startTime = DateTime.Now.Ticks;
 
