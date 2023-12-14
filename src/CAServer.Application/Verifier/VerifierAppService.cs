@@ -86,6 +86,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         //validate 
         var startTime = DateTime.UtcNow.ToUniversalTime();
+        var interIndicator = _indicatorScope.Begin(MonitorTag.SendVerificationRequestAsync, "SendVerificationRequestAsync1");
         try
         {
             ValidateAccount(input);
@@ -101,7 +102,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 };
             }
 
-            _logger.LogError("Send VerifierCode Failed : {message}", result.Message);
+            _logger.LogError("Send VerifierCode Failed: {message}", result.Message);
             throw new UserFriendlyException(result.Message);
         }
         catch (Exception e)
@@ -109,8 +110,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             var endTime = DateTime.UtcNow.ToUniversalTime();
             var costTime = (endTime - startTime).TotalMilliseconds;
             _logger.LogDebug("TotalCount Time is {time}", (long)costTime);
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "Send VerifierCode Error: {Message}", e.Message);
             throw new UserFriendlyException(e.Message);
+        }
+        finally
+        {
+            _indicatorScope.End(interIndicator);
         }
     }
 
