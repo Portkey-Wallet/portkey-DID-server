@@ -157,12 +157,12 @@ public partial class ThirdPartOrderAppServiceTest
           "isStable": true,
           "name": "USD Coin",
           "roundOff": 2,
-          "symbol": "ETH",
+          "symbol": "ELF",
           "network": {
-            "name": "ETH",
+            "name": "aelf",
             "fiatCurrenciesNotSupported": [
               {
-                "fiatCurrency": "EUR",
+                "fiatCurrency": "HKD",
                 "paymentMethod": "credit_debit_card"
               }
             ],
@@ -224,7 +224,7 @@ public partial class ThirdPartOrderAppServiceTest
         _output.WriteLine(JsonConvert.SerializeObject(buyFiatList));
         buyFiatList.ShouldNotBeNull();
         buyFiatList.Success.ShouldBe(true);
-        buyFiatList.Data.FiatList.Count.ShouldBe(2);
+        buyFiatList.Data.FiatList.Count.ShouldBe(4);
         
         var sellFiatList = await _thirdPartOrderAppService.GetRampFiatListAsync(new RampFiatRequest
         {

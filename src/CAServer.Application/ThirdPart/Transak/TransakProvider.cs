@@ -117,7 +117,6 @@ public class TransakProvider
     private async Task<Dictionary<string, string>> GetAccessTokenHeader()
     {
         var accessToken = await GetAccessTokenWithRetry(true);
-        _logger.LogInformation("------test ac token:" + accessToken);
         return new Dictionary<string, string> { ["access-token"] = accessToken };
     }
 
@@ -300,8 +299,7 @@ public class TransakProvider
             {
                 return;
             }
-
-
+            
             //bad response and special treat the question of token access
             var content = await webHookRes.Content.ReadAsStringAsync();
 
