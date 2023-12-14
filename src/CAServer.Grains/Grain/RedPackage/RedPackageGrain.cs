@@ -115,6 +115,7 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
                 Decimal = State.Decimal,
                 Status = State.Status
             };
+            return result;
         }
         if (checkResult.Item1 == false)
         {
