@@ -120,10 +120,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
                 var grabed = State.Items.First(item => item.UserId == userId);
                 result.Data.Amount = grabed.Amount.ToString();
                 result.Data.Decimal = grabed.Decimal;
-
             }
-
-            
             return result;
         }
 

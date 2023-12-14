@@ -366,9 +366,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 ErrorMessage = result.Data.ErrorMessage,
                 Amount = result.Data.Amount,
                 Decimal = result.Data.Decimal,
-                Status = (result.Data.Status == RedPackageStatus.Expired)
-                    ? RedPackageStatus.Expired
-                    : result.Data.Status
+                Status = result.Data.Status
             };
             if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
             {
