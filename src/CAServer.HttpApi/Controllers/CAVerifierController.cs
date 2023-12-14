@@ -60,6 +60,7 @@ public class CAVerifierController : CAServerController
 
         if (!_switchAppService.GetSwitchStatus(CheckSwitch).IsOpen)
         {
+            
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
 
