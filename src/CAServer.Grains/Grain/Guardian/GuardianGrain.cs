@@ -1,9 +1,10 @@
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.State;
+using CAServer.Grains.Strategy;
 using Orleans;
 using Volo.Abp.ObjectMapping;
-
+[FastStrategy]
 public class GuardianGrain : Grain<GuardianState>, IGuardianGrain
 {
     private readonly IObjectMapper _objectMapper;

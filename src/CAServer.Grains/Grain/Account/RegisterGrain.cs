@@ -1,4 +1,5 @@
 using CAServer.Grains.State;
+using CAServer.Grains.Strategy;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Orleans.Providers;
@@ -7,6 +8,7 @@ using Volo.Abp.ObjectMapping;
 namespace CAServer.Grains.Grain.Account;
 
 [StorageProvider(ProviderName = "Default")]
+[FastStrategy]
 public class RegisterGrain : Grain<RegisterState>, IRegisterGrain
 {
     private readonly IObjectMapper _objectMapper;

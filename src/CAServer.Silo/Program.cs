@@ -1,8 +1,12 @@
-﻿using CAServer.Silo;
+﻿using CAServer.Grains.Strategy;
+using CAServer.Silo;
 using CAServer.Silo.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Orleans.Concurrency;
+using Orleans.Runtime;
+using Orleans.Runtime.Placement;
 using Serilog;
 using Serilog.Events;
 
@@ -50,7 +54,15 @@ public class Program
 
     internal static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
-            .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
+            .ConfigureServices((hostcontext, services) =>
+            {
+                services.AddApplication<CAServerOrleansSiloModule>();
+                services.AddSingletonNamedService<PlacementStrategy, FastStrategy>(nameof(FastStrategy));
+                services.AddSingletonKeyedService<Type, IPlacementDirector, FastStrategyFixedSiloDirector>(
+                    typeof(FastStrategy));
+                services.AddSingletonKeyedService<Type, IPlacementDirector, SlowStrategyFixedSiloDirector>(
+                    typeof(StatelessWorkerAttribute));
+            })
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();

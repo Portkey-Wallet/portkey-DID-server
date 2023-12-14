@@ -1,9 +1,11 @@
 using System.Security.Cryptography;
 using CAServer.Grains.State.Device;
+using CAServer.Grains.Strategy;
 using Orleans;
 
 namespace CAServer.Grains.Grain.Device;
 
+[FastStrategy]
 public class DeviceGrain : Grain<DeviceState>, IDeviceGrain
 {
     public override async Task OnActivateAsync()
