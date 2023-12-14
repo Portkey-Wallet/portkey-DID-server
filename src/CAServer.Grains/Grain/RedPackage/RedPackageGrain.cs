@@ -104,6 +104,18 @@ public class   RedPackageGrain : Orleans.Grain<RedPackageState>, IRedPackageGrai
     {
         var result = new GrainResultDto<GrabResultDto>();
         var checkResult = CheckRedPackagePermissions(userId);
+        if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
+        {
+            result.Success = true;
+            result.Data = new GrabResultDto()
+            {
+                Result = RedPackageGrabStatus.Success,
+                ErrorMessage = "",
+                Amount = State.Items.First(item => item.UserId == userId).Amount.ToString(),
+                Decimal = State.Decimal,
+                Status = State.Status
+            };
+        }
         if (checkResult.Item1 == false)
         {
             result.Success = false;
