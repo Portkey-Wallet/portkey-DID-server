@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
@@ -465,9 +466,9 @@ public class ContractAppService : IContractAppService
 
     public async Task PayRedPackageAsync(Guid redPackageId)
     {
-        // TODO daiyabin  batch pay so sleep a little moment        Thread.Sleep(30000);
         try
         {
+            Thread.Sleep(30000);
             Stopwatch watcher = Stopwatch.StartNew();
             var startTime = DateTime.Now.Ticks;
 
@@ -513,7 +514,6 @@ public class ContractAppService : IContractAppService
 
     public async Task<bool> RefundAsync(Guid redPackageId)
     {
-        _logger.Info($"Refund start and the redpackage id is {redPackageId}",redPackageId.ToString());
         try
         {
             var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);

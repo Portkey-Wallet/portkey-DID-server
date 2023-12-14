@@ -325,10 +325,6 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
-            // var chainInfo = _chainOptions.ChainInfos[chainId];
-            // var client = new AElfClient(chainInfo.BaseUrl);
-            // await client.IsConnectedAsync();
-
             var result = await ForwardTransactionToChainAsync(chainId,rawTransaction);
             DeactivateOnIdle();
 
