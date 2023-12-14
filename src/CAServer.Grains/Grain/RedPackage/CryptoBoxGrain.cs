@@ -105,27 +105,20 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
     {
         var result = new GrainResultDto<GrabResultDto>();
         var checkResult = CheckRedPackagePermissions(userId);
-        if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
-        {
-            result.Success = true;
-            result.Data = new GrabResultDto()
-            {
-                Result = RedPackageGrabStatus.Success,
-                ErrorMessage = "",
-                Amount = State.Items.First(item => item.UserId == userId).Amount.ToString(),
-                Decimal = State.Decimal,
-                Status = State.Status
-            };
-            return result;
-        }
         if (checkResult.Item1 == false)
         {
             result.Success = false;
+            var amount = string.Empty;
+            if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
+            {
+                amount = State.Items.First(item => item.UserId == userId).Amount.ToString();
+            }
+
             result.Data = new GrabResultDto()
             {
                 Result = RedPackageGrabStatus.Fail,
                 ErrorMessage = checkResult.Item2,
-                Amount = "",
+                Amount = amount,
                 Status = State.Status,
                 ExpireTime = State.ExpireTime
             };

@@ -360,17 +360,23 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
                 });
             }
-            return new GrabRedPackageOutputDto()
+            var res = new GrabRedPackageOutputDto()
             {
                 Result = result.Data.Result,
                 ErrorMessage = result.Data.ErrorMessage,
                 Amount = result.Data.Amount,
                 Decimal = result.Data.Decimal,
-                Status = (result.Data.Status == RedPackageStatus.Expired
-                          || DateTimeOffset.Now.ToUnixTimeMilliseconds() > result.Data.ExpireTime)
+                Status = (result.Data.Status == RedPackageStatus.Expired)
                     ? RedPackageStatus.Expired
                     : result.Data.Status
             };
+            if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
+            {
+                res.Result = RedPackageGrabStatus.Success;
+                res.ErrorMessage = "";
+            }
+
+            return res;
         }
         finally
         {
