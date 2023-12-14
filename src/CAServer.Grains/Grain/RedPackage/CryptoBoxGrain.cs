@@ -108,20 +108,22 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         if (checkResult.Item1 == false)
         {
             result.Success = false;
-            var amount = string.Empty;
-            if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
-            {
-                amount = State.Items.First(item => item.UserId == userId).Amount.ToString();
-            }
-
             result.Data = new GrabResultDto()
             {
                 Result = RedPackageGrabStatus.Fail,
                 ErrorMessage = checkResult.Item2,
-                Amount = amount,
                 Status = State.Status,
                 ExpireTime = State.ExpireTime
             };
+            if (checkResult.Item2.Equals(RedPackageConsts.RedPackageUserGrabbed))
+            {
+                var grabed = State.Items.First(item => item.UserId == userId);
+                result.Data.Amount = grabed.Amount.ToString();
+                result.Data.Decimal = grabed.Decimal;
+
+            }
+
+            
             return result;
         }
 
@@ -215,7 +217,12 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
 
     private (bool, string) CheckRedPackagePermissions(Guid userId)
     {
-        if (DateTimeOffset.Now.ToUnixTimeMilliseconds() > State.ExpireTime || State.Status == RedPackageStatus.Expired)
+        if (State.Items.Any(item => item.UserId == userId))
+        {
+            return (false, RedPackageConsts.RedPackageUserGrabbed);
+        }
+        
+        if (State.Status == RedPackageStatus.Expired)
         {
             return (false, RedPackageConsts.RedPackageExpired);
         }
@@ -234,11 +241,6 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         if (State.Status == RedPackageStatus.Init)
         {
             return (false, RedPackageConsts.RedPackageNotSet);
-        }
-
-        if (State.Items.Any(item => item.UserId == userId))
-        {
-            return (false, RedPackageConsts.RedPackageUserGrabbed);
         }
 
         return (true, "");
