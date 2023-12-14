@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -268,7 +269,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            _logger.LogError(e, "getredpackage failed, id={id}", id);
         }
        
         CheckLuckKing(detail);
