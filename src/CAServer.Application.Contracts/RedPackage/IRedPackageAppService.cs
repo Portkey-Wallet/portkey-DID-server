@@ -11,9 +11,11 @@ public interface IRedPackageAppService
     Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input);
     Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId);
     Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount, int maxResultCount);
+
     Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string chainId,
         [CanBeNull] string token);
+
     Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input);
 
-    RedPackageTokenInfo GetRedPackageOption(String symbol, string chainId,out long maxCount,out string redpackageContractAddress);
+    RedPackageTokenInfo GetRedPackageOption(String symbol, string chainId, out long maxCount, out string redpackageContractAddress);
 }
