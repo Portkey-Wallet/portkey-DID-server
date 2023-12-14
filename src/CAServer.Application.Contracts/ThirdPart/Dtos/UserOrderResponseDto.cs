@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CAServer.Commons;
 using CAServer.ThirdPart.Dtos.Order;
 
 namespace CAServer.ThirdPart.Dtos;
@@ -13,6 +14,23 @@ public class BasicOrderResult
 public class OrderCreatedDto : BasicOrderResult
 {
     public string Id { get; set; }
+
+
+    public CommonResponseDto<OrderCreatedResultDto> ToCommonResponse()
+    {
+        return Success 
+            ? new CommonResponseDto<OrderCreatedResultDto>(new OrderCreatedResultDto
+            {
+                OrderId = Id
+            }) 
+            : new CommonResponseDto<OrderCreatedResultDto>().Error(Message);
+    }
+
+}
+
+public class OrderCreatedResultDto
+{
+    public string OrderId { get; set; }
 }
 
 public class OrdersDto

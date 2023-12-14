@@ -42,6 +42,9 @@ public interface IContractProvider
 
     Task<TransactionResultDto> SyncTransactionAsync(string chainId,
         SyncHolderInfoInput syncHolderInfoInput);
+    Task<ChainStatusDto> GetChainStatus(string chainId);
+    Task<Tuple<string, Transaction>> GenerateTransferTransaction(string symbol, string amount, string address,
+        string chainId, string senderPubKey);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency

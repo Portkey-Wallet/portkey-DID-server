@@ -1,20 +1,21 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
+using CAServer.Amazon;
 using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.IpInfo;
-using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Processor.NFT;
+using CAServer.ThirdPart.Processor.Ramp;
 using CAServer.ThirdPart.Processors;
-using CAServer.ThirdPart.Provider;
+using CAServer.ThirdPart.Transak;
 using CAServer.Tokens.Provider;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,8 +57,14 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
+        Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
+        // Configure<RampOptions>(configuration.GetSection("RampOptions"));
+
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
+
+        context.Services.AddMemoryCache();
+        context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
         
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
@@ -70,6 +77,15 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        
+        context.Services.AddSingleton<AlchemyProvider>();
+        context.Services.AddSingleton<TransakProvider>();
+        
+        context.Services.AddSingleton<IThirdPartAdaptor, AlchemyAdaptor>();
+        context.Services.AddSingleton<IThirdPartAdaptor, TransakAdaptor>();
+
+        context.Services.AddSingleton<AbstractRampOrderProcessor, TransakOrderProcessor>();
+        context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
         
         context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
         context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
@@ -105,6 +121,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+        
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));

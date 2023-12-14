@@ -1,16 +1,14 @@
 using System;
-using System.IO;
 using System.Linq;
-using System.Net;
 using CAServer.Grains;
 using CAServer.Hub;
-using CAServer.Hubs;
 using CAServer.HubsEventHandler;
+using CAServer.Middleware;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
-using CAServer.Signature;
+using CAServer.ThirdPart.Adaptor;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -41,10 +39,8 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
-using Volo.Abp.RabbitMQ;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
-using Volo.Abp.VirtualFileSystem;
 
 namespace CAServer;
 
@@ -68,10 +64,11 @@ public class CAServerHttpApiHostModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
+        Configure<RampOptions>(configuration.GetSection("RampOptions"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
-        Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
         ConfigureConventionalControllers();
@@ -173,7 +170,7 @@ public class CAServerHttpApiHostModule : AbpModule
         //     },
         //     options =>
         //     {
-        //         options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", Version = "v1" });
+        //         options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", ClientVersion = "v1" });
         //         options.DocInclusionPredicate((docName, description) => true);
         //         options.CustomSchemaIds(type => type.FullName);
         //     });
@@ -328,6 +325,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
+        app.UseMiddleware<DeviceInfoMiddleware>();
 
         if (env.IsDevelopment())
         {
@@ -348,6 +346,9 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseConfiguredEndpoints();
 
         StartOrleans(context.ServiceProvider);
+
+        // to start pre heat
+        context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCaches().GetAwaiter().GetResult();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

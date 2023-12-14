@@ -7,6 +7,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
 using CAServer.Tokens.Provider;
@@ -22,9 +23,8 @@ namespace CAServer.ThirdPart.Processor.NFT;
 public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 {
     private readonly AlchemyProvider _alchemyProvider;
-    private readonly AlchemyOptions _alchemyOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly ITokenAppService _tokenAppService;
-    private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
 
 
@@ -35,18 +35,17 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         .Build();
 
     public AlchemyNftOrderProcessor(ILogger<AlchemyNftOrderProcessor> logger, IClusterClient clusterClient,
-        IOptions<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
         IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
-        ITokenAppService tokenAppService, ITokenProvider tokenProvider)
+        ITokenAppService tokenAppService)
         : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock,
             thirdPartOrderAppService)
     {
         _logger = logger;
         _alchemyProvider = alchemyProvider;
+        _thirdPartOptions = thirdPartOptions;
         _tokenAppService = tokenAppService;
-        _tokenProvider = tokenProvider;
-        _alchemyOptions = thirdPartOptions.Value.Alchemy;
     }
 
     public override string ThirdPartName()
@@ -54,6 +53,11 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         return ThirdPartNameType.Alchemy.ToString();
     }
 
+    public AlchemyOptions AlchemyOptions()
+    {
+        return _thirdPartOptions.CurrentValue.Alchemy;
+    }
+    
     public override IThirdPartValidOrderUpdateRequest VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input)
     {
         // verify input type and data 
@@ -69,7 +73,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         // verify signature 
         var signSource = ThirdPartHelper.ConvertObjectToSortedString(input,
             AlchemyHelper.SignatureField, AlchemyHelper.IdField);
-        var signature = AlchemyHelper.HmacSign(signSource, _alchemyOptions.NftAppSecret);
+        var signature = AlchemyHelper.HmacSign(signSource, AlchemyOptions().NftAppSecret);
         _logger.LogDebug("Verify Alchemy signature, signature={Signature}, signSource={SignSource}",
             signature, signSource);
         AssertHelper.IsTrue(signature == (string)inputSignature,
@@ -81,7 +85,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         // fill orderId 
         achNftOrderRequest.Id = Guid.Parse(achNftOrderRequest.MerchantOrderNo);
         // mapping status
-        achNftOrderRequest.Status = AlchemyHelper.GetOrderStatus(achNftOrderRequest.Status);
+        achNftOrderRequest.Status = AlchemyHelper.GetOrderStatus(achNftOrderRequest.Status).ToString();
         return achNftOrderRequest;
     }
 
@@ -92,7 +96,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
             OrderNo = orderId.ToString()
         });
         alchemyOrder.Id = Guid.Parse(alchemyOrder.MerchantOrderNo);
-        alchemyOrder.Status = AlchemyHelper.GetOrderStatus(alchemyOrder.Status);
+        alchemyOrder.Status = AlchemyHelper.GetOrderStatus(alchemyOrder.Status).ToString();
         return alchemyOrder;
     }
 

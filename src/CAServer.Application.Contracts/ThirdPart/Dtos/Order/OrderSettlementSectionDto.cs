@@ -21,12 +21,3 @@ public class OrderSettlementSectionDto : BaseOrderSection
     public List<FeeItem> FeeDetail { get; set; }
     
 }
-
-
-public class FeeItem
-{
-    public string Name { get; set; }
-    public string FiatCrypto { get; set; }
-    public string Currency { get; set; }
-    public string FeeAmount { get; set; }
-}

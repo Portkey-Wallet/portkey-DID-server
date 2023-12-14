@@ -26,21 +26,21 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
-    private readonly ThirdPartOptions _thirdPartOptions;
-    private readonly TransactionOptions _transactionOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
+    private readonly IOptionsMonitor<TransactionOptions> _transactionOptions;
 
     public NftOrderThirdPartOrderStatusWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         INftCheckoutService nftCheckoutService, ILogger<NftOrderThirdPartOrderStatusWorker> logger,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
-        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions)
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptionsMonitor<TransactionOptions> transactionOptions)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _nftCheckoutService = nftCheckoutService;
         _logger = logger;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
-        _transactionOptions = transactionOptions.Value;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _transactionOptions = transactionOptions;
+        _thirdPartOptions = thirdPartOptions;
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
     public async Task Handle()
     {
         await using var handle =
-            await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "NftOrderThirdPartOrderStatusWorker");
+            await _distributedLock.TryAcquireAsync(name: _transactionOptions.CurrentValue.LockKeyPrefix + "NftOrderThirdPartOrderStatusWorker");
         if (handle == null)
         {
             _logger.LogWarning("NftOrderThirdPartOrderStatusWorker running, skip");
@@ -59,7 +59,7 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
 
         _logger.LogDebug("NftOrderThirdPartOrderStatusWorker start");
         const int pageSize = 100;
-        var minutesAgo = _thirdPartOptions.Timer.HandleUnCompletedOrderMinuteAgo;
+        var minutesAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedOrderMinuteAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddMinutes(-minutesAgo).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow.AddHours(-1).ToUtcMilliSeconds().ToString();
         var total = 0;

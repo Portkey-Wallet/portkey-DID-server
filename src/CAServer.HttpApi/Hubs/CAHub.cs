@@ -59,6 +59,11 @@ public class CAHub : AbpHub
         await _hubService.RequestNFTOrderStatusAsync(request.TargetClientId, request.OrderId);
     }
 
+    public async Task RequestRampOrderStatus(OrderListenerRequestDto request)
+    {
+        await _hubService.RequestRampOrderStatus(request.TargetClientId, request.OrderId);
+    }
+
     public override Task OnDisconnectedAsync(Exception? exception)
     {
         var clientId = _hubService.UnRegisterClient(Context.ConnectionId);

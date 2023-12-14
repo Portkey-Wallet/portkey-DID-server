@@ -26,4 +26,8 @@
     <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="7.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Controllers\TestController.cs" />
+  </ItemGroup>
+
 </Project>

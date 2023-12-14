@@ -7,6 +7,7 @@ namespace CAServer.Options;
 public class ThirdPartOptions
 {
     public AlchemyOptions Alchemy { get; set; }
+    public TransakOptions Transak { get; set; }
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
     public OrderExportAuth OrderExportAuth { get; set; }
@@ -39,6 +40,7 @@ public class ThirdPartTimerOptions
     public int NftUnCompletedOrderSettlementMinuteAgo { get; set; } = 2;
     public int NftUnCompletedOrderSettlementDaysAgo { get; set; }  = 2;
     
+    public int RampUnCompletedSettlementMinuteAgo { get; set; }  = 2;
     public int NftOrderExpireSeconds { get; set; }  = 60 * 30;
 }
 
@@ -47,7 +49,6 @@ public class AlchemyOptions
     public string AppId { get; set; }
     public string AppSecret { get; set; }
     public string BaseUrl { get; set; }
-    
     public string NftAppId { get; set; }
     public string NftAppSecret { get; set; }
     public string NftBaseUrl { get; set; }
@@ -58,9 +59,21 @@ public class AlchemyOptions
     public string GetTokenUri { get; set; }
     public bool SkipCheckSign { get; set; } = false;
     public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
+    public int CryptoListExpirationMinutes { get; set; } = CommonConstant.CryptoListExpirationMinutes;
     public int NftFiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
     public string MerchantQueryTradeUri { get; set; }
+}
+
+public class TransakOptions
+{
+    public string AppId { get; set; }
+    public string AppSecret { get; set; }
+    public string BaseUrl { get; set; }
+    public double RefreshTokenDurationPercent { get; set; } = 0.8;
+    public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
+    public int CryptoListExpirationMinutes { get; set; } = CommonConstant.CryptoListExpirationMinutes;
+    public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
 }
 
 public class MerchantOptions

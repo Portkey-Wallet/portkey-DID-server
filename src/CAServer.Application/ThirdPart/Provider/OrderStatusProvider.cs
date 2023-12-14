@@ -40,7 +40,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IHttpProvider _httpProvider;
     private readonly IBus _broadcastBus;
 
@@ -55,7 +55,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         IThirdPartOrderProvider thirdPartOrderProvider,
         IObjectMapper objectMapper,
         IClusterClient clusterClient,
-        IOptions<ThirdPartOptions> thirdPartOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider,
         IDistributedEventBus distributedEventBus, IBus broadcastBus)
     {
@@ -63,7 +63,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
         _distributedEventBus = distributedEventBus;
         _broadcastBus = broadcastBus;
@@ -132,7 +132,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             var nftOrderGrainDto = await GetNftOrderAsync(orderId);
             AssertHelper.IsTrue(nftOrderGrainDto?.WebhookStatus != NftOrderWebhookStatus.SUCCESS.ToString(),
                 "Webhook status of order {OrderId} exists", orderId);
-            if (nftOrderGrainDto?.WebhookCount >= _thirdPartOptions.Timer.NftCheckoutMerchantCallbackCount)
+            if (nftOrderGrainDto?.WebhookCount >= _thirdPartOptions.CurrentValue.Timer.NftCheckoutMerchantCallbackCount)
                 return 0;
 
             var orderGrainDto = await GetRampOrderAsync(orderId);

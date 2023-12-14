@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
@@ -16,7 +17,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     private readonly IAlchemyServiceAppService _alchemyServiceAppService;
     private readonly ITestOutputHelper _testOutputHelper;
 
-    public AlchemyServiceAppServiceTest(ITestOutputHelper testOutputHelper)
+    public AlchemyServiceAppServiceTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
         _alchemyServiceAppService = GetRequiredService<IAlchemyServiceAppService>();
@@ -26,26 +27,33 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     {
         base.AfterAddApplication(services);
         var mockOptions = MockThirdPartOptions();
-        services.AddSingleton(MockThirdPartOptions());
+        services.AddSingleton(mockOptions);
+        services.AddSingleton(MockRampOptions());
 
         // mock http
         services.AddSingleton(MockHttpFactory(_testOutputHelper,
+            
             PathMatcher(HttpMethod.Get, AlchemyApi.QueryNftFiatList.Path,
                 new AlchemyBaseResponseDto<List<AlchemyFiatDto>>(
-                    new() { new AlchemyFiatDto { Country = "USA", Currency = "USD"} })),
+                    new() { new AlchemyFiatDto { Country = "US", Currency = "USD"} })),
+            
             PathMatcher(HttpMethod.Get, AlchemyApi.QueryFiatList.Path,
                 new AlchemyBaseResponseDto<List<AlchemyFiatDto>>(
-                    new() { new AlchemyFiatDto { Country = "USA", Currency = "USD" } })),
-            PathMatcher(HttpMethod.Get, mockOptions.Value.Alchemy.CryptoListUri,
+                    new() { new AlchemyFiatDto { Country = "US", Currency = "USD", PayMax = "2000", PayMin = "20"} })),
+            
+            PathMatcher(HttpMethod.Get, mockOptions.CurrentValue.Alchemy.CryptoListUri,
                 new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>(
-                    new() { new AlchemyCryptoDto { Crypto = "ELF" } })),
-            PathMatcher(HttpMethod.Post, mockOptions.Value.Alchemy.GetTokenUri,
+                    new() { new AlchemyCryptoDto { Crypto = "ELF", Network = "ELF", BuyEnable = "1", SellEnable = "1" } })),
+            
+            PathMatcher(HttpMethod.Post, mockOptions.CurrentValue.Alchemy.GetTokenUri,
                 new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
                     new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
+            
             PathMatcher(HttpMethod.Post, AlchemyApi.GetFreeLoginToken.Path,
                 new AlchemyBaseResponseDto<AlchemyTokenDataDto>(
                     new AlchemyTokenDataDto { AccessToken = "AccessToken" })),
-            PathMatcher(HttpMethod.Post, mockOptions.Value.Alchemy.OrderQuoteUri,
+            
+            PathMatcher(HttpMethod.Post, mockOptions.CurrentValue.Alchemy.OrderQuoteUri,
                 new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>(
                     new AlchemyOrderQuoteDataDto
                     {
@@ -55,7 +63,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
                         Fiat = "USD",
                         FiatQuantity = "1",
                         RampFee = "0.2",
-                        NetworkFee = "0.1"
+                        NetworkFee = "0.1",
                     }))
         ));
     }
@@ -65,8 +73,8 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     {
         var input = new GetAlchemyOrderQuoteDto()
         {
-            Crypto = "USDT",
-            Network = "ETH",
+            Crypto = "ELF",
+            Network = "ELF",
             Fiat = "USD",
             Country = "US",
             Amount = "201",
@@ -74,7 +82,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Type = "ONE"
         };
         var result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
 
     [Fact]
@@ -82,8 +90,8 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     {
         var input = new GetAlchemyOrderQuoteDto()
         {
-            Crypto = "USDT",
-            Network = "ETH",
+            Crypto = "ELF",
+            Network = "ELF",
             Fiat = "USD",
             Country = "US",
             Amount = "201",
@@ -93,15 +101,15 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         
         // from mock http
         var result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
         
         // from cache
         result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
 
         input.Side = "SELL";
         result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
     
     [Fact]
@@ -112,7 +120,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Email = "test@portkey.finance"
         };
         var result = await _alchemyServiceAppService.GetAlchemyFreeLoginTokenAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
     
     [Fact]
@@ -133,8 +141,8 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         {
             Type = "BUY"
         };
-        var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
-        result.Success.ShouldBe("Success");
+        var result = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(input);
+        result.Success.ShouldBe(true);
     }
 
     [Fact]
@@ -144,15 +152,15 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         {
             Type = "SELL"
         };
-        var result = await _alchemyServiceAppService.GetAlchemyFiatListAsync(input);
-        result.Success.ShouldBe("Success");
+        var result = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(input);
+        result.Success.ShouldBe(true);
     }
 
     [Fact]
     public async Task GetAlchemyCryptoListAsyncTest()
     {
         var result = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(new GetAlchemyCryptoListDto());
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
 
     [Fact]

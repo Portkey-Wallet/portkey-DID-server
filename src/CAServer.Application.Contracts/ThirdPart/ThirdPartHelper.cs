@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using CAServer.ThirdPart.Dtos;
 using JetBrains.Annotations;
 
 namespace CAServer.ThirdPart;
@@ -31,6 +30,11 @@ public static class ThirdPartHelper
     public static bool ValidateMerchantOrderNo(string merchantOrderNo)
     {
         return merchantOrderNo.IsNullOrEmpty() || Guid.TryParse(merchantOrderNo, out Guid _);
+    }
+    
+    public static Guid GenerateOrderId(string merchantName, string merchantOrderNo)
+    {
+        return new Guid(MD5.HashData(Encoding.Default.GetBytes(merchantName + merchantOrderNo)));
     }
 
     public static Guid GetOrderId(string merchantOrderNo)
@@ -97,17 +101,13 @@ public static class AlchemyHelper
     
     public static bool OrderStatusExist(string orderStatus)
     {
-        return GetOrderStatus(orderStatus) != OrderStatusType.Unknown.ToString();
+        return GetOrderStatus(orderStatus) != OrderStatusType.Unknown;
     }
 
-    public static string GetOrderStatus(string status)
+    public static OrderStatusType GetOrderStatus(string status)
     {
-        if (_orderStatusDict.TryGetValue(status, out OrderStatusType _))
-        {
-            return _orderStatusDict[status].ToString();
-        }
-
-        return "Unknown";
+        var exists = _orderStatusDict.TryGetValue(status, out var statusEnum);
+        return exists ? statusEnum : OrderStatusType.Unknown;
     }
 
     public static string AesEncrypt(string plainText, string secretKeyData)

@@ -1,0 +1,84 @@
+{
+  "RampOptions": {
+    "Providers": {
+      "Alchemy": {
+        "Name": "AlchemyPay",
+        "AppId": "f83Is2y7L425rxl8",
+        "BaseUrl": "https://ramptest.alchemypay.org",
+        "Logo": "https://ramp.alchemypay.org/static/img/6.32716249.svg",
+        "CountryIconUrl": "https://static.alchemypay.org/alchemypay/flag/{ISO}.png",
+        "WebhookUrl" :"http://127.0.0.1:5001/api/app/thirdPart/order/alchemy",
+        "PaymentTags": [
+          "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
+          "https://ramp.alchemypay.org/static/img/2.a5406123.svg",
+          "https://ramp.alchemypay.org/static/img/3.22abdb74.svg"
+        ],
+        "Coverage": {
+          "OnRamp": false,
+          "OffRamp": false
+        },
+        "NetworkMapping": {
+          "AELF": "ELF"
+        }
+      },
+      "Transak": {
+        "Name": "Transak",
+        "AppId": "09c056fd-d423-46d9-a641-e4a7a1e7de33",
+        "BaseUrl": "https://global-stg.transak.com",
+        "Logo": "https://assets.transak.com/images/website/transak-logo.svg",
+        "CountryIconUrl": "http://127.0.0.1:5001/api/app/image/svg/{SVG_MD5}.svg",
+        "WebhookUrl" :"http://127.0.0.1:5001/api/app/thirdPart/order/transak",
+        "PaymentTags": [
+          "https://ramp.alchemypay.org/static/img/1.059c000d.svg",
+          "https://ramp.alchemypay.org/static/img/2.a5406123.svg"
+        ],
+        "Coverage": {
+          "OnRamp": true,
+          "OffRamp": true
+        },
+        "NetworkMapping": {
+          "AELF": "aelf"
+        }
+      }
+    },
+    "CryptoList": [
+      {
+        "Symbol": "ELF",
+        "Icon": "https://explorer-test.aelf.io/favicon.test.ico",
+        "Decimals": "8",
+        "Network": "aelf",
+        "ChainId": "AELF",
+        "Address": ""
+      }
+    ],
+    "DefaultCurrency": {
+      "Crypto": "ELF",
+      "CryptoAmount": "400",
+      "Network": "aelf",
+      "ChainId": "AELF",
+      "Fiat": "USD",
+      "FiatAmount": "200"
+    },
+    "PortkeyIdWhiteList": [
+      "fd71c1fd-d123-4ff4-83ef-136331af175d"
+    ],
+    "CoverageExpressions": {
+      "Alchemy": {
+        "OnRamp": [
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
+        ],
+        "OffRamp": [
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
+        ]
+      },
+      "Transak": {
+        "OnRamp": [
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
+        ],
+        "OffRamp": [
+          "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))"
+        ]
+      }
+    }
+  }
+}
