@@ -7,7 +7,7 @@ namespace CAServer.Common;
 
 public class CustomMessageHelper
 {
-    public static string BuildRedPackageCardContent(Guid senderId,string memo, Guid redPackageId)
+    public static string BuildRedPackageCardContent(Guid senderId, string memo, Guid redPackageId)
     {
         var redPackageCard = new RedPackageCard
         {
