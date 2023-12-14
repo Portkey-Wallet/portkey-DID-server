@@ -40,14 +40,14 @@ public class DeviceInfoMiddleware
             var headers = context.Request.Headers;
             if (headers.IsNullOrEmpty()) return null;
 
-            var clientTypeExists = headers.TryGetValue("ClientType", out var clientType);
+            var clientTypeExists = headers.TryGetValue("Client-Type", out var clientType);
             var clientVersionExists = headers.TryGetValue("Version", out var clientVersion);
             if (!clientTypeExists && !clientVersionExists) return null;
 
             return new DeviceInfo
             {
-                ClientType = clientType.ToString().ToUpper(),
-                Version = clientVersion.ToString().ToUpper()
+                ClientType = clientType.ToString(),
+                Version = clientVersion.ToString()
             };
         }
         catch (Exception e)
