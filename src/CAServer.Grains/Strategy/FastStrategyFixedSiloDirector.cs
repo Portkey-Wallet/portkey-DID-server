@@ -9,6 +9,10 @@ public class FastStrategyFixedSiloDirector : IPlacementDirector
     public Task<SiloAddress> OnAddActivation(PlacementStrategy strategy, PlacementTarget target, IPlacementContext context)
     {
         var silos = context.GetCompatibleSilos(target).OrderBy(s => s).ToArray();
+        if ( silos.Length > 1 )
+        {
+            return Task.FromResult(silos[1]);
+        }
         return Task.FromResult(silos[0]);
     }
 }
