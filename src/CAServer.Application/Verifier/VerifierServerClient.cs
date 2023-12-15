@@ -82,7 +82,16 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", dto.GuardianIdentifier },
             { "verifierSessionId", dto.VerifierSessionId.ToString() },
         };
-        var verifierServerResponse =await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        ResponseResultDto<VerifierServerResponse> verifierServerResponse = null;
+        try
+        {
+            verifierServerResponse = await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "send verification request error:{0}", JsonConvert.SerializeObject(parameters));
+            throw;
+        }
         _indicatorScope.End(indicator);
         return verifierServerResponse;
     }
