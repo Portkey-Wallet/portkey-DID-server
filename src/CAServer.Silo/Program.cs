@@ -59,7 +59,7 @@ public class Program
                 services.AddApplication<CAServerOrleansSiloModule>();
                 services.AddSingletonNamedService<PlacementStrategy, FastStrategy>(nameof(FastStrategy));
                 services.AddSingletonKeyedService<Type, IPlacementDirector, FastStrategyFixedSiloDirector>(
-                    typeof(FastStrategyAttribute));
+                    typeof(FastStrategy));
                 services.AddSingletonKeyedService<Type, IPlacementDirector, SlowStrategyFixedSiloDirector>(
                     typeof(StatelessWorkerAttribute));
             })
