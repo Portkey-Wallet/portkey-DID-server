@@ -1,21 +1,16 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
-using AElf.Contracts.MultiToken;
 using AElf.Client.Service;
+using AElf.Contracts.MultiToken;
 using AElf.Types;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
-using CAServer.Grains.Grain;
-using CAServer.Grains.Grain.RedPackage;
 using CAServer.Options;
 using CAServer.RedPackage;
-using CAServer.RedPackage.Dtos;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -24,7 +19,6 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
-using Portkey.Contracts.RedPacket;
 using Portkey.Contracts.TokenClaim;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -58,8 +52,6 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly IIndicatorScope _indicatorScope;
     private readonly IRedPackageAppService _redPackageAppService;
     private readonly GrainOptions _grainOptions;
-    
-
 
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
@@ -181,7 +173,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction = await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName, param);
-        
+
         _indicatorScope.End(generateIndicator);
         _logger.LogDebug("Send tx methodName is: {methodName} param is: {transaction}, publicKey is:{publicKey} ",
             methodName, transaction, _claimTokenInfoOption.PublicKey);
@@ -273,12 +265,12 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.SendTransactionAsync.ToString());
-        
+
         var result = await client.SendTransactionAsync(new SendTransactionInput
         {
             RawTransaction = rawTransaction
         });
-        
+
         _indicatorScope.End(generateIndicator);
 
         return result;
@@ -287,11 +279,11 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId)
     {
         var client = await GetAElfClientAsync(chainId);
-        
+
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GetTransactionResultAsync.ToString());
         var result = await client.GetTransactionResultAsync(transactionId);
-        
+
         _indicatorScope.End(generateIndicator);
         return result;
     }

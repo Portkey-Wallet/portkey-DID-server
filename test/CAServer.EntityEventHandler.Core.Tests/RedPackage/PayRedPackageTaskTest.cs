@@ -16,8 +16,8 @@ public class PayRedPackageTaskTest : CAServerEntityEventHandlerTestBase
     {
         var userId = Guid.NewGuid();
         var redPackageId = Guid.NewGuid();
-        var redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(redPackageId);
-        var res = await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(redPackageId), 8, 1, userId);
+        var redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(redPackageId);
+        var res = await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(redPackageId), 8, 1, userId,86400000);
         
         var userId1 = Guid.NewGuid();
         var userId2 = Guid.NewGuid();

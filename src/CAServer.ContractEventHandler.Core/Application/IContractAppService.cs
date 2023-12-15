@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
@@ -49,10 +50,7 @@ public interface IContractAppService
     // Task InitializeIndexAsync(long blockHeight);
     Task PayRedPackageAsync(Guid eventDataRedPackageId);
 
-    Task<bool> Refund(Guid redPackageId);
-
-
-
+    Task<bool> RefundAsync(Guid redPackageId);
 }
 
 public class ContractAppService : IContractAppService
@@ -73,7 +71,6 @@ public class ContractAppService : IContractAppService
     private readonly SyncOriginChainIdOptions _syncOriginChainIdOptions;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly PayRedPackageAccount _packageAccount;
-    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
@@ -85,10 +82,8 @@ public class ContractAppService : IContractAppService
         IUserAssetsProvider userAssetsProvider,
         IMonitorLogProvider monitorLogProvider, IDistributedCache<string> distributedCache,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount, 
-        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
         IRedPackageCreateResultService redPackageCreateResultService)
     {
-        _redPackageIndexRepository = redPackageIndexRepository;
         _distributedEventBus = distributedEventBus;
         _indexOptions = indexOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -131,11 +126,11 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
+                _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
                 return;
             }
             
-            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.RedPacketCreated))
+            if (!result.Logs.Select(l => l.Name).Contains(LogEvent.CryptoBoxCreated))
             {
                 eto.Message = "Transaction status: FAILED" + ". Error: Verification failed";
                 eto.Success = false;
@@ -143,12 +138,12 @@ public class ContractAppService : IContractAppService
                 _logger.LogInformation("RedPackageCreate pushed: " + "\n{result}",
                     JsonConvert.SerializeObject(eto, Formatting.Indented));
 
-                _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
+                _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
                 return;
             }
             eto.Success = true;
             eto.Message = "Transaction status: " + result.Status;
-            _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
+            _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
         }
         catch (Exception e)
         {
@@ -156,7 +151,7 @@ public class ContractAppService : IContractAppService
                 eventData.SessionId.ToString());
             eto.Success = false;
             eto.Message = e.Message;
-            _ = _redPackageCreateResultService.updateRedPackageAndSengMessageAsync(eto);
+            _ = _redPackageCreateResultService.UpdateRedPackageAndSendMessageAsync(eto);
         }
        
     }
@@ -471,47 +466,41 @@ public class ContractAppService : IContractAppService
 
     public async Task PayRedPackageAsync(Guid redPackageId)
     {
-        // TODO daiyabin  batch pay so sleep a little moment        Thread.Sleep(30000);
         try
         {
+            //TODO Thread.Sleep(30000);
             Stopwatch watcher = Stopwatch.StartNew();
             var startTime = DateTime.Now.Ticks;
 
             _logger.Info($"PayRedPackageAsync start and the redpackage id is {redPackageId}", redPackageId.ToString());
-            var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
 
             var redPackageDetail = await grain.GetRedPackage(redPackageId);
             var grabItems = redPackageDetail.Data.Items;
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
             _logger.Info("red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",
-                payRedPackageFrom.ToString());
-            //if we need judge other params ?
+                payRedPackageFrom);
             if (grabItems.IsNullOrEmpty())
             {
                 _logger.Info("there are no one claim the red packages,red package id is{redPackageId} ",
                     redPackageId.ToString());
+                return;
             }
-
+            grabItems = grabItems.Where(t => !t.PaymentCompleted).ToList();
             var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail, payRedPackageFrom);
             _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",
                 JsonConvert.SerializeObject(res));
-            var result = res.TransactionResultDto;
-            var eto = new RedPackageTransactionResultEto();
-            var redPackageIndex = await _redPackageIndexRepository.GetAsync(redPackageId);
-            _logger.LogInformation("_redPackageIndexRepository result is {redPackageIndex}",
-                JsonConvert.SerializeObject(redPackageIndex));
 
-            if (redPackageIndex == null || redPackageIndex.TransactionStatus != RedPackageTransactionStatus.Success)
+            if (res.TransactionResultDto.Status != TransactionState.Mined)
             {
-                _logger.LogInformation("PayRedPackageAsync pushed: " + "\n{redPackageIndex}",
-                    JsonConvert.SerializeObject(eto, Formatting.Indented));
+                _logger.LogError("PayRedPackageAsync fail: " + "\n{res}",
+                    JsonConvert.SerializeObject(res, Formatting.Indented));
                 return;
             }
 
             //if success update the payment status of red package 
             await grain.UpdateRedPackage(grabItems);
             _logger.Info("PayRedPackageAsync end and the redpackage id is {redPackageId}", redPackageId.ToString());
-            await _distributedEventBus.PublishAsync(eto);
 
             watcher.Stop();
             _logger.LogInformation("#monitor# payRedPackage:{redpackageId},{cost},{endTime}:", redPackageId.ToString(),
@@ -523,31 +512,26 @@ public class ContractAppService : IContractAppService
         }
     }
 
-    public async Task<bool> Refund(Guid redPackageId)
+    public async Task<bool> RefundAsync(Guid redPackageId)
     {
-        _logger.Info($"Refund start and the redpackage id is {redPackageId}",redPackageId.ToString());
         try
         {
-            var grain = _clusterClient.GetGrain<IRedPackageGrain>(redPackageId);
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
 
             var redPackageDetail = await grain.GetRedPackage(redPackageId);
             var redPackageDetailDto = redPackageDetail.Data;
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
-            _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",payRedPackageFrom.ToString());
-        
-
+            _logger.Info("Refund red package payRedPackageFrom,payRedPackageFrom:{payRedPackageFrom} ",payRedPackageFrom);
+            
             if (redPackageDetailDto.Status.Equals(RedPackageStatus.Expired) && !redPackageDetailDto.IsRedPackageFullyClaimed)
             {
                 var res = await _contractProvider.SendTransferRedPacketRefundAsync(redPackageDetailDto,payRedPackageFrom);
-                var redPackageIndex =  await _redPackageIndexRepository.GetAsync(new Guid(res.TransactionResultDto.TransactionId));
-                if (redPackageIndex == null)
-                {
-                    return false;
-                } else if (redPackageIndex.TransactionStatus == RedPackageTransactionStatus.Success)
+                if (res.TransactionResultDto.Status == TransactionState.Mined)
                 {
                     await grain.UpdateRedPackageExpire();
-                    return true; 
+                    return true;
                 }
+                _logger.LogError("Refund red package fail {message}", res.TransactionResultDto.Error);
             }
         }
         catch (Exception e)

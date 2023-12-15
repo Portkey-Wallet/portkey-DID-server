@@ -435,6 +435,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             icon = _activitiesIcon.Transfer;
         }
+        else if (_activityTypeOptions.RedPacketTypes.Contains(transactionType))
+        {
+            icon = _activitiesIcon.RedPacket;
+        }
 
         return icon;
     }

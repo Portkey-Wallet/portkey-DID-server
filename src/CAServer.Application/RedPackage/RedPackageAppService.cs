@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -96,12 +97,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             Id = redPackageId,
             PublicKey = publicKey,
-            Signature = signature,
             MinAmount = result.MinAmount,
             Symbol = redPackageInput.Symbol,
             Decimal = result.Decimal,
             ChainId = redPackageInput.ChainId,
-            ExpireTime = RedPackageConsts.ExpireTimeMs,
+            ExpireTime = _redPackageOptions.ExpireTimeMs,
             RedPackageContractAddress = chainInfo.RedPackageContractAddress
         };
     }
@@ -146,9 +146,9 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 throw new UserFriendlyException("PortkeyToken token not found");
             }
 
-            var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
-                CurrentUser.Id.Value);
+                CurrentUser.Id.Value,_redPackageOptions.ExpireTimeMs);
             _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {input}", input);
             if (!createResult.Success)
             {
@@ -253,7 +253,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             maxResultCount = RedPackageConsts.DefaultRedPackageGrabberCount;
         }
         
-        var grain = _clusterClient.GetGrain<IRedPackageGrain>(id);
+        var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(id);
         var detail =  (await grain.GetRedPackage(skipCount, maxResultCount,CurrentUser.Id.Value)).Data;
         try
         {
@@ -269,7 +269,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            _logger.LogError(e, "getredpackage failed, id={id}", id);
         }
        
         CheckLuckKing(detail);
@@ -292,7 +292,15 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
     {
 
-        var contractAddressList = _redPackageOptions.RedPackageContractAddress;
+        var contractAddressList = new List<ContractAddressInfo>();
+        foreach (var item in _chainOptions.ChainInfos)
+        {
+            contractAddressList.Add(new ContractAddressInfo()
+            {
+                ChainId = item.Key,
+                ContractAddress = item.Value.RedPackageContractAddress
+            });
+        }
 
         if (string.IsNullOrEmpty(token) && string.IsNullOrEmpty(chainId))
         {
@@ -342,24 +350,31 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 };
             }
 
-            var grain = _clusterClient.GetGrain<IRedPackageGrain>(input.Id);
+            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var result = await grain.GrabRedPackage(CurrentUser.Id.Value, input.UserCaAddress);
-            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+            if (result.Success)
             {
-                RedPackageId = input.Id
+                await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+                {
+                    RedPackageId = input.Id
 
-            });
-            return new GrabRedPackageOutputDto()
+                });
+            }
+            var res = new GrabRedPackageOutputDto()
             {
                 Result = result.Data.Result,
                 ErrorMessage = result.Data.ErrorMessage,
                 Amount = result.Data.Amount,
                 Decimal = result.Data.Decimal,
-                Status = (result.Data.Status == RedPackageStatus.Expired
-                          || DateTimeOffset.Now.ToUnixTimeMilliseconds() > result.Data.ExpireTime)
-                    ? RedPackageStatus.Expired
-                    : result.Data.Status
+                Status = result.Data.Status
             };
+            if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
+            {
+                res.Result = RedPackageGrabStatus.Success;
+                res.ErrorMessage = "";
+            }
+
+            return res;
         }
         finally
         {

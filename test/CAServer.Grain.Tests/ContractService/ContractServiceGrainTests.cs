@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Portkey.Contracts.CA;
-using Portkey.Contracts.RedPacket;
+using Portkey.Contracts.CryptoBox;
 using Shouldly;
 using Xunit;
 
@@ -121,24 +121,24 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
     }
     
     [Fact]
-    public async void SendTransferRedPacketToChainAsyncTest()
+    public async void SendTransferCryptoBoxToChainAsyncTest()
     {
         var redPackageKeyGrain = Cluster.Client.GetGrain<IRedPackageKeyGrain>(Guid.Parse("6f720cbc-02ed-4467-92bc-76461d957745"));
         var res = await redPackageKeyGrain.GenerateKey();
 
-        var list = new List<TransferRedPacketInput>()
+        var list = new List<TransferCryptoBoxInput>()
         {
-            new TransferRedPacketInput()
+            new TransferCryptoBoxInput()
             {
                 Amount = 1701075501959,
-                ReceiverAddress = Address.FromBase58("2dni1t2hmZxtEE1tTiAWQ7Fm7hrc42wWvc1jyxAzDT6KGwHhDf"),
-                RedPacketSignature = await redPackageKeyGrain.GenerateSignature("ELF--0--0.39")
+                Receiver = Address.FromBase58("2dni1t2hmZxtEE1tTiAWQ7Fm7hrc42wWvc1jyxAzDT6KGwHhDf"),
+                CryptoBoxSignature = await redPackageKeyGrain.GenerateSignature("ELF--0--0.39")
             }
         };
 
-        var sendInput = new TransferRedPacketBatchInput()
+        var sendInput = new TransferCryptoBoxesInput()
         {
-            TransferRedPacketInputs = {list}
+            TransferCryptoBoxInputs = {list}
         };
         var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
     }
@@ -149,10 +149,10 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         var userId2 = Guid.NewGuid();
         var userId3 = Guid.NewGuid();
         var redPackageId = Guid.NewGuid();
-        var redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(redPackageId);
+        var redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(redPackageId);
         var input = NewSendRedPackageInputDto(redPackageId);
         input.Count = 2;
-        await redPackageGrain.CreateRedPackage(input, 8, 1, userId1);
+        await redPackageGrain.CreateRedPackage(input, 8, 1, userId1,86400000);
         var res = await redPackageGrain.GrabRedPackage(userId1, "xxxx");
         res.Success.ShouldBe(true);
         await redPackageGrain.GrabRedPackage(userId2, "xxxx");
@@ -160,8 +160,8 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         res.Success.ShouldBe(false);
         res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageFullyClaimed);
         
-        redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(Guid.NewGuid());
-        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1);
+        redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(Guid.NewGuid());
+        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1,86400000);
         await redPackageGrain.CancelRedPackage();
         res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
         res.Success.ShouldBe(false);
@@ -171,8 +171,8 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         res.Success.ShouldBe(false);
         res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageExpired);
 
-        redPackageGrain = Cluster.Client.GetGrain<IRedPackageGrain>(Guid.NewGuid());
-        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1);
+        redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(Guid.NewGuid());
+        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1,86400000);
         await redPackageGrain.GrabRedPackage(userId2, "xxxx");
         res = await redPackageGrain.GrabRedPackage(userId2, "xxxx");
         res.Success.ShouldBe(false);

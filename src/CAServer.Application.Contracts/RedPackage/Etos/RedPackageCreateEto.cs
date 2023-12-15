@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Volo.Abp.EventBus;
 
 namespace CAServer.RedPackage.Etos;
