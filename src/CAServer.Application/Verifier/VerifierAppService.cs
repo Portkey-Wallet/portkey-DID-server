@@ -121,6 +121,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     public async Task<VerificationCodeResponse> VerifyCodeAsync(VerificationSignatureRequestDto signatureRequestDto)
     {
+        var interIndicator = _indicatorScope.Begin(MonitorTag.VerifyCodeAsync, "VerifyCodeAsync1");
         try
         {
             var request =
@@ -147,8 +148,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "Validate VerifierCode error: {Message}", e.Message);
             throw new UserFriendlyException(e.Message);
+        }
+        finally
+        {
+            _indicatorScope.End(interIndicator);
         }
     }
 
