@@ -5,6 +5,7 @@ using AElf.Standards.ACS7;
 using AElf.Types;
 using CAServer.Commons;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.Grains.Strategy;
 using CAServer.Monitor;
 using CAServer.Signature;
 using Google.Protobuf;
@@ -21,7 +22,7 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
 
-[StatelessWorker]
+[SlowStrategy]
 public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 {
     private readonly GrainOptions _grainOptions;
