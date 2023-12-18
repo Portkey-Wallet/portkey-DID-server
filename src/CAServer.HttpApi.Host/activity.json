@@ -36,18 +36,18 @@
       "SetTransferLimit":"Set Transfer Limit",
       "TransferToken": "Withdraw",
       "CreateCryptoBox": "Crypto Box Sent",
-      "TransferCryptoBoxBatch": "Crypto Box Claimed",
+      "TransferCryptoBoxes": "Crypto Box Claimed",
       "RefundCryptoBox": "Crypto Box Returned"
     },
     "TransactionTypeMap": {
       "TransferToken": "Transfer",
       "CreateCryptoBox": "Transfer",
-      "TransferCryptoBoxBatch": "Transfer",
+      "TransferCryptoBoxes": "Transfer",
       "RefundCryptoBox": "Transfer"
     },
     "RedPacketTypes": [
       "CreateCryptoBox",
-      "TransferCryptoBoxBatch",
+      "TransferCryptoBoxes",
       "RefundCryptoBox"
     ],
     "TransferTypes": [

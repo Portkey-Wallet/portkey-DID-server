@@ -144,13 +144,13 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 
              var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             
-             var times = 0;
-             while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
-             {
-                 times++;
-                 await Task.Delay(_grainOptions.RetryDelay);
-                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-             }
+            var times = 0;
+            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.CryptoBoxRetryTimes)
+            {
+                times++;
+                await Task.Delay(_grainOptions.CryptoBoxRetryDelay);
+                transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+            }
 
              return new TransactionInfoDto
              {
@@ -325,6 +325,10 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
     {
         try
         {
+            // var chainInfo = _chainOptions.ChainInfos[chainId];
+            // var client = new AElfClient(chainInfo.BaseUrl);
+            // await client.IsConnectedAsync();
+
             var result = await ForwardTransactionToChainAsync(chainId,rawTransaction);
             DeactivateOnIdle();
 
