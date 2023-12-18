@@ -136,14 +136,13 @@ public partial class ThirdPartOrderAppServiceTest
     {
         MockRampLists();
         MockRampPrice();
-
-      
+        
 
         var usdExchange = await _thirdPartOrderAppService.GetRampExchangeAsync(new RampExchangeRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
             Crypto = "ELF",
-            Network = "AELF-AELF",
+            Network = "AELF",
             Fiat = "USD",
             Country = "US",
         });
@@ -157,7 +156,7 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Type = OrderTransDirect.SELL.ToString(),
             Crypto = "ELF",
-            Network = "AELF-AELF",
+            Network = "AELF",
             Fiat = "EUR",
             Country = "DE",
         });
