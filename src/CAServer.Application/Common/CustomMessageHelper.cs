@@ -1,5 +1,6 @@
 using System;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.RedPackage;
 using Newtonsoft.Json;
 
@@ -20,17 +21,23 @@ public class CustomMessageHelper
         return JsonConvert.SerializeObject(result);
     }
 
-    public static string BuildTransferContent(string content, Guid senderId, string memo, string transferId,
-        string transactionId, string blockHash)
+    public static string BuildTransferContent(string content, TransferIndex transfer)
     {
-        var customMessage = JsonConvert.DeserializeObject<CustomMessage<TransferCard>>(content);
+        var customMessage = JsonConvert.DeserializeObject<TransferCustomMessage<TransferCard>>(content);
         customMessage.Data = new TransferCard
         {
-            Id = transferId,
-            SenderId = senderId,
-            Memo = memo,
-            TransactionId = transactionId,
-            BlockHash = blockHash
+            Id = transfer.Id,
+            SenderId = transfer.SenderId,
+            Memo = transfer.Memo,
+            TransactionId = transfer.TransactionId,
+            BlockHash = transfer.BlockHash
+        };
+
+        customMessage.TransferExtraData = new TransferExtraData
+        {
+            Amount = transfer.Amount,
+            Decimal = transfer.Decimal,
+            Symbol = transfer.Symbol
         };
 
         return JsonConvert.SerializeObject(customMessage);

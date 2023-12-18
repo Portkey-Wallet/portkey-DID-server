@@ -136,9 +136,8 @@ public class ImTransferService : IImTransferService, ISingletonDependency
             var messageRequestDto =
                 JsonConvert.DeserializeObject<ImSendMessageRequestDto>(transferIndex.Message);
 
-            messageRequestDto.Content = CustomMessageHelper.BuildTransferContent(messageRequestDto.Content,
-                transferIndex.SenderId,
-                transferIndex.Memo, transferIndex.Id, transferIndex.TransactionId, transferIndex.BlockHash);
+            messageRequestDto.Content =
+                CustomMessageHelper.BuildTransferContent(messageRequestDto.Content, transferIndex);
 
             var headers = new Dictionary<string, string>
             {

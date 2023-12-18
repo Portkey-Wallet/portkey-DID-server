@@ -9,6 +9,11 @@ public class CustomMessage<T>
     public T Data { get; set; }
 }
 
+public class TransferCustomMessage<T> : CustomMessage<T>
+{
+    public TransferExtraData TransferExtraData { get; set; }
+}
+
 public class RedPackageCard
 {
     public Guid Id { get; set; }
@@ -23,4 +28,11 @@ public class TransferCard
     public string Memo { get; set; }
     public string TransactionId { get; set; }
     public string BlockHash { get; set; }
+}
+
+public class TransferExtraData
+{
+    public long Amount { get; set; }
+    public int Decimal { get; set; }
+    public string Symbol { get; set; }
 }
