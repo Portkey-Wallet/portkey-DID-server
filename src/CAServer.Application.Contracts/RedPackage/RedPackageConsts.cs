@@ -28,3 +28,8 @@ public class RedPackageConsts
     public const string RedPackageNotSet = "RedPackage has not been Init";
     public const string RedPackageUserGrabbed = "User has Grabbed before";
 }
+
+public static class TransferConstant
+{
+    public static string TransferCardType = "TRANSFER-CARD";
+}

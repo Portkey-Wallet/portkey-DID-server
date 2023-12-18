@@ -15,3 +15,12 @@ public class RedPackageCard
     public Guid SenderId { get; set; }
     public string Memo { get; set; }
 }
+
+public class TransferCard
+{
+    public string Id { get; set; }
+    public Guid SenderId { get; set; }
+    public string Memo { get; set; }
+    public string TransactionId { get; set; }
+    public string BlockHash { get; set; }
+}

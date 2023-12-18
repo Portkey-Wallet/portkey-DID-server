@@ -19,4 +19,20 @@ public class CustomMessageHelper
         result.Data = redPackageCard;
         return JsonConvert.SerializeObject(result);
     }
+
+    public static string BuildTransferContent(string content, Guid senderId, string memo, string transferId,
+        string transactionId, string blockHash)
+    {
+        var customMessage = JsonConvert.DeserializeObject<CustomMessage<TransferCard>>(content);
+        customMessage.Data = new TransferCard
+        {
+            Id = transferId,
+            SenderId = senderId,
+            Memo = memo,
+            TransactionId = transactionId,
+            BlockHash = blockHash
+        };
+
+        return JsonConvert.SerializeObject(customMessage);
+    }
 }

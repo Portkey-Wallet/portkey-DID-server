@@ -6,3 +6,10 @@ public enum RedPackageTransactionStatus
     Success,
     Fail
 }
+
+public enum TransferTransactionStatus
+{
+    Processing = 0,
+    Success,
+    Fail
+}
