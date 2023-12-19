@@ -1,10 +1,13 @@
+using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using CAServer.Telegram.Dtos;
 using CAServer.Telegram.Options;
 using CAServer.Telegram.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -33,13 +36,20 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
     {
         return Task.FromResult(new TelegramBotDto()
         {
+            BotId = _telegramAuthOptions.Bots[_telegramAuthOptions.DefaultUsed ?? ""]?.BotId,
             BotName = _telegramAuthOptions.Bots[_telegramAuthOptions.DefaultUsed ?? ""]?.BotName
         });
     }
 
-    public async Task<string> ValidateTelegramHashAndGenerateTokenAsync(TelegramAuthReceiveRequest request)
+    public async Task<string> ValidateTelegramHashAndGenerateTokenAsync(string telegramAuthResult)
     {
-        var telegramAuthDto = _objectMapper.Map<TelegramAuthReceiveRequest, TelegramAuthDto>(request);
+        if (telegramAuthResult.IsNullOrWhiteSpace())
+        {
+            _logger.LogInformation("telegram auth result is null");
+            throw new UserFriendlyException("Invalid Telegram Login Information");
+        }
+        var telegramAuthString = Encoding.UTF8.GetString(Convert.FromBase64String(telegramAuthResult));
+        var telegramAuthDto = JsonConvert.DeserializeObject<TelegramAuthDto>(telegramAuthString);
         if (!await _telegramAuthProvider.ValidateTelegramHashAsync(telegramAuthDto))
         {
             _logger.LogError("Invalid Telegram Login Information, id={0}", telegramAuthDto.Id);
