@@ -451,11 +451,5 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TransferGrainDto, TransferIndex>();
         CreateMap<TransferIndex, TransferResultDto>();
         CreateMap<TransferIndex, TransferEto>().ReverseMap();
-        CreateMap<TelegramAuthReceiveRequest, TelegramAuthDto>()
-            .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
-            .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
-            .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
-            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Proto_Url));
-
     }
 }

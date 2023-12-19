@@ -12,6 +12,7 @@ public class TelegramAuthOptions
 
 public class TelegramBtoOptions
 {
+    public string BotId { get; set; }
     public string BotName { get; set; }
     public string Token { get; set; }
 }
