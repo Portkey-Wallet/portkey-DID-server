@@ -5,7 +5,7 @@ namespace CAServer.Telegram.Options;
 public class TelegramAuthOptions
 {
     public Dictionary<string, TelegramBtoOptions> Bots { get; set; }
-    public string RedirectUrl { get; set; }
+    public Dictionary<string, string> RedirectUrl { get; set; }
     public string DefaultUsed { get; set; }
     public int Expire { get; set; }
 }
