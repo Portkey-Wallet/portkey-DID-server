@@ -62,7 +62,16 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         VerifierCodeRequestDto dto)
     {
         var indicator = _indicatorScope.Begin(MonitorTag.SendVerificationRequestAsync,"GetVerifierServerEndPointsAsync");
-        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
+        string endPoint = null;
+        try
+        {
+            endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "get end point error:{0}", JsonConvert.SerializeObject(dto));
+            throw;
+        }
         _indicatorScope.End(indicator);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)

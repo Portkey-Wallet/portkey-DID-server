@@ -132,11 +132,14 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
+        var generateIndicatorMethod = _indicatorScope.Begin(MonitorTag.AelfClient,
+            $"{MonitorAelfClientType.GenerateTransactionAsync}_{methodName}");
        
         var chain = await GetChainStatusDtoAsync(chainId,client);
         var transaction = GenerateTransaction(chain,addressFromPrivateKey, contractAddress,
             methodName,
             param);
+        _indicatorScope.End(generateIndicatorMethod);
         _indicatorScope.End(generateIndicator);
 
         _logger.LogDebug("Call tx methodName is: {methodName} param is: {transaction}", methodName, transaction);
@@ -145,11 +148,13 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         var interIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.ExecuteTransactionAsync.ToString());
+        var interIndicatorMethod = _indicatorScope.Begin(MonitorTag.AelfClient,
+            $"{MonitorAelfClientType.ExecuteTransactionAsync}_{methodName}");
         var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
         {
             RawTransaction = txWithSign.ToByteArray().ToHex()
         });
-
+        _indicatorScope.End(interIndicatorMethod);
         _indicatorScope.End(interIndicator);
 
         var value = new T();
