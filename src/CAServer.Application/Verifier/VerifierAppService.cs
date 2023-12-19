@@ -6,8 +6,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
-using AElf.Cryptography;
-using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
@@ -47,7 +45,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
-    private readonly VerifierAccountOptions _verifierAccountOptions;
 
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
@@ -66,7 +63,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider, IOptionsSnapshot<VerifierAccountOptions> verifierAccountOptions)
+        ICacheProvider cacheProvider, IContractProvider contractProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -78,7 +75,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
-        _verifierAccountOptions = verifierAccountOptions.Value;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -269,6 +265,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new UserFriendlyException(e.Message);
         }
     }
+
 
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId)
     {
@@ -533,3 +530,6 @@ public class GenerateSignatureOutput
     public string Data { get; set; }
     public string Signature { get; set; }
 }
+
+
+

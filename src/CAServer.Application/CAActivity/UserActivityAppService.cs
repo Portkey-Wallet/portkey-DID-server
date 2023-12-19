@@ -77,7 +77,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             var twoCaAddress = new List<CAAddressInfo>() { request.CaAddressInfos[0], request.TargetAddressInfos[0] };
             var transactionsDto = await _activityProvider.GetTwoCaTransactionsAsync(twoCaAddress,
-                request.Symbol, ActivityConstants.RecentTypes, request.SkipCount, request.MaxResultCount);
+                request.Symbol, _activityTypeOptions.RecentTypes, request.SkipCount, request.MaxResultCount);
 
             var transactions = ObjectMapper.Map<TransactionsDto, IndexerTransactions>(transactionsDto);
             return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
@@ -117,19 +117,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return new GetActivitiesDto { Data = new List<GetActivityDto>(), TotalRecordCount = 0 };
         }
     }
-
-    private List<string> FilterTypes(IEnumerable<string> reqList)
-    {
-        if (reqList == null || reqList.Count() == 0)
-        {
-            return _activityTypeOptions.TypeMap.Keys.ToList();
-        }
-
-        var ans = reqList.Where(e => _activityTypeOptions.AllSupportTypes.Contains(e)).ToList();
-
-        return ans.Count == 0 ? _activityTypeOptions.DefaultTypes : ans;
-    }
-
 
     public async Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request)
     {
@@ -428,19 +415,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 return;
             }
         }
-
-        if (activityDto.TransactionType == ActivityConstants.TransferTokenName)
-        {
-            activityDto.TransactionType = ActivityConstants.TransferName;
-            activityDto.TransactionName = typeName;
-            return;
-        }
-
+        
         activityDto.TransactionName = activityDto.NftInfo != null &&
                                       !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
-                                      ActivityConstants.ShowNftTypes.Contains(activityDto.TransactionType)
+                                      _activityTypeOptions.ShowNftTypes.Contains(activityDto.TransactionType)
             ? typeName + " NFT"
             : typeName;
+        activityDto.TransactionType = _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
     }
 
     private string GetIconByType(string transactionType)
@@ -453,6 +434,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         else if (_activityTypeOptions.TransferTypes.Contains(transactionType))
         {
             icon = _activitiesIcon.Transfer;
+        }
+        else if (_activityTypeOptions.RedPacketTypes.Contains(transactionType))
+        {
+            icon = _activitiesIcon.RedPacket;
         }
 
         return icon;
