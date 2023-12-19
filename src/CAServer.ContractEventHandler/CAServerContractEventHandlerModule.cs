@@ -12,6 +12,7 @@ using CAServer.Signature;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.Mongo;
+using Hangfire.Mongo.CosmosDB;
 using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
 using Medallion.Threading;
@@ -22,6 +23,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -187,33 +189,45 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        context.Services.AddHangfire(x =>
+        var mongoType = configuration["Hangfire:MongoType"];
+        var connectionString = configuration["Hangfire:ConnectionString"];
+        if(connectionString.IsNullOrEmpty()) return;
+
+        if (mongoType.IsNullOrEmpty() ||
+            mongoType.Equals(MongoType.MongoDb.ToString(), StringComparison.OrdinalIgnoreCase))
         {
-            var connectionString = configuration["Hangfire:ConnectionString"];
-            x.UseMongoStorage(connectionString, new MongoStorageOptions
+            context.Services.AddHangfire(x =>
             {
-                MigrationOptions = new MongoMigrationOptions
+                x.UseMongoStorage(connectionString, new MongoStorageOptions
                 {
-                    MigrationStrategy = new MigrateMongoMigrationStrategy(),
-                    BackupStrategy = new CollectionMongoBackupStrategy()
-                },
-                Prefix = "hangfire.contract.event.handler",
-                CheckConnection = true,
-                CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
+                    MigrationOptions = new MongoMigrationOptions
+                    {
+                        MigrationStrategy = new MigrateMongoMigrationStrategy(),
+                        BackupStrategy = new CollectionMongoBackupStrategy()
+                    },
+                    CheckConnection = true,
+                    CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
+                });
+            });
+        }
+        else if (mongoType.Equals(MongoType.DocumentDb.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            context.Services.AddHangfire(config =>
+            {
+                var mongoUrlBuilder = new MongoUrlBuilder(connectionString) { DatabaseName = "jobs" };
+                var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
+                var opt = new CosmosStorageOptions
+                {
+                    MigrationOptions = new MongoMigrationOptions
+                    {
+                        BackupStrategy = new NoneMongoBackupStrategy(),
+                        MigrationStrategy = new DropMongoMigrationStrategy(),
+                    }
+                };
+                config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
             });
 
-            x.UseDashboardMetric(DashboardMetrics.ServerCount)
-                .UseDashboardMetric(DashboardMetrics.RecurringJobCount)
-                .UseDashboardMetric(DashboardMetrics.RetriesCount)
-                .UseDashboardMetric(DashboardMetrics.AwaitingCount)
-                .UseDashboardMetric(DashboardMetrics.EnqueuedAndQueueCount)
-                .UseDashboardMetric(DashboardMetrics.ScheduledCount)
-                .UseDashboardMetric(DashboardMetrics.ProcessingCount)
-                .UseDashboardMetric(DashboardMetrics.SucceededCount)
-                .UseDashboardMetric(DashboardMetrics.FailedCount)
-                .UseDashboardMetric(DashboardMetrics.EnqueuedCountOrNull)
-                .UseDashboardMetric(DashboardMetrics.FailedCountOrNull)
-                .UseDashboardMetric(DashboardMetrics.DeletedCount);
-        });
+            context.Services.AddHangfireServer(opt => { opt.Queues = new[] { "default", "notDefault" }; });
+        }
     }
 }
