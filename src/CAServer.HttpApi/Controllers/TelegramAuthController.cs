@@ -44,6 +44,6 @@ public class TelegramAuthController : CAServerController
             _logger.LogInformation("redirect page configuration error,redirect={0},url={1}", redirect, redirectUrl);
             throw new UserFriendlyException("Redirect Page Configuration Error");
         }
-        return Redirect($"{_telegramAuthOptions.RedirectUrl}?token={token}&type=telegram");
+        return Redirect($"{redirectUrl}?token={token}&type=telegram");
     }
 }
