@@ -36,6 +36,7 @@ using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
+using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
@@ -266,8 +267,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<Entities.Es.ContactAddress, UserContactAddressDto>();
         CreateMap<AppleUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, UserExtraInfoGrainDto>();
+        // CreateMap<TelegramUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<AppleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<TelegramUserExtraInfo, Verifier.Dtos.UserExtraInfo>()
+            .ForMember(t => t.FullName, m => m.MapFrom(f => f.UserName))
+            .ForMember(t => t.Picture, m => m.MapFrom(f => f.ProtoUrl));
         CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoEto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoResultDto>()
@@ -422,5 +427,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<Portkey.Contracts.CA.Guardian, GuardianIndexerInfoDto>()
             .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
+        CreateMap<TelegramAuthReceiveRequest, TelegramAuthDto>()
+            .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
+            .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
+            .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
+            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Proto_Url));
+
     }
 }

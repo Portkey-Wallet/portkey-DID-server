@@ -10,6 +10,7 @@ using CAServer.Options;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.Telegram.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
@@ -87,6 +88,8 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
+        Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
         context.Services.AddHttpClient();
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();

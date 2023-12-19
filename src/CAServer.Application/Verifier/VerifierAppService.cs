@@ -18,6 +18,7 @@ using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
 using CAServer.Options;
+using CAServer.Telegram;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
@@ -53,6 +54,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
+
+    private const string TelegramUserIdPrefix = "telegram_";
 
 
     public VerifierAppService(IEnumerable<IAccountValidator> accountValidator, IObjectMapper objectMapper,
@@ -290,6 +293,52 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         return _objectMapper.Map<VerifierServer, GetVerifierServerResponse>(verifierServer);
     }
 
+    public async Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        try
+        {
+            //var userId = GetTelegramUserIdWithPrefix(requestDto.AccessToken);
+            var userId = GetTelegramUserId(requestDto.AccessToken);
+            var hashInfo = await GetSaltAndHashAsync(userId);
+            var response =
+                await _verifierServerClient.VerifyTelegramTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
+            if (!response.Success)
+            {
+                throw new UserFriendlyException($"Validate VerifierTelegram Failed :{response.Message}");
+            }
+
+            if (!hashInfo.Item3)
+            {
+                await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
+            }
+
+            await AddUserInfoAsync(
+                ObjectMapper.Map<TelegramUserExtraInfo, Dtos.UserExtraInfo>(response.Data.UserExtraInfo));
+
+            return new VerificationCodeResponse
+            {
+                VerificationDoc = response.Data.VerificationDoc,
+                Signature = response.Data.Signature
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "{Message}", e.Message);
+            if (ThirdPartyMessage.MessageDictionary.ContainsKey(e.Message))
+            {
+                throw new UserFriendlyException(e.Message, ThirdPartyMessage.MessageDictionary[e.Message]);
+            }
+
+            if (e.Message.ToLower().Contains("timeout"))
+            {
+                throw new UserFriendlyException("Request time out",
+                    ThirdPartyMessage.MessageDictionary["Request time out"]);
+            }
+
+            throw new UserFriendlyException(e.Message);
+        }
+    }
+
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
     {
@@ -446,6 +495,34 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         catch (Exception e)
         {
             _logger.LogError(e, "{Message}", e.Message);
+            throw new Exception("Invalid token");
+        }
+    }
+
+    private string GetTelegramUserIdWithPrefix(string identityToken)
+    {
+        var userId = GetTelegramUserId(identityToken);
+        return $"{TelegramUserIdPrefix}{userId}";
+    }
+
+    private string GetTelegramUserId(string identityToken)
+    {
+        try
+        {
+            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken((identityToken));
+            var claims = jwtToken.Payload.Claims;
+            var idClaims = claims.FirstOrDefault(c => c.Type.Equals(TelegramTokenClaimNames.UserId));
+            string userId = idClaims?.Value;
+            if (userId.IsNullOrWhiteSpace())
+            {
+                throw new Exception("userId is empty");
+            }
+
+            return userId;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "invalid jwt token, {Message}, {token}", e.Message, identityToken);
             throw new Exception("Invalid token");
         }
     }
