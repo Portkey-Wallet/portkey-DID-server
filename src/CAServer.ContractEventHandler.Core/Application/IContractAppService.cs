@@ -476,7 +476,7 @@ public class ContractAppService : IContractAppService
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
 
             var redPackageDetail = await grain.GetRedPackage(redPackageId);
-            var grabItems = redPackageDetail.Data.Items;
+            var grabItems = redPackageDetail.Data.Items.Where(t => !t.PaymentCompleted).ToList();
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
             _logger.Info("red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",
                 payRedPackageFrom);
@@ -486,7 +486,7 @@ public class ContractAppService : IContractAppService
                     redPackageId.ToString());
                 return;
             }
-            grabItems = grabItems.Where(t => !t.PaymentCompleted).ToList();
+            redPackageDetail.Data.Items = grabItems;
             var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail, payRedPackageFrom);
             _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",
                 JsonConvert.SerializeObject(res));
