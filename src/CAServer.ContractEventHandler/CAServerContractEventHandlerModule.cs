@@ -184,9 +184,10 @@ public class CAServerContractEventHandlerModule : AbpModule
     
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
+        var redis = ConnectionMultiplexer.Connect(configuration["Hangfire:Redis:ConnectionString"]);
         context.Services.AddHangfire(config =>
         {
-            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
+            config.UseRedisStorage(redis, new RedisStorageOptions
             {
                 Db = 1
             });
