@@ -129,6 +129,12 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await GetResultAsync<VerifyAppleTokenDto>(input, requestUri, identifierHash, salt);
     }
 
+    public async Task<ResponseResultDto<VerifyTokenDto<TelegramUserExtraInfo>>> VerifyTelegramTokenAsync(VerifyTokenRequestDto input, string identifierHash, string salt)
+    {
+        var requestUri = "/api/app/account/verifyTelegramToken";
+        return await GetResultAsync<VerifyTokenDto<TelegramUserExtraInfo>>(input, requestUri, identifierHash, salt);
+    }
+
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,
         string requestUri, string identifierHash, string salt)
     {

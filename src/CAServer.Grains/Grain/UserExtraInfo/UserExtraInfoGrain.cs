@@ -37,7 +37,8 @@ public class UserExtraInfoGrain : Grain<UserExtraInfoState>, IUserExtraInfoGrain
             return _objectMapper.Map<UserExtraInfoState, UserExtraInfoGrainDto>(State);
         }
 
-        if (State.GuardianType == GuardianIdentifierType.Google.ToString())
+        if (State.GuardianType == GuardianIdentifierType.Google.ToString()
+            || State.GuardianType == GuardianIdentifierType.Telegram.ToString())
         {
             State.FullName = userExtraInfoGrainDto.FullName;
             State.FirstName = userExtraInfoGrainDto.FirstName;

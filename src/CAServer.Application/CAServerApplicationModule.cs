@@ -12,6 +12,7 @@ using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.Telegram.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,6 +95,8 @@ public class CAServerApplicationModule : AbpModule
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
+        Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
+        Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
         context.Services.AddHttpClient();
         ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
