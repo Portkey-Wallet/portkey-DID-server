@@ -10,7 +10,10 @@ using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Signature;
 using Hangfire;
-using Hangfire.Redis.StackExchange;
+using Hangfire.Dashboard;
+using Hangfire.Mongo;
+using Hangfire.Mongo.Migration.Strategies;
+using Hangfire.Mongo.Migration.Strategies.Backup;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.DataProtection;
@@ -40,7 +43,6 @@ using Volo.Abp.BackgroundJobs.Hangfire;
 
 namespace CAServer.ContractEventHandler;
 
-
 [DependsOn(
     typeof(CAServerContractEventHandlerCoreModule),
     typeof(CAServerGrainsModule),
@@ -53,6 +55,7 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(CAServerMongoDbModule),
     typeof(CAServerMonitorModule),
+    typeof(AbpBackgroundJobsHangfireModule),
     typeof(AElfIndexingElasticsearchModule)
 )]
 public class CAServerContractEventHandlerModule : AbpModule
@@ -88,7 +91,7 @@ public class CAServerContractEventHandlerModule : AbpModule
     {
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
     }
-    
+
     private void ConfigureDistributedLocking(
         ServiceConfigurationContext context,
         IConfiguration configuration)
@@ -100,7 +103,7 @@ public class CAServerContractEventHandlerModule : AbpModule
             return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
         });
     }
-    
+
     private void ConfigureDataProtection(
         ServiceConfigurationContext context,
         IConfiguration configuration,
@@ -181,22 +184,36 @@ public class CAServerContractEventHandlerModule : AbpModule
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
-    
+
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        var redis = ConnectionMultiplexer.Connect(configuration["Hangfire:Redis:ConnectionString"]);
-        context.Services.AddHangfire(config =>
+        context.Services.AddHangfire(x =>
         {
-            config.UseRedisStorage(redis, new RedisStorageOptions
+            var connectionString = configuration["Hangfire:ConnectionString"];
+            x.UseMongoStorage(connectionString, new MongoStorageOptions
             {
-                Db = 1
+                MigrationOptions = new MongoMigrationOptions
+                {
+                    MigrationStrategy = new MigrateMongoMigrationStrategy(),
+                    BackupStrategy = new CollectionMongoBackupStrategy()
+                },
+                Prefix = "hangfire.contract.event.handler",
+                CheckConnection = true,
+                CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
             });
-        });
-        
-        context.Services.AddHangfireServer(options =>
-        {
-            options.Queues = new[] { "redpackage" };
-            options.WorkerCount = 8;
+
+            x.UseDashboardMetric(DashboardMetrics.ServerCount)
+                .UseDashboardMetric(DashboardMetrics.RecurringJobCount)
+                .UseDashboardMetric(DashboardMetrics.RetriesCount)
+                .UseDashboardMetric(DashboardMetrics.AwaitingCount)
+                .UseDashboardMetric(DashboardMetrics.EnqueuedAndQueueCount)
+                .UseDashboardMetric(DashboardMetrics.ScheduledCount)
+                .UseDashboardMetric(DashboardMetrics.ProcessingCount)
+                .UseDashboardMetric(DashboardMetrics.SucceededCount)
+                .UseDashboardMetric(DashboardMetrics.FailedCount)
+                .UseDashboardMetric(DashboardMetrics.EnqueuedCountOrNull)
+                .UseDashboardMetric(DashboardMetrics.FailedCountOrNull)
+                .UseDashboardMetric(DashboardMetrics.DeletedCount);
         });
     }
 }
