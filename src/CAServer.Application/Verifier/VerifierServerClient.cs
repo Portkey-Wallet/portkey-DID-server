@@ -69,7 +69,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "get end point error:{0}", JsonConvert.SerializeObject(dto));
+            _logger.LogError(e, "SendVerificationRequest get end point error:{0}", JsonConvert.SerializeObject(dto));
             throw;
         }
         _indicatorScope.End(indicator);
