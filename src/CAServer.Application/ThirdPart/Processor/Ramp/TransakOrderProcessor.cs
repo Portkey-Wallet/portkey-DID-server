@@ -4,6 +4,7 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using CAServer.ThirdPart.Transak;
+using MassTransit;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Orleans;
@@ -19,8 +20,8 @@ public class TransakOrderProcessor : AbstractRampOrderProcessor
 
     public TransakOrderProcessor(IClusterClient clusterClient, IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus, IOrderStatusProvider orderStatusProvider,
-        TransakProvider transakProvider, IAbpDistributedLock distributedLock) : base(clusterClient,
-        thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock)
+        TransakProvider transakProvider, IAbpDistributedLock distributedLock, IBus broadcastBus) : base(clusterClient,
+        thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus)
     {
         _transakProvider = transakProvider;
     }
