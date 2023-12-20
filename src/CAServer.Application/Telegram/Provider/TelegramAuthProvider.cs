@@ -38,8 +38,8 @@ public class TelegramAuthProvider : ISingletonDependency, ITelegramAuthProvider
             return false;
         }
 
-        string token = _telegramAuthOptions.Bots[_telegramAuthOptions.DefaultUsed].Token;
-        string dataCheckString = GetDataCheckString(telegramAuthDto);
+        var token = _telegramAuthOptions.Bots[_telegramAuthOptions.DefaultUsed].Token;
+        var dataCheckString = GetDataCheckString(telegramAuthDto);
         var localHash = await GenerateTelegramHashAsync(token, dataCheckString);
         if (!localHash.Equals(telegramAuthDto.Hash))
         {

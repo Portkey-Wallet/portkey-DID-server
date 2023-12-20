@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CAServer.Telegram.Dtos;
 using CAServer.Telegram.Options;
@@ -30,6 +31,18 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
         _objectMapper = objectMapper;
         _telegramAuthProvider = telegramAuthProvider;
         _jwtTokenProvider = jwtTokenProvider;
+    }
+    
+    public Task<Tuple<string, string>>  GetTelegramAuthResultAsync(string param)
+    {
+        var pattern = @"(\\w+)#(\\w+)=(\\w+)";
+        Match match = Regex.Match(param, pattern);
+        if (match.Success)
+        {
+            return Task.FromResult(new Tuple<string, string>(match.Groups[1].Value, match.Groups[3].Value));
+        }
+        _logger.LogInformation("telegram auth result is valid");
+        throw new UserFriendlyException("Invalid Telegram Login Information");
     }
 
     public Task<TelegramBotDto> GetTelegramBotInfoAsync()
