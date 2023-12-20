@@ -514,5 +514,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.FiatAmount, m => m.MapFrom(f => f.FiatAmount))
             .ForMember(t => t.Status, m => m.MapFrom(f => f.Status))
             ;
+        CreateMap<QueryAlchemyOrderInfo, OrderDto>().ReverseMap();
     }
 }
