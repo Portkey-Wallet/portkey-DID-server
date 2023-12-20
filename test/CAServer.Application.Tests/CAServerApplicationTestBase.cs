@@ -13,7 +13,7 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
+        //services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
     }
 
     protected IAbpDistributedLock GetMockAbpDistributedLockAlwaysSuccess()

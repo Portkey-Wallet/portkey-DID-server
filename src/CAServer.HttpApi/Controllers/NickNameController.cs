@@ -3,6 +3,7 @@ using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using CAServer.CAAccount.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
 
@@ -11,7 +12,7 @@ namespace CAServer.Controllers;
 [RemoteService]
 [Area("app")]
 [ControllerName("NickName")]
-[Route("api/app/account/nickname")]
+[Route("api/app/account")]
 [Authorize]
 public class NickNameController : CAServerController
 {
@@ -22,9 +23,21 @@ public class NickNameController : CAServerController
         _nickNameService = nickNameService;
     }
 
-    [HttpPut]
+    [HttpPut("nickname")]
     public async Task<CAHolderResultDto> NicknameAsync([FromBody] UpdateNickNameDto nickNameDto)
     {
         return await _nickNameService.SetNicknameAsync(nickNameDto);
+    }
+
+    [HttpGet("caHolder")]
+    public async Task<CAHolderResultDto> GetCaHolderAsync()
+    {
+        return await _nickNameService.GetCaHolderAsync();
+    }
+    
+    [HttpPost("holderInfo")]
+    public async Task<CAHolderResultDto> HolderInfoAsync(HolderInfoDto holderInfo)
+    {
+        return await _nickNameService.UpdateHolderInfoAsync(holderInfo);
     }
 }

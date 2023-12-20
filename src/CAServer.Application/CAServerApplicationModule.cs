@@ -1,15 +1,21 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
 using CAServer.AppleAuth;
 using CAServer.Common;
+using CAServer.Commons;
+using CAServer.DataReporting;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Options;
+using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.DistributedLocking;
@@ -43,9 +49,15 @@ public class CAServerApplicationModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         Configure<TokenListOptions>(configuration.GetSection("Tokens"));
         Configure<TokenInfoOptions>(configuration.GetSection("TokenInfo"));
+        Configure<AssetsInfoOptions>(configuration.GetSection("AssetsInfo"));
         Configure<GoogleRecaptchaOptions>(configuration.GetSection("GoogleRecaptcha"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
+        Configure<ImServerOptions>(configuration.GetSection("ImServer"));
+        Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
+        Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
+        Configure<SecurityOptions>(configuration.GetSection("Security"));
+        Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
@@ -79,10 +91,50 @@ public class CAServerApplicationModule : AbpModule
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
         Configure<ContractOptions>(configuration.GetSection("ContractOptions"));
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
+        Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
+        Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         context.Services.AddHttpClient();
+        ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+        Configure<VariablesOptions>(configuration.GetSection("Variables"));
+        context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
+        Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
+        Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
+        Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        AddMessagePushService(context, configuration);
+    }
+
+    private void AddMessagePushService(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        var baseUrl = configuration["MessagePush:BaseUrl"];
+        var appId = configuration["MessagePush:AppId"];
+        if (baseUrl.IsNullOrWhiteSpace())
+        {
+            return;
+        }
+
+        context.Services.AddHttpClient(MessagePushConstant.MessagePushServiceName, httpClient =>
+        {
+            httpClient.BaseAddress = new Uri(baseUrl);
+
+            if (!appId.IsNullOrWhiteSpace())
+            {
+                httpClient.DefaultRequestHeaders.Add(
+                    "AppId", appId);
+            }
+        });
+    }
+
+    private void ConfigureRetryHttpClient(IServiceCollection services)
+    {
+        //if http code = 5xx or 408,this client will retry
+        services.AddHttpClient(HttpConstant.RetryHttpClient)
+            .AddTransientHttpErrorPolicy(policyBuilder =>
+                policyBuilder.WaitAndRetryAsync(
+                    HttpConstant.RetryCount, retryNumber => TimeSpan.FromMilliseconds(HttpConstant.RetryDelayMs)));
     }
 }

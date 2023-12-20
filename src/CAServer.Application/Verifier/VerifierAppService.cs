@@ -263,6 +263,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+
     public async Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId)
     {
         GetVerifierServersOutput result;
@@ -285,6 +286,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         var verifierServer = RandomHelper.GetRandomOfList(result.VerifierServers);
         return _objectMapper.Map<VerifierServer, GetVerifierServerResponse>(verifierServer);
     }
+
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
     {
@@ -444,4 +446,17 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new Exception("Invalid token");
         }
     }
+    
+   
+    
+    
 }
+
+public class GenerateSignatureOutput
+{
+    public string Data { get; set; }
+    public string Signature { get; set; }
+}
+
+
+

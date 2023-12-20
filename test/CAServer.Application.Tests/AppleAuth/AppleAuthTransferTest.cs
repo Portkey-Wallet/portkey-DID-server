@@ -37,11 +37,6 @@ public class AppleAuthTransferTest : CAServerApplicationTestBase
         _appleTransferOptions.IsNeedIntercept(email).ShouldBe(false);
     }
 
-    protected override void AfterAddApplication(IServiceCollection services)
-    {
-        base.AfterAddApplication(services);
-    }
-
     private IOptionsSnapshot<AppleTransferOptions> MockAppleTransferOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AppleTransferOptions>>();
