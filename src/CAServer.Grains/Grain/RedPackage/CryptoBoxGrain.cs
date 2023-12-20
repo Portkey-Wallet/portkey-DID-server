@@ -246,7 +246,16 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
     private BucketItem GetBucket(Guid userId)
     {
         var random = new Random();
-        var bucket = State.BucketNotClaimed[random.Next(State.BucketNotClaimed.Count)];
+        var index = random.Next(State.BucketNotClaimed.Count);
+        var bucket = State.BucketNotClaimed[index];
+        if (index != 0 && State.BucketNotClaimed[0].IsLuckyKing)
+        {
+            if (bucket.Amount.CompareTo(State.BucketNotClaimed[0].Amount) == 0)
+            {
+                bucket.IsLuckyKing = true;
+                State.BucketNotClaimed[0].IsLuckyKing = false;
+            }
+        }
         bucket.UserId = userId;
         State.BucketNotClaimed.Remove(bucket);
         State.BucketClaimed.Add(bucket);
@@ -348,6 +357,8 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         }
 
         buckets[luckyKingIndex].IsLuckyKing = true;
+        
+        buckets.Sort((item1, item2) => item2.Amount.CompareTo(item1.Amount));
 
         return (buckets, luckyKingIndex);
     }

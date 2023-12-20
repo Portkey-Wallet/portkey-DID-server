@@ -51,7 +51,7 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
-        
+
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
 
         ConfigureGraphQl(context);
@@ -117,6 +117,9 @@ public class CAServerApplicationTestModule : AbpModule
             o.ContractTypes = new List<string>() { "TEST", "ContractTypes" };
             o.ShowPriceTypes = new List<string>() { "TEST" };
             o.NoShowTypes = new List<string>() { "no show" };
+            o.RedPacketTypes = new List<string>() { "no" };
+            o.ShowNftTypes = new List<string>() { "TEST" };
+            o.TransactionTypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
             o.Zero = "0";
         });
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
@@ -163,6 +166,24 @@ public class CAServerApplicationTestModule : AbpModule
         {
             options.ImBaseUrl = "https:127.0.0.1";
             options.PortKeyBaseUrl = "https:127.0.0.1";
+            options.ForestBaseUrl = "http://127.0.0.1";
+            options.ExcludedSuffixes = new List<string>();
+            options.ExcludedSuffixes.Add("png");
+            options.ExcludedSuffixes.Add("jpg");
+            options.BucketList = new List<string>();
+            options.BucketList.Add("127.0.0.1");
+            options.BucketList.Add("127.0.0.1");
+            options.BucketList.Add("127.0.0.1");
+        });
+        context.Services.Configure<TokenInfoOptions>(option =>
+        {
+            option.TokenInfos = new Dictionary<string, TokenInfo>
+            {
+                {"ELF", new TokenInfo()
+                {
+                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/Coin_ELF.png"
+                }} 
+            };
         });
         base.ConfigureServices(context);
     }
