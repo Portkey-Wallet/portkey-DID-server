@@ -11,5 +11,5 @@ public interface  ITelegramAuthService
     
     Task<TelegramBotDto> GetTelegramBotInfoAsync();
 
-    Task<string> ValidateTelegramHashAndGenerateTokenAsync(string telegramAuthResult);
+    Task<string> ValidateTelegramHashAndGenerateTokenAsync(TelegramAuthReceiveRequest telegramAuthReceiveRequest);
 }

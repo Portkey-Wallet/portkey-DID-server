@@ -35,10 +35,9 @@ public class TelegramAuthController : CAServerController
     }
 
     [HttpGet("receive/{redirect}")]
-    public async Task<IActionResult> ReceiveAsync(string redirect, string tgAuthResult)
+    public async Task<IActionResult> ReceiveAsync(string redirect, TelegramAuthReceiveRequest request)
     {
-        
-        var token = await _telegramAuthService.ValidateTelegramHashAndGenerateTokenAsync(tgAuthResult);
+        var token = await _telegramAuthService.ValidateTelegramHashAndGenerateTokenAsync(request);
         var redirectUrl = _telegramAuthOptions.RedirectUrl[redirect];
         if (redirectUrl.IsNullOrWhiteSpace())
         {
