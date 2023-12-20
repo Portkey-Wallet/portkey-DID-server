@@ -73,8 +73,6 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
-        Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
-        
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
