@@ -38,13 +38,18 @@ public class JwtTokenProvider : IJwtTokenProvider, ISingletonDependency
             AsymmetricSecurityKey asymmetricSecurityKey = new RsaSecurityKey(rsa.ExportParameters(true));
             var signingCredentials = new SigningCredentials(asymmetricSecurityKey, SecurityAlgorithms.RsaSha256);
 
-            var claims = new Claim[userInfo.Count];
-            int index = 0;
+            var claims = new List<Claim>
+            {
+                Capacity = userInfo.Count
+            };
             foreach (var keyValuePair in userInfo)
             {
-                claims[index] = new Claim(keyValuePair.Key, keyValuePair.Value);
-                index++;
+                if (keyValuePair.Value != null)
+                {
+                    claims.Add(new(keyValuePair.Key, keyValuePair.Value));
+                }
             }
+            
 
             var token = new JwtSecurityToken(
                 issuer: _jwtTokenOptions.Issuer,
