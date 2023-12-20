@@ -145,7 +145,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
              var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             
             var times = 0;
-            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.CryptoBoxRetryTimes)
+            while (transactionResult.Status == TransactionState.Pending || transactionResult.Status == TransactionState.NotExisted && times < _grainOptions.CryptoBoxRetryTimes) 
             {
                 times++;
                 await Task.Delay(_grainOptions.CryptoBoxRetryDelay);
