@@ -62,7 +62,16 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         VerifierCodeRequestDto dto)
     {
         var indicator = _indicatorScope.Begin(MonitorTag.SendVerificationRequestAsync,"GetVerifierServerEndPointsAsync");
-        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
+        string endPoint = null;
+        try
+        {
+            endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "SendVerificationRequest get end point error:{0}", JsonConvert.SerializeObject(dto));
+            throw;
+        }
         _indicatorScope.End(indicator);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)
@@ -82,7 +91,16 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "guardianIdentifier", dto.GuardianIdentifier },
             { "verifierSessionId", dto.VerifierSessionId.ToString() },
         };
-        var verifierServerResponse =await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        ResponseResultDto<VerifierServerResponse> verifierServerResponse = null;
+        try
+        {
+            verifierServerResponse = await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "send verification request error:{0}", JsonConvert.SerializeObject(parameters));
+            throw;
+        }
         _indicatorScope.End(indicator);
         return verifierServerResponse;
     }
