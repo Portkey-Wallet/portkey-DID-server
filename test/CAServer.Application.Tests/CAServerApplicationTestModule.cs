@@ -166,6 +166,14 @@ public class CAServerApplicationTestModule : AbpModule
         {
             options.ImBaseUrl = "https:127.0.0.1";
             options.PortKeyBaseUrl = "https:127.0.0.1";
+            options.ForestBaseUrl = "http://127.0.0.1";
+            options.ExcludedSuffixes = new List<string>();
+            options.ExcludedSuffixes.Add("png");
+            options.ExcludedSuffixes.Add("jpg");
+            options.BucketList = new List<string>();
+            options.BucketList.Add("127.0.0.1");
+            options.BucketList.Add("127.0.0.1");
+            options.BucketList.Add("127.0.0.1");
         });
         context.Services.Configure<TokenInfoOptions>(option =>
         {
