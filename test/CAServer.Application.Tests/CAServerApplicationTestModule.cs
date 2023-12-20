@@ -164,6 +164,16 @@ public class CAServerApplicationTestModule : AbpModule
             options.ImBaseUrl = "https:127.0.0.1";
             options.PortKeyBaseUrl = "https:127.0.0.1";
         });
+        context.Services.Configure<TokenInfoOptions>(option =>
+        {
+            option.TokenInfos = new Dictionary<string, TokenInfo>
+            {
+                {"ELF", new TokenInfo()
+                {
+                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/Coin_ELF.png"
+                }} 
+            };
+        });
         base.ConfigureServices(context);
     }
 
