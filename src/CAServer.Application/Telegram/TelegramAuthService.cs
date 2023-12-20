@@ -54,15 +54,15 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
         });
     }
 
-    public async Task<string> ValidateTelegramHashAndGenerateTokenAsync(string telegramAuthResult)
+    public async Task<string> ValidateTelegramHashAndGenerateTokenAsync(TelegramAuthReceiveRequest request)
     {
-        if (telegramAuthResult.IsNullOrWhiteSpace())
+        if (request == null)
         {
             _logger.LogInformation("telegram auth result is null");
             throw new UserFriendlyException("Invalid Telegram Login Information");
         }
-        var telegramAuthString = Encoding.UTF8.GetString(Convert.FromBase64String(telegramAuthResult));
-        var telegramAuthDto = JsonConvert.DeserializeObject<TelegramAuthDto>(telegramAuthString);
+        
+        var telegramAuthDto = _objectMapper.Map<TelegramAuthReceiveRequest, TelegramAuthDto>(request);
         if (!await _telegramAuthProvider.ValidateTelegramHashAsync(telegramAuthDto))
         {
             _logger.LogError("Invalid Telegram Login Information, id={0}", telegramAuthDto.Id);
