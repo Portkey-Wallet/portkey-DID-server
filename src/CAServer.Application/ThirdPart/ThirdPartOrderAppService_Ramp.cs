@@ -92,7 +92,7 @@ public partial class ThirdPartOrderAppService
             : _thirdPartAdaptors
                 .Where(a => providers.ContainsKey(a.Key))
                 .ToDictionary(a => a.Key, a => a.Value);
-    } 
+    }
 
     /// <summary>
     ///     Crypto list
@@ -116,6 +116,11 @@ public partial class ThirdPartOrderAppService
             }
 
             return Task.FromResult(new CommonResponseDto<RampCryptoDto>(cryptoDto));
+        }
+        catch (UserFriendlyException e)
+        {
+            Logger.LogWarning(e, "GetRampCryptoListAsync failed, type={Type}, fiat={Fiat}", request.Type, request.Fiat);
+            return Task.FromResult(new CommonResponseDto<RampCryptoDto>().Error(e));
         }
         catch (Exception e)
         {
@@ -175,6 +180,12 @@ public partial class ThirdPartOrderAppService
                 DefaultFiat = defaultFiat
             });
         }
+        catch (UserFriendlyException e)
+        {
+            Logger.LogWarning(e, "GetRampFiatListAsync failed, type={Type}, fiat={Fiat}",
+                rampFiatRequest.Type, rampFiatRequest.Crypto);
+            return new CommonResponseDto<RampFiatDto>().Error(e);
+        }
         catch (Exception e)
         {
             Logger.LogError(e, "GetRampFiatListAsync ERROR, type={Type}, crypto={Crypto}",
@@ -216,11 +227,18 @@ public partial class ThirdPartOrderAppService
                 : new CurrencyLimit
                 {
                     Symbol = request.Fiat,
-                    MinLimit = limitList.Min(limit => limit.Fiat.MinLimit.SafeToDecimal()).ToString(CultureInfo.InvariantCulture),
-                    MaxLimit = limitList.Max(limit => limit.Fiat.MaxLimit.SafeToDecimal()).ToString(CultureInfo.InvariantCulture)
+                    MinLimit = limitList.Min(limit => limit.Fiat.MinLimit.SafeToDecimal())
+                        .ToString(CultureInfo.InvariantCulture),
+                    MaxLimit = limitList.Max(limit => limit.Fiat.MaxLimit.SafeToDecimal())
+                        .ToString(CultureInfo.InvariantCulture)
                 };
 
             return new CommonResponseDto<RampLimitDto>(rampLimit);
+        }
+        catch (UserFriendlyException e)
+        {
+            Logger.LogWarning(e, "GetRampLimitAsync failed, crypto={Crypto}, fiat={Fiat}", request.Crypto, request.Fiat);
+            return new CommonResponseDto<RampLimitDto>().Error(e);
         }
         catch (Exception e)
         {
@@ -251,6 +269,11 @@ public partial class ThirdPartOrderAppService
                 Exchange = maxExchange.ToString(8)
             };
             return new CommonResponseDto<RampExchangeDto>(exchange);
+        }
+        catch (UserFriendlyException e)
+        {
+            Logger.LogWarning(e, "GetRampExchangeAsync failed, crypto={Crypto}, fiat={Fiat}", request.Crypto,
+            return new CommonResponseDto<RampExchangeDto>().Error(e);
         }
         catch (Exception e)
         {
@@ -288,6 +311,11 @@ public partial class ThirdPartOrderAppService
 
             return new CommonResponseDto<RampPriceDto>(priceList.First());
         }
+        catch (UserFriendlyException e)
+        {
+            Logger.LogError(e, "GetRampPriceAsync failed, crypto={Crypto}, fiat={Fiat}", request.Crypto,
+                request.Fiat);            return new CommonResponseDto<RampPriceDto>().Error(e);
+        }
         catch (Exception e)
         {
             Logger.LogError(e, "GetRampPriceAsync ERROR, crypto={Crypto}, fiat={Fiat}", request.Crypto,
@@ -314,17 +342,23 @@ public partial class ThirdPartOrderAppService
                 .ToList();
             var detailList = (await Task.WhenAll(detailTasks)).Where(detail => detail != null).ToList();
             AssertHelper.NotEmpty(detailList, "Ramp detail list empty");
-            
+
             foreach (var providerRampDetailDto in detailList)
             {
                 providerRampDetailDto.FiatAmount = request.IsBuy() ? null : providerRampDetailDto.FiatAmount;
                 providerRampDetailDto.CryptoAmount = request.IsSell() ? null : providerRampDetailDto.CryptoAmount;
             }
-            
+
             return new CommonResponseDto<RampDetailDto>(new RampDetailDto
             {
                 ProvidersList = detailList
             });
+        }
+        catch (UserFriendlyException e)
+        {
+            Logger.LogError(e, "GetRampDetailAsync failed, crypto={Crypto}, fiat={Fiat}", request.Crypto,
+                request.Fiat);
+            return new CommonResponseDto<RampDetailDto>().Error(e);
         }
         catch (Exception e)
         {

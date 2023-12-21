@@ -42,11 +42,11 @@ public class CommonResponseDto<T>
         return this;
     }
     
-    public CommonResponseDto<T> Error(Exception e, [CanBeNull] string message = null)
+    public CommonResponseDto<T> Error(Exception e, [CanBeNull] string message = null, [CanBeNull] string code = null)
     {
         return e is UserFriendlyException ufe
-            ? Error(ufe.Code, message ?? ufe.Message)
-            : Error(CommonErrorCode, message ?? e.Message);
+            ? Error(code ?? ufe.Code, message ?? ufe.Message)
+            : Error(code ?? CommonErrorCode, message ?? e.Message);
     }
 
 
