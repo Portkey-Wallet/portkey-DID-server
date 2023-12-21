@@ -70,18 +70,19 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         });
     }
 
-    public async Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash)
+    public async Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash, List<CAAddressInfo> caAddressInfos)
     {
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
             Query = @"
-			    query($transactionId:String,$blockHash:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderTransaction(dto: {transactionId:$transactionId,blockHash:$blockHash,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+			    query($transactionId:String,$caAddressInfos:[CAAddressInfo]!,$blockHash:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderTransaction(dto: {transactionId:$transactionId,caAddressInfos:$caAddressInfos,blockHash:$blockHash,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         data{id,chainId,blockHash,blockHeight,previousBlockHash,transactionId,methodName,tokenInfo{symbol,tokenContractAddress,decimals,totalSupply,tokenName},status,timestamp,nftInfo{symbol,totalSupply,imageUrl,decimals,tokenName},transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress},fromAddress,transactionFees{symbol,amount},isManagerConsumer},totalRecordCount
                     }
                 }",
             Variables = new
             {
+                caAddressInfos = caAddressInfos,
                 transactionId = inputTransactionId, blockHash = inputBlockHash, skipCount = 0, maxResultCount = 1,
                 startBlockHeight = 0, endBlockHeight = 0
             }
