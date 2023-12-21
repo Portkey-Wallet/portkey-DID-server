@@ -11,5 +11,7 @@ public enum OperationType
     RemoveOtherManagerInfo = 6,
     SetLoginGuardian = 7,
     Approve = 8,
-    ModifyTransferLimit = 9
+    ModifyTransferLimit = 9,
+    GuardianApproveTransfer = 10,
+    UnSetLoginAccount = 11
 }
