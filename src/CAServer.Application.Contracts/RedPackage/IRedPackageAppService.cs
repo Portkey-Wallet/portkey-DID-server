@@ -17,5 +17,5 @@ public interface IRedPackageAppService
 
     Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input);
 
-    RedPackageTokenInfo GetRedPackageOption(String symbol, string chainId, out long maxCount, out string redpackageContractAddress);
+    RedPackageTokenInfo GetRedPackageOption(String symbol, string chainId, out long maxCount);
 }
