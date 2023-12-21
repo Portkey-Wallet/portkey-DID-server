@@ -10,7 +10,11 @@ using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.Signature;
 using Hangfire;
-using Hangfire.Redis.StackExchange;
+using Hangfire.Dashboard;
+using Hangfire.Mongo;
+using Hangfire.Mongo.CosmosDB;
+using Hangfire.Mongo.Migration.Strategies;
+using Hangfire.Mongo.Migration.Strategies.Backup;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.DataProtection;
@@ -19,6 +23,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -40,7 +45,6 @@ using Volo.Abp.BackgroundJobs.Hangfire;
 
 namespace CAServer.ContractEventHandler;
 
-
 [DependsOn(
     typeof(CAServerContractEventHandlerCoreModule),
     typeof(CAServerGrainsModule),
@@ -53,6 +57,7 @@ namespace CAServer.ContractEventHandler;
     typeof(AbpCachingStackExchangeRedisModule),
     typeof(CAServerMongoDbModule),
     typeof(CAServerMonitorModule),
+    typeof(AbpBackgroundJobsHangfireModule),
     typeof(AElfIndexingElasticsearchModule)
 )]
 public class CAServerContractEventHandlerModule : AbpModule
@@ -88,7 +93,7 @@ public class CAServerContractEventHandlerModule : AbpModule
     {
         Configure<AbpDistributedCacheOptions>(options => { options.KeyPrefix = "CAServer:"; });
     }
-    
+
     private void ConfigureDistributedLocking(
         ServiceConfigurationContext context,
         IConfiguration configuration)
@@ -100,7 +105,7 @@ public class CAServerContractEventHandlerModule : AbpModule
             return new RedisDistributedSynchronizationProvider(connection.GetDatabase());
         });
     }
-    
+
     private void ConfigureDataProtection(
         ServiceConfigurationContext context,
         IConfiguration configuration,
@@ -181,21 +186,48 @@ public class CAServerContractEventHandlerModule : AbpModule
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
-    
+
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        context.Services.AddHangfire(config =>
+        var mongoType = configuration["Hangfire:MongoType"];
+        var connectionString = configuration["Hangfire:ConnectionString"];
+        if(connectionString.IsNullOrEmpty()) return;
+
+        if (mongoType.IsNullOrEmpty() ||
+            mongoType.Equals(MongoType.MongoDb.ToString(), StringComparison.OrdinalIgnoreCase))
         {
-            config.UseRedisStorage(configuration["Hangfire:Redis:ConnectionString"], new RedisStorageOptions
+            context.Services.AddHangfire(x =>
             {
-                Db = 1
+                x.UseMongoStorage(connectionString, new MongoStorageOptions
+                {
+                    MigrationOptions = new MongoMigrationOptions
+                    {
+                        MigrationStrategy = new MigrateMongoMigrationStrategy(),
+                        BackupStrategy = new CollectionMongoBackupStrategy()
+                    },
+                    CheckConnection = true,
+                    CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
+                });
             });
-        });
-        
-        context.Services.AddHangfireServer(options =>
+        }
+        else if (mongoType.Equals(MongoType.DocumentDb.ToString(), StringComparison.OrdinalIgnoreCase))
         {
-            options.Queues = new[] { "redpackage" };
-            options.WorkerCount = 8;
-        });
+            context.Services.AddHangfire(config =>
+            {
+                var mongoUrlBuilder = new MongoUrlBuilder(connectionString) { DatabaseName = "jobs" };
+                var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
+                var opt = new CosmosStorageOptions
+                {
+                    MigrationOptions = new MongoMigrationOptions
+                    {
+                        BackupStrategy = new NoneMongoBackupStrategy(),
+                        MigrationStrategy = new DropMongoMigrationStrategy(),
+                    }
+                };
+                config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
+            });
+
+            context.Services.AddHangfireServer(opt => { opt.Queues = new[] { "default", "notDefault" }; });
+        }
     }
 }

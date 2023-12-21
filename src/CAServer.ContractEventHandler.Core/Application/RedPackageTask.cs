@@ -28,7 +28,7 @@ public class RedPackageTask
         _distributedEventBus = distributedEventBus;
     }
 
-    [Queue("redpackage")]
+    // [Queue("redpackage")]
     public async Task ExpireRedPackageRedPackageAsync(Guid redPackageId)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
