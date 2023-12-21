@@ -273,6 +273,7 @@ public partial class ThirdPartOrderAppService
         catch (UserFriendlyException e)
         {
             Logger.LogWarning(e, "GetRampExchangeAsync failed, crypto={Crypto}, fiat={Fiat}", request.Crypto,
+                request.Fiat);
             return new CommonResponseDto<RampExchangeDto>().Error(e);
         }
         catch (Exception e)
