@@ -19,9 +19,15 @@ using CAServer.Grains.State.Contacts;
 using CAServer.Grains.State.CrossChain;
 using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
+using CAServer.Grains.State.PrivacyPermission;
+using CAServer.Grains.State.RedPackage;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
+using CAServer.PrivacyPermission.Dtos;
+using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ValidateOriginChainId.Dtos;
 using Google.Protobuf.Collections;
 using Portkey.Contracts.CA;
 
@@ -88,7 +94,9 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     { e.GuardianList.Guardians.Where(g => g.IsLoginGuardian).Select(g => g.IdentifierHash).ToList() }))
             .ForMember(d => d.ManagerInfos, opt => opt.MapFrom(g => g.ManagerInfos))
             .ForMember(d => d.CaHash,
-                opt => opt.MapFrom(g => g.CaHash));
+                opt => opt.MapFrom(g => g.CaHash))
+            .ForMember(d => d.CreateChainId,
+                opt => opt.MapFrom(g => g.CreateChainId));
 
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoState>().ReverseMap();
         CreateMap<OrderState, OrderGrainDto>();
@@ -102,5 +110,32 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<OrderStatusInfoState, OrderStatusInfoGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkGrainResultDto>();
         CreateMap<BookmarkItem, BookmarkResultDto>();
+
+        CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
+        CreateMap<RedPackageState, SendRedPackageInputDto>()
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => src.TotalAmount.ToString()))
+            .ForMember(dest => dest.TotalAmount,
+                opt => opt.MapFrom(src => src.TotalAmount)).ReverseMap();
+        CreateMap<RedPackageState, RedPackageDetailDto>()
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => src.TotalAmount.ToString()))
+            .ForMember(dest => dest.GrabbedAmount, 
+                opt => opt.MapFrom(src => src.GrabbedAmount.ToString()))
+            .ForMember(dest => dest.MinAmount, 
+                opt => opt.MapFrom(src => src.MinAmount.ToString()))
+            .ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ReverseMap()
+            .ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ForMember(dest => dest.TotalAmount, 
+                opt => opt.MapFrom(src => long.Parse(src.TotalAmount)))
+            .ForMember(dest => dest.GrabbedAmount, 
+                opt => opt.MapFrom(src => long.Parse(src.GrabbedAmount)))
+            .ForMember(dest => dest.MinAmount, 
+                opt => opt.MapFrom(src => long.Parse(src.MinAmount)));
+        CreateMap<GrabItem, GrabItemDto>()
+            .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount.ToString()))
+            .ReverseMap()
+            .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => long.Parse(src.Amount)));
     }
 }

@@ -1,19 +1,28 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Threading.Tasks;
+using CAServer.AppleAuth.Provider;
 using CAServer.Bookmark;
+using CAServer.Common;
 using CAServer.EntityEventHandler.Core;
 using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
+using CAServer.RedPackage;
 using CAServer.Search;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using NSubstitute.Extensions;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 
 namespace CAServer;
 
@@ -28,7 +37,7 @@ public class CAServerApplicationTestModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         // load config from [appsettings.Development.json]
-        var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+        var environmentName = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
         var builder = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
@@ -42,6 +51,10 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
+
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
+
+        ConfigureGraphQl(context);
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
@@ -73,6 +86,20 @@ public class CAServerApplicationTestModule : AbpModule
         };
         tokenList.Add(token1);
         tokenList.Add(token2);
+        context.Services.Configure<RedPackageOptions>(o =>
+        {
+            o.MaxCount = 1000;
+            o.TokenInfo = new List<RedPackageTokenInfo>()
+            {
+                new RedPackageTokenInfo()
+                {
+                    ChainId = "AELF",
+                    Decimal = 8,
+                    MinAmount = "1",
+                    Symbol = "ELF"
+                }
+            };
+        });
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
         context.Services.Configure<IpServiceSettingOptions>(o =>
         {
@@ -82,6 +109,19 @@ public class CAServerApplicationTestModule : AbpModule
             o.ExpirationDays = 1;
         });
         context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
+
+        context.Services.Configure<ActivityTypeOptions>(o =>
+        {
+            o.TypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
+            o.TransferTypes = new List<string>() { "TEST", "TransferTypes" };
+            o.ContractTypes = new List<string>() { "TEST", "ContractTypes" };
+            o.ShowPriceTypes = new List<string>() { "TEST" };
+            o.NoShowTypes = new List<string>() { "no show" };
+            o.RedPacketTypes = new List<string>() { "no" };
+            o.ShowNftTypes = new List<string>() { "TEST" };
+            o.TransactionTypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
+            o.Zero = "0";
+        });
         context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
         {
             option.ChainInfos = new Dictionary<string, CAServer.Grains.Grain.ApplicationHandler.ChainInfo>
@@ -114,6 +154,45 @@ public class CAServerApplicationTestModule : AbpModule
             options.Code = "SG";
             options.Iso = "65";
         });
+        context.Services.Configure<SecurityOptions>(options => { options.DefaultTokenTransferLimit = 100000; });
+
+        context.Services.Configure<AppleCacheOptions>(options =>
+        {
+            options.Configuration = "127.0.0.1:6379";
+            options.Db = 2;
+        });
+
+        context.Services.Configure<AwsThumbnailOptions>(options =>
+        {
+            options.ImBaseUrl = "https:127.0.0.1";
+            options.PortKeyBaseUrl = "https:127.0.0.1";
+            options.ForestBaseUrl = "http://127.0.0.1";
+            options.ExcludedSuffixes = new List<string>();
+            options.ExcludedSuffixes.Add("png");
+            options.ExcludedSuffixes.Add("jpg");
+            options.BucketList = new List<string>();
+            options.BucketList.Add("127.0.0.1");
+            options.BucketList.Add("127.0.0.1");
+            options.BucketList.Add("127.0.0.1");
+        });
+        context.Services.Configure<TokenInfoOptions>(option =>
+        {
+            option.TokenInfos = new Dictionary<string, TokenInfo>
+            {
+                {"ELF", new TokenInfo()
+                {
+                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/Coin_ELF.png"
+                }} 
+            };
+        });
         base.ConfigureServices(context);
+    }
+
+    private void ConfigureGraphQl(ServiceConfigurationContext context)
+    {
+        context.Services.AddSingleton(new GraphQLHttpClient(
+            "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
+            new NewtonsoftJsonSerializer()));
+        context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
 }

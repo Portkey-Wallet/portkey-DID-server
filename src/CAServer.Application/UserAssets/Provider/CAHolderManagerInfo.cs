@@ -9,6 +9,7 @@ public class CAHolderManagerInfo
 
 public class CAHolderManager
 {
+    public string OriginChainId { get; set; }
     public string ChainId { get; set; }
     public string CaHash { get; set; }
     public string CaAddress { get; set; }

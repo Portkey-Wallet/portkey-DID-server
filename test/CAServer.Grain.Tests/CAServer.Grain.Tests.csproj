@@ -31,4 +31,5 @@
         <ProjectReference Include="..\..\src\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
     </ItemGroup>
 
+
 </Project>

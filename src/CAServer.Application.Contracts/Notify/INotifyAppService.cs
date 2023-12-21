@@ -7,6 +7,7 @@ namespace CAServer.Notify;
 
 public interface INotifyAppService
 {
+    Task<int> FireAsync(string token, string title, string content);
     Task<PullNotifyResultDto> PullNotifyAsync(PullNotifyDto input);
     Task<NotifyResultDto> CreateAsync(CreateNotifyDto notifyDto);
     Task<NotifyResultDto> UpdateAsync(Guid id, UpdateNotifyDto notifyDto);

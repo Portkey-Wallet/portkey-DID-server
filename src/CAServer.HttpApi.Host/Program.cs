@@ -27,10 +27,10 @@ public class Program
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-            
+
 #if DEBUG
             .WriteTo.Async(c => c.Console())
-#endif          
+#endif
             .CreateLogger();
 
         try
@@ -38,6 +38,8 @@ public class Program
             Log.Information("Starting CAServer.HttpApi.Host.");
             var builder = WebApplication.CreateBuilder(args);
             builder.Configuration.AddJsonFile("phone.json");
+            builder.Configuration.AddJsonFile("seedurl.json");
+            builder.Configuration.AddJsonFile("activity.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseSerilog();
@@ -45,6 +47,7 @@ public class Program
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
+            //app.MapHub<DataReportingHub>("dataReporting");
             await app.InitializeApplicationAsync();
             await app.RunAsync();
             return 0;

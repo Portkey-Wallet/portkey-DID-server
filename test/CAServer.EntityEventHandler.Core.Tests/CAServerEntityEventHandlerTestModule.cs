@@ -1,4 +1,6 @@
 ﻿using AElf.Indexing.Elasticsearch.Options;
+using CAServer.ContractEventHandler.Core;
+using CAServer.ContractEventHandler.Core.Application;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Tests.Token;
 using CAServer.Options;
@@ -10,9 +12,9 @@ using Moq;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Modularity;
+using Volo.Abp.OpenIddict.Tokens;
 
 namespace CAServer.EntityEventHandler.Tests;
-
 
 [DependsOn(
     typeof(CAServerEntityEventHandlerCoreModule),
@@ -23,6 +25,7 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
         Configure<AbpAutoMapperOptions>(options =>
         {
             //Add all mappings defined in the assembly of the MyModule class
@@ -60,14 +63,11 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
         };
         tokenList.Add(token1);
         tokenList.Add(token2);
-        context.Services.Configure<TokenListOptions>(o =>
-        {
-            o.UserToken = tokenList;
-        });
-        context.Services.Configure<IndexSettingOptions>(o =>
-        {
-            o.IndexPrefix = "caservertest";
-        });
+        context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
+        context.Services.Configure<IndexSettingOptions>(o => { o.IndexPrefix = "caservertest"; });
+        var accounts = new List<string>();
+        accounts.Add("23GxsoW9TRpLqX1Z5tjrmcRMMSn5bhtLAf4HtPj8JX9BerqTqp");
+        accounts.Add("2CpKfnoWTk69u6VySHMeuJvrX2hGrMw9pTyxcD4VM6Q28dJrhk");
+        Configure<PayRedPackageAccount>(o => { o.RedPackagePayAccounts = accounts; });
     }
-
 }

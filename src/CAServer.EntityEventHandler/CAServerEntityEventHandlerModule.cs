@@ -5,12 +5,16 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch.Options;
 using CAServer.Commons;
 using CAServer.EntityEventHandler.Core;
+using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
+using CAServer.RedPackage;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using Hangfire;
+using Hangfire.Redis.StackExchange;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.Extensions.Caching.Distributed;
@@ -25,6 +29,7 @@ using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
+using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.EventBus.RabbitMq;
@@ -49,10 +54,13 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureTokenCleanupService();
         //ConfigureEsIndexCreation();
         context.Services.AddHostedService<CAServerHostedService>();
+        Configure<CAServer.Options.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
-
+        
         context.Services.AddSingleton<IClusterClient>(o =>
         {
             return new ClientBuilder()
@@ -78,7 +86,8 @@ public class CAServerEntityEventHandlerModule : AbpModule
     
     private void ConfigureGraphQl(ServiceConfigurationContext context,
         IConfiguration configuration)
-    {
+    {        
+        Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         context.Services.AddSingleton(new GraphQLHttpClient(configuration["GraphQL:Configuration"],
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
@@ -121,6 +130,12 @@ public class CAServerEntityEventHandlerModule : AbpModule
 
         var client = context.ServiceProvider.GetRequiredService<IClusterClient>();
         AsyncHelper.RunSync(async () => await client.Connect());
+    }
+    
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<LoginGuardianChangeRecordReceiveWorker>());
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

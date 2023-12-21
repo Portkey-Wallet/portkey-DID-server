@@ -20,7 +20,6 @@ public class UserAssetsProviderTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
-        base.AfterAddApplication(services);
         services.AddSingleton(GetMockIGraphQLHelper());
     }
 
