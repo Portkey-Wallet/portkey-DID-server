@@ -118,7 +118,6 @@ public class CAServerApplicationTestModule : AbpModule
             o.Language = "en";
             o.ExpirationDays = 1;
         });
-        context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
 
         context.Services.Configure<ActivityTypeOptions>(o =>
         {
