@@ -42,6 +42,8 @@ public class Program
             builder.Configuration.AddJsonFile("phone.json");
             builder.Configuration.AddJsonFile("ramp.json");
             builder.Configuration.AddJsonFile("seedurl.json");
+            builder.Configuration.AddJsonFile("activity.json");
+
             var hostBuilder = builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseSerilog();
@@ -55,6 +57,7 @@ public class Program
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
             app.MapHub<CAHub>("ca");
+            //app.MapHub<DataReportingHub>("dataReporting");
             await app.InitializeApplicationAsync();
             await app.RunAsync();
             return 0;

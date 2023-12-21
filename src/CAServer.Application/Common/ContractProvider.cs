@@ -10,6 +10,7 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
 using CAServer.Options;
+using CAServer.RedPackage;
 using CAServer.Signature;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -53,19 +54,25 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly ContractOptions _contractOptions;
     private readonly IClusterClient _clusterClient;
     private readonly IIndicatorScope _indicatorScope;
+    private readonly IRedPackageAppService _redPackageAppService;
+    private readonly GrainOptions _grainOptions;
+
 
     public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         IClusterClient clusterClient,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
-        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope)
+        IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope,
+        IRedPackageAppService redPackageAppService, IOptions<GrainOptions> grainOptions)
     {
         _chainOptions = chainOptions.Value;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;
         _indicatorScope = indicatorScope;
-        _contractOptions = contractOptions.Value;
         _clusterClient = clusterClient;
+        _redPackageAppService = redPackageAppService;
+        _grainOptions = grainOptions.Value;
+        _contractOptions = contractOptions.Value;
     }
 
     public async Task<TransactionResultDto> SyncTransactionAsync(string chainId, SyncHolderInfoInput input)
@@ -212,7 +219,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GenerateTransactionAsync.ToString());
         var transaction = await client.GenerateTransactionAsync(ownAddress, contractAddress, methodName, param);
-        
+
         _indicatorScope.End(generateIndicator);
         _logger.LogDebug("Send tx methodName is: {methodName} param is: {transaction}, publicKey is:{publicKey} ",
             methodName, transaction, _claimTokenInfoOption.PublicKey);
@@ -304,12 +311,12 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.SendTransactionAsync.ToString());
-        
+
         var result = await client.SendTransactionAsync(new SendTransactionInput
         {
             RawTransaction = rawTransaction
         });
-        
+
         _indicatorScope.End(generateIndicator);
 
         return result;
@@ -318,11 +325,11 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     public async Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId)
     {
         var client = await GetAElfClientAsync(chainId);
-        
+
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
             MonitorAelfClientType.GetTransactionResultAsync.ToString());
         var result = await client.GetTransactionResultAsync(transactionId);
-        
+
         _indicatorScope.End(generateIndicator);
         return result;
     }
