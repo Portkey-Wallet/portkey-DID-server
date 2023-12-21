@@ -211,7 +211,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             if (extraInfo != null)
             {
                 guardian.ThirdPartyEmail = extraInfo.Email;
-                if (guardian.Type == GuardianIdentifierType.Google.ToString())
+                if (guardian.Type == GuardianIdentifierType.Google.ToString()
+                    || guardian.Type == GuardianIdentifierType.Telegram.ToString())
                 {
                     guardian.FirstName = extraInfo.FirstName;
                     guardian.LastName = extraInfo.LastName;
