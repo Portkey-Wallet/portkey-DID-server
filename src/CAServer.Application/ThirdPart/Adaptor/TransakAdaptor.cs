@@ -31,6 +31,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     private const string CryptoCacheKey = "Ramp:transak:crypto";
     private const string FiatCacheKey = "Ramp:transak:fiat";
     private const string CountryCacheKey = "Ramp:transak:country";
+    private const string CryptoUSDT = "USDT";
+    private const string CryptoNetwork = "ethereum";
     private const decimal DefaultFiatAccount = 200;
 
     private readonly TransakProvider _transakProvider;
@@ -120,8 +122,6 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         {
             var cryptoList = await GetTransakCryptoListWithCache();
             var theCrypto = cryptoList
-                // .Where(c => c.Network != null)
-                // .Where(c => c.Network.ToNetworkId() == rampFiatRequest.Network)
                 .FirstOrDefault(c => c.Symbol == crypto);
             if (theCrypto != null)
             {
@@ -160,6 +160,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     private async Task<TransakRampPrice> GetTransakPriceWithCache(string paymentMethod,
         RampDetailRequest rampPriceRequest)
     {
+        rampPriceRequest.Network =
+            _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping[rampPriceRequest.Network];
         var transakPriceRequest = _objectMapper.Map<RampDetailRequest, GetRampPriceRequest>(rampPriceRequest);
         transakPriceRequest.PaymentMethod = paymentMethod;
 
@@ -399,8 +401,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
 
             decimal minFiatAmount = 0;
-            rampDetailRequest.Crypto = "USDT";
-            rampDetailRequest.Network = "ethereum";
+            rampDetailRequest.Crypto = CryptoUSDT;
+            rampDetailRequest.Network = CryptoNetwork;
             rampDetailRequest.Country = null;
             if (rampDetailRequest.IsBuy())
             {
@@ -453,8 +455,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
             var commonPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
 
-            // var commonPrice = await GetCommonRampPriceWithCache(rampDetailRequest);
-
+            
 
             var transakFeePercent = commonPrice.TransakFeePercent();
 

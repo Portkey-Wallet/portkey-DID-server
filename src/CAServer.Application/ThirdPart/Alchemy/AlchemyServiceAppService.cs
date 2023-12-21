@@ -175,7 +175,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             AssertHelper.NotEmpty(cryptoList.Data, "Empty Alchemy crypto list");
             var mappingNetworkExists = AlchemyRampOptions().NetworkMapping.TryGetValue(input.Network, out var mappingNetwork);
             var cryptoItem = cryptoList.Data
-                .Where(c => !mappingNetworkExists || mappingNetwork == c.Network)
+                .Where(c => mappingNetworkExists && mappingNetwork == c.Network)
                 .Where(c => c.Crypto == input.Crypto)
                 .FirstOrDefault(c => input.IsBuy() ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0);
             AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found in Alchemy list.", input.Crypto);
@@ -188,7 +188,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             var fiatListData = await GetAlchemyFiatListWithCacheAsync(new GetAlchemyFiatListDto { Type = input.Side });
             AssertHelper.IsTrue(fiatListData.Success, "Query Alchemy fiat list failed, {Msg}", fiatListData.Message);
 
-            var fiat = fiatListData.Data.FirstOrDefault(t => t.Currency == input.Fiat);
+            var fiat = fiatListData.Data.FirstOrDefault(t => t.Currency == input.Fiat && t.Country == input.Country);
             AssertHelper.NotNull(fiat, "{Fiat} not found in Alchemy fiat list", input.Fiat);
 
             var fixedFee = fiat.FixedFee.SafeToDecimal();

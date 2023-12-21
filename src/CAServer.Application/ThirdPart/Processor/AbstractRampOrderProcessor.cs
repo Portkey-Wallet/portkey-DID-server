@@ -8,6 +8,7 @@ using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf.WellKnownTypes;
+using MassTransit;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -25,6 +26,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly IBus _broadcastBus;
 
     protected readonly JsonSerializerSettings JsonDecodeSettings = new()
     {
@@ -33,13 +35,14 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
 
     protected AbstractRampOrderProcessor(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider, IDistributedEventBus distributedEventBus,
-        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock)
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus)
     {
         _clusterClient = clusterClient;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
+        _broadcastBus = broadcastBus;
     }
 
     /// <summary>
@@ -112,9 +115,11 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
             
             AssertHelper.IsTrue(result.Success, "Update order failed,{Message}", result.Message);
 
-            await _distributedEventBus.PublishAsync(ObjectMapper.Map<OrderGrainDto, OrderEto>(result.Data));
+            var orderEto = ObjectMapper.Map<OrderGrainDto, OrderEto>(result.Data);
+            await _distributedEventBus.PublishAsync(orderEto);
             await _orderStatusProvider.AddOrderStatusInfoAsync(
                 ObjectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
+            await _broadcastBus.Publish(orderEto);
             return new CommonResponseDto<Empty>();
         }
         catch (UserFriendlyException e)

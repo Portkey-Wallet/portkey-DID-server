@@ -51,10 +51,13 @@ public class OrderWsNotifyProvider : IOrderWsNotifyProvider
                 : orderDto.TransDirect == TransferDirectionType.TokenBuy.ToString()
                     ? OrderDisplayStatus.ToOnRampDisplayStatus(orderDto.Status)
                     : OrderDisplayStatus.ToOffRampDisplayStatus(orderDto.Status);
-        var tokenInfo = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, orderDto.Crypto);
-        if (tokenInfo != null)
+        if (orderDto.Crypto.NotNullOrEmpty())
         {
-            orderDto.CryptoDecimals = tokenInfo.Decimals.ToString();
+            var tokenInfo = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, orderDto.Crypto);
+            if (tokenInfo != null)
+            {
+                orderDto.CryptoDecimals = tokenInfo.Decimals.ToString();
+            }
         }
         if (_orderNotifyListeners.TryGetValue(orderDto.OrderId.ToString(), out var callback))
         {
