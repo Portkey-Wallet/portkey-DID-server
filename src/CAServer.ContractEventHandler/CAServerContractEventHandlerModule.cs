@@ -214,7 +214,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         {
             context.Services.AddHangfire(config =>
             {
-                var mongoUrlBuilder = new MongoUrlBuilder(connectionString) { DatabaseName = "jobs" };
+                var mongoUrlBuilder = new MongoUrlBuilder(connectionString);
                 var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
                 var opt = new CosmosStorageOptions
                 {
