@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.RedPackage.Etos;
-using Microsoft.Extensions.Logging;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 
@@ -9,19 +8,16 @@ namespace CAServer.ContractEventHandler.Core;
 
 public class PayRedPackageEventHandler : IDistributedEventHandler<PayRedPackageEto>, ITransientDependency
 {
-    private readonly ILogger<RedPackageEventHandler> _logger;
-    private readonly IContractAppService _contractAppService;
+    private readonly IPayRedPackageService _payRedPackageService;
 
-
-    public PayRedPackageEventHandler(ILogger<RedPackageEventHandler> logger,  IContractAppService contractAppService)
+    public PayRedPackageEventHandler(IPayRedPackageService payRedPackageService)
     {
-        _logger = logger;
-        _contractAppService = contractAppService;
+        _payRedPackageService = payRedPackageService;
     }
 
     public Task HandleEventAsync(PayRedPackageEto eventData)
     {
-        _ = _contractAppService.PayRedPackageAsync(eventData.RedPackageId);
+        _ = _payRedPackageService.PayRedPackageAsync(eventData.RedPackageId);
         return Task.CompletedTask;
     }
 }
