@@ -19,8 +19,9 @@ public class PayRedPackageEventHandler : IDistributedEventHandler<PayRedPackageE
         _contractAppService = contractAppService;
     }
 
-    public async Task HandleEventAsync(PayRedPackageEto eventData)
+    public Task HandleEventAsync(PayRedPackageEto eventData)
     {
         _ = _contractAppService.PayRedPackageAsync(eventData.RedPackageId);
+        return Task.CompletedTask;
     }
 }
