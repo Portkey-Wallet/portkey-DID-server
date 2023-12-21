@@ -25,6 +25,7 @@ public class TokenInfoDto
     public string Decimals { get; set; }
     public string BalanceInUsd { get; set; }
     public string TokenContractAddress { get; set; }
+    public string ImageUrl { get; set; }
 }
 
 public class NftInfoDto

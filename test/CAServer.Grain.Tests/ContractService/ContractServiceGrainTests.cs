@@ -3,13 +3,18 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
+using CAServer.Grains.Grain.RedPackage;
 using CAServer.Grains.State.ApplicationHandler;
+using CAServer.RedPackage;
+using CAServer.RedPackage.Dtos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Portkey.Contracts.CA;
+using Portkey.Contracts.CryptoBox;
+using Shouldly;
 using Xunit;
 
 namespace CAServer.Grain.Tests.ContractService;
@@ -113,5 +118,81 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
         var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         await grain.SyncTransactionAsync("AELF", input);
+    }
+    
+    [Fact]
+    public async void SendTransferCryptoBoxToChainAsyncTest()
+    {
+        var redPackageKeyGrain = Cluster.Client.GetGrain<IRedPackageKeyGrain>(Guid.Parse("6f720cbc-02ed-4467-92bc-76461d957745"));
+        var res = await redPackageKeyGrain.GenerateKey();
+
+        var list = new List<TransferCryptoBoxInput>()
+        {
+            new TransferCryptoBoxInput()
+            {
+                Amount = 1701075501959,
+                Receiver = Address.FromBase58("2dni1t2hmZxtEE1tTiAWQ7Fm7hrc42wWvc1jyxAzDT6KGwHhDf"),
+                CryptoBoxSignature = await redPackageKeyGrain.GenerateSignature("ELF--0--0.39")
+            }
+        };
+
+        var sendInput = new TransferCryptoBoxesInput()
+        {
+            TransferCryptoBoxInputs = {list}
+        };
+        var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+    }
+    
+    private async Task GrabRedPackage_test()
+    {
+        var userId1 = Guid.NewGuid();
+        var userId2 = Guid.NewGuid();
+        var userId3 = Guid.NewGuid();
+        var redPackageId = Guid.NewGuid();
+        var redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(redPackageId);
+        var input = NewSendRedPackageInputDto(redPackageId);
+        input.Count = 2;
+        await redPackageGrain.CreateRedPackage(input, 8, 1, userId1,86400000);
+        var res = await redPackageGrain.GrabRedPackage(userId1, "xxxx");
+        res.Success.ShouldBe(true);
+        await redPackageGrain.GrabRedPackage(userId2, "xxxx");
+        res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
+        res.Success.ShouldBe(false);
+        res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageFullyClaimed);
+        
+        redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(Guid.NewGuid());
+        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1,86400000);
+        await redPackageGrain.CancelRedPackage();
+        res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
+        res.Success.ShouldBe(false);
+        res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageCancelled);
+        await redPackageGrain.ExpireRedPackage();
+        res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
+        res.Success.ShouldBe(false);
+        res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageExpired);
+
+        redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(Guid.NewGuid());
+        await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1,86400000);
+        await redPackageGrain.GrabRedPackage(userId2, "xxxx");
+        res = await redPackageGrain.GrabRedPackage(userId2, "xxxx");
+        res.Success.ShouldBe(false);
+        res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageUserGrabbed);
+    }
+    
+    private SendRedPackageInputDto NewSendRedPackageInputDto(Guid redPackageId)
+    {
+        return new SendRedPackageInputDto()
+        {
+            Id = new Guid("6f720cbc-02ed-4467-92bc-76461d957745"),
+            Type = RedPackageType.Random,
+            Count = 500,
+            TotalAmount = "1000000",
+            Memo = "this is my first memo",
+            ChainId = "AELF",
+            Symbol = "ELF",
+            ChannelUuid = "eff010f5d9dd4df986a20251ae634e86",
+            RawTransaction = "xxxxx",
+            Message = "anyway"
+        };
     }
 }

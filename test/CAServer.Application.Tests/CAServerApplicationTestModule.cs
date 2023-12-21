@@ -10,6 +10,7 @@ using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
+using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.ThirdPart;
 using GraphQL.Client.Abstractions;
@@ -40,7 +41,7 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
-        
+
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
 
         ConfigureGraphQl(context);
@@ -95,6 +96,20 @@ public class CAServerApplicationTestModule : AbpModule
         };
         tokenList.Add(token1);
         tokenList.Add(token2);
+        context.Services.Configure<RedPackageOptions>(o =>
+        {
+            o.MaxCount = 1000;
+            o.TokenInfo = new List<RedPackageTokenInfo>()
+            {
+                new RedPackageTokenInfo()
+                {
+                    ChainId = "AELF",
+                    Decimal = 8,
+                    MinAmount = "1",
+                    Symbol = "ELF"
+                }
+            };
+        });
         context.Services.Configure<TokenListOptions>(o => { o.UserToken = tokenList; });
         context.Services.Configure<IpServiceSettingOptions>(o =>
         {
@@ -103,7 +118,21 @@ public class CAServerApplicationTestModule : AbpModule
             o.Language = "en";
             o.ExpirationDays = 1;
         });
-        context.Services.Configure<ChainOptions>(option =>
+        context.Services.Configure<ThirdPartOptions>(configuration.GetSection("ThirdPart"));
+
+        context.Services.Configure<ActivityTypeOptions>(o =>
+        {
+            o.TypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
+            o.TransferTypes = new List<string>() { "TEST", "TransferTypes" };
+            o.ContractTypes = new List<string>() { "TEST", "ContractTypes" };
+            o.ShowPriceTypes = new List<string>() { "TEST" };
+            o.NoShowTypes = new List<string>() { "no show" };
+            o.RedPacketTypes = new List<string>() { "no" };
+            o.ShowNftTypes = new List<string>() { "TEST" };
+            o.TransactionTypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
+            o.Zero = "0";
+        });
+        context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
         {
             option.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
                 { { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() } };
@@ -147,6 +176,24 @@ public class CAServerApplicationTestModule : AbpModule
         {
             options.ImBaseUrl = "https:127.0.0.1";
             options.PortKeyBaseUrl = "https:127.0.0.1";
+            options.ForestBaseUrl = "http://127.0.0.1";
+            options.ExcludedSuffixes = new List<string>();
+            options.ExcludedSuffixes.Add("png");
+            options.ExcludedSuffixes.Add("jpg");
+            options.BucketList = new List<string>();
+            options.BucketList.Add("127.0.0.1");
+            options.BucketList.Add("127.0.0.1");
+            options.BucketList.Add("127.0.0.1");
+        });
+        context.Services.Configure<TokenInfoOptions>(option =>
+        {
+            option.TokenInfos = new Dictionary<string, TokenInfo>
+            {
+                {"ELF", new TokenInfo()
+                {
+                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/Coin_ELF.png"
+                }} 
+            };
         });
         base.ConfigureServices(context);
     }
@@ -158,6 +205,4 @@ public class CAServerApplicationTestModule : AbpModule
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
     }
-    
-
 }
