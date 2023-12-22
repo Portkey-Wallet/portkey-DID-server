@@ -237,7 +237,8 @@ public partial class ThirdPartOrderAppService
         }
         catch (UserFriendlyException e)
         {
-            Logger.LogWarning(e, "GetRampLimitAsync failed, crypto={Crypto}, fiat={Fiat}", request.Crypto, request.Fiat);
+            Logger.LogWarning(e, "GetRampLimitAsync failed, crypto={Crypto}, fiat={Fiat}", request.Crypto,
+                request.Fiat);
             return new CommonResponseDto<RampLimitDto>().Error(e);
         }
         catch (Exception e)
@@ -261,7 +262,8 @@ public partial class ThirdPartOrderAppService
                 .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();
 
             // choose the MAX crypto-fiat exchange rate
-            var maxExchange = (await Task.WhenAll(exchangeTasks)).Where(limit => limit != null).Max() ?? 0;
+            var maxExchanges = (await Task.WhenAll(exchangeTasks)).Where(limit => limit != null);
+            var maxExchange = (request.IsBuy() ? maxExchanges.Min() : maxExchanges.Max()) ?? 0;
             AssertHelper.IsTrue(maxExchange > 0, "empty maxExchange");
 
             var exchange = new RampExchangeDto
@@ -315,7 +317,8 @@ public partial class ThirdPartOrderAppService
         catch (UserFriendlyException e)
         {
             Logger.LogError(e, "GetRampPriceAsync failed, crypto={Crypto}, fiat={Fiat}", request.Crypto,
-                request.Fiat);            return new CommonResponseDto<RampPriceDto>().Error(e);
+                request.Fiat);
+            return new CommonResponseDto<RampPriceDto>().Error(e);
         }
         catch (Exception e)
         {
@@ -341,7 +344,10 @@ public partial class ThirdPartOrderAppService
             var detailTasks = GetThirdPartAdaptors(request.Type).Values
                 .Select(adaptor => adaptor.GetRampDetailAsync(request))
                 .ToList();
-            var detailList = (await Task.WhenAll(detailTasks)).Where(detail => detail != null).ToList();
+
+            var detailList = (await Task.WhenAll(detailTasks)).Where(detail => detail != null)
+                .OrderByDescending(detail => request.IsBuy() ? detail.CryptoAmount : detail.FiatAmount)
+                .ToList();
             AssertHelper.NotEmpty(detailList, "Ramp detail list empty");
 
             foreach (var providerRampDetailDto in detailList)
