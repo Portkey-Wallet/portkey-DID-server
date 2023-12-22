@@ -21,6 +21,8 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
     private readonly IObjectMapper _objectMapper;
     private readonly ITelegramAuthProvider _telegramAuthProvider;
     private readonly IJwtTokenProvider _jwtTokenProvider;
+    
+    private const string Pattern = @"(\\w+)#(\\w+)=(\\w+)";
 
     public TelegramAuthService(ILogger<TelegramAuthService> logger,
         IOptionsSnapshot<TelegramAuthOptions> telegramAuthOptions, IObjectMapper objectMapper,
@@ -35,8 +37,7 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
     
     public Task<Tuple<string, string>>  GetTelegramAuthResultAsync(string param)
     {
-        var pattern = @"(\\w+)#(\\w+)=(\\w+)";
-        Match match = Regex.Match(param, pattern);
+        Match match = Regex.Match(param, Pattern);
         if (match.Success)
         {
             return Task.FromResult(new Tuple<string, string>(match.Groups[1].Value, match.Groups[3].Value));

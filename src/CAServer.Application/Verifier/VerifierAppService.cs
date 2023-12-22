@@ -294,7 +294,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         try
         {
-            //var userId = GetTelegramUserIdWithPrefix(requestDto.AccessToken);
             var userId = GetTelegramUserId(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
