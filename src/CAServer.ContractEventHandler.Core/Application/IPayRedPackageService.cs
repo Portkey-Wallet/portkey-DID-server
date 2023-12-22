@@ -126,18 +126,7 @@ public class PayRedPackageService : IPayRedPackageService
                 redPackageId.ToString());
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
             var redPackageDetail = await grain.GetRedPackage(redPackageId);
-            var grabItems = redPackageDetail.Data.Items.Where(t => !t.PaymentCompleted).ToList();
-            var payRedPackageFrom = _packageAccount.getOneAccountRandom();
-            _logger.LogInformation("red package payRedPackageFrom, payRedPackageFrom is {payRedPackageFrom} ",
-                payRedPackageFrom);
-
-            if (grabItems.IsNullOrEmpty())
-            {
-                _logger.LogInformation("there are no one claim the red packages,red package id is {redPackageId}",
-                    redPackageId.ToString());
-                return;
-            }
-
+            
             var redPackageStatus = redPackageDetail.Data.Status;
             if (redPackageStatus == RedPackageStatus.Expired ||
                 redPackageStatus == RedPackageStatus.FullyClaimed ||
@@ -146,6 +135,18 @@ public class PayRedPackageService : IPayRedPackageService
                 RemoveRedPackageJob(redPackageId);
             }
 
+            var grabItems = redPackageDetail.Data.Items.Where(t => !t.PaymentCompleted).ToList();
+            var payRedPackageFrom = _packageAccount.getOneAccountRandom();
+            _logger.LogInformation("red package payRedPackageFrom, payRedPackageFrom is {payRedPackageFrom} ",
+                payRedPackageFrom);
+            
+            if (grabItems.IsNullOrEmpty())
+            {
+                _logger.LogInformation("there are no one claim the red packages,red package id is {redPackageId}",
+                    redPackageId.ToString());
+                return;
+            }
+            
             redPackageDetail.Data.Items = grabItems;
             var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail, payRedPackageFrom);
             _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",
