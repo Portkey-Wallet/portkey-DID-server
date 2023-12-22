@@ -96,17 +96,19 @@ public class PayRedPackageService : IPayRedPackageService
             if (!check)
             {
                 _logger.LogWarning("do not acquire send red package lock key, packageId:{redPackageId}", redPackageId);
+                return;
             }
 
             await SetPayCacheAsync(redPackageId);
             await SendRedPackageAsync(redPackageId);
+
+            await RemovePayCacheAsync(redPackageId);
+            _logger.LogInformation("release send red package lock, packageId:{redPackageId}", redPackageId);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "send red package error, packageId:{redPackageId}", redPackageId);
-        }
-        finally
-        {
+
             await RemovePayCacheAsync(redPackageId);
             _logger.LogInformation("release send red package lock, packageId:{redPackageId}", redPackageId);
         }
@@ -266,7 +268,7 @@ public class PayRedPackageService : IPayRedPackageService
         var recurringKey = _lockPayRedPackagePrefix + redPackageId;
         await _payDistributedCache.SetAsync(recurringKey, redPackageId.ToString(), new DistributedCacheEntryOptions()
         {
-            AbsoluteExpiration = DateTimeOffset.Now.AddDays(_grabRedPackageOptions.RecurringInfoExpireDays)
+            AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(_grabRedPackageOptions.PayCacheExpireTime)
         });
     }
 
