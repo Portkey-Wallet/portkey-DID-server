@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.RedPackage;
 using Hangfire;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Volo.Abp.Caching;
+using Volo.Abp.DistributedLocking;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
@@ -25,36 +28,95 @@ public class PayRedPackageService : IPayRedPackageService
     private readonly PayRedPackageAccount _packageAccount;
     private readonly IContractProvider _contractProvider;
     private readonly GrabRedPackageOptions _grabRedPackageOptions;
+    private readonly IDistributedCache<PayRedPackageRecurring> _distributedCache;
+    private readonly IDistributedCache<string> _payDistributedCache;
+    private readonly IAbpDistributedLock _distributedLock;
+    private readonly string _lockKeyPrefix = "CAServer:ContractEventHandler:PayRedPackage:";
+    private readonly string _lockPayRedPackagePrefix = "CAServer:ContractEventHandler:LockPayRedPackage:";
+    private readonly string _payRedPackageRecurringPrefix = "CAServer:ContractEventHandler:RedPackageRecurring:";
 
     public PayRedPackageService(ILogger<PayRedPackageService> logger,
         IClusterClient clusterClient,
         IOptionsSnapshot<PayRedPackageAccount> packageAccount,
         IContractProvider contractProvider,
-        IOptionsSnapshot<GrabRedPackageOptions> grabRedPackageOptions)
+        IOptionsSnapshot<GrabRedPackageOptions> grabRedPackageOptions,
+        IDistributedCache<PayRedPackageRecurring> distributedCache,
+        IAbpDistributedLock distributedLock, IDistributedCache<string> payDistributedCache)
     {
         _logger = logger;
         _clusterClient = clusterClient;
         _contractProvider = contractProvider;
+        _distributedCache = distributedCache;
+        _distributedLock = distributedLock;
+        _payDistributedCache = payDistributedCache;
         _packageAccount = packageAccount.Value;
         _grabRedPackageOptions = grabRedPackageOptions.Value;
     }
 
-    public Task PayRedPackageAsync(Guid redPackageId)
+    public async Task PayRedPackageAsync(Guid redPackageId)
     {
-        RecurringJob.AddOrUpdate(redPackageId.ToString(), () => SendRedPackageAsync(redPackageId),
-            _grabRedPackageOptions.Corn);
-        _logger.LogInformation("add or update grab RecurringJob, redPackageId:{redPackageId}", redPackageId);
+        try
+        {
+            await using var handle =
+                await _distributedLock.TryAcquireAsync(name: _lockKeyPrefix + redPackageId);
+            if (handle != null)
+            {
+                var payRecurringCount = 0;
+                var recurringKey = _payRedPackageRecurringPrefix + redPackageId;
+                var recurringInfo = await _distributedCache.GetAsync(recurringKey);
 
-        return Task.CompletedTask;
+                if (recurringInfo != null)
+                {
+                    var totalPayRecurringCount = recurringInfo.TotalPayRecurringCount;
+                    payRecurringCount = GetPayRecurringCount(recurringInfo.PayRecurringCount, totalPayRecurringCount);
+                    await UpdateRecurringCountAsync(recurringKey, payRecurringCount, totalPayRecurringCount);
+                }
+
+                AddOrUpdateRecurringJob(redPackageId, payRecurringCount);
+            }
+            else
+            {
+                _logger.LogWarning("do not get lock, keys already exits, redPackageId: {redPackageId}",
+                    redPackageId.ToString());
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "PayRedPackageAsync error, redPackageId: {redPackageId}", redPackageId.ToString());
+        }
     }
 
+    public async Task SendRedPackageWithLockAsync(Guid redPackageId)
+    {
+        try
+        {
+            _logger.LogInformation("SendRedPackageWithLockAsync, packageId:{redPackageId}", redPackageId);
+            var check = await CheckAsync(redPackageId);
+            if (!check)
+            {
+                _logger.LogWarning("do not acquire send red package lock key, packageId:{redPackageId}", redPackageId);
+            }
 
-    // todo: when to stop job
+            await SetPayCacheAsync(redPackageId);
+            await SendRedPackageAsync(redPackageId);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "send red package error, packageId:{redPackageId}", redPackageId);
+        }
+        finally
+        {
+            await RemovePayCacheAsync(redPackageId);
+            _logger.LogInformation("release send red package lock, packageId:{redPackageId}", redPackageId);
+        }
+    }
+
     public async Task SendRedPackageAsync(Guid redPackageId)
     {
         try
         {
-            _logger.LogInformation("SendRedPackage start, redPackageId:{redPackageId}", redPackageId);
+            await UpdateRecurringCountAsync(redPackageId);
             var watcher = Stopwatch.StartNew();
             var startTime = DateTime.Now.Ticks;
 
@@ -66,11 +128,20 @@ public class PayRedPackageService : IPayRedPackageService
             var payRedPackageFrom = _packageAccount.getOneAccountRandom();
             _logger.LogInformation("red package payRedPackageFrom, payRedPackageFrom is {payRedPackageFrom} ",
                 payRedPackageFrom);
+
             if (grabItems.IsNullOrEmpty())
             {
                 _logger.LogInformation("there are no one claim the red packages,red package id is {redPackageId}",
                     redPackageId.ToString());
                 return;
+            }
+
+            var redPackageStatus = redPackageDetail.Data.Status;
+            if (redPackageStatus == RedPackageStatus.Expired ||
+                redPackageStatus == RedPackageStatus.FullyClaimed ||
+                redPackageStatus == RedPackageStatus.Cancelled)
+            {
+                RemoveRedPackageJob(redPackageId);
             }
 
             redPackageDetail.Data.Items = grabItems;
@@ -86,24 +157,9 @@ public class PayRedPackageService : IPayRedPackageService
             }
 
             //if success, update the payment status of red package 
-            var updateResult = await grain.UpdateRedPackage(grabItems);
-            if (!updateResult.Success)
-            {
-                _logger.LogError("update the payment status of red package fail, redPackage id is {redPackageId}",
-                    redPackageId.ToString());
-                return;
-            }
-
+            await grain.UpdateRedPackage(grabItems);
             _logger.LogInformation("PayRedPackageAsync end and the redPackage id is {redPackageId}",
                 redPackageId.ToString());
-
-            var redPackageStatus = updateResult.Data.Status;
-            if (redPackageStatus == RedPackageStatus.Expired ||
-                redPackageStatus == RedPackageStatus.FullyClaimed ||
-                redPackageStatus == RedPackageStatus.Cancelled)
-            {
-                RemoveRedPackageJob(redPackageId);
-            }
 
             watcher.Stop();
             _logger.LogInformation("#monitor# payRedPackage:{redPackage}, {cost}, {endTime}:", redPackageId.ToString(),
@@ -113,11 +169,110 @@ public class PayRedPackageService : IPayRedPackageService
         {
             _logger.LogError(e, "PayRedPackage error, packageId:{redPackageId}", redPackageId);
         }
+        finally
+        {
+            await RemovePayCacheAsync(redPackageId);
+            _logger.LogInformation("release send red package lock, packageId:{redPackageId}", redPackageId);
+        }
     }
 
     private void RemoveRedPackageJob(Guid redPackageId)
     {
         RecurringJob.RemoveIfExists(redPackageId.ToString());
         _logger.LogInformation("stop send redPackage job, redPackageId:{redPackageId}", redPackageId);
+    }
+
+    // if count < 5 10s, 5-15 20s >15 1h
+    private string GetCorn(int payRecurringCount)
+    {
+        if (payRecurringCount < _grabRedPackageOptions.FirstRecurringCount)
+        {
+            return $"0/{_grabRedPackageOptions.Interval} * * * * ?";
+        }
+
+        if (payRecurringCount < _grabRedPackageOptions.SecondRecurringCount)
+        {
+            return $"0/{_grabRedPackageOptions.Interval * 2} * * * * ?";
+        }
+
+        return "0 0 0/1 * * ?";
+    }
+
+    private int GetPayRecurringCount(int payRecurringCount, int totalPayRecurringCount)
+    {
+        if (totalPayRecurringCount >= _grabRedPackageOptions.SecondRecurringCount)
+        {
+            return _grabRedPackageOptions.FirstRecurringCount - 1;
+        }
+
+        return payRecurringCount;
+    }
+
+    private void AddOrUpdateRecurringJob(Guid redPackageId, int payRecurringCount)
+    {
+        var corn = GetCorn(payRecurringCount);
+
+        RecurringJob.AddOrUpdate(redPackageId.ToString(), () => SendRedPackageWithLockAsync(redPackageId),
+            corn);
+        _logger.LogInformation("add or update grab RecurringJob, redPackageId:{redPackageId}", redPackageId);
+    }
+
+    private async Task UpdateRecurringCountAsync(Guid redPackageId)
+    {
+        var recurringKey = _payRedPackageRecurringPrefix + redPackageId;
+        var recurringInfo = await _distributedCache.GetAsync(recurringKey);
+        var totalPayRecurringCount = 1;
+        var payRecurringCount = 1;
+
+        if (recurringInfo != null)
+        {
+            totalPayRecurringCount = ++recurringInfo.TotalPayRecurringCount;
+            payRecurringCount = ++recurringInfo.PayRecurringCount;
+        }
+
+        await UpdateRecurringCountAsync(recurringKey, payRecurringCount, totalPayRecurringCount);
+        AddOrUpdateRecurringJob(redPackageId, payRecurringCount);
+        _logger.LogInformation(
+            "pay red package, packageId:{packageId}, payRecurringCount:{payRecurringCount}, totalPayRecurringCount:{totalPayRecurringCount}",
+            redPackageId, payRecurringCount, totalPayRecurringCount);
+    }
+
+    private async Task UpdateRecurringCountAsync(string recurringKey, int payRecurringCount, int totalPayRecurringCount)
+    {
+        await _distributedCache.SetAsync(recurringKey, new PayRedPackageRecurring()
+        {
+            TotalPayRecurringCount = totalPayRecurringCount,
+            PayRecurringCount = payRecurringCount
+        }, new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTimeOffset.Now.AddDays(_grabRedPackageOptions.RecurringInfoExpireDays)
+        });
+    }
+
+    private async Task<bool> CheckAsync(Guid redPackageId)
+    {
+        var result = await GetPayCacheAsync(redPackageId);
+        return result.IsNullOrEmpty();
+    }
+
+    private async Task<string> GetPayCacheAsync(Guid redPackageId)
+    {
+        var recurringKey = _lockPayRedPackagePrefix + redPackageId;
+        return await _payDistributedCache.GetAsync(recurringKey);
+    }
+
+    private async Task SetPayCacheAsync(Guid redPackageId)
+    {
+        var recurringKey = _lockPayRedPackagePrefix + redPackageId;
+        await _payDistributedCache.SetAsync(recurringKey, redPackageId.ToString(), new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTimeOffset.Now.AddDays(_grabRedPackageOptions.RecurringInfoExpireDays)
+        });
+    }
+
+    private async Task RemovePayCacheAsync(Guid redPackageId)
+    {
+        var recurringKey = _lockPayRedPackagePrefix + redPackageId;
+        await _payDistributedCache.RemoveAsync(recurringKey);
     }
 }

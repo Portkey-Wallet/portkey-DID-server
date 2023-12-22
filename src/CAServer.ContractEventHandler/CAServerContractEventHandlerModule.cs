@@ -228,8 +228,13 @@ public class CAServerContractEventHandlerModule : AbpModule
                 };
                 config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
             });
-
-            context.Services.AddHangfireServer(opt => { opt.Queues = new[] { "default", "notDefault" }; });
         }
+        
+        context.Services.AddHangfireServer(opt =>
+        {
+            opt.SchedulePollingInterval = TimeSpan.FromMilliseconds(3000);
+            opt.HeartbeatInterval = TimeSpan.FromMilliseconds(3000);
+            opt.Queues = new[] { "default", "notDefault" };
+        });
     }
 }
