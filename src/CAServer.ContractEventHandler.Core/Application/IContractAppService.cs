@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using AElf;
-using AElf.Indexing.Elasticsearch;
 using AElf.Types;
-using CAServer.Entities.Es;
 using CAServer.Commons;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -21,7 +18,6 @@ using CAServer.UserAssets.Provider;
 using CAServer.RedPackage.Etos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
-using Hangfire;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -50,7 +46,6 @@ public interface IContractAppService
     // Task UpdateOriginChainIdAsync(string originChainId, string syncChainId ,UserLoginEto userLoginEto);
     // Task InitializeQueryRecordIndexAsync();
     // Task InitializeIndexAsync(long blockHeight);
-    Task PayRedPackageAsync(Guid eventDataRedPackageId);
 
     Task<bool> RefundAsync(Guid redPackageId);
 }
@@ -465,72 +460,6 @@ public class ContractAppService : IContractAppService
         }
 
         return true;
-    }
-
-    public Task PayRedPackageAsync(Guid redPackageId)
-    {
-        RecurringJob.AddOrUpdate(redPackageId.ToString(), () => SendRedPackageAsync(redPackageId), "0/9 * * * * ?");
-        _logger.LogInformation("add to hangfire, redPackageId:{redPackageId}", redPackageId);
-
-        return Task.CompletedTask;
-    }
-
-    public async Task SendRedPackageAsync(Guid redPackageId)
-    {
-        try
-        {
-            _logger.LogInformation("SendRedPackage start, redPackageId:{redPackageId}", redPackageId);
-            Stopwatch watcher = Stopwatch.StartNew();
-            var startTime = DateTime.Now.Ticks;
-
-            _logger.Info($"PayRedPackageAsync start and the redpackage id is {redPackageId}", redPackageId.ToString());
-            var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
-
-            var redPackageDetail = await grain.GetRedPackage(redPackageId);
-
-            if (redPackageDetail.Data.Status == RedPackageStatus.Expired ||
-                redPackageDetail.Data.Status == RedPackageStatus.FullyClaimed ||
-                redPackageDetail.Data.Status == RedPackageStatus.Cancelled)
-            {
-                RecurringJob.RemoveIfExists(redPackageId.ToString());
-                _logger.LogInformation("stop send redPackage job, redPackageId:{redPackageId}", redPackageId);
-            }
-
-            var grabItems = redPackageDetail.Data.Items.Where(t => !t.PaymentCompleted).ToList();
-            var payRedPackageFrom = _packageAccount.getOneAccountRandom();
-            _logger.Info("red package payRedPackageFrom,payRedPackageFrom{payRedPackageFrom} ",
-                payRedPackageFrom);
-            if (grabItems.IsNullOrEmpty())
-            {
-                _logger.Info("there are no one claim the red packages,red package id is{redPackageId} ",
-                    redPackageId.ToString());
-                return;
-            }
-
-            redPackageDetail.Data.Items = grabItems;
-            var res = await _contractProvider.SendTransferRedPacketToChainAsync(redPackageDetail, payRedPackageFrom);
-            _logger.LogInformation("SendTransferRedPacketToChainAsync result is {res}",
-                JsonConvert.SerializeObject(res));
-
-            if (res.TransactionResultDto.Status != TransactionState.Mined)
-            {
-                _logger.LogError("PayRedPackageAsync fail: " + "\n{res}",
-                    JsonConvert.SerializeObject(res, Formatting.Indented));
-                return;
-            }
-
-            //if success update the payment status of red package 
-            await grain.UpdateRedPackage(grabItems);
-            _logger.Info("PayRedPackageAsync end and the redpackage id is {redPackageId}", redPackageId.ToString());
-
-            watcher.Stop();
-            _logger.LogInformation("#monitor# payRedPackage:{redpackageId},{cost},{endTime}:", redPackageId.ToString(),
-                watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "PayRedPackageAsync:{message}", e.Message);
-        }
     }
 
     public async Task<bool> RefundAsync(Guid redPackageId)
