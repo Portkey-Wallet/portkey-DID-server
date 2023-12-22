@@ -171,11 +171,6 @@ public class PayRedPackageService : IPayRedPackageService
         {
             _logger.LogError(e, "PayRedPackage error, packageId:{redPackageId}", redPackageId);
         }
-        finally
-        {
-            await RemovePayCacheAsync(redPackageId);
-            _logger.LogInformation("release send red package lock, packageId:{redPackageId}", redPackageId);
-        }
     }
 
     private void RemoveRedPackageJob(Guid redPackageId)
