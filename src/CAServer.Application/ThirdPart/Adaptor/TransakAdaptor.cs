@@ -3,23 +3,19 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Grains;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Transak;
 using JetBrains.Annotations;
-using MassTransit.Internals;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Serilog;
+using Volo.Abp;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
@@ -215,45 +211,16 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
                 .ToList();
             return fiatList;
         }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(e, "{ThirdPart} GetFiatListAsync failed", ThirdPart());
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "{ThirdPart} GetFiatListAsync error", ThirdPart());
-            return new List<RampFiatItem>();
         }
-    }
+        return new List<RampFiatItem>();
 
-    public async Task<TransakRampPrice> GetCommonRampPriceWithCache(RampDetailRequest rampDetailRequest)
-    {
-        var fiatList = await GetTransakFiatListWithCache(rampDetailRequest.Type, rampDetailRequest.Crypto);
-        AssertHelper.NotEmpty(fiatList, "Transak fiat list empty");
-
-        var fiat = fiatList
-            .Where(f => f.Symbol == rampDetailRequest.Fiat)
-            .Where(f => !f.SupportingCountries.IsNullOrEmpty())
-            .FirstOrDefault(f => f.SupportingCountries.Contains(rampDetailRequest.Country));
-        AssertHelper.NotNull(fiat, "Fiat {Fiat} not found", rampDetailRequest.Fiat);
-        AssertHelper.NotEmpty(fiat.PaymentOptions, "Fiat {Fiat} payment empty", rampDetailRequest.Fiat);
-
-        var paymentOption = fiat.PaymentOptions
-            .Where(payment => rampDetailRequest.IsBuy() || payment.IsPayOutAllowed)
-            .FirstOrDefault(payment => payment.IsActive);
-
-        // USD price·
-        var defaultAmount = rampDetailRequest.IsBuy()
-            ? paymentOption.DefaultAmount ?? DefaultFiatAccount
-            : paymentOption.DefaultAmountForPayOut ?? DefaultFiatAccount;
-        rampDetailRequest.Fiat = paymentOption.LimitCurrency;
-        rampDetailRequest.FiatAmount = defaultAmount;
-        rampDetailRequest.Country = null;
-        var limitCurrencyPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
-        if (paymentOption.LimitCurrency == fiat.Symbol) return limitCurrencyPrice;
-
-        // Input other fiat, calculate cryptoAmount via USD-price
-        var cryptoAmount = limitCurrencyPrice.FiatAmount * limitCurrencyPrice.ConversionPrice;
-        rampDetailRequest.Fiat = fiat.Symbol;
-        rampDetailRequest.FiatAmount = null;
-        rampDetailRequest.CryptoAmount = cryptoAmount;
-        return await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
     }
 
     private async Task<TransakFiatItem> GetTransakFiatItem(string type, string fiat, [CanBeNull] string country = null)
@@ -270,7 +237,6 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         AssertHelper.NotEmpty(fiatItem.PaymentOptions, "Fiat {Fiat} payment empty", fiat);
         return fiatItem;
     }
-
 
     public async Task<RampLimitDto> GetRampLimitAsync(RampLimitRequest rampLimitRequest)
     {
@@ -325,22 +291,15 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
                 Crypto = cryptoLimit
             };
         }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(e, "{ThirdPart} GetRampLimitAsync failed", ThirdPart());
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "{ThirdPart} GetRampLimitAsync error", ThirdPart());
-            return null;
         }
-    }
-
-    /// <param name="fromFiatExchange">e.g.: ELF-USD - 0.35</param>
-    /// <param name="toFiatExchange">e.g.: ELF-EUR - 0.31</param>
-    /// <param name="fromAmount">e.g.: 200 USD</param>
-    private static decimal CalculateLimit(decimal fromFiatExchange, decimal toFiatExchange, decimal fromAmount)
-    {
-        if (fromFiatExchange == toFiatExchange) return fromAmount;
-        AssertHelper.IsTrue(fromFiatExchange > 0, "Invalid fiat exchange from {Ex}", fromFiatExchange);
-        AssertHelper.IsTrue(toFiatExchange > 0, "Invalid fiat exchange to {Ex}", toFiatExchange);
-        return fromAmount * toFiatExchange / fromFiatExchange;
+        return null;
     }
 
     public async Task<decimal?> GetRampExchangeAsync(RampExchangeRequest rampExchangeRequest)
@@ -435,11 +394,15 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             var limitCurrencyPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
             return limitCurrencyPrice.FiatCryptoExchange();
         }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(e, "{ThirdPart} GetRampExchangeAsync failed", ThirdPart());
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
-            return null;
         }
+        return null;
     }
 
     public async Task<RampPriceDto> GetRampPriceAsync(RampDetailRequest rampDetailRequest)
@@ -484,11 +447,16 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             };
             return rampPrice;
         }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(e, "{ThirdPart} GetRampExchangeAsync failed", ThirdPart());
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
-            return null;
         }
+        return null;
+
     }
 
     public async Task<ProviderRampDetailDto> GetRampDetailAsync(RampDetailRequest rampDetailRequest)
@@ -514,10 +482,14 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             };
             return providerRampDetail;
         }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(e, "{ThirdPart} GetRampDetailAsync failed", ThirdPart());
+        }
         catch (Exception e)
         {
-            _logger.LogError(e, "{ThirdPart} GetRampExchangeAsync error", ThirdPart());
-            return null;
+            _logger.LogError(e, "{ThirdPart} GetRampDetailAsync error", ThirdPart());
         }
+        return null;
     }
 }
