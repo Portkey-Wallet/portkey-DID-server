@@ -1,7 +1,8 @@
 using System;
+using System.Linq;
 using CAServer.Commons;
 using CAServer.Entities.Es;
-using CAServer.RedPackage;
+using CAServer.UserAssets.Provider;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -22,7 +23,8 @@ public class CustomMessageHelper
         return JsonConvert.SerializeObject(result);
     }
 
-    public static string BuildTransferContent(string content, string toUserName, TransferIndex transfer)
+    public static string BuildTransferContent(string content, string toUserName, TransferIndex transfer,
+        NftInfo nftInfo)
     {
         var customMessage = JsonConvert.DeserializeObject<TransferCustomMessage<TransferCard>>(content);
         customMessage.Data = new TransferCard
@@ -36,13 +38,25 @@ public class CustomMessageHelper
             ToUserName = toUserName
         };
 
-        customMessage.TransferExtraData = new TransferExtraData
+        customMessage.TransferExtraData = new TransferExtraData();
+        if (nftInfo != null)
         {
-            Amount = transfer.Amount,
-            Decimal = transfer.Decimal,
-            Symbol = transfer.Symbol
-        };
-
+            customMessage.TransferExtraData.NftInfo = new TransferNftInfo()
+            {
+                NftId = nftInfo.Symbol.Split("-").Last(),
+                Alias = nftInfo.TokenName
+            };
+        }
+        else
+        {
+            customMessage.TransferExtraData.TokenInfo = new TransferTokenInfo()
+            {
+                Amount = transfer.Amount,
+                Decimal = transfer.Decimal,
+                Symbol = transfer.Symbol
+            };
+        }
+        
         return JsonConvert.SerializeObject(customMessage, new JsonSerializerSettings()
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()

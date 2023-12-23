@@ -11,6 +11,8 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ImTransfer;
 using CAServer.ImTransfer.Etos;
 using CAServer.Options;
+using CAServer.UserAssets;
+using CAServer.UserAssets.Provider;
 using GraphQL;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,12 +37,13 @@ public class ImTransferService : IImTransferService, ISingletonDependency
     private readonly IContractProvider _contractProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IGraphQLHelper _graphQlHelper;
+    private readonly IUserAssetsProvider _userAssetsProvider;
 
     public ImTransferService(ILogger<ImTransferService> logger,
         INESTRepository<TransferIndex, string> transferRepository, IHttpClientProvider httpClientProvider,
         IOptionsSnapshot<ImServerOptions> imServerOptions, IContractProvider contractProvider,
         IClusterClient clusterClient, IGraphQLHelper graphQlHelper,
-        INESTRepository<CAHolderIndex, Guid> caHolderRepository)
+        INESTRepository<CAHolderIndex, Guid> caHolderRepository, IUserAssetsProvider userAssetsProvider)
     {
         _logger = logger;
         _transferRepository = transferRepository;
@@ -49,6 +52,7 @@ public class ImTransferService : IImTransferService, ISingletonDependency
         _clusterClient = clusterClient;
         _graphQlHelper = graphQlHelper;
         _caHolderRepository = caHolderRepository;
+        _userAssetsProvider = userAssetsProvider;
         _imServerOptions = imServerOptions.Value;
     }
 
@@ -142,8 +146,17 @@ public class ImTransferService : IImTransferService, ISingletonDependency
                 JsonConvert.DeserializeObject<ImSendMessageRequestDto>(transferIndex.Message);
 
             var user = await _caHolderRepository.GetAsync(transferDto.ToUserId);
+
+            NftInfo nftInfo = null;
+            if (transferDto.Decimal == 0)
+            {
+                var nftDetail = await GetUserNftInfoAsync(transferDto.Symbol);
+                nftInfo = nftDetail?.NftInfo;
+            }
+
             messageRequestDto.Content =
-                CustomMessageHelper.BuildTransferContent(messageRequestDto.Content, user?.NickName, transferIndex);
+                CustomMessageHelper.BuildTransferContent(messageRequestDto.Content, user?.NickName, transferIndex,
+                    nftInfo);
 
             var headers = new Dictionary<string, string>
             {
@@ -196,5 +209,13 @@ public class ImTransferService : IImTransferService, ISingletonDependency
                 symbol, skipCount = 0, maxResultCount = 1
             }
         });
+    }
+
+    private async Task<IndexerNftInfo> GetUserNftInfoAsync(string symbol)
+    {
+        var nftInfo = await _userAssetsProvider.GetUserNftInfoAsync(new List<CAAddressInfo>(),
+            symbol, 0, 1);
+
+        return nftInfo?.CaHolderNFTBalanceInfo?.Data?.FirstOrDefault();
     }
 }
