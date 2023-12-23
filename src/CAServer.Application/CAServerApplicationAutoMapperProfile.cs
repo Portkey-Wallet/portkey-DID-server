@@ -417,7 +417,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
-        
+
         CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
         CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
 
@@ -433,10 +433,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
         CreateMap<RedPackageIndex, RedPackageDetailDto>()
             .ForMember(dest => dest.Items, opt => opt.Ignore())
-            .ForMember(dest => dest.TotalAmount, 
+            .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
             .ReverseMap()
-            .ForMember(dest => dest.TotalAmount, 
+            .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
@@ -444,7 +444,8 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<ImTransferDto, TransferGrainDto>();
         CreateMap<TransferGrainDto, TransferIndex>();
-        CreateMap<TransferIndex, TransferResultDto>();
+        CreateMap<TransferIndex, TransferResultDto>().ForMember(t => t.Status,
+            m => m.MapFrom(f => Enum.Parse(typeof(TransferTransactionStatus), f.TransactionStatus)));
         CreateMap<TransferIndex, TransferEto>().ReverseMap();
     }
 }

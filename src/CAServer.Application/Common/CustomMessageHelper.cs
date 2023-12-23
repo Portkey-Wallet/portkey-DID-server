@@ -3,6 +3,7 @@ using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.RedPackage;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace CAServer.Common;
 
@@ -21,7 +22,7 @@ public class CustomMessageHelper
         return JsonConvert.SerializeObject(result);
     }
 
-    public static string BuildTransferContent(string content, TransferIndex transfer)
+    public static string BuildTransferContent(string content, string toUserName, TransferIndex transfer)
     {
         var customMessage = JsonConvert.DeserializeObject<TransferCustomMessage<TransferCard>>(content);
         customMessage.Data = new TransferCard
@@ -30,7 +31,9 @@ public class CustomMessageHelper
             SenderId = transfer.SenderId,
             Memo = transfer.Memo,
             TransactionId = transfer.TransactionId,
-            BlockHash = transfer.BlockHash
+            BlockHash = transfer.BlockHash,
+            ToUserId = transfer.ToUserId,
+            ToUserName = toUserName
         };
 
         customMessage.TransferExtraData = new TransferExtraData
@@ -40,6 +43,9 @@ public class CustomMessageHelper
             Symbol = transfer.Symbol
         };
 
-        return JsonConvert.SerializeObject(customMessage);
+        return JsonConvert.SerializeObject(customMessage, new JsonSerializerSettings()
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        });
     }
 }
