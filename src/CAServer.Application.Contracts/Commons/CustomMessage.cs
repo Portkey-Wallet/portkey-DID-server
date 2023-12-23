@@ -34,7 +34,19 @@ public class TransferCard
 
 public class TransferExtraData
 {
+    public TransferTokenInfo TokenInfo { get; set; }
+    public TransferNftInfo NftInfo { get; set; }
+}
+
+public class TransferTokenInfo
+{
     public long Amount { get; set; }
     public int Decimal { get; set; }
     public string Symbol { get; set; }
+}
+
+public class TransferNftInfo
+{
+    public string NftId { get; set; }
+    public string Alias { get; set; }
 }
