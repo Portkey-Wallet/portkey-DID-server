@@ -29,6 +29,7 @@ public class ImTransferService : IImTransferService, ISingletonDependency
 {
     private readonly ILogger<ImTransferService> _logger;
     private readonly INESTRepository<TransferIndex, string> _transferRepository;
+    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
     private readonly IHttpClientProvider _httpClientProvider;
     private readonly ImServerOptions _imServerOptions;
     private readonly IContractProvider _contractProvider;
@@ -38,7 +39,8 @@ public class ImTransferService : IImTransferService, ISingletonDependency
     public ImTransferService(ILogger<ImTransferService> logger,
         INESTRepository<TransferIndex, string> transferRepository, IHttpClientProvider httpClientProvider,
         IOptionsSnapshot<ImServerOptions> imServerOptions, IContractProvider contractProvider,
-        IClusterClient clusterClient, IGraphQLHelper graphQlHelper)
+        IClusterClient clusterClient, IGraphQLHelper graphQlHelper,
+        INESTRepository<CAHolderIndex, Guid> caHolderRepository)
     {
         _logger = logger;
         _transferRepository = transferRepository;
@@ -46,6 +48,7 @@ public class ImTransferService : IImTransferService, ISingletonDependency
         _contractProvider = contractProvider;
         _clusterClient = clusterClient;
         _graphQlHelper = graphQlHelper;
+        _caHolderRepository = caHolderRepository;
         _imServerOptions = imServerOptions.Value;
     }
 
@@ -94,6 +97,7 @@ public class ImTransferService : IImTransferService, ISingletonDependency
                 JsonConvert.SerializeObject(result, Formatting.Indented));
 
             transferGrainDto.TransactionResult = result.Status;
+            transferGrainDto.BlockHash = result.BlockHash;
             if (result.Status != TransactionState.Mined)
             {
                 transferGrainDto.ErrorMessage = $"Transaction status: {result.Status}. Error: {result.Error}";
@@ -130,14 +134,16 @@ public class ImTransferService : IImTransferService, ISingletonDependency
             transferIndex.ErrorMessage = transferDto.Message;
             transferIndex.TransactionResult = transferDto.TransactionResult;
             transferIndex.TransactionStatus = transferDto.TransactionStatus.ToString();
+            transferIndex.BlockHash = transferDto.BlockHash;
             transferIndex.ModificationTime = transferDto.ModificationTime;
             await _transferRepository.UpdateAsync(transferIndex);
 
             var messageRequestDto =
                 JsonConvert.DeserializeObject<ImSendMessageRequestDto>(transferIndex.Message);
 
+            var user = await _caHolderRepository.GetAsync(transferDto.ToUserId);
             messageRequestDto.Content =
-                CustomMessageHelper.BuildTransferContent(messageRequestDto.Content, transferIndex);
+                CustomMessageHelper.BuildTransferContent(messageRequestDto.Content, user?.NickName, transferIndex);
 
             var headers = new Dictionary<string, string>
             {

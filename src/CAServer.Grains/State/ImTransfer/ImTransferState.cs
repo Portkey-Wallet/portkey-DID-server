@@ -17,6 +17,7 @@ public class ImTransferState
     public string RawTransaction { get; set; }
     public string Message { get; set; }
     public string TransactionId { get; set; }
+    public string BlockHash { get; set; }
     public string TransactionResult { get; set; }
     public TransferTransactionStatus TransactionStatus { get; set; }
     public string ErrorMessage { get; set; }
