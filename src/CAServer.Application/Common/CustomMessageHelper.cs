@@ -30,11 +30,11 @@ public class CustomMessageHelper
         customMessage.Data = new TransferCard
         {
             Id = transfer.Id,
-            SenderId = transfer.SenderId,
+            SenderId = transfer.SenderId.ToString(),
             Memo = transfer.Memo,
             TransactionId = transfer.TransactionId,
             BlockHash = transfer.BlockHash,
-            ToUserId = transfer.ToUserId,
+            ToUserId = transfer.ToUserId.ToString(),
             ToUserName = toUserName
         };
 
