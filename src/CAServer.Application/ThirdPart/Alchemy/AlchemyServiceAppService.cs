@@ -175,7 +175,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             AssertHelper.NotEmpty(cryptoList.Data, "Empty Alchemy crypto list");
             var mappingNetworkExists = AlchemyRampOptions().NetworkMapping.TryGetValue(input.Network, out var mappingNetwork);
             var cryptoItem = cryptoList.Data
-                .Where(c => mappingNetworkExists && mappingNetwork == c.Network)
+                .Where(c => c.Network == (mappingNetworkExists ? mappingNetwork : input.Network))
                 .Where(c => c.Crypto == input.Crypto)
                 .FirstOrDefault(c => input.IsBuy() ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0);
             AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found in Alchemy list.", input.Crypto);
