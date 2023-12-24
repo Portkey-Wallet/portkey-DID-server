@@ -119,7 +119,7 @@ public class AElfHashBase64Converter : JsonConverter<Hash>
 }
 
 // Google.Protobuf.ByteString (Base64)
-public class ByteStringBase64Converter :  JsonConverter<ByteString>
+public class ByteStringBase64Converter : JsonConverter<ByteString>
 {
     public override void WriteJson(JsonWriter writer, ByteString value, JsonSerializer serializer)
     {
