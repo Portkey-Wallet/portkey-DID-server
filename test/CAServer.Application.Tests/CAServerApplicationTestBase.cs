@@ -65,7 +65,7 @@ public abstract class CAServerApplicationTestBase : CAServerTestBase<CAServerApp
     {
         var mockActivityProvider = new Mock<IActivityProvider>();
         mockActivityProvider
-            .Setup(x => x.GetCaHolder(It.IsAny<string>()))
+            .Setup(x => x.GetCaHolderAsync(It.IsAny<string>()))
             .Returns<string>((_) => Task.FromResult(result));
         
         mockActivityProvider.Setup(m => m.GetTokenDecimalsAsync(It.IsAny<string>())).ReturnsAsync(new IndexerSymbols

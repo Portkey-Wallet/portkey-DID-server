@@ -15,19 +15,15 @@ using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 
-public interface INftOrderSettlementTransferWorker
-{
-    Task Handle();
-}
 
-public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorker, ISingletonDependency
+public class NftOrderSettlementTransferWorker : IJobWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderSettlementTransferWorker> _logger;
     private readonly INftCheckoutService _nftCheckoutService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly TransactionOptions _transactionOptions;
     private readonly IContractProvider _contractProvider;
 
@@ -35,7 +31,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
     public NftOrderSettlementTransferWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         INftCheckoutService nftCheckoutService, ILogger<NftOrderSettlementTransferWorker> logger,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
-        IOptions<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions,
         IContractProvider contractProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
@@ -45,7 +41,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
         _distributedLock = distributedLock;
         _contractProvider = contractProvider;
         _transactionOptions = transactionOptions.Value;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
     }
 
     /// <summary>
@@ -53,7 +49,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
     /// </summary>
     /// 
     [AutomaticRetry(Attempts = 0)]
-    public async Task Handle()
+    public async Task HandleAsync()
     {
         _logger.LogDebug("NftOrderSettlementTransferWorker start");
         await using var handle =
@@ -69,11 +65,11 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
         _logger.LogDebug("NftOrderSettlementTransferWorker chainHeight={Height} LIB: {LibHeight}",
             chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight);
 
-        const int pageSize = 100;
-        var secondsAgo = _thirdPartOptions.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
+        var pageSize = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferPageSize;
+        var secondsAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow
-            .AddHours(-_thirdPartOptions.Timer.HandleUnCompletedSettlementTransferHoursAgo).ToUtcMilliSeconds();
+            .AddHours(-_thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferHoursAgo).ToUtcMilliSeconds();
         var total = 0;
         var count = 0;
         while (true)

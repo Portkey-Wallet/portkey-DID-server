@@ -111,7 +111,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             input.TransDirect = input.TransDirect.DefaultIfEmpty(TransferDirectionType.NFTBuy.ToString());
 
             // Query userId from caHolder
-            var caHolder = await _activityProvider.GetCaHolder(input.CaHash);
+            var caHolder = await _activityProvider.GetCaHolderAsync(input.CaHash);
 
             // query decimal of paymentSymbol via GraphQL
             var decimalsList = await _activityProvider.GetTokenDecimalsAsync(input.PaymentSymbol);

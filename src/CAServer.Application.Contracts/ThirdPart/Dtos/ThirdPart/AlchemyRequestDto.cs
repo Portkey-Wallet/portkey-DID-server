@@ -164,6 +164,7 @@ public class AlchemyNftOrderDto : IThirdPartValidOrderUpdateRequest
 
 public class AlchemyNftOrderRequestDto : Dictionary<string, string>, IThirdPartNftOrderUpdateRequest
 {
+    // In order to verify the signature correctly when Alchemy add new fields, the Dictionary is inherited here.
 }
 
 public class AlchemyNftReleaseNoticeRequestDto

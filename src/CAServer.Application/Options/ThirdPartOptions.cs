@@ -28,16 +28,21 @@ public class ThirdPartTimerOptions
     public int TransactionWaitTimeoutSeconds { get; set; } = 45;
     public int TransactionConfirmHeight { get; set; } = 100;
     public int HandleUnCompletedOrderMinuteAgo { get; set; } = 2;
+    public int HandleUnCompletedOrderPageSize { get; set; } = 10;
     public int HandleUnCompletedSettlementTransferSecondsAgo { get; set; } = 30;
+    public int HandleUnCompletedSettlementTransferPageSize { get; set; } = 10;
     public int HandleUnCompletedSettlementTransferHoursAgo { get; set; } = 1;
     public int NftCheckoutMerchantCallbackCount { get; set; }  = 3;
+    public int NftCheckoutMerchantCallbackPageSize { get; set; }  = 10;
     public int NftCheckoutResultThirdPartNotifyCount { get; set; }  = 3;
+    public int NftCheckoutResultThirdPartPageSize { get; set; }  = 10;
     public int NftUnCompletedMerchantCallbackMinuteAgo { get; set; }  = 2;
     public int NftUnCompletedThirdPartCallbackMinuteAgo { get; set; }  = 2;
     
     // Handle un complete order settlement from days ago to minutes ago
     public int NftUnCompletedOrderSettlementMinuteAgo { get; set; } = 2;
     public int NftUnCompletedOrderSettlementDaysAgo { get; set; }  = 2;
+    public int NftUnCompletedOrderSettlementPageSize { get; set; }  = 10;
     
     public int NftOrderExpireSeconds { get; set; }  = 60 * 30;
 }

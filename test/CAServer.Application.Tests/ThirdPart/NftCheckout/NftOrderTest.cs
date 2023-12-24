@@ -223,7 +223,7 @@ public partial class NftOrderTest : ThirdPartTestBase
 
         #region run worker to fix transaction status
         
-            await _nftOrderSettlementTransferWorker.Handle();
+            await _nftOrderSettlementTransferWorker.HandleAsync();
             order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
             order.ShouldNotBeNull();
             order.Status.ShouldBe(OrderStatusType.Finish.ToString());
@@ -381,7 +381,7 @@ public partial class NftOrderTest : ThirdPartTestBase
 
         #endregion
 
-        await _nftOrderMerchantCallbackWorker.Handle();
+        await _nftOrderMerchantCallbackWorker.HandleAsync();
     }
 
 
@@ -420,6 +420,6 @@ public partial class NftOrderTest : ThirdPartTestBase
 
         #endregion
 
-        await _nftOrderThirdPartOrderStatusWorker.Handle();
+        await _nftOrderThirdPartOrderStatusWorker.HandleAsync();
     }
 }

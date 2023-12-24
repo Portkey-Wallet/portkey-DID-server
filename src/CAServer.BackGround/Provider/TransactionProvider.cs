@@ -6,7 +6,6 @@ using CAServer.BackGround.Options;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
-using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
@@ -131,7 +130,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Handle unCompleted order fail, orderId:{orderId}", order.Id);
+                _logger.LogError(e, "HandleAsync unCompleted order fail, orderId:{orderId}", order.Id);
             }
         }
     }
