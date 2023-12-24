@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
@@ -60,8 +59,8 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid input");
 
         var inputDict = input as AlchemyNftOrderRequestDto;
-        var hasAppId = inputDict.TryGetValue(AlchemyHelper.AppIdField, out var appId);
-        var hasSignature = inputDict.TryGetValue(AlchemyHelper.SignatureField, out var inputSignature);
+        _ = inputDict.TryGetValue(AlchemyHelper.AppIdField, out var appId);
+        _ = inputDict.TryGetValue(AlchemyHelper.SignatureField, out var inputSignature);
 
         AssertHelper.NotEmpty(appId, "Empty appId");
         AssertHelper.NotEmpty(inputSignature, "Empty signature");

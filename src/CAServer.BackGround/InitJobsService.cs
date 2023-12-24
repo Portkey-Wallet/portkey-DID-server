@@ -27,23 +27,23 @@ public class InitJobsService : BackgroundService
             
             // fix uncompleted merchant callback
             _recurringJobs.AddOrUpdate<NftOrderMerchantCallbackWorker>("HandleNftOrdersCallbackAsync",
-                x => x.Handle(), _transactionOptions.NftOrderMerchantCallbackPeriod);
+                x => x.HandleAsync(), _transactionOptions.NftOrderMerchantCallbackPeriod);
             
             // fix uncompleted NFT release result notify to ThirdPart
             _recurringJobs.AddOrUpdate<NftOrderThirdPartNftResultNotifyWorker>("HandleNftThirdPartResultNotifyAsync",
-                x => x.Handle(), _transactionOptions.NftOrderThirdPartResultPeriod);
+                x => x.HandleAsync(), _transactionOptions.NftOrderThirdPartResultPeriod);
             
             // fix order status, witch is still Created/Initialized 
-            _recurringJobs.AddOrUpdate<INftOrderThirdPartOrderStatusWorker>("HandleUnCompletedNftOrderPayResultRefresh",
-                x => x.Handle(), _transactionOptions.HandleUnCompletedNftOrderPayResultPeriod);
+            _recurringJobs.AddOrUpdate<NftOrderThirdPartOrderStatusWorker>("HandleUnCompletedNftOrderPayResultRefresh",
+                x => x.HandleAsync(), _transactionOptions.HandleUnCompletedNftOrderPayResultPeriod);
             
             // fix uncompleted ELF transfer to merchant
-            _recurringJobs.AddOrUpdate<INftOrderSettlementTransferWorker>("HandleUnCompletedNftOrderSettlementTransfer",
-                x => x.Handle(), _transactionOptions.HandleUnCompletedNftOrderPayTransferPeriod);
+            _recurringJobs.AddOrUpdate<NftOrderSettlementTransferWorker>("HandleUnCompletedNftOrderSettlementTransfer",
+                x => x.HandleAsync(), _transactionOptions.HandleUnCompletedNftOrderPayTransferPeriod);
             
             // fix uncompleted ELF order count value
-            _recurringJobs.AddOrUpdate<INftOrdersSettlementWorker>("NftOrdersSettlementWorker",
-                x => x.Handle(), _transactionOptions.NftOrdersSettlementPeriod);
+            _recurringJobs.AddOrUpdate<NftOrdersSettlementWorker>("NftOrdersSettlementWorker",
+                x => x.HandleAsync(), _transactionOptions.NftOrdersSettlementPeriod);
         }
         catch (Exception e)
         {

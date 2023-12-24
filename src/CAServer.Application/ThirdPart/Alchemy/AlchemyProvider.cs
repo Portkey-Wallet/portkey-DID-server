@@ -96,7 +96,7 @@ public class AlchemyProvider : ISingletonDependency
     ///     Notice Alchemy NFT release result
     public async Task<AlchemyNftOrderDto> GetNftTrade(AlchemyNftReleaseNoticeRequestDto request)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(_alchemyOptions.NftBaseUrl,
+        var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.QueryNftTrade,
             header: GetNftAlchemyRequestHeader(),
             param: new Dictionary<string, string>
@@ -112,11 +112,11 @@ public class AlchemyProvider : ISingletonDependency
     ///     Notice Alchemy NFT release result
     public async Task NoticeNftReleaseResult(AlchemyNftReleaseNoticeRequestDto request)
     {
-        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<Empty>>(_alchemyOptions.NftBaseUrl,
+        var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<Empty>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.NftResultNotice,
             header: GetNftAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(request, JsonSerializerSettings), 
-            withLog:true);
+            withInfoLog:true);
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             JsonConvert.SerializeObject(res));
     }
@@ -125,7 +125,7 @@ public class AlchemyProvider : ISingletonDependency
     ///     Notice Alchemy NFT release result
     public async Task<List<AlchemyFiatDto>> GetNftFiatList()
     {
-        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.NftBaseUrl,
+        var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.QueryNftFiatList,
             header: GetNftAlchemyRequestHeader()
         );
@@ -137,7 +137,7 @@ public class AlchemyProvider : ISingletonDependency
     ///     Get Alchemy NFT free login Token
     public async Task<AlchemyTokenDataDto> GetNftFreeLoginToken(GetAlchemyFreeLoginTokenDto input)
     {
-        var res = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(_alchemyOptions.NftBaseUrl,
+        var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(_alchemyOptions.NftBaseUrl,
             AlchemyApi.GetFreeLoginToken,
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
             header: GetNftAlchemyRequestHeader()

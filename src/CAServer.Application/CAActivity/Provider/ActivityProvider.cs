@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
-using CAServer.CAActivity.Dtos;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
 using GraphQL;
-using Microsoft.Extensions.Options;
 using Nest;
 using Volo.Abp.DependencyInjection;
 
@@ -133,7 +131,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         });
     }
 
-    public async Task<CAHolderIndex> GetCaHolder(string caHash)
+    public async Task<CAHolderIndex> GetCaHolderAsync(string caHash)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>();
         mustQuery.Add(q => q.Term(i => i.Field(f => f.CaHash).Value(caHash)));

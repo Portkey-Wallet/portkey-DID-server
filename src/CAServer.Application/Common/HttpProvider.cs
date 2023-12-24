@@ -17,23 +17,23 @@ namespace CAServer.Common;
 
 public interface IHttpProvider : ISingletonDependency
 {
-    Task<T> Invoke<T>(string domain, ApiInfo apiInfo,
+    Task<T> InvokeAsync<T>(string domain, ApiInfo apiInfo,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false);
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withInfoLog = false);
 
-    Task<string> Invoke(string domain, ApiInfo apiInfo,
+    Task<string> InvokeAsync(string domain, ApiInfo apiInfo,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false);
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withInfoLog = false);
 
-    Task<string> Invoke(HttpMethod method, string url,
+    Task<string> InvokeAsync(HttpMethod method, string url,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, bool withLog = false);
+        Dictionary<string, string> header = null, bool withInfoLog = false);
 
 }
 
@@ -53,13 +53,13 @@ public class HttpProvider : IHttpProvider
         _logger = logger;
     }
 
-    public async Task<T> Invoke<T>(string domain, ApiInfo apiInfo,
+    public async Task<T> InvokeAsync<T>(string domain, ApiInfo apiInfo,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false)
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withInfoLog = false)
     {
-        var resp = await Invoke(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, withLog);
+        var resp = await InvokeAsync(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, withInfoLog);
         try
         {
             return JsonConvert.DeserializeObject<T>(resp, settings ?? DefaultJsonSettings);
@@ -70,20 +70,20 @@ public class HttpProvider : IHttpProvider
         }
     }
 
-    public async Task<string> Invoke(string domain, ApiInfo apiInfo,
+    public async Task<string> InvokeAsync(string domain, ApiInfo apiInfo,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withLog = false)
+        Dictionary<string, string> header = null, JsonSerializerSettings settings = null, bool withInfoLog = false)
     {
-        return await Invoke(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, withLog);
+        return await InvokeAsync(apiInfo.Method, domain + apiInfo.Path, pathParams, param, body, header, withInfoLog);
     }
     
-    public async Task<string> Invoke(HttpMethod method, string url,
+    public async Task<string> InvokeAsync(HttpMethod method, string url,
         Dictionary<string, string> pathParams = null,
         Dictionary<string, string> param = null,
         string body = null,
-        Dictionary<string, string> header = null, bool withLog = false)
+        Dictionary<string, string> header = null, bool withInfoLog = false)
     {
         // url params
         var fullUrl = PathParamUrl(url, pathParams);
@@ -110,11 +110,10 @@ public class HttpProvider : IHttpProvider
         var content = await response.Content.ReadAsStringAsync();
         
         // log
-        
         _logger.LogDebug(
             "Request To {FullUrl}, query={Query}, header={Header}, statusCode={StatusCode}, body={Body}, resp={Content}",
             fullUrl, builder.Query, request.Headers.ToString(), response.StatusCode, body, content);
-        if (withLog)
+        if (withInfoLog)
             _logger.LogInformation(
             "Request To {FullUrl}, query={Query}, statusCode={StatusCode}, body={Body}, resp={Content}",
             fullUrl, builder.Query, response.StatusCode, body, content);

@@ -180,7 +180,7 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
             _thirdPartOrderProvider.SignMerchantDto(requestDto);
 
             // do callback merchant
-            var res = await _httpProvider.Invoke(HttpMethod.Post, nftOrderGrainDto.WebhookUrl,
+            var res = await _httpProvider.InvokeAsync(HttpMethod.Post, nftOrderGrainDto.WebhookUrl,
                 body: JsonConvert.SerializeObject(requestDto, JsonSerializerSettings));
             nftOrderGrainDto.WebhookResult = res;
 

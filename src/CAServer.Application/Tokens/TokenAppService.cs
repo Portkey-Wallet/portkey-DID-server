@@ -171,7 +171,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         
         return await _latestExchange.GetOrAddAsync(
             GrainIdHelper.GenerateGrainId(exchangeProviderName, fromSymbol, toSymbol),
-            async () => await exchangeProvider.Latest(fromSymbol, toSymbol),
+            async () => await exchangeProvider.LatestAsync(fromSymbol, toSymbol),
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
@@ -188,7 +188,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
         return await _latestExchange.GetOrAddAsync(
             GrainIdHelper.GenerateGrainId(exchangeProviderName, fromSymbol, toSymbol),
-            async () => await exchangeProvider.History(fromSymbol, toSymbol, timestamp.ToUtcMilliSeconds()),
+            async () => await exchangeProvider.HistoryAsync(fromSymbol, toSymbol, timestamp.ToUtcMilliSeconds()),
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)

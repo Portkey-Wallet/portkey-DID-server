@@ -22,7 +22,7 @@ public interface IActivityProvider
 
     Task<IndexerSymbols> GetTokenDecimalsAsync(string symbol);
 
-    Task<CAHolderIndex> GetCaHolder(string caHash);
+    Task<CAHolderIndex> GetCaHolderAsync(string caHash);
 
     Task<GuardiansDto> GetCaHolderInfoAsync(List<string> caAddresses, string caHash, int skipCount = 0,
         int maxResultCount = 10);

@@ -53,12 +53,12 @@ public class BinanceProvider : IExchangeProvider
         return ExchangeProviderName.Binance;
     }
 
-    public async Task<TokenExchange> Latest(string fromToken, string toToken)
+    public async Task<TokenExchange> LatestAsync(string fromToken, string toToken)
     {
         
         return await BlockDetect(async () =>
         {
-            var res = await _httpProvider.Invoke<BinanceTickerPrice>(
+            var res = await _httpProvider.InvokeAsync<BinanceTickerPrice>(
                 BinanceOptions().BaseUrl, BinanceApi.TickerPrice,
                 param: new Dictionary<string, string> { ["symbol"] = fromToken.ToUpper() + toToken.ToUpper() }
             );
@@ -74,7 +74,7 @@ public class BinanceProvider : IExchangeProvider
     }
 
     
-    public async Task<TokenExchange> History(string fromToken, string toToken, long timestamp)
+    public async Task<TokenExchange> HistoryAsync(string fromToken, string toToken, long timestamp)
     {
         return await BlockDetect(async () =>
         {
@@ -89,7 +89,7 @@ public class BinanceProvider : IExchangeProvider
                 Limit = "1",
             };
             
-            var res = await _httpProvider.Invoke<List<List<string>>>(
+            var res = await _httpProvider.InvokeAsync<List<List<string>>>(
                 BinanceOptions().BaseUrl, BinanceApi.KLine,
                 param: JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(req, HttpProvider.DefaultJsonSettings))
             );
