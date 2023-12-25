@@ -66,11 +66,11 @@ public class AlchemyProvider
     /// get Alchemy order quote
     public async Task<AlchemyOrderQuoteDataDto> GetAlchemyOrderQuoteAsync(GetAlchemyOrderQuoteDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>>(AlchemyOptions().BaseUrl,
+        var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.RampOrderQuote,
             header: GetRampAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
-            withLog: true
+            withInfoLog: true
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "GetAlchemyOrderQuote fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
@@ -80,11 +80,11 @@ public class AlchemyProvider
     /// get Alchemy Crypto list
     public async Task<List<AlchemyCryptoDto>> GetAlchemyCryptoListAsync(GetAlchemyCryptoListDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>>(AlchemyOptions().BaseUrl,
+        var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryCryptoList,
             header: GetRampAlchemyRequestHeader(),
             param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings)),
-            debugLog: false
+            withInfoLog: false
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "GetAlchemyCryptoList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
@@ -94,11 +94,11 @@ public class AlchemyProvider
     /// get Alchemy fiat list
     public async Task<List<AlchemyFiatDto>> GetAlchemyFiatListAsync(GetAlchemyFiatListDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(AlchemyOptions().BaseUrl,
+        var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryFiatList,
             header: GetRampAlchemyRequestHeader(),
             param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings)),
-            debugLog: false
+            withInfoLog: false
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "GetAlchemyFiatList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
@@ -108,11 +108,11 @@ public class AlchemyProvider
     /// query Alchemy order info
     public async Task<QueryAlchemyOrderInfo> QueryAlchemyOrderInfoAsync(QueryAlchemyOrderDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<QueryAlchemyOrderInfo>>(AlchemyOptions().BaseUrl,
+        var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<QueryAlchemyOrderInfo>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryOrderTrade,
             header: GetRampAlchemyRequestHeader(),
             param: JsonConvert.DeserializeObject<Dictionary<string,string>>(JsonConvert.SerializeObject(input, JsonSerializerSettings)),
-            withLog: true
+            withInfoLog: true
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "QueryAlchemyOrderInfoAsync fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
@@ -124,7 +124,7 @@ public class AlchemyProvider
     public async Task<AlchemyTokenDataDto> GetAlchemyRampFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input)
     {
         
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(AlchemyOptions().BaseUrl,
+        var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.RampFreeLoginToken,
             header: GetRampAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings)
@@ -137,11 +137,11 @@ public class AlchemyProvider
     /// Update off-ramp order TxHash
     public async Task UpdateOffRampOrder(WaitToSendOrderInfoDto input)
     {
-        var result = await _httpProvider.Invoke<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(AlchemyOptions().BaseUrl,
+        var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.UpdateSellOrder,
             header: GetRampAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
-            withLog: true
+            withInfoLog: true
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "UpdateSellOrder fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
@@ -182,7 +182,7 @@ public class AlchemyProvider
         var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryNftFiatList,
             header: GetNftAlchemyRequestHeader(),
-            debugLog: false
+            withDebugLog: false
         );
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             JsonConvert.SerializeObject(res));

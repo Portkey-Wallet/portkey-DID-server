@@ -189,7 +189,7 @@ public class TransakProvider
     public async Task<TransakAccessToken> GetAccessTokenAsync()
     {
         // cacheData not exists or force
-        var accessTokenResp = await _httpProvider.Invoke<TransakMetaResponse<object, TransakAccessToken>>(
+        var accessTokenResp = await _httpProvider.InvokeAsync<TransakMetaResponse<object, TransakAccessToken>>(
             TransakOptions().BaseUrl,
             TransakApi.RefreshAccessToken,
             body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = GetApiKey() }),
@@ -206,10 +206,10 @@ public class TransakProvider
     /// <returns></returns>
     public async Task<List<TransakCryptoItem>> GetCryptoCurrenciesAsync()
     {
-        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCryptoItem>>>(
+        var resp = await _httpProvider.InvokeAsync<TransakBaseResponse<List<TransakCryptoItem>>>(
             TransakOptions().BaseUrl,
             TransakApi.GetCryptoCurrencies,
-            debugLog: false
+            withInfoLog: false
         );
         AssertHelper.IsTrue(resp.Success,
             "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
@@ -224,7 +224,7 @@ public class TransakProvider
     /// <returns></returns>
     public async Task<List<TransakFiatItem>> GetFiatCurrenciesAsync()
     {
-        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakFiatItem>>>(
+        var resp = await _httpProvider.InvokeAsync<TransakBaseResponse<List<TransakFiatItem>>>(
             TransakOptions().BaseUrl,
             TransakApi.GetFiatCurrencies,
             header: new Dictionary<string, string>
@@ -232,7 +232,7 @@ public class TransakProvider
                 ["accept"] = "application/json"
             },
             param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() },
-            debugLog: false
+            withInfoLog: false
         );
         AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}",
             resp.Error?.StatusCode, resp.Error?.Message);
@@ -246,10 +246,10 @@ public class TransakProvider
     /// <returns></returns>
     public async Task<List<TransakCountry>> GetTransakCountriesAsync()
     {
-        var resp = await _httpProvider.Invoke<TransakBaseResponse<List<TransakCountry>>>(
+        var resp = await _httpProvider.InvokeAsync<TransakBaseResponse<List<TransakCountry>>>(
             TransakOptions().BaseUrl,
             TransakApi.GetCountries,
-            debugLog: false
+            withInfoLog: false
         );
         AssertHelper.IsTrue(resp.Success,
             "GetTransakCountriesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
@@ -266,12 +266,12 @@ public class TransakProvider
     public async Task<TransakRampPrice> GetRampPriceAsync(GetRampPriceRequest input)
     {
         input.PartnerApiKey = GetApiKey();
-        var resp = await _httpProvider.Invoke<TransakBaseResponse<TransakRampPrice>>(
+        var resp = await _httpProvider.InvokeAsync<TransakBaseResponse<TransakRampPrice>>(
             TransakOptions().BaseUrl,
             TransakApi.GetPrice,
             param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
                 JsonConvert.SerializeObject(input, JsonSerializerSettings)),
-            withLog: true
+            withInfoLog: true
         );
         AssertHelper.IsTrue(resp.Success, "GetRampPrice Transak response error, code={Code}, message={Message}",
             resp.Error?.StatusCode, resp.Error?.Message);
@@ -288,10 +288,10 @@ public class TransakProvider
         for (var i = 0; i < RetryCount; i++)
         {
             // Update the webhook address when the system starts.
-            var webHookRes = await _httpProvider.InvokeResponse(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
+            var webHookRes = await _httpProvider.InvokeResponseAsync(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
                 body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
                 header: await GetAccessTokenHeader(),
-                withLog: true
+                withInfoLog: true
             );
             AssertHelper.NotNull(webHookRes, "transak webhook http response null");
             //right response return 
@@ -319,12 +319,12 @@ public class TransakProvider
     /// <returns></returns>
     public async Task<TransakOrderDto> GetOrderByIdAsync(string orderId)
     {
-        var resp = await _httpProvider.Invoke<QueryTransakOrderByIdResult>(TransakOptions().BaseUrl,
+        var resp = await _httpProvider.InvokeAsync<QueryTransakOrderByIdResult>(TransakOptions().BaseUrl,
             TransakApi.GetOrderById,
             pathParams: new Dictionary<string, string> { ["orderId"] = orderId },
             header: new Dictionary<string, string> { ["api-secret"] = TransakOptions().AppSecret },
             settings: JsonSerializerSettings,
-            withLog: true
+            withInfoLog: true
         );
 
         return resp?.Data;
