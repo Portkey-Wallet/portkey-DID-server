@@ -34,6 +34,7 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(_currentUser);

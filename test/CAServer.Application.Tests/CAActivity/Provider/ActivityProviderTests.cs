@@ -20,6 +20,7 @@ public class ActivityProviderTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockIGraphQLHelper());
     }
     [Fact]
@@ -34,7 +35,7 @@ public class ActivityProviderTests : CAServerApplicationTestBase
     [Fact]
     public async void GetActivityAsyncTest()
     {
-        var result = await _activityProvider.GetActivityAsync("123", "123");
+        var result = await _activityProvider.GetActivityAsync("123", "123", new List<CAAddressInfo>());
     }
     
     [Fact]

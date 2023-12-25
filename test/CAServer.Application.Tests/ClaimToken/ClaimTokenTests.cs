@@ -20,6 +20,7 @@ public partial class ClaimTokenTests : CAServerApplicationTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
      {
+         base.AfterAddApplication(services);
         services.AddSingleton(GetClaimTokenInfoOptions());
         services.AddSingleton(GetMockCacheProvider());
         services.AddSingleton(GetClaimTokenWhiteListAddressesOptions());

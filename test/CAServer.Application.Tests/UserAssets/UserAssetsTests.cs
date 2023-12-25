@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.Types;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Contacts.Provider;
-using CAServer.Etos;
-using CAServer.Grains.Grain.ValidateOriginChainId;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -20,11 +17,12 @@ using Microsoft.Extensions.Options;
 using Moq;
 using NSubstitute;
 using Orleans;
-using Portkey.Contracts.CA;
 using Shouldly;
+using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using Xunit;
+using Token = CAServer.UserAssets.Dtos.Token;
 
 namespace CAServer.UserAssets;
 
@@ -67,19 +65,18 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             imageProcessProvider: imageProcessProviderMock.Object,
             chainOptions: chainOptionsMock.Object,
             contractProvider: contractProviderMock.Object,
-            contactProvider: contactProviderMock.Object,
-            clusterClient: clusterClientMock.Object,
-            guardianProvider: guardianProviderMock.Object,
             distributedEventBus: GetRequiredService<IDistributedEventBus>(),
             seedImageOptions:  seedImageOptionsMock.Object,
             userTokenAppService: userTokenAppServiceMock.Object,
             tokenProvider: tokenProvider.Object,
-            assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>());
+            assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(), 
+            userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>());
         return userAssetsAppService;
     }
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockUserAssetsProvider());

@@ -276,7 +276,7 @@ grpc_csharp_plugin
 launchSettings.json
 
 # dev settings
-*/**/appsettings.Development.json
+*.Development.json
 
 yarn.lock
 

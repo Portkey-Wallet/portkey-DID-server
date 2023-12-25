@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="DistributedLock.Redis" Version="1.0.2" />
+        <PackageReference Include="MassTransit.Abstractions" Version="8.1.0" />
         <PackageReference Include="Hangfire" Version="1.8.6" />
         <PackageReference Include="Hangfire.Redis.StackExchange" Version="1.9.2" />
         <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
