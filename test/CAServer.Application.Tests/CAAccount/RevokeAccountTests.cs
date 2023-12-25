@@ -37,6 +37,7 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetMockUserAssetsProvider());
         services.AddSingleton(GetMockGuardianProvider());

@@ -37,6 +37,7 @@ public class ListHolderInfoTest : CAServerApplicationTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockGuardian());
         services.AddSingleton(GetPrivacyPermission());
     }

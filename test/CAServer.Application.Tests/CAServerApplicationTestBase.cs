@@ -33,6 +33,7 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
         services.AddSingleton(GetMockInMemoryHarness());
     }

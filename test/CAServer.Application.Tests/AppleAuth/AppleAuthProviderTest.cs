@@ -33,6 +33,7 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetJwtSecurityTokenHandlerMock());
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetMockAppleAuthOptions());
