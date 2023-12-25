@@ -49,4 +49,5 @@ public static class CommonConstant
     
     public const int WalletNameDefaultLength = 8;
     public const string AppVersionKeyPrefix = "AppVersion";
+    public const string DefaultSymbol = "ELF";
 }
