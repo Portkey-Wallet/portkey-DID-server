@@ -1,13 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf;
-using AElf.Cryptography;
 using CAServer.Signature.Dtos;
-using Google.Protobuf;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using SignatureServer.Providers;
 using Volo.Abp;
 
 namespace CAServer.Signature;
@@ -17,14 +14,14 @@ namespace CAServer.Signature;
 public class SignatureController : CAServerSignatureController
 {
     private readonly ILogger<SignatureController> _logger;
-    private readonly KeyPairInfoOptions _keyPairInfoOptions;
+    private readonly AccountProvider _accountProvider;
 
 
     public SignatureController(ILogger<SignatureController> logger,
-        IOptionsSnapshot<KeyPairInfoOptions> signatureOptions)
+        AccountProvider accountProvider)
     {
         _logger = logger;
-        _keyPairInfoOptions = signatureOptions.Value;
+        _accountProvider = accountProvider;
     }
 
     [HttpPost]
@@ -34,31 +31,20 @@ public class SignatureController : CAServerSignatureController
         try
         {
             _logger.LogDebug("input PublicKey: {PublicKey}, HexMsg: {HexMsg}", input.PublicKey, input.HexMsg);
-            var privateKey = GetPrivateKeyByPublicKey(input.PublicKey);
-            var recoverableInfo = CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey),
+            var signatureResult = _accountProvider.GetSignature(input.PublicKey, 
                 ByteArrayHelper.HexStringToByteArray(input.HexMsg));
-            _logger.LogDebug("Signature result :{signatureResult}", recoverableInfo.ToHex());
+            _logger.LogDebug("Signature result :{SignatureResult}", signatureResult);
 
             return new SignResponseDto
             {
-                Signature = ByteString.CopyFrom(recoverableInfo).ToHex(),
+                Signature = signatureResult,
             };
         }
         catch (Exception e)
         {
-            _logger.LogError("Signature failed, error msg is {errorMsg}", e);
+            _logger.LogError("Signature failed, error msg is {ErrorMsg}", e);
             throw new UserFriendlyException(e.Message);
         }
     }
 
-    private string GetPrivateKeyByPublicKey(string publicKey)
-    {
-        if (_keyPairInfoOptions.PrivateKeyDictionary.TryGetValue(publicKey, out string _))
-        {
-            return _keyPairInfoOptions.PrivateKeyDictionary[publicKey];
-        }
-
-        _logger.LogError("Publish key {publishKey} not exist!", publicKey);
-        throw new KeyNotFoundException("Publish key not exist!");
-    }
 }

@@ -27,10 +27,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Logs" />
-    </ItemGroup>
-
-    <ItemGroup>
       <None Remove="Logs\logs.txt" />
     </ItemGroup>
 </Project>
