@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using CAServer.Commons;
+using CAServer.ThirdPart.Dtos.Order;
 
 namespace CAServer.ThirdPart.Dtos;
 
@@ -12,6 +14,23 @@ public class BasicOrderResult
 public class OrderCreatedDto : BasicOrderResult
 {
     public string Id { get; set; }
+
+
+    public CommonResponseDto<OrderCreatedResultDto> ToCommonResponse()
+    {
+        return Success 
+            ? new CommonResponseDto<OrderCreatedResultDto>(new OrderCreatedResultDto
+            {
+                OrderId = Id
+            }) 
+            : new CommonResponseDto<OrderCreatedResultDto>().Error(Message);
+    }
+
+}
+
+public class OrderCreatedResultDto
+{
+    public string OrderId { get; set; }
 }
 
 public class OrdersDto
@@ -47,4 +66,11 @@ public class OrderDto
     public string ReceivingMethod { get; set; }
     public string ReceiptTime { get; set; }
     public string TransactionId { get; set; }
+
+    public NftOrderSectionDto NftOrderSection { get; set; }
+    
+    public OrderSettlementSectionDto OrderSettlementSection { get; set; }
+    
+    public OrderStatusSection OrderStatusSection { get; set; }
+    
 }

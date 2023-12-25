@@ -1,26 +1,36 @@
 using CAServer.Options;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace CAServer.ThirdPart.Alchemy;
 
-public partial class AlchemyOrderAppServiceTest
+public sealed partial class AlchemyOrderAppServiceTest
 {
-    private IOptions<ThirdPartOptions> getMockThirdPartOptions()
+    private static IOptionsMonitor<ThirdPartOptions> GetMockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
-            alchemy = new AlchemyOptions()
+            Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
                 AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
             },
-            timer = new ThirdPartTimerOptions()
+            Transak = new TransakOptions
+            {
+                AppId = "transakAppId",
+                AppSecret = "transakAppSecret",
+                BaseUrl = "http://127.0.0.1:9200"
+            },
+            Timer = new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,
             }
         };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+        
+        var mockOption = new Mock<IOptionsMonitor<ThirdPartOptions>>();
+        mockOption.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
+        return mockOption.Object;
     }
 }
