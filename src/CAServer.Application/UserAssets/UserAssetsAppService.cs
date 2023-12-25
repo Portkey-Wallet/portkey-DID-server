@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
 using ChainOptions = CAServer.Options.ChainOptions;
@@ -43,6 +44,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IUserTokenAppService _userTokenAppService;
     private readonly ITokenProvider _tokenProvider;
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
+    private readonly IDistributedCache<List<Token>> _userTokenCache;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -50,7 +52,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
         IContractProvider contractProvider, IDistributedEventBus distributedEventBus,
         IOptionsSnapshot<SeedImageOptions> seedImageOptions, IUserTokenAppService userTokenAppService,
-        ITokenProvider tokenProvider, IAssetsLibraryProvider assetsLibraryProvider)
+        ITokenProvider tokenProvider, IAssetsLibraryProvider assetsLibraryProvider,
+        IDistributedCache<List<Token>> userTokenCache)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -65,6 +68,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _userTokenAppService = userTokenAppService;
         _tokenProvider = tokenProvider;
         _assetsLibraryProvider = assetsLibraryProvider;
+        _userTokenCache = userTokenCache;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -165,9 +169,21 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var userTokensWithBalance =
                 ObjectMapper.Map<List<IndexerTokenInfo>, List<Token>>(indexerTokenInfos.CaHolderTokenBalanceInfo.Data);
 
-            userTokensWithBalance.ForEach(token =>
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol));
-            tokenList.AddRange(userTokensWithBalance);
+            var tokenKey = $"{CommonConstant.ResourceTokenKey}:{userId.ToString()}";
+
+            var tokenCacheList = await _userTokenCache.GetAsync(tokenKey);
+            foreach (var token in userTokensWithBalance)
+            {
+                var tokenCache =
+                    tokenCacheList?.FirstOrDefault(t => t.ChainId == token.ChainId && t.Symbol == token.Symbol);
+                if (tokenCache != null)
+                {
+                    continue;
+                }
+                
+                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+                tokenList.Add(token);
+            }
 
             dto.TotalRecordCount = tokenList.Count;
             tokenList = tokenList.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
