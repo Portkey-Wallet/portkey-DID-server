@@ -18,6 +18,8 @@ using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
+using DistributedCacheEntryOptions = Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions;
+using Token = CAServer.UserAssets.Dtos.Token;
 
 namespace CAServer.Tokens;
 
@@ -29,6 +31,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     private readonly TokenListOptions _tokenListOptions;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IDistributedCache<List<string>> _distributedCache;
+    private readonly IDistributedCache<List<Token>> _userTokenCache;
     private readonly ITokenProvider _tokenProvider;
 
     public UserTokenAppService(
@@ -36,12 +39,13 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         IOptionsSnapshot<TokenListOptions> tokenListOptions,
         IDistributedEventBus distributedEventBus,
         IDistributedCache<List<string>> distributedCache,
-        ITokenProvider tokenProvider)
+        ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _distributedCache = distributedCache;
         _tokenProvider = tokenProvider;
+        _userTokenCache = userTokenCache;
         _tokenListOptions = tokenListOptions.Value;
     }
 
@@ -53,7 +57,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             var valueTuple = GetTokenInfoFromId(id);
             grainId = await AddTokenAsync(valueTuple.symbol, valueTuple.chainId);
         }
-        
+
         //var isNeedDelete = !isDisplay && await IsNeedDeleteAsync(grainId);
         var grain = _clusterClient.GetGrain<IUserTokenGrain>(grainId);
         var userId = CurrentUser.GetId();
@@ -62,9 +66,42 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         {
             throw new UserFriendlyException(tokenResult.Message);
         }
-
+        
+        await HandleTokenCacheAsync(userId, tokenResult.Data);
         await PublishAsync(tokenResult.Data, false);
         return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
+    }
+
+    private async Task HandleTokenCacheAsync(Guid userId, UserTokenGrainDto tokenDto)
+    {
+        var tokenKey = $"{CommonConstant.ResourceTokenKey}:{userId.ToString()}";
+        var tokenList = await _userTokenCache.GetAsync(tokenKey);
+        if (tokenList == null)
+        {
+            tokenList = new List<Token>();
+        }
+
+        var token = tokenList.FirstOrDefault(t =>
+            t.Symbol == tokenDto.Token.Symbol && t.ChainId == tokenDto.Token.ChainId);
+
+        if (tokenDto.IsDisplay && token != null)
+        {
+            tokenList.Remove(token);
+        }
+
+        if (!tokenDto.IsDisplay && token == null)
+        {
+            tokenList.Add(new Token()
+            {
+                ChainId = tokenDto.Token.ChainId,
+                Symbol = tokenDto.Token.Symbol
+            });
+        }
+
+        await _userTokenCache.SetAsync(tokenKey, tokenList, new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+        });
     }
 
     public async Task<UserTokenDto> AddUserTokenAsync(Guid userId, AddUserTokenInput input)

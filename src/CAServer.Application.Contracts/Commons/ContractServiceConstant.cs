@@ -65,8 +65,10 @@ public static class CommonConstant
     public const int WalletNameDefaultLength = 8;
     public const string AppVersionKeyPrefix = "AppVersion";
 
+    public const string DefaultSymbol = "ELF";
     public const string DefaultFiatUSD = "USD";
     public const string DefaultCryptoELF = "ELF";
     public const string DefaultFiatPrice = "200";
     public const string DefaultCryptoPrice = "400";
+
 }

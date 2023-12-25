@@ -16,7 +16,7 @@ public interface IActivityProvider
     Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> addressInfos, string inputChainId,
         string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount);
 
-    Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash);
+    Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash, List<CAAddressInfo> addressInfos);
 
     Task<string> GetCaHolderNickName(Guid userId);
 

@@ -121,6 +121,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
                 result.Data.Amount = grabed.Amount.ToString();
                 result.Data.Decimal = grabed.Decimal;
             }
+
             return result;
         }
 
@@ -168,15 +169,12 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         return result;
     }
 
-    public async Task<GrainResultDto<bool>> UpdateRedPackage(List<GrabItemDto> grabItemDtos)
+    public async Task<GrainResultDto<RedPackageDetailDto>> UpdateRedPackage(List<GrabItemDto> grabItemDtos)
     {
-        var result = new GrainResultDto<bool>();
-        result.Success = true;
-        result.Data = true;
+        var result = new GrainResultDto<RedPackageDetailDto>();
         if (State == null || State.Items.IsNullOrEmpty())
         {
             result.Success = false;
-            result.Data = false;
             return result;
         }
 
@@ -188,6 +186,9 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         }
 
         await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<RedPackageState, RedPackageDetailDto>(State);
         return result;
     }
 
@@ -218,7 +219,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         {
             return (false, RedPackageConsts.RedPackageUserGrabbed);
         }
-        
+
         if (State.Status == RedPackageStatus.Expired)
         {
             return (false, RedPackageConsts.RedPackageExpired);
@@ -256,6 +257,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
                 State.BucketNotClaimed[0].IsLuckyKing = false;
             }
         }
+
         bucket.UserId = userId;
         State.BucketNotClaimed.Remove(bucket);
         State.BucketClaimed.Add(bucket);
@@ -311,7 +313,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         var buckets = new List<BucketItem>();
         var remainAmount = totalAmount;
         int decimalPlaces = BucketRandomSpecialOperation(totalAmount, count, decimalIn);
-        long realMinAmount = (long) Math.Pow(10, decimalIn - decimalPlaces);
+        long realMinAmount = (long)Math.Pow(10, decimalIn - decimalPlaces);
 
         int luckyKingIndex = 0;
         long luckyKingAmount = realMinAmount;
@@ -342,7 +344,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
             {
                 long maxAllocationAmount = remainAmount / (count - i) * 2;
                 double randomNumber = random.NextDouble();
-                allocationAmount = (long) (randomNumber * maxAllocationAmount) / realMinAmount * realMinAmount;
+                allocationAmount = (long)(randomNumber * maxAllocationAmount) / realMinAmount * realMinAmount;
             }
 
             buckets[i].Amount += allocationAmount;
@@ -357,7 +359,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         }
 
         buckets[luckyKingIndex].IsLuckyKing = true;
-        
+
         buckets.Sort((item1, item2) => item2.Amount.CompareTo(item1.Amount));
 
         return (buckets, luckyKingIndex);
@@ -372,7 +374,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
             places += 2;
         }
 
-        long baseJudgeCount = (long) Math.Pow(10, decimalIn - places);
+        long baseJudgeCount = (long)Math.Pow(10, decimalIn - places);
         if (baseJudgeCount * count > total)
         {
             return decimalIn;
@@ -383,8 +385,8 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
 
     private int DecimalPlaces(long count, int decimalIn)
     {
-        long baseJudgeCount = (long) Math.Pow(10, decimalIn);
-        decimal tempNum = (decimal) count / baseJudgeCount;
+        long baseJudgeCount = (long)Math.Pow(10, decimalIn);
+        decimal tempNum = (decimal)count / baseJudgeCount;
         int[] bits = decimal.GetBits(tempNum);
         int exponent = (bits[3] >> 16) & 0x1F;
         return exponent;
