@@ -48,11 +48,11 @@ public class CAServerApplicationTestModule : AbpModule
 
         context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
         
-        context.Services.AddSingleton<INftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
-        context.Services.AddSingleton<INftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
-        context.Services.AddSingleton<INftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
-        context.Services.AddSingleton<INftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
-        context.Services.AddSingleton<INftOrdersSettlementWorker, NftOrdersSettlementWorker>();
+        context.Services.AddSingleton<NftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
+        context.Services.AddSingleton<NftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
+        context.Services.AddSingleton<NftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
+        context.Services.AddSingleton<NftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
+        context.Services.AddSingleton<NftOrdersSettlementWorker, NftOrdersSettlementWorker>();
         
         context.Services.AddSingleton<NftOrderMerchantCallbackHandler>();
         context.Services.AddSingleton<NftOrderUpdateHandler>();
