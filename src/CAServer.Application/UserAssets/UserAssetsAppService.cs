@@ -220,7 +220,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 if (userToken == null || !userToken.IsDisplay)
                 {
-                    tokenIds.Add(token.Id);
+                    var tokenId = userToken != null ? userToken.Id.ToString() : token.Id;
+                    tokenIds.Add(tokenId);
                 }
             }
 
