@@ -108,7 +108,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var userTokens =
                 await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
 
-            await CheckNeedAddTokenAsync(userId, indexerTokenInfos, userTokens);
+            var tokenKey = $"{CommonConstant.ResourceTokenKey}:{userId.ToString()}";
+            var tokenCacheList = await _userTokenCache.GetAsync(tokenKey);
+            await CheckNeedAddTokenAsync(userId, indexerTokenInfos, userTokens, tokenCacheList);
+            
             var chainInfos = await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddresses);
             var chainIds = chainInfos.CaHolderManagerInfo.Select(c => c.ChainId).Distinct().ToList();
 
@@ -119,7 +122,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             };
 
             var userTokenSymbols = userTokens.Where(t => t.IsDefault || t.IsDisplay).ToList();
-
             if (userTokenSymbols.IsNullOrEmpty())
             {
                 _logger.LogError("get no result from current user {id}", userId);
@@ -169,9 +171,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var userTokensWithBalance =
                 ObjectMapper.Map<List<IndexerTokenInfo>, List<Token>>(indexerTokenInfos.CaHolderTokenBalanceInfo.Data);
 
-            var tokenKey = $"{CommonConstant.ResourceTokenKey}:{userId.ToString()}";
 
-            var tokenCacheList = await _userTokenCache.GetAsync(tokenKey);
             foreach (var token in userTokensWithBalance)
             {
                 var tokenCache =
@@ -180,7 +180,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 {
                     continue;
                 }
-                
+
                 token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
                 tokenList.Add(token);
             }
@@ -218,7 +218,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     }
 
     private async Task CheckNeedAddTokenAsync(Guid userId, IndexerTokenInfos tokenInfos,
-        List<UserTokenIndex> userTokens)
+        List<UserTokenIndex> userTokens, List<Token> tokenCacheList)
     {
         try
         {
@@ -231,9 +231,15 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var tokenIds = new List<string>();
             foreach (var token in tokens)
             {
+                var cacheToken =
+                    tokenCacheList?.FirstOrDefault(f => f.Symbol == token.Symbol && f.ChainId == token.ChainId);
+                if (cacheToken != null)
+                {
+                    continue;
+                }
+
                 var userToken =
                     userTokens.FirstOrDefault(f => f.Token.Symbol == token.Symbol && f.Token.ChainId == token.ChainId);
-
                 if (userToken == null || !userToken.IsDisplay)
                 {
                     var tokenId = userToken != null ? userToken.Id.ToString() : token.Id;

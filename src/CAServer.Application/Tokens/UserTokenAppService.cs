@@ -67,12 +67,12 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             throw new UserFriendlyException(tokenResult.Message);
         }
         
-        await HandleTokenCacheAsync(userId, tokenResult.Data, id);
+        await HandleTokenCacheAsync(userId, tokenResult.Data);
         await PublishAsync(tokenResult.Data, false);
         return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
     }
 
-    private async Task HandleTokenCacheAsync(Guid userId, UserTokenGrainDto tokenDto, string id)
+    private async Task HandleTokenCacheAsync(Guid userId, UserTokenGrainDto tokenDto)
     {
         var symbols = await _distributedCache.GetAsync(CommonConstant.ResourceTokenKey);
         if (!symbols.Contains(tokenDto.Token.Symbol))
