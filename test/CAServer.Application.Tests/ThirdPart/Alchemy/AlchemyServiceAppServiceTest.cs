@@ -198,6 +198,6 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
     {
         var list = await _alchemyServiceAppService.GetAlchemyNftFiatListAsync();
         list.ShouldNotBeEmpty();
-        list[0].Country.ShouldBe("USA");
+        list[0].Country.ShouldBe("US");
     }
 }
