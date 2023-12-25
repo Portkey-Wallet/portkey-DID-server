@@ -34,7 +34,7 @@ public class ActivityProviderTests : CAServerApplicationTestBase
     [Fact]
     public async void GetActivityAsyncTest()
     {
-        var result = await _activityProvider.GetActivityAsync("123", "123");
+        var result = await _activityProvider.GetActivityAsync("123", "123", new List<CAAddressInfo>());
     }
     
     [Fact]

@@ -55,7 +55,7 @@ public partial class UserActivityAppServiceTests
                             },
                             NftInfo = new NftInfo()
                             {
-                             Symbol   = "ELF"
+                                Symbol = "ELF"
                             }
                         }
                     }
@@ -126,37 +126,39 @@ public partial class UserActivityAppServiceTests
                     }
                 }
             });
-        mockActivityProvider.Setup(m => m.GetActivityAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(
-            new IndexerTransactions
-            {
-                CaHolderTransaction = new CaHolderTransaction
+        mockActivityProvider
+            .Setup(m => m.GetActivityAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<List<CAAddressInfo>>()))
+            .ReturnsAsync(
+                new IndexerTransactions
                 {
-                    TotalRecordCount = 1,
-                    Data = new List<IndexerTransaction>
+                    CaHolderTransaction = new CaHolderTransaction
                     {
-                        new()
+                        TotalRecordCount = 1,
+                        Data = new List<IndexerTransaction>
                         {
-                            BlockHash = "BlockHash",
-                            BlockHeight = 100,
-                            ChainId = "AELF",
-                            FromAddress = "From",
-                            Id = "id",
-                            MethodName = "methodName",
-                            Status = "status",
-                            Timestamp = 1000,
-                            TransactionId = "id",
-                            TransactionFees = new List<IndexerTransactionFee>
+                            new()
                             {
-                                new()
+                                BlockHash = "BlockHash",
+                                BlockHeight = 100,
+                                ChainId = "AELF",
+                                FromAddress = "From",
+                                Id = "id",
+                                MethodName = "methodName",
+                                Status = "status",
+                                Timestamp = 1000,
+                                TransactionId = "id",
+                                TransactionFees = new List<IndexerTransactionFee>
                                 {
-                                    Symbol = "ELF",
-                                    Amount = 100
+                                    new()
+                                    {
+                                        Symbol = "ELF",
+                                        Amount = 100
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
 
         mockActivityProvider.Setup(m => m.GetCaHolderNickName(It.IsAny<Guid>())).ReturnsAsync("nickname");
         mockActivityProvider.Setup(m => m.GetTokenDecimalsAsync(It.IsAny<string>())).ReturnsAsync(new IndexerSymbols

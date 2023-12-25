@@ -34,7 +34,7 @@ public class UserActivetyProviderTests : CAServerApplicationTestBase
             activitiesList, "", "", activitiesListstr,
             1, 1);
 
-        await _uActivityProvider.GetActivityAsync("", "");
+        await _uActivityProvider.GetActivityAsync("", "", new List<CAAddressInfo>());
     }
 
 
