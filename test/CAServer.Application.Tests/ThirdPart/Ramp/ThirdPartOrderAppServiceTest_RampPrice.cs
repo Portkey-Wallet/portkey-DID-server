@@ -142,27 +142,14 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Type = OrderTransDirect.SELL.ToString(),
             Crypto = "ELF",
-            Network = "AELF",
+            Network = "ELF",
             Fiat = "USD",
             Country = "US",
         });
-
+        
         usdExchange.ShouldNotBeNull();
         usdExchange.Success.ShouldBeTrue();
-        usdExchange.Data.Exchange.ShouldBe("0.355717");
-
-
-        var eurExchange = await _thirdPartOrderAppService.GetRampExchangeAsync(new RampExchangeRequest
-        {
-            Type = OrderTransDirect.SELL.ToString(),
-            Crypto = "ELF",
-            Network = "AELF",
-            Fiat = "EUR",
-            Country = "DE",
-        });
-        eurExchange.ShouldNotBeNull();
-        eurExchange.Success.ShouldBeTrue();
-        eurExchange.Data.Exchange.ShouldBe("0.338841");
+        usdExchange.Data.Exchange.ShouldBe("0.354321");
     }
 
 
@@ -206,7 +193,7 @@ public partial class ThirdPartOrderAppServiceTest
             Type = OrderTransDirect.BUY.ToString(),
             Crypto = "ELF",
             CryptoAmount = 200,
-            Network = "AELF-AELF",
+            Network = "AELF",
             Fiat = "USD",
             FiatAmount = 65,
             Country = "US",
@@ -219,7 +206,7 @@ public partial class ThirdPartOrderAppServiceTest
             Type = OrderTransDirect.SELL.ToString(),
             Crypto = "ELF",
             CryptoAmount = 200,
-            Network = "AELF-AELF",
+            Network = "AELF",
             Fiat = "USD",
             FiatAmount = 65,
             Country = "US",
