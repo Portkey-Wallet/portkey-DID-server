@@ -97,6 +97,24 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         });
     }
 
+    public async Task<IndexerNftInfos> GetUserNftInfoBySymbolAsync(List<CAAddressInfo> caAddressInfos, string symbol,
+        int inputSkipCount, int inputMaxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerNftInfos>(new GraphQLRequest
+        {
+            Query = @"
+			    query($symbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderNFTBalanceInfo(dto: {symbol:$symbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress}},totalRecordCount}
+                }",
+            Variables = new
+            {
+                caAddressInfos, symbol, skipCount = inputSkipCount,
+                maxResultCount = inputMaxResultCount
+            }
+        });
+    }
+
     public async Task<IndexerRecentTransactionUsers> GetRecentTransactionUsersAsync(List<CAAddressInfo> caAddressInfos,
         int inputSkipCount, int inputMaxResultCount)
     {
@@ -199,7 +217,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
         return caHolder;
     }
-    
+
     public async Task<CAHolderIndex> GetCaHolderIndexByCahashAsync(string caHash)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CAHolderIndex>, QueryContainer>>() { };
