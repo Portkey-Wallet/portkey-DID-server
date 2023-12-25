@@ -36,7 +36,7 @@ public class TransakOrderProcessor : AbstractRampOrderProcessor
         if (iThirdPartOrder is not TransakEventRawDataDto dto)
             throw new UserFriendlyException("Not TransakEventRawData");
 
-        var accessToken = await _transakProvider.GetAccessTokenWithRetry();
+        var accessToken = await _transakProvider.GetAccessTokenWithRetryAsync();
         var eventData = TransakHelper.DecodeJwt(dto.Data, accessToken);
         Logger.LogInformation("Transak webhook data decode: {EventData}", eventData);
 

@@ -20,7 +20,7 @@ public interface IThirdPartRampOrderProcessor
     /// </summary>
     /// <param name="thirdPartOrder"></param>
     /// <returns></returns>
-    Task<BasicOrderResult> OrderUpdate(IThirdPartOrder thirdPartOrder);
+    Task<BasicOrderResult> OrderUpdateAsync(IThirdPartOrder thirdPartOrder);
 
     /// <summary>
     ///     Create an EMPTY ramp order by user

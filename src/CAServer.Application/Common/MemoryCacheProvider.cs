@@ -9,6 +9,7 @@ namespace CAServer.Common
 {
     public interface ILocalMemoryCache<T>
     {
+        // Do not use a dynamic cache Key to avoid this cache causing memory overflow.
         Task<T> GetOrAddAsync(string cacheKey, Func<Task<T>> factory, MemoryCacheEntryOptions options);
     }
 
@@ -16,12 +17,13 @@ namespace CAServer.Common
     {
         private readonly IMemoryCache _memoryCache;
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
-
+        
         public LocalMemoryCache(IMemoryCache memoryCache)
         {
             _memoryCache = memoryCache;
         }
 
+        // Do not use a dynamic cache Key to avoid this cache causing memory overflow.
         public async Task<T> GetOrAddAsync(string cacheKey, Func<Task<T>> factory, MemoryCacheEntryOptions options)
         {
             if (_memoryCache.TryGetValue(cacheKey, out T cachedValue))

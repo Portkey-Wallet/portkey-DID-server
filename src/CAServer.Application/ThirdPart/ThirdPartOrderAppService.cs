@@ -118,7 +118,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         return new OrderCreatedDto();
     }
 
-    public async Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrder(OrderDto orderDto)
+    public async Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrderAsync(OrderDto orderDto)
     {
         try
         {
@@ -145,7 +145,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         }
     }
 
-    public async Task UpdateOffRampTxHash(TransactionHashDto input)
+    public async Task UpdateOffRampTxHashAsync(TransactionHashDto input)
     {
         try
         {

@@ -92,7 +92,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         try
         {
-            var resp = await _alchemyProvider.GetNftFreeLoginToken(input);
+            var resp = await _alchemyProvider.GetNftFreeLoginTokenAsync(input);
             AssertHelper.NotEmpty(resp.AccessToken, "AccessToken empty");
             return new AlchemyBaseResponseDto<AlchemyTokenDataDto>(resp);
         }
@@ -130,7 +130,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     public async Task<List<AlchemyFiatDto>> GetAlchemyNftFiatListAsync()
     {
         return await _nftFiatListCache.GetOrAddAsync(CommonConstant.NftFiatListKey,
-            async () => await _alchemyProvider.GetNftFiatList(),
+            async () => await _alchemyProvider.GetNftFiatListAsync(),
             () => new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(AlchemyOptions().NftFiatListExpirationMinutes)

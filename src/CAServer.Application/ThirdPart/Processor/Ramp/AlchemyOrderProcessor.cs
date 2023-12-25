@@ -87,7 +87,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
                 orderPendingUpdate.Network, orderPendingUpdate.Address);
 
-            await _alchemyProvider.UpdateOffRampOrder(orderPendingUpdate);
+            await _alchemyProvider.UpdateOffRampOrderAsync(orderPendingUpdate);
         }
         catch (Exception e)
         {

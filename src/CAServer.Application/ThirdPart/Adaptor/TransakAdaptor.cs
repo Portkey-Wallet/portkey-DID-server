@@ -64,20 +64,20 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         return ThirdPartNameType.Transak.ToString();
     }
 
-    public async Task PreHeatCaches()
+    public async Task PreHeatCachesAsync()
     {
         if (_thirdPartOptions?.CurrentValue?.Transak == null) return;
 
         _logger.LogInformation("Transak adaptor pre heat start");
-        var cryptoTask = GetTransakCryptoListWithCache();
-        var fiatTask = GetTransakFiatListWithCache(OrderTransDirect.BUY.ToString());
-        var countryTask = GetTransakCountryWithCache();
+        var cryptoTask = GetTransakCryptoListWithCacheAsync();
+        var fiatTask = GetTransakFiatListWithCacheAsync(OrderTransDirect.BUY.ToString());
+        var countryTask = GetTransakCountryWithCacheAsync();
         await Task.WhenAll(cryptoTask, fiatTask, countryTask);
         _logger.LogInformation("Transak adaptor pre heat done");
     }
 
     // cached crypto list
-    private async Task<List<TransakCryptoItem>> GetTransakCryptoListWithCache()
+    private async Task<List<TransakCryptoItem>> GetTransakCryptoListWithCacheAsync()
     {
         return await _cryptoCache.GetOrAddAsync(CryptoCacheKey,
             async () => await _transakProvider.GetCryptoCurrenciesAsync(),
@@ -88,24 +88,24 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             });
     }
 
-    private async Task<List<TransakFiatItem>> GetTransakFiatCurrencies()
+    private async Task<List<TransakFiatItem>> GetTransakFiatCurrenciesAsync()
     {
         _logger.LogDebug("Transak fiat query start");
         var fiatList = await _transakProvider.GetFiatCurrenciesAsync();
 
         _logger.LogDebug("Transak fiat query finish");
-        await _transakProvider.SetSvgUrl(fiatList);
+        await _transakProvider.SetSvgUrlAsync(fiatList);
 
         _logger.LogDebug("Transak fiat upload finish");
         return fiatList;
     }
 
     // cached fiat list
-    private async Task<List<TransakFiatItem>> GetTransakFiatListWithCache(string type,
+    private async Task<List<TransakFiatItem>> GetTransakFiatListWithCacheAsync(string type,
         string crypto = null)
     {
         var fiatList = await _fiatCache.GetOrAddAsync(FiatCacheKey,
-            async () => await GetTransakFiatCurrencies(),
+            async () => await GetTransakFiatCurrenciesAsync(),
             new MemoryCacheEntryOptions
             {
                 AbsoluteExpiration =
@@ -116,7 +116,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         var notSupportedFiat = new ConcurrentDictionary<string, List<string>>();
         if (crypto.NotNullOrEmpty())
         {
-            var cryptoList = await GetTransakCryptoListWithCache();
+            var cryptoList = await GetTransakCryptoListWithCacheAsync();
             var theCrypto = cryptoList
                 .FirstOrDefault(c => c.Symbol == crypto);
             if (theCrypto != null)
@@ -141,7 +141,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     }
 
     // cached country list
-    private async Task<Dictionary<string, TransakCountry>> GetTransakCountryWithCache()
+    private async Task<Dictionary<string, TransakCountry>> GetTransakCountryWithCacheAsync()
     {
         return await _countryCache.GetOrAddAsync(CountryCacheKey,
             async () => (await _transakProvider.GetTransakCountriesAsync()).ToDictionary(c => c.Alpha2, c => c),
@@ -153,7 +153,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     }
 
     // cached ramp price
-    private async Task<TransakRampPrice> GetTransakPriceWithCache(string paymentMethod,
+    private async Task<TransakRampPrice> GetTransakPriceWithCacheAsync(string paymentMethod,
         RampDetailRequest rampPriceRequest)
     {
         rampPriceRequest.Network =
@@ -189,10 +189,10 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
 
             // query fiat ASYNC
-            var fiatTask = GetTransakFiatListWithCache(rampFiatRequest.Type, rampFiatRequest.Crypto);
+            var fiatTask = GetTransakFiatListWithCacheAsync(rampFiatRequest.Type, rampFiatRequest.Crypto);
 
             // query country ASYNC
-            var countryTask = GetTransakCountryWithCache();
+            var countryTask = GetTransakCountryWithCacheAsync();
 
 
             // wait fiatTask and countryTask
@@ -223,11 +223,11 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         return new List<RampFiatItem>();
     }
 
-    private async Task<TransakFiatItem> GetTransakFiatItem(string type, string fiat, [CanBeNull] string country = null,
+    private async Task<TransakFiatItem> GetTransakFiatItemAsync(string type, string fiat, [CanBeNull] string country = null,
         [CanBeNull] string crypto = null)
     {
         // find fiat info 
-        var fiatList = await GetTransakFiatListWithCache(type, crypto);
+        var fiatList = await GetTransakFiatListWithCacheAsync(type, crypto);
         AssertHelper.NotEmpty(fiatList, "Transak fiat list empty");
 
         var fiatItem = fiatList
@@ -244,7 +244,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         try
         {
             // find fiat info 
-            var fiat = await GetTransakFiatItem(rampLimitRequest.Type, rampLimitRequest.Fiat, rampLimitRequest.Country,
+            var fiat = await GetTransakFiatItemAsync(rampLimitRequest.Type, rampLimitRequest.Fiat, rampLimitRequest.Country,
                 rampLimitRequest.Crypto);
 
             // find any payment option
@@ -264,7 +264,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             }
 
 
-            var priceInfo = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+            var priceInfo = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
 
 
             var fiatLimit = new CurrencyLimit(fiat.Symbol, "", "");
@@ -313,7 +313,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
             rampDetailRequest.Network =
                 _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping[rampDetailRequest.Network];
-            var cryptoList = await GetTransakCryptoListWithCache();
+            var cryptoList = await GetTransakCryptoListWithCacheAsync();
             var theCrypto = cryptoList
                 .Where(c => c.Network.Name == rampDetailRequest.Network)
                 .FirstOrDefault(c => c.Symbol == rampDetailRequest.Crypto);
@@ -333,7 +333,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
 
             var fiatList = await _fiatCache.GetOrAddAsync(FiatCacheKey,
-                async () => await GetTransakFiatCurrencies(),
+                async () => await GetTransakFiatCurrenciesAsync(),
                 new MemoryCacheEntryOptions
                 {
                     AbsoluteExpiration =
@@ -370,7 +370,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             {
                 rampDetailRequest.CryptoAmount = paymentOption.MinAmount;
 
-                var limiPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+                var limiPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
 
                 rampDetailRequest.Crypto = rampDetailRequest.Crypto;
                 rampDetailRequest.FiatAmount = limiPrice.FiatAmount;
@@ -386,7 +386,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
                 }
 
                 rampDetailRequest.CryptoAmount = paymentOption.MinAmountForPayOut;
-                var limiPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+                var limiPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
 
                 rampDetailRequest.Crypto = rampDetailRequest.Crypto;
                 rampDetailRequest.FiatAmount = limiPrice.FiatAmount;
@@ -394,7 +394,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
                 rampDetailRequest.CryptoAmount = null;
             }
 
-            var limitCurrencyPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+            var limitCurrencyPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
             return limitCurrencyPrice.FiatCryptoExchange();
         }
         catch (UserFriendlyException e)
@@ -413,14 +413,14 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     {
         try
         {
-            var fiat = await GetTransakFiatItem(rampDetailRequest.Type, rampDetailRequest.Fiat,
+            var fiat = await GetTransakFiatItemAsync(rampDetailRequest.Type, rampDetailRequest.Fiat,
                 rampDetailRequest.Country, rampDetailRequest.Crypto);
 
             var paymentOption = fiat.MaxLimitPayment(rampDetailRequest.Type);
 
             AssertHelper.NotNull(paymentOption, "Fiat {Fiat} paymentOption missing", rampDetailRequest.Fiat);
 
-            var commonPrice = await GetTransakPriceWithCache(paymentOption.Id, rampDetailRequest);
+            var commonPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
 
 
             var transakFeePercent = commonPrice.TransakFeePercent();
@@ -467,13 +467,13 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         try
         {
             var fiatItem =
-                await GetTransakFiatItem(rampDetailRequest.Type, rampDetailRequest.Fiat, rampDetailRequest.Country,
+                await GetTransakFiatItemAsync(rampDetailRequest.Type, rampDetailRequest.Fiat, rampDetailRequest.Country,
                     rampDetailRequest.Crypto);
             var payment = fiatItem.MaxLimitPayment(rampDetailRequest.Type);
             AssertHelper.NotNull(payment, "Payment of fiatItem not found, type={}, fiat={Fiat}, country={Country}",
                 rampDetailRequest.Type, rampDetailRequest.Fiat, rampDetailRequest.Country);
 
-            var price = await GetTransakPriceWithCache(payment.Id, rampDetailRequest);
+            var price = await GetTransakPriceWithCacheAsync(payment.Id, rampDetailRequest);
 
             var providerRampDetail = _objectMapper.Map<TransakRampPrice, ProviderRampDetailDto>(price);
             providerRampDetail.ThirdPart = ThirdPart();

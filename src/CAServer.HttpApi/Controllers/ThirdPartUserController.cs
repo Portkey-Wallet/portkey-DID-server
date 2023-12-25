@@ -55,49 +55,49 @@ public class ThirdPartUserController : CAServerController
     }
 
     [HttpGet("ramp/info")]
-    public async Task<CommonResponseDto<RampCoverageDto>> GetRampCoverage()
+    public async Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync()
     {
         return await _thirdPartOrdersAppService.GetRampCoverageAsync();
     }
 
     [HttpGet("ramp/crypto")]
-    public async Task<CommonResponseDto<RampCryptoDto>> GetRampCurrency(RampCryptoRequest request)
+    public async Task<CommonResponseDto<RampCryptoDto>> GetRampCurrencyAsync(RampCryptoRequest request)
     {
         return await _thirdPartOrdersAppService.GetRampCryptoListAsync(request);
     }
 
     [HttpGet("ramp/fiat")]
-    public async Task<CommonResponseDto<RampFiatDto>> GetRampFiat(RampFiatRequest rampFiatRequest)
+    public async Task<CommonResponseDto<RampFiatDto>> GetRampFiatAsync(RampFiatRequest rampFiatRequest)
     {
         return await _thirdPartOrdersAppService.GetRampFiatListAsync(rampFiatRequest);
     }
 
     [HttpGet("ramp/limit")]
-    public async Task<CommonResponseDto<RampLimitDto>> GetRampLimit(RampLimitRequest request)
+    public async Task<CommonResponseDto<RampLimitDto>> GetRampLimitAsync(RampLimitRequest request)
     {
         return await _thirdPartOrdersAppService.GetRampLimitAsync(request);
     }
 
     [HttpGet("ramp/exchange")]
-    public async Task<CommonResponseDto<RampExchangeDto>> GetRampExchange(RampExchangeRequest request)
+    public async Task<CommonResponseDto<RampExchangeDto>> GetRampExchangeAsync(RampExchangeRequest request)
     {
         return await _thirdPartOrdersAppService.GetRampExchangeAsync(request);
     }
 
     [HttpGet("ramp/price")]
-    public async Task<CommonResponseDto<RampPriceDto>> GetRampPrice(RampDetailRequest request)
+    public async Task<CommonResponseDto<RampPriceDto>> GetRampPriceAsync(RampDetailRequest request)
     {
         return await _thirdPartOrdersAppService.GetRampPriceAsync(request);
     }
 
     [HttpGet("ramp/detail")]
-    public async Task<CommonResponseDto<RampDetailDto>> GetRampDetail(RampDetailRequest request)
+    public async Task<CommonResponseDto<RampDetailDto>> GetRampDetailAsync(RampDetailRequest request)
     {
         return await _thirdPartOrdersAppService.GetRampDetailAsync(request);
     }
 
     [HttpPost("ramp/transaction")]
-    public async Task<CommonResponseDto<Empty>> TransactionForwardCall(TransactionDto input)
+    public async Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input)
     {
         return await _thirdPartOrdersAppService.TransactionForwardCallAsync(input);
     }

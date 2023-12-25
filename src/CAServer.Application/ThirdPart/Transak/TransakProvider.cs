@@ -114,9 +114,9 @@ public class TransakProvider
         }
     }
 
-    private async Task<Dictionary<string, string>> GetAccessTokenHeader()
+    private async Task<Dictionary<string, string>> GetAccessTokenHeaderAsync()
     {
-        var accessToken = await GetAccessTokenWithRetry(true);
+        var accessToken = await GetAccessTokenWithRetryAsync(true);
         return new Dictionary<string, string> { ["access-token"] = accessToken };
     }
 
@@ -126,7 +126,7 @@ public class TransakProvider
     /// <param name="force"></param>
     /// <param name="timeOutMillis"></param>
     /// <returns></returns>
-    public async Task<string> GetAccessTokenWithRetry(bool force = false, long timeOutMillis = 5000)
+    public async Task<string> GetAccessTokenWithRetryAsync(bool force = false, long timeOutMillis = 5000)
     {
         var stopwatch = Stopwatch.StartNew();
         while (true)
@@ -273,7 +273,7 @@ public class TransakProvider
                 JsonConvert.SerializeObject(input, JsonSerializerSettings)),
             withInfoLog: true
         );
-        AssertHelper.IsTrue(resp.Success, "GetRampPrice Transak response error, code={Code}, message={Message}",
+        AssertHelper.IsTrue(resp.Success, "GetRampPriceAsync Transak response error, code={Code}, message={Message}",
             resp.Error?.StatusCode, resp.Error?.Message);
         return resp.Response;
     }
@@ -290,7 +290,7 @@ public class TransakProvider
             // Update the webhook address when the system starts.
             var webHookRes = await _httpProvider.InvokeResponseAsync(TransakOptions().BaseUrl, TransakApi.UpdateWebhook,
                 body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
-                header: await GetAccessTokenHeader(),
+                header: await GetAccessTokenHeaderAsync(),
                 withInfoLog: true
             );
             AssertHelper.NotNull(webHookRes, "transak webhook http response null");
@@ -308,7 +308,7 @@ public class TransakProvider
             AssertHelper.IsTrue(content.Contains(ErrorTokenAcesstoken),
                 "transak webhook http response exception,ex is{Content}", content);
 
-            await GetAccessTokenWithRetry(true);
+            await GetAccessTokenWithRetryAsync(true);
         }
     }
 
@@ -335,7 +335,7 @@ public class TransakProvider
     /// </summary>
     /// <param name="transakFiatItems"></param>
     /// <returns></returns>
-    public async Task SetSvgUrl(List<TransakFiatItem> transakFiatItems)
+    public async Task SetSvgUrlAsync(List<TransakFiatItem> transakFiatItems)
     {
         var uploadTask = new List<Task>();
         foreach (var transakFiatItem in transakFiatItems)
@@ -346,13 +346,13 @@ public class TransakProvider
                 continue;
             }
 
-            uploadTask.Add(SingleSetSvgUrl(transakFiatItem));
+            uploadTask.Add(SingleSetSvgUrlAsync(transakFiatItem));
         }
 
         await Task.WhenAll(uploadTask);
     }
 
-    private async Task SingleSetSvgUrl(TransakFiatItem transakFiatItem)
+    private async Task SingleSetSvgUrlAsync(TransakFiatItem transakFiatItem)
     {
         var svgUrl = transakFiatItem.Icon;
         if (string.IsNullOrWhiteSpace(svgUrl))

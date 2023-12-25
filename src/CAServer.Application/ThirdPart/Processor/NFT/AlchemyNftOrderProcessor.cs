@@ -90,7 +90,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
 
     public override async Task<IThirdPartValidOrderUpdateRequest> QueryNftOrderAsync(Guid orderId)
     {
-        var alchemyOrder = await _alchemyProvider.GetNftTrade(new AlchemyNftReleaseNoticeRequestDto()
+        var alchemyOrder = await _alchemyProvider.GetNftTradeAsync(new AlchemyNftReleaseNoticeRequestDto()
         {
             OrderNo = orderId.ToString()
         });
@@ -120,7 +120,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     {
         try
         {
-            await _alchemyProvider.NoticeNftReleaseResult(new AlchemyNftReleaseNoticeRequestDto
+            await _alchemyProvider.NoticeNftReleaseResultAsync(new AlchemyNftReleaseNoticeRequestDto
             {
                 MerchantOrderNo = orderGrainDto.Id.ToString(),
                 OrderNo = orderGrainDto.ThirdPartOrderNo,
@@ -140,7 +140,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         }
     }
 
-    public override async Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto,
+    public override async Task<OrderSettlementGrainDto> FillOrderSettlementAsync(OrderGrainDto orderGrainDto,
         NftOrderGrainDto nftOrderGrainDto,
         OrderSettlementGrainDto orderSettlementGrainDto, long? finishTime = null)
     {

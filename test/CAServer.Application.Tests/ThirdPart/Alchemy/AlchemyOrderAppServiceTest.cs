@@ -155,7 +155,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         };
         try
         {
-            await _thirdPartOrderAppService.UpdateOffRampTxHash(input);
+            await _thirdPartOrderAppService.UpdateOffRampTxHashAsync(input);
         }
         catch (Exception e)
         {
@@ -170,7 +170,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         };
         try
         {
-            await _thirdPartOrderAppService.UpdateOffRampTxHash(inputFail);
+            await _thirdPartOrderAppService.UpdateOffRampTxHashAsync(inputFail);
         }
         catch (Exception e)
         {
@@ -271,6 +271,6 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
             Id = Guid.Empty,
             ThirdPartOrderNo = "123"
         };
-        await _thirdPartOrderAppService.QueryThirdPartRampOrder(input);
+        await _thirdPartOrderAppService.QueryThirdPartRampOrderAsync(input);
     }
 }

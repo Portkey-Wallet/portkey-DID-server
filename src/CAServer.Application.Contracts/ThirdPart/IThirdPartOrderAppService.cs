@@ -22,8 +22,8 @@ public interface IThirdPartOrderAppService
     Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input);
     Task<CommonResponseDto<string>> InitOrderAsync(Guid orderId, Guid userId);
     Task<CommonResponseDto<Empty>> OrderUpdateAsync(string thirdPart, IThirdPartOrder thirdPartOrder);
-    Task UpdateOffRampTxHash(TransactionHashDto input);
-    Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrder(OrderDto orderDto);
+    Task UpdateOffRampTxHashAsync(TransactionHashDto input);
+    Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrderAsync(OrderDto orderDto);
     Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input);
     Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
     

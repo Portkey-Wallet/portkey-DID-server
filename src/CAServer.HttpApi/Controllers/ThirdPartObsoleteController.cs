@@ -32,7 +32,7 @@ public class ThirdPartObsoleteController
     [HttpPost("alchemy/txHash")]
     public async Task SendAlchemyTxHashAsync(TransactionHashDto request)
     {
-        await _thirdPartOrderAppService.UpdateOffRampTxHash(request);
+        await _thirdPartOrderAppService.UpdateOffRampTxHashAsync(request);
     }
 
     [Obsolete("Just for old version front-end")]

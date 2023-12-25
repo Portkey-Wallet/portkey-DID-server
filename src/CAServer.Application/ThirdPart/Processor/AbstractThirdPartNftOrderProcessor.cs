@@ -113,7 +113,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="orderGrainDto"></param>
     /// <returns></returns>
-    public abstract Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto,
+    public abstract Task<OrderSettlementGrainDto> FillOrderSettlementAsync(OrderGrainDto orderGrainDto,
         NftOrderGrainDto nftOrderGrainDto, OrderSettlementGrainDto orderSettlementGrainDto, long? finishTime = null);
 
     /// <summary>
@@ -284,7 +284,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                     transferTx.ToByteArray().ToHex());
             AssertHelper.NotNull(sendResult, "Empty send result");
 
-            var txResult = await WaitTransactionResult(CommonConstant.MainChainId, sendResult.TransactionId);
+            var txResult = await WaitTransactionResultAsync(CommonConstant.MainChainId, sendResult.TransactionId);
             AssertHelper.NotNull(txResult, "Transaction result empty, {ChainId}-{TxId}", CommonConstant.MainChainId,
                 sendResult.TransactionId);
             AssertHelper.IsTrue(txResult.Status != TransactionState.NodeValidationFailed,
@@ -338,7 +338,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // fill order settlement data and save
             var orderSettlementGrainDto = await _thirdPartOrderAppService.GetOrderSettlementAsync(orderId);
-            await FillOrderSettlement(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto, finishTime);
+            await FillOrderSettlementAsync(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto, finishTime);
 
             // save
             await _thirdPartOrderAppService.AddUpdateOrderSettlementAsync(orderSettlementGrainDto);
@@ -437,7 +437,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         }
     }
 
-    private async Task<TransactionResultDto> WaitTransactionResult(string chainId, string transactionId)
+    private async Task<TransactionResultDto> WaitTransactionResultAsync(string chainId, string transactionId)
     {
         var waitingStatus = new List<string> { TransactionState.NotExisted, TransactionState.Pending };
         var maxWaitMillis = _thirdPartOptions.CurrentValue.Timer.TransactionWaitTimeoutSeconds * 1000;
@@ -453,7 +453,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
                 rawTxResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
                 _logger.LogDebug(
-                    "WaitTransactionResult chainId={ChainId}, transactionId={TransactionId}, status={Status}", chainId,
+                    "WaitTransactionResultAsync chainId={ChainId}, transactionId={TransactionId}, status={Status}", chainId,
                     transactionId, rawTxResult.Status);
             }
         }

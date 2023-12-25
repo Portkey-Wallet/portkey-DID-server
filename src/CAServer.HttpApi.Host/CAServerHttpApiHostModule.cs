@@ -362,7 +362,7 @@ public class CAServerHttpApiHostModule : AbpModule
         StartOrleans(context.ServiceProvider);
 
         // to start pre heat
-        context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCaches().GetAwaiter().GetResult();
+        context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync().GetAwaiter().GetResult();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

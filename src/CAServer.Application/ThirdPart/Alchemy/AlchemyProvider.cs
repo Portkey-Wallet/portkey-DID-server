@@ -135,7 +135,7 @@ public class AlchemyProvider
     }
 
     /// Update off-ramp order TxHash
-    public async Task UpdateOffRampOrder(WaitToSendOrderInfoDto input)
+    public async Task UpdateOffRampOrderAsync(WaitToSendOrderInfoDto input)
     {
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.UpdateSellOrder,
@@ -148,7 +148,7 @@ public class AlchemyProvider
     }
 
     /// Notice Alchemy NFT release result
-    public async Task<AlchemyNftOrderDto> GetNftTrade(AlchemyNftReleaseNoticeRequestDto request)
+    public async Task<AlchemyNftOrderDto> GetNftTradeAsync(AlchemyNftReleaseNoticeRequestDto request)
     {
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryNftTrade,
@@ -164,7 +164,7 @@ public class AlchemyProvider
     }
 
     ///     Notice Alchemy NFT release result
-    public async Task NoticeNftReleaseResult(AlchemyNftReleaseNoticeRequestDto request)
+    public async Task NoticeNftReleaseResultAsync(AlchemyNftReleaseNoticeRequestDto request)
     {
         var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<Empty>>(AlchemyOptions().BaseUrl,
             AlchemyApi.NftResultNotice,
@@ -177,7 +177,7 @@ public class AlchemyProvider
 
 
     ///     Notice Alchemy NFT release result
-    public async Task<List<AlchemyFiatDto>> GetNftFiatList()
+    public async Task<List<AlchemyFiatDto>> GetNftFiatListAsync()
     {
         var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(AlchemyOptions().BaseUrl,
             AlchemyApi.QueryNftFiatList,
@@ -190,7 +190,7 @@ public class AlchemyProvider
     }
 
     ///     Get Alchemy NFT free login Token
-    public async Task<AlchemyTokenDataDto> GetNftFreeLoginToken(GetAlchemyFreeLoginTokenDto input)
+    public async Task<AlchemyTokenDataDto> GetNftFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input)
     {
         var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(AlchemyOptions().BaseUrl,
             AlchemyApi.GetFreeLoginToken,

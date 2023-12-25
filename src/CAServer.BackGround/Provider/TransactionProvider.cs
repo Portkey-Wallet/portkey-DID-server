@@ -94,7 +94,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             }
 
             // send to thirdPart
-            await _thirdPartOrderAppService.UpdateOffRampTxHash(new TransactionHashDto
+            await _thirdPartOrderAppService.UpdateOffRampTxHashAsync(new TransactionHashDto
             {
                 MerchantName = transactionDto.MerchantName,
                 OrderId = transactionDto.OrderId.ToString(),
@@ -122,7 +122,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             try
             {
                 // get status from thirdPart.
-                var thirdPartOrder = await _thirdPartOrderAppService.QueryThirdPartRampOrder(order);
+                var thirdPartOrder = await _thirdPartOrderAppService.QueryThirdPartRampOrderAsync(order);
                 AssertHelper.IsTrue(thirdPartOrder.Success, "Query order Fail");
                 if (thirdPartOrder.Data == null || thirdPartOrder.Data.Id == Guid.Empty)
                     continue;
@@ -186,7 +186,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         if (order.Status == OrderStatusType.Transferred.ToString() &&
             thirdPartOrderStatus == OrderStatusType.Created.ToString() && isOverInterval)
         {
-            await _thirdPartOrderAppService.UpdateOffRampTxHash(new TransactionHashDto
+            await _thirdPartOrderAppService.UpdateOffRampTxHashAsync(new TransactionHashDto
             {
                 MerchantName = order.MerchantName,
                 OrderId = order.Id.ToString(),
