@@ -174,7 +174,7 @@ public class HubServiceTest : CAServerApplicationTestBase
     }
     
     
-    private IOptions<ThirdPartOptions> GetMockThirdPartOptions()
+    private IOptionsMonitor<ThirdPartOptions> GetMockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
@@ -191,6 +191,9 @@ public class HubServiceTest : CAServerApplicationTestBase
                 DelaySeconds = 1,
             }
         };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+        
+        var mockOption = new Mock<IOptionsMonitor<ThirdPartOptions>>();
+        mockOption.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
+        return mockOption.Object;
     }
 }

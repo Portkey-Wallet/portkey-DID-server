@@ -35,12 +35,12 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
     private readonly INESTRepository<OrderSettlementIndex, Guid> _orderSettlementRepository;
     private readonly IObjectMapper _objectMapper;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
 
     public ThirdPartOrderProvider(
         INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
-        IOptions<ThirdPartOptions> thirdPartOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         INESTRepository<NftOrderIndex, Guid> nftOrderRepository,
         ILogger<ThirdPartOrderProvider> logger, INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository,
         INESTRepository<OrderSettlementIndex, Guid> orderSettlementRepository)
@@ -51,7 +51,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         _logger = logger;
         _orderStatusInfoRepository = orderStatusInfoRepository;
         _orderSettlementRepository = orderSettlementRepository;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
     }
 
     public async Task<RampOrderIndex> GetThirdPartOrderIndexAsync(string orderId)
@@ -86,7 +86,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
     public async Task<List<OrderDto>> GetUnCompletedThirdPartOrdersAsync()
     {
         var transDirectSell = TransferDirectionType.TokenSell.ToString();
-        var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.Timer.HandleUnCompletedOrderMinuteAgo)
+        var modifyTimeLt = DateTimeOffset.UtcNow.AddMinutes(_thirdPartOptions.CurrentValue.Timer.HandleUnCompletedOrderMinuteAgo)
             .ToUnixTimeMilliseconds();
         var unCompletedState = new List<string>
         {
@@ -319,7 +319,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
 
     public void SignMerchantDto(NftMerchantBaseDto input)
     {
-        var merchantOption = _thirdPartOptions.Merchant.GetOption(input.MerchantName);
+        var merchantOption = _thirdPartOptions.CurrentValue.Merchant.GetOption(input.MerchantName);
         AssertHelper.NotEmpty(merchantOption?.DidPrivateKey, "Merchant {Merchant} did private key empty",
             input.MerchantName);
         input.Signature = MerchantSignatureHelper.GetSignature(merchantOption?.DidPrivateKey, input);
@@ -331,7 +331,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         {
             AssertHelper.NotEmpty(input.Signature, "Empty input signature");
 
-            var merchantOption = _thirdPartOptions.Merchant.GetOption(input.MerchantName);
+            var merchantOption = _thirdPartOptions.CurrentValue.Merchant.GetOption(input.MerchantName);
             AssertHelper.NotEmpty(merchantOption?.PublicKey, "Merchant {Merchant} public key empty",
                 input.MerchantName);
 

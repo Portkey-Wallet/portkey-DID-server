@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using CAServer.Common;
 using CAServer.Commons;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
-using CAServer.ThirdPart.Processors;
+using CAServer.ThirdPart.Dtos.ThirdPart;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -21,14 +21,13 @@ namespace CAServer.Controllers;
 [IgnoreAntiforgeryToken]
 public class ThirdPartOrderController : CAServerController
 {
-    private readonly IAlchemyOrderAppService _alchemyOrderService;
-    private readonly INftCheckoutService _nftCheckoutService;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
+    private readonly INftCheckoutService _nftCheckoutService;
 
-    public ThirdPartOrderController(IAlchemyOrderAppService alchemyOrderService,
-        INftCheckoutService nftCheckoutService, IThirdPartOrderAppService thirdPartOrderAppService)
+    public ThirdPartOrderController(
+        INftCheckoutService nftCheckoutService, 
+        IThirdPartOrderAppService thirdPartOrderAppService)
     {
-        _alchemyOrderService = alchemyOrderService;
         _nftCheckoutService = nftCheckoutService;
         _thirdPartOrderAppService = thirdPartOrderAppService;
     }
@@ -82,10 +81,15 @@ public class ThirdPartOrderController : CAServerController
     }
     
     [HttpPost("order/alchemy")]
-    public async Task<BasicOrderResult> UpdateAlchemyOrderAsync(
-        AlchemyOrderUpdateDto input)
+    public async Task<CommonResponseDto<Empty>> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
-        return await _alchemyOrderService.UpdateAlchemyOrderAsync(input);
+        return await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
+    }
+    
+    [HttpPost("order/transak")]
+    public async Task<CommonResponseDto<Empty>> UpdateTransakOrderAsync(TransakEventRawDataDto input)
+    {
+        return await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Transak.ToString(), input);
     }
 
     [HttpPost("nftorder/alchemy")]

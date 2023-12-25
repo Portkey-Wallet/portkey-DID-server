@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using Google.Protobuf.WellKnownTypes;
 
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart.Dtos.ThirdPart;
 
 public class GetAlchemyFreeLoginTokenDto
 {
@@ -17,19 +16,30 @@ public class GetAlchemyCryptoListDto
 
 public class GetAlchemyFiatListDto
 {
-    public string Type { get; set; } = "BUY";
+    public string Type { get; set; } = OrderTransDirect.BUY.ToString();
+
+    public bool IsBuy()
+    {
+        return Type == OrderTransDirect.BUY.ToString();
+    }
+    
 }
 
 public class GetAlchemyOrderQuoteDto
 {
     [Required] public string Crypto { get; set; }
-    [Required] public string Network { get; set; }
+    public string Network { get; set; }
     [Required] public string Fiat { get; set; }
     [Required] public string Country { get; set; }
     [Required] public string Amount { get; set; }
     [Required] public string Side { get; set; }
     public string PayWayCode { get; set; }
     public string Type { get; set; }
+
+    public bool IsBuy()
+    {
+        return Side == OrderTransDirect.BUY.ToString();
+    }
 }
 
 public class GetAlchemySignatureDto
@@ -37,7 +47,7 @@ public class GetAlchemySignatureDto
     [Required] public string Address { get; set; }
 }
 
-public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
+public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject, IThirdPartOrder
 {
     [Required] public string MerchantOrderNo { get; set; }
     public string OrderNo { get; set; }
@@ -78,13 +88,6 @@ public class AlchemyOrderUpdateDto : OrderDto, IValidatableObject
     }
 }
 
-public class SendAlchemyTxHashDto
-{
-    public string MerchantName { get; set; }
-    [Required] public string OrderId { get; set; }
-    [Required] public string TxHash { get; set; }
-}
-
 public class WaitToSendOrderInfoDto
 {
     public string OrderNo { get; set; }
@@ -103,7 +106,7 @@ public class QueryAlchemyOrderInfoDto
     public string OrderId { get; set; }
 }
 
-public class OrderQueryDto
+public class QueryAlchemyOrderDto
 {
     public string OrderNo { get; set; }
     public string MerchantOrderNo { get; set; }

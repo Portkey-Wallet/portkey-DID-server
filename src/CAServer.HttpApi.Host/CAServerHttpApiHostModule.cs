@@ -3,14 +3,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Hub;
-using CAServer.Hubs;
 using CAServer.HubsEventHandler;
+using CAServer.Middleware;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using CAServer.ThirdPart.Adaptor;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -70,10 +71,11 @@ public class CAServerHttpApiHostModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
+        Configure<RampOptions>(configuration.GetSection("RampOptions"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
-        Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
@@ -178,7 +180,7 @@ public class CAServerHttpApiHostModule : AbpModule
         //     },
         //     options =>
         //     {
-        //         options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", Version = "v1" });
+        //         options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", ClientVersion = "v1" });
         //         options.DocInclusionPredicate((docName, description) => true);
         //         options.CustomSchemaIds(type => type.FullName);
         //     });
@@ -337,6 +339,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
+        app.UseMiddleware<DeviceInfoMiddleware>();
 
         if (env.IsDevelopment())
         {
@@ -357,6 +360,9 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseConfiguredEndpoints();
 
         StartOrleans(context.ServiceProvider);
+
+        // to start pre heat
+        context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync().GetAwaiter().GetResult();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

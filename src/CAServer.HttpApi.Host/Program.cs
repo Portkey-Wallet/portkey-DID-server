@@ -40,14 +40,19 @@ public class Program
             var builder = WebApplication.CreateBuilder(args);
             builder.Configuration.AddJsonFile("apollo.appsettings.json");
             builder.Configuration.AddJsonFile("phone.json");
+            builder.Configuration.AddJsonFile("ramp.json");
             builder.Configuration.AddJsonFile("seedurl.json");
             builder.Configuration.AddJsonFile("activity.json");
-            builder.Host.AddAppSettingsSecretsJson()
+
+            var hostBuilder = builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
-// #if !DEBUG
-                // .UseApollo()
-// #endif
                 .UseSerilog();
+            
+            if (builder.Configuration.GetSection("apollo").GetSection("UseApollo").Get<bool>())
+            {
+                hostBuilder.UseApollo();
+            }
+
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();

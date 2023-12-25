@@ -3,6 +3,7 @@ using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
 using CAServer.BackGround.Provider;
 using CAServer.Bookmark;
+using CAServer.Common;
 using CAServer.ContractEventHandler.Core;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.ThirdPart;
@@ -27,6 +28,7 @@ namespace CAServer;
 
 [DependsOn(
     typeof(CAServerApplicationModule),
+    typeof(CAServerApplicationContractsModule),
     typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),
@@ -45,6 +47,8 @@ public class CAServerApplicationTestModule : AbpModule
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
 
         ConfigureGraphQl(context);
+        
+        context.Services.AddMemoryCache();
 
         context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
         

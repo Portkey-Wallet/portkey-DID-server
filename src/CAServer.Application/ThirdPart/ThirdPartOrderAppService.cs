@@ -10,14 +10,19 @@ using CAServer.Commons;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
+using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
+using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Provider;
 using Google.Authenticator;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -26,10 +31,11 @@ using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
+using Enum = System.Enum;
 
 namespace CAServer.ThirdPart;
 
-public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppService, ISingletonDependency
+public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppService, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;
     private readonly IClusterClient _clusterClient;
@@ -37,19 +43,24 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IActivityProvider _activityProvider;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly IOptionsMonitor<RampOptions> _rampOptions;
+    private readonly Dictionary<string, IThirdPartAdaptor> _thirdPartAdaptors;
+    private readonly Dictionary<string, AbstractRampOrderProcessor> _rampOrderProcessors;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
-        IOptions<ThirdPartOptions> thirdPartOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<ThirdPartOrderAppService> logger,
         IObjectMapper objectMapper,
         IActivityProvider activityProvider,
         IOrderStatusProvider orderStatusProvider,
-        IAbpDistributedLock distributedLock)
+        IAbpDistributedLock distributedLock, IOptionsMonitor<RampOptions> rampOptions,
+        IEnumerable<IThirdPartAdaptor> thirdPartAdaptors,
+        IEnumerable<AbstractRampOrderProcessor> rampOrderProcessors)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -58,11 +69,21 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _objectMapper = objectMapper;
         _logger = logger;
         _activityProvider = activityProvider;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
+        _rampOptions = rampOptions;
+        _thirdPartAdaptors = thirdPartAdaptors.ToDictionary(a => a.ThirdPart(), a => a);
+        _rampOrderProcessors = rampOrderProcessors.ToDictionary(p => p.ThirdPartName(), p => p);
     }
 
+    private AbstractRampOrderProcessor GetThirdPartOrderProcessor(string thirdPart)
+    {
+        var processorExists = _rampOrderProcessors.TryGetValue(thirdPart, out var processor);
+        AssertHelper.IsTrue(processorExists, "Order processor of {ThirdPart} not exists", thirdPart);
+        AssertHelper.NotNull(processor, "Order processor of {ThirdPart} null", thirdPart);
+        return processor;
+    }
 
     /// <summary>
     ///     crate user ramp order
@@ -97,6 +118,50 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         return new OrderCreatedDto();
     }
 
+    public async Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrderAsync(OrderDto orderDto)
+    {
+        try
+        {
+            var orderResp = await GetThirdPartOrderProcessor(orderDto.MerchantName).QueryThirdOrderAsync(orderDto);
+            return new CommonResponseDto<OrderDto>(orderResp);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Ramp thirdPart update order error");
+            return new CommonResponseDto<OrderDto>().Error(e);
+        }
+    }
+
+    public async Task<CommonResponseDto<Empty>> OrderUpdateAsync(string thirdPart, IThirdPartOrder thirdPartOrder)
+    {
+        try
+        {
+            return await GetThirdPartOrderProcessor(thirdPart).OrderUpdateAsync(thirdPartOrder);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "Ramp thirdPart update order error");
+            return new CommonResponseDto<Empty>().Error(e);
+        }
+    }
+
+    public async Task UpdateOffRampTxHashAsync(TransactionHashDto input)
+    {
+        try
+        {
+            AssertHelper.NotNull(input, "input null");
+            AssertHelper.NotEmpty(input.MerchantName, "MerchantName empty");
+            AssertHelper.NotEmpty(input.OrderId, "OrderId empty");
+            AssertHelper.NotEmpty(input.TxHash, "TxHash empty");
+            await GetThirdPartOrderProcessor(input.MerchantName).UpdateTxHashAsync(input);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "UpdateTxHashAsync error, input={Json}", JsonConvert.SerializeObject(input));
+        }
+    }
+
+
     /// <summary>
     ///     create base order with nft-order section
     /// </summary>
@@ -120,7 +185,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
             AssertHelper.IsTrue(double.TryParse(input.PaymentAmount, out var priceAmount), "Invalid priceAmount");
 
             var merchantAddress = input.MerchantAddress.DefaultIfEmpty(
-                _thirdPartOptions.Merchant.GetOption(input.MerchantName).ReceivingAddress);
+                _thirdPartOptions.CurrentValue.Merchant.GetOption(input.MerchantName).ReceivingAddress);
             AssertHelper.NotEmpty(merchantAddress, "Merchant crypto settlement address empty");
 
             // Save ramp order
@@ -166,11 +231,24 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         }
     }
 
+    public async Task<CommonResponseDto<string>> InitOrderAsync(Guid orderId, Guid userId)
+    {
+        var order = await DoCreateOrderAsync(new OrderGrainDto
+        {
+            Id = orderId,
+            UserId = userId,
+            Status = OrderStatusType.Initialized.ToString()
+        });
+        return order.Success
+            ? new CommonResponseDto<string>(order.Data.Id.ToString())
+            : new CommonResponseDto<string>().Error(order.Message);
+    }
+
     // create ramp order
     private async Task<GrainResultDto<OrderGrainDto>> DoCreateOrderAsync(OrderGrainDto orderGrainDto)
     {
         _logger.LogInformation("This third part order {OrderId} of user:{UserId} will be created",
-            orderGrainDto.ThirdPartOrderNo, orderGrainDto.UserId);
+            orderGrainDto.Id, orderGrainDto.UserId);
 
         var orderGrain = _clusterClient.GetGrain<IOrderGrain>(orderGrainDto.Id);
         var result = await orderGrain.CreateUserOrderAsync(orderGrainDto);
@@ -188,7 +266,8 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
         _logger.LogInformation("This nft-order {OrderId} of merchant:{MerchantName} will be created",
             nftOrderGrainDto.MerchantOrderId, nftOrderGrainDto.MerchantName);
         nftOrderGrainDto.CreateTime = DateTime.UtcNow;
-        nftOrderGrainDto.ExpireTime = DateTime.UtcNow.AddSeconds(_thirdPartOptions.Timer.NftOrderExpireSeconds);
+        nftOrderGrainDto.ExpireTime =
+            DateTime.UtcNow.AddSeconds(_thirdPartOptions.CurrentValue.Timer.NftOrderExpireSeconds);
         var nftOrderGrain = _clusterClient.GetGrain<INftOrderGrain>(nftOrderGrainDto.Id);
         var result = await nftOrderGrain.CreateNftOrder(nftOrderGrainDto);
         AssertHelper.IsTrue(result.Success, "Create merchant nft-order fail");
@@ -364,7 +443,7 @@ public class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppSe
     public bool VerifyOrderExportCode(string pin)
     {
         var tfa = new TwoFactorAuthenticator();
-        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.OrderExportAuth.Key).ToByteArray(),
+        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.CurrentValue.OrderExportAuth.Key).ToByteArray(),
             pin);
     }
 }

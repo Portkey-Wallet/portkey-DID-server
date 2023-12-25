@@ -9,7 +9,7 @@ namespace CAServer.ThirdPart.Alchemy;
 
 public partial class AlchemyServiceAppServiceTest
 {
-    private IOptions<ThirdPartOptions> getMockThirdPartOptions()
+    private IOptionsMonitor<ThirdPartOptions> getMockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
@@ -26,7 +26,9 @@ public partial class AlchemyServiceAppServiceTest
                 DelaySeconds = 1,
             }
         };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+        var mockOption = new Mock<IOptionsMonitor<ThirdPartOptions>>();
+        mockOption.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
+        return mockOption.Object;
     }
 
     private IDistributedCache<AlchemyOrderQuoteDataDto> GetMockAlchemyOrderQuoteDto()

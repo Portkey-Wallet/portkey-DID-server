@@ -21,7 +21,6 @@ public class NftOrderSettlementTransferWorker : IJobWorker, ISingletonDependency
     private readonly ILogger<NftOrderSettlementTransferWorker> _logger;
     private readonly INftCheckoutService _nftCheckoutService;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
-    private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly TransactionOptions _transactionOptions;
@@ -30,14 +29,13 @@ public class NftOrderSettlementTransferWorker : IJobWorker, ISingletonDependency
 
     public NftOrderSettlementTransferWorker(IThirdPartOrderProvider thirdPartOrderProvider,
         INftCheckoutService nftCheckoutService, ILogger<NftOrderSettlementTransferWorker> logger,
-        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock,
+        IAbpDistributedLock distributedLock,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptions<TransactionOptions> transactionOptions,
         IContractProvider contractProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _nftCheckoutService = nftCheckoutService;
         _logger = logger;
-        _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
         _contractProvider = contractProvider;
         _transactionOptions = transactionOptions.Value;

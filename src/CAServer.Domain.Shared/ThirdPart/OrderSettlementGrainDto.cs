@@ -16,11 +16,3 @@ public class OrderSettlementGrainDto
     public List<FeeItem> FeeDetail { get; set; } = new();
     public Dictionary<string, string> ExtensionData { get; set; }
 }
-
-public class FeeItem
-{
-    public string Name { get; set; }
-    public string FiatCrypto { get; set; }
-    public string Currency { get; set; }
-    public string FeeAmount { get; set; }
-}

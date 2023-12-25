@@ -15,7 +15,6 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
 {
     private readonly INESTRepository<RampOrderIndex, Guid> _orderRepository;
     private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
-    private readonly INESTRepository<NftOrderIndex, Guid> _nftOrderRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<ThirdPartHandler> _logger;
 
@@ -23,14 +22,12 @@ public class ThirdPartHandler : IDistributedEventHandler<OrderEto>, IDistributed
         INESTRepository<RampOrderIndex, Guid> orderRepository,
         IObjectMapper objectMapper,
         ILogger<ThirdPartHandler> logger,
-        INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository,
-        INESTRepository<NftOrderIndex, Guid> nftOrderRepository)
+        INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository)
     {
         _orderRepository = orderRepository;
         _objectMapper = objectMapper;
         _logger = logger;
         _orderStatusInfoRepository = orderStatusInfoRepository;
-        _nftOrderRepository = nftOrderRepository;
     }
 
     public async Task HandleEventAsync(OrderEto eventData)

@@ -31,7 +31,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<AbstractThirdPartNftOrderProcessor> _logger;
     private readonly IOrderStatusProvider _orderStatusProvider;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IContractProvider _contractProvider;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
@@ -44,7 +44,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
     protected AbstractThirdPartNftOrderProcessor(ILogger<AbstractThirdPartNftOrderProcessor> logger,
         IClusterClient clusterClient,
-        IOptions<ThirdPartOptions> thirdPartOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
         IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService)
     {
@@ -54,7 +54,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         _contractProvider = contractProvider;
         _distributedLock = distributedLock;
         _thirdPartOrderAppService = thirdPartOrderAppService;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
     }
 
 
@@ -113,7 +113,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="orderGrainDto"></param>
     /// <returns></returns>
-    public abstract Task<OrderSettlementGrainDto> FillOrderSettlement(OrderGrainDto orderGrainDto,
+    public abstract Task<OrderSettlementGrainDto> FillOrderSettlementAsync(OrderGrainDto orderGrainDto,
         NftOrderGrainDto nftOrderGrainDto, OrderSettlementGrainDto orderSettlementGrainDto, long? finishTime = null);
 
     /// <summary>
@@ -265,7 +265,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var (txHash, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
                 orderGrainDto.CryptoAmount,
                 nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
-                _thirdPartOptions.Merchant.NftOrderSettlementPublicKey);
+                _thirdPartOptions.CurrentValue.Merchant.NftOrderSettlementPublicKey);
 
             // update main-order, record transactionId first
             orderGrainDto.TransactionId = txHash;
@@ -284,7 +284,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                     transferTx.ToByteArray().ToHex());
             AssertHelper.NotNull(sendResult, "Empty send result");
 
-            var txResult = await WaitTransactionResult(CommonConstant.MainChainId, sendResult.TransactionId);
+            var txResult = await WaitTransactionResultAsync(CommonConstant.MainChainId, sendResult.TransactionId);
             AssertHelper.NotNull(txResult, "Transaction result empty, {ChainId}-{TxId}", CommonConstant.MainChainId,
                 sendResult.TransactionId);
             AssertHelper.IsTrue(txResult.Status != TransactionState.NodeValidationFailed,
@@ -338,7 +338,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             // fill order settlement data and save
             var orderSettlementGrainDto = await _thirdPartOrderAppService.GetOrderSettlementAsync(orderId);
-            await FillOrderSettlement(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto, finishTime);
+            await FillOrderSettlementAsync(orderGrainDto, nftOrderGrainDto, orderSettlementGrainDto, finishTime);
 
             // save
             await _thirdPartOrderAppService.AddUpdateOrderSettlementAsync(orderSettlementGrainDto);
@@ -402,7 +402,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             // update order status
             var newStatus = rawTxResult.Status == TransactionState.Mined
                 ? rawTxResult.BlockNumber <= confirmedHeight || chainHeight >=
-                rawTxResult.BlockNumber + _thirdPartOptions.Timer.TransactionConfirmHeight
+                rawTxResult.BlockNumber + _thirdPartOptions.CurrentValue.Timer.TransactionConfirmHeight
                     ? OrderStatusType.Finish.ToString()
                     : OrderStatusType.Transferred.ToString()
                 : OrderStatusType.TransferFailed.ToString();
@@ -437,11 +437,11 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         }
     }
 
-    private async Task<TransactionResultDto> WaitTransactionResult(string chainId, string transactionId)
+    private async Task<TransactionResultDto> WaitTransactionResultAsync(string chainId, string transactionId)
     {
         var waitingStatus = new List<string> { TransactionState.NotExisted, TransactionState.Pending };
-        var maxWaitMillis = _thirdPartOptions.Timer.TransactionWaitTimeoutSeconds * 1000;
-        var delayMillis = _thirdPartOptions.Timer.TransactionWaitDelaySeconds * 1000;
+        var maxWaitMillis = _thirdPartOptions.CurrentValue.Timer.TransactionWaitTimeoutSeconds * 1000;
+        var delayMillis = _thirdPartOptions.CurrentValue.Timer.TransactionWaitDelaySeconds * 1000;
         TransactionResultDto rawTxResult = null;
         using var cts = new CancellationTokenSource(maxWaitMillis);
         try
@@ -453,7 +453,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
                 rawTxResult = await _contractProvider.GetTransactionResultAsync(chainId, transactionId);
                 _logger.LogDebug(
-                    "WaitTransactionResult chainId={ChainId}, transactionId={TransactionId}, status={Status}", chainId,
+                    "WaitTransactionResultAsync chainId={ChainId}, transactionId={TransactionId}, status={Status}", chainId,
                     transactionId, rawTxResult.Status);
             }
         }
@@ -468,7 +468,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
     public async Task<CommonResponseDto<Empty>> NotifyNftReleaseAsync(Guid orderId)
     {
-        var maxNotifyCount = _thirdPartOptions.Timer.NftCheckoutResultThirdPartNotifyCount;
+        var maxNotifyCount = _thirdPartOptions.CurrentValue.Timer.NftCheckoutResultThirdPartNotifyCount;
         try
         {
             // query nft-order data and verify

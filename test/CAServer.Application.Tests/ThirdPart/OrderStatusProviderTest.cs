@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
 
-namespace CAServer.ThirdPart.Alchemy;
+namespace CAServer.ThirdPart;
 
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public partial class OrderStatusProviderTest : CAServerApplicationTestBase

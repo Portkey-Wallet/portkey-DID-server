@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.ThirdPart.Dtos.Order;
+using CAServer.Tokens.Provider;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart.Provider;
@@ -15,6 +17,13 @@ public class OrderWsNotifyProvider : IOrderWsNotifyProvider
     
     // orderId => callback func
     private readonly Dictionary<string, Func<NotifyOrderDto, Task>> _orderNotifyListeners = new();
+    
+    private readonly ITokenProvider _tokenProvider;
+
+    public OrderWsNotifyProvider(ITokenProvider tokenProvider)
+    {
+        _tokenProvider = tokenProvider;
+    }
 
     public Task RegisterOrderListenerAsync(string clientId, string orderId, Func<NotifyOrderDto, Task> callback)
     {
@@ -32,17 +41,28 @@ public class OrderWsNotifyProvider : IOrderWsNotifyProvider
         return Task.CompletedTask;
     }
 
-    public Task NotifyOrderDataAsync(NotifyOrderDto orderDto)
+    public async Task NotifyOrderDataAsync(NotifyOrderDto orderDto)
     {
-        if (orderDto == null)
+        if (orderDto == null) return;
+        
+        orderDto.DisplayStatus =
+            orderDto.IsNftOrder()
+                ? OrderDisplayStatus.ToNftCheckoutRampDisplayStatus(orderDto.Status)
+                : orderDto.TransDirect == TransferDirectionType.TokenBuy.ToString()
+                    ? OrderDisplayStatus.ToOnRampDisplayStatus(orderDto.Status)
+                    : OrderDisplayStatus.ToOffRampDisplayStatus(orderDto.Status);
+        if (orderDto.Crypto.NotNullOrEmpty())
         {
-            return Task.CompletedTask;
+            var tokenInfo = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, orderDto.Crypto);
+            if (tokenInfo != null)
+            {
+                orderDto.CryptoDecimals = tokenInfo.Decimals.ToString();
+            }
         }
         if (_orderNotifyListeners.TryGetValue(orderDto.OrderId.ToString(), out var callback))
         {
-            callback.Invoke(orderDto);
+            await callback.Invoke(orderDto);
         }
-        return Task.CompletedTask;
     }
     
 }
