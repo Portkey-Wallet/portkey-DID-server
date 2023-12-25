@@ -213,7 +213,7 @@ public class ImTransferService : IImTransferService, ISingletonDependency
 
     private async Task<IndexerNftInfo> GetUserNftInfoAsync(string symbol)
     {
-        var nftInfo = await _userAssetsProvider.GetUserNftInfoAsync(new List<CAAddressInfo>(),
+        var nftInfo = await _userAssetsProvider.GetUserNftInfoBySymbolAsync(new List<CAAddressInfo>(),
             symbol, 0, 1);
 
         return nftInfo?.CaHolderNFTBalanceInfo?.Data?.FirstOrDefault();
