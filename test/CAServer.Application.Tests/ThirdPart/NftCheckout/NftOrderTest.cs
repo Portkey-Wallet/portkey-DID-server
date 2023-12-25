@@ -35,10 +35,10 @@ public partial class NftOrderTest : ThirdPartTestBase
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly INftCheckoutService _nftCheckoutService;
-    private readonly INftOrderMerchantCallbackWorker _nftOrderMerchantCallbackWorker;
-    private readonly INftOrderSettlementTransferWorker _nftOrderSettlementTransferWorker;
-    private readonly INftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
-    private readonly INftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
+    private readonly NftOrderMerchantCallbackWorker _nftOrderMerchantCallbackWorker;
+    private readonly NftOrderSettlementTransferWorker _nftOrderSettlementTransferWorker;
+    private readonly NftOrderThirdPartOrderStatusWorker _nftOrderThirdPartOrderStatusWorker;
+    private readonly NftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private static readonly JsonSerializerSettings JsonSettings = JsonSettingsBuilder.New()
@@ -49,12 +49,12 @@ public partial class NftOrderTest : ThirdPartTestBase
     public NftOrderTest(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        _nftOrderSettlementTransferWorker = GetRequiredService<INftOrderSettlementTransferWorker>();
-        _nftOrderThirdPartOrderStatusWorker = GetRequiredService<INftOrderThirdPartOrderStatusWorker>();
-        _orderThirdPartNftResultNotifyWorker = GetRequiredService<INftOrderThirdPartNftResultNotifyWorker>();
+        _nftOrderSettlementTransferWorker = GetRequiredService<NftOrderSettlementTransferWorker>();
+        _nftOrderThirdPartOrderStatusWorker = GetRequiredService<NftOrderThirdPartOrderStatusWorker>();
+        _orderThirdPartNftResultNotifyWorker = GetRequiredService<NftOrderThirdPartNftResultNotifyWorker>();
         _nftCheckoutService = GetRequiredService<INftCheckoutService>();
         _thirdPartOrderAppService = GetRequiredService<IThirdPartOrderAppService>();
-        _nftOrderMerchantCallbackWorker = GetRequiredService<INftOrderMerchantCallbackWorker>();
+        _nftOrderMerchantCallbackWorker = GetRequiredService<NftOrderMerchantCallbackWorker>();
         _orderStatusProvider = GetRequiredService<IOrderStatusProvider>();
         _alchemyProvider = GetRequiredService<AlchemyProvider>();
         _testOutputHelper.WriteLine("publicKey = " + MerchantAccount.PublicKey.ToHex());
