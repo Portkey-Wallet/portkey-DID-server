@@ -91,13 +91,13 @@ public class ThirdPartUserController : CAServerController
     }
 
     [HttpGet("ramp/detail")]
-    public async Task<CommonResponseDto<RampDetailDto>> GetRampDetail(RampDetailRequest request)
+    public async Task<CommonResponseDto<RampDetailDto>> GetRampDetailAsync(RampDetailRequest request)
     {
         return await _thirdPartOrdersAppService.GetRampDetailAsync(request);
     }
 
     [HttpPost("ramp/transaction")]
-    public async Task<CommonResponseDto<Empty>> TransactionForwardCall(TransactionDto input)
+    public async Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input)
     {
         return await _thirdPartOrdersAppService.TransactionForwardCallAsync(input);
     }
