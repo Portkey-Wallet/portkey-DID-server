@@ -74,12 +74,6 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
     private async Task HandleTokenCacheAsync(Guid userId, UserTokenGrainDto tokenDto)
     {
-        var symbols = await _distributedCache.GetAsync(CommonConstant.ResourceTokenKey);
-        if (!symbols.Contains(tokenDto.Token.Symbol))
-        {
-            return;
-        }
-
         var tokenKey = $"{CommonConstant.ResourceTokenKey}:{userId.ToString()}";
         var tokenList = await _userTokenCache.GetAsync(tokenKey);
         if (tokenList == null)
