@@ -27,12 +27,13 @@ using Orleans;
 using Orleans.Runtime;
 using Portkey.Contracts.CA;
 using Volo.Abp.Caching;
+using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
-public interface IContractAppService
+public interface IContractAppService : ISingletonDependency
 {
     Task CreateRedPackageAsync(RedPackageCreateEto message);
     Task CreateHolderInfoAsync(AccountRegisterCreateEto message);
