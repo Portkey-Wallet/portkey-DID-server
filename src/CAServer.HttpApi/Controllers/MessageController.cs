@@ -20,7 +20,6 @@ public class MessageController : CAServerController
         _messageAppService = messageAppService;
     }
 
-    //[Authorize]
     [HttpPost("scanLoginSuccess")]
     public async Task ScanLoginSuccessAsync(ScanLoginDto request)
     {

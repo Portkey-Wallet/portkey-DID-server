@@ -10,12 +10,15 @@
     <ItemGroup>
         <ProjectReference Include="..\CAServer.Domain.Shared\CAServer.Domain.Shared.csproj" />
         <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
+        <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="AElf.CSharp.Core" Version="1.2.3" />
         <PackageReference Include="AElf.Sdk.CSharp" Version="1.2.3" />
         <PackageReference Include="AutoMapper" Version="12.0.0" />
+        <PackageReference Include="CodingSeb.ExpressionEvaluator" Version="1.4.40" />
+        <PackageReference Include="GoogleAuthenticator" Version="3.1.1" />
         <PackageReference Include="GraphQL.Client" Version="5.1.0" />
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
         <PackageReference Include="GraphQL.Primitives" Version="5.1.0" />
@@ -28,6 +31,7 @@
         <PackageReference Include="Orleans.Providers.MongoDB" Version="3.8.0" />
         <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
         <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
         <PackageReference Include="Volo.Abp.Ddd.Domain" Version="7.0.0" />
         <PackageReference Include="Volo.Abp.ObjectExtending" Version="7.0.0" />
         <PackageReference Include="Volo.Abp.Account.Application.Contracts" Version="7.0.0" />
@@ -51,9 +55,19 @@
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateRequestDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateResponseDto.cs" />
       <Orleans_CodeGenInputs Remove="AppleMigrate\IAppleMigrateAppService.cs" />
+      <Orleans_CodeGenInputs Remove="Commons\Dtos\PageResultDto.cs" />
     </ItemGroup>
 
     <ItemGroup>
       <Folder Include="UserBehavior\Dtos\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Amazon\SvgConst.cs" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Amazon\SvgConst.cs" />
     </ItemGroup>
 </Project>

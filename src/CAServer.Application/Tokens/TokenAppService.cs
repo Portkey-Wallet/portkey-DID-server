@@ -2,18 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.Users;
 
 namespace CAServer.Tokens;
@@ -25,13 +29,21 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     private readonly IClusterClient _clusterClient;
     private readonly ContractAddressOptions _contractAddressOptions;
     private readonly ITokenProvider _tokenProvider;
+    private readonly IDistributedCache<TokenExchange> _latestExchange;
+    private readonly IDistributedCache<TokenExchange> _historyExchange;
+    private readonly Dictionary<string, IExchangeProvider> _exchangeProviders;
 
     public TokenAppService(IClusterClient clusterClient, IOptions<ContractAddressOptions> contractAddressesOptions,
-        ITokenProvider tokenProvider)
+        ITokenProvider tokenProvider, IEnumerable<IExchangeProvider> exchangeProviders,
+        IDistributedCache<TokenExchange> latestExchange,
+        IDistributedCache<TokenExchange> historyExchange)
     {
         _clusterClient = clusterClient;
         _tokenProvider = tokenProvider;
+        _latestExchange = latestExchange;
+        _historyExchange = historyExchange;
         _contractAddressOptions = contractAddressesOptions.Value;
+        _exchangeProviders = exchangeProviders.ToDictionary(p => p.Name().ToString(), p => p);
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -148,6 +160,40 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         }
 
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
+    }
+
+    public async Task<TokenExchange> GetLatestExchangeAsync(string exchangeProviderName, string fromSymbol,
+        string toSymbol)
+    {
+        var providerExists =
+            _exchangeProviders.TryGetValue(exchangeProviderName, out var exchangeProvider);
+        AssertHelper.IsTrue(providerExists, "Provider of {Name} not exists", exchangeProviderName.ToString());
+        
+        return await _latestExchange.GetOrAddAsync(
+            GrainIdHelper.GenerateGrainId(exchangeProviderName, fromSymbol, toSymbol),
+            async () => await exchangeProvider.LatestAsync(fromSymbol, toSymbol),
+            () => new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
+            }
+        );
+    }
+
+    public async Task<TokenExchange> GetHistoryExchangeAsync(string exchangeProviderName, string fromSymbol,
+        string toSymbol, DateTime timestamp)
+    {
+        var providerExists =
+            _exchangeProviders.TryGetValue(exchangeProviderName, out var exchangeProvider);
+        AssertHelper.IsTrue(providerExists, "Provider of {Name} not exists", exchangeProviderName);
+
+        return await _latestExchange.GetOrAddAsync(
+            GrainIdHelper.GenerateGrainId(exchangeProviderName, fromSymbol, toSymbol),
+            async () => await exchangeProvider.HistoryAsync(fromSymbol, toSymbol, timestamp.ToUtcMilliSeconds()),
+            () => new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
+            }
+        );
     }
 
     private List<GetTokenListDto> GetTokenInfoList(List<UserTokenIndex> userTokenInfos, List<IndexerToken> tokenInfos)

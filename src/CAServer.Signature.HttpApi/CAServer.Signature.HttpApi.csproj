@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AElf.Client" Version="1.1.0" />
     <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
+    <PackageReference Include="Nethereum.KeyStore" Version="3.8.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Volo.Abp.AutoMapper" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.AspNetCore.Mvc" Version="7.0.0" />

@@ -7,5 +7,13 @@ public class HubResponse<T> : HubResponseBase<T>
 
 public class HubResponseBase<T>
 {
+    
+    public HubResponseBase(){}
+
+    public HubResponseBase(T body)
+    {
+        Body = body;
+    }
+
     public T Body { get; set; }
 }

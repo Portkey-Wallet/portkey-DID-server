@@ -15,4 +15,9 @@ public interface ITokenAppService
 
     Task<List<GetTokenListDto>> GetTokenListAsync(GetTokenListRequestDto input);
     Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol);
+
+    Task<TokenExchange> GetLatestExchangeAsync(string providerName, string fromSymbol, string toSymbol);
+
+    Task<TokenExchange> GetHistoryExchangeAsync(string providerName, string fromSymbol, string toSymbol, DateTime timestamp);
+
 }

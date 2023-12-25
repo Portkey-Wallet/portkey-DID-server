@@ -9,39 +9,26 @@ namespace CAServer.ThirdPart.Alchemy;
 
 public partial class AlchemyServiceAppServiceTest
 {
-    private IOptions<ThirdPartOptions> getMockThirdPartOptions()
+    private IOptionsMonitor<ThirdPartOptions> getMockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
-            alchemy = new AlchemyOptions()
+            Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
                 AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
                 SkipCheckSign = true
             },
-            timer = new ThirdPartTimerOptions()
+            Timer = new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 5000,
                 DelaySeconds = 1,
             }
         };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
-    }
-
-    private IDistributedCache<List<AlchemyFiatDto>> GetMockAlchemyFiatDto()
-    {
-        var mockCache = new Mock<IDistributedCache<List<AlchemyFiatDto>>>();
-
-        mockCache.Setup(t => t.GetAsync(It.IsAny<string>(), default, default, default))
-            .ReturnsAsync(new List<AlchemyFiatDto>()
-            {
-                new AlchemyFiatDto()
-                {
-                    Currency = "USD"
-                }
-            });
-        return mockCache.Object;
+        var mockOption = new Mock<IOptionsMonitor<ThirdPartOptions>>();
+        mockOption.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
+        return mockOption.Object;
     }
 
     private IDistributedCache<AlchemyOrderQuoteDataDto> GetMockAlchemyOrderQuoteDto()
