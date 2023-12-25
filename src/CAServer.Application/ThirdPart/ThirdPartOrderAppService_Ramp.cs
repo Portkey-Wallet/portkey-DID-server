@@ -259,7 +259,6 @@ public partial class ThirdPartOrderAppService
         {
             // invoke provider-adaptors ASYNC
             var exchangeTasks = GetThirdPartAdaptors(request.Type).Values
-              
                 .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();
 
             // choose the MAX crypto-fiat exchange rate
