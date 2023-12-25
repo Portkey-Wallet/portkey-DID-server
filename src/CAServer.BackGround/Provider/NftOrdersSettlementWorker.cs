@@ -1,5 +1,3 @@
-using System.Reflection;
-using CAServer.BackGround.Consts;
 using CAServer.BackGround.Options;
 using CAServer.Common;
 using CAServer.Commons;
@@ -11,24 +9,19 @@ using CAServer.ThirdPart.Provider;
 using Hangfire;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 
-public interface INftOrdersSettlementWorker
-{
-    Task Handle();
-}
 
-public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonDependency
+public class NftOrdersSettlementWorker : IJobWorker, ISingletonDependency
 {
     private const string LockJobKey = "NftOrdersSettlementWorker";
 
     private readonly ILogger<NftOrdersSettlementWorker> _logger;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly INftCheckoutService _nftCheckoutService;
     private readonly IAbpDistributedLock _distributedLock;
@@ -36,13 +29,13 @@ public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonD
 
 
     public NftOrdersSettlementWorker(ILogger<NftOrdersSettlementWorker> logger,
-        IOptions<ThirdPartOptions> thirdPartOptions,
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IThirdPartOrderProvider thirdPartOrderProvider,
         INftCheckoutService nftCheckoutService, IAbpDistributedLock distributedLock,
         IOptions<TransactionOptions> transactionOptions)
     {
         _logger = logger;
-        _thirdPartOptions = thirdPartOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _nftCheckoutService = nftCheckoutService;
         _distributedLock = distributedLock;
@@ -53,7 +46,7 @@ public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonD
     ///     Compensate for NFT-release-result not properly notified to ThirdPart.
     /// </summary>
     [AutomaticRetry(Attempts = 0)]
-    public async Task Handle()
+    public async Task HandleAsync()
     {
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + LockJobKey);
@@ -65,7 +58,7 @@ public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonD
 
         _logger.LogDebug("NftOrdersSettlementWorker start");
 
-        var minusAgo = _thirdPartOptions.Timer.NftUnCompletedOrderSettlementMinuteAgo;
+        var minusAgo = _thirdPartOptions.CurrentValue.Timer.NftUnCompletedOrderSettlementMinuteAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddMinutes(-minusAgo).ToUtcMilliSeconds().ToString();
 
         var total = 0;
@@ -75,13 +68,13 @@ public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonD
         {
             // GetThirdPartOrdersByPageAsync
             var pendingData = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
-                new GetThirdPartOrderConditionDto(0, BackGroundConsts.pageSize)
+                new GetThirdPartOrderConditionDto(0, _thirdPartOptions.CurrentValue.Timer.NftUnCompletedOrderSettlementPageSize)
                 {
                     TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() },
                     StatusIn = new List<string> { OrderStatusType.Finish.ToString() },
                     LastModifyTimeLt = lastModifyTimeLt,
                     LastModifyTimeGt = DateTime.UtcNow
-                        .AddDays(-_thirdPartOptions.Timer.NftUnCompletedOrderSettlementDaysAgo).ToUtcMilliSeconds().ToString()
+                        .AddDays(-_thirdPartOptions.CurrentValue.Timer.NftUnCompletedOrderSettlementDaysAgo).ToUtcMilliSeconds().ToString()
                 }, OrderSectionEnum.OrderStateSection, OrderSectionEnum.SettlementSection);
             if (pendingData.Items.IsNullOrEmpty())
             {
@@ -128,10 +121,6 @@ public class NftOrdersSettlementWorker : INftOrdersSettlementWorker, ISingletonD
         if (total > 0)
         {
             _logger.LogInformation("NftOrdersSettlementWorker finish, success:{Success}/{Total}", success, total);
-        }
-        else
-        {
-            _logger.Debug("NftOrdersSettlementWorker finish, success:{Success}/{Total}", success, total);
         }
     }
 }

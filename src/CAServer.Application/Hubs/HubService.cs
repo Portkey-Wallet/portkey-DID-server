@@ -144,7 +144,7 @@ public class HubService : CAServerAppService, IHubService
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "notify orderStatus error");
+                _logger.LogError(e, "notify orderStatus error, clientId={ClientId}, orderId={OrderId}", clientId, orderId);
             }
         });
         

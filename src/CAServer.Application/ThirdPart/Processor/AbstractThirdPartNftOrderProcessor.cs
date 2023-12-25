@@ -276,7 +276,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
                 .Build();
             var transferringResult =
                 await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, transferringExtension);
-            AssertHelper.IsTrue(transferringResult.Success, "sava ramp order failed: " + transferringResult.Message);
+            AssertHelper.IsTrue(transferringResult.Success, "Save ramp order failed: " + transferringResult.Message);
 
             // Transfer crypto to merchant, and wait result
             var sendResult =
@@ -305,7 +305,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
 
             var updateResult =
                 await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto, resExtensionBuilder.Build());
-            AssertHelper.IsTrue(updateResult.Success, "sava ramp order failed: " + updateResult.Message);
+            AssertHelper.IsTrue(updateResult.Success, "Save ramp order failed: " + updateResult.Message);
         }
         catch (UserFriendlyException e)
         {
@@ -359,7 +359,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     }
 
     /// <summary>
-    ///     Invoke by worker, refresh settlement transfer transaction status
+    ///     InvokeAsync by worker, refresh settlement transfer transaction status
     /// </summary>
     /// <param name="orderId"></param>
     /// <param name="confirmedHeight"></param>

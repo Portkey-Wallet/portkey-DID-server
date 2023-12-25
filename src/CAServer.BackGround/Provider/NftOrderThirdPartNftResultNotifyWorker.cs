@@ -17,13 +17,7 @@ using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 
-public interface INftOrderThirdPartNftResultNotifyWorker
-{
-    Task Handle();
-    
-}
-
-public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResultNotifyWorker, ISingletonDependency
+public class NftOrderThirdPartNftResultNotifyWorker : IJobWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderThirdPartNftResultNotifyWorker> _logger;
     private readonly INftCheckoutService _nftCheckoutService;
@@ -52,7 +46,7 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
     ///     Compensate for NFT-release-result not properly notified to ThirdPart.
     /// </summary>
     [AutomaticRetry(Attempts = 0)]
-    public async Task Handle()
+    public async Task HandleAsync()
     {
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _transactionOptions.CurrentValue.LockKeyPrefix + LockJobKey);
@@ -73,7 +67,7 @@ public class NftOrderThirdPartNftResultNotifyWorker : INftOrderThirdPartNftResul
         while (true)
         {
             var pendingData = await _thirdPartOrderProvider.QueryNftOrderPagerAsync(
-                new NftOrderQueryConditionDto(0, BackGroundConsts.pageSize)
+                new NftOrderQueryConditionDto(0, _thirdPartOptions.CurrentValue.Timer.NftCheckoutResultThirdPartPageSize)
                 {
                     ThirdPartNotifyCountGtEq =  BackGroundConsts.minNotifyCount,
                     ThirdPartNotifyCountLtEq = maxNotifyCount - 1,

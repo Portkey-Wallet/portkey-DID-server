@@ -41,7 +41,7 @@ public class OkxProvider : IExchangeProvider
         return ExchangeProviderName.Okx;
     }
 
-    public async Task<TokenExchange> Latest(string fromSymbol, string toSymbol)
+    public async Task<TokenExchange> LatestAsync(string fromSymbol, string toSymbol)
     {
         // The first k-line after one minute of inquiry returns the latest price.
         var req = new OkxKLineReq()
@@ -52,7 +52,7 @@ public class OkxProvider : IExchangeProvider
             Limit = "1"
         };
 
-        var res = await _httpProvider.Invoke<OkxResponse<List<List<string>>>>(BaseUrl(), OkxApi.KLine,
+        var res = await _httpProvider.InvokeAsync<OkxResponse<List<List<string>>>>(BaseUrl(), OkxApi.KLine,
             param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
                 JsonConvert.SerializeObject(req, HttpProvider.DefaultJsonSettings))
         );
@@ -73,7 +73,7 @@ public class OkxProvider : IExchangeProvider
         };
     }
 
-    public async Task<TokenExchange> History(string fromSymbol, string toSymbol, long timestamp)
+    public async Task<TokenExchange> HistoryAsync(string fromSymbol, string toSymbol, long timestamp)
     {
         // The first k-line after one minute of inquiry returns the latest price.
         var req = new OkxKLineReq()
@@ -85,7 +85,7 @@ public class OkxProvider : IExchangeProvider
             Limit = "1"
         };
 
-        var res = await _httpProvider.Invoke<OkxResponse<List<List<string>>>>(BaseUrl(), OkxApi.KLineHistory,
+        var res = await _httpProvider.InvokeAsync<OkxResponse<List<List<string>>>>(BaseUrl(), OkxApi.KLineHistory,
             param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
                 JsonConvert.SerializeObject(req, HttpProvider.DefaultJsonSettings))
         );

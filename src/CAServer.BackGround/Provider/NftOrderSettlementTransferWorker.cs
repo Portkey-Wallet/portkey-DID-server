@@ -15,12 +15,8 @@ using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 
-public interface INftOrderSettlementTransferWorker
-{
-    Task Handle();
-}
 
-public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorker, ISingletonDependency
+public class NftOrderSettlementTransferWorker : IJobWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderSettlementTransferWorker> _logger;
     private readonly INftCheckoutService _nftCheckoutService;
@@ -51,7 +47,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
     /// </summary>
     /// 
     [AutomaticRetry(Attempts = 0)]
-    public async Task Handle()
+    public async Task HandleAsync()
     {
         _logger.LogDebug("NftOrderSettlementTransferWorker start");
         await using var handle =
@@ -67,7 +63,7 @@ public class NftOrderSettlementTransferWorker : INftOrderSettlementTransferWorke
         _logger.LogDebug("NftOrderSettlementTransferWorker chainHeight={Height} LIB: {LibHeight}",
             chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight);
 
-        const int pageSize = 100;
+        var pageSize = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferPageSize;
         var secondsAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow

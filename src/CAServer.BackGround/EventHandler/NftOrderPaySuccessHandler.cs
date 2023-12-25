@@ -51,11 +51,11 @@ public class NftOrderPaySuccessHandler : IDistributedEventHandler<OrderEto>, ITr
         }
         catch (UserFriendlyException e)
         {
-            _logger.LogWarning(e, "Handle nft order pay result fail, Id={Id}, Status={Status}", orderId, status);
+            _logger.LogWarning(e, "HandleAsync nft order pay result fail, Id={Id}, Status={Status}", orderId, status);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Handle nft order pay result error, Id={Id}, Status={Status}", orderId, status);
+            _logger.LogError(e, "HandleAsync nft order pay result error, Id={Id}, Status={Status}", orderId, status);
             throw;
         }
     }

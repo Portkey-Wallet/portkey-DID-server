@@ -16,12 +16,7 @@ using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 
-public interface INftOrderMerchantCallbackWorker
-{
-    public Task Handle();
-}
-
-public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, ISingletonDependency
+public class NftOrderMerchantCallbackWorker : IJobWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderMerchantCallbackWorker> _logger;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
@@ -48,7 +43,7 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
     /// </summary>
     ///
     [AutomaticRetry(Attempts = 0)]
-    public async Task Handle()
+    public async Task HandleAsync()
     {
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _transactionOptions.LockKeyPrefix + "NftOrderMerchantCallbackWorker");
@@ -59,8 +54,8 @@ public class NftOrderMerchantCallbackWorker : INftOrderMerchantCallbackWorker, I
         }
 
         _logger.LogDebug("NftOrderMerchantCallbackWorker start");
-        const int pageSize = 100;
         const int minCallbackCount = 1;
+        var pageSize = _thirdPartOptions.CurrentValue.Timer.NftCheckoutMerchantCallbackPageSize;
         var maxCallbackCount = _thirdPartOptions.CurrentValue.Timer.NftCheckoutMerchantCallbackCount;
 
         // query and handle WebhookCount > 0, but status is FAIL data

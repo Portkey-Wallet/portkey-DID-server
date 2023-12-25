@@ -130,7 +130,7 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Handle unCompleted order fail, orderId:{OrderId}", order.Id);
+                _logger.LogError(e, "HandleAsync unCompleted order fail, orderId:{OrderId}", order.Id);
             }
         }
     }

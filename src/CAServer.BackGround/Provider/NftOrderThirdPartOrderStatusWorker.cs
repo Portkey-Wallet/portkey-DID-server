@@ -14,12 +14,7 @@ using Volo.Abp.DistributedLocking;
 
 namespace CAServer.BackGround.Provider;
 
-public interface INftOrderThirdPartOrderStatusWorker
-{
-    Task Handle();
-}
-
-public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusWorker, ISingletonDependency
+public class NftOrderThirdPartOrderStatusWorker : IJobWorker, ISingletonDependency
 {
     private readonly ILogger<NftOrderThirdPartOrderStatusWorker> _logger;
     private readonly INftCheckoutService _nftCheckoutService;
@@ -47,7 +42,7 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
     ///     Compensate unprocessed order data from ThirdPart webhook.
     /// </summary>
     [AutomaticRetry(Attempts = 0)]
-    public async Task Handle()
+    public async Task HandleAsync()
     {
         await using var handle =
             await _distributedLock.TryAcquireAsync(name: _transactionOptions.CurrentValue.LockKeyPrefix + "NftOrderThirdPartOrderStatusWorker");
@@ -58,7 +53,7 @@ public class NftOrderThirdPartOrderStatusWorker : INftOrderThirdPartOrderStatusW
         }
 
         _logger.LogDebug("NftOrderThirdPartOrderStatusWorker start");
-        const int pageSize = 100;
+        var pageSize = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedOrderPageSize;
         var minutesAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedOrderMinuteAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddMinutes(-minutesAgo).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow.AddHours(-1).ToUtcMilliSeconds().ToString();
