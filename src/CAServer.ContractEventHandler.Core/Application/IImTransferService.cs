@@ -108,7 +108,7 @@ public class ImTransferService : IImTransferService, ISingletonDependency
                 transferGrainDto.TransactionStatus = TransferTransactionStatus.Fail;
                 return;
             }
-            
+
             transferGrainDto.TransactionStatus = TransferTransactionStatus.Success;
         }
         catch (Exception e)
@@ -139,7 +139,6 @@ public class ImTransferService : IImTransferService, ISingletonDependency
             transferIndex.TransactionStatus = transferDto.TransactionStatus.ToString();
             transferIndex.BlockHash = transferDto.BlockHash;
             transferIndex.ModificationTime = transferDto.ModificationTime;
-            await _transferRepository.UpdateAsync(transferIndex);
 
             var messageRequestDto =
                 JsonConvert.DeserializeObject<ImSendMessageRequestDto>(transferIndex.Message);
@@ -157,6 +156,9 @@ public class ImTransferService : IImTransferService, ISingletonDependency
                 CustomMessageHelper.BuildTransferContent(messageRequestDto.Content, sender?.NickName, user?.NickName,
                     transferIndex,
                     nftInfo);
+
+            transferIndex.Message = JsonConvert.SerializeObject(messageRequestDto);
+            await _transferRepository.UpdateAsync(transferIndex);
 
             var headers = new Dictionary<string, string>
             {
