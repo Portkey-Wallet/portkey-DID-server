@@ -8,7 +8,7 @@ public class GetActivityRequestDto : IValidatableObject
 {
     [Required] public string TransactionId { get; set; }
     [Required] public string BlockHash { get; set; }
-    public string TransactionType { get; set; }
+    public string ActivityType { get; set; }
 
     [Required] public List<string> CaAddresses { get; set; }
 

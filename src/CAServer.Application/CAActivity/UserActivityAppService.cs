@@ -7,6 +7,7 @@ using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
@@ -122,8 +123,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
-            var caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address})
-                .ToList();
+            var caAddressInfos = new List<CAAddressInfo>();
+            if (request.ActivityType != CommonConstant.TransferCard)
+            {
+                caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
             var activitiesDto =
@@ -409,20 +415,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         if (activityDto.TransactionType == ActivityConstants.TransferName)
         {
-            var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
+            var eTransferConfig =
+                _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
             if (eTransferConfig != null && eTransferConfig.Accounts.Contains(activityDto.FromAddress))
             {
                 activityDto.TransactionName = ActivityConstants.DepositName;
                 return;
             }
         }
-        
+
         activityDto.TransactionName = activityDto.NftInfo != null &&
                                       !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
                                       _activityTypeOptions.ShowNftTypes.Contains(activityDto.TransactionType)
             ? typeName + " NFT"
             : typeName;
-        activityDto.TransactionType = _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
+        activityDto.TransactionType =
+            _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType,
+                activityDto.TransactionType);
     }
 
     private string GetIconByType(string transactionType)
