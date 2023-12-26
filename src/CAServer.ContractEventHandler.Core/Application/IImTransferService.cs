@@ -106,6 +106,9 @@ public class ImTransferService : IImTransferService, ISingletonDependency
             {
                 transferGrainDto.ErrorMessage = $"Transaction status: {result.Status}. Error: {result.Error}";
                 transferGrainDto.TransactionStatus = TransferTransactionStatus.Fail;
+                _logger.LogWarning(
+                    "Im transfer send transaction fail, transferId:{transferId}, errorMessage:{errorMessage}",
+                    transferGrainDto.Id, transferGrainDto.ErrorMessage);
                 return;
             }
 
@@ -139,6 +142,11 @@ public class ImTransferService : IImTransferService, ISingletonDependency
             transferIndex.TransactionStatus = transferDto.TransactionStatus.ToString();
             transferIndex.BlockHash = transferDto.BlockHash;
             transferIndex.ModificationTime = transferDto.ModificationTime;
+            if (transferDto.TransactionStatus != TransferTransactionStatus.Success)
+            {
+                await _transferRepository.UpdateAsync(transferIndex);
+                return;
+            }
 
             var messageRequestDto =
                 JsonConvert.DeserializeObject<ImSendMessageRequestDto>(transferIndex.Message);
