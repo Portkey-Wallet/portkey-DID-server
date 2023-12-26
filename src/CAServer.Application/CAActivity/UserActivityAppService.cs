@@ -7,6 +7,7 @@ using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
@@ -122,8 +123,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
-            var caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address})
-                .ToList();
+            var caAddressInfos = new List<CAAddressInfo>();
+            if (request.ActivityType != CommonConstant.TransferCard)
+            {
+                caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
             var activitiesDto =
@@ -206,37 +212,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         return string.Empty;
     }
-
-    public async Task<GetActivityDto> GetActivityByTransactionIdAsync(GetActivityRequestDto request)
-    {
-        try
-        {
-            var indexerTransactions =
-                await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
-            var activitiesDto =
-                await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
-            if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
-            {
-                return new GetActivityDto();
-            }
-
-            var activityDto = activitiesDto.Data[0];
-
-            if (!_activityTypeOptions.ContractTypes.Contains(activityDto.TransactionType))
-            {
-                await GetActivityName(request.CaAddresses, activityDto,
-                    indexerTransactions.CaHolderTransaction.Data[0]);
-            }
-
-            return activityDto;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetActivityByTransactionIdAsync Error {request}", request);
-            return new GetActivityDto();
-        }
-    }
-
 
     private async Task GetActivityName(List<string> addresses, GetActivityDto dto, IndexerTransaction transaction)
     {
@@ -440,20 +415,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         if (activityDto.TransactionType == ActivityConstants.TransferName)
         {
-            var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
+            var eTransferConfig =
+                _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
             if (eTransferConfig != null && eTransferConfig.Accounts.Contains(activityDto.FromAddress))
             {
                 activityDto.TransactionName = ActivityConstants.DepositName;
                 return;
             }
         }
-        
+
         activityDto.TransactionName = activityDto.NftInfo != null &&
                                       !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
                                       _activityTypeOptions.ShowNftTypes.Contains(activityDto.TransactionType)
             ? typeName + " NFT"
             : typeName;
-        activityDto.TransactionType = _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
+        activityDto.TransactionType =
+            _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType,
+                activityDto.TransactionType);
     }
 
     private string GetIconByType(string transactionType)

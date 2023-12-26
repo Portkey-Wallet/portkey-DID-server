@@ -12,5 +12,4 @@ public interface IUserActivityAppService:IApplicationService
     Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto request);
     Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request);
     Task<string> GetCaHolderCreateTimeAsync(GetUserCreateTimeRequestDto requestDto);
-    Task<GetActivityDto> GetActivityByTransactionIdAsync(GetActivityRequestDto requestDto);
 }
