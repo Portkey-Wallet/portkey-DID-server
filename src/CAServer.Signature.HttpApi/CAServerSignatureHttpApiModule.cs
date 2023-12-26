@@ -26,8 +26,8 @@ public class CAServerSignatureHttpApiModule : AbpModule
     
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        var app = context.GetApplicationBuilder();
-        var env = context.GetEnvironment();
+        // var app = context.GetApplicationBuilder();
+        // var env = context.GetEnvironment();
 
         _ = context.ServiceProvider.GetService<AccountProvider>();
     }

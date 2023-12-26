@@ -43,6 +43,7 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
+        services.AddSingleton(MockGraphQLProvider());
     }
 
     private IAppleUserProvider GetMockAppleUserProvider()
@@ -59,6 +60,14 @@ public class RegisterServiceTests : CAServerApplicationTestBase
         provider.Setup(t => t.SetUserExtraInfoAsync(It.IsAny<AppleUserExtraInfo>())).Returns(Task.CompletedTask);
 
         return provider.Object;
+    }
+
+    private IGraphQLProvider MockGraphQLProvider()
+    {
+
+        var mock = new Mock<IGraphQLProvider>();
+        // mock.Setup()
+        return mock.Object;
     }
     
     [Fact]
