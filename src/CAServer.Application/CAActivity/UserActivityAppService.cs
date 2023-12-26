@@ -205,6 +205,36 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return string.Empty;
     }
 
+    public async Task<GetActivityDto> GetActivityByTransactionIdAsync(GetActivityRequestDto request)
+    {
+        try
+        {
+            var indexerTransactions =
+                await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
+            var activitiesDto =
+                await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
+            if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
+            {
+                return new GetActivityDto();
+            }
+
+            var activityDto = activitiesDto.Data[0];
+
+            if (!_activityTypeOptions.ContractTypes.Contains(activityDto.TransactionType))
+            {
+                await GetActivityName(request.CaAddresses, activityDto,
+                    indexerTransactions.CaHolderTransaction.Data[0]);
+            }
+
+            return activityDto;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetActivityByTransactionIdAsync Error {request}", request);
+            return new GetActivityDto();
+        }
+    }
+
 
     private async Task GetActivityName(List<string> addresses, GetActivityDto dto, IndexerTransaction transaction)
     {
