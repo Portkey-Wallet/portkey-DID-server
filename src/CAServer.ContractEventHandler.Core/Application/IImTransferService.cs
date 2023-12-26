@@ -108,9 +108,8 @@ public class ImTransferService : IImTransferService, ISingletonDependency
                 transferGrainDto.TransactionStatus = TransferTransactionStatus.Fail;
                 return;
             }
-
+            
             transferGrainDto.TransactionStatus = TransferTransactionStatus.Success;
-            transferGrainDto.ErrorMessage = $"Transaction status: {result.Status}";
         }
         catch (Exception e)
         {
@@ -135,7 +134,7 @@ public class ImTransferService : IImTransferService, ISingletonDependency
             }
 
             transferIndex.Decimal = transferDto.Decimal;
-            transferIndex.ErrorMessage = transferDto.Message;
+            transferIndex.ErrorMessage = transferDto.ErrorMessage;
             transferIndex.TransactionResult = transferDto.TransactionResult;
             transferIndex.TransactionStatus = transferDto.TransactionStatus.ToString();
             transferIndex.BlockHash = transferDto.BlockHash;
@@ -144,8 +143,8 @@ public class ImTransferService : IImTransferService, ISingletonDependency
 
             var messageRequestDto =
                 JsonConvert.DeserializeObject<ImSendMessageRequestDto>(transferIndex.Message);
-
             var user = await _caHolderRepository.GetAsync(transferDto.ToUserId);
+            var sender = await _caHolderRepository.GetAsync(transferDto.SenderId);
 
             NftInfo nftInfo = null;
             if (transferDto.Decimal == 0)
@@ -155,7 +154,8 @@ public class ImTransferService : IImTransferService, ISingletonDependency
             }
 
             messageRequestDto.Content =
-                CustomMessageHelper.BuildTransferContent(messageRequestDto.Content, user?.NickName, transferIndex,
+                CustomMessageHelper.BuildTransferContent(messageRequestDto.Content, sender?.NickName, user?.NickName,
+                    transferIndex,
                     nftInfo);
 
             var headers = new Dictionary<string, string>

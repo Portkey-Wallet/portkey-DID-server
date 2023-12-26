@@ -25,6 +25,7 @@ public class TransferCard
 {
     public string Id { get; set; }
     public string SenderId { get; set; }
+    public string SenderName { get; set; }
     public string Memo { get; set; }
     public string TransactionId { get; set; }
     public string BlockHash { get; set; }

@@ -23,7 +23,8 @@ public class CustomMessageHelper
         return JsonConvert.SerializeObject(result);
     }
 
-    public static string BuildTransferContent(string content, string toUserName, TransferIndex transfer,
+    public static string BuildTransferContent(string content, string senderName, string toUserName,
+        TransferIndex transfer,
         NftInfo nftInfo)
     {
         var customMessage = JsonConvert.DeserializeObject<TransferCustomMessage<TransferCard>>(content);
@@ -31,6 +32,7 @@ public class CustomMessageHelper
         {
             Id = transfer.Id,
             SenderId = transfer.SenderId.ToString(),
+            SenderName = senderName,
             Memo = transfer.Memo,
             TransactionId = transfer.TransactionId,
             BlockHash = transfer.BlockHash,
@@ -56,7 +58,7 @@ public class CustomMessageHelper
                 Symbol = transfer.Symbol
             };
         }
-        
+
         return JsonConvert.SerializeObject(customMessage, new JsonSerializerSettings()
         {
             ContractResolver = new CamelCasePropertyNamesContractResolver()
