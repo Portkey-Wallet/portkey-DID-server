@@ -16,7 +16,6 @@ using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -231,24 +230,41 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         var curUserIsFrom = addresses.Contains(dto.FromAddress);
-        var anotherAddress = "";
+        var curUserIsTo = transaction.TransferInfo != null && addresses.Contains(transaction.TransferInfo?.ToAddress);
+        var anotherAddresses = new List<string>();
+
         var chainId = string.Empty;
         if (curUserIsFrom)
         {
             dto.From = nickName;
-            anotherAddress = transaction.TransferInfo?.ToAddress;
+            anotherAddresses.Add(transaction.TransferInfo?.ToAddress);
             chainId = transaction.TransferInfo?.ToChainId;
         }
-        else
+
+        if (curUserIsTo)
         {
             dto.To = nickName;
-            anotherAddress = dto.FromAddress;
+            anotherAddresses.Add(dto.FromAddress);
             chainId = transaction.ChainId;
         }
 
+        if (!curUserIsFrom && !curUserIsTo)
+        {
+            anotherAddresses.Add(transaction.TransferInfo?.ToAddress);
+            anotherAddresses.Add(dto.FromAddress);
+        }
+
         var nameList =
-            await _userContactProvider.BatchGetUserNameAsync(new List<string> { anotherAddress }, CurrentUser.GetId(),
+            await _userContactProvider.BatchGetUserNameAsync(anotherAddresses, CurrentUser.GetId(),
                 chainId);
+        if (!curUserIsFrom && !curUserIsTo)
+        {
+            anotherAddresses.Add(transaction.TransferInfo?.ToAddress);
+            anotherAddresses.Add(dto.FromAddress);
+            dto.From = nameList.FirstOrDefault(t => t.Item1?.Address == dto.FromAddress)?.Item2;
+            dto.To =  nameList.FirstOrDefault(t => t.Item1?.Address == transaction.TransferInfo?.ToAddress)?.Item2;
+            return;
+        }
 
         var contactName = nameList.FirstOrDefault()?.Item2;
         if (curUserIsFrom)
