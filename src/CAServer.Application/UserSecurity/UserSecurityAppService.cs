@@ -215,8 +215,18 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
-                var info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
-                    chainInfo.Value.ChainId);
+                GetHolderInfoOutput info;
+                try
+                {
+                    info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
+                        chainInfo.Value.ChainId);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e,
+                        "get holder info error in GetTokenBalanceTransferCheck, caHash: {caHash}", input.CaHash);
+                    continue;
+                }
 
                 if (chainInfo.Value.ChainId == ChainHelper.ConvertChainIdToBase58(info.CreateChainId) ||
                     input.CheckTransferSafeChainId.IsNullOrWhiteSpace() ||
