@@ -102,7 +102,7 @@ public class AlchemyProvider
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             "GetAlchemyFiatList fail ({Code}){Msg}", result.ReturnCode, result.ReturnMsg);
-        return result.Data.Where(f => f.PayMax.SafeToDecimal() - f.PayMin.SafeToDecimal() > 0).ToList();
+        return result.Data.Where(f => f.PayMax.SafeToDecimal() == 0 || f.PayMax.SafeToDecimal() - f.PayMin.SafeToDecimal() > 0).ToList();
     }
 
     /// query Alchemy order info
