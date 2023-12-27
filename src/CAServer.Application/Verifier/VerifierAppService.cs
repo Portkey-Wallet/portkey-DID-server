@@ -4,8 +4,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
@@ -366,8 +368,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         else
         {
-            salt = GetSalt();
-            identifierHash = GetHash(requestInput.GuardianIdentifier, requestInput.Salt);
+            salt = GetSalt().ToHex();
+            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),  
+                ByteArrayHelper.HexStringToByteArray(requestInput.Salt)).ToHex();
         }
 
         requestInput.Salt = salt;
@@ -397,9 +400,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
 
         var salt = GetSalt();
-        var identifierHash = GetHash(guardianIdentifier, salt);
+        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt);
 
-        return Tuple.Create(identifierHash, salt, false);
+        return Tuple.Create(identifierHash.ToHex(), salt.ToHex(), false);
     }
 
     private GrainResultDto<GuardianGrainDto> GetGuardian(string guardianIdentifier)
@@ -441,12 +444,24 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private string GetSalt() => Guid.NewGuid().ToString("N");
+    private byte[] GetSalt() => Guid.NewGuid().ToByteArray();
 
-    private string GetHash(string input, string salt)
+    private Hash GetHash(byte[] identifier, byte[] salt)
     {
-        var hash = HashHelper.ComputeFrom(input).ToHex();
-        return HashHelper.ComputeFrom(salt + hash).ToHex();
+        const int maxIdentifierLength = 256;
+        const int maxSaltLength = 16;
+
+        if (identifier.Length > maxIdentifierLength)
+        {
+            throw new Exception("Identifier is too long");
+        }
+
+        if (salt.Length != maxSaltLength)
+        {
+            throw new Exception($"Salt has to be {maxSaltLength} bytes.");
+        }
+        var hash = HashHelper.ComputeFrom(identifier);
+        return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }
 
     private async Task<GoogleUserInfoDto> GetUserInfoFromGoogleAsync(string accessToken)
