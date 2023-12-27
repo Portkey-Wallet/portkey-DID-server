@@ -52,11 +52,6 @@
         "Iso": "HK"
       },
       {
-        "Country": "Italy",
-        "Code": "39",
-        "Iso": "IT"
-      },
-      {
         "Country": "India",
         "Code": "91",
         "Iso": "IN"
@@ -85,11 +80,6 @@
         "Country": "Netherlands",
         "Code": "31",
         "Iso": "NL"
-      },
-      {
-        "Country": "New Zealand",
-        "Code": "64",
-        "Iso": "NZ"
       },
       {
         "Country": "Philippines",
