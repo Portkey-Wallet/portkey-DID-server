@@ -495,12 +495,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private string GetTelegramUserIdWithPrefix(string identityToken)
-    {
-        var userId = GetTelegramUserId(identityToken);
-        return $"{TelegramUserIdPrefix}{userId}";
-    }
-
     private string GetTelegramUserId(string identityToken)
     {
         try

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CAServer.Telegram.Dtos;
@@ -8,7 +7,6 @@ using CAServer.Telegram.Options;
 using CAServer.Telegram.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -22,7 +20,7 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
     private readonly ITelegramAuthProvider _telegramAuthProvider;
     private readonly IJwtTokenProvider _jwtTokenProvider;
     
-    private const string Pattern = @"(\\w+)#(\\w+)=(\\w+)";
+    private const string Pattern = @"(\w+)#(\w+)=(\w+)";
 
     public TelegramAuthService(ILogger<TelegramAuthService> logger,
         IOptionsSnapshot<TelegramAuthOptions> telegramAuthOptions, IObjectMapper objectMapper,
