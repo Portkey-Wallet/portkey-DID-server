@@ -510,11 +510,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private string GetTelegramUserIdWithPrefix(string identityToken)
-    {
-        var userId = GetTelegramUserId(identityToken);
-        return $"{TelegramUserIdPrefix}{userId}";
-    }
 
     private string GetTelegramUserId(string identityToken)
     {
@@ -539,11 +534,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     }
 }
 
-public class GenerateSignatureOutput
-{
-    public string Data { get; set; }
-    public string Signature { get; set; }
-}
+
 
 
 
