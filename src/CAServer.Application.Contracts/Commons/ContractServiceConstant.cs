@@ -66,8 +66,7 @@ public static class CommonConstant
     public const string AppVersionKeyPrefix = "AppVersion";
     public const string DefaultSymbol = "ELF";
     public const string TransferCard = "transfer-card";
-
-    public const string DefaultSymbol = "ELF";
+    
     public const string DefaultFiatUSD = "USD";
     public const string DefaultCryptoELF = "ELF";
     public const string DefaultFiatPrice = "200";
