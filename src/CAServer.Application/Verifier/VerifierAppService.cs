@@ -6,20 +6,24 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Indexing.Elasticsearch;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Dtos;
+using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -44,7 +48,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
-
+    private readonly IGuardianProvider _guardianProvider;
+    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
+    private readonly TestCaHashListOptions _options;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -60,7 +66,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider,
+        INESTRepository<GuardianIndex, string> guardianRepository,
+        IGuardianProvider guardianProvider,
+        IOptionsSnapshot<TestCaHashListOptions> options)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -73,6 +82,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
+        _guardianRepository = guardianRepository;
+        _guardianProvider = guardianProvider;
+        _options = options.Value;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -81,6 +93,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         var startTime = DateTime.UtcNow.ToUniversalTime();
         try
         {
+            var isTestCaHash = await IsTestCaHashAsync(input.GuardianIdentifier);
+            if (isTestCaHash)
+            {
+                return new VerifierServerResponse();
+            }
+
             ValidateAccount(input);
             var verifierSessionId = Guid.NewGuid();
             input.VerifierSessionId = verifierSessionId;
@@ -146,6 +164,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
+            var isTestCaHash = await IsTestCaHashAsync(userInfo.Id);
+            if (isTestCaHash)
+            {
+                return new VerificationCodeResponse();
+            }
+            
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -193,6 +217,13 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
+            
+            var isTestCaHash = await IsTestCaHashAsync(userId);
+            if (isTestCaHash)
+            {
+                return new VerificationCodeResponse();
+            }
+            
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -446,10 +477,37 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new Exception("Invalid token");
         }
     }
-    
-   
-    
-    
+
+    private async Task<bool> IsTestCaHashAsync(string guardianIdentifier)
+    {
+        var caHash = await GetCaHashAsync(guardianIdentifier);
+        if (caHash.IsNullOrEmpty() || _options.TestCaHashList.IsNullOrEmpty()) return false;
+
+        var isTestCaHash = _options.TestCaHashList.Contains(caHash);
+        _logger.LogWarning("is test hash, caHash:{caHash}", caHash);
+        return isTestCaHash;
+    }
+
+    private async Task<string> GetCaHashAsync(string guardianIdentifier)
+    {
+        var identifierHash = await GetHashFromIdentifierAsync(guardianIdentifier);
+        var holderInfo = await _guardianProvider.GetGuardiansAsync(identifierHash, string.Empty);
+        return holderInfo?.CaHolderInfo?.FirstOrDefault()?.CaHash;
+    }
+
+    private async Task<string> GetHashFromIdentifierAsync(string guardianIdentifier)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(guardianIdentifier)));
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardianGrainDto = await _guardianRepository.GetAsync(Filter);
+        if (guardianGrainDto == null || guardianGrainDto.IsDeleted) return null;
+
+        return guardianGrainDto?.IdentifierHash;
+    }
 }
 
 public class GenerateSignatureOutput
@@ -457,6 +515,3 @@ public class GenerateSignatureOutput
     public string Data { get; set; }
     public string Signature { get; set; }
 }
-
-
-

@@ -70,6 +70,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
+        Configure<TestCaHashListOptions>(configuration.GetSection("TestCaHashList"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
