@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -62,6 +64,12 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
     {
         try
         {
+            // image url
+            if (!imageUrl.StartsWith("http"))
+            {
+                return imageUrl;
+            }
+            
             if (!_awsThumbnailOptions.ExcludedSuffixes.Contains(GetImageUrlSuffix(imageUrl)))
             {
                 return imageUrl;

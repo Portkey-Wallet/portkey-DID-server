@@ -20,6 +20,7 @@
     <PackageReference Include="AWSSDK.CognitoIdentity" Version="3.7.205.22" />
     <PackageReference Include="GoogleAuthenticator" Version="3.1.1" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.14" />
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.Account.Application" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.DistributedLocking" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.EventBus.RabbitMQ" Version="7.0.0" />
