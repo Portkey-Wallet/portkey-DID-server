@@ -62,6 +62,10 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
     {
         try
         {
+            if (!imageUrl.StartsWith("http"))
+            {
+                return imageUrl;
+            }
             if (!_awsThumbnailOptions.ExcludedSuffixes.Contains(GetImageUrlSuffix(imageUrl)))
             {
                 return imageUrl;
