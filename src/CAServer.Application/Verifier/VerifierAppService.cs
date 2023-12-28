@@ -93,13 +93,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         var startTime = DateTime.UtcNow.ToUniversalTime();
         try
         {
-            var isTestCaHash = await IsTestCashAsync(input.GuardianIdentifier);
+            var isTestCaHash = await IsTestCaHashAsync(input.GuardianIdentifier);
             if (isTestCaHash)
             {
-                _logger.LogWarning("");
                 return new VerifierServerResponse();
             }
-            
+
             ValidateAccount(input);
             var verifierSessionId = Guid.NewGuid();
             input.VerifierSessionId = verifierSessionId;
@@ -466,12 +465,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private async Task<bool> IsTestCashAsync(string guardianIdentifier)
+    private async Task<bool> IsTestCaHashAsync(string guardianIdentifier)
     {
         var caHash = await GetCaHashAsync(guardianIdentifier);
         if (caHash.IsNullOrEmpty() || _options.TestCaHashList.IsNullOrEmpty()) return false;
 
-        return _options.TestCaHashList.Contains(caHash);
+        var isTestCaHash = _options.TestCaHashList.Contains(caHash);
+        _logger.LogWarning("is test hash, caHash:{caHash}", caHash);
+        return isTestCaHash;
     }
 
     private async Task<string> GetCaHashAsync(string guardianIdentifier)
