@@ -6,5 +6,5 @@ public class JwtTokenOptions
     public string PrivateKey { get; set; }
     public string Issuer { get; set; }
     public string Audience { get; set; }
-    public int expire { get; set; }
+    public int Expire { get; set; }
 }

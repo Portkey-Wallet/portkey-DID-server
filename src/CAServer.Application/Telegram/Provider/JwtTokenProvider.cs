@@ -56,7 +56,7 @@ public class JwtTokenProvider : IJwtTokenProvider, ISingletonDependency
                 audience: _jwtTokenOptions.Audience,
                 claims: claims,
                 notBefore: DateTime.UtcNow,
-                expires: DateTime.UtcNow.AddSeconds(_jwtTokenOptions.expire),
+                expires: DateTime.UtcNow.AddSeconds(_jwtTokenOptions.Expire),
                 signingCredentials: signingCredentials
             );
 
