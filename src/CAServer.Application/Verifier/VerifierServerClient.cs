@@ -1,17 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Dtos;
+using CAServer.Entities.Es;
+using CAServer.Guardian.Provider;
+using CAServer.Options;
 using CAServer.Settings;
 using CAServer.Switch;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.DependencyInjection;
@@ -24,17 +30,24 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-
+    private readonly IGuardianProvider _guardianProvider;
+    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
+    private readonly TestCaHashListOptions _options;
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory, INESTRepository<GuardianIndex, string> guardianRepository,
+        IGuardianProvider guardianProvider,
+        IOptionsSnapshot<TestCaHashListOptions> options)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
         _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
+        _guardianRepository = guardianRepository;
+        _guardianProvider = guardianProvider;
+        _options = options.Value;
     }
 
     private bool _disposed;
@@ -57,6 +70,16 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     public async Task<ResponseResultDto<VerifierServerResponse>> SendVerificationRequestAsync(
         VerifierCodeRequestDto dto)
     {
+        var checkCaHash = await CheckCaHashAsync(dto.GuardianIdentifier);
+        if (!checkCaHash)
+        {
+            return new ResponseResultDto<VerifierServerResponse>
+            {
+                Success = false,
+                Message = string.Empty
+            };
+        }
+
         var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)
@@ -183,5 +206,33 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         _logger.LogInformation("Result from verifier: {result}", result);
 
         return JsonConvert.DeserializeObject<ResponseResultDto<T>>(result);
+    }
+
+    private async Task<bool> CheckCaHashAsync(string guardianIdentifier)
+    {
+        var caHash = await GetCaHashAsync(guardianIdentifier);
+        if (caHash.IsNullOrEmpty() || _options.TestCaHashList.IsNullOrEmpty()) return true;
+
+        return !_options.TestCaHashList.Contains(caHash);
+    }
+
+    private async Task<string> GetCaHashAsync(string guardianIdentifier)
+    {
+        var holderInfo = await _guardianProvider.GetGuardiansAsync(guardianIdentifier, string.Empty);
+        return holderInfo?.CaHolderInfo?.FirstOrDefault()?.CaHash;
+    }
+
+    private async Task<string> GetHashFromIdentifierAsync(string guardianIdentifier)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(guardianIdentifier)));
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardianGrainDto = await _guardianRepository.GetAsync(Filter);
+        if (guardianGrainDto == null || guardianGrainDto.IsDeleted) return null;
+
+        return guardianGrainDto?.IdentifierHash;
     }
 }
