@@ -298,7 +298,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         {
             _logger.LogError(e,
                 "An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {caHash}", input.CaHash);
-            throw new UserFriendlyException("An exception occurred during GetManagerApprovedListByCaHashAsync");
+            return new TokenBalanceTransferCheckAsyncResultDto
+                { IsTransferSafe = false, IsSynchronizing = false, IsOriginChainSafe = false };
         }
     }
 
