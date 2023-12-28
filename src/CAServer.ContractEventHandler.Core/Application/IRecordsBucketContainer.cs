@@ -8,10 +8,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
-public interface IRecordsBucketContainer
+public interface IRecordsBucketContainer : ISingletonDependency
 {
     Task AddValidatedRecordsAsync(string chainId, List<SyncRecord> records);
     Task AddToBeValidatedRecordsAsync(string chainId, List<SyncRecord> records);

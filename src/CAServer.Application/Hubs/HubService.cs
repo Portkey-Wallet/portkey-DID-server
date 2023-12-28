@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Entities.Es;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Hub;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -25,15 +28,20 @@ public class HubService : CAServerAppService, IHubService
     private readonly IHubProvider _caHubProvider;
     private readonly IHubCacheProvider _hubCacheProvider;
     private readonly IConnectionProvider _connectionProvider;
-    private readonly ThirdPartOptions _thirdPartOptions;
+    private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<HubService> _logger;
+    private readonly IOrderWsNotifyProvider _orderWsNotifyProvider;
+
+    private readonly Dictionary<string, string> _clientOrderListener = new();
+    private readonly Dictionary<string, Func<NotifyOrderDto, Task>> _orderNotifyListeners = new();
+
 
     public HubService(IHubProvider hubProvider, IHubCacheProvider hubCacheProvider, IHubProvider caHubProvider,
         IThirdPartOrderProvider thirdPartOrderProvider, IObjectMapper objectMapper,
-        IConnectionProvider connectionProvider, IOptions<ThirdPartOptions> merchantOptions,
-        ILogger<HubService> logger)
+        IConnectionProvider connectionProvider, IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
+        ILogger<HubService> logger, IOrderWsNotifyProvider orderWsNotifyProvider)
     {
         _hubProvider = hubProvider;
         _hubCacheProvider = hubCacheProvider;
@@ -41,8 +49,9 @@ public class HubService : CAServerAppService, IHubService
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _objectMapper = objectMapper;
         _connectionProvider = connectionProvider;
-        _thirdPartOptions = merchantOptions.Value;
+        _thirdPartOptions = thirdPartOptions;
         _logger = logger;
+        _orderWsNotifyProvider = orderWsNotifyProvider;
     }
 
      public async Task Ping(HubRequestContext context, string content)
@@ -75,7 +84,9 @@ public class HubService : CAServerAppService, IHubService
 
     public string UnRegisterClient(string connectionId)
     {
-        return _connectionProvider.Remove(connectionId);
+        var clientId = _connectionProvider.Remove(connectionId);
+        _orderWsNotifyProvider.UnRegisterOrderListenerAsync(clientId);
+        return clientId;
     }
 
     public async Task SendAllUnreadRes(string clientId)
@@ -112,6 +123,37 @@ public class HubService : CAServerAppService, IHubService
         await _hubCacheProvider.RemoveResponseByClientId(clientId, requestId);
     }
     
+    public async Task RequestRampOrderStatus(string clientId, string orderId)
+    {
+        await RequestOrderStatusAsync(clientId, orderId);
+    }
+    
+    public async Task RequestNFTOrderStatusAsync(string clientId, string orderId)
+    {
+        await RequestOrderStatusAsync(clientId, orderId);
+    }
+    
+    public async Task RequestOrderStatusAsync(string clientId, string orderId)
+    {
+        await _orderWsNotifyProvider.RegisterOrderListenerAsync(clientId, orderId, async notifyOrderDto =>
+        {
+            try
+            {
+                var methodName = notifyOrderDto.IsNftOrder() ? "OnNFTOrderChanged" : "OnRampOrderChanged";
+                await _caHubProvider.ResponseAsync(new HubResponseBase<NotifyOrderDto>(notifyOrderDto), clientId, methodName);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "notify orderStatus error, clientId={ClientId}, orderId={OrderId}", clientId, orderId);
+            }
+        });
+        
+        // notify current order immediately
+        var currentOrder = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(orderId);
+        var notifyOrderDto = _objectMapper.Map<RampOrderIndex, NotifyOrderDto>(currentOrder);
+        await _orderWsNotifyProvider.NotifyOrderDataAsync(notifyOrderDto);
+    }
+
     public async Task RequestOrderTransferredAsync(string targetClientId, string orderId)
     {
         await RequestConditionOrderAsync(targetClientId, orderId,      
@@ -131,7 +173,7 @@ public class HubService : CAServerAppService, IHubService
 
     private async Task RequestConditionOrderAsync(string targetClientId, string orderId, Func<OrderDto, bool> matchCondition, string callbackMethod)
     {
-        var cts = new CancellationTokenSource(_thirdPartOptions.timer.TimeoutMillis);
+        var cts = new CancellationTokenSource(_thirdPartOptions.CurrentValue.Timer.TimeoutMillis);
         while (!cts.IsCancellationRequested)
         {
             try
@@ -157,13 +199,13 @@ public class HubService : CAServerAppService, IHubService
                 {
                     _logger.LogWarning("Get third-part order {OrderId} {CallbackMethod} condition not match, wait for next time",
                         orderId, callbackMethod);
-                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.timer.DelaySeconds));
+                    await Task.Delay(TimeSpan.FromSeconds(_thirdPartOptions.CurrentValue.Timer.DelaySeconds));
                     continue;
                 }
 
                 // push address to client via ws
                 var bodyDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(
-                    new AlchemyTargetAddressDto()
+                    new NotifyOrderDto()
                     {
                         OrderId = esOrderData.Id,
                         MerchantName = esOrderData.MerchantName,

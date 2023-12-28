@@ -29,10 +29,11 @@ using Portkey.Contracts.CA;
 using Portkey.Contracts.CryptoBox;
 using Volo.Abp;
 using Volo.Abp.Caching;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
-public interface IContractProvider
+public interface IContractProvider : ISingletonDependency
 {
     Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId,
         Hash loginGuardian, string caHash);
@@ -518,12 +519,13 @@ public class ContractProvider : IContractProvider
     public async Task<TransactionInfoDto> SendTransferRedPacketRefundAsync(RedPackageDetailDto redPackageDetail,
         string payRedPackageFrom)
     {
-        Guid redPackageId = redPackageDetail.Id;
-        string symbol = redPackageDetail.Symbol;
-        string chainId = redPackageDetail.ChainId;
+        var redPackageId = redPackageDetail.Id;
+        var chainId = redPackageDetail.ChainId;
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Id);
-        var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Symbol,
-            redPackageDetail.ChainId, out long maxCount, out string redPackageContractAddress);
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+        {
+            return null;
+        }
         var grab = redPackageDetail.Items.Sum(item => long.Parse(item.Amount));
         var sendInput = new RefundCryptoBoxInput
         {
@@ -536,7 +538,7 @@ public class ContractProvider : IContractProvider
         _logger.LogInformation("SendTransferRedPacketRefundAsync input {input}",JsonConvert.SerializeObject(sendInput));
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
-            redPackageContractAddress, MethodName.RefundCryptoBox);
+            chainInfo.RedPackageContractAddress, MethodName.RefundCryptoBox);
     }
 
 
@@ -548,15 +550,14 @@ public class ContractProvider : IContractProvider
         //build param for transfer red package input 
         var list = new List<TransferCryptoBoxInput>();
         var redPackageId = redPackageDetail.Data.Id;
-        var symbol = redPackageDetail.Data.Symbol;
         var chainId = redPackageDetail.Data.ChainId;
+        if (!_chainOptions.ChainInfos.TryGetValue(chainId, out var chainInfo))
+        {
+            return null;
+        }
 
         var redPackageKeyGrain = _clusterClient.GetGrain<IRedPackageKeyGrain>(redPackageDetail.Data.Id);
         _logger.Debug("SendTransferRedPacketToChainAsync message: {redPackageId}", redPackageDetail.Data.Id.ToString());
-        var res = _redPackageAppService.GetRedPackageOption(redPackageDetail.Data.Symbol,
-            redPackageDetail.Data.ChainId, out var maxCount, out var redPackageContractAddress);
-        _logger.LogInformation("GetRedPackageOption message: " + "\n{res}",
-            JsonConvert.SerializeObject(res, Formatting.Indented));
         foreach (var item in redPackageDetail.Data.Items.Where(o => !o.PaymentCompleted).ToArray())
         {
             _logger.LogInformation("redPackageKeyGrain GenerateSignature input{param}",
@@ -581,6 +582,6 @@ public class ContractProvider : IContractProvider
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
         return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
-            redPackageContractAddress, MethodName.TransferCryptoBoxes);
+            chainInfo.RedPackageContractAddress, MethodName.TransferCryptoBoxes);
     }
 }

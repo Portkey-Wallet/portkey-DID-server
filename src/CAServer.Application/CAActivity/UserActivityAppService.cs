@@ -122,8 +122,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
+            var caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address})
+                .ToList();
             var indexerTransactions =
-                await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
+                await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
             var activitiesDto =
                 await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
@@ -406,22 +408,25 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
-        if (activityDto.TransactionType == ActivityConstants.TransferName)
+        if (activityDto.TransactionType == ActivityConstants.TransferName && _activityOptions.ETransferConfigs != null)
         {
-            var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
+            var eTransferConfig =
+                _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
             if (eTransferConfig != null && eTransferConfig.Accounts.Contains(activityDto.FromAddress))
             {
                 activityDto.TransactionName = ActivityConstants.DepositName;
                 return;
             }
         }
-        
+
         activityDto.TransactionName = activityDto.NftInfo != null &&
                                       !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
                                       _activityTypeOptions.ShowNftTypes.Contains(activityDto.TransactionType)
             ? typeName + " NFT"
             : typeName;
-        activityDto.TransactionType = _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
+        activityDto.TransactionType =
+            _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType,
+                activityDto.TransactionType);
     }
 
     private string GetIconByType(string transactionType)

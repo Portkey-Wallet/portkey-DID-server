@@ -52,6 +52,11 @@
         "Iso": "HK"
       },
       {
+        "Country": "India",
+        "Code": "91",
+        "Iso": "IN"
+      },
+      {
         "Country": "Lithuania",
         "Code": "370",
         "Iso": "LT"
@@ -67,6 +72,11 @@
         "Iso": "MX"
       },
       {
+        "Country": "Malaysia",
+        "Code": "60",
+        "Iso": "MY"
+      },
+      {
         "Country": "Netherlands",
         "Code": "31",
         "Iso": "NL"
@@ -80,6 +90,11 @@
         "Country": "Singapore",
         "Code": "65",
         "Iso": "SG"
+      },
+      {
+        "Country": "Sweden",
+        "Code": "46",
+        "Iso": "SWE"
       },
       {
         "Country": "Ukraine",

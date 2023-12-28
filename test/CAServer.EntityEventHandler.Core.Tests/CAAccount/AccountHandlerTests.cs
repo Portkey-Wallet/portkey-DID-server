@@ -31,6 +31,7 @@ public partial class AccountHandlerTests : CAServerEntityEventHandlerTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetClusterClient());
         services.AddSingleton(GetMockAbpDistributedLock());
     }

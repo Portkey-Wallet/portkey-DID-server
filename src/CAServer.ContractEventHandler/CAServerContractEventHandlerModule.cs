@@ -73,6 +73,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<IndexOptions>(configuration.GetSection("Index"));
         Configure<PayRedPackageAccount>(configuration.GetSection("RedPackagePayAccount"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
+        Configure<GrabRedPackageOptions>(configuration.GetSection("GrabRedPackage"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
@@ -82,6 +83,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         context.Services.AddSingleton<IRecordsBucketContainer, RecordsBucketContainer>();
         context.Services.AddSingleton<IRedPackageCreateResultService, RedPackageCreateResultService>();
         context.Services.AddSingleton<IHttpClientProvider, HttpClientProvider>();
+        context.Services.AddSingleton<IPayRedPackageService, PayRedPackageService>();
         context.Services.AddHttpClient();
         ConfigureCache(configuration);
         ConfigureDataProtection(context, configuration, hostingEnvironment);
@@ -214,7 +216,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         {
             context.Services.AddHangfire(config =>
             {
-                var mongoUrlBuilder = new MongoUrlBuilder(connectionString) { DatabaseName = "jobs" };
+                var mongoUrlBuilder = new MongoUrlBuilder(connectionString);
                 var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
                 var opt = new CosmosStorageOptions
                 {
@@ -226,8 +228,13 @@ public class CAServerContractEventHandlerModule : AbpModule
                 };
                 config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
             });
-
-            context.Services.AddHangfireServer(opt => { opt.Queues = new[] { "default", "notDefault" }; });
         }
+        
+        context.Services.AddHangfireServer(opt =>
+        {
+            opt.SchedulePollingInterval = TimeSpan.FromMilliseconds(3000);
+            opt.HeartbeatInterval = TimeSpan.FromMilliseconds(3000);
+            opt.Queues = new[] { "default", "notDefault" };
+        });
     }
 }

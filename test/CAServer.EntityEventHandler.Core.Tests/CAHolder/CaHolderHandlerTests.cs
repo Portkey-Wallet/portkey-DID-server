@@ -30,6 +30,7 @@ public class CaHolderHandlerTests : CAServerEntityEventHandlerTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockGraphQL());
         services.AddSingleton(GetContactProviderMock());
     }

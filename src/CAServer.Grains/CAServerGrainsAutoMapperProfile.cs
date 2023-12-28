@@ -20,12 +20,14 @@ using CAServer.Grains.State.CrossChain;
 using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
 using CAServer.Grains.State.PrivacyPermission;
+using CAServer.Grains.State.ThirdPart;
 using CAServer.Grains.State.RedPackage;
 using CAServer.Grains.State.Tokens;
 using CAServer.Grains.State.UserExtraInfo;
 using CAServer.PrivacyPermission.Dtos;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.RedPackage.Dtos;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ValidateOriginChainId.Dtos;
 using Google.Protobuf.Collections;
@@ -137,5 +139,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
             .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount.ToString()))
             .ReverseMap()
             .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => long.Parse(src.Amount)));
+        CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
+        CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
+        CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
     }
 }

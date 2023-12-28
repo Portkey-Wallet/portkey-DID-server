@@ -3,16 +3,19 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Hub;
-using CAServer.Hubs;
+using CAServer.HubsEventHandler;
+using CAServer.Middleware;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using CAServer.ThirdPart.Adaptor;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using MassTransit;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,6 +43,7 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
+using Volo.Abp.RabbitMQ;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
@@ -67,10 +71,11 @@ public class CAServerHttpApiHostModule : AbpModule
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
+        Configure<RampOptions>(configuration.GetSection("RampOptions"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
-        Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
+        Configure<Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
@@ -88,6 +93,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureOrleans(context, configuration);
         context.Services.AddHttpContextAccessor();
         ConfigureTokenCleanupService();
+        ConfigureMassTransit(context, configuration);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -174,7 +180,7 @@ public class CAServerHttpApiHostModule : AbpModule
         //     },
         //     options =>
         //     {
-        //         options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", Version = "v1" });
+        //         options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", ClientVersion = "v1" });
         //         options.DocInclusionPredicate((docName, description) => true);
         //         options.CustomSchemaIds(type => type.FullName);
         //     });
@@ -277,6 +283,30 @@ public class CAServerHttpApiHostModule : AbpModule
         });
     }
 
+    private void ConfigureMassTransit(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddMassTransit(x =>
+        {
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
+            var clientId = configuration.GetSection("ClientId").Get<string>();
+            x.AddConsumer<OrderWsBroadcastConsumer>();
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                    "/", h =>
+                    {
+                        h.Username(rabbitMqConfig.Connections.Default.UserName);
+                        h.Password(rabbitMqConfig.Connections.Default.Password);
+                    });
+                
+                cfg.ReceiveEndpoint("BroadcastClient_" + clientId, e =>
+                {
+                    e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
+                });
+            });
+        });
+    }
+
     private void ConfigureTokenCleanupService()
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
@@ -309,6 +339,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
+        app.UseMiddleware<DeviceInfoMiddleware>();
 
         if (env.IsDevelopment())
         {
@@ -329,6 +360,9 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseConfiguredEndpoints();
 
         StartOrleans(context.ServiceProvider);
+
+        // to start pre heat
+        context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync().GetAwaiter().GetResult();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

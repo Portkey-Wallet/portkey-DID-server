@@ -8,6 +8,7 @@ using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
@@ -58,7 +59,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 
             if (order.Status != OrderStatusType.Created.ToString())
             {
-                _logger.LogWarning("Order status is NOT Create, orderId:{orderId}", eventData.OrderId);
+                _logger.LogWarning("Order status is NOT Create, orderId:{OrderId}", eventData.OrderId);
                 return;
             }
 
@@ -71,7 +72,11 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
                 Order = _objectMapper.Map<RampOrderIndex, OrderDto>(order),
                 Status = OrderStatusType.StartTransfer,
                 RawTransaction = eventData.RawTransaction,
-                DicExt = new Dictionary<string, object> { ["TransactionId"] = order.TransactionId }
+                DicExt = new Dictionary<string, object>
+                {
+                    ["TransactionId"] = order.TransactionId,
+                    ["RawTransaction"] = eventData.RawTransaction
+                }
             });
 
             var chainId = _transactionOptions.SendToChainId;
@@ -87,7 +92,9 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 
             var transactionDto = _objectMapper.Map<TransactionEto, HandleTransactionDto>(eventData);
             transactionDto.ChainId = chainId;
-
+            
+            _logger.LogDebug("HandleAsync transaction: orderId:{OrderId}, rawTransaction:{RawTransaction}, publicKey:{PublicKey}",
+                eventData.OrderId, eventData.RawTransaction, eventData.PublicKey);
             BackgroundJob.Schedule<ITransactionProvider>(provider =>
                 provider.HandleTransactionAsync(transactionDto), TimeSpan.FromSeconds(_transactionOptions.DelayTime));
         }
@@ -95,7 +102,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         {
             // add alarm.
             _logger.LogError(e,
-                "Handle transaction fail: orderId:{orderId}, rawTransaction:{rawTransaction}, publicKey:{publicKey}",
+                "HandleAsync transaction fail: orderId:{orderId}, rawTransaction:{rawTransaction}, publicKey:{publicKey}",
                 eventData.OrderId, eventData.RawTransaction, eventData.PublicKey);
 
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
