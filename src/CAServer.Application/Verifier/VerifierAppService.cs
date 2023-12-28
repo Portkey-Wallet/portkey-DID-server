@@ -164,6 +164,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
+            var isTestCaHash = await IsTestCaHashAsync(userInfo.Id);
+            if (isTestCaHash)
+            {
+                return new VerificationCodeResponse();
+            }
+            
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -211,6 +217,13 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
+            
+            var isTestCaHash = await IsTestCaHashAsync(userId);
+            if (isTestCaHash)
+            {
+                return new VerificationCodeResponse();
+            }
+            
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
