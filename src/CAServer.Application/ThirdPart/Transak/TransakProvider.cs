@@ -105,7 +105,7 @@ public class TransakProvider
             }
             else
             {
-                _logger.LogError("Transak webhook url options not exists, skip update to Transak");
+                _logger.LogWarning("Transak webhook url options not exists, skip update to Transak");
             }
         }
         catch (Exception e)
@@ -209,7 +209,8 @@ public class TransakProvider
         var resp = await _httpProvider.InvokeAsync<TransakBaseResponse<List<TransakCryptoItem>>>(
             TransakOptions().BaseUrl,
             TransakApi.GetCryptoCurrencies,
-            withInfoLog: false
+            withInfoLog: false,
+            withDebugLog: false
         );
         AssertHelper.IsTrue(resp.Success,
             "GetCryptoCurrenciesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,
@@ -232,7 +233,8 @@ public class TransakProvider
                 ["accept"] = "application/json"
             },
             param: new Dictionary<string, string> { ["apiKey"] = GetApiKey() },
-            withInfoLog: false
+            withInfoLog: false,
+            withDebugLog: false
         );
         AssertHelper.IsTrue(resp.Success, "GetFiatCurrencies Transak response error, code={Code}, message={Message}",
             resp.Error?.StatusCode, resp.Error?.Message);
@@ -249,7 +251,8 @@ public class TransakProvider
         var resp = await _httpProvider.InvokeAsync<TransakBaseResponse<List<TransakCountry>>>(
             TransakOptions().BaseUrl,
             TransakApi.GetCountries,
-            withInfoLog: false
+            withInfoLog: false,
+            withDebugLog: false
         );
         AssertHelper.IsTrue(resp.Success,
             "GetTransakCountriesAsync Transak response error, code={Code}, message={Message}", resp.Error?.StatusCode,

@@ -409,22 +409,35 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         return null;
     }
 
+    private async Task<bool> InRampLimit(RampDetailRequest rampDetailRequest)
+    {
+        var limit = await GetRampLimitAsync(new RampLimitRequest
+        {
+            Type = rampDetailRequest.Type,
+            Fiat = rampDetailRequest.Fiat,
+            Crypto = rampDetailRequest.Crypto,
+            Network = rampDetailRequest.Network,
+            Country = rampDetailRequest.Country
+        });
+        var currencyLimit = rampDetailRequest.IsBuy() ? limit.Fiat : limit.Crypto;
+        var amount = (rampDetailRequest.IsBuy() ? rampDetailRequest.FiatAmount : rampDetailRequest.CryptoAmount) ?? 0;
+        return amount >= currencyLimit.MinLimit.SafeToDecimal() && amount <= currencyLimit.MaxLimit.SafeToDecimal();
+    }
+
     public async Task<RampPriceDto> GetRampPriceAsync(RampDetailRequest rampDetailRequest)
     {
         try
         {
+            if (await InRampLimit(rampDetailRequest)) return null;
+
             var fiat = await GetTransakFiatItemAsync(rampDetailRequest.Type, rampDetailRequest.Fiat,
                 rampDetailRequest.Country, rampDetailRequest.Crypto);
 
             var paymentOption = fiat.MaxLimitPayment(rampDetailRequest.Type);
-
             AssertHelper.NotNull(paymentOption, "Fiat {Fiat} paymentOption missing", rampDetailRequest.Fiat);
 
             var commonPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
-
-
             var transakFeePercent = commonPrice.TransakFeePercent();
-
             var fiatAmount = rampDetailRequest.IsBuy()
                 ? rampDetailRequest.FiatAmount ?? 0
                 : rampDetailRequest.CryptoAmount / commonPrice.ConversionPrice ?? 0;
@@ -466,6 +479,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     {
         try
         {
+            if (await InRampLimit(rampDetailRequest)) return null;
+            
             var fiatItem =
                 await GetTransakFiatItemAsync(rampDetailRequest.Type, rampDetailRequest.Fiat, rampDetailRequest.Country,
                     rampDetailRequest.Crypto);

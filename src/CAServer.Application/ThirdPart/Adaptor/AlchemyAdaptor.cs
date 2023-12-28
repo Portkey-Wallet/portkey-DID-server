@@ -164,6 +164,12 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         return orderQuote.Data;
     }
 
+    private async Task<bool> InPriceLimit(RampDetailRequest rampDetailRequest)
+    {
+        var (min, max) = await GetRampLimit(rampDetailRequest.Fiat, rampDetailRequest.Crypto, rampDetailRequest.IsBuy());
+        var amount = (rampDetailRequest.IsBuy() ? rampDetailRequest.FiatAmount : rampDetailRequest.CryptoAmount) ?? 0;
+        return amount >= min.SafeToDecimal() && amount <= max.SafeToDecimal();
+    }
 
     /// <summary>
     ///     Get ramp price
@@ -174,6 +180,8 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     {
         try
         {
+            if (!await InPriceLimit(rampDetailRequest)) return null;
+
             var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
             AssertHelper.IsTrue(orderQuote.Success, "Query Alchemy order quote failed, " + orderQuote.Message);
@@ -194,6 +202,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         }
     }
 
+
     /// <summary>
     ///     Get ramp detail
     /// </summary>
@@ -204,6 +213,8 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     {
         try
         {
+            if (!await InPriceLimit(rampDetailRequest)) return null;
+
             var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
             var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, ProviderRampDetailDto>(orderQuote.Data);
