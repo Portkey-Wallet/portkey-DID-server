@@ -315,7 +315,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
                 _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping[rampDetailRequest.Network];
             var cryptoList = await GetTransakCryptoListWithCacheAsync();
             var theCrypto = cryptoList
-                .Where(c => c.Network.Name == rampDetailRequest.Network)
+                .Where(c => rampDetailRequest.Network.IsNullOrEmpty() || c.Network.Name == rampDetailRequest.Network)
                 .FirstOrDefault(c => c.Symbol == rampDetailRequest.Crypto);
             if (theCrypto == null)
             {
@@ -428,7 +428,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     {
         try
         {
-            if (await InRampLimit(rampDetailRequest)) return null;
+            if (!await InRampLimit(rampDetailRequest)) return null;
 
             var fiat = await GetTransakFiatItemAsync(rampDetailRequest.Type, rampDetailRequest.Fiat,
                 rampDetailRequest.Country, rampDetailRequest.Crypto);
@@ -479,7 +479,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     {
         try
         {
-            if (await InRampLimit(rampDetailRequest)) return null;
+            if (!await InRampLimit(rampDetailRequest)) return null;
             
             var fiatItem =
                 await GetTransakFiatItemAsync(rampDetailRequest.Type, rampDetailRequest.Fiat, rampDetailRequest.Country,
