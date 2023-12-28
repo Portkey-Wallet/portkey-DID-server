@@ -41,6 +41,7 @@ using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
 using CAServer.PrivacyPolicy.Dtos;
 using CAServer.Search.Dtos;
+using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Dtos.Ramp;
@@ -274,8 +275,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<Entities.Es.ContactAddress, UserContactAddressDto>();
         CreateMap<AppleUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, UserExtraInfoGrainDto>();
+        // CreateMap<TelegramUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<AppleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<TelegramUserExtraInfo, Verifier.Dtos.UserExtraInfo>()
+            .ForMember(t => t.FullName, m => m.MapFrom(f => f.UserName))
+            .ForMember(t => t.Picture, m => m.MapFrom(f => f.ProtoUrl));
         CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoEto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoResultDto>()
@@ -544,5 +549,10 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.Status, m => m.MapFrom(f => f.Status))
             ;
         CreateMap<QueryAlchemyOrderInfo, OrderDto>().ReverseMap();
+        CreateMap<TelegramAuthReceiveRequest, TelegramAuthDto>()
+            .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
+            .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
+            .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
+            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
     }
 }

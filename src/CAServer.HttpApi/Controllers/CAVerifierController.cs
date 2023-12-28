@@ -222,6 +222,13 @@ public class CAVerifierController : CAServerController
         return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
 
+    [HttpPost("verifyTelegramToken")]
+    public async Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        ValidateOperationType(requestDto.OperationType);
+        return await _verifierAppService.VerifyTelegramTokenAsync(requestDto);
+    }
+
     [HttpPost("isGoogleRecaptchaOpen")]
     public async Task<bool> IsGoogleRecaptchaOpen([FromHeader] string version,
         OperationTypeRequestInput operationTypeRequestInput)
