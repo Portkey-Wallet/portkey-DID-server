@@ -429,7 +429,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
-        if (activityDto.TransactionType == ActivityConstants.TransferName)
+        if (activityDto.TransactionType == ActivityConstants.TransferName && _activityOptions.ETransferConfigs != null)
         {
             var eTransferConfig =
                 _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);

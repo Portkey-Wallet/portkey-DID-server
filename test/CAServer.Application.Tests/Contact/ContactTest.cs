@@ -50,6 +50,7 @@ public partial class ContactTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockHttpClient());
         services.AddSingleton(GetMockContactProvider());
         services.AddSingleton(GetMockHostInfoOptions());
@@ -444,17 +445,6 @@ public partial class ContactTest : CAServerApplicationTestBase
                     ChainName = "test"
                 }
             }
-        };
-
-        var orderInfo = new QueryAlchemyOrderInfo
-        {
-            OrderNo = string.Empty, Address = string.Empty, Account = string.Empty, Amount = string.Empty,
-            AppId = string.Empty, CompleteTime = string.Empty, Crypto = string.Empty, CryptoPrice = string.Empty,
-            CryptoActualAmount = string.Empty, CryptoAmount = string.Empty, PayTime = string.Empty,
-            Network = string.Empty, FiatAmount = string.Empty, Fiat = string.Empty, TxHash = string.Empty,
-            Email = string.Empty, Name = string.Empty, FiatRate = string.Empty, Status = string.Empty,
-            Side = string.Empty, TxTime = string.Empty, Networkfee = string.Empty, PayType = string.Empty,
-            RampFee = string.Empty, CryptoQuantity = string.Empty
         };
     }
 

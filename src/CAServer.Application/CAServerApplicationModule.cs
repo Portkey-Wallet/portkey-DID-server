@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
+using CAServer.Amazon;
 using CAServer.AppleAuth;
 using CAServer.Common;
 using CAServer.Commons;
@@ -12,6 +13,15 @@ using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.ThirdPart.Adaptor;
+using CAServer.ThirdPart.Alchemy;
+using CAServer.ThirdPart.Processor;
+using CAServer.ThirdPart.Processor.NFT;
+using CAServer.ThirdPart.Processor.Ramp;
+using CAServer.ThirdPart.Processors;
+using CAServer.ThirdPart.Transak;
+using CAServer.Tokens.Provider;
+using CAServer.Telegram.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,9 +65,17 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
+        Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
+        // Configure<RampOptions>(configuration.GetSection("RampOptions"));
+
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
+
+        context.Services.AddMemoryCache();
+        context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
+        
+        context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
@@ -68,8 +86,20 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        
+        context.Services.AddSingleton<AlchemyProvider>();
+        context.Services.AddSingleton<TransakProvider>();
+        
+        context.Services.AddSingleton<IThirdPartAdaptor, AlchemyAdaptor>();
+        context.Services.AddSingleton<IThirdPartAdaptor, TransakAdaptor>();
 
-
+        context.Services.AddSingleton<AbstractRampOrderProcessor, TransakOrderProcessor>();
+        context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
+        
+        context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
+        context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
+        context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
+        
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -93,13 +123,18 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
+        Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
+        Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
         context.Services.AddHttpClient();
         ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+        
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));

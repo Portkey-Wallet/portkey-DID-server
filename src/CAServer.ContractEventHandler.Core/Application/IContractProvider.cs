@@ -29,10 +29,11 @@ using Portkey.Contracts.CA;
 using Portkey.Contracts.CryptoBox;
 using Volo.Abp;
 using Volo.Abp.Caching;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
-public interface IContractProvider
+public interface IContractProvider : ISingletonDependency
 {
     Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId,
         Hash loginGuardian, string caHash);

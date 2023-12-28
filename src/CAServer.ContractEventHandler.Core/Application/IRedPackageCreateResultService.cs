@@ -15,10 +15,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
-public interface IRedPackageCreateResultService
+public interface IRedPackageCreateResultService : ISingletonDependency
 {
     Task UpdateRedPackageAndSendMessageAsync(RedPackageCreateResultEto redPackageCreateResult);
 }

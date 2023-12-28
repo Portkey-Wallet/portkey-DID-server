@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Text.Json;
 using System.Threading.Tasks;
 using CAServer.Hubs;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 
@@ -35,14 +36,23 @@ public class Program
 
         try
         {
-            Log.Information("Starting CAServer.HttpApi.Host.");
+            Log.Information("Starting CAServer.HttpApi.Host");
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("apollo.appsettings.json");
             builder.Configuration.AddJsonFile("phone.json");
+            builder.Configuration.AddJsonFile("ramp.json");
             builder.Configuration.AddJsonFile("seedurl.json");
             builder.Configuration.AddJsonFile("activity.json");
-            builder.Host.AddAppSettingsSecretsJson()
+
+            var hostBuilder = builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
                 .UseSerilog();
+            
+            if (builder.Configuration.GetSection("apollo").GetSection("UseApollo").Get<bool>())
+            {
+                hostBuilder.UseApollo();
+            }
+
             builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();

@@ -35,10 +35,6 @@ public class ContactProviderTest : CAServerApplicationTestBase
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
     }
 
-    protected override void AfterAddApplication(IServiceCollection services)
-    {
-        //services.AddSingleton(GetGraphQlMock());
-    }
 
     [Fact]
     public async Task GetContactsAsyncTest()
