@@ -899,6 +899,9 @@ public class ContractAppService : IContractAppService
                 return;
             }
 
+            storedToBeValidatedRecords = storedToBeValidatedRecords
+                .Where(r => r.BlockHeight >= _indexOptions.AutoSyncStartHeight[chainId]).ToList();
+            
             storedToBeValidatedRecords = OptimizeSyncRecords(storedToBeValidatedRecords
                 .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
 
