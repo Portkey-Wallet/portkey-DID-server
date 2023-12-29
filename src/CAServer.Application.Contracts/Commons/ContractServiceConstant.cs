@@ -72,4 +72,6 @@ public static class CommonConstant
     public const string DefaultFiatPrice = "200";
     public const string DefaultCryptoPrice = "400";
 
+    public const string ProtocolName = "http";
+
 }

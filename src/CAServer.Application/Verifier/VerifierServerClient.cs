@@ -8,7 +8,6 @@ using AElf;
 using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Settings;
-using CAServer.Switch;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,6 +34,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         _logger = logger;
         _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
+
     }
 
     private bool _disposed;
