@@ -807,6 +807,12 @@ public class ContractAppService : IContractAppService
         try
         {
             var lastEndHeight = await _graphQLProvider.GetLastEndHeightAsync(chainId, QueryType.QueryRecord);
+            if (lastEndHeight == 0)
+            {
+                _logger.LogError(
+                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. \nLastEndHeight: {last}", chainId, lastEndHeight);
+                return;
+            }
 
             var currentIndexHeight = await _graphQLProvider.GetIndexBlockHeightAsync(chainId);
 
