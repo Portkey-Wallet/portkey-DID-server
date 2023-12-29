@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Security;
 using CAServer.Security.Dtos;
@@ -38,6 +39,14 @@ public class UserSecurityController : CAServerController
     [HttpGet("balanceCheck")]
     public async Task<TokenBalanceTransferCheckAsyncResultDto> GetTokenBalanceTransferCheckAsync(GetTokenBalanceTransferCheckWithChainIdDto input)
     {
-        return await _userSecurityAppService.GetTokenBalanceTransferCheckAsync(input);
+        try
+        {
+            return await _userSecurityAppService.GetTokenBalanceTransferCheckAsync(input);
+        }
+        catch (Exception e)
+        {
+            return new TokenBalanceTransferCheckAsyncResultDto
+                { IsTransferSafe = false, IsSynchronizing = false, IsOriginChainSafe = false };
+        }
     }
 }
