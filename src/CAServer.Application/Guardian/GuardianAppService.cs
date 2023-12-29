@@ -211,21 +211,22 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             if (extraInfo != null)
             {
                 guardian.ThirdPartyEmail = extraInfo.Email;
-                if (guardian.Type == GuardianIdentifierType.Google.ToString())
+                var guardianType = Enum.Parse(typeof(GuardianIdentifierType), guardian.Type);
+                switch (guardianType)
                 {
-                    guardian.FirstName = extraInfo.FirstName;
-                    guardian.LastName = extraInfo.LastName;
-                }
-                else if (guardian.Type == GuardianIdentifierType.Telegram.ToString())
-                {
-                    guardian.FirstName = extraInfo.FirstName;
-                    guardian.LastName = extraInfo.LastName;
-                    guardian.IsPrivate = true;
-                }
-                else if (guardian.Type == GuardianIdentifierType.Apple.ToString())
-                {
-                    await SetNameAsync(guardian);
-                    guardian.IsPrivate = extraInfo.IsPrivateEmail;
+                    case GuardianIdentifierType.Google:
+                        guardian.FirstName = extraInfo.FirstName;
+                        guardian.LastName = extraInfo.LastName;
+                        break;
+                    case GuardianIdentifierType.Telegram:
+                        guardian.FirstName = extraInfo.FirstName;
+                        guardian.LastName = extraInfo.LastName;
+                        guardian.IsPrivate = true;
+                        break;
+                    case GuardianIdentifierType.Apple:
+                        await SetNameAsync(guardian);
+                        guardian.IsPrivate = extraInfo.IsPrivateEmail;
+                        break;
                 }
             }
         }

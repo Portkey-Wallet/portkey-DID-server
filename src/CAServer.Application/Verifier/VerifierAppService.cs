@@ -319,7 +319,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "validate telegram error, accessToken={0}, verifierId={1}", requestDto.AccessToken,
+                requestDto.VerifierId);
             if (ThirdPartyMessage.MessageDictionary.ContainsKey(e.Message))
             {
                 throw new UserFriendlyException(e.Message, ThirdPartyMessage.MessageDictionary[e.Message]);
@@ -523,6 +524,3 @@ public class GenerateSignatureOutput
     public string Data { get; set; }
     public string Signature { get; set; }
 }
-
-
-
