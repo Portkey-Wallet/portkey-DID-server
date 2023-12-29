@@ -61,7 +61,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         return _thirdPartOptions.CurrentValue.Alchemy;
     }
-    
+
     private ThirdPartProvider AlchemyRampOptions()
     {
         var exists =
@@ -206,14 +206,18 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
              * on-ramp: input-amount is FiatQuantity, which user will pay
              * off-ramp: FiatQuantity = (CryptoQuantity * fiat-crypto-exchange) - fee
              */
-            quoteData.FiatQuantity = input.IsBuy() ? input.Amount : (fiatAmount - rampFee - networkFee).ToString(CultureInfo.InvariantCulture);
+            quoteData.FiatQuantity = input.IsBuy()
+                ? input.Amount
+                : (fiatAmount - rampFee - networkFee).ToString(CultureInfo.InvariantCulture);
             quoteData.RampFee = rampFee.ToString("f2");
 
             /*
              * on-ramp: CryptoQuantity = (FiatQuantity - Fee ) / fiat-crypto-exchange
              * off-ramp: input-amount is CryptoQuantity, which user will pay
              */
-            quoteData.CryptoQuantity = input.IsBuy() ? (fiatAmount / cryptoPrice).ToString(CultureInfo.InvariantCulture) : input.Amount;
+            quoteData.CryptoQuantity = input.IsBuy()
+                ? (fiatAmount / cryptoPrice).ToString(CultureInfo.InvariantCulture)
+                : input.Amount;
             return new CommonResponseDto<AlchemyOrderQuoteDataDto>(quoteData);
         }
         catch (Exception e)

@@ -107,7 +107,6 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
     private async Task<Tuple<string, string>> GetRampLimit(string fiat, string crypto, bool isBuy)
     {
-        
         var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(
             new GetAlchemyCryptoListDto
             {
@@ -123,11 +122,11 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         var min = isBuy ? cryptoItem?.MinPurchaseAmount : cryptoItem?.MinSellAmount;
         var max = isBuy ? cryptoItem?.MaxPurchaseAmount : cryptoItem?.MaxSellAmount;
         AssertHelper.IsTrue(max.SafeToDecimal() > 0 && max.SafeToDecimal() - min.SafeToDecimal() > 0,
-            "Alchemy limit invalid, min={Min}, max={Max}, fiat={Fiat}, Crypto={Crypto}", 
+            "Alchemy limit invalid, min={Min}, max={Max}, fiat={Fiat}, Crypto={Crypto}",
             min, max, fiat, crypto);
         return Tuple.Create(min, max);
     }
-    
+
 
     /// <summary>
     ///     Get ramp exchange
@@ -154,7 +153,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     private async Task<AlchemyOrderQuoteDataDto> GetCommonAlchemyOrderQuoteData(GetAlchemyOrderQuoteDto input)
     {
         var (min, _) = await GetRampLimit(input.Fiat, input.Crypto, input.IsBuy());
-        
+
         // query order quote with a valid amount
         var amount = (min ?? "0").SafeToDecimal();
         input.Amount = (amount > 0 ? amount : DefaultAmount).ToString(CultureInfo.InvariantCulture);
@@ -166,8 +165,10 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
     private async Task<bool> InPriceLimit(RampDetailRequest rampDetailRequest)
     {
-        var (min, max) = await GetRampLimit(rampDetailRequest.Fiat, rampDetailRequest.Crypto, rampDetailRequest.IsBuy());
+        var (min, max) =
+            await GetRampLimit(rampDetailRequest.Fiat, rampDetailRequest.Crypto, rampDetailRequest.IsBuy());
         var amount = (rampDetailRequest.IsBuy() ? rampDetailRequest.FiatAmount : rampDetailRequest.CryptoAmount) ?? 0;
+
         return amount >= min.SafeToDecimal() && amount <= max.SafeToDecimal();
     }
 
@@ -213,9 +214,8 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     {
         try
         {
-            if (!await InPriceLimit(rampDetailRequest)) return null;
-
             var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
+            if (!await InPriceLimit(rampDetailRequest)) return null;
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
             var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, ProviderRampDetailDto>(orderQuote.Data);
             rampPrice.ThirdPart = ThirdPart();
