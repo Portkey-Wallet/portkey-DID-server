@@ -512,7 +512,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "invalid jwt token, {Message}, {token}", e.Message, identityToken);
+            _logger.LogError(e, "invalid jwt token, {token}", identityToken);
             throw new Exception("Invalid token");
         }
     }
