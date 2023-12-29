@@ -352,7 +352,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "{Message}", e.Message);
+            _logger.LogError(e, "validate telegram error, accessToken={0}, verifierId={1}", requestDto.AccessToken,
+                requestDto.VerifierId);
             if (ThirdPartyMessage.MessageDictionary.ContainsKey(e.Message))
             {
                 throw new UserFriendlyException(e.Message, ThirdPartyMessage.MessageDictionary[e.Message]);
@@ -589,7 +590,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "invalid jwt token, {Message}, {token}", e.Message, identityToken);
+            _logger.LogError(e, "invalid jwt token, {token}", identityToken);
             throw new Exception("Invalid token");
         }
     }

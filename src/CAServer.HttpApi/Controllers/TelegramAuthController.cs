@@ -6,14 +6,13 @@ using CAServer.Telegram.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
 
 [RemoteService]
 [Area("app")]
-[ControllerName("AppleAuth")]
+[ControllerName("TelegramAuth")]
 [Route("api/app/telegramAuth/")]
 public class TelegramAuthController : CAServerController
 {
