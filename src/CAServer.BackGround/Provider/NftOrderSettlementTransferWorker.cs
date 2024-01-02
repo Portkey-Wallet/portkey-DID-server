@@ -76,6 +76,7 @@ public class NftOrderSettlementTransferWorker : IJobWorker, ISingletonDependency
             var pendingData = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
                 new GetThirdPartOrderConditionDto(0, pageSize)
                 {
+                    LastModifyTimeGt = modifyTimeGt.ToString(),
                     LastModifyTimeLt = lastModifyTimeLt,
                     StatusIn = new List<string>
                     {
