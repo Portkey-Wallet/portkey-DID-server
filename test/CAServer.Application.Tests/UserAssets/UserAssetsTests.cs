@@ -86,6 +86,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockAssetsInfoOptions());
         services.AddSingleton(GetContractProvider());
         services.AddSingleton(GetMockSeedImageOptions());
+        services.AddSingleton(GetMockTokenProvider());
     }
 
     private void Login(Guid userId)
@@ -107,7 +108,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
 
 
         var result = await _userAssetsAppService.GetTokenAsync(param);
-        result.TotalRecordCount.ShouldBe(3);
+        result.TotalRecordCount.ShouldBe(2);
 
         var data = result.Data.First();
         data.Balance.ShouldBe(1000.ToString());

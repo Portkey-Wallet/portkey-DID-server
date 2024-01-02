@@ -7,6 +7,7 @@ using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Options;
@@ -350,5 +351,26 @@ public partial class UserAssetsTests
                 SeedImageDic = dict
             });
         return mockOptionsSnapshot.Object;
+    }
+
+    private ITokenProvider GetMockTokenProvider()
+    {
+        var tokenProvider = new Mock<ITokenProvider>();
+
+        tokenProvider.Setup(t => t.GetUserTokenInfoListAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new List<UserTokenIndex>()
+            {
+                new UserTokenIndex()
+                {
+                    IsDisplay=true,
+                    IsDefault=true,
+                    Token = new Token()
+                    {
+                        Symbol = "ELF",
+                        ChainId = "AELF"
+                    }
+                }
+            });
+        return tokenProvider.Object;
     }
 }
