@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
 using CAServer.BackGround.Provider;
@@ -17,8 +20,11 @@ using CAServer.ThirdPart;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
@@ -29,7 +35,7 @@ namespace CAServer;
 [DependsOn(
     typeof(CAServerApplicationModule),
     typeof(CAServerApplicationContractsModule),
-    typeof(CAServerContractEventHandlerCoreModule),
+    // typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),
     typeof(CAServerDomainTestModule)
@@ -52,24 +58,26 @@ public class CAServerApplicationTestModule : AbpModule
 
         context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
         
-        context.Services.AddSingleton<NftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
-        context.Services.AddSingleton<NftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
-        context.Services.AddSingleton<NftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
-        context.Services.AddSingleton<NftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
-        context.Services.AddSingleton<NftOrdersSettlementWorker, NftOrdersSettlementWorker>();
-        
-        context.Services.AddSingleton<NftOrderMerchantCallbackHandler>();
-        context.Services.AddSingleton<NftOrderUpdateHandler>();
-        context.Services.AddSingleton<NftOrderReleaseResultHandler>();
-        context.Services.AddSingleton<NftOrderPaySuccessHandler>();
-        context.Services.AddSingleton<NftOrderTransferHandler>();
-        context.Services.AddSingleton<NftOrderSettlementHandler>();
-        context.Services.AddSingleton<OrderSettlementUpdateHandler>();
-        context.Services.AddSingleton<ThirdPartHandler>();
+        // context.Services.AddSingleton<NftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
+        // context.Services.AddSingleton<NftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
+        // context.Services.AddSingleton<NftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
+        // context.Services.AddSingleton<NftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
+        // context.Services.AddSingleton<NftOrdersSettlementWorker, NftOrdersSettlementWorker>();
+        //
+        // context.Services.AddSingleton<NftOrderMerchantCallbackHandler>();
+        // context.Services.AddSingleton<NftOrderUpdateHandler>();
+        // context.Services.AddSingleton<NftOrderReleaseResultHandler>();
+        // context.Services.AddSingleton<NftOrderPaySuccessHandler>();
+        // context.Services.AddSingleton<NftOrderTransferHandler>();
+        // context.Services.AddSingleton<NftOrderSettlementHandler>();
+        // context.Services.AddSingleton<OrderSettlementUpdateHandler>();
+        // context.Services.AddSingleton<ThirdPartHandler>();
+        context.Services.AddSingleton<IAbpDistributedLock>(GetMockAbpDistributedLock());
+        context.Services.AddSingleton(GetMockInMemoryHarness());
         
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
-        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
-        Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerContractEventHandlerCoreModule>(); });
+        // Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
+        // Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerContractEventHandlerCoreModule>(); });
         Configure<SwitchOptions>(options => options.Ramp = true);
         var tokenList = new List<UserTokenItem>();
         var token1 = new UserTokenItem
@@ -207,5 +215,58 @@ public class CAServerApplicationTestModule : AbpModule
             "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
             new NewtonsoftJsonSerializer()));
         context.Services.AddScoped<IGraphQLClient>(sp => sp.GetRequiredService<GraphQLHttpClient>());
+    }
+    
+    protected IAbpDistributedLock GetMockAbpDistributedLock()
+    {
+        var mockLockProvider = new Mock<IAbpDistributedLock>();
+        var keyRequestTimes = new Dictionary<string, DateTime>();
+        mockLockProvider
+            .Setup(x => x.TryAcquireAsync(It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .Returns<string, TimeSpan, CancellationToken>((name, timeSpan, cancellationToken) =>
+            {
+                lock (keyRequestTimes)
+                {
+                    if (keyRequestTimes.TryGetValue(name, out var lastRequestTime))
+                        if ((DateTime.Now - lastRequestTime).TotalMilliseconds <= 1000)
+                            return Task.FromResult<IAbpDistributedLockHandle>(null);
+                    keyRequestTimes[name] = DateTime.Now;
+                    var handleMock = new Mock<IAbpDistributedLockHandle>();
+                    handleMock.Setup(h => h.DisposeAsync()).Callback(() =>
+                    {
+                        lock (keyRequestTimes)
+                            keyRequestTimes.Remove(name);
+                    });
+
+                    return Task.FromResult(handleMock.Object);
+                }
+            });
+
+        return mockLockProvider.Object;
+    }
+    
+    protected IBus GetMockInMemoryHarness(params IConsumer[] consumers)
+    {
+        var busMock = new Mock<IBus>();
+
+        busMock.Setup(bus => bus.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()))
+            .Callback<object, CancellationToken>((message, token) =>
+            {
+                foreach (var consumer in consumers)
+                {
+                    var consumeMethod = consumer.GetType().GetMethod("Consume");
+                    if (consumeMethod == null) continue;
+                
+                    var consumeContextType = typeof(ConsumeContext<>).MakeGenericType(message.GetType());
+                
+                    dynamic contextMock = Activator.CreateInstance(typeof(Mock<>).MakeGenericType(consumeContextType));
+                    contextMock.SetupGet("Message").Returns(message);
+                
+                    consumeMethod.Invoke(consumer, new[] { ((Mock)contextMock).Object });
+                }
+            })
+            .Returns(Task.CompletedTask);
+
+        return busMock.Object;
     }
 }
