@@ -33,4 +33,7 @@ public interface IUserAssetsProvider
     Task<CAHolderInfo> GetCaHolderManagerInfoAsync(List<string> userCaAddresses);
 
     Task<CAHolderIndex> GetCaHolderIndexByCahashAsync(string caHash);
+
+    Task<IndexerNftInfos> GetUserNftInfoBySymbolAsync(List<CAAddressInfo> caAddressInfos, string symbol,
+        int inputSkipCount, int inputMaxResultCount);
 }

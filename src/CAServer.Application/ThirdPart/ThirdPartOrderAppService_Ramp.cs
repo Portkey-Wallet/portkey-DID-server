@@ -212,7 +212,8 @@ public partial class ThirdPartOrderAppService
 
             var limitList = (await Task.WhenAll(limitTasks)).Where(limit => limit != null).ToList();
             AssertHelper.NotEmpty(limitList, "Empty limit list");
-
+            _logger.LogDebug("Ramp limit: {Limit}", JsonConvert.SerializeObject(limitList));
+            
             rampLimit.Crypto = request.IsBuy()
                 ? null
                 : new CurrencyLimit
@@ -312,6 +313,7 @@ public partial class ThirdPartOrderAppService
                 .ToList();
             AssertHelper.NotEmpty(priceList, "Price list empty");
 
+            _logger.LogDebug("Ramp price: {Price}", JsonConvert.SerializeObject(priceList));
             return new CommonResponseDto<RampPriceDto>(priceList.First());
         }
         catch (UserFriendlyException e)
@@ -350,6 +352,7 @@ public partial class ThirdPartOrderAppService
                 .ToList();
             AssertHelper.NotEmpty(detailList, "Ramp detail list empty");
 
+            _logger.LogDebug("Ramp detail: {Detail}", JsonConvert.SerializeObject(detailList));
             foreach (var providerRampDetailDto in detailList)
             {
                 providerRampDetailDto.FiatAmount = request.IsBuy() ? null : providerRampDetailDto.FiatAmount;

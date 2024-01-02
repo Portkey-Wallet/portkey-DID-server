@@ -59,6 +59,8 @@ public class TokenPriceGrain : Grain<CurrentTokenPriceState>, ITokenPriceGrain
         }
         catch (Exception e)
         {
+            // use last price if get price fail.
+            price = State.PriceInUsd;
             _logger.LogError(e, "Get symbol price error: {symbol}", symbol);
         }
 

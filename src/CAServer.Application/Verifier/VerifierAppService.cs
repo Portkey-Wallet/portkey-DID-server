@@ -4,9 +4,11 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
+using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
@@ -19,6 +21,7 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
+using CAServer.Telegram;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
@@ -50,12 +53,13 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IContractProvider _contractProvider;
     private readonly IGuardianProvider _guardianProvider;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
-    private readonly TestCaHashListOptions _options;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
+
+    private const string TelegramUserIdPrefix = "telegram_";
 
 
     public VerifierAppService(IEnumerable<IAccountValidator> accountValidator, IObjectMapper objectMapper,
@@ -68,8 +72,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
         ICacheProvider cacheProvider, IContractProvider contractProvider,
         INESTRepository<GuardianIndex, string> guardianRepository,
-        IGuardianProvider guardianProvider,
-        IOptionsSnapshot<TestCaHashListOptions> options)
+        IGuardianProvider guardianProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -84,7 +87,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
         _guardianRepository = guardianRepository;
         _guardianProvider = guardianProvider;
-        _options = options.Value;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -93,12 +95,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         var startTime = DateTime.UtcNow.ToUniversalTime();
         try
         {
-            var isTestCaHash = await IsTestCaHashAsync(input.GuardianIdentifier);
-            if (isTestCaHash)
-            {
-                return new VerifierServerResponse();
-            }
-
             ValidateAccount(input);
             var verifierSessionId = Guid.NewGuid();
             input.VerifierSessionId = verifierSessionId;
@@ -164,12 +160,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userInfo = await GetUserInfoFromGoogleAsync(requestDto.AccessToken);
-            var isTestCaHash = await IsTestCaHashAsync(userInfo.Id);
-            if (isTestCaHash)
-            {
-                return new VerificationCodeResponse();
-            }
-            
             var hashInfo = await GetSaltAndHashAsync(userInfo.Id);
             var response =
                 await _verifierServerClient.VerifyGoogleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -217,13 +207,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userId = GetAppleUserId(requestDto.AccessToken);
-            
-            var isTestCaHash = await IsTestCaHashAsync(userId);
-            if (isTestCaHash)
-            {
-                return new VerificationCodeResponse();
-            }
-            
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
                 await _verifierServerClient.VerifyAppleTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -318,6 +301,52 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         return _objectMapper.Map<VerifierServer, GetVerifierServerResponse>(verifierServer);
     }
 
+    public async Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        try
+        {
+            var userId = GetTelegramUserId(requestDto.AccessToken);
+            var hashInfo = await GetSaltAndHashAsync(userId);
+            var response =
+                await _verifierServerClient.VerifyTelegramTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
+            if (!response.Success)
+            {
+                throw new UserFriendlyException($"Validate VerifierTelegram Failed :{response.Message}");
+            }
+
+            if (!hashInfo.Item3)
+            {
+                await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
+            }
+
+            await AddUserInfoAsync(
+                ObjectMapper.Map<TelegramUserExtraInfo, Dtos.UserExtraInfo>(response.Data.UserExtraInfo));
+
+            return new VerificationCodeResponse
+            {
+                VerificationDoc = response.Data.VerificationDoc,
+                Signature = response.Data.Signature
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "validate telegram error, accessToken={0}, verifierId={1}", requestDto.AccessToken,
+                requestDto.VerifierId);
+            if (ThirdPartyMessage.MessageDictionary.ContainsKey(e.Message))
+            {
+                throw new UserFriendlyException(e.Message, ThirdPartyMessage.MessageDictionary[e.Message]);
+            }
+
+            if (e.Message.ToLower().Contains("timeout"))
+            {
+                throw new UserFriendlyException("Request time out",
+                    ThirdPartyMessage.MessageDictionary["Request time out"]);
+            }
+
+            throw new UserFriendlyException(e.Message);
+        }
+    }
+
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
     {
@@ -349,8 +378,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         else
         {
-            salt = GetSalt();
-            identifierHash = GetHash(requestInput.GuardianIdentifier, requestInput.Salt);
+            salt = GetSalt().ToHex();
+            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),  
+                ByteArrayHelper.HexStringToByteArray(salt)).ToHex();
         }
 
         requestInput.Salt = salt;
@@ -380,9 +410,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
 
         var salt = GetSalt();
-        var identifierHash = GetHash(guardianIdentifier, salt);
+        var identifierHash = GetHash(Encoding.UTF8.GetBytes(guardianIdentifier), salt);
 
-        return Tuple.Create(identifierHash, salt, false);
+        return Tuple.Create(identifierHash.ToHex(), salt.ToHex(), false);
     }
 
     private GrainResultDto<GuardianGrainDto> GetGuardian(string guardianIdentifier)
@@ -424,12 +454,24 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private string GetSalt() => Guid.NewGuid().ToString("N");
+    private byte[] GetSalt() => Guid.NewGuid().ToByteArray();
 
-    private string GetHash(string input, string salt)
+    private Hash GetHash(byte[] identifier, byte[] salt)
     {
-        var hash = HashHelper.ComputeFrom(input).ToHex();
-        return HashHelper.ComputeFrom(salt + hash).ToHex();
+        const int maxIdentifierLength = 256;
+        const int maxSaltLength = 16;
+
+        if (identifier.Length > maxIdentifierLength)
+        {
+            throw new Exception("Identifier is too long");
+        }
+
+        if (salt.Length != maxSaltLength)
+        {
+            throw new Exception($"Salt has to be {maxSaltLength} bytes.");
+        }
+        var hash = HashHelper.ComputeFrom(identifier);
+        return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }
 
     private async Task<GoogleUserInfoDto> GetUserInfoFromGoogleAsync(string accessToken)
@@ -478,35 +520,26 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private async Task<bool> IsTestCaHashAsync(string guardianIdentifier)
+    private string GetTelegramUserId(string identityToken)
     {
-        var caHash = await GetCaHashAsync(guardianIdentifier);
-        if (caHash.IsNullOrEmpty() || _options.TestCaHashList.IsNullOrEmpty()) return false;
+        try
+        {
+            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken((identityToken));
+            var claims = jwtToken.Payload.Claims;
+            var idClaims = claims.FirstOrDefault(c => c.Type.Equals(TelegramTokenClaimNames.UserId));
+            string userId = idClaims?.Value;
+            if (userId.IsNullOrWhiteSpace())
+            {
+                throw new Exception("userId is empty");
+            }
 
-        var isTestCaHash = _options.TestCaHashList.Contains(caHash);
-        _logger.LogWarning("is test hash, caHash:{caHash}", caHash);
-        return isTestCaHash;
-    }
-
-    private async Task<string> GetCaHashAsync(string guardianIdentifier)
-    {
-        var identifierHash = await GetHashFromIdentifierAsync(guardianIdentifier);
-        var holderInfo = await _guardianProvider.GetGuardiansAsync(identifierHash, string.Empty);
-        return holderInfo?.CaHolderInfo?.FirstOrDefault()?.CaHash;
-    }
-
-    private async Task<string> GetHashFromIdentifierAsync(string guardianIdentifier)
-    {
-        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(guardianIdentifier)));
-
-        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
-            f.Bool(b => b.Must(mustQuery));
-
-        var guardianGrainDto = await _guardianRepository.GetAsync(Filter);
-        if (guardianGrainDto == null || guardianGrainDto.IsDeleted) return null;
-
-        return guardianGrainDto?.IdentifierHash;
+            return userId;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "invalid jwt token, {token}", identityToken);
+            throw new Exception("Invalid token");
+        }
     }
 }
 

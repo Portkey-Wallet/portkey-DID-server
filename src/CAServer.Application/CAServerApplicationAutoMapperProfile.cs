@@ -22,6 +22,7 @@ using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
@@ -29,6 +30,8 @@ using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Guardian;
 using CAServer.Hubs;
+using CAServer.ImTransfer.Dtos;
+using CAServer.ImTransfer.Etos;
 using CAServer.ImUser.Dto;
 using CAServer.IpInfo;
 using CAServer.Message.Dtos;
@@ -41,6 +44,7 @@ using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
 using CAServer.PrivacyPolicy.Dtos;
 using CAServer.Search.Dtos;
+using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Dtos.Ramp;
@@ -274,8 +278,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<Entities.Es.ContactAddress, UserContactAddressDto>();
         CreateMap<AppleUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, UserExtraInfoGrainDto>();
+        // CreateMap<TelegramUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<AppleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<TelegramUserExtraInfo, Verifier.Dtos.UserExtraInfo>()
+            .ForMember(t => t.FullName, m => m.MapFrom(f => f.UserName))
+            .ForMember(t => t.Picture, m => m.MapFrom(f => f.ProtoUrl));
         CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoEto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoResultDto>()
@@ -419,7 +427,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
         CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
-        
+
         CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
         CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
 
@@ -471,14 +479,20 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
         CreateMap<RedPackageIndex, RedPackageDetailDto>()
             .ForMember(dest => dest.Items, opt => opt.Ignore())
-            .ForMember(dest => dest.TotalAmount, 
+            .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
             .ReverseMap()
-            .ForMember(dest => dest.TotalAmount, 
+            .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
             .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
+        CreateMap<ImTransferDto, TransferGrainDto>();
+        CreateMap<TransferGrainDto, TransferIndex>();
+        CreateMap<TransferIndex, TransferResultDto>().ForMember(t => t.Status,
+            m => m.MapFrom(f => Enum.Parse(typeof(TransferTransactionStatus), f.TransactionStatus)));
+        CreateMap<TransferIndex, TransferEto>().ReverseMap();
+
         
         CreateMap<ThirdPartProvider, RampCoverageDto>().ReverseMap();
         CreateMap<CryptoItem, RampCurrencyItem>().ReverseMap();
@@ -544,5 +558,10 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.Status, m => m.MapFrom(f => f.Status))
             ;
         CreateMap<QueryAlchemyOrderInfo, OrderDto>().ReverseMap();
+        CreateMap<TelegramAuthReceiveRequest, TelegramAuthDto>()
+            .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
+            .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
+            .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
+            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
     }
 }
