@@ -26,6 +26,7 @@ using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
+using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Guardian;
@@ -42,7 +43,6 @@ using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
 using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
-using CAServer.PrivacyPolicy.Dtos;
 using CAServer.Search.Dtos;
 using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
@@ -53,6 +53,8 @@ using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
+using CAServer.Upgrade.Dtos;
+using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
@@ -563,5 +565,10 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
             .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
+
+
+        CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
+        CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
+        CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
     }
 }

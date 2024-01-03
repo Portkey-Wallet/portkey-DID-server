@@ -12,6 +12,7 @@ using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
+using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
 using CAServer.Grains.State.Bookmark;
@@ -25,6 +26,7 @@ using CAServer.Grains.State.PrivacyPermission;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Grains.State.RedPackage;
 using CAServer.Grains.State.Tokens;
+using CAServer.Grains.State.Upgrade;
 using CAServer.Grains.State.UserExtraInfo;
 using CAServer.PrivacyPermission.Dtos;
 using CAServer.RedPackage.Dtos;
@@ -115,25 +117,25 @@ public class CAServerGrainsAutoMapperProfile : Profile
 
         CreateMap<PrivacyPermissionState, PrivacyPermissionDto>().ReverseMap();
         CreateMap<RedPackageState, SendRedPackageInputDto>()
-            .ForMember(dest => dest.TotalAmount, 
+            .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
             .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => src.TotalAmount)).ReverseMap();
         CreateMap<RedPackageState, RedPackageDetailDto>()
-            .ForMember(dest => dest.TotalAmount, 
+            .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => src.TotalAmount.ToString()))
-            .ForMember(dest => dest.GrabbedAmount, 
+            .ForMember(dest => dest.GrabbedAmount,
                 opt => opt.MapFrom(src => src.GrabbedAmount.ToString()))
-            .ForMember(dest => dest.MinAmount, 
+            .ForMember(dest => dest.MinAmount,
                 opt => opt.MapFrom(src => src.MinAmount.ToString()))
             .ForMember(dest => dest.Items, opt => opt.Ignore())
             .ReverseMap()
             .ForMember(dest => dest.Items, opt => opt.Ignore())
-            .ForMember(dest => dest.TotalAmount, 
+            .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => long.Parse(src.TotalAmount)))
-            .ForMember(dest => dest.GrabbedAmount, 
+            .ForMember(dest => dest.GrabbedAmount,
                 opt => opt.MapFrom(src => long.Parse(src.GrabbedAmount)))
-            .ForMember(dest => dest.MinAmount, 
+            .ForMember(dest => dest.MinAmount,
                 opt => opt.MapFrom(src => long.Parse(src.MinAmount)));
         CreateMap<GrabItem, GrabItemDto>()
             .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount.ToString()))
@@ -144,5 +146,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
+        CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
     }
 }
