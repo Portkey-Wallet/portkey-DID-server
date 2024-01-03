@@ -192,7 +192,7 @@ public class AlchemyProvider
     /// Get Alchemy NFT free login Token
     public async Task<AlchemyTokenDataDto> GetNftFreeLoginTokenAsync(GetAlchemyFreeLoginTokenDto input)
     {
-        var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(AlchemyOptions().BaseUrl,
+        var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(AlchemyOptions().NftBaseUrl,
             AlchemyApi.GetFreeLoginToken,
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
             header: GetNftAlchemyRequestHeader()
