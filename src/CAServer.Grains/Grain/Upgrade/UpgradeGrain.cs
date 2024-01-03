@@ -24,12 +24,13 @@ public class UpgradeGrain : Grain<UpgradeState>, IUpgradeGrain
         await WriteStateAsync();
         await base.OnDeactivateAsync();
     }
-    
+
     public async Task<GrainResultDto<UpgradeGrainDto>> AddUpgradeInfo(UpgradeGrainDto upgradeDto)
     {
         var result = new GrainResultDto<UpgradeGrainDto>();
         State = _objectMapper.Map<UpgradeGrainDto, UpgradeState>(upgradeDto);
         State.Id = this.GetPrimaryKeyString();
+        State.IsPopup = true;
         State.CreateTime = DateTime.UtcNow;
         await WriteStateAsync();
 
