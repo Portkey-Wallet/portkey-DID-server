@@ -87,13 +87,15 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         _signatureProvider = context.HttpContext.RequestServices.GetRequiredService<ISignatureProvider>();
 
         var managerCheck = await CheckAddressAsync(chainId, graphqlConfig.Url, caHash, address, chainOptions);
-        if (!managerCheck.HasValue || !managerCheck.Value)
+        if (!managerCheck.hasManager)
         {
-            _logger.LogError(
-                $"Manager validation failed. caHash:{caHash}, address:{address}, chainId:{chainId}");
+            _logger.LogWarning(
+                "Manager validation failed, chainId:{chainId}, caHash:{caHash}, managerAddress:{managerAddress}",
+                chainId, caHash, address);
             return GetForbidResult(OpenIddictConstants.Errors.InvalidRequest, "Manager validation failed.");
         }
 
+        var caAddress = managerCheck.caAddress;
         var userManager = context.HttpContext.RequestServices.GetRequiredService<IdentityUserManager>();
         _distributedEventBus = context.HttpContext.RequestServices.GetRequiredService<IDistributedEventBus>();
 
@@ -101,7 +103,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         if (user == null)
         {
             var userId = Guid.NewGuid();
-            var createUserResult = await CreateUserAsync(userManager, userId, caHash);
+            var createUserResult = await CreateUserAsync(userManager, userId, caHash, caAddress);
             if (!createUserResult)
             {
                 return GetForbidResult(OpenIddictConstants.Errors.ServerError, "Create user failed.");
@@ -188,7 +190,8 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         return message;
     }
 
-    private async Task<bool> CreateUserAsync(IdentityUserManager userManager, Guid userId, string caHash)
+    private async Task<bool> CreateUserAsync(IdentityUserManager userManager, Guid userId, string caHash,
+        string caAddress)
     {
         var result = false;
         await using var handle =
@@ -201,16 +204,16 @@ public class SignatureGrantHandler : ITokenExtensionGrant
 
             if (identityResult.Succeeded)
             {
-                _logger.LogInformation("Send create user event...");
                 await _distributedEventBus.PublishAsync(new CreateUserEto
                 {
                     Id = userId,
                     UserId = userId,
                     CaHash = caHash,
+                    CaAddress = caAddress,
                     CreateTime = DateTime.UtcNow
                 });
 
-                _logger.LogDebug($"create user success: {userId.ToString()}");
+                _logger.LogInformation("create user success: userId: {userId}, caHash:{caHash}", userId.ToString());
             }
 
             result = identityResult.Succeeded;
@@ -223,28 +226,43 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         return result;
     }
 
-    private async Task<bool?> CheckAddressAsync(string chainId, string graphQlUrl, string caHash, string manager,
+    private async Task<(bool hasManager, string caAddress)> CheckAddressAsync(string chainId, string graphQlUrl,
+        string caHash, string manager,
         ChainOptions chainOptions)
     {
         var graphQlResult = await CheckAddressFromGraphQlAsync(graphQlUrl, caHash, manager);
-        if (!graphQlResult.HasValue || !graphQlResult.Value)
+        if (graphQlResult.hasManager.HasValue && graphQlResult.hasManager.Value)
         {
-            _logger.LogDebug("graphql is invalid.");
-            return await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
+            return (true, graphQlResult.caAddress);
         }
 
-        return true;
+        _logger.LogInformation(
+            "check from graphql invalid, chainId:{chainId}, caHash:{caHash}, managerAddress:{managerAddress}", chainId,
+            caHash, manager);
+
+        var contractResult = await CheckAddressFromContractAsync(chainId, caHash, manager, chainOptions);
+        if (contractResult.hasManager.HasValue && contractResult.hasManager.Value)
+        {
+            return (true, contractResult.caAddress);
+        }
+
+        _logger.LogInformation(
+            "check from contract invalid, chainId:{chainId}, caHash:{caHash}, managerAddress:{managerAddress}", chainId,
+            caHash, manager);
+
+        return (false, string.Empty);
     }
 
-    private async Task<bool?> CheckAddressFromGraphQlAsync(string url, string caHash,
+    private async Task<(bool? hasManager, string caAddress)> CheckAddressFromGraphQlAsync(string url, string caHash,
         string managerAddress)
     {
         var caHolderManagerInfo = await GetManagerList(url, caHash);
         var caHolderManager = caHolderManagerInfo?.CaHolderManagerInfo.FirstOrDefault();
-        return caHolderManager?.ManagerInfos.Any(t => t.Address == managerAddress);
+        return (caHolderManager?.ManagerInfos.Any(t => t.Address == managerAddress), caHolderManager?.CaAddress);
     }
 
-    private async Task<bool?> CheckAddressFromContractAsync(string chainId, string caHash, string manager,
+    private async Task<(bool? hasManager, string caAddress)> CheckAddressFromContractAsync(string chainId,
+        string caHash, string manager,
         ChainOptions chainOptions)
     {
         var param = new GetHolderInfoInput
@@ -257,7 +275,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
             await CallTransactionAsync<GetHolderInfoOutput>(chainId, MethodName.GetHolderInfo, param, false,
                 chainOptions);
 
-        return output?.ManagerInfos?.Any(t => t.Address.ToBase58() == manager);
+        return (output?.ManagerInfos?.Any(t => t.Address.ToBase58() == manager), output?.CaAddress?.ToBase58());
     }
 
     private async Task<T> CallTransactionAsync<T>(string chainId, string methodName, IMessage param,

@@ -38,6 +38,7 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         State.Id = this.GetPrimaryKey();
         State.UserId = caHolderDto.UserId;
         State.CreateTime = caHolderDto.CreateTime;
+        State.CaAddress = caHolderDto.CaAddress;
         State.CaHash = caHolderDto.CaHash;
         State.Nickname = caHolderDto.Nickname;
 
