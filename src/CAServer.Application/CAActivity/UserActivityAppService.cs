@@ -117,7 +117,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var caAddressInfos = new List<CAAddressInfo>();
-            var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            var caAddresses = request.CaAddresses;
+            if (caAddresses.IsNullOrEmpty())
+            {
+                caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            }
+          
             if (request.ActivityType != CommonConstant.TransferCard)
             {
                 caAddressInfos = caAddresses.Select(address => new CAAddressInfo { CaAddress = address })
