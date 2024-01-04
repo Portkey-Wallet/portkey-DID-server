@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
+using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -261,17 +262,27 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
             AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "NFT order merchant address missing");
 
-            // generate transfer transaction
-            var (txHash, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
-                orderGrainDto.CryptoAmount,
-                nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
-                _thirdPartOptions.CurrentValue.Merchant.NftOrderSettlementPublicKey);
-
-            // update main-order, record transactionId first
-            orderGrainDto.TransactionId = txHash;
+            // generate transfer transaction or use an old transaction data
+            Transaction transferTx;
+            if (orderGrainDto.RawTransaction.IsNullOrEmpty())
+            {
+                (_, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
+                    orderGrainDto.CryptoAmount,
+                    nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
+                    _thirdPartOptions.CurrentValue.Merchant.NftOrderSettlementPublicKey);
+                // update main-order, record transactionId first
+                orderGrainDto.TransactionId = transferTx.GetHash().ToHex();
+                orderGrainDto.RawTransaction = transferTx.ToByteArray().ToHex();
+            }
+            else
+            {
+                transferTx =
+                    Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(orderGrainDto.RawTransaction));
+            }
+            
             orderGrainDto.Status = OrderStatusType.Transferring.ToString();
             var transferringExtension = OrderStatusExtensionBuilder.Create()
-                .Add(ExtensionKey.TxHash, txHash)
+                .Add(ExtensionKey.TxHash, orderGrainDto.TransactionId)
                 .Add(ExtensionKey.Transaction, JsonConvert.SerializeObject(transferTx, JsonSerializerSettings))
                 .Build();
             var transferringResult =

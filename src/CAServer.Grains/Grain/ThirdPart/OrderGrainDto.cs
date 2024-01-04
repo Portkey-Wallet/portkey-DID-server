@@ -28,4 +28,6 @@ public class OrderGrainDto
     public string ReceiptTime { get; set; }
     
     public string TransactionId { get; set; }
+    
+    public string RawTransaction { get; set; }
 }
