@@ -30,4 +30,6 @@ public class OrderState
     public bool IsDeleted { get; set; } = false;
     
     public string TransactionId { get; set; }
+    
+    public string RawTransaction { get; set; }
 }

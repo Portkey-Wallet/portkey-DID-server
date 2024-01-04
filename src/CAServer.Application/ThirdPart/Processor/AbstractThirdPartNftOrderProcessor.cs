@@ -254,8 +254,6 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
             AssertHelper.IsTrue(currentStatus == OrderStatusType.StartTransfer,
                 "Order not in settlement StartTransfer state, current: {Status}", currentStatus);
-            AssertHelper.NullOrEmpty(orderGrainDto.TransactionId, "TransactionId exists: {TxId}",
-                orderGrainDto.TransactionId);
 
             // query nft-order data and verify
             var nftOrderGrainDto = await _orderStatusProvider.GetNftOrderAsync(orderId);
