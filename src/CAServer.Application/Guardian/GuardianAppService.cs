@@ -198,7 +198,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                 }
             }
         }
-
+        
+        if (_stopRegisterOptions.Open)
+        {
+            throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
+        }
         throw new UserFriendlyException("This address is not registered.", GuardianMessageCode.NotExist);
     }
 
