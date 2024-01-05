@@ -123,11 +123,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
 
-        if (_stopRegisterOptions.Open)
-        {
-            throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
-        }
-
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
         var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
@@ -166,6 +161,10 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         if (!guardianGrainDto.Success)
         {
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
+            if (_stopRegisterOptions.Open)
+            {
+                throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
+            }
             throw new UserFriendlyException(guardianGrainDto.Message, GuardianMessageCode.NotExist);
         }
 
