@@ -123,7 +123,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
         }
 
-        if (_stopRegisterOptions.StopRegister)
+        if (_stopRegisterOptions.Open)
         {
             throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
         }
