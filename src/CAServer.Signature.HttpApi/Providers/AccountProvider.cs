@@ -141,8 +141,7 @@ public class AccountProvider : ISingletonDependency
         try
         {
             /* read password from console */
-            Console.Write($"Input password of {address}: ");
-            var pwd = ReadPassword();
+            var pwd = InputHelper.ReadPassword($"Input password of {address}: ");
             var privateKey = KeyStoreService.DecryptKeyStoreFromJson(pwd, json);
             account = new AccountHolder(HexByteConvertorExtensions.ToHex(privateKey));
             Console.WriteLine("Success!");
@@ -156,20 +155,4 @@ public class AccountProvider : ISingletonDependency
         }
     }
 
-    private static string ReadPassword()
-    {
-        var pwd = "";
-        while (true)
-        {
-            var key = Console.ReadKey(true);
-            if (key.Key == ConsoleKey.Enter)
-                break;
-            if (key.Key == ConsoleKey.Backspace && pwd.Length > 0)
-                pwd = pwd[..^1];
-            else if (key.Key != ConsoleKey.Backspace)
-                pwd += key.KeyChar;
-        }
-
-        return pwd;
-    }
 }

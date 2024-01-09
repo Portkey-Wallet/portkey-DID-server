@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Threading.Tasks;
+using CAServer.Signature;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using Serilog.Events;
+using SignatureServer.Command;
 
-namespace CAServer.Signature;
+namespace SignatureServer;
 
 public class Program
 {
@@ -16,24 +18,21 @@ public class Program
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
+        
+        if (!args.IsNullOrEmpty() && args[0] == "command")
+        {
+            new CommandProvider(configuration).Start();
+            return 0;
+        }
+
         Log.Logger = new LoggerConfiguration()
-#if DEBUG
-            .MinimumLevel.Debug()
-#else
-            .MinimumLevel.Information()
-#endif
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-
-#if DEBUG
-            .WriteTo.Async(c => c.Console())
-#endif
             .CreateLogger();
 
         try
         {
-            Log.Information("Starting web host.");
+            Log.Information("Starting CAServer.Signature host");
             var builder = WebApplication.CreateBuilder(args);
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
