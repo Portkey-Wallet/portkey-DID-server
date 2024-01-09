@@ -7,8 +7,9 @@ public class TransferOrder
 {
     
     public Guid Id { get; set; }
+    public Guid RampOrderId { get; set; }
     public string ThirdPartName { get; set; }
-    public string ThirdPartId { get; set; }
+    public string ThirdPartOrderId { get; set; }
     public string Network { get; set; }
     public string ToAddress { get; set; }
     public string Status { get; set; }
@@ -24,6 +25,7 @@ public class TransferOrder
     public string TransactionId { get; set; }
     public string RawTransaction { get; set; }
     public int TxRetryTimes { get; set; }
+    public long TransactionTime { get; set; }
     
     public string CallbackCount { get; set; }
     public string CallbackStatus { get; set; }
