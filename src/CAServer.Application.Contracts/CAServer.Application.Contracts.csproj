@@ -31,6 +31,7 @@
         <PackageReference Include="Orleans.Providers.MongoDB" Version="3.8.0" />
         <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
         <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
+        <PackageReference Include="System.Data.HashFunction.MurmurHash" Version="2.0.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
         <PackageReference Include="Volo.Abp.Ddd.Domain" Version="7.0.0" />
         <PackageReference Include="Volo.Abp.ObjectExtending" Version="7.0.0" />
@@ -59,6 +60,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Growth\Dtos" />
+      <Folder Include="Growth\Etos" />
       <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
 
