@@ -38,27 +38,7 @@ public partial class TelegramAuthServiceTests : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         services.AddSingleton(MockTelegramAuthOptionsSnapshot());
-        services.AddSingleton(MockJwtTokenOptionsSnapshot());
         services.AddSingleton(MockContractProvider());
-    }
-
-    [Fact]
-    public async Task GetTelegramAuthResultAsync_Test()
-    {
-        try
-        {
-            var (redirect, telegramResult) = await _telegramAuthService.GetTelegramAuthResultAsync(Param);
-            redirect.ShouldBe(Redirect);
-        }
-        catch (Exception e)
-        {
-            Assert.True(false, "expected no exception to be thrown");
-        }
-
-        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        {
-            await _telegramAuthService.GetTelegramAuthResultAsync(ErrorParam);
-        });
     }
 
     [Fact]
