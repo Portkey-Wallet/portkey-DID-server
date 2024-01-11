@@ -1,9 +1,8 @@
-using System;
+using System.Collections.Generic;
 using CAServer.Commons;
 using Google.Protobuf.WellKnownTypes;
-using Nest;
 
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart.Dtos.ThirdPart;
 
 public class AlchemyBaseResponseDto<T>
 {
@@ -96,4 +95,18 @@ public class AlchemyOrderQuoteDataDto
 public class AlchemySignatureResultDto : AlchemyBaseResponseDto<Empty>
 {
     public string Signature { get; set; }
+}
+
+public class AlchemyTreasuryPriceResultDto
+{
+    public string Price { get; set; }
+
+    public List<AlchemyTreasuryNetwork> NetworkList { get; set; }
+    
+    public class AlchemyTreasuryNetwork
+    {
+        public string Network { get; set; }
+        public string NetworkFee { get; set; }
+    }
+    
 }

@@ -182,3 +182,8 @@ public class AlchemyNftReleaseNoticeRequestDto
     public string Picture { get; set; }
     public string PictureNumber { get; set; }
 }
+
+public class AlchemyTreasuryRequestDto
+{
+    public string Crypto { get; set; }
+}
