@@ -34,12 +34,13 @@ public class EncryptJsonGenerateCommand : ICommand
 
         var builder = EncryptDataDto.Builder()
             .Key(key)
-            .Secret(InputHelper.ReadPassword("Secret: "));
+            .Secret(InputHelper.ReadPassword("Secret (Hidden): "));
         
         while (!builder.PasswordMatch)
         {
-            builder.Password(InputHelper.ReadPassword("Password: "))
-                .RepeatPassword(InputHelper.ReadPassword("Repeat password: "));
+            builder
+                .Password(InputHelper.ReadPassword("Password (Hidden): "))
+                .RepeatPassword(InputHelper.ReadPassword("Repeat password (Hidden): "));
             if (!builder.PasswordMatch)
                 Console.Write("Password not match");
         }
@@ -52,8 +53,8 @@ public class EncryptJsonGenerateCommand : ICommand
         write.Flush();
         write.Close();
         
-        Console.WriteLine("json: " + encryptDataDto.FormatJson());
-        Console.WriteLine($"Done! Encrypted file saved at {path}");
+        Console.WriteLine("Encrypt json : " + encryptDataDto.FormatJson());
+        Console.WriteLine($"Done! Encrypted file saved : {path}");
         
     }
 }

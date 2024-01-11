@@ -6,14 +6,14 @@ using AElf;
 
 namespace SignatureServer.Common;
 
-public static class EncryptJsonHelper
+public static class EncryptHelper
 {
   
-        public static byte[] AesEncrypt(byte[] data, byte[] password, byte[] salt)
+    public static byte[] AesEncrypt(byte[] sourceData, byte[] password, byte[] salt)
     {
-        if (data.IsNullOrEmpty())
+        if (sourceData.IsNullOrEmpty())
         {
-            return data;
+            return sourceData;
         }
 
         using var key = new Rfc2898DeriveBytes(password.ToHex(), salt);
@@ -28,17 +28,17 @@ public static class EncryptJsonHelper
 
         using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
         {
-            csEncrypt.Write(data, 0, data.Length);
+            csEncrypt.Write(sourceData, 0, sourceData.Length);
         }
 
         return msEncrypt.ToArray();
     }
 
-    public static byte[] AesDecrypt(byte[] data, byte[] password, byte[] salt)
+    public static byte[] AesDecrypt(byte[] encryptData, byte[] password, byte[] salt)
     {
-        if (data.IsNullOrEmpty())
+        if (encryptData.IsNullOrEmpty())
         {
-            return data;
+            return encryptData;
         }
 
         using var key = new Rfc2898DeriveBytes(password.ToHex(), salt);
@@ -47,14 +47,14 @@ public static class EncryptJsonHelper
         aesAlg.Padding = PaddingMode.PKCS7;
 
         var iv = new byte[aesAlg.BlockSize / 8];
-        Array.Copy(data, 0, iv, 0, iv.Length);
+        Array.Copy(encryptData, 0, iv, 0, iv.Length);
         aesAlg.IV = iv;
 
         var decryptor = aesAlg.CreateDecryptor(key.GetBytes(aesAlg.KeySize / 8), iv);
         using var msDecrypt = new MemoryStream();
         using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
         {
-            csDecrypt.Write(data, iv.Length, data.Length - iv.Length);
+            csDecrypt.Write(encryptData, iv.Length, encryptData.Length - iv.Length);
         }
         return msDecrypt.ToArray();
     }

@@ -27,7 +27,7 @@ public class EncryptDataDto
             var cipherText = ByteArrayHelper.HexStringToByteArray(EncryptData);
             var key = HashHelper.ComputeFrom(password).ToByteArray();
             var salt = ByteArrayHelper.HexStringToByteArray(Salt);
-            return Encoding.UTF8.GetString(EncryptJsonHelper.AesDecrypt(cipherText, key, salt));
+            return Encoding.UTF8.GetString(EncryptHelper.AesDecrypt(cipherText, key, salt));
         }
         catch (Exception e)
         {
@@ -71,7 +71,7 @@ public class EncryptDataDto
                 : _instance.EncryptType;
             
             _instance.EncryptData = _instance.EncryptType == DefaultEncryptType.ToString() 
-                ? EncryptJsonHelper.AesEncrypt(Encoding.UTF8.GetBytes(_secret), passwordByte, saltByte).ToHex()
+                ? EncryptHelper.AesEncrypt(Encoding.UTF8.GetBytes(_secret), passwordByte, saltByte).ToHex()
                 : "Invalid encrypt type";
             
             return _instance;
