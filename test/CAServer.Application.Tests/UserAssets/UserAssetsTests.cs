@@ -103,7 +103,14 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" }
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            }
         };
 
 
@@ -125,7 +132,14 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" }
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            }
         };
 
         var result = await _userAssetsAppService.GetNFTCollectionsAsync(param);
@@ -144,7 +158,14 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
             Symbol = "TEST-0"
         };
 
@@ -164,7 +185,14 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" }
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            }
         };
 
         var result = await _userAssetsAppService.GetRecentTransactionUsersAsync(param);
@@ -184,7 +212,14 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             SkipCount = 0,
             MaxResultCount = 10,
             Keyword = "ELF",
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" }
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            }
         };
 
         var result = await _userAssetsAppService.SearchUserAssetsAsync(param);
