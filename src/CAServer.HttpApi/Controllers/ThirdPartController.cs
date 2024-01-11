@@ -101,4 +101,11 @@ public class ThirdPartOrderController : CAServerController
             .UpdateThirdPartNftOrderAsync(input);
         return res.Success ? "success" : "fail";
     }
+    
+    [HttpGet("exchange/price/alchemy")]
+    public async Task<AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>> AlchemyTreasurePrice(
+        AlchemyTreasuryPriceResultDto input)
+    {
+        return 
+    }
 }

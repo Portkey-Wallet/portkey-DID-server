@@ -162,6 +162,22 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
     }
 
+    public async Task<TokenExchange> GetAvgLatestExchangeAsync(string fromSymbol, string toSymbol)
+    {
+        var names = _exchangeProviders.Values.Select(p => p.Name()).ToList();
+        var getExchangeTasks = names.Select(name => GetLatestExchangeAsync(name.ToString(), fromSymbol, toSymbol)).ToList();
+        var exchangeList = await Task.WhenAll(getExchangeTasks);
+        AssertHelper.NotEmpty(exchangeList, "Query exchange of {}_{} failed", fromSymbol, toSymbol);
+        var avgExchange = exchangeList.Select(ex => ex.Exchange).Average();
+        return new TokenExchange
+        {
+            FromSymbol = fromSymbol,
+            ToSymbol = toSymbol,
+            Exchange = avgExchange,
+            Timestamp = DateTime.Now.ToUtcMilliSeconds()
+        };
+    }
+
     public async Task<TokenExchange> GetLatestExchangeAsync(string exchangeProviderName, string fromSymbol,
         string toSymbol)
     {
