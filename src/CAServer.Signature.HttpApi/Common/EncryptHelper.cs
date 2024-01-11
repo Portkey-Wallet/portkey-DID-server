@@ -9,7 +9,26 @@ namespace SignatureServer.Common;
 public static class EncryptHelper
 {
   
-    public static byte[] AesEncrypt(byte[] sourceData, byte[] password, byte[] salt)
+    public static byte[] AesGcmEncrypt(byte[] data, byte[] key, byte[] nonce, out byte[] tag)
+    {
+        using var aesGcm = new AesGcm(key);
+        tag = new byte[16];
+        var encryptedData = new byte[data.Length];
+        aesGcm.Encrypt(nonce, data, encryptedData, tag);
+
+        return encryptedData;
+    }
+
+    public static byte[] AesGcmDecrypt(byte[] encryptedData, byte[] key, byte[] nonce, byte[] tag)
+    {
+        using var aesGcm = new AesGcm(key);
+        var decryptedData = new byte[encryptedData.Length];
+        aesGcm.Decrypt(nonce, encryptedData, tag, decryptedData);
+
+        return decryptedData;
+    }
+    
+    public static byte[] AesCbcEncrypt(byte[] sourceData, byte[] password, byte[] salt)
     {
         if (sourceData.IsNullOrEmpty())
         {
@@ -34,7 +53,7 @@ public static class EncryptHelper
         return msEncrypt.ToArray();
     }
 
-    public static byte[] AesDecrypt(byte[] encryptData, byte[] password, byte[] salt)
+    public static byte[] AesCbcDecrypt(byte[] encryptData, byte[] password, byte[] salt)
     {
         if (encryptData.IsNullOrEmpty())
         {

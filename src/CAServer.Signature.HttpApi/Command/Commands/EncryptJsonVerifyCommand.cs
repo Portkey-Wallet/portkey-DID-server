@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using SignatureServer.Common;
@@ -30,7 +31,8 @@ public class EncryptJsonVerifyCommand : ICommand
             path = PathHelper.ResolvePath(_configuration.GetSection("KeyStore:Path").Get<string>()) + path;
             var json = File.ReadAllText(path);
             var encryptData = JsonConvert.DeserializeObject<EncryptDataDto>(json);
-            encryptData.Decrypt(InputHelper.ReadPassword("Password: "));
+            var secret = encryptData!.Decrypt(InputHelper.ReadPassword("Password: "));
+            // Console.WriteLine($"Secret:{secret}");
             Console.WriteLine("Encrypt json verified!");
         }
         catch (Exception e)

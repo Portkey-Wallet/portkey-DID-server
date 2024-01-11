@@ -1,9 +1,14 @@
+using System.Collections.Generic;
+
 namespace SignatureServer.Command;
 
-public enum EncryptType
+public static class EncryptType
 {
-    
-    AES_CBC,
-    
-    
+    public const string AesCbc = "AesCbc";
+    public const string AesGcm = "AesGcm";
+
+    public const string Default = AesGcm;
+    public static List<string> All = new(){ AesCbc, AesGcm};
+
 }
+

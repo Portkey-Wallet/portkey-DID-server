@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
 using AElf;
 using Newtonsoft.Json;
@@ -11,10 +13,10 @@ namespace SignatureServer.Dtos;
 
 public class EncryptDataDto
 {
-
     public int Version { get; set; } = 1;
     public string EncryptType { get; set; }
-    public string Salt { get; set; }
+    public string Nonce { get; set; }
+    public string Tag { get; set; }
     public string Key { get; set; }
     public string Information { get; set; }
     public string EncryptData { get; set; }
@@ -22,21 +24,18 @@ public class EncryptDataDto
 
     public string Decrypt(string password)
     {
-        try
-        {
-            var cipherText = ByteArrayHelper.HexStringToByteArray(EncryptData);
-            var key = HashHelper.ComputeFrom(password).ToByteArray();
-            var salt = ByteArrayHelper.HexStringToByteArray(Salt);
-            return Encoding.UTF8.GetString(EncryptHelper.AesDecrypt(cipherText, key, salt));
-        }
-        catch (Exception e)
-        {
-            throw;
-            // throw new Exception("Decrypt data failed", e);
-        }
-
+        var cipherText = ByteArrayHelper.HexStringToByteArray(EncryptData);
+        var key = HashHelper.ComputeFrom(password).ToByteArray();
+        var nonce = ByteArrayHelper.HexStringToByteArray(Nonce);
+        var tag = Tag.IsNullOrEmpty() ? null : ByteArrayHelper.HexStringToByteArray(Tag);
+        return EncryptType switch
+            {
+                Command.EncryptType.AesCbc => Encoding.UTF8.GetString(EncryptHelper.AesCbcDecrypt(cipherText, key, nonce)),
+                Command.EncryptType.AesGcm => Encoding.UTF8.GetString(EncryptHelper.AesGcmDecrypt(cipherText, key, nonce, tag)),
+                _ => throw new UserFriendlyException("Invalid encrypt type")
+            };
     }
-    
+
     public string FormatJson()
     {
         return JsonConvert.SerializeObject(this, Formatting.Indented);
@@ -49,31 +48,38 @@ public class EncryptDataDto
 
     public class EncryptDataBuilder
     {
-        public const EncryptType DefaultEncryptType = Command.EncryptType.AES_CBC;
-        
-        public bool PasswordMatch { get; set; }
-        
         private string? _password;
+        private string? _repeatPassword;
         private string _secret = "";
-        private readonly EncryptDataDto _instance = new ();
+        private readonly EncryptDataDto _instance = new();
 
         public EncryptDataDto Build()
         {
             if (_password.IsNullOrEmpty()) throw new ArgumentException("password");
             if (_secret.IsNullOrEmpty()) throw new ArgumentException("secret");
-            if (_instance.Salt.IsNullOrEmpty()) throw new ArgumentException("salt");
+            if (_instance.Nonce.IsNullOrEmpty()) throw new ArgumentException("salt");
+            if (_password != _repeatPassword) throw new ArgumentException("password not match");
 
             var passwordByte = ByteArrayHelper.HexStringToByteArray(_password);
-            var saltByte = ByteArrayHelper.HexStringToByteArray(_instance.Salt);
-            
+            var nonceByte = ByteArrayHelper.HexStringToByteArray(_instance.Nonce);
+            var tag = Array.Empty<byte>();
+
             _instance.EncryptType = _instance.EncryptType.IsNullOrEmpty()
-                ? DefaultEncryptType.ToString()
+                ? Command.EncryptType.Default
                 : _instance.EncryptType;
-            
-            _instance.EncryptData = _instance.EncryptType == DefaultEncryptType.ToString() 
-                ? EncryptHelper.AesEncrypt(Encoding.UTF8.GetBytes(_secret), passwordByte, saltByte).ToHex()
-                : "Invalid encrypt type";
-            
+
+            _instance.EncryptData = _instance.EncryptType switch
+            {
+                Command.EncryptType.AesCbc => EncryptHelper
+                    .AesCbcEncrypt(Encoding.UTF8.GetBytes(_secret), passwordByte, nonceByte).ToHex(),
+                Command.EncryptType.AesGcm => EncryptHelper
+                    .AesGcmEncrypt(Encoding.UTF8.GetBytes(_secret), passwordByte, nonceByte, out tag).ToHex(),
+                _ => throw new UserFriendlyException("Invalid encrypt type")
+            };
+
+            // for AES_GCM
+            if (!tag.IsNullOrEmpty()) _instance.Tag = tag.ToHex();
+
             return _instance;
         }
 
@@ -82,39 +88,60 @@ public class EncryptDataDto
             _secret = secret;
             return this;
         }
-        
+
         public EncryptDataBuilder Key(string key)
         {
             _instance.Key = key;
             return this;
         }
-        
+
+        public EncryptDataBuilder EncryptType(string type, out bool success)
+        {
+            success = false;
+            if (type.IsNullOrEmpty())
+            {
+                _instance.EncryptType = Command.EncryptType.Default;
+                Console.WriteLine($"( Default encrypt type {Command.EncryptType.Default} will be used)");
+                success = true;
+            }
+            else if (Command.EncryptType.All.Contains(type))
+            {
+                success = true;
+                _instance.EncryptType = type;
+            }
+
+            return this;
+        }
+
         public EncryptDataBuilder Information(string information)
         {
             _instance.Information = information;
             return this;
         }
-        
+
         public EncryptDataBuilder Password(string password)
         {
             _password = HashHelper.ComputeFrom(password).ToHex();
-            PasswordMatch = false;
+            _repeatPassword = null;
             return this;
         }
-        
-        public EncryptDataBuilder RepeatPassword(string repeatPassword)
-        {
-            PasswordMatch = !_password.IsNullOrEmpty() && _password == HashHelper.ComputeFrom(repeatPassword).ToHex();
-            return this;
-        }
-        
-        public EncryptDataBuilder RandomSalt()
-        {
-            _instance.Salt = HashHelper.ComputeFrom(Random.Shared.NextInt64()).ToHex();
-            return this;
-        }
-        
-        
-    }
 
+        public EncryptDataBuilder RepeatPassword(string repeatPassword, out bool success)
+        {
+            _repeatPassword = HashHelper.ComputeFrom(repeatPassword).ToHex();
+            success = !_password.IsNullOrEmpty() && _password == _repeatPassword;
+            return this;
+        }
+
+        public EncryptDataBuilder RandomNonce()
+        {
+            var nonce = new byte[12];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(nonce);
+            }
+            _instance.Nonce = nonce.ToHex();
+            return this;
+        }
+    }
 }
