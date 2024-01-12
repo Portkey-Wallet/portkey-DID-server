@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using Volo.Abp;
 
 namespace SignatureServer.Common;
 
@@ -35,5 +37,16 @@ public static class InputHelper
         
         return pwd;
     }
+    
+    public static string ReadFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            throw new UserFriendlyException("File not exits " + path);
+        }
+        using var textReader = File.OpenText(path);
+        return textReader.ReadToEnd();
+    }
+
     
 }

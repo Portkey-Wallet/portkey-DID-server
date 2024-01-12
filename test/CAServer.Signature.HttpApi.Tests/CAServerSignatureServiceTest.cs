@@ -9,6 +9,7 @@ using AElf;
 using CAServer.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using SignatureServer;
 using Volo.Abp.Users;
 using Xunit;
 

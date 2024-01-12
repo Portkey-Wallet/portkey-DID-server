@@ -36,6 +36,22 @@ public class EncryptDataDto
             };
     }
 
+    public bool TryDecrypt(string password, out string secretData, out string message)
+    {
+        try
+        {
+            secretData = Decrypt(password);
+            message = "success";
+            return true;
+        }
+        catch (Exception e)
+        {
+            message = e.Message;
+            secretData = "";
+            return false;
+        }
+    }
+
     public string FormatJson()
     {
         return JsonConvert.SerializeObject(this, Formatting.Indented);

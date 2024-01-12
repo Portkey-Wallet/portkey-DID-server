@@ -129,10 +129,6 @@ public class AccountProvider : ISingletonDependency
             _accountHolders[account.PublicKey] = account;
             _accountHolders[account.AddressObj().ToBase58()] = account;
         }
-
-        Console.WriteLine();
-        Console.WriteLine("aaaaaaaaaaaaaaaaaaaa  Finish to decode keystore  aaaaaaaaaaaaaaaaaaa");
-        Console.WriteLine();
         _logger.LogInformation("Done!");
     }
 

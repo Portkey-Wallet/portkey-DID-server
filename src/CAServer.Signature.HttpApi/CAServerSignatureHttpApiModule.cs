@@ -1,12 +1,13 @@
-﻿using Volo.Abp.AspNetCore.Mvc;
-using Volo.Abp.Modularity;
+﻿using CAServer.Signature;
 using Microsoft.Extensions.DependencyInjection;
 using SignatureServer.Options;
 using SignatureServer.Providers;
 using Volo.Abp;
+using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AutoMapper;
+using Volo.Abp.Modularity;
 
-namespace CAServer.Signature;
+namespace SignatureServer;
 
 [DependsOn(
     typeof(AbpAspNetCoreMvcModule))]
@@ -20,16 +21,15 @@ public class CAServerSignatureHttpApiModule : AbpModule
         Configure<KeyStoreOptions>(configuration.GetSection("KeyStore"));
 
         context.Services.AddSingleton<AccountProvider>();
+        context.Services.AddSingleton<StorageProvider>();
     }
     
     
     
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        var app = context.GetApplicationBuilder();
-        var env = context.GetEnvironment();
-
         _ = context.ServiceProvider.GetService<AccountProvider>();
+        _ = context.ServiceProvider.GetService<StorageProvider>();
     }
     
 }

@@ -3,6 +3,7 @@ using AElf;
 using AElf.Cryptography;
 using AElf.Cryptography.ECDSA;
 using Microsoft.Extensions.DependencyInjection;
+using SignatureServer;
 using Volo.Abp.Modularity;
 
 namespace CAServer.Signature.Test;
