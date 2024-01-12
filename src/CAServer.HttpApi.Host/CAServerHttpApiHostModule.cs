@@ -65,10 +65,8 @@ public class CAServerHttpApiHostModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
         Configure<ChainOptions>(configuration.GetSection("Chains"));
-        Configure<RealIpOptions>(configuration.GetSection("RealIp"));
         Configure<TransactionFeeOptions>(configuration.GetSection("TransactionFeeInfo"));
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
-        Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
@@ -92,25 +90,6 @@ public class CAServerHttpApiHostModule : AbpModule
     private void ConfigureVirtualFileSystem(ServiceConfigurationContext context)
     {
         var hostingEnvironment = context.Services.GetHostingEnvironment();
-
-        // if (hostingEnvironment.IsDevelopment())
-        // {
-        //     Configure<AbpVirtualFileSystemOptions>(options =>
-        //     {
-        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainSharedModule>(
-        //             Path.Combine(hostingEnvironment.ContentRootPath,
-        //                 $"..{Path.DirectorySeparatorChar}CAServer.Domain.Shared"));
-        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerDomainModule>(
-        //             Path.Combine(hostingEnvironment.ContentRootPath,
-        //                 $"..{Path.DirectorySeparatorChar}CAServer.Domain"));
-        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationContractsModule>(
-        //             Path.Combine(hostingEnvironment.ContentRootPath,
-        //                 $"..{Path.DirectorySeparatorChar}CAServer.Application.Contracts"));
-        //         options.FileSets.ReplaceEmbeddedByPhysical<CAServerApplicationModule>(
-        //             Path.Combine(hostingEnvironment.ContentRootPath,
-        //                 $"..{Path.DirectorySeparatorChar}CAServer.Application"));
-        //     });
-        // }
     }
 
     private void ConfigureConventionalControllers()
@@ -160,18 +139,6 @@ public class CAServerHttpApiHostModule : AbpModule
                 });
             }
         );
-        // context.Services.AddAbpSwaggerGenWithOAuth(
-        //     configuration["AuthServer:Authority"],
-        //     new Dictionary<string, string>
-        //     {
-        //         { "CAServer", "CAServer API" }
-        //     },
-        //     options =>
-        //     {
-        //         options.SwaggerDoc("v1", new OpenApiInfo { Title = "CAServer API", Version = "v1" });
-        //         options.DocInclusionPredicate((docName, description) => true);
-        //         options.CustomSchemaIds(type => type.FullName);
-        //     });
     }
 
     private static void ConfigureOrleans(ServiceConfigurationContext context, IConfiguration configuration)
@@ -203,26 +170,7 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         Configure<AbpLocalizationOptions>(options =>
         {
-            options.Languages.Add(new LanguageInfo("ar", "ar", "العربية"));
-            options.Languages.Add(new LanguageInfo("cs", "cs", "Čeština"));
             options.Languages.Add(new LanguageInfo("en", "en", "English"));
-            options.Languages.Add(new LanguageInfo("en-GB", "en-GB", "English (UK)"));
-            options.Languages.Add(new LanguageInfo("fi", "fi", "Finnish"));
-            options.Languages.Add(new LanguageInfo("fr", "fr", "Français"));
-            options.Languages.Add(new LanguageInfo("hi", "hi", "Hindi", "in"));
-            options.Languages.Add(new LanguageInfo("is", "is", "Icelandic", "is"));
-            options.Languages.Add(new LanguageInfo("it", "it", "Italiano", "it"));
-            options.Languages.Add(new LanguageInfo("ro-RO", "ro-RO", "Română"));
-            options.Languages.Add(new LanguageInfo("hu", "hu", "Magyar"));
-            options.Languages.Add(new LanguageInfo("pt-BR", "pt-BR", "Português"));
-            options.Languages.Add(new LanguageInfo("ru", "ru", "Русский"));
-            options.Languages.Add(new LanguageInfo("sk", "sk", "Slovak"));
-            options.Languages.Add(new LanguageInfo("tr", "tr", "Türkçe"));
-            options.Languages.Add(new LanguageInfo("zh-Hans", "zh-Hans", "简体中文"));
-            options.Languages.Add(new LanguageInfo("zh-Hant", "zh-Hant", "繁體中文"));
-            options.Languages.Add(new LanguageInfo("de-DE", "de-DE", "Deutsch", "de"));
-            options.Languages.Add(new LanguageInfo("es", "es", "Español", "es"));
-            options.Languages.Add(new LanguageInfo("el", "el", "Ελληνικά"));
         });
     }
 
@@ -296,40 +244,16 @@ public class CAServerHttpApiHostModule : AbpModule
         var app = context.GetApplicationBuilder();
         var env = context.GetEnvironment();
 
-        if (env.IsDevelopment())
-        {
-            app.UseDeveloperExceptionPage();
-        }
-
         app.UseAbpRequestLocalization();
         app.UseCorrelationId();
         app.UseStaticFiles();
         app.UseRouting();
         app.UseCors();
         app.UseAuthentication();
-
-        if (MultiTenancyConsts.IsEnabled)
-        {
-            app.UseMultiTenancy();
-        }
-
         app.UseAuthorization();
-        if (!env.IsDevelopment())
-        {
-            app.UseMiddleware<RealIpMiddleware>();
-        }
-        if (env.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseAbpSwaggerUI(options =>
-            {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API");
 
-                // var configuration = context.GetConfiguration();
-                // options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
-                // options.OAuthScopes("CAServer");
-            });
-        }
+        app.UseSwagger();
+        app.UseAbpSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API"); });
 
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
