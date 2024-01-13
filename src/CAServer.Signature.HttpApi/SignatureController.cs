@@ -83,7 +83,7 @@ public class SignatureController : CAServerSignatureController
         var (_, appsecret) = AuthorityHelper.AssertDappHeader(_authOptions.CurrentValue, HttpContext,
             input.Key, input.BizData);
         var strategyOutput = _storageProvider.ExecuteThirdPartSecret(input, _alchemyPayAesSignStrategy);
-        strategyOutput.Value = EncryptHelper.AesCbcEncrypt(strategyOutput.Value, appsecret);
+        // strategyOutput.Value = EncryptHelper.AesCbcEncrypt(strategyOutput.Value, appsecret);
         return Task.FromResult(new CommonResponse<CommonThirdPartExecuteOutput>(strategyOutput));
     }
     
@@ -94,7 +94,7 @@ public class SignatureController : CAServerSignatureController
         var (_, appsecret) = AuthorityHelper.AssertDappHeader(_authOptions.CurrentValue, HttpContext,
             input.Key, input.BizData);
         var strategyOutput = _storageProvider.ExecuteThirdPartSecret(input, _alchemyPayShaSignStrategy);
-        strategyOutput.Value = EncryptHelper.AesCbcEncrypt(strategyOutput.Value, appsecret);
+        // strategyOutput.Value = EncryptHelper.AesCbcEncrypt(strategyOutput.Value, appsecret);
         return Task.FromResult(new CommonResponse<CommonThirdPartExecuteOutput>(strategyOutput));
     }
     
@@ -105,7 +105,7 @@ public class SignatureController : CAServerSignatureController
         var (_, appsecret) = AuthorityHelper.AssertDappHeader(_authOptions.CurrentValue, HttpContext,
             input.Key, input.BizData);
         var strategyOutput = _storageProvider.ExecuteThirdPartSecret(input, _alchemyPayHmacSignStrategy);
-        strategyOutput.Value = EncryptHelper.AesCbcEncrypt(strategyOutput.Value, appsecret);
+        // strategyOutput.Value = EncryptHelper.AesCbcEncrypt(strategyOutput.Value, appsecret);
         return Task.FromResult(new CommonResponse<CommonThirdPartExecuteOutput>(strategyOutput));
     }
     
@@ -116,7 +116,7 @@ public class SignatureController : CAServerSignatureController
         var (_, appsecret) = AuthorityHelper.AssertDappHeader(_authOptions.CurrentValue, HttpContext,
             input.Key, input.KeyId, input.TeamId, input.ClientId);
         var strategyOutput = _storageProvider.ExecuteThirdPartSecret(input, _appleAuthStrategy);
-        strategyOutput.Value = EncryptHelper.AesCbcEncrypt(strategyOutput.Value, appsecret);
+        // strategyOutput.Value = EncryptHelper.AesCbcEncrypt(strategyOutput.Value, appsecret);
         return Task.FromResult(new CommonResponse<CommonThirdPartExecuteOutput>(strategyOutput));
     }
 }
