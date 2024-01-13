@@ -8,8 +8,8 @@ namespace SignatureServer.Command;
 
 public class CommandProvider
 {
-    private List<ICommand> _commands = new();
-    private IConfiguration _configuration;
+    private readonly List<ICommand> _commands = new();
+    private readonly IConfiguration _configuration;
 
     public CommandProvider(IConfiguration configuration)
     {

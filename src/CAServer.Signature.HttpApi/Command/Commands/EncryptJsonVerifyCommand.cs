@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using SignatureServer.Common;

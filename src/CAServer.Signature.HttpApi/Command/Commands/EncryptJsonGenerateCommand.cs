@@ -8,11 +8,11 @@ namespace SignatureServer.Command.Commands;
 
 public class EncryptJsonGenerateCommand : ICommand
 {
-    private IConfiguration _configuration;
+    private readonly IConfiguration _configuration;
     
     public EncryptJsonGenerateCommand(IConfiguration configuration)
     {
-        this._configuration = configuration;
+        _configuration = configuration;
     }
     
     public string Name()
@@ -32,7 +32,10 @@ public class EncryptJsonGenerateCommand : ICommand
             Run();
             return;
         }
-        var builder = EncryptDataDto.Builder().Key(key);
+        
+        var encryptDataBuilder = EncryptDataDto.Builder()
+            .RandomNonce()
+            .Key(key);
 
         // Enter the encryption method, enter ENTER directly,
         // and the Aes Gcm mode will be selected by default.
@@ -40,26 +43,26 @@ public class EncryptJsonGenerateCommand : ICommand
         bool encryptTypeSelected;
         do
         {
-            builder.EncryptType(InputHelper.ReadText(encryptTypeLabel), out encryptTypeSelected);
+            encryptDataBuilder.EncryptType(InputHelper.ReadText(encryptTypeLabel), out encryptTypeSelected);
         } while (!encryptTypeSelected);
 
         // Input secret data
-        builder.Secret(InputHelper.ReadPassword("Secret [Hidden]: "));
+        encryptDataBuilder.Secret(InputHelper.ReadPassword("Secret [Hidden]: "));
         
         // Input password twice
         bool passwordMatch;
         do
         {
-            builder
+            encryptDataBuilder
                 .Password(InputHelper.ReadPassword("Password [Hidden]: "))
                 .RepeatPassword(InputHelper.ReadPassword("Repeat password [Hidden]: "), out passwordMatch);
             if (!passwordMatch) Console.WriteLine("Password not match");
         } while (!passwordMatch);
         
         // Input any Information
-        var encryptDataDto = builder
+        var encryptDataDto = encryptDataBuilder
             .Information(InputHelper.ReadText("Information [optional]:"))
-            .RandomNonce().Build();
+            .Build();
 
         var write = File.CreateText(path);
         write.Write(encryptDataDto.FormatJson());

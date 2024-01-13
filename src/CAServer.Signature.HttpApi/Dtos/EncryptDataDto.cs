@@ -35,6 +35,26 @@ public class EncryptDataDto
             };
     }
 
+    public string Encrypt(string password, string secret)
+    {
+        var passwordByte = ByteArrayHelper.HexStringToByteArray(password);
+        var nonceByte = ByteArrayHelper.HexStringToByteArray(Nonce);
+        var tag = Array.Empty<byte>();
+        EncryptData = EncryptType switch
+        {
+            Command.EncryptType.AesCbc => EncryptHelper
+                .AesCbcEncrypt(Encoding.UTF8.GetBytes(secret), passwordByte, nonceByte).ToHex(),
+            Command.EncryptType.AesGcm => EncryptHelper
+                .AesGcmEncrypt(Encoding.UTF8.GetBytes(secret), passwordByte, nonceByte, out tag).ToHex(),
+            _ => throw new UserFriendlyException("Invalid encrypt type")
+        };
+        
+        // for AES_GCM
+        if (!tag.IsNullOrEmpty()) Tag = tag.ToHex();
+        return EncryptData;
+    }
+
+
     public bool TryDecrypt(string password, out string secretData, out string message)
     {
         try
@@ -74,27 +94,7 @@ public class EncryptDataDto
             if (_secret.IsNullOrEmpty()) throw new ArgumentException("secret");
             if (_instance.Nonce.IsNullOrEmpty()) throw new ArgumentException("salt");
             if (_password != _repeatPassword) throw new ArgumentException("password not match");
-
-            var passwordByte = ByteArrayHelper.HexStringToByteArray(_password);
-            var nonceByte = ByteArrayHelper.HexStringToByteArray(_instance.Nonce);
-            var tag = Array.Empty<byte>();
-
-            _instance.EncryptType = _instance.EncryptType.IsNullOrEmpty()
-                ? Command.EncryptType.Default
-                : _instance.EncryptType;
-
-            _instance.EncryptData = _instance.EncryptType switch
-            {
-                Command.EncryptType.AesCbc => EncryptHelper
-                    .AesCbcEncrypt(Encoding.UTF8.GetBytes(_secret), passwordByte, nonceByte).ToHex(),
-                Command.EncryptType.AesGcm => EncryptHelper
-                    .AesGcmEncrypt(Encoding.UTF8.GetBytes(_secret), passwordByte, nonceByte, out tag).ToHex(),
-                _ => throw new UserFriendlyException("Invalid encrypt type")
-            };
-
-            // for AES_GCM
-            if (!tag.IsNullOrEmpty()) _instance.Tag = tag.ToHex();
-
+            _instance.Encrypt(_password!, _secret);
             return _instance;
         }
 
