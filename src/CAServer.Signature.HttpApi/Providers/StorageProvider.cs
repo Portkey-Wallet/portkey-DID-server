@@ -17,19 +17,15 @@ public class StorageProvider : ISingletonDependency
     private readonly ILogger<StorageProvider> _logger;
     private readonly IOptionsMonitor<KeyStoreOptions> _keyStoreOptions;
     private readonly Dictionary<string, string> _secretStorage = new();
-    private readonly AlchemyPayAesSignStrategy _alchemyPayAesSignStrategy;
 
-    public StorageProvider(IOptionsMonitor<KeyStoreOptions> keyStoreOptions, ILogger<StorageProvider> logger,
-        AlchemyPayAesSignStrategy alchemyPayAesSignStrategy)
+    public StorageProvider(IOptionsMonitor<KeyStoreOptions> keyStoreOptions, ILogger<StorageProvider> logger)
     {
         _keyStoreOptions = keyStoreOptions;
         _logger = logger;
-        _alchemyPayAesSignStrategy = alchemyPayAesSignStrategy;
         LoadEncryptDataWithProvidedPassword();
         LoadKeyStoreWithPassword();
     }
-
-
+    
     private void AssertKeyMod(string key, Mod checkMod)
     {
         if (!_keyStoreOptions.CurrentValue.ThirdPart.TryGetValue(key, out var keyOption))
@@ -63,18 +59,17 @@ public class StorageProvider : ISingletonDependency
     /// <typeparam name="TOutput"></typeparam>
     /// <returns></returns>
     /// <exception cref="UserFriendlyException"></exception>
-    public TOutput ExecuteThirdPartSecret<TInput, TOutput>(string key, TInput executeInput,
+    public TOutput ExecuteThirdPartSecret<TInput, TOutput>(TInput executeInput,
         IThirdPartExecuteStrategy<TInput, TOutput> strategy)
         where TInput : BaseThirdPartExecuteInput
     {
-        AssertKeyMod(key, Mod.X);
-        if (!_secretStorage.TryGetValue(key, out var secret) || secret.IsNullOrEmpty())
-            throw new UserFriendlyException("Secret of key " + key + "not found");
+        AssertKeyMod(executeInput.Key, Mod.X);
+        if (!_secretStorage.TryGetValue(executeInput.Key, out var secret) || secret.IsNullOrEmpty())
+            throw new UserFriendlyException("Secret of key " + executeInput.Key + "not found");
         
         return strategy.Execute(secret, executeInput);
     }
-
-
+    
     private void LoadEncryptDataWithProvidedPassword()
     {
         if (_keyStoreOptions.CurrentValue.Path.IsNullOrEmpty()) return;

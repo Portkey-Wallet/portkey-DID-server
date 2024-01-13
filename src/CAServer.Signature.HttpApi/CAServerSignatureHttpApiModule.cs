@@ -1,4 +1,5 @@
-﻿using CAServer.Signature;
+﻿using System.IdentityModel.Tokens.Jwt;
+using CAServer.Signature;
 using Microsoft.Extensions.DependencyInjection;
 using SignatureServer.Options;
 using SignatureServer.Providers;
@@ -13,6 +14,7 @@ namespace SignatureServer;
     typeof(AbpAspNetCoreMvcModule))]
 public class CAServerSignatureHttpApiModule : AbpModule
 {
+    
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerSignatureHttpApiModule>(); });
@@ -22,14 +24,14 @@ public class CAServerSignatureHttpApiModule : AbpModule
 
         context.Services.AddSingleton<AccountProvider>();
         context.Services.AddSingleton<StorageProvider>();
+        
+        context.Services.AddScoped<JwtSecurityTokenHandler>();
+
     }
-    
-    
     
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         _ = context.ServiceProvider.GetService<AccountProvider>();
         _ = context.ServiceProvider.GetService<StorageProvider>();
     }
-    
 }

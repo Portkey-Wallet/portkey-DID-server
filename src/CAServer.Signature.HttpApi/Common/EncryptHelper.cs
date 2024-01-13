@@ -1,18 +1,18 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 using AElf;
 
 namespace SignatureServer.Common;
 
 public static class EncryptHelper
 {
-    private static readonly int KeySize = 256;
-    private static readonly int BlockSize = 128;
-    private static readonly int Iterations = 1000;
+    private const int KeySize = 256;
+    private const int BlockSize = 128;
+    private const int Iterations = 1000;
 
-  
+
     public static byte[] AesGcmEncrypt(byte[] data, byte[] key, byte[] nonce, out byte[] tag)
     {
         using var aesGcm = new AesGcm(key);
@@ -30,6 +30,17 @@ public static class EncryptHelper
         return decryptedData;
     }
  
+    
+    public static string AesCbcEncrypt(string sourceData, string password)
+    {
+        return AesCbcEncrypt(Encoding.UTF8.GetBytes(sourceData), Encoding.UTF8.GetBytes(password)).ToHex();
+    }
+    
+    public static string AesCbcDecrypt(string encryptData, string password)
+    {
+        return AesCbcDecrypt(Encoding.UTF8.GetBytes(encryptData), Encoding.UTF8.GetBytes(password)).ToHex();
+    }
+    
     public static byte[] AesCbcEncrypt(byte[] sourceData, byte[] password, byte[]? salt = null)
     {
         using var aesAlg = Aes.Create();

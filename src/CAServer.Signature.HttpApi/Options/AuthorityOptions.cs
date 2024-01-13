@@ -6,6 +6,7 @@ public class AuthorityOptions
 {
     
     // appid => appSecret
-    private Dictionary<string, string> Dapp = new();
+    public Dictionary<string, string> Dapp { get; set; } = new();
+    
     
 }

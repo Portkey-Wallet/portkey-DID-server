@@ -6,7 +6,6 @@ using AElf;
 using CAServer.Signature;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.KeyStore;
 using SignatureServer.Common;
 using SignatureServer.Dtos;
@@ -76,7 +75,7 @@ public class AccountProvider : ISingletonDependency
         {
             var keyStoreContent = ReadKeyStore(address);
             var privateKey = KeyStoreService.DecryptKeyStoreFromJson(password, keyStoreContent);
-            var account = new AccountHolder(HexByteConvertorExtensions.ToHex(privateKey));
+            var account = new AccountHolder(privateKey.ToHex());
             _logger.LogInformation("Load key store success, address: {Address}", address);
             _accountHolders[account.PublicKey] = account;
             _accountHolders[account.AddressObj().ToBase58()] = account;
@@ -87,7 +86,7 @@ public class AccountProvider : ISingletonDependency
     {
         if (_keyStoreOptions.Value.Path.IsNullOrEmpty()) return;
         if (_keyStoreOptions.Value.LoadAddress.IsNullOrEmpty()) return;
-        Dictionary<string, string> keyStoreDict = new Dictionary<string, string>();
+        var keyStoreDict = new Dictionary<string, string>();
         foreach (var address in _keyStoreOptions.Value.LoadAddress)
         {
             // account already exists, skip
@@ -139,7 +138,7 @@ public class AccountProvider : ISingletonDependency
             /* read password from console */
             var pwd = InputHelper.ReadPassword($"Input password of {address}: ");
             var privateKey = KeyStoreService.DecryptKeyStoreFromJson(pwd, json);
-            account = new AccountHolder(HexByteConvertorExtensions.ToHex(privateKey));
+            account = new AccountHolder(privateKey.ToHex());
             Console.WriteLine("Success!");
             return true;
         }

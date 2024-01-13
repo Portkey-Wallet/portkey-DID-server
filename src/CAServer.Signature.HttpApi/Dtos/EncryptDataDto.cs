@@ -4,15 +4,14 @@ using System.Security.Cryptography;
 using System.Text;
 using AElf;
 using Newtonsoft.Json;
-using SignatureServer.Command;
 using SignatureServer.Common;
 using Volo.Abp;
-using Random = System.Random;
 
 namespace SignatureServer.Dtos;
 
 public class EncryptDataDto
 {
+    
     public int Version { get; set; } = 1;
     public string EncryptType { get; set; }
     public string Nonce { get; set; }
@@ -27,7 +26,7 @@ public class EncryptDataDto
         var cipherText = ByteArrayHelper.HexStringToByteArray(EncryptData);
         var key = HashHelper.ComputeFrom(password).ToByteArray();
         var nonce = ByteArrayHelper.HexStringToByteArray(Nonce);
-        var tag = Tag.IsNullOrEmpty() ? null : ByteArrayHelper.HexStringToByteArray(Tag);
+        var tag = Tag.IsNullOrEmpty() ? Array.Empty<byte>() : ByteArrayHelper.HexStringToByteArray(Tag);
         return EncryptType switch
             {
                 Command.EncryptType.AesCbc => Encoding.UTF8.GetString(EncryptHelper.AesCbcDecrypt(cipherText, key, nonce)),

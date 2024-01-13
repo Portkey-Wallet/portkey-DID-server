@@ -2,13 +2,13 @@ namespace SignatureServer.Dtos;
 
 /// <summary>
 ///     Basic policy entry parameters.
-///     Only the policy type is defined.
 ///     Other business entry parameters of the policy are provided by specific subclasses.
 /// </summary>
 public class BaseThirdPartExecuteInput
 {
 
-    public string ExecuteStrategy { get; set; }
+    public string Key { get; set; }
+    public string Signature { get; set; }
     
 }
 
@@ -23,6 +23,18 @@ public class CommonThirdPartExecuteInput : BaseThirdPartExecuteInput
 }
 
 
+/// <summary>
+///     A common execution policy
+///     for signing a string-type service parameter by using a secret key.
+/// </summary>
+public class AppleAuthExecuteInput : BaseThirdPartExecuteInput
+{
+    public string KeyId { get; set; }
+    public string TeamId { get; set; }
+    public string ClientId { get; set; }
+}
+
+
 
 /// <summary>
 ///     The basic return result of the key execution policy.
@@ -30,7 +42,7 @@ public class CommonThirdPartExecuteInput : BaseThirdPartExecuteInput
 /// </summary>
 public class BaseThirdPartExecuteOutput
 {
-    
+    public string Signature { get; set; }
 }
 
 /// <summary>
@@ -40,4 +52,9 @@ public class BaseThirdPartExecuteOutput
 public class CommonThirdPartExecuteOutput
 {
     public string Value { get; set; }
+
+    public CommonThirdPartExecuteOutput(string value)
+    {
+        Value = value;
+    }
 }
