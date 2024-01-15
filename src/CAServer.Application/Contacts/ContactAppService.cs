@@ -689,41 +689,4 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         return new List<ContactResultDto>();
     }
-
-    public async Task<ContactResultDto> MergeUpdateAsync(Guid id, ContactDto contactDto)
-    {
-        Logger.LogDebug("[contact merge update] merge update begin, data:{data}",
-            JsonConvert.SerializeObject(contactDto));
-        var userId = CurrentUser.GetId();
-
-        var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
-        var result =
-            await contactGrain.UpdateContactAsync(userId,
-                ObjectMapper.Map<ContactDto, ContactGrainDto>(contactDto));
-
-        if (!result.Success)
-        {
-            Logger.LogError("[contact merge update] update contact fail, contactId:{id}, message:{message}",
-                id.ToString(), result.Message);
-            return null;
-        }
-
-        await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data), false,
-            false);
-
-        var imputationResult = await contactGrain.Imputation();
-        if (!imputationResult.Success)
-        {
-            Logger.LogError("[contact merge update] imputation fail, contactId:{id}", id.ToString());
-            return null;
-        }
-
-        await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(imputationResult.Data), false,
-            false);
-
-        Logger.LogDebug("[contact merge update] merge update end, data:{data}",
-            JsonConvert.SerializeObject(imputationResult.Data));
-        return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(imputationResult.Data);
-    }
 }
