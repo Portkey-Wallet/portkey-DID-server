@@ -10,6 +10,8 @@ using CAServer.ThirdPart.Dtos.ThirdPart;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
@@ -23,13 +25,15 @@ public class ThirdPartOrderController : CAServerController
 {
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly INftCheckoutService _nftCheckoutService;
+    private readonly ILogger<ThirdPartOrderController> _logger;
 
     public ThirdPartOrderController(
         INftCheckoutService nftCheckoutService, 
-        IThirdPartOrderAppService thirdPartOrderAppService)
+        IThirdPartOrderAppService thirdPartOrderAppService, ILogger<ThirdPartOrderController> logger)
     {
         _nftCheckoutService = nftCheckoutService;
         _thirdPartOrderAppService = thirdPartOrderAppService;
+        _logger = logger;
     }
 
     [HttpGet("tfa/generate")]
@@ -102,10 +106,31 @@ public class ThirdPartOrderController : CAServerController
         return res.Success ? "success" : "fail";
     }
     
-    [HttpGet("exchange/price/alchemy")]
-    public async Task<AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>> AlchemyTreasurePrice(
-        AlchemyTreasuryPriceResultDto input)
+    [HttpGet("treasury/price/alchemy")]
+    public Task<AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>> AlchemyTreasurePrice(
+        AlchemyTreasuryPriceRequestDto input)
     {
-        return 
+        //TODO mock result and log
+        _logger.LogInformation("Receive request of [/treasury/price/alchemy], request={Request}", JsonConvert.SerializeObject(HttpContext.Request));
+        return Task.FromResult(new AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>(new AlchemyTreasuryPriceResultDto
+        {
+            Price = "1",
+            NetworkList = new List<AlchemyTreasuryPriceResultDto.AlchemyTreasuryNetwork>
+            {
+                new()
+                {
+                    Network = "aelf",
+                    NetworkFee = "0.0041"
+                }
+            }
+        }));
+    }
+    
+    [HttpPost("treasury/order/alchemy")]
+    public Task<AlchemyBaseResponseDto<Empty>> AlchemyTreasurePrice(AlchemyTreasuryOrderRequestDto input)
+    {
+        //TODO mock result and log
+        _logger.LogInformation("Receive request of [/treasury/order/alchemy], request={Request}", JsonConvert.SerializeObject(HttpContext.Request));
+        return Task.FromResult(new AlchemyBaseResponseDto<Empty>());
     }
 }
