@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.Commons;
@@ -28,7 +29,7 @@ public class ThirdPartOrderController : CAServerController
     private readonly ILogger<ThirdPartOrderController> _logger;
 
     public ThirdPartOrderController(
-        INftCheckoutService nftCheckoutService, 
+        INftCheckoutService nftCheckoutService,
         IThirdPartOrderAppService thirdPartOrderAppService, ILogger<ThirdPartOrderController> logger)
     {
         _nftCheckoutService = nftCheckoutService;
@@ -40,7 +41,7 @@ public class ThirdPartOrderController : CAServerController
     public IActionResult GenerateAuthCode(string key, string userName, string title)
     {
         var setupCode = _thirdPartOrderAppService.GenerateGoogleAuthCode(key, userName, title);
-        
+
         var result = """ <html><body><img src="IMAGE" alt="QR Code"><br/>CODE<body/><html/> """;
         return new ContentResult
         {
@@ -61,13 +62,14 @@ public class ThirdPartOrderController : CAServerController
 
         try
         {
-            var orderList = await _thirdPartOrderAppService.ExportOrderListAsync(new GetThirdPartOrderConditionDto(0, 100)
-            {
-                LastModifyTimeLt = requestDto.EndTime,
-                LastModifyTimeGt = requestDto.StartTime,
-                StatusIn = requestDto.Status,
-                TransDirectIn = new List<string> { requestDto.Type }
-            }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
+            var orderList = await _thirdPartOrderAppService.ExportOrderListAsync(
+                new GetThirdPartOrderConditionDto(0, 100)
+                {
+                    LastModifyTimeLt = requestDto.EndTime,
+                    LastModifyTimeGt = requestDto.StartTime,
+                    StatusIn = requestDto.Status,
+                    TransDirectIn = new List<string> { requestDto.Type }
+                }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
 
             var orderResp = new OrderExportResponseDto(orderList);
 
@@ -83,13 +85,13 @@ public class ThirdPartOrderController : CAServerController
             return StatusCode(StatusCodes.Status502BadGateway, "Internal error, please try again later");
         }
     }
-    
+
     [HttpPost("order/alchemy")]
     public async Task<CommonResponseDto<Empty>> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
         return await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
     }
-    
+
     [HttpPost("order/transak")]
     public async Task<CommonResponseDto<Empty>> UpdateTransakOrderAsync(TransakEventRawDataDto input)
     {
@@ -105,14 +107,17 @@ public class ThirdPartOrderController : CAServerController
             .UpdateThirdPartNftOrderAsync(input);
         return res.Success ? "success" : "fail";
     }
-    
+
     [HttpGet("treasury/price/alchemy")]
-    public Task<AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>> AlchemyTreasurePrice(
+    public async Task<AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>> AlchemyTreasurePrice(
         AlchemyTreasuryPriceRequestDto input)
     {
         //TODO mock result and log
-        _logger.LogInformation("Receive request of [/treasury/price/alchemy], request={Request}", JsonConvert.SerializeObject(HttpContext.Request));
-        return Task.FromResult(new AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>(new AlchemyTreasuryPriceResultDto
+        _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
+            HttpContext.Request.Path.ToString(),
+            Encoding.UTF8.GetString(await HttpContext.Request.Body.GetAllBytesAsync()),
+            JsonConvert.SerializeObject(HttpContext.Request.Headers));
+        return new AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>(new AlchemyTreasuryPriceResultDto
         {
             Price = "1",
             NetworkList = new List<AlchemyTreasuryPriceResultDto.AlchemyTreasuryNetwork>
@@ -123,14 +128,17 @@ public class ThirdPartOrderController : CAServerController
                     NetworkFee = "0.0041"
                 }
             }
-        }));
+        });
     }
-    
+
     [HttpPost("treasury/order/alchemy")]
-    public Task<AlchemyBaseResponseDto<Empty>> AlchemyTreasurePrice(AlchemyTreasuryOrderRequestDto input)
+    public async Task<AlchemyBaseResponseDto<Empty>> AlchemyTreasurePrice(AlchemyTreasuryOrderRequestDto input)
     {
         //TODO mock result and log
-        _logger.LogInformation("Receive request of [/treasury/order/alchemy], request={Request}", JsonConvert.SerializeObject(HttpContext.Request));
-        return Task.FromResult(new AlchemyBaseResponseDto<Empty>());
+        _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
+            HttpContext.Request.Path.ToString(),
+            JsonConvert.SerializeObject(input),
+            JsonConvert.SerializeObject(HttpContext.Request.Headers));
+        return new AlchemyBaseResponseDto<Empty>();
     }
 }
