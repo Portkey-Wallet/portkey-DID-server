@@ -12,6 +12,7 @@ using CAServer.ThirdPart.Provider;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.DistributedLocking;
@@ -42,6 +43,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
     {
         if (orderDto is not AlchemyOrderUpdateDto dto)
             throw new UserFriendlyException("not Alchemy-order");
+        Logger.LogInformation("Alchemy order: {Order}", JsonConvert.SerializeObject(dto));
         return dto;
     }
 

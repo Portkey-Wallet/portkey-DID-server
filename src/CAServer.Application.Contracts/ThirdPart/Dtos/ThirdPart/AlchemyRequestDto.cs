@@ -182,3 +182,20 @@ public class AlchemyNftReleaseNoticeRequestDto
     public string Picture { get; set; }
     public string PictureNumber { get; set; }
 }
+
+public class AlchemyTreasuryPriceRequestDto
+{
+    public string Crypto { get; set; }
+}
+
+
+public class AlchemyTreasuryOrderRequestDto
+{
+    public string OrderNo { get; set; }
+    public string Crypto { get; set; }
+    public string Network { get; set; }
+    public string Address { get; set; }
+    public string CryptoAmount { get; set; }
+    public string CryptoPrice { get; set; }
+    public string UsdtAmount { get; set; }
+}

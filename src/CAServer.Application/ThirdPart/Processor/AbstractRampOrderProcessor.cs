@@ -1,15 +1,20 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
 using Google.Protobuf.WellKnownTypes;
 using MassTransit;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
@@ -26,6 +31,8 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly ITokenAppService _tokenAppService;
+    private readonly IOptionsMonitor<ChainOptions> _chainOptions;
     private readonly IBus _broadcastBus;
 
     protected readonly JsonSerializerSettings JsonDecodeSettings = new()
@@ -35,7 +42,8 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
 
     protected AbstractRampOrderProcessor(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider, IDistributedEventBus distributedEventBus,
-        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus)
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus,
+        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions)
     {
         _clusterClient = clusterClient;
         _thirdPartOrderProvider = thirdPartOrderProvider;
@@ -43,6 +51,8 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
         _broadcastBus = broadcastBus;
+        _tokenAppService = tokenAppService;
+        _chainOptions = chainOptions;
     }
 
     /// <summary>
@@ -77,7 +87,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
     /// <returns></returns>
     public abstract Task<OrderDto> QueryThirdOrderAsync(OrderDto orderDto);
 
-    
+
     public async Task<CommonResponseDto<Empty>> OrderUpdateAsync(IThirdPartOrder thirdPartOrder)
     {
         OrderDto inputOrderDto = null;
@@ -104,7 +114,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
 
             var dataToBeUpdated = MergeEsAndInput2GrainModel(inputOrderDto, esOrderData);
             var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
-            dataToBeUpdated.Status = inputState.ToString(); 
+            dataToBeUpdated.Status = inputState.ToString();
             dataToBeUpdated.Id = grainId;
             dataToBeUpdated.UserId = esOrderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
@@ -112,7 +122,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
                 grainId);
 
             var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
-            
+
             AssertHelper.IsTrue(result.Success, "Update order failed,{Message}", result.Message);
 
             var orderEto = ObjectMapper.Map<OrderGrainDto, OrderEto>(result.Data);
@@ -137,7 +147,35 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
             return new CommonResponseDto<Empty>().Error(e, "INTERNAL ERROR, please try again later.");
         }
     }
-    
+
+    /// <summary>
+    ///     Check the price of the crypto in USDT.
+    /// </summary>
+    /// <param name="cryptoSymbol"></param>
+    /// <returns></returns>
+    public async Task<ExchangePriceDto> GetPriceInUsdtAsync(string cryptoSymbol)
+    {
+        var cryptoUsdtEx = await _tokenAppService.GetAvgLatestExchangeAsync(cryptoSymbol, CommonConstant.USDT);
+        var elfCryptoEx = cryptoSymbol == CommonConstant.ELF
+            ? cryptoUsdtEx
+            : await _tokenAppService.GetAvgLatestExchangeAsync(CommonConstant.ELF, cryptoSymbol);
+        var chainExists =
+            _chainOptions.CurrentValue.ChainInfos.TryGetValue(CommonConstant.MainChainId, out var chainInfo);
+        AssertHelper.IsTrue(chainExists, "ChainInfo of {} not found", CommonConstant.MainChainId);
+        var networkFee = chainInfo!.TransactionFee * elfCryptoEx.Exchange;
+        return new ExchangePriceDto
+        {
+            FromCrypto = cryptoSymbol,
+            ToCrypto = CommonConstant.USDT,
+            Price = cryptoUsdtEx.Exchange,
+            NetworkFee = new Dictionary<string, FeeItem>
+            {
+                [CommonConstant.MainChainId] =
+                    FeeItem.Crypto(cryptoSymbol, networkFee.ToString(CultureInfo.InvariantCulture))
+            }
+        };
+    }
+
     private OrderGrainDto MergeEsAndInput2GrainModel(OrderDto fromData, OrderDto toData)
     {
         var orderGrainData = ObjectMapper.Map<OrderDto, OrderGrainDto>(fromData);

@@ -64,7 +64,7 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
     public Task<GrainResultDto<OrderGrainDto>> GetOrder()
     {
         var result = new GrainResultDto<OrderGrainDto>();
-
+        
         if (State.Id == Guid.Empty)
         {
             return Task.FromResult(result);
