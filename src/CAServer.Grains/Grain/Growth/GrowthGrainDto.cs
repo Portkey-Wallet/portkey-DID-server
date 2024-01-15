@@ -1,6 +1,7 @@
+using CAServer.Growth.Dtos;
+
 namespace CAServer.Grains.Grain.Growth;
 
-public class GrowthGrainDto
+public class GrowthGrainDto : GrowthBase
 {
-    
 }

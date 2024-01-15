@@ -60,8 +60,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Growth\Dtos" />
-      <Folder Include="Growth\Etos" />
       <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
 

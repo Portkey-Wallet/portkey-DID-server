@@ -1,6 +1,8 @@
-namespace CAServer.Grains.State.Growth;
+using System;
 
-public class GrowthState
+namespace CAServer.Growth.Dtos;
+
+public class GrowthBase
 {
     public string Id { get; set; }
     public Guid UserId { get; set; }
@@ -10,5 +12,4 @@ public class GrowthState
     public string ProjectCode { get; set; }
     public string ShortLinkCode { get; set; }
     public DateTime CreateTime { get; set; }
-    public bool IsDeleted { get; set; }
 }
