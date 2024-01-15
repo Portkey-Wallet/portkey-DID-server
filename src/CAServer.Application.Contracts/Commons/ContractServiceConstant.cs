@@ -73,5 +73,7 @@ public static class CommonConstant
     public const string DefaultCryptoPrice = "400";
 
     public const string ProtocolName = "http";
+    public const string UserGrowthPrefix = "UserGrowth";
+    public const string RedDotPrefix = "RedDot";
 
 }
