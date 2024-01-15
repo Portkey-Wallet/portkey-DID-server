@@ -1,13 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using AElf;
 
 namespace CAServer.Common;
 
 public static class EncryptionHelper
 {
+    private const int KeySize = 256;
+    private const int BlockSize = 128;
     private const int Iterations = 1000;
+    private const int IvIterations = 1;
 
 
     public static string MD5Encrypt32(string input)
@@ -27,66 +32,70 @@ public static class EncryptionHelper
         }
     }
     
-    public static string Encrypt(string plainText, string password)
+    public static string EncryptBase64(string plainText, string password)
     {
-        var aes = Aes.Create();
-        aes.KeySize = 256; 
-        aes.BlockSize = 128; 
-        aes.Mode = CipherMode.CBC; 
-
-        var salt = new byte[16];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(salt);
-        }
-
-        var key = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
-
-        using (var encryptor = aes.CreateEncryptor(key.GetBytes(aes.KeySize / 8), aes.IV))
-        using (var memoryStream = new MemoryStream())
-        {
-            memoryStream.Write(salt, 0, salt.Length); 
-            memoryStream.Write(aes.IV, 0, aes.IV.Length);
-            using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
-            {
-                using (var streamWriter = new StreamWriter(cryptoStream))
-                {
-                    streamWriter.Write(plainText);
-                }
-            }
-
-            return Convert.ToBase64String(memoryStream.ToArray());
-        }
+        var encryptData = AesCbcEncrypt(Encoding.UTF8.GetBytes(plainText), Encoding.UTF8.GetBytes(password));
+        return Convert.ToBase64String(encryptData);
     }
 
-    public static string Decrypt(string cipherText, string password)
+    public static string DecryptFromBase64(string cipherText, string password)
     {
-        var bytes = Convert.FromBase64String(cipherText);
-        using (var memoryStream = new MemoryStream(bytes))
+        var encryptData = Convert.FromBase64String(cipherText);
+        return Encoding.UTF8.GetString(AesCbcDecrypt(encryptData, Encoding.UTF8.GetBytes(password)));
+    }
+    
+    
+    public static string EncryptHex(string plainText, string password)
+    {
+        var encryptData = AesCbcEncrypt(Encoding.UTF8.GetBytes(plainText), Encoding.UTF8.GetBytes(password));
+        return encryptData.ToHex();
+    }
+
+    public static string DecryptFromHex(string cipherText, string password)
+    {
+        var encryptData = ByteArrayHelper.HexStringToByteArray(cipherText);
+        return Encoding.UTF8.GetString(AesCbcDecrypt(encryptData, Encoding.UTF8.GetBytes(password)));
+    }
+    
+    public static byte[] AesCbcEncrypt(byte[] sourceData, byte[] password, byte[]? salt = null)
+    {
+        using var aesAlg = Aes.Create();
+        aesAlg.KeySize = KeySize;
+        aesAlg.BlockSize = BlockSize;
+        aesAlg.Mode = CipherMode.CBC;
+        aesAlg.Padding = PaddingMode.PKCS7;
+        aesAlg.Key = new Rfc2898DeriveBytes(password, salt ?? new byte[16], Iterations).GetBytes(KeySize / 8);
+        if (!salt.IsNullOrEmpty()) 
+            aesAlg.GenerateIV();
+        else
+            aesAlg.IV = new Rfc2898DeriveBytes(password, salt ?? new byte[16], IvIterations).GetBytes(BlockSize / 8);
+        var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+        using var msEncrypt = new MemoryStream();
+        msEncrypt.Write(aesAlg.IV, 0, aesAlg.IV.Length);
+        using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
         {
-            var salt = new byte[16];
-            var _ = memoryStream.Read(salt, 0, salt.Length);
-
-            var iv = new byte[16];
-            var __= memoryStream.Read(iv, 0, iv.Length);
-
-            var key = new Rfc2898DeriveBytes(password, salt, Iterations, HashAlgorithmName.SHA256);
-
-            using (var aes = Aes.Create())
-            {
-                aes.KeySize = 256;
-                aes.BlockSize = 128;
-                aes.Mode = CipherMode.CBC;
-                aes.IV = iv;
-
-                using (var decryptor = aes.CreateDecryptor(key.GetBytes(aes.KeySize / 8), aes.IV))
-                using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
-                using (var streamReader = new StreamReader(cryptoStream))
-                {
-                    return streamReader.ReadToEnd();
-                }
-            }
+            csEncrypt.Write(sourceData, 0, sourceData.Length);
         }
+        return msEncrypt.ToArray();
+    }
+
+    public static byte[] AesCbcDecrypt(byte[] encryptData, byte[] password, byte[]? salt = null)
+    {
+        using var aesAlg = Aes.Create();
+        aesAlg.KeySize = KeySize;
+        aesAlg.BlockSize = BlockSize;
+        aesAlg.Mode = CipherMode.CBC;
+        aesAlg.Padding = PaddingMode.PKCS7;
+        aesAlg.Key = new Rfc2898DeriveBytes(password, salt ?? new byte[16], Iterations).GetBytes(KeySize / 8);
+        var iv = new byte[aesAlg.BlockSize / 8];
+        Array.Copy(encryptData, 0, iv, 0, iv.Length);
+        var decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);
+        using var msDecrypt = new MemoryStream();
+        using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Write))
+        {
+            csDecrypt.Write(encryptData, iv.Length, encryptData.Length - iv.Length);
+        }
+        return msDecrypt.ToArray();
     }
 
 }
