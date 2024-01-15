@@ -14,5 +14,5 @@ public class TelegramAuthDto
     public string LastName { get; set; }
     public string Hash { get; set; }
     [JsonProperty("photo_url")]
-    public string ProtoUrl { get; set; }
+    public string PhotoUrl { get; set; }
 }

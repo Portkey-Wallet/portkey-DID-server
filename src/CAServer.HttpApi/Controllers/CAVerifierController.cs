@@ -30,7 +30,6 @@ public class CAVerifierController : CAServerController
     private readonly IGoogleAppService _googleAppService;
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string CheckSwitch = "CheckSwitch";
-    private const string TelegramLoginSwitch = "TelegramLogin";
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
@@ -226,10 +225,6 @@ public class CAVerifierController : CAServerController
     [HttpPost("verifyTelegramToken")]
     public async Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto)
     {
-        if (!_switchAppService.GetSwitchStatus(TelegramLoginSwitch).IsOpen)
-        {
-            throw new UserFriendlyException("Telegram login not supported");
-        }
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyTelegramTokenAsync(requestDto);
     }
