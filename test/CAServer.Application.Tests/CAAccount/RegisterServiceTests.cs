@@ -73,6 +73,14 @@ public class RegisterServiceTests : CAServerApplicationTestBase
 
         return provider.Object;
     }
+
+    private IGraphQLProvider MockGraphQLProvider()
+    {
+
+        var mock = new Mock<IGraphQLProvider>();
+        // mock.Setup()
+        return mock.Object;
+    }
     
     
     protected new IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
