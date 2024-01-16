@@ -4,7 +4,7 @@ namespace CAServer.Commons;
 
 public static class MurmurHashHelper
 {
-    public static string GetHash(string plainText)
+    public static string GenerateHash(string plainText)
     {
         var bytes = Encoding.UTF8.GetBytes(plainText);
         var hashConfig = new System.Data.HashFunction.MurmurHash.MurmurHash3Config

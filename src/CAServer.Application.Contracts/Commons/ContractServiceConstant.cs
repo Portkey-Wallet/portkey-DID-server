@@ -75,5 +75,7 @@ public static class CommonConstant
     public const string ProtocolName = "http";
     public const string UserGrowthPrefix = "UserGrowth";
     public const string RedDotPrefix = "RedDot";
+    public const int InitInviteCode = 10000;
+    public const string InviteCodeGrainId = "UserGrowth-InviteCode";
 
 }

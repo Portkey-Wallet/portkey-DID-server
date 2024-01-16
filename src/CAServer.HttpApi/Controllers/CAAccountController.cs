@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CAServer.CAAccount;
 using CAServer.Dtos;
@@ -81,5 +82,12 @@ public class CAAccountController : CAServerController
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
         return await _caAccountService.RevokeAsync(input);
+    }
+
+    [HttpGet("{shortLinkCode}")]
+    public  async Task<IActionResult> Get(string shortLinkCode)
+    {
+        var url = "";
+        return Redirect(url);
     }
 }
