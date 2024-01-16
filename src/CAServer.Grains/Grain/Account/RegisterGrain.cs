@@ -8,7 +8,6 @@ using Volo.Abp.ObjectMapping;
 namespace CAServer.Grains.Grain.Account;
 
 [StorageProvider(ProviderName = "Default")]
-[FastStrategy]
 public class RegisterGrain : Grain<RegisterState>, IRegisterGrain
 {
     private readonly IObjectMapper _objectMapper;

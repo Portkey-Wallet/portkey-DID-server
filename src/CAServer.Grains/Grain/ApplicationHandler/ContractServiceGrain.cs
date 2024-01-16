@@ -22,7 +22,7 @@ using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
 
-[SlowStrategy]
+[StatelessWorker]
 public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
 {
     private readonly GrainOptions _grainOptions;

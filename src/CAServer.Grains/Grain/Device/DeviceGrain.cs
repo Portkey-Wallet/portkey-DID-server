@@ -5,7 +5,6 @@ using Orleans;
 
 namespace CAServer.Grains.Grain.Device;
 
-[FastStrategy]
 public class DeviceGrain : Grain<DeviceState>, IDeviceGrain
 {
     public override async Task OnActivateAsync()
