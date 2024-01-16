@@ -52,10 +52,8 @@ public class ThirdPartTimerOptions
 public class AlchemyOptions
 {
     public string AppId { get; set; }
-    public string AppSecret { get; set; }
     public string BaseUrl { get; set; }
     public string NftAppId { get; set; }
-    public string NftAppSecret { get; set; }
     public string NftBaseUrl { get; set; }
     public string UpdateSellOrderUri { get; set; }
     public string FiatListUri { get; set; }
@@ -73,7 +71,6 @@ public class AlchemyOptions
 public class TransakOptions
 {
     public string AppId { get; set; }
-    public string AppSecret { get; set; }
     public string BaseUrl { get; set; }
     public double RefreshTokenDurationPercent { get; set; } = 0.8;
     public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;

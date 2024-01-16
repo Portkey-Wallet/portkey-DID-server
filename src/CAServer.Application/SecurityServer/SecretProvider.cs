@@ -81,10 +81,6 @@ public class SecretProvider : ISecretProvider, ITransientDependency
     public async Task<string> GetAlchemyAesSignAsync(string key, string source)
     {
         var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post, Uri(AlchemyPayAes),
-            param: new Dictionary<string, string>
-            {
-                ["key"] = key
-            },
             body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput()
             {
                 Key = key,
@@ -101,10 +97,6 @@ public class SecretProvider : ISecretProvider, ITransientDependency
     public async Task<string> GetAlchemyShaSignAsync(string key, string source)
     {
         var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post, Uri(AlchemyPaySha),
-            param: new Dictionary<string, string>
-            {
-                ["key"] = key
-            },
             body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput()
             {
                 Key = key,
@@ -121,10 +113,6 @@ public class SecretProvider : ISecretProvider, ITransientDependency
     public async Task<string> GetAlchemyHmacSignAsync(string key, string source)
     {
         var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post, Uri(AlchemyPayHmac),
-            param: new Dictionary<string, string>
-            {
-                ["key"] = key
-            },
             body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput()
             {
                 Key = key,
@@ -142,10 +130,6 @@ public class SecretProvider : ISecretProvider, ITransientDependency
     public async Task<string> GetAppleAuthSignatureAsync(string key, string keyId, string teamId, string clientId)
     {
         var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post, Uri(AppleAuth),
-            param: new Dictionary<string, string>
-            {
-                ["key"] = key
-            },
             body: JsonConvert.SerializeObject(new AppleAuthExecuteInput()
             {
                 Key = key,

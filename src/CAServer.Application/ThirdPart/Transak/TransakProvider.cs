@@ -14,6 +14,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Options;
+using CAServer.SecurityServer;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
@@ -47,8 +48,9 @@ public class TransakProvider
     private readonly IHttpProvider _httpProvider;
     private readonly IClusterClient _clusterClient;
     private readonly IImageProcessProvider _imageProcessProvider;
+    private readonly ISecretProvider _secretProvider;
     public const int RetryCount = 2;
-    public const string ErrorTokenAcesstoken = "Access Token";
+    public const string ErrorTokenAccessToken = "Access Token";
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .IgnoreNullValue()
@@ -60,7 +62,7 @@ public class TransakProvider
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IHttpProvider httpProvider, IOptionsMonitor<RampOptions> rampOptions, IClusterClient clusterClient,
         IAbpDistributedLock distributedLock, ILogger<TransakProvider> logger,
-        IImageProcessProvider imageProcessProvider)
+        IImageProcessProvider imageProcessProvider, ISecretProvider secretProvider)
     {
         _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
@@ -69,6 +71,7 @@ public class TransakProvider
         _distributedLock = distributedLock;
         _logger = logger;
         _imageProcessProvider = imageProcessProvider;
+        _secretProvider = secretProvider;
         InitAsync().GetAwaiter().GetResult();
     }
 
@@ -189,14 +192,16 @@ public class TransakProvider
     public async Task<TransakAccessToken> GetAccessTokenAsync()
     {
         // cacheData not exists or force
+        var apiKey = GetApiKey();
+        var secret = await _secretProvider.GetSecretAsync(apiKey);
         var accessTokenResp = await _httpProvider.InvokeAsync<TransakMetaResponse<object, TransakAccessToken>>(
             TransakOptions().BaseUrl,
             TransakApi.RefreshAccessToken,
-            body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = GetApiKey() }),
-            header: new Dictionary<string, string> { ["api-secret"] = TransakOptions().AppSecret },
+            body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = apiKey }),
+            header: new Dictionary<string, string> { ["api-secret"] = secret },
             settings: JsonSerializerSettings);
         AssertHelper.NotNull(accessTokenResp?.Data, "AccessToken response null");
-        AssertHelper.NotEmpty(accessTokenResp.Data.AccessToken, "AccessToken empty");
+        AssertHelper.NotEmpty(accessTokenResp!.Data.AccessToken, "AccessToken empty");
         return accessTokenResp.Data;
     }
 
@@ -308,7 +313,7 @@ public class TransakProvider
 
             AssertHelper.IsTrue(!HttpStatusCode.BadRequest.Equals(webHookRes.StatusCode),
                 "transak webhook http response exception,ex is {Content}", content);
-            AssertHelper.IsTrue(content.Contains(ErrorTokenAcesstoken),
+            AssertHelper.IsTrue(content.Contains(ErrorTokenAccessToken),
                 "transak webhook http response exception,ex is{Content}", content);
 
             await GetAccessTokenWithRetryAsync(true);
@@ -322,10 +327,12 @@ public class TransakProvider
     /// <returns></returns>
     public async Task<TransakOrderDto> GetOrderByIdAsync(string orderId)
     {
+        var apiKey = GetApiKey();
+        var secret = await _secretProvider.GetSecretAsync(apiKey);
         var resp = await _httpProvider.InvokeAsync<QueryTransakOrderByIdResult>(TransakOptions().BaseUrl,
             TransakApi.GetOrderById,
             pathParams: new Dictionary<string, string> { ["orderId"] = orderId },
-            header: new Dictionary<string, string> { ["api-secret"] = TransakOptions().AppSecret },
+            header: new Dictionary<string, string> { ["api-secret"] = secret },
             settings: JsonSerializerSettings,
             withInfoLog: true
         );

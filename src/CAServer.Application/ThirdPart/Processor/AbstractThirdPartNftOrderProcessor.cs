@@ -66,7 +66,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="input"></param>
     /// <returns>decrypted and verified data</returns>
-    public abstract IThirdPartValidOrderUpdateRequest VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
+    public abstract Task<IThirdPartValidOrderUpdateRequest> VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
 
     /// <summary>
     ///     Query new order via ThirdPart API and verify
@@ -129,7 +129,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         try
         {
             // verify webhook input
-            updateRequest = VerifyNftOrderAsync(request);
+            updateRequest = await VerifyNftOrderAsync(request);
             AssertHelper.NotEmpty(updateRequest.Id, "Order id missing");
             AssertHelper.NotEmpty(updateRequest.Status, "Order status missing");
 
