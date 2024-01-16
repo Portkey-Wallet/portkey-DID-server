@@ -16,12 +16,12 @@ public interface ISignatureProvider
 
 public class SignatureProvider : ISignatureProvider, ISingletonDependency
 {
-    
     private const string GetSecurityUri = "/api/app/signature";
-    
+
     private readonly IOptionsMonitor<SignatureServerOptions> _signatureServerOptions;
     private readonly IHttpProvider _httpProvider;
     private readonly ILogger<SignatureProvider> _logger;
+    
 
 
     public SignatureProvider(IOptionsMonitor<SignatureServerOptions> signatureOptions,
@@ -45,10 +45,24 @@ public class SignatureProvider : ISignatureProvider, ISingletonDependency
             HexMsg = hexMsg,
         };
 
-        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<SignResponseDto>>(HttpMethod.Post, Uri(GetSecurityUri), body: JsonConvert.SerializeObject(signatureSend));
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<SignResponseDto>>(HttpMethod.Post,
+            Uri(GetSecurityUri), 
+            body: JsonConvert.SerializeObject(signatureSend),
+            header: SecurityServerHeader()
+            );
         AssertHelper.IsTrue(resp?.Success ?? false, "Signature response failed");
         AssertHelper.NotEmpty(resp!.Data?.Signature, "Signature response empty");
         return resp.Data!.Signature;
+    }
+    
+    public Dictionary<string, string> SecurityServerHeader(params string[] signValues)
+    {
+        var signString = string.Join(CommonConstant.EmptyString, signValues);
+        return new Dictionary<string, string>
+        {
+            ["appid"] = _signatureServerOptions.CurrentValue.AppId,
+            ["signature"] = EncryptionHelper.EncryptHex(signString, _signatureServerOptions.CurrentValue.AppSecret)
+        };
     }
 }
 

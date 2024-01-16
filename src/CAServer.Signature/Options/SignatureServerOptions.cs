@@ -16,5 +16,6 @@ public class KeyIds
     public string CoinGecko { get; set; } = "CoinGeckoCaServer";
     public string IpService { get; set; } = "IpServiceCaServer";
     public string AwsS3IdentityPool { get; set; } = "AwsS3IdentityPool";
+    public string GoogleRecaptcha { get; set; } = "GoogleRecaptchaCaServer";
 
 }
