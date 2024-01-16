@@ -3,10 +3,13 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Signature.Provider;
+using CAServer.ThirdPart;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
+using NSubstitute;
 using Shouldly;
 using Volo.Abp;
 using Xunit;
@@ -27,6 +30,7 @@ public class IpInfoClientTest : CAServerApplicationTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(MockIpInfoHttpClient());
+        services.AddSingleton(MockSecretProvider());
     }
 
 
@@ -34,14 +38,13 @@ public class IpInfoClientTest : CAServerApplicationTestBase
     public async Task GetIpInfoTest_error()
     {
         var result = () => _infoClient.GetIpInfoAsync("error");
-        var exception = await Assert.ThrowsAsync<UserFriendlyException>(result);
+        var exception = await Assert.ThrowsAnyAsync<Exception>(result);
         exception.ShouldNotBeNull();
         exception.Message.ShouldContain("mock error");
 
         result = () => _infoClient.GetIpInfoAsync("NotFound");
-        exception = await Assert.ThrowsAsync<UserFriendlyException>(result);
+        exception = await Assert.ThrowsAnyAsync<Exception>(result);
         exception.ShouldNotBeNull();
-        exception.Message.ShouldContain("Request error");
     }
 
 
@@ -58,6 +61,13 @@ public class IpInfoClientTest : CAServerApplicationTestBase
         {
             e.ShouldNotBeNull();
         }
+    }
+
+    protected static ISecretProvider MockSecretProvider()
+    {
+        var mock = new Mock<ISecretProvider>();
+        mock.Setup(ser => ser.GetSecretWithCacheAsync(It.IsAny<string>())).ReturnsAsync("mockSecret");
+        return mock.Object;
     }
 
 

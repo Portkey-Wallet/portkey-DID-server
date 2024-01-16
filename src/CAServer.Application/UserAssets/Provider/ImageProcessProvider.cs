@@ -6,13 +6,11 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.amazon;
-using CAServer.Amazon;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.Svg;
 using CAServer.Image.Dto;
 using CAServer.Options;
-using CAServer.Signature.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -25,23 +23,20 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
 {
     private readonly ILogger<ImageProcessProvider> _logger;
     private readonly AwsThumbnailOptions _awsThumbnailOptions;
-    private readonly ISecretProvider _secretProvider;
-    private readonly IOptionsMonitor<AwsS3Option> _awsS3Option;
     private readonly IClusterClient _clusterClient;
+    private readonly IAwsS3Client _awsS3Client;
 
 
-    private HttpClient? Client { get; set; }
+    private HttpClient Client { get; set; }
 
     public ImageProcessProvider(ILogger<ImageProcessProvider> logger,
         IOptions<AwsThumbnailOptions> awsThumbnailOptions,
-        IOptionsMonitor<AwsS3Option> awsS3Option,
-        IClusterClient clusterClient, ISecretProvider secretProvider)
+        IClusterClient clusterClient, IAwsS3Client awsS3Client)
     {
         _logger = logger;
-        _awsS3Option = awsS3Option;
         _awsThumbnailOptions = awsThumbnailOptions.Value;
         _clusterClient = clusterClient;
-        _secretProvider = secretProvider;
+        _awsS3Client = awsS3Client;
     }
 
     public async Task<string> GetResizeImageAsync(string imageUrl, int width, int height, ImageResizeType type)
@@ -125,11 +120,10 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
         }
 
         //upload the svg to amazon and get its url
-        var client = new AwsS3Client(_awsS3Option.CurrentValue, _secretProvider);
         var byteData = Encoding.UTF8.GetBytes(svg);
         try
         {
-            var res = await client.UpLoadFileAsync(new MemoryStream(byteData), svgMd5);
+            var res = await _awsS3Client.UpLoadFileAsync(new MemoryStream(byteData), svgMd5);
             svgGrainDto.AmazonUrl = res;
             await grain.AddSvgAsync(svgGrainDto);
             _logger.LogDebug("Aws S3 upload to {Rul}", svgGrainDto.AmazonUrl);

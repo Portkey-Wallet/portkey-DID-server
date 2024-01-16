@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.amazon;
 using CAServer.CAActivity.Provider;
 using CAServer.Entities.Es;
+using CAServer.Options;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
@@ -36,7 +40,18 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
         base.AfterAddApplication(services);
         services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
         services.AddSingleton(GetMockInMemoryHarness());
+        services.AddSingleton(MockGraphQlOptions());
+        services.AddSingleton(MockAwsS3Client());
     }
+    
+    protected IAwsS3Client MockAwsS3Client()
+    {
+        var mockImageClient = new Mock<IAwsS3Client>();
+        mockImageClient.Setup(p => p.UpLoadFileAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync("http://s3.test.com/result.svg");
+        return mockImageClient.Object;
+    }
+    
 
     protected IActivityProvider MockActivityProviderCaHolder(string guidVal = null)
     {
@@ -44,6 +59,18 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
         {
             UserId = guidVal.IsNullOrEmpty() ? Guid.NewGuid() : Guid.Parse(guidVal)
         });
+    }
+
+    protected IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
+    {
+        var options = new GraphQLOptions()
+        {
+            Configuration = ""
+        };
+
+        var mock = new Mock<IOptionsSnapshot<GraphQLOptions>>();
+        mock.Setup(o => o.Value).Returns(options);
+        return mock.Object;
     }
     
     protected IBus GetMockInMemoryHarness(params IConsumer[] consumers)

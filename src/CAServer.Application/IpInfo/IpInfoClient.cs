@@ -30,7 +30,7 @@ public class IpInfoClient : IIpInfoClient
     public async Task<IpInfoDto> GetIpInfoAsync(string ip)
     {
         var accessKey = await _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.IpService);
-        var requestUrl = _ipServiceSetting.CurrentValue.BaseUrl.TrimEnd('/') + "/{ip}";
+        var requestUrl = _ipServiceSetting.CurrentValue.BaseUrl.TrimEnd('/') + "/" + ip;
         requestUrl += $"?access_key={accessKey}&language={_ipServiceSetting.CurrentValue.Language}";
         var response = await _httpProvider.InvokeAsync<IpInfoDto>(HttpMethod.Get, requestUrl);
         AssertHelper.IsTrue(response.Error == null, response.Error?.Info ?? "Get ip info failed {}", ip);

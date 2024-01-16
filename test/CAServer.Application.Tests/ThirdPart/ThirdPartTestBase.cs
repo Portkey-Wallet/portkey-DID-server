@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
+using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Transak;
 using CAServer.Tokens.Provider;
@@ -96,6 +98,32 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
         optionMock.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
         return optionMock.Object;
     }
+    
+    
+    protected static ISecretProvider MockSecretProvider()
+    {
+        var rampSecret = "rampTest";
+        var nftSecret = "testTest";
+        var option = MockThirdPartOptions();
+        var mock = new Mock<ISecretProvider>();
+        mock.Setup(ser => ser.GetSecretWithCacheAsync(option.CurrentValue.Transak.AppId)).Returns(Task.FromResult("transakAppSecret"));
+        
+        mock.Setup(ser => ser.GetAlchemyShaSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.GenerateAlchemyApiSign(appid + rampSecret + source)));
+        mock.Setup(ser => ser.GetAlchemyAesSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.AesEncrypt(source, rampSecret)));
+        mock.Setup(ser => ser.GetAlchemyHmacSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.HmacSign(source, rampSecret)));
+        
+        mock.Setup(ser => ser.GetAlchemyShaSignAsync(option.CurrentValue.Alchemy.NftAppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.GenerateAlchemyApiSign(appid + nftSecret + source)));
+        mock.Setup(ser => ser.GetAlchemyAesSignAsync(option.CurrentValue.Alchemy.NftAppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.AesEncrypt(source, nftSecret)));
+        mock.Setup(ser => ser.GetAlchemyHmacSignAsync(option.CurrentValue.Alchemy.NftAppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.HmacSign(source, nftSecret)));
+        return mock.Object;
+    }
+
 
     protected static IOptionsMonitor<RampOptions> MockRampOptions()
     {

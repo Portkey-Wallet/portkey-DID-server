@@ -1,4 +1,7 @@
+using System.Threading.Tasks;
+using AElf;
 using CAServer.Options;
+using CAServer.Signature.Provider;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -31,4 +34,20 @@ public sealed partial class AlchemyOrderAppServiceTest
         mockOption.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
         return mockOption.Object;
     }
+
+
+    private static ISecretProvider MockSecretProvider()
+    {
+        var secret = "abadddfafdfdsfdsffdsfdsfdsfdsfds";
+        var option = GetMockThirdPartOptions();
+        var mock = new Mock<ISecretProvider>();
+        mock.Setup(ser => ser.GetAlchemyShaSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.GenerateAlchemyApiSign(appid + secret + source)));
+        mock.Setup(ser => ser.GetAlchemyAesSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.AesEncrypt(source, secret)));
+        mock.Setup(ser => ser.GetAlchemyHmacSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.HmacSign(source, secret)));
+        return mock.Object;
+    }
+    
 }
