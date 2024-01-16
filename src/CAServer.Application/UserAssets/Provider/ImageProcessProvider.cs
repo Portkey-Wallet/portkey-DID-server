@@ -101,11 +101,11 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
         }
     }
 
-    public async Task<string> UploadSvgAsync(string svgMd5, [CanBeNull] string svg = null)
+    public async Task<string> UploadSvgAsync(string svgMd5, string svg = null)
     {
         var grain = _clusterClient.GetGrain<ISvgGrain>(svgMd5);
         var svgGrainDto = await grain.GetSvgAsync();
-        svg = svg ?? svgGrainDto.Svg;
+        svg ??= svgGrainDto.Svg;
         var amazonUrl = svgGrainDto.AmazonUrl;
         svgGrainDto.Id = svgMd5;
         svgGrainDto.AmazonUrl = "";

@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 using CAServer.Cache;
 using CAServer.Google.Dtos;
 using CAServer.Options;
+using CAServer.Signature.Provider;
 using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Google;
@@ -26,17 +26,19 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly FireBaseAppCheckOptions _fireBaseAppCheckOptions;
+    private readonly ISecretProvider _secretProvider;
 
     public GoogleAppService(
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOptions,
         ILogger<GoogleAppService> logger, IOptions<GoogleRecaptchaOptions> googleRecaptchaOption,
         IHttpClientFactory httpClientFactory, ICacheProvider cacheProvider,
-        JwtSecurityTokenHandler jwtSecurityTokenHandler, IOptionsSnapshot<FireBaseAppCheckOptions> fireBaseAppCheckOptions)
+        JwtSecurityTokenHandler jwtSecurityTokenHandler, IOptionsSnapshot<FireBaseAppCheckOptions> fireBaseAppCheckOptions, ISecretProvider secretProvider)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _cacheProvider = cacheProvider;
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
+        _secretProvider = secretProvider;
         _fireBaseAppCheckOptions = fireBaseAppCheckOptions.Value;
         _googleRecaptchaOption = googleRecaptchaOption.Value;
         _sendVerifierCodeRequestLimitOptions = sendVerifierCodeRequestLimitOptions.Value;
@@ -70,13 +72,9 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
 
     public async Task<bool> IsGoogleRecaptchaTokenValidAsync(string recaptchaToken, PlatformType platformType)
     {
-        var platformTypeName = platformType.ToString();
-        var getSuccess = _googleRecaptchaOption.SecretMap.TryGetValue(platformTypeName, out var secret);
-        if (!getSuccess)
-        {
-            throw new UserFriendlyException("Google Recaptcha Secret Not Found");
-        }
-
+        var key = Signature.Provider.Dtos.SecurityKey.GoogleRecaptcha + platformType;
+        var secret = await _secretProvider.GetSecretWithCacheAsync(key); 
+        
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");

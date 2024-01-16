@@ -1,17 +1,10 @@
 using System.IO;
-using System.Net;
-using System.Threading;
-using Amazon.S3;
-using Amazon.S3.Model;
 using CAServer.amazon;
 using CAServer.Amazon;
-using CAServer.Common;
-using CAServer.Commons;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
-using Shouldly;
 using Xunit;
 using Xunit.Abstractions;
 
