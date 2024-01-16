@@ -199,7 +199,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            }
         };
 
         var result = await _userActivityAppService.GetActivitiesAsync(param);
@@ -218,7 +225,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
             TransactionTypes = new List<string>() { "ContractTypes" }
         };
 
@@ -230,8 +244,8 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         data.TransactionFees.First().Decimals.ShouldBe("8");
     }
-    
-    
+
+
     [Fact]
     public async Task GetActivitiesTransferTypesTest()
     {
@@ -239,7 +253,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
             TransactionTypes = new List<string>() { "TransferTypes" }
         };
 
@@ -259,7 +280,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
             TransactionTypes = new List<string>() { "TEST" }
         };
 

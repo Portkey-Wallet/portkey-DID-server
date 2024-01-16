@@ -74,5 +74,6 @@ public static class CommonConstant
 
     public const string ProtocolName = "http";
     public const string UrlSegmentation = "?";
+    public const string UpgradeGrainIdPrefix = "UpgradeInfo";
 
 }
