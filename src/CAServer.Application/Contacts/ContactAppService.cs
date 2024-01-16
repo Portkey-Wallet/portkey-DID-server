@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Contacts.Provider;
@@ -16,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -38,15 +40,20 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly VariablesOptions _variablesOptions;
     private readonly HostInfoOptions _hostInfoOptions;
     private readonly IImRequestProvider _imRequestProvider;
+    private readonly IContractProvider _contractProvider;
+    private readonly ChainOptions _chainOptions;
 
-    public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
+    public ContactAppService(IDistributedEventBus distributedEventBus,
+        IClusterClient clusterClient,
         IHttpContextAccessor httpContextAccessor,
         IContactProvider contactProvider,
         IOptionsSnapshot<ImServerOptions> imServerOptions,
         IHttpClientService httpClientService,
         IOptions<VariablesOptions> variablesOptions,
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions,
-        IImRequestProvider imRequestProvider)
+        IImRequestProvider imRequestProvider,
+        IOptionsSnapshot<ChainOptions> chainOptions,
+        IContractProvider contractProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -57,6 +64,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _hostInfoOptions = hostInfoOptions.Value;
         _httpClientService = httpClientService;
         _imRequestProvider = imRequestProvider;
+        _contractProvider = contractProvider;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task<ContactResultDto> CreateAsync(CreateUpdateContactDto input)
@@ -70,6 +79,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
+        await CheckContactAsync(contactDto);
+
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
         var result =
             await contactGrain.AddContactAsync(userId,
@@ -132,11 +143,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId, id, isUpdate);
         var contactDto = await GetContactDtoAsync(input, id);
+        await CheckContactAsync(contactDto);
 
         var result =
             await contactGrain.UpdateContactAsync(userId,
                 ObjectMapper.Map<ContactDto, ContactGrainDto>(contactDto));
-
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
@@ -848,5 +859,45 @@ public class ContactAppService : CAServerAppService, IContactAppService
         Logger.LogDebug("[contact merge update] merge update end, data:{data}",
             JsonConvert.SerializeObject(imputationResult.Data));
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(imputationResult.Data);
+    }
+
+    private async Task CheckContactAsync(ContactDto contact)
+    {
+        if (contact.ImInfo != null && contact.CaHolderInfo == null)
+        {
+            throw new UserFriendlyException("add contact fail.");
+        }
+
+        if (contact.ImInfo != null && contact.Addresses.Count < _chainOptions.ChainInfos.Keys.Count)
+        {
+            var chainIds = contact.Addresses.Select(t => t.ChainId);
+
+            foreach (var chainInfo in _chainOptions.ChainInfos.Where(t => !chainIds.Contains(t.Key)))
+            {
+                var result = await GetAddressAsync(chainInfo.Key, contact.CaHolderInfo.CaHash);
+                if (result == null) continue;
+
+                contact.Addresses.Add(new ContactAddressDto()
+                {
+                    Address = result.CaAddress.ToBase58(),
+                    ChainId = chainInfo.Key
+                });
+            }
+        }
+    }
+
+    private async Task<GetHolderInfoOutput> GetAddressAsync(string chainId, string caHash)
+    {
+        try
+        {
+            return await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "get holder error, caHash:{caHash}, chainId:{chainId}", caHash,
+                chainId);
+
+            return null;
+        }
     }
 }
