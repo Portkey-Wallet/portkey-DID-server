@@ -1,26 +1,26 @@
-using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
 using Amazon;
 using Amazon.CognitoIdentity;
 using Amazon.S3;
 using Amazon.S3.Model;
 using CAServer.Amazon;
+using CAServer.Signature.Provider;
+using Volo.Abp.DependencyInjection;
 
 namespace CAServer.amazon;
-
-using System.Net;
-using Volo.Abp.DependencyInjection;
 
 public class AwsS3Client : ISingletonDependency
 {
     private readonly AwsS3Option _awsS3Option;
-
+    private readonly ISecretProvider _secretProvider;
     private  AmazonS3Client _amazonS3Client;
 
-    public AwsS3Client(AwsS3Option awsS3Option)
+    public AwsS3Client(AwsS3Option awsS3Option, ISecretProvider secretProvider)
     {
         _awsS3Option = awsS3Option;
+        _secretProvider = secretProvider;
         InitAmazonS3Client();
     }
 

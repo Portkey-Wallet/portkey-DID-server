@@ -7,6 +7,7 @@ using AElf.Types;
 using CAServer.Chain;
 using CAServer.Common;
 using CAServer.Options;
+using CAServer.Signature.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;

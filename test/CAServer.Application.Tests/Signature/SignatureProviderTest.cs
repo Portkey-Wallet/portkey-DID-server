@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Signature.Options;
+using CAServer.Signature.Provider;
 using CAServer.VerifierCode;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

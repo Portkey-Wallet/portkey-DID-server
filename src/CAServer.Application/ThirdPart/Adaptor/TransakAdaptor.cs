@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;

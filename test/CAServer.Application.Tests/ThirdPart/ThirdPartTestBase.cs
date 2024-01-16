@@ -1,19 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Types;
+using CAServer.Common;
 using CAServer.Commons;
-using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Transak;
 using CAServer.Tokens.Provider;
-using GraphQL;
-using GraphQL.Client.Abstractions;
-using GraphQL.Client.Http;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -55,10 +51,8 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             Alchemy = new AlchemyOptions()
             {
                 AppId = "ramp",
-                AppSecret = "rampTest",
                 BaseUrl = "http://localhost:9200/book/_search",
                 NftAppId = "test",
-                NftAppSecret = "testTest",
                 NftBaseUrl = "http://localhost:9200/book/_search",
                 UpdateSellOrderUri = "/webhooks/off/merchant",
                 FiatListUri = "/merchant/fiat/list",
@@ -70,7 +64,6 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             Transak = new TransakOptions
             {
                 AppId = "transakAppId",
-                AppSecret = "transakAppSecret",
                 BaseUrl = "http://127.0.0.1:9200"
             },
             OrderExportAuth = new OrderExportAuth
@@ -192,15 +185,15 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
         return optionMock.Object;
     }
 
-    protected MassTransit.IBus MockMassTransitIBus()
+    protected IBus MockMassTransitIBus()
     {
-        var mockContractProvider = new Mock<MassTransit.IBus>();
+        var mockContractProvider = new Mock<IBus>();
         return mockContractProvider.Object;
     }
 
-    protected CAServer.Common.IContractProvider MockContractProvider()
+    protected IContractProvider MockContractProvider()
     {
-        var mockContractProvider = new Mock<CAServer.Common.IContractProvider>();
+        var mockContractProvider = new Mock<IContractProvider>();
         mockContractProvider
             .Setup(p =>
                 p.SendRawTransactionAsync("AELF", It.IsAny<string>()))

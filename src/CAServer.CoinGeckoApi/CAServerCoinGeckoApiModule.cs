@@ -13,11 +13,6 @@ public class CAServerCoinGeckoApiModule : AbpModule
     {
         var configuration = context.Services.GetConfiguration();
         Configure<CoinGeckoOptions>(configuration.GetSection("CoinGecko"));
-        context.Services.AddHttpClient("CoinGeckoPro", client =>
-        {
-            client.BaseAddress = new Uri(configuration["CoinGecko:BaseUrl"]);
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("x-cg-pro-api-key", configuration["CoinGecko:ApiKey"]);
-        });
+        context.Services.AddHttpClient();
     }
 }

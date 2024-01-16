@@ -1,36 +1,22 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using AElf.Indexing.Elasticsearch;
 using CAServer.amazon;
 using CAServer.Amazon;
-using CAServer.CAActivity;
-using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Entities.Es;
-using CAServer.Google;
 using CAServer.Grains.Grain.Svg;
-using CAServer.Grains.Grain.Svg.Dtos;
 using CAServer.Image.Dto;
 using CAServer.Options;
-using CAServer.Settings;
-using CAServer.Tokens;
-using CAServer.UserAssets.Dtos;
-using CAServer.Verifier;
-using Elasticsearch.Net;
-using GraphQL;
+using CAServer.Signature.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
 using Orleans;
-using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.UserAssets.Provider;
@@ -39,6 +25,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
 {
     private readonly ILogger<ImageProcessProvider> _logger;
     private readonly AwsThumbnailOptions _awsThumbnailOptions;
+    private readonly ISecretProvider _secretProvider;
     private readonly IOptionsMonitor<AwsS3Option> _awsS3Option;
     private readonly IClusterClient _clusterClient;
 
@@ -48,12 +35,13 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
     public ImageProcessProvider(ILogger<ImageProcessProvider> logger,
         IOptions<AwsThumbnailOptions> awsThumbnailOptions,
         IOptionsMonitor<AwsS3Option> awsS3Option,
-        IClusterClient clusterClient)
+        IClusterClient clusterClient, ISecretProvider secretProvider)
     {
         _logger = logger;
         _awsS3Option = awsS3Option;
         _awsThumbnailOptions = awsThumbnailOptions.Value;
         _clusterClient = clusterClient;
+        _secretProvider = secretProvider;
     }
 
     public async Task<string> GetResizeImageAsync(string imageUrl, int width, int height, ImageResizeType type)
@@ -137,7 +125,7 @@ public class ImageProcessProvider : IImageProcessProvider, ISingletonDependency
         }
 
         //upload the svg to amazon and get its url
-        var client = new AwsS3Client(_awsS3Option.CurrentValue);
+        var client = new AwsS3Client(_awsS3Option.CurrentValue, _secretProvider);
         var byteData = Encoding.UTF8.GetBytes(svg);
         try
         {

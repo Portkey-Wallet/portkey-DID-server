@@ -13,13 +13,11 @@ public sealed partial class AlchemyOrderAppServiceTest
             Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
-                AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
             },
             Transak = new TransakOptions
             {
                 AppId = "transakAppId",
-                AppSecret = "transakAppSecret",
                 BaseUrl = "http://127.0.0.1:9200"
             },
             Timer = new ThirdPartTimerOptions()

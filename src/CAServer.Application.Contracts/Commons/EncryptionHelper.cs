@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using AElf;
 
-namespace CAServer.Common;
+namespace CAServer.Commons;
 
 public static class EncryptionHelper
 {
@@ -65,10 +65,8 @@ public static class EncryptionHelper
         aesAlg.Mode = CipherMode.CBC;
         aesAlg.Padding = PaddingMode.PKCS7;
         aesAlg.Key = new Rfc2898DeriveBytes(password, salt ?? new byte[16], Iterations).GetBytes(KeySize / 8);
-        if (!salt.IsNullOrEmpty()) 
-            aesAlg.GenerateIV();
-        else
-            aesAlg.IV = new Rfc2898DeriveBytes(password, salt ?? new byte[16], IvIterations).GetBytes(BlockSize / 8);
+        if (salt.IsNullOrEmpty()) 
+            aesAlg.IV = new Rfc2898DeriveBytes(password, new byte[16], IvIterations).GetBytes(BlockSize / 8);
         var encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
         using var msEncrypt = new MemoryStream();
         msEncrypt.Write(aesAlg.IV, 0, aesAlg.IV.Length);

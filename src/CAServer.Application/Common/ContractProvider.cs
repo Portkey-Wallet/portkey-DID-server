@@ -12,6 +12,7 @@ using CAServer.Monitor;
 using CAServer.Options;
 using CAServer.RedPackage;
 using CAServer.Signature;
+using CAServer.Signature.Provider;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;

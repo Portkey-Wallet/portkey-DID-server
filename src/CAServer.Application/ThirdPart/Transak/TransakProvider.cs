@@ -6,15 +6,17 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Common;
-using CAServer.Common.Dtos;
 using CAServer.Commons;
 using CAServer.Grains.Grain.Svg;
 using CAServer.Grains.Grain.Svg.Dtos;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Grains.State.ThirdPart;
+using CAServer.Http;
+using CAServer.Http.Dtos;
 using CAServer.Options;
 using CAServer.SecurityServer;
+using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
@@ -193,7 +195,7 @@ public class TransakProvider
     {
         // cacheData not exists or force
         var apiKey = GetApiKey();
-        var secret = await _secretProvider.GetSecretAsync(apiKey);
+        var secret = await _secretProvider.GetSecretWithCacheAsync(apiKey);
         var accessTokenResp = await _httpProvider.InvokeAsync<TransakMetaResponse<object, TransakAccessToken>>(
             TransakOptions().BaseUrl,
             TransakApi.RefreshAccessToken,
@@ -328,7 +330,7 @@ public class TransakProvider
     public async Task<TransakOrderDto> GetOrderByIdAsync(string orderId)
     {
         var apiKey = GetApiKey();
-        var secret = await _secretProvider.GetSecretAsync(apiKey);
+        var secret = await _secretProvider.GetSecretWithCacheAsync(apiKey);
         var resp = await _httpProvider.InvokeAsync<QueryTransakOrderByIdResult>(TransakOptions().BaseUrl,
             TransakApi.GetOrderById,
             pathParams: new Dictionary<string, string> { ["orderId"] = orderId },

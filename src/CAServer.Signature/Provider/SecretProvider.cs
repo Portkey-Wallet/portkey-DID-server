@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Options;
+using CAServer.Http;
 using CAServer.SecurityServer.Dtos;
+using CAServer.Signature.Options;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,18 +11,16 @@ using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using HttpMethod = System.Net.Http.HttpMethod;
 
-namespace CAServer.SecurityServer;
+namespace CAServer.Signature.Provider;
 
 public interface ISecretProvider
 {
     Task<string> GetSecretWithCacheAsync(string key);
-    Task<string> GetSecretAsync(string key);
     Task<string> GetAlchemyAesSignAsync(string key, string source);
     Task<string> GetAlchemyShaSignAsync(string key, string source);
     Task<string> GetAlchemyHmacSignAsync(string key, string source);
-    Task<string> GetAppleAuthSignatureAsync(string key, string keyId, string teamId, string clientId);
+    Task<string> GetAppleAuthSignatureAsync(string key, string teamId, string clientId);
 }
-
 
 public class SecretProvider : ISecretProvider, ITransientDependency
 {
@@ -49,9 +46,8 @@ public class SecretProvider : ISecretProvider, ITransientDependency
 
     private string Uri(string path)
     {
-        return _signatureOption.CurrentValue.BaseUrl + path;
+        return _signatureOption.CurrentValue.BaseUrl.TrimEnd('/') + path;
     }
-
 
     public async Task<string> GetSecretWithCacheAsync(string key)
     {
@@ -62,86 +58,92 @@ public class SecretProvider : ISecretProvider, ITransientDependency
         });
     }
 
-
-    public async Task<string> GetSecretAsync(string key)
+    private async Task<string> GetSecretAsync(string key)
     {
-        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Get, Uri(GetSecurityUri),
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Get,
+            Uri(GetSecurityUri),
             param: new Dictionary<string, string>
             {
                 ["key"] = key
             },
             header: SecurityServerHeader(key));
-        AssertHelper.NotNull(resp, "Secret response empty");
-        AssertHelper.IsTrue(resp.Success, "Secret response failed {}", resp.Message);
-        AssertHelper.NotNull(resp.Data, "Secret response data empty");
+        AssertHelper.NotNull(resp?.Data, "Secret response data empty");
+        AssertHelper.IsTrue(resp!.Success, "Secret response failed {}", resp.Message);
         AssertHelper.NotEmpty(resp.Data.Value, "Secret empty");
         return EncryptionHelper.DecryptFromHex(resp.Data.Value, _signatureOption.CurrentValue.AppSecret);
     }
 
     public async Task<string> GetAlchemyAesSignAsync(string key, string source)
     {
-        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post, Uri(AlchemyPayAes),
-            body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput()
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post,
+            Uri(AlchemyPayAes),
+            body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput
             {
                 Key = key,
                 BizData = source
             }, HttpProvider.DefaultJsonSettings),
             header: SecurityServerHeader(key));
-        AssertHelper.NotNull(resp, "Signature response empty");
-        AssertHelper.IsTrue(resp.Success, "Signature response failed {}", resp.Message);
-        AssertHelper.NotNull(resp.Data, "Signature response data empty");
+        AssertHelper.NotNull(resp?.Data, "Signature response data empty");
+        AssertHelper.IsTrue(resp!.Success, "Signature response failed {}", resp.Message);
         AssertHelper.NotEmpty(resp.Data.Value, "Signature empty");
+        _logger.LogDebug("GetAlchemyAesSignAsync source={Source}, key={Key}, sign={Value}", source, key,
+            resp.Data.Value);
         return resp.Data.Value;
     }
-    
+
     public async Task<string> GetAlchemyShaSignAsync(string key, string source)
     {
-        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post, Uri(AlchemyPaySha),
-            body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput()
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post,
+            Uri(AlchemyPaySha),
+            body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput
             {
                 Key = key,
                 BizData = source
             }, HttpProvider.DefaultJsonSettings),
             header: SecurityServerHeader(key));
-        AssertHelper.NotNull(resp, "Signature response empty");
-        AssertHelper.IsTrue(resp.Success, "Signature response failed {}", resp.Message);
-        AssertHelper.NotNull(resp.Data, "Signature response data empty");
+        AssertHelper.NotNull(resp?.Data, "Signature response data empty");
+        AssertHelper.IsTrue(resp!.Success, "Signature response failed {}", resp.Message);
         AssertHelper.NotEmpty(resp.Data.Value, "Signature empty");
+        _logger.LogDebug("GetAlchemyShaSignAsync source={Source}, key={Key}, sign={Value}", source, key,
+            resp.Data.Value);
         return resp.Data.Value;
     }
 
     public async Task<string> GetAlchemyHmacSignAsync(string key, string source)
     {
-        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post, Uri(AlchemyPayHmac),
-            body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput()
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post,
+            Uri(AlchemyPayHmac),
+            body: JsonConvert.SerializeObject(new CommonThirdPartExecuteInput
             {
                 Key = key,
                 BizData = source
             }, HttpProvider.DefaultJsonSettings),
             header: SecurityServerHeader(key));
-        AssertHelper.NotNull(resp, "Signature response empty");
-        AssertHelper.IsTrue(resp.Success, "Signature response failed {}", resp.Message);
-        AssertHelper.NotNull(resp.Data, "Signature response data empty");
+        AssertHelper.NotNull(resp?.Data, "Signature response data empty");
+        AssertHelper.IsTrue(resp!.Success, "Signature response failed {}", resp.Message);
         AssertHelper.NotEmpty(resp.Data.Value, "Signature empty");
+        _logger.LogDebug("GetAlchemyHmacSignAsync source={Source}, key={Key}, sign={Value}", source, key,
+            resp.Data.Value);
         return resp.Data.Value;
     }
 
 
-    public async Task<string> GetAppleAuthSignatureAsync(string key, string keyId, string teamId, string clientId)
+    public async Task<string> GetAppleAuthSignatureAsync(string key, string teamId, string clientId)
     {
-        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post, Uri(AppleAuth),
-            body: JsonConvert.SerializeObject(new AppleAuthExecuteInput()
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Post,
+            Uri(AppleAuth),
+            body: JsonConvert.SerializeObject(new AppleAuthExecuteInput
             {
                 Key = key,
-                KeyId = keyId,
                 TeamId = teamId,
                 ClientId = clientId
             }, HttpProvider.DefaultJsonSettings),
-            header: SecurityServerHeader(key));
-        AssertHelper.NotNull(resp, "Signature response empty");
-        AssertHelper.IsTrue(resp.Success, "Signature response failed {}", resp.Message);
-        AssertHelper.NotNull(resp.Data, "Signature response data empty");
+            header: SecurityServerHeader(key, teamId, clientId));
+        AssertHelper.NotNull(resp?.Data, "Signature response data empty");
+        AssertHelper.IsTrue(resp!.Success, "Signature response failed {}", resp.Message);
         AssertHelper.NotEmpty(resp.Data.Value, "Signature empty");
+        _logger.LogDebug("GetAlchemyHmacSignAsync teamId={TeamId}, clientId={ClientId}, key={Key}, sign={Value}",
+            teamId, clientId, key, resp.Data.Value);
         return resp.Data.Value;
     }
 
