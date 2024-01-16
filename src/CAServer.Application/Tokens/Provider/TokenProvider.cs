@@ -12,6 +12,8 @@ namespace CAServer.Tokens.Provider;
 
 public interface ITokenProvider
 {
+    Task<IndexerToken> GetTokenInfoAsync(string chainId, string symbol);
+    
     Task<IndexerTokens> GetTokenInfosAsync(string chainId, string symbol, string symbolKeyword, int skipCount = 0,
         int maxResultCount = 200);
 
@@ -29,6 +31,12 @@ public class TokenProvider : ITokenProvider, ISingletonDependency
     {
         _graphQlHelper = graphQlHelper;
         _userTokenIndexRepository = userTokenIndexRepository;
+    }
+
+    public async Task<IndexerToken> GetTokenInfoAsync(string chainId, string symbol)
+    {
+        var tokens = await GetTokenInfosAsync(chainId, symbol.Trim().ToUpper(), string.Empty, 0, 1);
+        return tokens.TokenInfo.IsNullOrEmpty() ? null : tokens.TokenInfo[0];
     }
 
     public async Task<IndexerTokens> GetTokenInfosAsync(string chainId, string symbol, string symbolKeyword,

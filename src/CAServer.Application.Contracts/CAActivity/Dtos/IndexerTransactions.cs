@@ -34,6 +34,7 @@ public class IndexerTransaction
     public TransferInfo TransferInfo { get; set; }
     public string FromAddress { get; set; }
     public List<IndexerTransactionFee> TransactionFees { get; set; }
+    public bool IsManagerConsumer { get; set; }
 }
 
 public class TransferInfo

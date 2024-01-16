@@ -24,6 +24,7 @@ public class SignatureProviderTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(MockSignatureServerOptions());
         services.AddSingleton(GetMockHttpClientFactory());
     }

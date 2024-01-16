@@ -29,6 +29,7 @@ public class UserTokenHandlerTests : CAServerEntityEventHandlerTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockIGraphQLHelper());
         services.AddSingleton(GetMockAbpDistributedLock());
     }

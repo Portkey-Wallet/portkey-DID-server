@@ -33,6 +33,7 @@ public class CaHolderTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
         services.AddSingleton(_currentUser);
     }
@@ -53,6 +54,15 @@ public class CaHolderTest : CAServerApplicationTestBase
         });
 
         result.Nickname.ShouldBe("Tom");
+
+        var newNickName = "Amy";
+        var updateResult = await _nickNameAppService.UpdateHolderInfoAsync(new HolderInfoDto()
+        {
+            NickName = newNickName,
+            Avatar = "test"
+        });
+        
+        updateResult.Nickname.ShouldBe(newNickName);
     }
 
     [Fact]

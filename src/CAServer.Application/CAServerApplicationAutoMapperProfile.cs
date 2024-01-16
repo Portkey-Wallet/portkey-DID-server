@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AElf;
 using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
@@ -12,6 +13,7 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
+using CAServer.DataReporting.Dtos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -20,26 +22,43 @@ using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
+using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
+using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Guardian;
 using CAServer.Hubs;
+using CAServer.ImTransfer.Dtos;
+using CAServer.ImTransfer.Etos;
+using CAServer.ImUser.Dto;
 using CAServer.IpInfo;
 using CAServer.Message.Dtos;
 using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
+using CAServer.PrivacyPolicy.Dtos;
+using CAServer.RedPackage.Dtos;
+using CAServer.ThirdPart;
+using CAServer.Search.Dtos;
+using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.Order;
+using CAServer.ThirdPart.Dtos.Ramp;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
+using CAServer.Upgrade.Dtos;
+using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
+using CAServer.ValidateOriginChainId.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
@@ -167,7 +186,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.CollectionName))
             .ForMember(t => t.Balance, m => m.MapFrom(f => f.NftInfo == null ? null : f.Balance.ToString()))
             .ForMember(t => t.TokenContractAddress,
-                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.TokenContractAddress));
+                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.TokenContractAddress))
+            .ForMember(t => t.Decimals,
+                m => m.MapFrom(f => f.NftInfo == null ? null : f.NftInfo.Decimals.ToString()));
 
         // user activity
         CreateMap<IndexerTransaction, GetActivityDto>()
@@ -211,7 +232,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<GetHolderInfoOutput, GuardianResultDto>()
             .ForMember(t => t.CaHash, m => m.MapFrom(f => f.CaHash.ToHex()))
-            .ForMember(t => t.CaAddress, m => m.MapFrom(f => f.CaAddress.ToBase58()));
+            .ForMember(t => t.CaAddress, m => m.MapFrom(f => f.CaAddress.ToBase58()))
+            .ForMember(t => t.CreateChainId,
+                m => m.MapFrom(f =>
+                    f.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(f.CreateChainId) : string.Empty));
         // .ForPath(t => t.GuardianList, m => m.MapFrom(f => f.GuardianList.Guardians));
 
         CreateMap<RegisterRequestDto, RegisterDto>().BeforeMap((src, dest) =>
@@ -256,8 +280,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<Entities.Es.ContactAddress, UserContactAddressDto>();
         CreateMap<AppleUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, UserExtraInfoGrainDto>();
+        // CreateMap<TelegramUserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<GoogleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<AppleUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<TelegramUserExtraInfo, Verifier.Dtos.UserExtraInfo>()
+            .ForMember(t => t.FullName, m => m.MapFrom(f => f.UserName))
+            .ForMember(t => t.Picture, m => m.MapFrom(f => f.ProtoUrl));
         CreateMap<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoEto>();
         CreateMap<UserExtraInfoGrainDto, UserExtraInfoResultDto>()
@@ -395,5 +423,152 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
             .ReverseMap()
             ;
+
+        CreateMap<ValidateOriginChainIdGrainDto, ValidateOriginChainIdState>().ReverseMap();
+
+
+        CreateMap<PrivacyPolicyIndex, PrivacyPolicyDto>().ReverseMap();
+        CreateMap<PrivacyPolicySignDto, PrivacyPolicyDto>().ReverseMap();
+
+        CreateMap<UserDeviceReportingRequestDto, UserDeviceReportingDto>();
+        CreateMap<AppStatusReportingRequestDto, AppStatusReportingDto>();
+
+        CreateMap<CAHolderIndex, HolderInfoWithAvatar>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
+        CreateMap<CAHolderGrainDto, HolderInfoWithAvatar>()
+            .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
+        CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
+        CreateMap<CAHolderIndex, HolderInfoResultDto>();
+        
+        CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
+            .Ignore(des => des.MerchantName)
+            .ForMember(des => des.Address, opt => opt.MapFrom(src => src.UserAddress))
+            .ForMember(des => des.Crypto, opt => opt.MapFrom(src => src.PaymentSymbol))
+            .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.PaymentAmount));
+
+        CreateMap<CreateNftOrderRequestDto, NftOrderGrainDto>().ReverseMap();
+        CreateMap<OrderStatusInfoIndex, OrderStatusSection>().ReverseMap();
+
+
+        CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>().ReverseMap();
+        CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>().ReverseMap();
+
+        CreateMap<OrderEto, RampOrderIndex>().ReverseMap();
+        CreateMap<OrderEto, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
+
+        CreateMap<RampOrderIndex, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
+
+        CreateMap<OrderGrainDto, NotifyOrderDto>()
+            .ForMember(des => des.OrderId, opt => opt.MapFrom(src => src.Id.ToString()));
+
+        CreateMap<NftOrderIndex, NftOrderSectionDto>()
+            .ForMember(des => des.ExpireTime, opt => opt.MapFrom(src => src.ExpireTime.ToUtcMilliSeconds()))
+            .ForMember(des => des.CreateTime, opt => opt.MapFrom(src => src.CreateTime.ToUtcMilliSeconds()));
+
+        CreateMap<OrderSettlementGrainDto, OrderSettlementIndex>().ReverseMap();
+        CreateMap<NftOrderGrainDto, NftOrderIndex>();
+        CreateMap<NftOrderIndex, NftOrderQueryResponseDto>();
+        CreateMap<NftOrderSectionDto, NftOrderQueryResponseDto>();
+        CreateMap<OrderSettlementIndex, OrderSettlementSectionDto>().ReverseMap();
+        CreateMap<OrderDto, NftOrderQueryResponseDto>()
+            .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
+            .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));
+CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
+        CreateMap<Portkey.Contracts.CA.Guardian, GuardianIndexerInfoDto>()
+            .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
+            .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
+        CreateMap<RedPackageIndex, RedPackageDetailDto>()
+            .ForMember(dest => dest.Items, opt => opt.Ignore())
+            .ForMember(dest => dest.TotalAmount,
+                opt => opt.MapFrom(src => src.TotalAmount.ToString()))
+            .ReverseMap()
+            .ForMember(dest => dest.TotalAmount,
+                opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
+        CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
+        CreateMap<UserTokenIndex, UserTokenIndexDto>()
+            .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
+        CreateMap<ImTransferDto, TransferGrainDto>();
+        CreateMap<TransferGrainDto, TransferIndex>();
+        CreateMap<TransferIndex, TransferResultDto>().ForMember(t => t.Status,
+            m => m.MapFrom(f => Enum.Parse(typeof(TransferTransactionStatus), f.TransactionStatus)));
+        CreateMap<TransferIndex, TransferEto>().ReverseMap();
+
+        
+        CreateMap<ThirdPartProvider, RampCoverageDto>().ReverseMap();
+        CreateMap<CryptoItem, RampCurrencyItem>().ReverseMap();
+        CreateMap<AlchemyOrderQuoteDataDto, RampPriceDto>()
+            .ForMember(des => des.FiatAmount, opt => opt.MapFrom(src => src.FiatQuantity))
+            .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.CryptoQuantity))
+            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.CryptoPrice))
+            .ReverseMap();
+        CreateMap<AlchemyOrderQuoteDataDto, ProviderRampDetailDto>()
+            .ForMember(des => des.FiatAmount, opt => opt.MapFrom(src => src.FiatQuantity))
+            .ForMember(des => des.CryptoAmount, opt => opt.MapFrom(src => src.CryptoQuantity))
+            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.CryptoPrice))
+            .ReverseMap();
+        CreateMap<RampDetailRequest, GetAlchemyOrderQuoteDto>()
+            .Ignore(des => des.Type)
+            .ForMember(des => des.Side, opt => opt.MapFrom(src => src.Type))
+            .ForMember(des => des.Amount,
+                opt => opt.MapFrom(src =>
+                    src.Type == OrderTransDirect.BUY.ToString() ? src.FiatAmount : src.CryptoAmount))
+            .ReverseMap();
+        CreateMap<RampExchangeRequest, GetAlchemyOrderQuoteDto>()
+            .Ignore(des => des.Type)
+            .ForMember(des => des.Side, opt => opt.MapFrom(src => src.Type))
+            .ReverseMap();
+        CreateMap<RampLimitRequest, GetAlchemyOrderQuoteDto>()
+            .Ignore(des => des.Type)
+            .ForMember(des => des.Side, opt => opt.MapFrom(src => src.Type))
+            .ReverseMap();
+        CreateMap<TransakRampPrice, RampPriceDto>()
+            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.FiatCryptoExchange()))
+            .ReverseMap();
+        CreateMap<TransakRampPrice, ProviderRampDetailDto>()
+            .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.FiatCryptoExchange()))
+            .ForMember(des => des.ProviderNetwork, opt => opt.MapFrom(src => src.Network))
+            .ReverseMap();
+        CreateMap<RampExchangeRequest, RampDetailRequest>().ReverseMap();
+        CreateMap<RampLimitRequest, RampDetailRequest>().ReverseMap();
+        CreateMap<RampPriceDto, ProviderRampDetailDto>().ReverseMap();
+        CreateMap<RampFiatItem, DefaultFiatCurrency>().ReverseMap();
+        CreateMap<ThirdPartProvider, RampProviderDto>()
+            .ForMember(des => des.CallbackUrl, opt => opt.MapFrom(src => src.WebhookUrl))
+            .ReverseMap();
+        CreateMap<ProviderCoverage, RampProviderCoverageDto>()
+            .ForMember(des => des.Buy, opt => opt.MapFrom(src => src.OnRamp))
+            .ForMember(des => des.Sell, opt => opt.MapFrom(src => src.OffRamp))
+            .ReverseMap();
+        CreateMap<RampDetailRequest, GetRampPriceRequest>()
+            .ForMember(des => des.IsBuyOrSell, opt => opt.MapFrom(src => src.Type))
+            .ForMember(des => des.FiatCurrency, opt => opt.MapFrom(src => src.Fiat))
+            .ForMember(des => des.CryptoCurrency, opt => opt.MapFrom(src => src.Crypto))
+            .ReverseMap();
+        CreateMap<TransakOrderDto, OrderDto>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => Guid.Parse(f.PartnerOrderId)))
+            .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.Id))
+            .ForMember(t => t.TransDirect, m
+                => m.MapFrom(f =>
+                    f.IsBuy() ? TransferDirectionType.TokenBuy.ToString() : TransferDirectionType.TokenSell.ToString()))
+            .ForMember(t => t.Address, m => m.MapFrom(f => f.WalletAddress))
+            .ForMember(t => t.Crypto, m => m.MapFrom(f => f.Cryptocurrency))
+            .ForMember(t => t.CryptoAmount, m => m.MapFrom(f => f.CryptoAmount))
+            .ForMember(t => t.Fiat, m => m.MapFrom(f => f.FiatCurrency))
+            .ForMember(t => t.FiatAmount, m => m.MapFrom(f => f.FiatAmount))
+            .ForMember(t => t.Status, m => m.MapFrom(f => f.Status))
+            ;
+        CreateMap<QueryAlchemyOrderInfo, OrderDto>().ReverseMap();
+        CreateMap<TelegramAuthReceiveRequest, TelegramAuthDto>()
+            .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
+            .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
+            .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
+            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
+
+
+        CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
+        CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
+        CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
     }
 }

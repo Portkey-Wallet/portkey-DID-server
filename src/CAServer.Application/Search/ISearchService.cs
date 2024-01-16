@@ -5,12 +5,15 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using AElf.Indexing.Elasticsearch.Options;
 using CAServer.Entities.Es;
+using CAServer.Search.Dtos;
+using CAServer.UserAssets;
 using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Domain.Entities;
+using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Search;
 
@@ -26,14 +29,14 @@ public abstract class SearchService<TEntity, TKey> : ISearchService
 {
     public abstract string IndexName { get; }
 
-    private readonly INESTRepository<TEntity, TKey> _nestRepository;
+    protected readonly INESTRepository<TEntity, TKey> _nestRepository;
 
     protected SearchService(INESTRepository<TEntity, TKey> nestRepository)
     {
         _nestRepository = nestRepository;
     }
 
-    public async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
+    public virtual async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
     {
         Func<SortDescriptor<TEntity>, IPromise<IList<ISort>>> sort = null;
         if (!string.IsNullOrEmpty(input.Sort))
@@ -60,7 +63,7 @@ public abstract class SearchService<TEntity, TKey> : ISearchService
         }, Formatting.None, serializeSetting);
     }
 
-    private static IEnumerable<SortType> ConvertSortOrder(string sort)
+    protected static IEnumerable<SortType> ConvertSortOrder(string sort)
     {
         var sortList = new List<SortType>();
         foreach (var sortOrder in sort.Split(","))
@@ -92,13 +95,65 @@ public abstract class SearchService<TEntity, TKey> : ISearchService
 public class UserTokenSearchService : SearchService<UserTokenIndex, Guid>
 {
     private readonly IndexSettingOptions _indexSettingOptions;
+    private readonly IObjectMapper _objectMapper;
+    private readonly IAssetsLibraryProvider _assetsLibraryProvider;
 
     public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.usertokenindex";
 
     public UserTokenSearchService(INESTRepository<UserTokenIndex, Guid> nestRepository,
-        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions, IObjectMapper objectMapper,
+        IOptionsSnapshot<IndexSettingOptions> optionsSnapshot, IAssetsLibraryProvider assetsLibraryProvider) : base(nestRepository)
     {
         _indexSettingOptions = indexSettingOptions.Value;
+        _objectMapper = objectMapper;
+        _indexSettingOptions = optionsSnapshot.Value;
+        _assetsLibraryProvider = assetsLibraryProvider;
+    }
+    
+    public override async Task<string> GetListByLucenceAsync(string indexName, GetListInput input)
+    {
+        Func<SortDescriptor<UserTokenIndex>, IPromise<IList<ISort>>> sort = null;
+        if (!string.IsNullOrEmpty(input.Sort))
+        {
+            var sortList = ConvertSortOrder(input.Sort);
+            var sortDescriptor = new SortDescriptor<UserTokenIndex>();
+            sortDescriptor = sortList.Aggregate(sortDescriptor,
+                (current, sortType) => current.Field(new Field(sortType.SortField), sortType.SortOrder));
+            sort = s => sortDescriptor;
+        }
+
+        var (totalCount, items) = await _nestRepository.GetListByLucenceAsync(input.Filter, sort,
+            input.MaxResultCount,
+            input.SkipCount, indexName);
+        
+        //If the queried index is "usertokenindex", add Token ImageUrl information.
+        List<UserTokenIndexDto> userTokenIndexDtos = null;
+        if (items != null)
+        {
+            userTokenIndexDtos = new List<UserTokenIndexDto>();
+            foreach (UserTokenIndex item in items)
+            {
+                var userTokenIndexDto =
+                    _objectMapper.Map<UserTokenIndex, UserTokenIndexDto>(item);
+                if (userTokenIndexDto.Token != null)
+                {
+                    userTokenIndexDto.Token.ImageUrl =
+                        _assetsLibraryProvider.buildSymbolImageUrl(userTokenIndexDto.Token.Symbol);
+                }
+
+                userTokenIndexDtos.Add(userTokenIndexDto);
+            }
+        }
+
+        var serializeSetting = new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        };
+        return JsonConvert.SerializeObject(new PagedResultDto<UserTokenIndexDto>
+        {
+            Items = userTokenIndexDtos,
+            TotalCount = totalCount
+        }, Formatting.None, serializeSetting);
     }
 }
 

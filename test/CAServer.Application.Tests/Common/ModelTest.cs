@@ -3,6 +3,7 @@ using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.IpInfo;
 using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.Verifier;
 using Shouldly;
 using Xunit;
@@ -118,7 +119,7 @@ public class ModelTest
             Type = string.Empty
         };
 
-        var responseDto = new AlchemyOrderQuoteResultDto
+        var responseDto = new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>()
         {
             Data = new AlchemyOrderQuoteDataDto()
             {
@@ -132,7 +133,7 @@ public class ModelTest
             }
         };
 
-        var dtos = new AlchemyCryptoListDto
+        var dtos = new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>()
         {
             Data = new List<AlchemyCryptoDto>()
             {
@@ -152,7 +153,7 @@ public class ModelTest
             }
         };
 
-        var fiatListDto = new AlchemyFiatListDto
+        var fiatListDto = new AlchemyBaseResponseDto<List<AlchemyFiatDto>>()
         {
             Data = new List<AlchemyFiatDto>()
             {
@@ -170,7 +171,7 @@ public class ModelTest
             }
         };
 
-        var tokenDto = new AlchemyTokenDto
+        var tokenDto = new AlchemyBaseResponseDto<AlchemyTokenDataDto>()
         {
             Data = new AlchemyTokenDataDto()
             {

@@ -6,6 +6,8 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
+using CAServer.Monitor;
+using CAServer.Monitor.Logger;
 using CAServer.Signature;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -57,14 +59,13 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         {
             hostBuilder.ConfigureServices(services =>
                 {
-
                     var mockTokenProvider = new Mock<ITokenPriceProvider>();
                     mockTokenProvider.Setup(o => o.GetPriceAsync(It.IsAny<string>()))
                         .ReturnsAsync(123);
-                    mockTokenProvider.Setup(o => o.GetHistoryPriceAsync(It.IsAny<string>(),It.IsAny<string>()))
+                    mockTokenProvider.Setup(o => o.GetHistoryPriceAsync(It.IsAny<string>(), It.IsAny<string>()))
                         .ReturnsAsync(123);
                     services.AddSingleton<ITokenPriceProvider>(mockTokenProvider.Object);
-                    
+
                     var mockSignatureProvider = new Mock<ISignatureProvider>();
                     mockSignatureProvider.Setup(o => o.SignTxMsg(It.IsAny<string>(), It.IsAny<string>()))
                         .ReturnsAsync("123");
@@ -78,7 +79,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                 "AELF", new Grains.Grain.ApplicationHandler.ChainInfo
                                 {
                                     ChainId = "AELF",
-                                    BaseUrl = "url",
+                                    BaseUrl = "http://192.168.66.61:8000",
                                     ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     CrossChainContractAddress =
@@ -91,7 +92,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                 "tDVV", new Grains.Grain.ApplicationHandler.ChainInfo
                                 {
                                     ChainId = "tDVV",
-                                    BaseUrl = "url",
+                                    BaseUrl = "http://192.168.67.18:8000",
                                     ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     CrossChainContractAddress =
@@ -128,6 +129,15 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                     services.AddSingleton(typeof(DistributedCache<>));
                     services.AddSingleton(typeof(IDistributedCache<>), typeof(DistributedCache<>));
                     services.AddSingleton(typeof(IDistributedCache<,>), typeof(DistributedCache<,>));
+                    services.Configure<IndicatorOptions>(o =>
+                    {
+                        o.IsEnabled = false;
+                        o.Module = "test";
+                        o.Application = "test";
+                    });
+                    services.AddSingleton<IMonitorLogger, MonitorLogger>();
+                    services.AddSingleton<IIndicatorLogger, IndicatorLogger>();
+                    services.AddSingleton<IIndicatorScope, IndicatorScope>();
                     services.Configure<AbpDistributedCacheOptions>(cacheOptions =>
                     {
                         cacheOptions.GlobalCacheEntryOptions.SlidingExpiration = TimeSpan.FromMinutes(20);

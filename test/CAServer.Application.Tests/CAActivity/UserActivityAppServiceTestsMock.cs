@@ -21,7 +21,7 @@ namespace CAServer.CAActivity;
 
 public partial class UserActivityAppServiceTests
 {
-    private IActivityProvider GetMockActivityProvider()
+    public static IActivityProvider GetMockActivityProvider()
     {
         var mockActivityProvider = new Mock<IActivityProvider>();
 
@@ -52,13 +52,18 @@ public partial class UserActivityAppServiceTests
                                     Symbol = "ELF",
                                     Amount = 100
                                 }
+                            },
+                            NftInfo = new NftInfo()
+                            {
+                                Symbol = "ELF"
                             }
                         }
                     }
                 }
             });
 
-        mockActivityProvider.Setup(m => m.GetActivityAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(
+        mockActivityProvider.Setup(m => m.GetActivitiesAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(),
+            It.IsAny<string>(), new List<string>() { "ContractTypes" }, It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
             new IndexerTransactions
             {
                 CaHolderTransaction = new CaHolderTransaction
@@ -73,7 +78,7 @@ public partial class UserActivityAppServiceTests
                             ChainId = "AELF",
                             FromAddress = "From",
                             Id = "id",
-                            MethodName = "methodName",
+                            MethodName = "ContractTypes",
                             Status = "status",
                             Timestamp = 1000,
                             TransactionId = "id",
@@ -89,6 +94,71 @@ public partial class UserActivityAppServiceTests
                     }
                 }
             });
+        mockActivityProvider.Setup(m => m.GetActivitiesAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(),
+            It.IsAny<string>(), new List<string>() { "TransferTypes" }, It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            new IndexerTransactions
+            {
+                CaHolderTransaction = new CaHolderTransaction
+                {
+                    TotalRecordCount = 1,
+                    Data = new List<IndexerTransaction>
+                    {
+                        new()
+                        {
+                            BlockHash = "BlockHash",
+                            BlockHeight = 100,
+                            ChainId = "AELF",
+                            FromAddress = "From",
+                            Id = "id",
+                            MethodName = "TransferTypes",
+                            Status = "status",
+                            Timestamp = 1000,
+                            TransactionId = "id",
+                            TransactionFees = new List<IndexerTransactionFee>
+                            {
+                                new()
+                                {
+                                    Symbol = "ELF",
+                                    Amount = 100
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        mockActivityProvider
+            .Setup(m => m.GetActivityAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<List<CAAddressInfo>>()))
+            .ReturnsAsync(
+                new IndexerTransactions
+                {
+                    CaHolderTransaction = new CaHolderTransaction
+                    {
+                        TotalRecordCount = 1,
+                        Data = new List<IndexerTransaction>
+                        {
+                            new()
+                            {
+                                BlockHash = "BlockHash",
+                                BlockHeight = 100,
+                                ChainId = "AELF",
+                                FromAddress = "From",
+                                Id = "id",
+                                MethodName = "methodName",
+                                Status = "status",
+                                Timestamp = 1000,
+                                TransactionId = "id",
+                                TransactionFees = new List<IndexerTransactionFee>
+                                {
+                                    new()
+                                    {
+                                        Symbol = "ELF",
+                                        Amount = 100
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
 
         mockActivityProvider.Setup(m => m.GetCaHolderNickName(It.IsAny<Guid>())).ReturnsAsync("nickname");
         mockActivityProvider.Setup(m => m.GetTokenDecimalsAsync(It.IsAny<string>())).ReturnsAsync(new IndexerSymbols
@@ -156,13 +226,13 @@ public partial class UserActivityAppServiceTests
 
         mockUserContactProvider.Setup(m =>
                 m.BatchGetUserNameAsync(It.IsAny<List<string>>(), It.IsAny<Guid>(), It.IsAny<string>()))
-            .ReturnsAsync(new List<Tuple<ContactAddress, string>>
+            .ReturnsAsync(new List<Tuple<ContactAddress, string, string>>
             {
                 new(new ContactAddress
                 {
                     Address = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
-                    ChainId = "AELF"
-                }, "test")
+                    ChainId = "AELF",
+                }, "test", "test")
             });
 
         return mockUserContactProvider.Object;
@@ -204,17 +274,17 @@ public partial class UserActivityAppServiceTests
         var mockUserAssetsProvider = new Mock<IUserAssetsProvider>();
 
 
-        mockUserAssetsProvider.Setup(m => m.GetCaHolderManagerInfoAsync(It.IsAny<List<string>>())).ReturnsAsync(new CAHolderInfo
-        {
-            CaHolderManagerInfo = new List<Manager>()
+        mockUserAssetsProvider.Setup(m => m.GetCaHolderManagerInfoAsync(It.IsAny<List<string>>())).ReturnsAsync(
+            new CAHolderInfo
             {
-                new Manager()
+                CaHolderManagerInfo = new List<Manager>()
                 {
-                    CaHash = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033",
+                    new Manager()
+                    {
+                        CaHash = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033",
+                    }
                 }
-            }
-
-        });
+            });
 
         mockUserAssetsProvider.Setup(m => m.GetUserChainIdsAsync(It.IsAny<List<string>>())).ReturnsAsync(
             new IndexerChainIds
@@ -288,7 +358,6 @@ public partial class UserActivityAppServiceTests
                 });
 
 
-
         mockUserAssetsProvider.Setup(m =>
                 m.GetRecentTransactionUsersAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(
@@ -319,9 +388,4 @@ public partial class UserActivityAppServiceTests
 
         return mockUserAssetsProvider.Object;
     }
-    
-
-    
-    
-    
 }

@@ -30,7 +30,7 @@ public class TokenPriceSnapshotGrain : Grain<TokenPriceSnapshotState>, ITokenPri
     public async Task<GrainResultDto<TokenPriceGrainDto>> GetHistoryPriceAsync(string symbol, string dateTime)
     {
         var result = new GrainResultDto<TokenPriceGrainDto>();
-        if (dateTime == State.TimeStamp)
+        if (dateTime == State.TimeStamp && State.PriceInUsd != 0)
         {
             result.Success = true;
             result.Data = new TokenPriceGrainDto
@@ -45,6 +45,16 @@ public class TokenPriceSnapshotGrain : Grain<TokenPriceSnapshotState>, ITokenPri
         try
         {
             price = await _tokenPriceProvider.GetHistoryPriceAsync(symbol, dateTime);
+            if (price == 0)
+            {
+                result.Success = true;
+                result.Data = new TokenPriceGrainDto
+                {
+                    Symbol = symbol,
+                    PriceInUsd = State.PriceInUsd
+                };
+                return result;
+            }
             State.Id = this.GetPrimaryKeyString();
             State.Symbol = symbol;
             State.PriceInUsd = price;
@@ -53,6 +63,8 @@ public class TokenPriceSnapshotGrain : Grain<TokenPriceSnapshotState>, ITokenPri
         }
         catch (Exception e)
         {
+            // use last price if get price fail.
+            price = State.PriceInUsd;
             _logger.LogError(e, "Get history price error: {symbol}, {dateTime}", symbol, dateTime);
         }
 

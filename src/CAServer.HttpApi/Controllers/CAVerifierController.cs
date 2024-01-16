@@ -30,9 +30,11 @@ public class CAVerifierController : CAServerController
     private readonly IGoogleAppService _googleAppService;
     private const string GoogleRecaptcha = "GoogleRecaptcha";
     private const string CheckSwitch = "CheckSwitch";
+    private const string TelegramLoginSwitch = "TelegramLogin";
     private const string XForwardedFor = "X-Forwarded-For";
     private readonly ICurrentUser _currentUser;
     private readonly IIpWhiteListAppService _ipWhiteListAppService;
+
 
     public CAVerifierController(IVerifierAppService verifierAppService, IObjectMapper objectMapper,
         ILogger<CAVerifierController> logger, ISwitchAppService switchAppService, IGoogleAppService googleAppService,
@@ -50,6 +52,7 @@ public class CAVerifierController : CAServerController
     [HttpPost("sendVerificationRequest")]
     public async Task<VerifierServerResponse> SendVerificationRequest([FromHeader] string recaptchatoken,
         [FromHeader] string version,
+        [FromHeader] string acToken,
         VerifierServerInput verifierServerInput)
     {
         var type = verifierServerInput.OperationType;
@@ -65,21 +68,21 @@ public class CAVerifierController : CAServerController
         return type switch
         {
             OperationType.CreateCAHolder => await RegisterSendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
+                sendVerificationRequestInput, type, acToken),
             OperationType.SocialRecovery => await RecoverySendVerificationRequestAsync(recaptchatoken,
-                sendVerificationRequestInput, type),
+                sendVerificationRequestInput, type, acToken),
             _ => await GuardianOperationsSendVerificationRequestAsync(recaptchatoken, sendVerificationRequestInput,
-                type)
+                type, acToken)
         };
     }
 
     private async Task<VerifierServerResponse> GuardianOperationsSendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
         if (_currentUser.IsAuthenticated)
         {
             return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput,
-                operationType);
+                operationType, acToken);
         }
 
         HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -87,7 +90,7 @@ public class CAVerifierController : CAServerController
     }
 
     private async Task<VerifierServerResponse> CheckUserIpAndGoogleRecaptchaAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
         var userIpAddress = UserIpAddress(HttpContext);
         if (string.IsNullOrWhiteSpace(userIpAddress))
@@ -100,29 +103,29 @@ public class CAVerifierController : CAServerController
         if (isInWhiteList)
         {
             return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
-                operationType);
+                operationType, acToken);
         }
 
         await _verifierAppService.CountVerifyCodeInterfaceRequestAsync(userIpAddress);
-        var googleRecaptchaTokenSuccess = false;
-        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
         {
+            _logger.LogDebug("No token is provided when operation is {operationType}", operationType);
             return null;
         }
 
-        try
+        var response =
+            await _googleAppService.ValidateTokenAsync(recaptchaToken, acToken,
+                sendVerificationRequestInput.PlatformType);
+
+        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
         {
-            googleRecaptchaTokenSuccess =
-                await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken,
-                    sendVerificationRequestInput.PlatformType);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("GoogleRecaptchaTokenAsync error: {errorMessage}", e.Message);
-            return null;
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return new VerifierServerResponse();
         }
 
-        if (googleRecaptchaTokenSuccess)
+        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
+            !string.IsNullOrWhiteSpace(recaptchaToken) &&
+            response.RcValidResult)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
@@ -131,11 +134,12 @@ public class CAVerifierController : CAServerController
     }
 
     private async Task<VerifierServerResponse> GoogleRecaptchaAndSendVerifyCodeAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
         var userIpAddress = UserIpAddress(HttpContext);
         if (string.IsNullOrWhiteSpace(userIpAddress))
         {
+            _logger.LogDebug("No userIp in header when operation is {operationType}", operationType);
             return null;
         }
 
@@ -149,25 +153,25 @@ public class CAVerifierController : CAServerController
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
 
-        var googleRecaptchaTokenSuccess = false;
-        if (string.IsNullOrWhiteSpace(recaptchaToken))
+        if (string.IsNullOrWhiteSpace(recaptchaToken) && string.IsNullOrWhiteSpace(acToken))
         {
+            _logger.LogDebug("No token is provided when operation is {operationType}", operationType);
             return null;
         }
 
-        try
+        var response =
+            await _googleAppService.ValidateTokenAsync(recaptchaToken,
+                acToken, sendVerificationRequestInput.PlatformType);
+
+        if (!string.IsNullOrWhiteSpace(acToken) && !response.AcValidResult)
         {
-            googleRecaptchaTokenSuccess =
-                await _googleAppService.IsGoogleRecaptchaTokenValidAsync(recaptchaToken,
-                    sendVerificationRequestInput.PlatformType);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError("GoogleRecaptchaTokenAsync error: {errorMessage}", e.Message);
-            return null;
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            return new VerifierServerResponse();
         }
 
-        if (googleRecaptchaTokenSuccess)
+        if (!string.IsNullOrWhiteSpace(acToken) && response.AcValidResult ||
+            !string.IsNullOrWhiteSpace(recaptchaToken) &&
+            response.RcValidResult)
         {
             return await _verifierAppService.SendVerificationRequestAsync(sendVerificationRequestInput);
         }
@@ -176,8 +180,9 @@ public class CAVerifierController : CAServerController
     }
 
     private async Task<VerifierServerResponse> RecoverySendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
+        
         //check guardian isExists;
         var guardianExists =
             await _verifierAppService.GuardianExistsAsync(sendVerificationRequestInput.GuardianIdentifier);
@@ -186,14 +191,15 @@ public class CAVerifierController : CAServerController
             return null;
         }
 
-        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType);
+        return await CheckUserIpAndGoogleRecaptchaAsync(recaptchaToken, sendVerificationRequestInput, operationType,
+            acToken);
     }
 
     private async Task<VerifierServerResponse> RegisterSendVerificationRequestAsync(string recaptchaToken,
-        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType)
+        SendVerificationRequestInput sendVerificationRequestInput, OperationType operationType, string acToken)
     {
         return await GoogleRecaptchaAndSendVerifyCodeAsync(recaptchaToken, sendVerificationRequestInput,
-            operationType);
+            operationType, acToken);
     }
 
     [HttpPost("verifyCode")]
@@ -215,6 +221,17 @@ public class CAVerifierController : CAServerController
     {
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
+    }
+
+    [HttpPost("verifyTelegramToken")]
+    public async Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        if (!_switchAppService.GetSwitchStatus(TelegramLoginSwitch).IsOpen)
+        {
+            throw new UserFriendlyException("Telegram login not supported");
+        }
+        ValidateOperationType(requestDto.OperationType);
+        return await _verifierAppService.VerifyTelegramTokenAsync(requestDto);
     }
 
     [HttpPost("isGoogleRecaptchaOpen")]
@@ -273,7 +290,7 @@ public class CAVerifierController : CAServerController
     private void ValidateOperationType(OperationType operationType)
     {
         var values = Enum.GetValues(typeof(OperationType)).ToDynamicList();
-        if (!values.Contains(operationType))
+        if (!values.Contains(operationType) || operationType == OperationType.Unknown)
         {
             throw new UserFriendlyException("OperationType is invalid");
         }

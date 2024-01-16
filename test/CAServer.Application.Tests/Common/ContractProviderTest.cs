@@ -89,11 +89,11 @@ public class ContractProviderTest : CAServerApplicationTestBase
         try
         {
             var nullResult = await _contractProvider.SendTransferAsync("TEST", "1",
-                "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST1");
+                "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST1", "");
             nullResult.ShouldBeNull();
 
             var result = await _contractProvider.SendTransferAsync("TEST", "1",
-                "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST");
+                "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST", "");
         }
         catch (Exception e)
         {

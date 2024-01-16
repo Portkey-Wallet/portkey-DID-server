@@ -22,6 +22,7 @@ public class ImageAppServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetImageProcessProviderMock());
     }
 

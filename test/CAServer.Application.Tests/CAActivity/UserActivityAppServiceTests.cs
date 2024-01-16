@@ -29,6 +29,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockTokenAppService());
@@ -198,7 +199,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" }
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            }
         };
 
         var result = await _userActivityAppService.GetActivitiesAsync(param);
@@ -209,8 +217,90 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         data.TransactionFees.First().Decimals.ShouldBe("8");
     }
-    
-    
+
+    [Fact]
+    public async Task GetActivitiesContractTypesTest()
+    {
+        var param = new GetActivitiesRequestDto
+        {
+            SkipCount = 0,
+            MaxResultCount = 10,
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
+            TransactionTypes = new List<string>() { "ContractTypes" }
+        };
+
+        var result = await _userActivityAppService.GetActivitiesAsync(param);
+        result.TotalRecordCount.ShouldBe(1);
+
+        var data = result.Data[0];
+        data.TransactionType.ShouldBe("methodName");
+        //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
+        data.TransactionFees.First().Decimals.ShouldBe("8");
+    }
+
+
+    [Fact]
+    public async Task GetActivitiesTransferTypesTest()
+    {
+        var param = new GetActivitiesRequestDto
+        {
+            SkipCount = 0,
+            MaxResultCount = 10,
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
+            TransactionTypes = new List<string>() { "TransferTypes" }
+        };
+
+        var result = await _userActivityAppService.GetActivitiesAsync(param);
+        result.TotalRecordCount.ShouldBe(1);
+
+        var data = result.Data[0];
+        data.TransactionType.ShouldBe("methodName");
+        //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
+        data.TransactionFees.First().Decimals.ShouldBe("8");
+    }
+
+    [Fact]
+    public async Task GetActivitiesActivityTypeTest()
+    {
+        var param = new GetActivitiesRequestDto
+        {
+            SkipCount = 0,
+            MaxResultCount = 10,
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
+            TransactionTypes = new List<string>() { "TEST" }
+        };
+
+        var result = await _userActivityAppService.GetActivitiesAsync(param);
+        result.TotalRecordCount.ShouldBe(1);
+
+        var data = result.Data[0];
+        data.TransactionType.ShouldBe("methodName");
+        //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
+        data.TransactionFees.First().Decimals.ShouldBe("8");
+    }
+
+
     [Fact]
     public async Task GetUserCreateTimeTest()
     {
@@ -221,10 +311,5 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
 
         var result = await _userActivityAppService.GetCaHolderCreateTimeAsync(param);
         result.ShouldBe("1000");
-       
     }
-    
-    
-    
-    
 }

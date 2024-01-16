@@ -13,31 +13,39 @@ namespace CAServer.Silo.Extensions;
 
 public static class OrleansHostExtensions
 {
-     public static IHostBuilder UseOrleansSnapshot(this IHostBuilder hostBuilder)
+    public static IHostBuilder UseOrleansSnapshot(this IHostBuilder hostBuilder)
     {
+#if DEBUG
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
+
         if (configuration == null) throw new ArgumentNullException(nameof(configuration));
         var configSection = configuration.GetSection("Orleans");
         if (configSection == null)
             throw new ArgumentNullException(nameof(configSection), "The OrleansServer node is missing");
-        return hostBuilder.UseOrleans(siloBuilder =>
+#endif
+
+        return hostBuilder.UseOrleans((context, siloBuilder) =>
         {
             //Configure OrleansSnapshot
+            var orleansConfigSection = context.Configuration.GetSection("Orleans");
             siloBuilder
-                .ConfigureEndpoints(advertisedIP:IPAddress.Parse(configSection.GetValue<string>("AdvertisedIP")),siloPort: configSection.GetValue<int>("SiloPort"), gatewayPort: configSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
-                .UseMongoDBClient(configSection.GetValue<string>("MongoDBClient"))
+                .ConfigureEndpoints(
+                    advertisedIP: IPAddress.Parse(orleansConfigSection.GetValue<string>("AdvertisedIP")),
+                    siloPort: orleansConfigSection.GetValue<int>("SiloPort"),
+                    gatewayPort: orleansConfigSection.GetValue<int>("GatewayPort"), listenOnAnyHostAddress: true)
+                .UseMongoDBClient(orleansConfigSection.GetValue<string>("MongoDBClient"))
                 .UseMongoDBClustering(options =>
                 {
-                    options.DatabaseName = configSection.GetValue<string>("DataBase");;
+                    options.DatabaseName = orleansConfigSection.GetValue<string>("DataBase");
                     options.Strategy = MongoDBMembershipStrategy.SingleDocument;
                 })
-                .AddMongoDBGrainStorage("Default",(MongoDBGrainStorageOptions op) =>
+                .AddMongoDBGrainStorage("Default", (MongoDBGrainStorageOptions op) =>
                 {
                     op.CollectionPrefix = "GrainStorage";
-                    op.DatabaseName = configSection.GetValue<string>("DataBase");
-                
+                    op.DatabaseName = orleansConfigSection.GetValue<string>("DataBase");
+
                     op.ConfigureJsonSerializerSettings = jsonSettings =>
                     {
                         // jsonSettings.ContractResolver = new PrivateSetterContractResolver();
@@ -45,27 +53,28 @@ public static class OrleansHostExtensions
                         jsonSettings.DefaultValueHandling = DefaultValueHandling.Populate;
                         jsonSettings.ObjectCreationHandling = ObjectCreationHandling.Replace;
                     };
-                    
                 })
                 .UseMongoDBReminders(options =>
                 {
-                    options.DatabaseName = configSection.GetValue<string>("DataBase");
+                    options.DatabaseName = orleansConfigSection.GetValue<string>("DataBase");
                     options.CreateShardKeyForCosmos = false;
                 })
                 .Configure<ClusterOptions>(options =>
                 {
-                    options.ClusterId = configSection.GetValue<string>("ClusterId");
-                    options.ServiceId = configSection.GetValue<string>("ServiceId");
+                    options.ClusterId = orleansConfigSection.GetValue<string>("ClusterId");
+                    options.ServiceId = orleansConfigSection.GetValue<string>("ServiceId");
                 })
-               // .AddMemoryGrainStorage("PubSubStore")
+                // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
-                .UseDashboard(options => {
-                    options.Username = configSection.GetValue<string>("DashboardUserName");
-                    options.Password = configSection.GetValue<string>("DashboardPassword");
+                .UseDashboard(options =>
+                {
+                    options.Username = orleansConfigSection.GetValue<string>("DashboardUserName");
+                    options.Password = orleansConfigSection.GetValue<string>("DashboardPassword");
                     options.Host = "*";
-                    options.Port = configSection.GetValue<int>("DashboardPort");
+                    options.Port = orleansConfigSection.GetValue<int>("DashboardPort");
                     options.HostSelf = true;
-                    options.CounterUpdateIntervalMs = configSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
+                    options.CounterUpdateIntervalMs =
+                        orleansConfigSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });

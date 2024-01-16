@@ -312,7 +312,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 var contactUpdate = group.Where(t => !t.Name.IsNullOrWhiteSpace()).OrderBy(t => t.Name)
                     .FirstOrDefault();
 
-                contactUpdate.CaHolderInfo = await GetHolderInfoAsync(userId);
+                var caHolderInfo = await GetHolderInfoAsync(userId);
+                contactUpdate.CaHolderInfo = ObjectMapper.Map<HolderInfoWithAvatar, CaHolderInfo>(caHolderInfo);
+                contactUpdate.Avatar = caHolderInfo?.Avatar;
                 contactUpdate.ImInfo = input.ImInfo;
 
                 if (contactUpdate.CaHolderInfo == null)
@@ -481,8 +483,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
             if (userInfo != null)
             {
                 contact.ImInfo = ObjectMapper.Map<ImInfoDto, ImInfo>(userInfo);
-                contact.CaHolderInfo = await GetHolderInfoAsync(userInfo.PortkeyId);
-
+                var holderInfoWithAvatar = await GetHolderInfoAsync(userInfo.PortkeyId);
+                contact.CaHolderInfo = ObjectMapper.Map<HolderInfoWithAvatar, CaHolderInfo>(holderInfoWithAvatar);
                 if (contact.CaHolderInfo == null)
                 {
                     contact.Addresses =
@@ -491,6 +493,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
                     return contact;
                 }
 
+                contact.Avatar = holderInfoWithAvatar?.Avatar;
                 contact.Addresses = await GetAddressesAsync(contact.CaHolderInfo.CaHash);
             }
 
@@ -500,7 +503,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var address = input.Addresses.First();
 
         contact.ImInfo = await GetImUserAsync(address.Address);
-        contact.CaHolderInfo = await GetHolderInfoAsync(contact.ImInfo, input.Addresses);
+        var caHolderInfo = await GetHolderInfoAsync(contact.ImInfo, input.Addresses);
+        contact.CaHolderInfo = ObjectMapper.Map<HolderInfoWithAvatar, CaHolderInfo>(caHolderInfo);
+        contact.Avatar = caHolderInfo?.Avatar;
 
         if (!address.ChainName.IsNullOrWhiteSpace() && address.ChainName != CommonConstant.ChainName) return contact;
 
@@ -558,7 +563,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return addresses;
     }
 
-    private async Task<CaHolderInfo> GetHolderInfoAsync(ImInfo imInfo, List<ContactAddressDto> addresses)
+    private async Task<HolderInfoWithAvatar> GetHolderInfoAsync(ImInfo imInfo, List<ContactAddressDto> addresses)
     {
         if (imInfo != null && imInfo.PortkeyId != Guid.Empty)
         {
@@ -570,7 +575,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return await GetHolderInfoAsync(addresses.First());
     }
 
-    private async Task<CaHolderInfo> GetHolderInfoAsync(Guid userId)
+    private async Task<HolderInfoWithAvatar> GetHolderInfoAsync(Guid userId)
     {
         if (userId == Guid.Empty) return null;
 
@@ -581,10 +586,10 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException(caHolder.Message);
         }
 
-        return ObjectMapper.Map<CAHolderGrainDto, CaHolderInfo>(caHolder.Data);
+        return ObjectMapper.Map<CAHolderGrainDto, HolderInfoWithAvatar>(caHolder.Data);
     }
 
-    private async Task<CaHolderInfo> GetHolderInfoAsync(ContactAddressDto address)
+    private async Task<HolderInfoWithAvatar> GetHolderInfoAsync(ContactAddressDto address)
     {
         var guardiansDto =
             await _contactProvider.GetCaHolderInfoAsync(new List<string> { address.Address }, string.Empty);
@@ -592,7 +597,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         if (caHash.IsNullOrWhiteSpace()) return null;
 
         var caHolder = await _contactProvider.GetCaHolderAsync(Guid.Empty, caHash);
-        return ObjectMapper.Map<CAHolderIndex, CaHolderInfo>(caHolder);
+        return ObjectMapper.Map<CAHolderIndex, HolderInfoWithAvatar>(caHolder);
     }
 
     private async Task<ImInfoDto> GetImInfoAsync(string relationId)
@@ -602,19 +607,15 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
-
-
         var header = new Dictionary<string, string>();
         if (hasAuthToken)
         {
             header.Add(CommonConstant.AuthHeader, authToken);
         }
 
-        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfoDto>>(
-            _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}",
-            header);
-
-        if (!responseDto.Success())
+        var url = _imServerOptions.BaseUrl + $"api/v1/users/imUserInfo?relationId={relationId}";
+        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfoDto>>(url, header);
+        if (!responseDto.Success)
         {
             throw new UserFriendlyException(responseDto.Message);
         }
@@ -631,18 +632,15 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var hasAuthToken = _httpContextAccessor.HttpContext.Request.Headers.TryGetValue(CommonConstant.AuthHeader,
             out var authToken);
 
-
         var header = new Dictionary<string, string>();
         if (hasAuthToken)
         {
             header.Add(CommonConstant.AuthHeader, authToken);
         }
 
-        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(
-            _imServerOptions.BaseUrl + $"api/v1/users/imUser?address={address}",
-            header);
-
-        if (!responseDto.Success())
+        var url = _imServerOptions.BaseUrl + $"api/v1/users/imUser?address={address}";
+        var responseDto = await _httpClientService.GetAsync<CommonResponseDto<ImInfo>>(url, header);
+        if (!responseDto.Success)
         {
             throw new UserFriendlyException(responseDto.Message);
         }
@@ -745,8 +743,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var responseDto = await _httpClientService.PostAsync<CommonResponseDto<object>>(url, param, header);
-
-        if (!responseDto.Success())
+        if (!responseDto.Success)
         {
             Logger.LogError("request im error, url:{url}", url);
         }
@@ -761,29 +758,30 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         var contactsIm = contacts.Where(t => t.ImInfo != null).ToList();
         var names = contactsIm.Where(t => !t.Name.IsNullOrWhiteSpace());
-        foreach (var name in names)
+        foreach (var contact in names)
         {
             result.Add(new GetNamesResultDto()
             {
-                PortkeyId = Guid.Parse(name.ImInfo.PortkeyId),
-                Name = name.Name
+                PortkeyId = Guid.Parse(contact.ImInfo.PortkeyId),
+                Name = contact.Name,
+                Avatar = contact.Avatar
             });
 
-            input.Remove(Guid.Parse(name.ImInfo.PortkeyId));
+            input.Remove(Guid.Parse(contact.ImInfo.PortkeyId));
         }
 
         var contactsHolder = contactsIm.Where(t => t.Name.IsNullOrWhiteSpace() && t.CaHolderInfo != null);
-        foreach (var name in contactsHolder)
+        foreach (var contact in contactsHolder)
         {
             result.Add(new GetNamesResultDto()
             {
-                PortkeyId = name.CaHolderInfo.UserId,
-                Name = name.CaHolderInfo.WalletName
+                PortkeyId = contact.CaHolderInfo.UserId,
+                Name = contact.CaHolderInfo.WalletName,
+                Avatar = contact.Avatar
             });
 
-            input.Remove(name.CaHolderInfo.UserId);
+            input.Remove(contact.CaHolderInfo.UserId);
         }
-
 
         if (input.Count == 0) return result;
 
@@ -793,18 +791,20 @@ public class ContactAppService : CAServerAppService, IContactAppService
             result.Add(new GetNamesResultDto()
             {
                 PortkeyId = holder.UserId,
-                Name = holder.NickName
+                Name = holder.NickName,
+                Avatar = holder.Avatar
             });
 
             input.Remove(holder.UserId);
         }
 
-        foreach (var per in input)
+        foreach (var item in input)
         {
             result.Add(new GetNamesResultDto()
             {
-                PortkeyId = per,
-                Name = string.Empty
+                PortkeyId = item,
+                Name = string.Empty,
+                Avatar = string.Empty
             });
         }
 

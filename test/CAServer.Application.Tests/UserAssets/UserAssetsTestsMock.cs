@@ -7,6 +7,7 @@ using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Options;
@@ -279,38 +280,37 @@ public partial class UserAssetsTests
 
         mockUserContactProvider.Setup(m =>
                 m.BatchGetUserNameAsync(It.IsAny<List<string>>(), It.IsAny<Guid>(), It.IsAny<string>()))
-            .ReturnsAsync(new List<Tuple<ContactAddress, string>>
+            .ReturnsAsync(new List<Tuple<ContactAddress, string, string>>
             {
                 new(new ContactAddress
                 {
                     Address = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
                     ChainId = "AELF"
-                }, "test")
+                }, "test", "test")
             });
 
         return mockUserContactProvider.Object;
     }
-    
+
     private IContractProvider GetContractProvider()
     {
         var fromBase58 = Address.FromBase58("NJRa6TYqvAgfDsLnsKXCA2jt3bYLEA8rUgPPzwMAG3YYXviHY");
 
         var mockContractProvider = new Mock<IContractProvider>();
         mockContractProvider.Setup(m =>
-                m.GetHolderInfoAsync(Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"), null, It.IsAny<string>()))
+                m.GetHolderInfoAsync(
+                    Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"), null,
+                    It.IsAny<string>()))
             .ReturnsAsync(new GetHolderInfoOutput
                 {
                     CaAddress = fromBase58,
                     CaHash = Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033")
-                    
                 }
-           );
+            );
 
         return mockContractProvider.Object;
     }
-    
-    
-    
+
 
     private IOptions<TokenInfoOptions> GetMockTokenInfoOptions()
     {
@@ -325,6 +325,15 @@ public partial class UserAssetsTests
         return new OptionsWrapper<TokenInfoOptions>(new TokenInfoOptions
         {
             TokenInfos = dict
+        });
+    }
+    
+    private IOptions<AssetsInfoOptions> GetMockAssetsInfoOptions()
+    {
+        return new OptionsWrapper<AssetsInfoOptions>(new AssetsInfoOptions()
+        {
+            ImageUrlPrefix = "https://raw.githubusercontent.com/Portkey-Wallet/assets/master/blockchains/",
+            ImageUrlSuffix = "/info/logo.png"
         });
     }
     
@@ -343,8 +352,25 @@ public partial class UserAssetsTests
             });
         return mockOptionsSnapshot.Object;
     }
-    
-    
-    
-    
+
+    private ITokenProvider GetMockTokenProvider()
+    {
+        var tokenProvider = new Mock<ITokenProvider>();
+
+        tokenProvider.Setup(t => t.GetUserTokenInfoListAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new List<UserTokenIndex>()
+            {
+                new UserTokenIndex()
+                {
+                    IsDisplay=true,
+                    IsDefault=true,
+                    Token = new Token()
+                    {
+                        Symbol = "ELF",
+                        ChainId = "AELF"
+                    }
+                }
+            });
+        return tokenProvider.Object;
+    }
 }

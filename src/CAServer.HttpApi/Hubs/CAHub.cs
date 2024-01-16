@@ -44,14 +44,24 @@ public class CAHub : AbpHub
         await _hubService.Ack(clientId, requestId);
     }
 
-    public async Task RequestAchTxAddress(AlchemyTargetAddressDto request)
+    public async Task RequestAchTxAddress(OrderListenerRequestDto request)
     {
         await _hubService.RequestAchTxAddressAsync(request.TargetClientId, request.OrderId);
     }
 
-    public async Task RequestOrderTransferred(AlchemyTargetAddressDto request)
+    public async Task RequestOrderTransferred(OrderListenerRequestDto request)
     {
         await _hubService.RequestOrderTransferredAsync(request.TargetClientId, request.OrderId);
+    }
+    
+    public async Task RequestNFTOrderStatus(OrderListenerRequestDto request)
+    {
+        await _hubService.RequestNFTOrderStatusAsync(request.TargetClientId, request.OrderId);
+    }
+
+    public async Task RequestRampOrderStatus(OrderListenerRequestDto request)
+    {
+        await _hubService.RequestRampOrderStatus(request.TargetClientId, request.OrderId);
     }
 
     public override Task OnDisconnectedAsync(Exception? exception)
