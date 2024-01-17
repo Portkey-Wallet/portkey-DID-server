@@ -157,8 +157,10 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     private async Task<TransakRampPrice> GetTransakPriceWithCacheAsync(string paymentMethod,
         RampDetailRequest rampPriceRequest)
     {
+        rampPriceRequest = _objectMapper.Map<RampDetailRequest, RampDetailRequest>(rampPriceRequest);
         rampPriceRequest.Network =
-            _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping[rampPriceRequest.Network];
+            _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping
+                .GetValueOrDefault(rampPriceRequest.Network, rampPriceRequest.Network);
         var transakPriceRequest = _objectMapper.Map<RampDetailRequest, GetRampPriceRequest>(rampPriceRequest);
         transakPriceRequest.PaymentMethod = paymentMethod;
 
@@ -224,7 +226,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         return new List<RampFiatItem>();
     }
 
-    private async Task<TransakFiatItem> GetTransakFiatItemAsync(string type, string fiat, [CanBeNull] string country = null,
+    private async Task<TransakFiatItem> GetTransakFiatItemAsync(string type, string fiat,
+        [CanBeNull] string country = null,
         [CanBeNull] string crypto = null)
     {
         // find fiat info 
@@ -245,7 +248,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         try
         {
             // find fiat info 
-            var fiat = await GetTransakFiatItemAsync(rampLimitRequest.Type, rampLimitRequest.Fiat, rampLimitRequest.Country,
+            var fiat = await GetTransakFiatItemAsync(rampLimitRequest.Type, rampLimitRequest.Fiat,
+                rampLimitRequest.Country,
                 rampLimitRequest.Crypto);
 
             // find any payment option
@@ -310,10 +314,11 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     {
         try
         {
+            // copy request
             var rampDetailRequest = _objectMapper.Map<RampExchangeRequest, RampDetailRequest>(rampExchangeRequest);
-
             rampDetailRequest.Network =
-                _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping[rampDetailRequest.Network];
+                _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping
+                    .GetValueOrDefault(rampDetailRequest.Network, rampDetailRequest.Network);
             var cryptoList = await GetTransakCryptoListWithCacheAsync();
             var theCrypto = cryptoList
                 .Where(c => rampDetailRequest.Network.IsNullOrEmpty() || c.Network.Name == rampDetailRequest.Network)
@@ -358,7 +363,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
             if (paymentOption == null)
             {
-                _logger.LogWarning($"paymentOption is no find,param:{rampDetailRequest}");
+                _logger.LogWarning("paymentOption is no find,param:{RampDetailRequest}", rampDetailRequest);
                 return null;
             }
 
@@ -371,10 +376,10 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             {
                 rampDetailRequest.CryptoAmount = paymentOption.MinAmount;
 
-                var limiPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
+                var limitPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
 
                 rampDetailRequest.Crypto = rampDetailRequest.Crypto;
-                rampDetailRequest.FiatAmount = limiPrice.FiatAmount;
+                rampDetailRequest.FiatAmount = limitPrice.FiatAmount;
                 rampDetailRequest.Network = rampDetailRequest.Network;
                 rampDetailRequest.CryptoAmount = null;
             }
@@ -382,15 +387,15 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             {
                 if (!paymentOption.IsPayOutAllowed)
                 {
-                    _logger.LogWarning($"fiat is no support payout,{rampDetailRequest}");
+                    _logger.LogWarning("fiat is no support payout,{RampDetailRequest}", rampDetailRequest.Fiat);
                     return null;
                 }
 
                 rampDetailRequest.CryptoAmount = paymentOption.MinAmountForPayOut;
-                var limiPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
+                var limitPrice = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
 
                 rampDetailRequest.Crypto = rampDetailRequest.Crypto;
-                rampDetailRequest.FiatAmount = limiPrice.FiatAmount;
+                rampDetailRequest.FiatAmount = limitPrice.FiatAmount;
                 rampDetailRequest.Network = rampDetailRequest.Network;
                 rampDetailRequest.CryptoAmount = null;
             }
@@ -481,7 +486,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         try
         {
             if (!await InRampLimit(rampDetailRequest)) return null;
-            
+
             var fiatItem =
                 await GetTransakFiatItemAsync(rampDetailRequest.Type, rampDetailRequest.Fiat, rampDetailRequest.Country,
                     rampDetailRequest.Crypto);

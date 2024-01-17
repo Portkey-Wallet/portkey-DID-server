@@ -144,7 +144,9 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     {
                         OffRamp = true,
                         OnRamp = true
-                    }
+                    },
+                    NetworkMapping = new Dictionary<string, string>() { { "AELF", "aelf" } }
+                        
                 },
                 ["Transak"] = new()
                 {
