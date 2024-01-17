@@ -1,10 +1,10 @@
-using System;
 using System.Collections.Generic;
 using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
+using CAServer.Growth;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
@@ -22,14 +22,17 @@ public class CAAccountController : CAServerController
     private readonly IGuardianAppService _guardianAppService;
     private readonly ITransactionFeeAppService _transactionFeeAppService;
     private readonly ICurrentUser _currentUser;
+    private readonly IGrowthAppService _growthAppService;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
-        ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser)
+        ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
+        IGrowthAppService growthAppService)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
         _transactionFeeAppService = transactionFeeAppService;
         _currentUser = currentUser;
+        _growthAppService = growthAppService;
     }
 
     [HttpPost("register/request")]
@@ -85,9 +88,9 @@ public class CAAccountController : CAServerController
     }
 
     [HttpGet("{shortLinkCode}")]
-    public  async Task<IActionResult> Get(string shortLinkCode)
+    public async Task<IActionResult> GetRedirectUrlAsync(string shortLinkCode)
     {
-        var url = "";
+        var url = await _growthAppService.GetRedirectUrlAsync(shortLinkCode);
         return Redirect(url);
     }
 }

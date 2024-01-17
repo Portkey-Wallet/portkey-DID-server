@@ -8,5 +8,6 @@ public interface IGrowthAppService
     Task<GrowthRedDotDto> GetRedDotAsync();
     Task SetRedDotAsync();
     Task<ShortLinkDto> GetShortLinkAsync(string projectCode);
-    Task CreateGrowthInfoAsync();
+    Task CreateGrowthInfoAsync(string referralCode);
+    Task<string> GetRedirectUrlAsync(string shortLinkCode);
 }

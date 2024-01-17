@@ -140,6 +140,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        Configure<GrowthOptions>(configuration.GetSection("Growth"));
         AddMessagePushService(context, configuration);
     }
 
