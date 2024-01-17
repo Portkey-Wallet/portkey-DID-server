@@ -105,7 +105,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
 
             if (!result.Success)
             {
-                _logger.LogError("{Message}", result.Message);
+                _logger.LogError("update register grain fail, message:{message}", result.Message);
                 throw new Exception(result.Message);
             }
 
@@ -120,13 +120,13 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             var duration = DateTime.UtcNow - register.CreateTime;
             _indicatorLogger.LogInformation(MonitorTag.Register, MonitorTag.Register.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
-            
+
             _logger.LogDebug("register update success: id: {id}, status: {status}", register.Id.ToString(),
                 register.RegisterStatus);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "update register info error, data: {data}", JsonConvert.SerializeObject(eventData));
         }
     }
 
@@ -166,11 +166,11 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             await _recoverRepository.UpdateAsync(recover);
 
             await PublicRecoverMessageAsync(updateResult.Data, eventData.Context);
-            
+
             var duration = DateTime.UtcNow - recover.CreateTime;
             _indicatorLogger.LogInformation(MonitorTag.SocialRecover, MonitorTag.SocialRecover.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
-            
+
             _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
         }
@@ -207,5 +207,9 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         var prevDeviceGrain = _clusterClient.GetGrain<IDeviceGrain>(GrainIdHelper.GenerateGrainId("Device", grainId));
         var salt = await prevDeviceGrain.GetOrGenerateSaltAsync();
         await newDeviceGrain.SetSaltAsync(salt);
+    }
+
+    private async Task AddGrowthInfoAsync(string caHash, string referralCode, string projectCode)
+    {
     }
 }

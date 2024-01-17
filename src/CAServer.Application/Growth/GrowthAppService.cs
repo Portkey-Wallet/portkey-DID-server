@@ -1,13 +1,17 @@
+using System;
 using System.Threading.Tasks;
-using AElf.Indexing.Elasticsearch;
+using CAServer.CAAccount;
 using CAServer.Commons;
-using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Growth;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Etos;
+using CAServer.Growth.Provider;
+using CAServer.Options;
 using CAServer.RedDot;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -21,16 +25,21 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
 {
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
-    private readonly INESTRepository<GrowthIndex, string> _growthRepository;
     private readonly IRedDotAppService _redDotAppService;
+    private readonly INickNameAppService _nickNameAppService;
+    private readonly IGrowthProvider _growthProvider;
+    private readonly GrowthOptions _growthOptions;
 
     public GrowthAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        INESTRepository<GrowthIndex, string> growthRepository, IRedDotAppService redDotAppService)
+        IRedDotAppService redDotAppService, INickNameAppService nickNameAppService,
+        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
-        _growthRepository = growthRepository;
         _redDotAppService = redDotAppService;
+        _nickNameAppService = nickNameAppService;
+        _growthProvider = growthProvider;
+        _growthOptions = growthOptions.Value;
     }
 
     public async Task<GrowthRedDotDto> GetRedDotAsync()
@@ -50,30 +59,49 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
 
     public async Task<ShortLinkDto> GetShortLinkAsync(string projectCode)
     {
-        var grainId = GrainIdHelper.GenerateGrainId(CommonConstant.UserGrowthPrefix, CurrentUser.GetId());
+        var caHash = await GetCaHashAsync();
+        var grainId = GrainIdHelper.GenerateGrainId(CommonConstant.UserGrowthPrefix, caHash);
         var growthGrain = _clusterClient.GetGrain<IGrowthGrain>(grainId);
-        var result = await growthGrain.GetGrowthInfo();
 
-        if (!result.Success)
+        GrowthGrainDto grainDto;
+        var exist = await growthGrain.Exist();
+        if (!exist)
         {
-            throw new UserFriendlyException(result.Message);
+            grainDto = await CreateGrowthInfoAsync(growthGrain, CurrentUser.GetId(), projectCode);
+        }
+        else
+        {
+            grainDto = await GetGrowthInfoAsync(growthGrain);
         }
 
-        var url = $"xxx/{result.Data.ShortLinkCode}";
+        var url = $"{_growthOptions.BaseAddress}/api/app/account/{grainDto.ShortLinkCode}";
         return new ShortLinkDto()
         {
             ShortLink = url
         };
     }
 
-    public async Task CreateGrowthInfoAsync()
+    private async Task<GrowthGrainDto> GetGrowthInfoAsync(IGrowthGrain growthGrain)
     {
-        var userId = CurrentUser.GetId();
-        var grainId = GrainIdHelper.GenerateGrainId(CommonConstant.UserGrowthPrefix, userId);
-        var growthGrain = _clusterClient.GetGrain<IGrowthGrain>(grainId);
+        var result = await growthGrain.GetGrowthInfo();
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+
+        return result.Data;
+    }
+
+    private async Task<GrowthGrainDto> CreateGrowthInfoAsync(IGrowthGrain growthGrain, Guid userId, string projectCode)
+    {
+        var caHash = await GetCaHashAsync();
+        var shortLinkCode = await GenerateShortLinkCodeAsync(caHash);
         var result = await growthGrain.CreateGrowthInfo(new GrowthGrainDto()
         {
-            UserId = userId
+            UserId = userId,
+            CaHash = caHash,
+            ShortLinkCode = shortLinkCode,
+            ProjectCode = projectCode
         });
 
         if (!result.Success)
@@ -83,5 +111,65 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<GrowthGrainDto, CreateGrowthEto>(result.Data), false,
             false);
+        return result.Data;
+    }
+
+    // may be not authrize.
+    public async Task CreateGrowthInfoAsync(string referralCode)
+    {
+        var caHash = await GetCaHashAsync();
+        var grainId = GrainIdHelper.GenerateGrainId(CommonConstant.UserGrowthPrefix, caHash);
+        var growthGrain = _clusterClient.GetGrain<IGrowthGrain>(grainId);
+        var result = await growthGrain.CreateGrowthInfo(new GrowthGrainDto()
+        {
+            UserId = CurrentUser.GetId(),   // may be not authrize.
+            CaHash = caHash,
+            ShortLinkCode = MurmurHashHelper.GenerateHash(caHash),
+            ReferralCode = referralCode
+        });
+
+        if (!result.Success)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+
+        await _distributedEventBus.PublishAsync(ObjectMapper.Map<GrowthGrainDto, CreateGrowthEto>(result.Data), false,
+            false);
+    }
+
+    public async Task<string> GetRedirectUrlAsync(string shortLinkCode)
+    {
+        var growthInfo = await _growthProvider.GetGrowthInfoByLinkCodeAsync(shortLinkCode);
+        if (growthInfo == null)
+        {
+            throw new UserFriendlyException("user growth info not exist.");
+        }
+
+        return
+            $"_growthOptions.RedirectUrl?referral_code={growthInfo.InviteCode}&project_code={growthInfo.ProjectCode ?? string.Empty}";
+    }
+
+    private async Task<string> GetCaHashAsync()
+    {
+        var caHolder = await _nickNameAppService.GetCaHolderAsync();
+        if (caHolder == null || CollectionUtilities.IsNullOrEmpty(caHolder.CaHash))
+        {
+            throw new UserFriendlyException("user not exist.");
+        }
+
+        return caHolder.CaHash;
+    }
+
+    private async Task<string> GenerateShortLinkCodeAsync(string plainText)
+    {
+        var shortLinkCode = MurmurHashHelper.GenerateHash(plainText);
+        var growthInfo = await _growthProvider.GetGrowthInfoByLinkCodeAsync(shortLinkCode);
+        if (growthInfo == null)
+        {
+            return shortLinkCode;
+        }
+
+        plainText += shortLinkCode;
+        return await GenerateShortLinkCodeAsync(plainText);
     }
 }

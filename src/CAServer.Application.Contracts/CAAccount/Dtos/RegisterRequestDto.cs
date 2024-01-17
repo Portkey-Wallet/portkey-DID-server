@@ -20,6 +20,7 @@ public class RegisterRequestDto : IValidatableObject
     [Required] public string VerificationDoc { get; set; }
     [Required] public string Signature { get; set; }
     [Required] public HubRequestContextDto Context { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)

@@ -1,3 +1,4 @@
+using CAServer.Commons;
 using CAServer.Grains.State.Growth;
 using Orleans;
 using Volo.Abp.ObjectMapping;
@@ -25,23 +26,26 @@ public class GrowthGrain : Grain<GrowthState>, IGrowthGrain
         await base.OnDeactivateAsync();
     }
 
-    public Task<GrainResultDto<GrowthGrainDto>> CreateGrowthInfo(GrowthGrainDto growthGrainDto)
+    public async Task<GrainResultDto<GrowthGrainDto>> CreateGrowthInfo(GrowthGrainDto growthGrainDto)
     {
         var result = new GrainResultDto<GrowthGrainDto>();
         if (!State.Id.IsNullOrEmpty())
         {
             result.Success = true;
             result.Data = _objectMapper.Map<GrowthState, GrowthGrainDto>(State);
-            return Task.FromResult(result);
+            return result;
         }
 
         State = _objectMapper.Map<GrowthGrainDto, GrowthState>(growthGrainDto);
         State.Id = this.GetPrimaryKeyString();
+
+        var inviteCodeGrain = GetInviteCodeGrain();
+        State.InviteCode = await inviteCodeGrain.GenerateInviteCode();
         State.CreateTime = DateTime.UtcNow;
 
         result.Success = true;
         result.Data = _objectMapper.Map<GrowthState, GrowthGrainDto>(State);
-        return Task.FromResult(result);
+        return result;
     }
 
     public Task<GrainResultDto<GrowthGrainDto>> GetGrowthInfo()
@@ -56,5 +60,15 @@ public class GrowthGrain : Grain<GrowthState>, IGrowthGrain
         result.Success = true;
         result.Data = _objectMapper.Map<GrowthState, GrowthGrainDto>(State);
         return Task.FromResult(result);
+    }
+
+    public Task<bool> Exist()
+    {
+        return Task.FromResult(!State.Id.IsNullOrEmpty() && !State.IsDeleted);
+    }
+
+    private IInviteCodeGrain GetInviteCodeGrain()
+    {
+        return GrainFactory.GetGrain<IInviteCodeGrain>(CommonConstant.InviteCodeGrainId);
     }
 }
