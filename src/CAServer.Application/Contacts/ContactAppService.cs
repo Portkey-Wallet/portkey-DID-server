@@ -694,11 +694,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
             throw new UserFriendlyException("add contact fail.");
         }
 
-        if (contact.Addresses.IsNullOrEmpty())
-        {
-            throw new UserFriendlyException("invalid contact address.");
-        }
-
         if (contact.ImInfo != null && contact.Addresses.Count < _chainOptions.ChainInfos.Keys.Count)
         {
             var address = contact.Addresses.First();
