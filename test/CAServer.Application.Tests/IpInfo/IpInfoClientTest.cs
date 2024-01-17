@@ -63,7 +63,7 @@ public class IpInfoClientTest : CAServerApplicationTestBase
         }
     }
 
-    protected static ISecretProvider MockSecretProvider()
+    public static ISecretProvider MockSecretProvider()
     {
         var mock = new Mock<ISecretProvider>();
         mock.Setup(ser => ser.GetSecretWithCacheAsync(It.IsAny<string>())).ReturnsAsync("mockSecret");

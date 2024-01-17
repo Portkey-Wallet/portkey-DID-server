@@ -74,7 +74,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             },
             Timer = new ThirdPartTimerOptions()
             {
-                TimeoutMillis = 5000,
+                TimeoutMillis = 100,
                 DelaySeconds = 1,
                 HandleUnCompletedOrderMinuteAgo = 0,
                 NftUnCompletedMerchantCallbackMinuteAgo = 0,

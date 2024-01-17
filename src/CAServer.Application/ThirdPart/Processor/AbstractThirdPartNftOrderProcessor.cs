@@ -264,12 +264,12 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             Transaction transferTx;
             if (orderGrainDto.RawTransaction.IsNullOrEmpty())
             {
-                (_, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
+                (var txId, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
                     orderGrainDto.CryptoAmount,
                     nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
                     _thirdPartOptions.CurrentValue.Merchant.NftOrderSettlementPublicKey);
                 // update main-order, record transactionId first
-                orderGrainDto.TransactionId = transferTx.GetHash().ToHex();
+                orderGrainDto.TransactionId = txId;
                 orderGrainDto.RawTransaction = transferTx.ToByteArray().ToHex();
             }
             else

@@ -10,6 +10,7 @@ using CAServer.amazon;
 using CAServer.CAActivity.Provider;
 using CAServer.Entities.Es;
 using CAServer.Options;
+using CAServer.Signature.Provider;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -42,6 +43,14 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
         services.AddSingleton(GetMockInMemoryHarness());
         services.AddSingleton(MockGraphQlOptions());
         services.AddSingleton(MockAwsS3Client());
+    }
+    
+    
+    protected static ISecretProvider MockSecretProvider()
+    {
+        var mock = new Mock<ISecretProvider>();
+        mock.Setup(ser => ser.GetSecretWithCacheAsync(It.IsAny<string>())).ReturnsAsync("mockSecret");
+        return mock.Object;
     }
     
     protected IAwsS3Client MockAwsS3Client()

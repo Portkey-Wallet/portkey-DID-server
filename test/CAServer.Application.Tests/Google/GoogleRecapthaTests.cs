@@ -27,12 +27,6 @@ public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
         services.AddSingleton(MockSecretProvider());
     }
 
-    protected static ISecretProvider MockSecretProvider()
-    {
-        var mock = new Mock<ISecretProvider>();
-        mock.Setup(ser => ser.GetSecretWithCacheAsync(It.IsAny<string>())).ReturnsAsync("mockSecret");
-        return mock.Object;
-    }
 
     [Fact]
     public async Task VerifierGoogleReCaptcha_Test()

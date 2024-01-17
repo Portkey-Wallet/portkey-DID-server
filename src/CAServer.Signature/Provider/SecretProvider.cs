@@ -60,17 +60,16 @@ public class SecretProvider : ISecretProvider, ITransientDependency
 
     private async Task<string> GetSecretAsync(string key)
     {
-        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<CommonThirdPartExecuteOutput>>(HttpMethod.Get,
+        var resp = await _httpProvider.InvokeAsync<CommonResponseDto<string>>(HttpMethod.Get,
             Uri(GetSecurityUri),
             param: new Dictionary<string, string>
             {
                 ["key"] = key
             },
             header: SecurityServerHeader(key));
-        AssertHelper.NotNull(resp?.Data, "Secret response data empty");
+        AssertHelper.NotEmpty(resp?.Data, "Secret response data empty");
         AssertHelper.IsTrue(resp!.Success, "Secret response failed {}", resp.Message);
-        AssertHelper.NotEmpty(resp.Data.Value, "Secret empty");
-        return EncryptionHelper.DecryptFromHex(resp.Data.Value, _signatureOption.CurrentValue.AppSecret);
+        return EncryptionHelper.DecryptFromHex(resp.Data, _signatureOption.CurrentValue.AppSecret);
     }
 
     public async Task<string> GetAlchemyAesSignAsync(string key, string source)
@@ -82,7 +81,7 @@ public class SecretProvider : ISecretProvider, ITransientDependency
                 Key = key,
                 BizData = source
             }, HttpProvider.DefaultJsonSettings),
-            header: SecurityServerHeader(key));
+            header: SecurityServerHeader(key, source));
         AssertHelper.NotNull(resp?.Data, "Signature response data empty");
         AssertHelper.IsTrue(resp!.Success, "Signature response failed {}", resp.Message);
         AssertHelper.NotEmpty(resp.Data.Value, "Signature empty");
@@ -100,7 +99,7 @@ public class SecretProvider : ISecretProvider, ITransientDependency
                 Key = key,
                 BizData = source
             }, HttpProvider.DefaultJsonSettings),
-            header: SecurityServerHeader(key));
+            header: SecurityServerHeader(key, source));
         AssertHelper.NotNull(resp?.Data, "Signature response data empty");
         AssertHelper.IsTrue(resp!.Success, "Signature response failed {}", resp.Message);
         AssertHelper.NotEmpty(resp.Data.Value, "Signature empty");
@@ -118,7 +117,7 @@ public class SecretProvider : ISecretProvider, ITransientDependency
                 Key = key,
                 BizData = source
             }, HttpProvider.DefaultJsonSettings),
-            header: SecurityServerHeader(key));
+            header: SecurityServerHeader(key, source));
         AssertHelper.NotNull(resp?.Data, "Signature response data empty");
         AssertHelper.IsTrue(resp!.Success, "Signature response failed {}", resp.Message);
         AssertHelper.NotEmpty(resp.Data.Value, "Signature empty");

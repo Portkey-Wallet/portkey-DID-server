@@ -21,12 +21,12 @@ public interface IAwsS3Client
 
 public class AwsS3Client : IAwsS3Client, ISingletonDependency
 {
-    private readonly AwsS3Option _awsS3Option;
+    private readonly IOptionsMonitor<AwsS3Option> _awsS3Option;
     private readonly ISecretProvider _secretProvider;
     private readonly IOptionsMonitor<SignatureServerOptions> _signatureOptions;
     private AmazonS3Client _amazonS3Client;
 
-    public AwsS3Client(AwsS3Option awsS3Option, ISecretProvider secretProvider,
+    public AwsS3Client(IOptionsMonitor<AwsS3Option> awsS3Option, ISecretProvider secretProvider,
         IOptionsMonitor<SignatureServerOptions> signatureOptions)
     {
         _awsS3Option = awsS3Option;
@@ -49,13 +49,13 @@ public class AwsS3Client : IAwsS3Client, ISingletonDependency
         var putObjectRequest = new PutObjectRequest
         {
             InputStream = steam,
-            BucketName = _awsS3Option.BucketName,
-            Key = _awsS3Option.S3Key + "/images/svg/" + fileName + ".svg",
+            BucketName = _awsS3Option.CurrentValue.BucketName,
+            Key = _awsS3Option.CurrentValue.S3Key + "/images/svg/" + fileName + ".svg",
             CannedACL = S3CannedACL.PublicRead,
         };
         var putObjectResponse = await _amazonS3Client.PutObjectAsync(putObjectRequest);
         return putObjectResponse.HttpStatusCode == HttpStatusCode.OK
-            ? $"https://{_awsS3Option.BucketName}.s3.amazonaws.com/{putObjectRequest.Key}"
+            ? $"https://{_awsS3Option.CurrentValue.BucketName}.s3.amazonaws.com/{putObjectRequest.Key}"
             : string.Empty;
     }
 }

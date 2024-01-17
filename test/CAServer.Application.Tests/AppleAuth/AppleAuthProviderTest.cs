@@ -42,13 +42,6 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
         // services.AddSingleton(GetMockECDsaSecurityKey());
         // services.AddSingleton(GetECDsaSecurityKeyMock());
     }
-    
-    protected static ISecretProvider MockSecretProvider()
-    {
-        var mock = new Mock<ISecretProvider>();
-        mock.Setup(ser => ser.GetSecretWithCacheAsync(It.IsAny<string>())).ReturnsAsync("mockSecret");
-        return mock.Object;
-    }
 
     [Fact]
     public async Task VerifyAppleIdTest()
