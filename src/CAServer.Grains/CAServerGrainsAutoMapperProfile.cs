@@ -7,9 +7,11 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.CrossChain;
+using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
+using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
@@ -18,10 +20,12 @@ using CAServer.Grains.State.Bookmark;
 using CAServer.Grains.State.Chain;
 using CAServer.Grains.State.Contacts;
 using CAServer.Grains.State.CrossChain;
+using CAServer.Grains.State.Growth;
 using CAServer.Grains.State.ImTransfer;
 using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
 using CAServer.Grains.State.PrivacyPermission;
+using CAServer.Grains.State.RedDot;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Grains.State.RedPackage;
 using CAServer.Grains.State.Tokens;
@@ -144,5 +148,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
+        CreateMap<RedDotState, RedDotGrainDto>().ReverseMap();
+        CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
     }
 }

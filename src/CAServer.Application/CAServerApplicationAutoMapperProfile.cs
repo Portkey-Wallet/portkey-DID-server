@@ -21,13 +21,16 @@ using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
+using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.Growth.Etos;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.ImTransfer.Dtos;
@@ -43,6 +46,7 @@ using CAServer.PrivacyPolicy.Dtos;
 using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
 using CAServer.PrivacyPolicy.Dtos;
+using CAServer.RedDot.Etos;
 using CAServer.Search.Dtos;
 using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
@@ -563,5 +567,8 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
             .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
+
+        CreateMap<RedDotGrainDto, RedDotEto>();
+        CreateMap<GrowthGrainDto, CreateGrowthEto>();
     }
 }

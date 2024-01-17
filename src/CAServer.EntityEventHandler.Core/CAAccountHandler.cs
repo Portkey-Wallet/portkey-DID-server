@@ -10,6 +10,7 @@ using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Device;
+using CAServer.Growth;
 using CAServer.Hubs;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
@@ -35,6 +36,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IIndicatorLogger _indicatorLogger;
+    private readonly IGrowthAppService _growthAppService;
 
     public CaAccountHandler(INESTRepository<AccountRegisterIndex, Guid> registerRepository,
         INESTRepository<AccountRecoverIndex, Guid> recoverRepository,
@@ -42,7 +44,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         ILogger<CaAccountHandler> logger,
         IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
-        IIndicatorLogger indicatorLogger)
+        IIndicatorLogger indicatorLogger, IGrowthAppService growthAppService)
     {
         _registerRepository = registerRepository;
         _recoverRepository = recoverRepository;
@@ -51,6 +53,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _indicatorLogger = indicatorLogger;
+        _growthAppService = growthAppService;
     }
 
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
@@ -121,8 +124,10 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             _indicatorLogger.LogInformation(MonitorTag.Register, MonitorTag.Register.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
 
-            _logger.LogDebug("register update success: id: {id}, status: {status}", register.Id.ToString(),
+            _logger.LogInformation("register update success: id: {id}, status: {status}", register.Id.ToString(),
                 register.RegisterStatus);
+
+            await AddGrowthInfoAsync(eventData.CaHash, eventData.ReferralInfo);
         }
         catch (Exception ex)
         {
@@ -209,7 +214,17 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         await newDeviceGrain.SetSaltAsync(salt);
     }
 
-    private async Task AddGrowthInfoAsync(string caHash, string referralCode, string projectCode)
+    private async Task AddGrowthInfoAsync(string caHash, ReferralInfo referralInfo)
     {
+        if (referralInfo == null || referralInfo.ReferralCode.IsNullOrEmpty())
+        {
+            _logger.LogInformation("no need to add growth info, caHash:{caHash}", caHash);
+            return;
+        }
+
+        await _growthAppService.CreateGrowthInfoAsync(caHash, referralInfo);
+        _logger.LogInformation(
+            "create growth info success, caHash:{caHash}, referralCode:{referralCode}, projectCode:{projectCode}",
+            caHash, referralInfo.ReferralCode, referralInfo.ProjectCode ?? string.Empty);
     }
 }
