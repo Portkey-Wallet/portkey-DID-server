@@ -409,7 +409,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<CAHolderGrainDto, DeleteCAHolderEto>();
         CreateMap<ImInfoDto, ImInfo>();
         CreateMap<AddressWithChain, ContactAddressDto>()
-            .ForMember(t => t.ChainId, m => m.MapFrom(f => f.ChainName))
+            .ForMember(t => t.ChainId, m => m.MapFrom(f => f.ChainName.ToUpper()))
             .ForMember(t => t.ChainName, f => f.MapFrom(m => m.ChainName));
         CreateMap<Contacts.CaHolderInfo, CaHolderDto>()
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))

@@ -70,9 +70,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
-
+        
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
+        await CheckContactAsync(contactDto);
+
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(GuidGenerator.Create());
         var result =
             await contactGrain.AddContactAsync(userId,
@@ -135,6 +137,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         await CheckAddressAsync(userId, input.Addresses, input.RelationId, id, isUpdate);
         var contactDto = await GetContactDtoAsync(input, id);
+        await CheckContactAsync(contactDto);
 
         var result =
             await contactGrain.UpdateContactAsync(userId,
@@ -146,7 +149,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
-        // return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
 
         var contactResultDto = ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
         var imageMap = _variablesOptions.ImageMap;
@@ -236,7 +238,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
             Items = ObjectMapper.Map<List<ContactResultDto>, List<ContactListDto>>(contactDtoList)
         };
     }
-    
+
     public async Task<ContactImputationDto> GetImputationAsync()
     {
         var isImputation = await _contactProvider.GetImputationAsync(CurrentUser.GetId());
@@ -289,7 +291,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return await contactNameGrain.IsNameExist(name);
     }
 
-    //need to optimize
     private async Task CheckAddressAsync(Guid userId, List<ContactAddressDto> addresses, string relationId,
         Guid? contactId = null, bool isUpdate = false)
     {
@@ -354,7 +355,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 {
                     contact.Addresses =
                         ObjectMapper.Map<List<AddressWithChain>, List<ContactAddressDto>>(userInfo.AddressWithChain);
-
                     return contact;
                 }
 
@@ -380,25 +380,22 @@ public class ContactAppService : CAServerAppService, IContactAppService
             await _contactProvider.GetCaHolderInfoAsync(new List<string> { address.Address },
                 caHash);
 
-        if (guardians?.CaHolderInfo?.Count > 0)
+        if (guardians?.CaHolderInfo?.Count > 0 && contact.ImInfo != null &&
+            contact.Addresses.Count < _chainOptions.ChainInfos.Keys.Count)
         {
-            var addressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress == address.Address)
-                .Select(t => new { t.CaAddress, t.ChainId }).FirstOrDefault();
-
-            if (contact.ImInfo != null)
+            var chainIds = contact.Addresses.Select(t => t.ChainId);
+            var needAddChainIds = _chainOptions.ChainInfos.Keys.Except(chainIds).ToList();
+            
+            foreach (var chainId in needAddChainIds)
             {
-                var addAddressInfos = guardians.CaHolderInfo.Where(t => t.CaAddress != address.Address)
-                    .Select(t => new { t.CaAddress, t.ChainId });
-
-                foreach (var info in addAddressInfos)
+                contact.Addresses.Add(new ContactAddressDto()
                 {
-                    contact.Addresses.Add(new ContactAddressDto()
-                    {
-                        Address = info.CaAddress,
-                        ChainId = info.ChainId
-                    });
-                }
+                    Address = address.Address,
+                    ChainId = chainId
+                });
             }
+
+            contact.Addresses = contact.Addresses.OrderBy(t => t.ChainId).ToList();
         }
 
         return contact;
@@ -688,5 +685,36 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         return new List<ContactResultDto>();
+    }
+
+    private async Task CheckContactAsync(ContactDto contact)
+    {
+        if (contact.ImInfo != null && contact.CaHolderInfo == null)
+        {
+            throw new UserFriendlyException("add contact fail.");
+        }
+
+        if (contact.Addresses.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException("invalid contact address.");
+        }
+
+        if (contact.ImInfo != null && contact.Addresses.Count < _chainOptions.ChainInfos.Keys.Count)
+        {
+            var address = contact.Addresses.First();
+            var chainIds = contact.Addresses.Select(t => t.ChainId);
+            var needAddChainIds = _chainOptions.ChainInfos.Keys.Except(chainIds).ToList();
+            
+            foreach (var chainId in needAddChainIds)
+            {
+                contact.Addresses.Add(new ContactAddressDto()
+                {
+                    Address = address.Address,
+                    ChainId = chainId
+                });
+            }
+        }
+
+        contact.Addresses = contact.Addresses.OrderBy(t => t.ChainId).ToList();
     }
 }
