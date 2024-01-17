@@ -69,6 +69,7 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<GuardianDeleteEto, GuardianIndex>();
         CreateMap<OrderSettlementGrainDto, OrderSettlementIndex>().ReverseMap();
         CreateMap<CreateGrowthEto, GrowthIndex>();
+        CreateMap<RedDot.Dtos.RedDotInfo, Entities.Es.RedDotInfo>().ReverseMap();
         CreateMap<RedDotEto, RedDotIndex>();
     }
 }
