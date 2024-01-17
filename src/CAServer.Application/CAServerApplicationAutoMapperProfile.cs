@@ -46,6 +46,7 @@ using CAServer.PrivacyPolicy.Dtos;
 using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
 using CAServer.PrivacyPolicy.Dtos;
+using CAServer.RedDot.Dtos;
 using CAServer.RedDot.Etos;
 using CAServer.Search.Dtos;
 using CAServer.Telegram.Dtos;
@@ -71,6 +72,7 @@ using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
 using GuardianType = CAServer.Account.GuardianType;
 using ImInfo = CAServer.Contacts.ImInfo;
+using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 
@@ -570,5 +572,6 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
 
         CreateMap<RedDotGrainDto, RedDotEto>();
         CreateMap<GrowthGrainDto, CreateGrowthEto>();
+        CreateMap<RedDotInfo, RedDotInfoDto>();
     }
 }
