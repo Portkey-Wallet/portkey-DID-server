@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
+using CAServer.CAAccount.Dtos;
 using CAServer.Commons;
 using CAServer.EnumType;
 using CAServer.Grains;
@@ -74,7 +75,7 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
             grainDto = await GetGrowthInfoAsync(growthGrain);
         }
 
-        var url = $"{_growthOptions.BaseAddress}/api/app/account/{grainDto.ShortLinkCode}";
+        var url = $"{_growthOptions.BaseUrl}/api/app/account/{grainDto.ShortLinkCode}";
         return new ShortLinkDto()
         {
             ShortLink = url
@@ -114,25 +115,23 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         return result.Data;
     }
 
-    // may be not authrize.
-    public async Task CreateGrowthInfoAsync(string referralCode)
+    public async Task CreateGrowthInfoAsync(string caHash, ReferralInfo referralInfo)
     {
-        var caHash = await GetCaHashAsync();
         var grainId = GrainIdHelper.GenerateGrainId(CommonConstant.UserGrowthPrefix, caHash);
         var growthGrain = _clusterClient.GetGrain<IGrowthGrain>(grainId);
+        var shortLinkCode = await GenerateShortLinkCodeAsync(caHash);
         var result = await growthGrain.CreateGrowthInfo(new GrowthGrainDto()
         {
-            UserId = CurrentUser.GetId(),   // may be not authrize.
             CaHash = caHash,
-            ShortLinkCode = MurmurHashHelper.GenerateHash(caHash),
-            ReferralCode = referralCode
+            ShortLinkCode = shortLinkCode,
+            ReferralCode = referralInfo.ReferralCode,
+            ProjectCode = referralInfo.ProjectCode
         });
 
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
         }
-
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<GrowthGrainDto, CreateGrowthEto>(result.Data), false,
             false);
     }
