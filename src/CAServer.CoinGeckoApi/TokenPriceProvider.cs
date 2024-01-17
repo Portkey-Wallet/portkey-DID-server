@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Signature.Options;
 using CAServer.Signature.Provider;
@@ -43,9 +44,15 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         var apiKey = AsyncHelper.RunSync(() =>
             _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.CoinGecko));
         var httpClient = httpClientFactory.CreateClient();
-        httpClient.BaseAddress = new Uri(_coinGeckoOptions.CurrentValue.BaseUrl);
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-        httpClient.DefaultRequestHeaders.Add("x-cg-pro-api-key", apiKey);
+        if (_coinGeckoOptions.CurrentValue.BaseUrl.NotNullOrEmpty())
+        {
+            httpClient.BaseAddress = new Uri(_coinGeckoOptions.CurrentValue.BaseUrl);
+        }
+        if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
+        {
+            httpClient.DefaultRequestHeaders.Add("x-cg-pro-api-key", apiKey);
+        }
         return httpClient;
     }
 
