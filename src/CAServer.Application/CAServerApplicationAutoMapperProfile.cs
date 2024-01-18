@@ -28,6 +28,7 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
+using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Growth.Etos;
@@ -58,6 +59,8 @@ using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
+using CAServer.Upgrade.Dtos;
+using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
@@ -413,7 +416,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<CAHolderGrainDto, DeleteCAHolderEto>();
         CreateMap<ImInfoDto, ImInfo>();
         CreateMap<AddressWithChain, ContactAddressDto>()
-            .ForMember(t => t.ChainId, m => m.MapFrom(f => f.ChainName))
+            .ForMember(t => t.ChainId, m => m.MapFrom(f => f.ChainName.ToUpper()))
             .ForMember(t => t.ChainName, f => f.MapFrom(m => m.ChainName));
         CreateMap<Contacts.CaHolderInfo, CaHolderDto>()
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
@@ -568,6 +571,12 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
+            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
+
+
+        CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
+        CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
+        CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
             .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
 
         CreateMap<RedDotGrainDto, RedDotEto>();

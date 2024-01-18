@@ -12,6 +12,7 @@ public static class MethodName
     public const string GetHolderInfo = "GetHolderInfo";
     public const string TransferCryptoBoxes = "TransferCryptoBoxes";
     public const string RefundCryptoBox = "RefundCryptoBox";
+    public const string AssignProjectDelegatee = "AssignProjectDelegatee";
 
 }
 

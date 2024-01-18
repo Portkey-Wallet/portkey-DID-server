@@ -12,5 +12,6 @@ public class RegisterDto : CAAccountBase
     public bool? RegisterSuccess { get; set; }
     public string RegisterMessage { get; set; }
     public HubRequestContext Context { get; set; }
+    public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
 }

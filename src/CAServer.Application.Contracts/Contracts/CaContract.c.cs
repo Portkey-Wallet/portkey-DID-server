@@ -144,6 +144,7 @@ namespace Portkey.Contracts.CA {
       return new LoginGuardianAdded
       {
         CaAddress = CaAddress,
+        IsCreateHolder = IsCreateHolder,
       };
     }
   }
@@ -469,6 +470,10 @@ namespace Portkey.Contracts.CA {
       {
         GuardiansRemoved = GuardiansRemoved
       },
+      new CAHolderSynced
+      {
+        CreateChainId = CreateChainId
+      },
       };
     }
 
@@ -581,6 +586,28 @@ namespace Portkey.Contracts.CA {
     {
       return new AdminChanged
       {
+      };
+    }
+  }
+
+  public partial class Invited : aelf::IEvent<Invited>
+  {
+    public global::System.Collections.Generic.IEnumerable<Invited> GetIndexed()
+    {
+      return new List<Invited>
+      {
+      };
+    }
+
+    public Invited GetNonIndexed()
+    {
+      return new Invited
+      {
+        CaHash = CaHash,
+        ContractAddress = ContractAddress,
+        MethodName = MethodName,
+        ReferralCode = ReferralCode,
+        ProjectCode = ProjectCode,
       };
     }
   }

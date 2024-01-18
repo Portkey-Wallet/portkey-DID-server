@@ -41,6 +41,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly VerifierIdMappingOptions _verifierIdMappingOptions;
     private readonly IContractProvider _contractProvider;
     private readonly IDistributedCache<string> _distributedCache;
+    private readonly StopRegisterOptions _stopRegisterOptions;
     private const string VerifierMapperCacheKey = "VerifierMapperCacheKey";
 
 
@@ -50,7 +51,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
         IOptionsSnapshot<VerifierIdMappingOptions> verifierIdMappingOptions,
-        IDistributedCache<string> distributedCache, IContractProvider contractProvider)
+        IDistributedCache<string> distributedCache, IContractProvider contractProvider,
+        IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -63,6 +65,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _verifierIdMappingOptions = verifierIdMappingOptions.Value;
         _appleUserProvider = appleUserProvider;
         _appleTransferOptions = appleTransferOptions.Value;
+        _stopRegisterOptions = stopRegisterOptions.Value;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -86,6 +89,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             {
                 continue;
             }
+
             var result = await GetVerifierServerAsync(dto.VerifierId, guardianIdentifierDto.ChainId);
             if (result)
             {
@@ -121,7 +125,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         var guardianIdentifierHash = GetHash(requestDto.LoginGuardianIdentifier);
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
-
         var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
 
         var originChainId = guardian == null
@@ -158,6 +161,10 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         if (!guardianGrainDto.Success)
         {
             _logger.LogError($"{guardianGrainDto.Message} guardianIdentifier: {guardianIdentifier}");
+            if (_stopRegisterOptions.Open)
+            {
+                throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
+            }
             throw new UserFriendlyException(guardianGrainDto.Message, GuardianMessageCode.NotExist);
         }
 
@@ -191,7 +198,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                 }
             }
         }
-
+        
+        if (_stopRegisterOptions.Open)
+        {
+            throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
+        }
         throw new UserFriendlyException("This address is not registered.", GuardianMessageCode.NotExist);
     }
 

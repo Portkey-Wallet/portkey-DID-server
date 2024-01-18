@@ -99,16 +99,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
-            var caAddressInfos = request.CaAddressInfos;
-            if (caAddressInfos == null)
-            {
-                caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
-            }
-
-            var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, request.ChainId,
+            var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddressInfos, request.ChainId,
                 request.Symbol, null, request.SkipCount, request.MaxResultCount);
-            return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
+            return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
                 request.Height, needMap: true);
         }
         catch (Exception e)
@@ -123,16 +117,22 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var caAddressInfos = new List<CAAddressInfo>();
+            var caAddresses = request.CaAddresses;
+            if (caAddresses.IsNullOrEmpty())
+            {
+                caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            }
+          
             if (request.ActivityType != CommonConstant.TransferCard)
             {
-                caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                caAddressInfos = caAddresses.Select(address => new CAAddressInfo { CaAddress = address })
                     .ToList();
             }
 
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
             var activitiesDto =
-                await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
+                await IndexerTransaction2Dto(caAddresses, indexerTransactions, null, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
@@ -142,7 +142,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (!_activityTypeOptions.ContractTypes.Contains(activityDto.TransactionType))
             {
-                await GetActivityName(request.CaAddresses, activityDto,
+                await GetActivityName(caAddresses, activityDto,
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
 

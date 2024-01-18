@@ -5,6 +5,7 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Contracts.MultiToken;
 using AElf.Types;
+using CAServer.CAAccount;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.State.ApplicationHandler;
@@ -43,6 +44,8 @@ public interface IContractProvider
 
     Task<TransactionResultDto> SyncTransactionAsync(string chainId,
         SyncHolderInfoInput syncHolderInfoInput);
+
+    Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto);
 }
 
 public class ContractProvider : IContractProvider, ISingletonDependency
@@ -95,6 +98,28 @@ public class ContractProvider : IContractProvider, ISingletonDependency
                 JsonConvert.SerializeObject(input.ToString(), Formatting.Indented));
             return new TransactionResultDto();
         }
+    }
+
+    public async Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto)
+    {
+        try
+        {
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var result = await grain.AuthorizeDelegateAsync(assignProjectDelegateeDto);
+            _logger.LogInformation(
+                "Authorize Delegate:" +
+                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                result.TransactionId, result.BlockNumber, result.Status, result.Error);
+            return result;
+
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Authorize Delegate Error: {input}", 
+                JsonConvert.SerializeObject(assignProjectDelegateeDto.ToString(), Formatting.Indented));
+            return new TransactionResultDto();
+        }
+        
     }
 
     public async Task<SyncHolderInfoInput> GetSyncHolderInfoInputAsync(string chainId,

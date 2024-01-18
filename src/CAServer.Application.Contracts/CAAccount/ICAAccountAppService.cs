@@ -12,4 +12,5 @@ public interface ICAAccountAppService
     Task<RevokeEntranceResultDto> RevokeEntranceAsync();
     Task<CancelCheckResultDto> RevokeCheckAsync(Guid uId);
     Task<RevokeResultDto> RevokeAsync(RevokeDto input);
+    Task<AuthorizeDelegateResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeRequestDto input);
 }

@@ -1,4 +1,5 @@
 using AElf.Client.Dto;
+using CAServer.CAAccount;
 using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
@@ -21,4 +22,6 @@ public interface IContractServiceGrain : IGrainWithGuidKey
 
     Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(string chainId, IMessage param, string payRedPackageFrom,
         string redPackageContractAddress,string methodName);
+
+    Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto);
 }
