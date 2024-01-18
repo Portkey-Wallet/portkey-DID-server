@@ -97,7 +97,7 @@ public class AlchemySignatureResultDto : AlchemyBaseResponseDto<Empty>
     public string Signature { get; set; }
 }
 
-public class AlchemyTreasuryPriceResultDto
+public class AlchemyTreasuryPriceResultDto : TreasuryBaseResult
 {
     public string Price { get; set; }
 

@@ -563,5 +563,15 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
             .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
+
+        CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>()
+            .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
+            .ReverseMap();
+        
+        CreateMap<TreasuryOrderRequest, TreasuryOrderDto>()
+            .ForMember(des => des.ToAddress, opt => opt.MapFrom(src => src.Address))
+            .ForMember(des => des.CryptoPriceInUsdt, opt => opt.MapFrom(src => src.CryptoPrice))
+            .ForMember(des => des.SettlementAmount, opt => opt.MapFrom(src => src.UsdtAmount))
+            .ReverseMap();
     }
 }

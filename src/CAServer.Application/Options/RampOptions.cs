@@ -1,4 +1,8 @@
+using System;
 using System.Collections.Generic;
+using CAServer.Common;
+using CAServer.Commons;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos.Ramp;
 using Newtonsoft.Json;
 
@@ -6,13 +10,17 @@ namespace CAServer.Options;
 
 public class RampOptions
 {
-
-    public Dictionary<string, ThirdPartProvider> Providers { get; set; } = new ();
+    public Dictionary<string, ThirdPartProvider> Providers { get; set; } = new();
     public List<string> PortkeyIdWhiteList { get; set; }
     public DefaultCurrencyOption DefaultCurrency { get; set; }
     public List<CryptoItem> CryptoList { get; set; }
-    
     public Dictionary<string, CoverageExpression> CoverageExpressions { get; set; }
+
+    public ThirdPartProvider Provider(ThirdPartNameType thirdPart)
+    {
+        return Providers.TryGetValue(thirdPart.ToString(), out var provider) ? provider : null;
+    }
+
 }
 
 public class CoverageExpression
@@ -32,6 +40,17 @@ public class ThirdPartProvider
     public List<string> PaymentTags { get; set; } = new();
     public Dictionary<string, string> NetworkMapping { get; set; } = new();
     public ProviderCoverage Coverage { get; set; }
+
+    // IpWhiteListBizType => WhiteList(e.g.: "192.1.1.1,192.1.*.*,192.1.1.1-192.1.1.100")
+    public Dictionary<string, string> IpWhiteList { get; set; } = new();
+
+    public void AssertIpWhiteList(IpWhiteListBizType bizType, string ip)
+    {
+        if (!IpWhiteList.TryGetValue(bizType.ToString(), out var listStr) || listStr.IsNullOrEmpty())
+            return;
+        AssertHelper.IsTrue(IpHelper.AssertAllowed(ip, listStr.Split(CommonConstant.Comma)),
+            "{biz} access not allowed from ip {Ip}", bizType.ToString(), ip);
+    }
 }
 
 public class CryptoItem

@@ -143,6 +143,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<TransferGrainDto, ImTransferState>().ReverseMap();
         CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
-        CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
+        CreateMap<TransakAccessTokenDto, TransakAccessTokenState>().ReverseMap();
+        CreateMap<TreasuryOrderState, TreasuryOrderDto>().ReverseMap();
     }
 }

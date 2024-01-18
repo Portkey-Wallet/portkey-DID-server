@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CAServer.ThirdPart;
 
-public class TransferOrder
+public class TreasuryOrderDto
 {
     
     public Guid Id { get; set; }
@@ -20,6 +20,7 @@ public class TransferOrder
     public int CryptoDecimals { get; set; }
     public string Fiat { get; set; }
     public decimal FiatAmount { get; set; }
+    public string SettlementAmount { get; set; }
     public List<FeeItem> FeeInfo { get; set; }
     
     public string TransactionId { get; set; }
@@ -27,7 +28,7 @@ public class TransferOrder
     public int TxRetryTimes { get; set; }
     public long TransactionTime { get; set; }
     
-    public string CallbackCount { get; set; }
+    public int CallbackCount { get; set; }
     public string CallbackStatus { get; set; }
     public long CallbackTime { get; set; }
     

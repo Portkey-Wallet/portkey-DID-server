@@ -31,8 +31,6 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
-    private readonly ITokenAppService _tokenAppService;
-    private readonly IOptionsMonitor<ChainOptions> _chainOptions;
     private readonly IBus _broadcastBus;
 
     protected readonly JsonSerializerSettings JsonDecodeSettings = new()
@@ -51,8 +49,6 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
         _broadcastBus = broadcastBus;
-        _tokenAppService = tokenAppService;
-        _chainOptions = chainOptions;
     }
 
     /// <summary>
@@ -146,34 +142,6 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
                 inputOrderDto?.Id, inputOrderDto?.ThirdPartOrderNo);
             return new CommonResponseDto<Empty>().Error(e, "INTERNAL ERROR, please try again later.");
         }
-    }
-
-    /// <summary>
-    ///     Check the price of the crypto in USDT.
-    /// </summary>
-    /// <param name="cryptoSymbol"></param>
-    /// <returns></returns>
-    public async Task<ExchangePriceDto> GetPriceInUsdtAsync(string cryptoSymbol)
-    {
-        var cryptoUsdtEx = await _tokenAppService.GetAvgLatestExchangeAsync(cryptoSymbol, CommonConstant.USDT);
-        var elfCryptoEx = cryptoSymbol == CommonConstant.ELF
-            ? cryptoUsdtEx
-            : await _tokenAppService.GetAvgLatestExchangeAsync(CommonConstant.ELF, cryptoSymbol);
-        var chainExists =
-            _chainOptions.CurrentValue.ChainInfos.TryGetValue(CommonConstant.MainChainId, out var chainInfo);
-        AssertHelper.IsTrue(chainExists, "ChainInfo of {} not found", CommonConstant.MainChainId);
-        var networkFee = chainInfo!.TransactionFee * elfCryptoEx.Exchange;
-        return new ExchangePriceDto
-        {
-            FromCrypto = cryptoSymbol,
-            ToCrypto = CommonConstant.USDT,
-            Price = cryptoUsdtEx.Exchange,
-            NetworkFee = new Dictionary<string, FeeItem>
-            {
-                [CommonConstant.MainChainId] =
-                    FeeItem.Crypto(cryptoSymbol, networkFee.ToString(CultureInfo.InvariantCulture))
-            }
-        };
     }
 
     private OrderGrainDto MergeEsAndInput2GrainModel(OrderDto fromData, OrderDto toData)

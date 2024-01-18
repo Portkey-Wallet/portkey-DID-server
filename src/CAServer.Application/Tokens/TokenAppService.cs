@@ -164,11 +164,19 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
     public async Task<TokenExchange> GetAvgLatestExchangeAsync(string fromSymbol, string toSymbol)
     {
-        var names = _exchangeProviders.Values.Select(p => p.Name()).ToList();
-        var getExchangeTasks = names.Select(name => GetLatestExchangeAsync(name.ToString(), fromSymbol, toSymbol)).ToList();
-        var exchangeList = await Task.WhenAll(getExchangeTasks);
-        AssertHelper.NotEmpty(exchangeList, "Query exchange of {}_{} failed", fromSymbol, toSymbol);
-        var avgExchange = exchangeList.Select(ex => ex.Exchange).Average();
+        decimal avgExchange;
+        if (fromSymbol != toSymbol)
+        {
+            var names = _exchangeProviders.Values.Select(p => p.Name()).ToList();
+            var getExchangeTasks = names.Select(name => GetLatestExchangeAsync(name.ToString(), fromSymbol, toSymbol)).ToList();
+            var exchangeList = await Task.WhenAll(getExchangeTasks);
+            AssertHelper.NotEmpty(exchangeList, "Query exchange of {}_{} failed", fromSymbol, toSymbol);
+            avgExchange = exchangeList.Select(ex => ex.Exchange).Average();
+        }
+        else
+        {
+            avgExchange = 1;
+        }
         return new TokenExchange
         {
             FromSymbol = fromSymbol,

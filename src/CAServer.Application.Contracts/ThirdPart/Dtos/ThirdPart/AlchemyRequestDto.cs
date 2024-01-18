@@ -183,19 +183,19 @@ public class AlchemyNftReleaseNoticeRequestDto
     public string PictureNumber { get; set; }
 }
 
-public class AlchemyTreasuryPriceRequestDto
+public class AlchemyTreasuryPriceRequestDto : TreasuryBaseContext
 {
     public string Crypto { get; set; }
 }
 
 
-public class AlchemyTreasuryOrderRequestDto
+public class AlchemyTreasuryOrderRequestDto : TreasuryBaseContext
 {
-    public string OrderNo { get; set; }
-    public string Crypto { get; set; }
-    public string Network { get; set; }
-    public string Address { get; set; }
-    public string CryptoAmount { get; set; }
-    public string CryptoPrice { get; set; }
-    public string UsdtAmount { get; set; }
+    [Required] public string OrderNo { get; set; }
+    [Required] public string Crypto { get; set; }
+    [Required] public string Network { get; set; }
+    [Required] public string Address { get; set; }
+    [Required] public string CryptoAmount { get; set; }
+    [Required] public string CryptoPrice { get; set; }
+    [Required] public string UsdtAmount { get; set; }
 }

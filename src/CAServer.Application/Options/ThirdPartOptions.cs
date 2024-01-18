@@ -68,6 +68,8 @@ public class AlchemyOptions
     public int NftFiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
     public string MerchantQueryTradeUri { get; set; }
+    public int TimestampExpireSeconds { get; set; } = 300;
+    public decimal EffectivePricePercentage { get; set; }  = 0.1M;
 }
 
 public class TransakOptions
