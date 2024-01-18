@@ -124,7 +124,7 @@ public class ThirdPartOrderController : CAServerController
             {
                 new()
                 {
-                    Network = "aelf",
+                    Network = "ELF",
                     NetworkFee = "0.0041"
                 }
             }
