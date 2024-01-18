@@ -82,4 +82,11 @@ public class CAAccountController : CAServerController
     {
         return await _caAccountService.RevokeAsync(input);
     }
+    
+    [HttpPost("authorize/delegate"), Authorize, IgnoreAntiforgeryToken]
+    public async Task<AuthorizeDelegateResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeRequestDto input)
+    {
+        return await _caAccountService.AuthorizeDelegateAsync(input);
+    }
+    
 }

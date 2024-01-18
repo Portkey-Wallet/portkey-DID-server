@@ -54,6 +54,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GuardianState, GuardianGrainDto>();
 
         CreateMap<CreateHolderDto, CreateCAHolderInput>()
+            .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => e.ProjectDelegateInfo))
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
             {
                 Type = e.GuardianInfo.Type,
