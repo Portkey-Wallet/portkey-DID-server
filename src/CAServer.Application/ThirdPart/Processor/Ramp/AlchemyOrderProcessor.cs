@@ -9,6 +9,7 @@ using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -31,8 +32,10 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         IDistributedEventBus distributedEventBus,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider,
-        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus) : base(
-        clusterClient, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus)
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus,
+        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions) : base(
+        clusterClient, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus,
+        tokenAppService, chainOptions)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartOptions = thirdPartOptions;
