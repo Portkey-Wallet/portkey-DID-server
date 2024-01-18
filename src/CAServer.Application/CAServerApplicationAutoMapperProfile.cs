@@ -28,7 +28,6 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
-using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Growth.Etos;
@@ -44,13 +43,12 @@ using CAServer.Notify.Dtos;
 using CAServer.Notify.Etos;
 using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
-using CAServer.RedPackage.Dtos;
-using CAServer.ThirdPart;
-using CAServer.PrivacyPolicy.Dtos;
 using CAServer.RedDot.Dtos;
 using CAServer.RedDot.Etos;
+using CAServer.RedPackage.Dtos;
 using CAServer.Search.Dtos;
 using CAServer.Telegram.Dtos;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Dtos.Ramp;
@@ -59,8 +57,6 @@ using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
-using CAServer.Upgrade.Dtos;
-using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
@@ -71,10 +67,12 @@ using CAServer.Verifier.Etos;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.AutoMapper;
+using CaHolderInfo = CAServer.Contacts.CaHolderInfo;
 using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
 using GuardianType = CAServer.Account.GuardianType;
-using ImInfo = CAServer.Contacts.ImInfo;
+using ImInfo = CAServer.Entities.Es.ImInfo;
+using OrderStatusInfo = CAServer.ThirdPart.Dtos.OrderStatusInfo;
 using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
@@ -406,22 +404,22 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<ContactAddress, ContactAddressDto>();
         CreateMap<CreateUpdateContactDto, ContactDto>();
         CreateMap<ContactDto, ContactGrainDto>();
-        CreateMap<CAHolderIndex, Contacts.CaHolderInfo>()
+        CreateMap<CAHolderIndex, CaHolderInfo>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
-        CreateMap<CAHolderGrainDto, Contacts.CaHolderInfo>()
+        CreateMap<CAHolderGrainDto, CaHolderInfo>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
-        CreateMap<Entities.Es.CaHolderInfo, Contacts.CaHolderInfo>();
-        CreateMap<Entities.Es.ImInfo, Contacts.ImInfo>();
+        CreateMap<Entities.Es.CaHolderInfo, CaHolderInfo>();
+        CreateMap<ImInfo, Contacts.ImInfo>();
 
         CreateMap<CAHolderGrainDto, DeleteCAHolderEto>();
-        CreateMap<ImInfoDto, ImInfo>();
+        CreateMap<ImInfoDto, Contacts.ImInfo>();
         CreateMap<AddressWithChain, ContactAddressDto>()
             .ForMember(t => t.ChainId, m => m.MapFrom(f => f.ChainName.ToUpper()))
             .ForMember(t => t.ChainName, f => f.MapFrom(m => m.ChainName));
-        CreateMap<Contacts.CaHolderInfo, CaHolderDto>()
+        CreateMap<CaHolderInfo, CaHolderDto>()
             .ForMember(t => t.UserId, m => m.MapFrom(f => f.UserId == Guid.Empty ? string.Empty : f.UserId.ToString()))
             ;
-        CreateMap<ImInfo, ImInfos>()
+        CreateMap<Contacts.ImInfo, ImInfos>()
             .ForMember(t => t.PortkeyId,
                 m => m.MapFrom(f => f.PortkeyId == Guid.Empty ? string.Empty : f.PortkeyId.ToString()))
             ;
@@ -444,7 +442,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.NickName));
         CreateMap<CAHolderGrainDto, HolderInfoWithAvatar>()
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
-        CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
+        CreateMap<HolderInfoWithAvatar, CaHolderInfo>().ReverseMap();
         CreateMap<CAHolderIndex, HolderInfoResultDto>();
         
         CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
@@ -458,7 +456,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
 
         CreateMap<OrderStatusInfoEto, OrderStatusInfoIndex>().ReverseMap();
-        CreateMap<CAServer.ThirdPart.Dtos.OrderStatusInfo, CAServer.Entities.Es.OrderStatusInfo>().ReverseMap();
+        CreateMap<OrderStatusInfo, Entities.Es.OrderStatusInfo>().ReverseMap();
 
         CreateMap<OrderEto, RampOrderIndex>().ReverseMap();
         CreateMap<OrderEto, NotifyOrderDto>()
@@ -493,7 +491,7 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ReverseMap()
             .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
-        CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
+        CreateMap<Entities.Es.Token, Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
             .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
         CreateMap<ImTransferDto, TransferGrainDto>();
@@ -571,12 +569,6 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
-            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
-
-
-        CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
-        CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
-        CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
             .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
 
         CreateMap<RedDotGrainDto, RedDotEto>();

@@ -14,7 +14,6 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
-using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
 using CAServer.Grains.State.Bookmark;
@@ -151,7 +150,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
-        CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
         CreateMap<RedDotState, RedDotGrainDto>().ReverseMap();
         CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
     }
