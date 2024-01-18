@@ -5,7 +5,8 @@
     "AppId": "CAServerService",
     "MetaServer": "http://192.168.66.212:8080,http://192.168.66.160:8080",
     "Namespaces": [
-      "ramp.json"
+      "ramp.json",
+      "admin.json"
     ]
   }
 }

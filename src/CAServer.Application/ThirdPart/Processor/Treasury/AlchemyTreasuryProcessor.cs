@@ -9,8 +9,8 @@ using CAServer.Options;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.Tokens;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Orleans;
+using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Processor.Treasury;
@@ -25,8 +25,8 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
 
     public AlchemyTreasuryProcessor(ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptionsMonitor<RampOptions> rampOptions,
-        IObjectMapper objectMapper, IClusterClient clusterClient) :
-        base(tokenAppService, chainOptions, clusterClient, objectMapper, thirdPartOptions)
+        IObjectMapper objectMapper, IClusterClient clusterClient, IDistributedEventBus distributedEventBus) :
+        base(tokenAppService, chainOptions, clusterClient, objectMapper, thirdPartOptions, distributedEventBus)
     {
         _tokenAppService = tokenAppService;
         _thirdPartOptions = thirdPartOptions;
@@ -85,8 +85,6 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         await AssertSignatureAsync(input);
 
         var rampConfig = _rampOptions.CurrentValue.Provider(ThirdPartName());
-        rampConfig.AssertIpWhiteList(IpWhiteListBizType.AlchemyPayTreasury, GetRealIp(input!.HttpContext));
-
         var mappingNetwork = rampConfig.NetworkMapping.Where(kv => kv.Value == input.Network).Select(kv => kv.Key)
             .FirstOrDefault();
         AssertHelper.NotEmpty(mappingNetwork, "Input network not support {}", input.Network);

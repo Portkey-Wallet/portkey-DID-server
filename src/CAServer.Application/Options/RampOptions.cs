@@ -40,17 +40,6 @@ public class ThirdPartProvider
     public List<string> PaymentTags { get; set; } = new();
     public Dictionary<string, string> NetworkMapping { get; set; } = new();
     public ProviderCoverage Coverage { get; set; }
-
-    // IpWhiteListBizType => WhiteList(e.g.: "192.1.1.1,192.1.*.*,192.1.1.1-192.1.1.100")
-    public Dictionary<string, string> IpWhiteList { get; set; } = new();
-
-    public void AssertIpWhiteList(IpWhiteListBizType bizType, string ip)
-    {
-        if (!IpWhiteList.TryGetValue(bizType.ToString(), out var listStr) || listStr.IsNullOrEmpty())
-            return;
-        AssertHelper.IsTrue(IpHelper.AssertAllowed(ip, listStr.Split(CommonConstant.Comma)),
-            "{biz} access not allowed from ip {Ip}", bizType.ToString(), ip);
-    }
 }
 
 public class CryptoItem

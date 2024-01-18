@@ -1,0 +1,12 @@
+{
+  
+  "AdminOptions": {
+    "Roles": {
+      "RoleName": ["Users"]
+    },
+    "Users": {
+      "UserName": "password"
+    }
+  }
+  
+}

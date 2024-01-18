@@ -79,6 +79,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<AddToWhiteListUrlsOptions>(configuration.GetSection("AddToWhiteListUrls"));
         Configure<ContactOptions>(configuration.GetSection("Contact"));
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -324,7 +325,11 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseAbpRequestLocalization();
         app.UseCorrelationId();
+        
+        app.UseMiddleware<DeviceInfoMiddleware>();
+        app.UseMiddleware<ConditionalIpWhitelistMiddleware>();
         app.UseStaticFiles();
+        
         app.UseRouting();
         app.UseCors();
         app.UseAuthentication();
@@ -339,7 +344,6 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
-        app.UseMiddleware<DeviceInfoMiddleware>();
 
         if (env.IsDevelopment())
         {
@@ -362,7 +366,7 @@ public class CAServerHttpApiHostModule : AbpModule
         StartOrleans(context.ServiceProvider);
 
         // to start pre heat
-        context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync().GetAwaiter().GetResult();
+        _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
