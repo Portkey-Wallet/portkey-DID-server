@@ -68,7 +68,7 @@ public class NftOrderThirdPartOrderStatusWorker : IJobWorker, ISingletonDependen
                     LastModifyTimeGt = modifyTimeGt,
                     StatusIn = new List<string>
                     {
-                        OrderStatusType.Initialized.ToString(),
+                        // OrderStatusType.Initialized.ToString(),
                         OrderStatusType.Created.ToString(),
                     },
                     TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() }

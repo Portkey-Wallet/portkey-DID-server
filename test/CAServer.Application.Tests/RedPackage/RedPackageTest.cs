@@ -16,8 +16,8 @@ public partial class RedPackageTest : CAServerApplicationTestBase
 {
     private readonly IRedPackageAppService _redPackageAppService;
     protected ICurrentUser _currentUser;
-    private readonly Guid userId = Guid.NewGuid();
-    private Guid redPackageId = Guid.NewGuid();
+    private readonly Guid userId = Guid.Parse("158ff364-3264-4234-ab20-02aaada2aaad");
+    private Guid redPackageId = Guid.Parse("f825f8f1-d3a4-4ee7-a98d-ad06b61094c0");
     
     public RedPackageTest()
     {
@@ -29,20 +29,26 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         base.AfterAddApplication(services);
         _currentUser = Substitute.For<ICurrentUser>();
         services.AddSingleton(_currentUser);
+        services.AddSingleton(GetMockClusterClient());
         services.AddSingleton(GetMockHttpContextAccessor());
+        services.AddSingleton(MockChainOptionsSnapshot());
+        services.AddSingleton(MockRedPackageKeyGrain());
+        services.AddSingleton(MockRedpackageOptions());
+        services.AddSingleton(MockCryptoBoxGrain());
+        services.AddSingleton(MockRedPackageIndex());
     }
     
     [Fact]
     public async Task GenerateRedPackageAsync_test()
     {
-        // var ex = await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
-        //     {
-        //         ChainId = "xxx",
-        //         Symbol = "xxxx"
-        //     });
-        // });
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
+            {
+                ChainId = "xxx",
+                Symbol = "xxxx"
+            });
+        });
         
         // var res = await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
         // {
@@ -146,7 +152,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetCreationResultAsync_test()
     {
-        var res = await _redPackageAppService.GetCreationResultAsync(Guid.NewGuid());
+        var res = await _redPackageAppService.GetCreationResultAsync(Guid.Parse("1f691ad9-1a99-4456-b4d4-fdfc3cd128a2"));
         res.Status.ShouldBe(RedPackageTransactionStatus.Fail);
     }
     
@@ -190,17 +196,11 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         
         Login(userId);
         var sendinput = NewSendRedPackageInputDto();
-        //await _redPackageAppService.SendRedPackageAsync(sendinput);
-        //res = await _redPackageAppService.GrabRedPackageAsync(input);
-        //res.Result.ShouldBe(RedPackageGrabStatus.Success);
-        // var detailDto = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, 0, 10);
-        // detailDto.GrabbedAmount.ShouldBe(res.Amount);
-        // detailDto.Grabbed.ShouldBe(1);
-        // detailDto.Status.ShouldBe(RedPackageStatus.Claimed);
-        // detailDto.Items.Count.ShouldBe(1);
-        
-        // res = await _redPackageAppService.GrabRedPackageAsync(input);
-        res.Result.ShouldBe(RedPackageGrabStatus.Fail);
+        await _redPackageAppService.SendRedPackageAsync(sendinput);
+        res = await _redPackageAppService.GrabRedPackageAsync(input);
+        res.Result.ShouldBe(RedPackageGrabStatus.Success);
+        var detailDto = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, 0, 10);
+        detailDto.Status.ShouldBe(RedPackageStatus.Claimed);
 
         var newId = Guid.NewGuid();
         sendinput.Id = newId;

@@ -194,7 +194,8 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
 
     private async Task SetNameAsync(UserExtraInfoGrainDto userExtraInfo)
     {
-        var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(userExtraInfo.Id);
+        var userId = userExtraInfo.Id.RemovePreFix("UserExtraInfo-");
+        var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(userId);
         if (userInfo == null) return;
 
         userExtraInfo.FirstName = userInfo.FirstName;

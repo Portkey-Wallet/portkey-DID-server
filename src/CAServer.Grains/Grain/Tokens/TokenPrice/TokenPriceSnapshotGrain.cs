@@ -63,6 +63,8 @@ public class TokenPriceSnapshotGrain : Grain<TokenPriceSnapshotState>, ITokenPri
         }
         catch (Exception e)
         {
+            // use last price if get price fail.
+            price = State.PriceInUsd;
             _logger.LogError(e, "Get history price error: {symbol}, {dateTime}", symbol, dateTime);
         }
 
