@@ -8,7 +8,7 @@ public class AlchemyBaseResponseDto<T>
 {
     public const string SuccessCode = "0000";
 
-    public string Success { get; set; } = "Success";
+    public bool Success => ReturnCode == SuccessCode;
     public string ReturnCode { get; set; } = SuccessCode;
     public string ReturnMsg { get; set; } = "SUCCESS";
     public string Extend { get; set; } = "";
@@ -35,8 +35,6 @@ public class AlchemyBaseResponseDto<T>
     {
         return new AlchemyBaseResponseDto<T>
         {
-
-            Success = "Fail",
             ReturnMsg = msg,
             ReturnCode = code.ToString()
         };
