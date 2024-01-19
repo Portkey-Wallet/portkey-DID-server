@@ -264,8 +264,9 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             Transaction transferTx;
             if (orderGrainDto.RawTransaction.IsNullOrEmpty())
             {
+                var amount = orderGrainDto.CryptoAmount.SafeToDecimal() * (decimal)Math.Pow(10, orderGrainDto.CryptoDecimals);
                 (var txId, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
-                    orderGrainDto.CryptoAmount,
+                    amount.ToString(0, DecimalHelper.RoundingOption.Floor),
                     nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
                     _thirdPartOptions.CurrentValue.Merchant.NftOrderSettlementPublicKey);
                 // update main-order, record transactionId first
