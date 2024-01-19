@@ -21,4 +21,8 @@
     <Folder Include="Common\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
+  </ItemGroup>
+
 </Project>
