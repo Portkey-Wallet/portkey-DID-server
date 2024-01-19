@@ -6,37 +6,73 @@ using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
+using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos.ThirdPart;
+using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
-using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Processor.Treasury;
 
 public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
 {
+    private readonly ILogger<AlchemyTreasuryProcessor> _logger;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
     private readonly ITokenAppService _tokenAppService;
     private readonly IObjectMapper _objectMapper;
+    private readonly AlchemyProvider _alchemyProvider;
 
 
     public AlchemyTreasuryProcessor(ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptionsMonitor<RampOptions> rampOptions,
-        IObjectMapper objectMapper, IClusterClient clusterClient, IDistributedEventBus distributedEventBus) :
-        base(tokenAppService, chainOptions, clusterClient, objectMapper, thirdPartOptions, distributedEventBus)
+        IObjectMapper objectMapper, IClusterClient clusterClient, IThirdPartOrderProvider thirdPartOrderProvider,
+        ILogger<AlchemyTreasuryProcessor> logger, ITreasuryOrderProvider treasuryOrderProvider,
+        AlchemyProvider alchemyProvider) :
+        base(tokenAppService, chainOptions, clusterClient, objectMapper, thirdPartOptions,
+            thirdPartOrderProvider, logger, treasuryOrderProvider)
     {
         _tokenAppService = tokenAppService;
         _thirdPartOptions = thirdPartOptions;
         _rampOptions = rampOptions;
         _objectMapper = objectMapper;
+        _logger = logger;
+        _alchemyProvider = alchemyProvider;
     }
 
     public override ThirdPartNameType ThirdPartName()
     {
         return ThirdPartNameType.Alchemy;
+    }
+
+    public override Task CallBackThirdPart(TreasuryOrderDto orderDto)
+    {
+        try
+        {
+        }
+        catch (Exception e)
+        {
+            
+        }
+
+        var networkMapping = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
+            .TryGetValue(orderDto.Network, out var achNetwork);
+        AssertHelper()
+        var request = new AlchemyTreasuryCallBackDto
+        {
+            OrderNo = orderDto.ThirdPartOrderId,
+            Crypto = orderDto.Crypto,
+            CryptoAmount = orderDto.CryptoAmount,
+            CryptoPrice = orderDto.CryptoPriceInUsdt.ToString(CultureInfo.InvariantCulture),
+            TxHash = orderDto.TransactionId,
+            Network = orderDto.Network
+        };
+
+
+
     }
 
     internal override async Task<string> AdaptPriceInputAsync<TPriceInput>(TPriceInput priceInput)
@@ -51,22 +87,14 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
     internal override async Task<TreasuryBaseResult> AdaptPriceOutputAsync(
         TreasuryPriceDto treasuryPriceDto)
     {
-        var exchangePrice = async (string fromSymbol, string toSymbol, decimal price) =>
-        {
-            if (fromSymbol == toSymbol) return price;
-            var exchange = await _tokenAppService.GetAvgLatestExchangeAsync(fromSymbol, toSymbol);
-            AssertHelper.NotNull(exchange, "Exchange from {} to {} not found", fromSymbol, toSymbol);
-            return price * exchange.Exchange;
-        };
-
         var networkList = new List<AlchemyTreasuryPriceResultDto.AlchemyTreasuryNetwork>();
         foreach (var (network, fee) in treasuryPriceDto.NetworkFee)
         {
-            var cryptoPrice = await exchangePrice(fee.Symbol, treasuryPriceDto.Crypto, fee.Amount.SafeToDecimal());
+            var price = fee.Amount.SafeToDecimal() * fee.SymbolPriceInUsdt.SafeToDecimal();
             networkList.Add(new AlchemyTreasuryPriceResultDto.AlchemyTreasuryNetwork
             {
                 Network = network,
-                NetworkFee = cryptoPrice.ToString(CultureInfo.InvariantCulture)
+                NetworkFee = price.ToString(CultureInfo.InvariantCulture)
             });
         }
 

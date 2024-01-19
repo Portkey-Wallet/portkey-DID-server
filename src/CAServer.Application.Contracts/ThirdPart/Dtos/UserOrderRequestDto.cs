@@ -52,6 +52,9 @@ public class GetThirdPartOrderConditionDto : PagedResultRequestDto
     public string LastModifyTimeGt { get; set; }
     public List<Guid> OrderIdIn { get; set; }
     
+    public string ThirdPartName { get; set; }
+    public List<string> ThirdPartOrderNoIn { get; set; }
+    
     /// <see cref="TransferDirectionType"/>
     public List<string> TransDirectIn { get; set; }
     

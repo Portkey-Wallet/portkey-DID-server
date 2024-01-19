@@ -30,17 +30,17 @@ public class ThirdPartOrderController : CAServerController
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly INftCheckoutService _nftCheckoutService;
     private readonly ILogger<ThirdPartOrderController> _logger;
-    private readonly Dictionary<string, IThirdPartTreasuryProcessor> _treasuryProcessors;
+    private readonly ITreasuryProcessorFactory _treasuryProcessorFactory;
 
     public ThirdPartOrderController(
         INftCheckoutService nftCheckoutService,
         IThirdPartOrderAppService thirdPartOrderAppService, ILogger<ThirdPartOrderController> logger,
-        IEnumerable<IThirdPartTreasuryProcessor> treasuryProcessors)
+        ITreasuryProcessorFactory treasuryProcessorFactory)
     {
         _nftCheckoutService = nftCheckoutService;
         _thirdPartOrderAppService = thirdPartOrderAppService;
         _logger = logger;
-        _treasuryProcessors = treasuryProcessors.ToDictionary(p => p.ThirdPartName().ToString());
+        _treasuryProcessorFactory = treasuryProcessorFactory;
     }
 
     [HttpGet("tfa/generate")]
@@ -116,18 +116,16 @@ public class ThirdPartOrderController : CAServerController
 
     [HttpGet("treasury/price/alchemy")]
     public async Task<AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>> AlchemyTreasurePrice(
-        
         AlchemyTreasuryPriceRequestDto input)
     {
         _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
             HttpContext.Request.Path.ToString(),
             Encoding.UTF8.GetString(await HttpContext.Request.Body.GetAllBytesAsync()),
             JsonConvert.SerializeObject(HttpContext.Request.Headers));
-        var processorExists = _treasuryProcessors.TryGetValue(ThirdPartNameType.Alchemy.ToString(), out var processor);
-        AssertHelper.IsTrue(processorExists, "Alchemy treasury processor not found");
-        
+
         input.HttpContext = HttpContext;
-        var result = await processor!.GetPriceAsync(input);
+        var result = await _treasuryProcessorFactory.Processor(ThirdPartNameType.Alchemy.ToString())
+            .GetPriceAsync(input);
         return new AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>(result as AlchemyTreasuryPriceResultDto);
     }
 
@@ -138,11 +136,9 @@ public class ThirdPartOrderController : CAServerController
             HttpContext.Request.Path.ToString(),
             JsonConvert.SerializeObject(input),
             JsonConvert.SerializeObject(HttpContext.Request.Headers));
-        var processorExists = _treasuryProcessors.TryGetValue(ThirdPartNameType.Alchemy.ToString(), out var processor);
-        AssertHelper.IsTrue(processorExists, "Alchemy treasury processor not found");
-        
-        input.HttpContext = HttpContext;
-        await processor!.NotifyOrder(input);
+            input.HttpContext = HttpContext;
+            
+        await _treasuryProcessorFactory.Processor(ThirdPartNameType.Alchemy.ToString()).NotifyOrderAsync(input);
         return new AlchemyBaseResponseDto<Empty>();
     }
 }

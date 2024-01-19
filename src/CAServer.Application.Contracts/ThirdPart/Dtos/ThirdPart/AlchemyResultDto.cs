@@ -110,3 +110,16 @@ public class AlchemyTreasuryPriceResultDto : TreasuryBaseResult
     }
     
 }
+
+public class AlchemyTreasuryCallBackDto
+{
+    public string OrderNo {get;set;}
+    public string Crypto {get;set;}
+    public string CryptoAmount {get;set;}
+    public string CryptoPrice {get;set;}
+    public string TxHash {get;set;}
+    public string Network {get;set;}
+    public string NetworkFee {get;set;}
+    public string Address {get;set;}
+    public string Status {get;set;}
+}

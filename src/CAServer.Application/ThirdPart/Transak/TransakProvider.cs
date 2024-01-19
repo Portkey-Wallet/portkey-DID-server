@@ -194,7 +194,9 @@ public class TransakProvider
             TransakApi.RefreshAccessToken,
             body: JsonConvert.SerializeObject(new Dictionary<string, string> { ["apiKey"] = GetApiKey() }),
             header: new Dictionary<string, string> { ["api-secret"] = TransakOptions().AppSecret },
-            settings: JsonSerializerSettings);
+            settings: JsonSerializerSettings, 
+            withDebugLog: false,
+            withInfoLog: false);
         AssertHelper.NotNull(accessTokenResp?.Data, "AccessToken response null");
         AssertHelper.NotEmpty(accessTokenResp.Data.AccessToken, "AccessToken empty");
         return accessTokenResp.Data;

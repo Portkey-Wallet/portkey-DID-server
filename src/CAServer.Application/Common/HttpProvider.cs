@@ -163,8 +163,8 @@ public class HttpProvider : IHttpProvider
                 fullUrl, response.StatusCode, time, builder.Query, request.Headers.ToString(), body, content);
         else 
             _logger.LogDebug(
-                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}",
-                fullUrl, response.StatusCode, time, builder.Query);
+                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}",
+                fullUrl, response.StatusCode, time);
         return response;
     }
     

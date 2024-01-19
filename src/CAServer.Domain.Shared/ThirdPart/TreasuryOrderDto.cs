@@ -9,9 +9,14 @@ public class TreasuryOrderDto
     public Guid Id { get; set; }
     public Guid RampOrderId { get; set; }
     public string ThirdPartName { get; set; }
+    
+    /// <see cref="TransferDirectionType"/>
+    public string TransferDirection { get; set; }
     public string ThirdPartOrderId { get; set; }
     public string Network { get; set; }
     public string ToAddress { get; set; }
+    
+    /// <see cref="OrderStatusType"/>
     public string Status { get; set; }
     
     public string Crypto { get; set; }
@@ -28,8 +33,10 @@ public class TreasuryOrderDto
     public int TxRetryTimes { get; set; }
     public long TransactionTime { get; set; }
     
-    public int CallbackCount { get; set; }
+    /// <see cref="TreasuryCallBackStatus"/>
     public string CallbackStatus { get; set; }
+    public string CallBackResult { get; set; }
+    public int CallbackCount { get; set; }
     public long CallbackTime { get; set; }
     
     public long CreateTime { get; set; }

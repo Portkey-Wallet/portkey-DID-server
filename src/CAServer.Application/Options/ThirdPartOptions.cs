@@ -11,7 +11,13 @@ public class ThirdPartOptions
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
     public OrderExportAuth OrderExportAuth { get; set; }
+    public TreasuryOptions TreasuryOptions { get; set; }
 
+}
+
+public class TreasuryOptions
+{
+    public Dictionary<string, string> SettlementAddress { get; set; } = new();
 }
 
 public class OrderExportAuth
@@ -57,6 +63,9 @@ public class AlchemyOptions
     public string NftAppId { get; set; }
     public string NftAppSecret { get; set; }
     public string NftBaseUrl { get; set; }
+    public string TreasuryAppId { get; set; }
+    public string TreasuryAppSecret { get; set; }
+    public string TreasuryBaseUrl { get; set; }
     public string UpdateSellOrderUri { get; set; }
     public string FiatListUri { get; set; }
     public string CryptoListUri { get; set; }

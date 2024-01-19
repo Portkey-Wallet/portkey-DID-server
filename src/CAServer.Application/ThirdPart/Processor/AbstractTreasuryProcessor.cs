@@ -1,45 +1,50 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
-using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
-using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processors;
+using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orleans;
-using Volo.Abp.EventBus.Distributed;
+using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Processor;
 
 public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
 {
+    private readonly ILogger<AbstractTreasuryProcessor> _logger;
     private readonly ITokenAppService _tokenAppService;
     private readonly IOptionsMonitor<ChainOptions> _chainOptions;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IClusterClient _clusterClient;
     private readonly IObjectMapper _objectMapper;
-    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly ITreasuryOrderProvider _treasuryOrderProvider;
 
     public AbstractTreasuryProcessor(ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions,
         IClusterClient clusterClient, IObjectMapper objectMapper, IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
-        IDistributedEventBus distributedEventBus)
+        IThirdPartOrderProvider thirdPartOrderProvider, ILogger<AbstractTreasuryProcessor> logger,
+        ITreasuryOrderProvider treasuryOrderProvider)
     {
         _tokenAppService = tokenAppService;
         _chainOptions = chainOptions;
         _clusterClient = clusterClient;
         _objectMapper = objectMapper;
         _thirdPartOptions = thirdPartOptions;
-        _distributedEventBus = distributedEventBus;
+        _thirdPartOrderProvider = thirdPartOrderProvider;
+        _logger = logger;
+        _treasuryOrderProvider = treasuryOrderProvider;
     }
 
     internal abstract Task<string> AdaptPriceInputAsync<TPriceInput>(TPriceInput priceInput)
@@ -50,6 +55,8 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     internal abstract Task<TreasuryOrderRequest> AdaptOrderInputAsync<TOrderInput>(TOrderInput orderInput)
         where TOrderInput : TreasuryBaseContext;
 
+    public abstract Task<bool> CallBackThirdPart(TreasuryOrderDto orderDto, out string callBackResult);
+
 
     /// <summary>
     ///     ThirdPart provider name enum
@@ -57,13 +64,11 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     /// <returns></returns>
     public abstract ThirdPartNameType ThirdPartName();
 
-
     /// <summary>
     ///     query treasury price
     /// </summary>
     /// <param name="priceInput"></param>
     /// <typeparam name="TPriceInput"></typeparam>
-    /// <typeparam name="TPriceOutput"></typeparam>
     /// <returns></returns>
     public async Task<TreasuryBaseResult> GetPriceAsync<TPriceInput>(TPriceInput priceInput)
         where TPriceInput : TreasuryBaseContext
@@ -79,7 +84,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             Price = cryptoUsdtEx.Exchange,
             NetworkFee = new Dictionary<string, FeeItem>
             {
-                [CommonConstant.MainChainId] = NetworkFeeInElf(CommonConstant.MainChainId)
+                [CommonConstant.MainChainId] = await NetworkFeeInElf(CommonConstant.MainChainId)
             }
         };
 
@@ -87,13 +92,17 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
         return await AdaptPriceOutputAsync(cryptoPrice);
     }
 
-    public FeeItem NetworkFeeInElf(string chainId)
+    public async Task<FeeItem> NetworkFeeInElf(string chainId)
     {
         var chainExists =
             _chainOptions.CurrentValue.ChainInfos.TryGetValue(chainId, out var chainInfo);
         AssertHelper.IsTrue(chainExists, "ChainInfo of {} not found", CommonConstant.MainChainId);
         AssertHelper.NotNull(chainInfo, "ChainInfo of {} empty", CommonConstant.MainChainId);
-        return FeeItem.Crypto(CommonConstant.ELF, chainInfo!.TransactionFee.ToString(CultureInfo.InvariantCulture));
+
+        var exchange = await _tokenAppService.GetAvgLatestExchangeAsync(CommonConstant.ELF, CommonConstant.USDT);
+        AssertHelper.NotNull(exchange, "Query exchange form {} to {} failed", CommonConstant.ELF, CommonConstant.USDT);
+        return FeeItem.Crypto(CommonConstant.ELF, chainInfo!.TransactionFee.ToString(CultureInfo.InvariantCulture),
+            exchange.Exchange);
     }
 
     /// <summary>
@@ -102,66 +111,108 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     /// <param name="thirdPartOrderInput"></param>
     /// <typeparam name="TOrderInput"></typeparam>
     /// <returns></returns>
-    public async Task NotifyOrder<TOrderInput>(TOrderInput thirdPartOrderInput) where TOrderInput : TreasuryBaseContext
+    public async Task NotifyOrderAsync<TOrderInput>(TOrderInput thirdPartOrderInput) where TOrderInput : TreasuryBaseContext
     {
-        var orderInput = await AdaptOrderInputAsync(thirdPartOrderInput);
-
-        var orderId = GuidHelper.UniqId(orderInput.ThirdPartName, orderInput.ThirdPartOrderId);
-        var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderId);
-        var orderResp = await treasuryOrderGrain.GetAsync();
-        AssertHelper.NotNull(orderResp, "Get order grain failed");
-
-        var orderDto = orderResp.Data;
-        AssertHelper.NotNull(orderDto, "Get order grain data failed");
-        AssertHelper.IsTrue(orderDto.ThirdPartOrderId.IsNullOrEmpty(), "Order {} of {} exists {}",
-            orderInput.ThirdPartOrderId, orderInput.ThirdPartName, orderId);
-
-        var token = await _tokenAppService.GetTokenInfoAsync(CommonConstant.MainChainId, orderInput.Crypto);
-        AssertHelper.NotNull(token, "Token {} not found", orderInput.Crypto);
-
-        // token price 
-        var exchange = await _tokenAppService.GetAvgLatestExchangeAsync(orderInput.Crypto, CommonConstant.USDT);
-        var inputExchange = orderInput.CryptoPrice.SafeToDecimal();
-        var deltaPercent = (inputExchange - exchange.Exchange) / inputExchange;
-        AssertHelper.IsTrue(deltaPercent < _thirdPartOptions.CurrentValue.Alchemy.EffectivePricePercentage,
-            "Invalid crypto price,from={} to={} input={}, latest={}", orderInput.Crypto, CommonConstant.USDT,
-            inputExchange, exchange.Exchange);
-
-        _objectMapper.Map(thirdPartOrderInput, orderDto);
-        orderDto.Id = orderId;
-        orderDto.Status = OrderStatusType.Created.ToString();
-        orderDto.CryptoDecimals = token.Decimals;
-        orderDto.FeeInfo = new List<FeeItem> { NetworkFeeInElf(CommonConstant.MainChainId) };
-
-        await DoSaveOrder(orderDto);
-    }
-
-    public async Task DoSaveOrder(TreasuryOrderDto orderDto, Dictionary<string, string> externalData = null)
-    {
-        var orderStatusGrain = _clusterClient.GetGrain<IOrderStatusInfoGrain>(
-            GrainIdHelper.GenerateGrainId(CommonConstant.TreasuryOrderStatusInfoPrefix,
-                orderDto.RampOrderId.ToString()));
-        await orderStatusGrain.AddOrderStatusInfo(new OrderStatusInfoGrainDto
+        try
         {
-            OrderId = orderDto.Id,
-            ThirdPartOrderNo = orderDto.ThirdPartOrderId,
-            OrderStatusInfo = new OrderStatusInfo
-            {
-                Status = orderDto.Status,
-                LastModifyTime = DateTime.UtcNow.ToUtcMilliSeconds(),
-                Extension = externalData.IsNullOrEmpty() ? null : JsonConvert.SerializeObject(externalData),
-            }
-        });
-        
-        var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderDto.Id);
-        await treasuryOrderGrain.SaveOrUpdateAsync(orderDto);
-        await _distributedEventBus.PublishAsync(new TreasuryOrderEto(orderDto));
+            var orderInput = await AdaptOrderInputAsync(thirdPartOrderInput);
+            AssertHelper.NotEmpty(orderInput.Address, "Empty address");
+            var address = Address.FromBase58(orderInput.Address);
+            AssertHelper.NotNull(address, "Invalid address");
+
+            // Query and verify ramp order
+            var rampOrderPager = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
+                new GetThirdPartOrderConditionDto(0, 1)
+                {
+                    ThirdPartName = orderInput.ThirdPartName,
+                    ThirdPartOrderNoIn = new List<string> { orderInput.ThirdPartOrderId }
+                });
+            AssertHelper.NotNull(rampOrderPager, "Ramp order query result empty");
+
+            var rampOrder = rampOrderPager.Items.FirstOrDefault();
+            AssertHelper.NotNull(rampOrder, "Ramp order not exists");
+            AssertHelper.IsTrue(rampOrder!.Crypto == orderInput.Crypto, "Crypto symbol not match");
+            AssertHelper.IsTrue(rampOrder.CryptoAmount == orderInput.CryptoAmount, "Crypto amount not match");
+            AssertHelper.IsTrue(rampOrder.Address == orderInput.Address, "Address not match");
+            AssertHelper.IsTrue(rampOrder.TransDirect == TransferDirectionType.TokenBuy.ToString(),
+                "Invalid ramp order transDirect");
+
+            // Query order grain, verify exists
+            var orderId = GuidHelper.UniqId(orderInput.ThirdPartName, orderInput.ThirdPartOrderId);
+            var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderId);
+
+            var orderResp = await treasuryOrderGrain.GetAsync();
+            AssertHelper.NotNull(orderResp, "Get order grain failed");
+            var orderDto = orderResp.Data;
+            AssertHelper.NotNull(orderDto, "Get order grain data failed");
+            AssertHelper.IsTrue(orderDto.ThirdPartOrderId.IsNullOrEmpty(), "Order {} of {} exists {}",
+                orderInput.ThirdPartOrderId, orderInput.ThirdPartName, orderId);
+
+            // Crypto token price 
+            var token = await _tokenAppService.GetTokenInfoAsync(CommonConstant.MainChainId, orderInput.Crypto);
+            AssertHelper.NotNull(token, "Token {} not found", orderInput.Crypto);
+
+            var exchange = await _tokenAppService.GetAvgLatestExchangeAsync(orderInput.Crypto, CommonConstant.USDT);
+            var inputExchange = orderInput.CryptoPrice.SafeToDecimal();
+            var deltaPercent = (inputExchange - exchange.Exchange) / inputExchange;
+            AssertHelper.IsTrue(deltaPercent < _thirdPartOptions.CurrentValue.Alchemy.EffectivePricePercentage,
+                "Invalid crypto price,from={} to={} input={}, latest={}", orderInput.Crypto, CommonConstant.USDT,
+                inputExchange, exchange.Exchange);
+
+            _objectMapper.Map(thirdPartOrderInput, orderDto);
+            orderDto.Id = orderId;
+            orderDto.Status = OrderStatusType.Created.ToString();
+            orderDto.CryptoDecimals = token.Decimals;
+            orderDto.FeeInfo = new List<FeeItem> { await NetworkFeeInElf(CommonConstant.MainChainId) };
+
+            await _treasuryOrderProvider.DoSaveOrder(orderDto);
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning("AbstractTreasuryProcessor handle notify order failed: {Msg}", e.Message);
+            throw;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "AbstractTreasuryProcessor handle notify order error!");
+            throw new UserFriendlyException("Internal error, please try again later");
+        }
     }
-    
-    internal string GetRealIp(HttpContext httpContext)
+
+
+    /// <summary>
+    ///     Order Status of Callback Tripartite Service
+    /// </summary>
+    /// <param name="orderId"></param>
+    /// <returns></returns>
+    public async Task CallBackAsync(Guid orderId)
     {
-        if (httpContext?.Request.Headers.IsNullOrEmpty() ?? true) return null;
-        var ipArr = httpContext?.Request.Headers["X-Forwarded-For"].ToString().Split(',');
-        return ipArr.IsNullOrEmpty() ? null : ipArr[0].Trim();
+        TreasuryOrderDto orderDto = null;
+        try
+        {
+            var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderId);
+
+            var orderResp = await treasuryOrderGrain.GetAsync();
+            AssertHelper.NotNull(orderResp, "Get order grain failed");
+            orderDto = orderResp.Data;
+            AssertHelper.NotNull(orderDto, "Get order grain data failed");
+
+            var success = await CallBackThirdPart(orderDto, out var callBackResult);
+            orderDto.CallbackCount++;
+            orderDto.CallbackTime = DateTime.UtcNow.ToUtcMilliSeconds();
+            orderDto.CallBackResult = callBackResult;
+            orderDto.CallbackStatus =
+                success ? TreasuryCallBackStatus.Success.ToString() : TreasuryCallBackStatus.Failed.ToString();
+            
+            await _treasuryOrderProvider.DoSaveOrder(orderDto, OrderStatusExtensionBuilder.Create()
+                .Add(ExtensionKey.CallBackStatus, orderDto.CallbackStatus)
+                .Add(ExtensionKey.CallBackResult, callBackResult)
+                .Build());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Treasury order callback error, orderId={OrderId}, status={Status}", orderId,
+                orderDto?.Status ?? "null");
+        }
     }
 }

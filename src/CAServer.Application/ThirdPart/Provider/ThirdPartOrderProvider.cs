@@ -136,6 +136,15 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         if (!condition.LastModifyTimeGt.IsNullOrEmpty())
             mustQuery.Add(q =>
                 q.TermRange(i => i.Field(f => f.LastModifyTime).GreaterThan(condition.LastModifyTimeGt)));
+        
+        if (condition.ThirdPartName.NotNullOrEmpty())
+            mustQuery.Add(q =>
+                q.Terms(i => i.Field(f => f.MerchantName).Terms(condition.ThirdPartName)));
+        
+        if (!condition.ThirdPartOrderNoIn.IsNullOrEmpty())
+            mustQuery.Add(q =>
+                q.Terms(i => i.Field(f => f.ThirdPartOrderNo).Terms(condition.ThirdPartOrderNoIn)));
+
 
         QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
