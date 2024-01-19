@@ -12,6 +12,7 @@ public class OrderState
     public string Crypto { get; set; }
     public string CryptoPrice { get; set; }
     public string CryptoAmount { get; set; }
+    public int CryptoDecimals { get; set; }
     public string Network { get; set; }
     public string Fiat { get; set; }
     public string FiatAmount { get; set; }
