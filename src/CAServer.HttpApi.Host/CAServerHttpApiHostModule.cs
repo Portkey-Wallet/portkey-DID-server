@@ -80,6 +80,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<ContactOptions>(configuration.GetSection("Contact"));
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
         Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
+        Configure<AuthServerOptions>(configuration.GetSection("AuthServer"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();

@@ -55,7 +55,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     internal abstract Task<TreasuryOrderRequest> AdaptOrderInputAsync<TOrderInput>(TOrderInput orderInput)
         where TOrderInput : TreasuryBaseContext;
 
-    public abstract Task<bool> CallBackThirdPart(TreasuryOrderDto orderDto, out string callBackResult);
+    public abstract Task<Tuple<bool, string>> CallBackThirdPart(TreasuryOrderDto orderDto);
 
 
     /// <summary>
@@ -197,7 +197,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             orderDto = orderResp.Data;
             AssertHelper.NotNull(orderDto, "Get order grain data failed");
 
-            var success = await CallBackThirdPart(orderDto, out var callBackResult);
+            var (success, callBackResult) = await CallBackThirdPart(orderDto);
             orderDto.CallbackCount++;
             orderDto.CallbackTime = DateTime.UtcNow.ToUtcMilliSeconds();
             orderDto.CallBackResult = callBackResult;

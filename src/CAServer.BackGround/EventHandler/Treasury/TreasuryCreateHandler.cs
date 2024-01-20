@@ -8,7 +8,6 @@ using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Options;
-using Nest;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 

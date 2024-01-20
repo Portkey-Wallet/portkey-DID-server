@@ -28,7 +28,8 @@ public interface IOrderStatusProvider
     Task<NftOrderGrainDto> GetNftOrderAsync(Guid orderId);
     Task AddOrderStatusInfoAsync(OrderStatusInfoGrainDto grainDto);
     Task UpdateOrderStatusAsync(OrderStatusUpdateDto orderStatusDto);
-
+    
+    Task<CommonResponseDto<Empty>> UpdateOrderAsync(OrderDto orderDto, Dictionary<string, string> extension = null);
     Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderGrainDto dataToBeUpdated,
         Dictionary<string, string> extension = null);
 
@@ -86,6 +87,41 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         var nftOrderGrainDto = await nftOrderGrain.GetNftOrder();
         AssertHelper.IsTrue(nftOrderGrainDto.Success, "Get NFT order failed.");
         return nftOrderGrainDto.Data == null || nftOrderGrainDto.Data.Id != orderId ? null : nftOrderGrainDto.Data;
+    }
+
+
+    public async Task<CommonResponseDto<Empty>> UpdateOrderAsync(OrderDto orderDto, Dictionary<string, string> extension = null)
+    {
+        var existsOrderDto = await _thirdPartOrderProvider.GetThirdPartOrderAsync(orderDto.Id.ToString());
+        AssertHelper.NotNull(existsOrderDto, "Order not found, id={Id}", orderDto.Id);
+        AssertHelper.IsTrue(orderDto.Id == existsOrderDto.Id, "Order invalid");
+        
+        var dataToBeUpdated = MergeEsAndInput2GrainModel(orderDto, existsOrderDto);
+        dataToBeUpdated.Status = orderDto.Status;
+        dataToBeUpdated.Id = orderDto.Id;
+        dataToBeUpdated.UserId = orderDto.UserId;
+        dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
+        _logger.LogInformation("This {MerchantName} order {GrainId} will be updated", orderDto.MerchantName,
+            orderDto.Id);
+        
+        return await UpdateRampOrderAsync(dataToBeUpdated, extension);
+    }
+    
+    
+    private OrderGrainDto MergeEsAndInput2GrainModel(OrderDto fromData, OrderDto toData)
+    {
+        var orderGrainData = _objectMapper.Map<OrderDto, OrderGrainDto>(fromData);
+        var orderData = _objectMapper.Map<OrderDto, OrderGrainDto>(toData);
+        foreach (var prop in typeof(OrderGrainDto).GetProperties())
+        {
+            // When the attribute in UpdateOrderData has been assigned, there is no need to overwrite it with the data in es
+            if (prop.GetValue(orderGrainData) == null && prop.GetValue(orderData) != null)
+            {
+                prop.SetValue(orderGrainData, prop.GetValue(orderData));
+            }
+        }
+
+        return orderGrainData;
     }
 
     // update ramp order

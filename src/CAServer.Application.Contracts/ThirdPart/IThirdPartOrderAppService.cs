@@ -2,6 +2,7 @@ using System;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Admin.Dtos;
 using CAServer.Commons;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
@@ -18,6 +19,8 @@ public interface IThirdPartOrderAppService
     
     // order
     Task<PagedResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input);
+    Task<PagedResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(GetThirdPartOrderConditionDto condition,
+        params OrderSectionEnum?[] withSections);
     Task<List<OrderDto>> ExportOrderListAsync(GetThirdPartOrderConditionDto condition, params OrderSectionEnum?[] orderSectionEnums);
     Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input);
     Task<CommonResponseDto<string>> InitOrderAsync(Guid orderId, Guid userId);
@@ -25,6 +28,7 @@ public interface IThirdPartOrderAppService
     Task UpdateOffRampTxHashAsync(TransactionHashDto input);
     Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrderAsync(OrderDto orderDto);
     Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input);
+    Task<CommonResponseDto<Empty>> UpdateRampOrder(OrderDto orderDto);
     Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
     
     // nft

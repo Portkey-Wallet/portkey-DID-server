@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
+using CAServer.Admin.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
@@ -304,6 +305,11 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         await _distributedEventBus.PublishAsync(new OrderSettlementEto(res.Data));
     }
 
+    public async Task<CommonResponseDto<Empty>> UpdateRampOrder(OrderDto orderDto)
+    {
+        return await _orderStatusProvider.UpdateOrderAsync(orderDto);
+    } 
+
     /// <summary>
     ///     query by merchantName & merchantId with MerchantSignature
     /// </summary>
@@ -368,6 +374,17 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
                 UserId = userId,
                 OrderIdIn = orderIdIn
             }, OrderSectionEnum.NftSection);
+    }
+
+    /// <summary>
+    ///     
+    /// </summary>
+    /// <param name="condition"></param>
+    /// <param name="withSections"></param>
+    /// <returns></returns>
+    public async Task<PagedResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(GetThirdPartOrderConditionDto condition, params OrderSectionEnum?[] withSections)
+    {
+        return await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(condition, withSections);
     }
 
     /// <summary>

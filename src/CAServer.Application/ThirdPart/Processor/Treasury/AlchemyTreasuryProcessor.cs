@@ -48,31 +48,30 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         return ThirdPartNameType.Alchemy;
     }
 
-    public override Task CallBackThirdPart(TreasuryOrderDto orderDto)
+    public override async Task<Tuple<bool, string>> CallBackThirdPart(TreasuryOrderDto orderDto)
     {
         try
         {
+            //TODO
+            var networkMapping = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
+                .TryGetValue(orderDto.Network, out var achNetwork);
+            var request = new AlchemyTreasuryCallBackDto
+            {
+                OrderNo = orderDto.ThirdPartOrderId,
+                Crypto = orderDto.Crypto,
+                CryptoAmount = orderDto.CryptoAmount,
+                CryptoPrice = orderDto.CryptoPriceInUsdt.ToString(CultureInfo.InvariantCulture),
+                TxHash = orderDto.TransactionId,
+                Network = orderDto.Network
+            };
         }
         catch (Exception e)
         {
             
         }
 
-        var networkMapping = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
-            .TryGetValue(orderDto.Network, out var achNetwork);
-        AssertHelper()
-        var request = new AlchemyTreasuryCallBackDto
-        {
-            OrderNo = orderDto.ThirdPartOrderId,
-            Crypto = orderDto.Crypto,
-            CryptoAmount = orderDto.CryptoAmount,
-            CryptoPrice = orderDto.CryptoPriceInUsdt.ToString(CultureInfo.InvariantCulture),
-            TxHash = orderDto.TransactionId,
-            Network = orderDto.Network
-        };
 
-
-
+        return Tuple.Create(false, "");
     }
 
     internal override async Task<string> AdaptPriceInputAsync<TPriceInput>(TPriceInput priceInput)
