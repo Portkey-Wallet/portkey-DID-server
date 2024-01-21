@@ -40,5 +40,9 @@ public static class ExtensionKey
     public const string CallBackStatus = "callBackStatus";
     public const string CallBackResult = "callBackResult";
 
+    public const string Reason = "Reason";
+    public const string AdminUserId = "AdminUserId";
+    public const string AdminUserName = "AdminUserName";
+
 
 }

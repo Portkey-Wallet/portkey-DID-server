@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<link rel="stylesheet" type="text/css" href="css/login.css">
+	<link rel="icon" href="https://portkey.finance/favicon.ico">
+	<title>MFA</title>
+</head>
+<body>
+<div class="login-container">
+	<div id="toast" class="toast" style="display: none;"></div>
+	<form method="post" id="mfa-form">
+		<h2>Google Authenticator <br/> Two factor authorize</h2>
+
+		<button type="button" id="resetButton">Reset</button>
+		<div id="resetBox" style="display:none">
+			<div class="input-group" id="GoogleTfaCode">
+				<img src=""/>
+				<p style="word-break: break-all;margin-top:0"></p>
+			</div>
+			<div class="input-group" id="GoogleTfaOldPin" style="display:none">
+				<label for="OldPin">Please input old pin</label>
+				<input type="text" id="OldPin">
+			</div>
+			<div class="input-group" id="GoogleTfaNewPin">
+				<label for="NewPin">Please input new pin</label>
+				<input type="text" id="NewPin" required>
+			</div>
+			<button type="submit" id="saveButton">Save</button>
+		</div>
+		
+	</form>
+</div>
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script>
+	
+	$(document).ready(function() {
+		$("#resetButton").on("click", generateGoogleTfa)
+		$("#mfa-form").submit(saveTfa)
+		if (!App.User().mfaExists) {
+			generateGoogleTfa();
+		}
+	});
+	
+	let generateGoogleTfa = function() {
+		$("#resetButton").hide();
+		$.ajax({
+			url: App.Uri.mfa,
+			method: "GET",
+			async: false,
+			success: function (response) {
+				console.info(JSON.stringify(response))
+				if (response && response.success && response.data) {
+					$("#GoogleTfaCode img").attr("src", response.data.codeImage);
+					$("#GoogleTfaCode p").html(response.data.manualEntryKey);
+					if (App.User().mfaExists) {
+						$("#GoogleTfaOldPin input").attr("required", "required");
+						$("#GoogleTfaOldPin").show();
+					}
+					$("#resetBox").show();
+				}
+			}
+		})
+	}
+	
+	let saveTfa = function(event) {
+		event.preventDefault();
+		$.ajax({
+			url: App.Uri.mfa,
+			method: "POST",
+			contentType: "application/json",
+			async: false,
+			data: JSON.stringify({
+				OldPin: $("#GoogleTfaOldPin input").val(),
+				NewPin: $("#GoogleTfaNewPin input").val(),
+			}),
+			success: function (response) {
+				console.info(JSON.stringify(response))
+				if (response && response.success) {
+					window.location.reload();
+					alert("Success")
+					return;
+				}
+				if (response) {
+					App.showToast(response.message)
+				}
+			}
+		})
+	}
+	
+</script>
+</body>
+</html>

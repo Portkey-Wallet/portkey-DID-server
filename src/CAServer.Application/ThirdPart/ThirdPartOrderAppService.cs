@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf;
-using CAServer.Admin.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
@@ -18,7 +16,6 @@ using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Processor;
 using CAServer.ThirdPart.Provider;
-using Google.Authenticator;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -305,9 +302,23 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         await _distributedEventBus.PublishAsync(new OrderSettlementEto(res.Data));
     }
 
-    public async Task<CommonResponseDto<Empty>> UpdateRampOrder(OrderDto orderDto)
+    /// <summary>
+    ///     Update Order
+    /// </summary>
+    /// <param name="orderDto"></param>
+    /// <param name="reason"></param>
+    /// <returns></returns>
+    public async Task<CommonResponseDto<Empty>> UpdateRampOrder(OrderDto orderDto, string reason = null)
     {
-        return await _orderStatusProvider.UpdateOrderAsync(orderDto);
+        var extensionBuilder = OrderStatusExtensionBuilder.Create();
+        if (reason.NotNullOrEmpty())
+            extensionBuilder.Add(ExtensionKey.Reason, reason);
+        if (CurrentUser.IsAuthenticated)
+        {
+            extensionBuilder.Add(ExtensionKey.AdminUserId, CurrentUser.GetId().ToString());
+            extensionBuilder.Add(ExtensionKey.AdminUserName, CurrentUser.UserName);
+        }
+        return await _orderStatusProvider.UpdateOrderAsync(orderDto, extensionBuilder.Build());
     } 
 
     /// <summary>
@@ -436,31 +447,12 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     }
 
     /// <summary>
-    ///     Generate a google auth code by key
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="userName"></param>
-    /// <param name="accountTitle"></param>
-    /// <returns></returns>
-    public SetupCode GenerateGoogleAuthCode(string key, string userName, string accountTitle)
-    {
-        const string defaultName = "noName";
-        const string defaultTitle = "orderExport";
-        AssertHelper.NotNull(key, "Param key required");
-        var tfa = new TwoFactorAuthenticator();
-        return tfa.GenerateSetupCode(userName.DefaultIfEmpty(defaultName), accountTitle.DefaultIfEmpty(defaultTitle),
-            HashHelper.ComputeFrom(key).ToByteArray(), 5);
-    }
-
-    /// <summary>
     ///     Verify order export auth by google-auth-pin
     /// </summary>
     /// <param name="pin"></param>
     /// <returns></returns>
     public bool VerifyOrderExportCode(string pin)
     {
-        var tfa = new TwoFactorAuthenticator();
-        return tfa.ValidateTwoFactorPIN(HashHelper.ComputeFrom(_thirdPartOptions.CurrentValue.OrderExportAuth.Key).ToByteArray(),
-            pin);
+        return GoogleTfaHelper.VerifyOrderExportCode(pin, _thirdPartOptions.CurrentValue.OrderExportAuth.Key);
     }
 }

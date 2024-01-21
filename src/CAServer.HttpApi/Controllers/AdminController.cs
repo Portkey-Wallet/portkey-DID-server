@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf;
+using CAServer.Admin;
 using CAServer.Admin.Dtos;
 using CAServer.Commons;
 using CAServer.Options;
@@ -22,18 +23,21 @@ namespace CAServer.Controllers;
 [Route("api/app/admin/")]
 public class AdminController : CAServerController
 {
-    
     private readonly IOptionsMonitor<AuthServerOptions> _authServerOptions;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
+    private readonly IAdminAppService _adminAppService;
 
-    public AdminController(IOptionsMonitor<AuthServerOptions> authServerOptions, IThirdPartOrderAppService thirdPartOrderAppService)
+    public AdminController(IOptionsMonitor<AuthServerOptions> authServerOptions,
+        IThirdPartOrderAppService thirdPartOrderAppService, IAdminAppService adminAppService)
     {
         _authServerOptions = authServerOptions;
         _thirdPartOrderAppService = thirdPartOrderAppService;
+        _adminAppService = adminAppService;
     }
 
-
-    [HttpGet("config")]
+    // [Authorize]
+    [HttpGet]
+    [Route("config")]
     public Task<CommonResponseDto<AdminConfigResponse>> Config()
     {
         return Task.FromResult(new CommonResponseDto<AdminConfigResponse>(new AdminConfigResponse
@@ -43,54 +47,47 @@ public class AdminController : CAServerController
         }));
     }
 
-    [HttpGet("mfa")]
-    public Task<CommonResponseDto<MfaResponse>> GetNewMfaCode()
+    // [Authorize]
+    [HttpGet]
+    [Route("mfa")]
+    public Task<CommonResponseDto<MfaResponse>> GenerateNewMfaCode()
     {
-        var userName = "";
-        //TODO var userName = 
-        var code = _thirdPartOrderAppService.GenerateGoogleAuthCode(RsaHelper.GenerateRsaKeyPair().Private.ToBson().ToHex(), userName, "portkey-admin");
-        return Task.FromResult(new CommonResponseDto<MfaResponse>(new MfaResponse
-        {
-            KeyId = "", //TODO cache
-            CodeImage = code.QrCodeSetupImageUrl,
-            ManualEntryKey = code.ManualEntryKey,
-        }));
+        return Task.FromResult(new CommonResponseDto<MfaResponse>(_adminAppService.GenerateRandomMfa()));
     }
     
+    // [Authorize]
+    [HttpPost]
+    [Route("mfa")]
+    public async Task<CommonResponseDto<Empty>> SetNewMfaCode(MfaRequest mfaRequest)
+    {
+        await _adminAppService.SetMfa(mfaRequest);
+        return new CommonResponseDto<Empty>();
+    }
 
-    [HttpPost("mfa")]
-    public Task<CommonResponseDto<MfaResponse>> SetNewMfaCode()
+    // [Authorize]
+    [HttpGet]
+    [Route("user")]
+    public async Task<CommonResponseDto<AdminUserResponse>> QueryUser()
     {
-        //TODO 
-        throw new NotImplementedException();
+        var user = await _adminAppService.GetCurrentUserAsync();
+        return new CommonResponseDto<AdminUserResponse>(user);
     }
     
-    
-    [Authorize]
-    [HttpGet("user")]
-    public Task<CommonResponseDto<AdminConfigResponse>> GetUser()
-    {
-        //TODO
-        return Task.FromResult(new CommonResponseDto<AdminConfigResponse>(new AdminConfigResponse
-        {
-            AuthServer = _authServerOptions.CurrentValue.Authority,
-            ClientId = _authServerOptions.CurrentValue.SwaggerClientId
-        }));
-    }
-    
-
-    [HttpGet("ramp/orders")]
+    // [Authorize]
+    [HttpGet]
+    [Route("ramp/orders")]
     public async Task<CommonResponseDto<PagedResultDto<OrderDto>>> GetOrder(GetThirdPartOrderConditionDto request)
     {
         var pager = await _thirdPartOrderAppService.GetThirdPartOrdersByPageAsync(request);
         return new CommonResponseDto<PagedResultDto<OrderDto>>(pager);
     }
 
-    [HttpPost("ramp/order")]
-    public async Task<CommonResponseDto<Empty>> UpdateOrder(OrderDto orderDto)
+    // [Authorize]
+    [HttpPost]
+    [Route("ramp/order")]
+    public async Task<CommonResponseDto<Empty>> UpdateOrder(UpdateOrderRequest updateOrderRequest)
     {
-        //TODO Google MFA
-        return await _thirdPartOrderAppService.UpdateRampOrder(orderDto);
+        await _adminAppService.AssertMfa(updateOrderRequest.TfaPin);
+        return await _thirdPartOrderAppService.UpdateRampOrder(updateOrderRequest.OrderDto);
     }
-    
 }

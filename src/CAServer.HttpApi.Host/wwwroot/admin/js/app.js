@@ -7,15 +7,24 @@ let App = (function() {
 
         return str.replace(regex, '');
     }
-    
+
     let configData = {
         authServer: "",
         clientId: ""
     }
     
+    let user = {
+        userId : "",
+        userName : "",
+        mfaExists : false
+    }
+    
     let URI = {
-        getConfig : "/api/app/admin/config",
-        test : "/api/app/admin/index",
+        config : "/api/app/admin/config",
+        user : "/api/app/admin/user",
+        mfa : "/api/app/admin/mfa",
+        orders : "/api/app/admin/orders",
+        order : "/api/app/admin/order",
     }
 
     let AuthServerURI = {
@@ -31,17 +40,20 @@ let App = (function() {
                     xhr.setRequestHeader("Authorization", tokenType + " " + token);
                 }
             },
+            contentType: "application/json",
             error: function(xhr) {
                 try {
+                    console.warn(JSON.stringify(xhr));
                     if (xhr.status === 401){
-                        debugger;
-                        localStorage.removeItem("accessToken");
-                        localStorage.removeItem("tokenType")
-                        window.location.href = '/admin/login.html';
+                        logout();
+                        return;
                     }
-                    console.log(JSON.stringify(xhr));
                     let response = JSON.parse(xhr.responseText);
-                    App.showToast("Err_" + xhr.status + ":" + response.error_description);
+                    if (response && response.error && response.error.message) {
+                        App.showToast(response.error.message)
+                    } else {
+                        App.showToast("Err_" + xhr.status + ":" + response.error_description);
+                    }
                 } catch (e) {
                     console.error("Error parsing the response: ", e);
                     App.showToast("Err_" + xhr.status + ": " + xhr.statusText);
@@ -50,6 +62,13 @@ let App = (function() {
         });
     };
 
+    
+    let logout = function () {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("tokenType");
+        window.location.href = '/admin/login.html';
+    }
+    
     let generateDeviceId = function() {
         let deviceId = getCookie("device-id");
         if (deviceId) {
@@ -68,7 +87,7 @@ let App = (function() {
 
     function loadConfig() {
         $.ajax({
-            url: URI.getConfig,
+            url: URI.config,
             method: 'GET',
             async: false,
             success: function(response) {
@@ -77,12 +96,27 @@ let App = (function() {
                     response.data.authServer = TrimEnd(response.data.authServer, "/")
                     configData = response.data;
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error("Error: ", status, error);
             }
         });
     }
+    
+    function loadUser() {
+        $.ajax({
+            url: URI.user,
+            method: 'GET',
+            async: false,
+            success: function(response) {
+                console.info("loadUser:" + JSON.stringify(response))
+                if (!response.success) {
+                    return showToast(response.message);
+                } 
+                if (response && response.success && response.data) {
+                    user = response.data;
+                }
+            }
+        });
+    }
+    
     
     let setCookie = function(name, value, seconds) {
         let expires = "";
@@ -119,6 +153,7 @@ let App = (function() {
     $(document).ready(function() {
         setupAjax();
         loadConfig();
+        loadUser();
         setCookie("device-id", generateDeviceId(), 3600 * 24 * 30);
     });
 
@@ -126,7 +161,9 @@ let App = (function() {
         setCookie: setCookie,
         getCookie: getCookie,
         showToast: showToast,
+        logout: logout,
         Config: () => configData,
+        User : () => user,
         Uri: URI,
         AuthServerUri: AuthServerURI,
     };

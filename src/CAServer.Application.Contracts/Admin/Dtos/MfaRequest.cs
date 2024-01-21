@@ -3,7 +3,7 @@ namespace CAServer.Admin.Dtos;
 public class MfaRequest
 {
     
-    public string KeyId { get; set; }
-    public string Code { get; set; }
+    public string OldPin { get; set; }
+    public string NewPin { get; set; }
     
 }

@@ -1,6 +1,8 @@
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
+using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.X509;
 
 namespace CAServer.Commons;
 
@@ -24,4 +26,15 @@ public class RsaHelper
         return generator.GenerateKeyPair();
     }
 
+    public static byte[] ConvertPrivateKeyToDer(AsymmetricKeyParameter privateKey)
+    {
+        var privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey);
+        return privateKeyInfo.GetDerEncoded();
+    }
+
+    public static byte[] ConvertPublicKeyToDer(AsymmetricKeyParameter publicKey)
+    {
+        var publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(publicKey);
+        return publicKeyInfo.GetDerEncoded();
+    }
 }

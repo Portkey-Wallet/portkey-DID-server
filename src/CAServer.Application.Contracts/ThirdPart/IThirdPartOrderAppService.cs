@@ -28,13 +28,12 @@ public interface IThirdPartOrderAppService
     Task UpdateOffRampTxHashAsync(TransactionHashDto input);
     Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrderAsync(OrderDto orderDto);
     Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input);
-    Task<CommonResponseDto<Empty>> UpdateRampOrder(OrderDto orderDto);
+    Task<CommonResponseDto<Empty>> UpdateRampOrder(OrderDto orderDto, string reason = null);
     Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
     
     // nft
     Task<OrderSettlementGrainDto> GetOrderSettlementAsync(Guid orderId);
     Task AddUpdateOrderSettlementAsync(OrderSettlementGrainDto grainDto);
-    SetupCode GenerateGoogleAuthCode(string key, string userName, string accountTitle);
     bool VerifyOrderExportCode(string pin);
     
     // ramp

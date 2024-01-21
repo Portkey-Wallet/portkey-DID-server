@@ -15,6 +15,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Volo.Abp;
 
@@ -46,7 +47,7 @@ public class ThirdPartOrderController : CAServerController
     [HttpGet("tfa/generate")]
     public IActionResult GenerateAuthCode(string key, string userName, string title)
     {
-        var setupCode = _thirdPartOrderAppService.GenerateGoogleAuthCode(key, userName, title);
+        var setupCode = GoogleTfaHelper.GenerateGoogleAuthCode(key, userName, title);
 
         var result = """ <html><body><img src="IMAGE" alt="QR Code"><br/>CODE<body/><html/> """;
         return new ContentResult
