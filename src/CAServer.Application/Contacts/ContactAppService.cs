@@ -15,7 +15,6 @@ using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -690,32 +689,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         return new List<ContactResultDto>();
-    }
-
-    private async Task CheckContactAsync(ContactDto contact)
-    {
-        if (contact.ImInfo != null && contact.CaHolderInfo == null)
-        {
-            throw new UserFriendlyException("add contact fail.");
-        }
-
-        if (contact.ImInfo != null && contact.Addresses.Count < _chainOptions.ChainInfos.Keys.Count)
-        {
-            var address = contact.Addresses.First();
-            var chainIds = contact.Addresses.Select(t => t.ChainId);
-            var needAddChainIds = _chainOptions.ChainInfos.Keys.Except(chainIds).ToList();
-            
-            foreach (var chainId in needAddChainIds)
-            {
-                contact.Addresses.Add(new ContactAddressDto()
-                {
-                    Address = address.Address,
-                    ChainId = chainId
-                });
-            }
-        }
-
-        contact.Addresses = contact.Addresses.OrderBy(t => t.ChainId).ToList();
     }
 
     private async Task CheckContactAsync(ContactDto contact)
