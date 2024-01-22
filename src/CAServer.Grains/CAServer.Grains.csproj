@@ -39,12 +39,5 @@
       </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <Orleans_CodeGenInputs Remove="Grain\Activity\ActivityGrain.cs" />
-      <Orleans_CodeGenInputs Remove="Grain\Activity\GraphQLClient.cs" />
-      <Orleans_CodeGenInputs Remove="Grain\Activity\IActivityGrain.cs" />
-    </ItemGroup>
-
-
 
 </Project>
