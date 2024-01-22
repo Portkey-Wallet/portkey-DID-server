@@ -1,8 +1,10 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using CAServer.Telegram;
 using CAServer.Telegram.Dtos;
 using CAServer.Verifier;
+using Castle.DynamicProxy;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Volo.Abp;
@@ -39,6 +41,7 @@ public partial class TelegramAuthServiceTests : CAServerApplicationTestBase
     {
         services.AddSingleton(MockTelegramAuthOptionsSnapshot());
         services.AddSingleton(MockContractProvider());
+        services.AddSingleton(MockHttpService());
     }
 
     [Fact]
@@ -51,7 +54,7 @@ public partial class TelegramAuthServiceTests : CAServerApplicationTestBase
     [Fact]
     public async Task ValidateTelegramHashAndGenerateTokenAsync_Test()
     {
-        TelegramAuthReceiveRequest request = new TelegramAuthReceiveRequest();
+        var request = new TelegramAuthReceiveRequest();
 
         await Assert.ThrowsAsync<UserFriendlyException>(async () =>
         {
@@ -61,7 +64,7 @@ public partial class TelegramAuthServiceTests : CAServerApplicationTestBase
         request = new TelegramAuthReceiveRequest
         {
             Id = "6637755486",
-            UserName = "UserName",
+            UserName = "",
             Auth_Date = "1703473471",
             First_Name = "FirstName",
             Last_Name = "LastName",
@@ -74,7 +77,7 @@ public partial class TelegramAuthServiceTests : CAServerApplicationTestBase
             await _telegramAuthService.ValidateTelegramHashAndGenerateTokenAsync(request);
         });
 
-        request.Hash = "9bf75d2841333abb70a417289921cee27c5744a2158e6345176e369d4c481066";
+        request.UserName = "UserName";
 
         var telegramToken = await _telegramAuthService.ValidateTelegramHashAndGenerateTokenAsync(request);
         telegramToken.ShouldNotBeNull();
