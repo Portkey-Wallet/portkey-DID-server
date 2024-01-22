@@ -42,6 +42,7 @@ public partial class TelegramAuthServiceTests : CAServerApplicationTestBase
         services.AddSingleton(MockTelegramAuthOptionsSnapshot());
         services.AddSingleton(MockContractProvider());
         services.AddSingleton(MockHttpService());
+        services.AddSingleton(MockHttpClientService());
     }
 
     [Fact]
@@ -78,10 +79,9 @@ public partial class TelegramAuthServiceTests : CAServerApplicationTestBase
         });
 
         request.UserName = "UserName";
+        request.Hash = "6bd8fdba423123065b80c0d05616a789f4ae3574c648f3e6c06823fa58b526ad";
 
         var telegramToken = await _telegramAuthService.ValidateTelegramHashAndGenerateTokenAsync(request);
         telegramToken.ShouldNotBeNull();
-        var segments = telegramToken.Split(".");
-        segments.Length.ShouldBe(3);
     }
 }

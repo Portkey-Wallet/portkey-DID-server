@@ -65,7 +65,7 @@ public partial class TelegramAuthServiceTests
         var mock = new Mock<IHttpService>();
         mock.Setup(o =>
                 o.PostResponseAsync<ResponseResultDto<string>>(It.IsAny<string>(),
-                    It.IsAny<Dictionary<string, string>>(),  It.IsAny<string>(), It.IsAny<HttpStatusCode>(),
+                    It.IsAny<Dictionary<string, string>>(), It.IsAny<string>(), It.IsAny<HttpStatusCode>(),
                     It.IsAny<AuthenticationHeaderValue>()))
             .ReturnsAsync((string url, Dictionary<string, string> param, string version, HttpStatusCode code,
                 AuthenticationHeaderValue value) =>
@@ -88,7 +88,32 @@ public partial class TelegramAuthServiceTests
                         "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjMwODY1MzUyIiwidXNlck5hbWUiOiJUaW1tIER1bmNhbm4iLCJhdXRoRGF0ZSI6IjE4MDQ4ODU2MTUiLCJmaXJzdE5hbWUiOiJUaW0iLCJsYXN0TmFtZSI6IkR1bmNhbiIsImhhc2giOiIwZThkNGU1NzBkOTg2ZmRmZmIxYjE2MWRhMWFjNGZhNTM2NGExMmI4YjZkZTQ4ODczOTYxNzQyNWE0Y2YzMTI0IiwicHJvdG9VcmwiOiJhYWEiLCJuYmYiOjE3MDU0NzA1MzMsImV4cCI6MTcwNTQ3NDEzMywiaXNzIjoiUG9ydEtleSIsImF1ZCI6IlBvcnRLZXkifQ.TWty_AtG6QNRO3CEmucEhl-m8DG6xQ6WQcNJHmc6IPkhTRtfRdvHgvXI8eFomGi8DLJ7jm0PWI_kHz3MjiPTG4ECUz7MFNmPCTnNIm7Kcn7FewLVXFgJ1Hmi3n_pDOqrUmTxlIo5z3O4M0qJuX5K-XBJ0U_AafrSDQwYyQCkUHiU1pqyW7I7vPGstET6_LxvszVpa4nnDol-osR21qQKxPemsbkSOZqZoaAt1ei6AQwSX43Upm6SZ155xJeNLtPHZXHmMmrGUaWOhkskWCz8jzr9_gaQjv3zoAbTMPH5CzDYTGCQVML9Hx1VBFEEcXpWBlKEsxXoeVr5rsfVl7MaCQ"
                 };
             });
-        
+
+        return mock.Object;
+    }
+
+    private IHttpClientService MockHttpClientService()
+    {
+        var mock = new Mock<IHttpClientService>();
+        mock.Setup(o => o.PostAsync<ResponseResultDto<string>>(It.IsAny<string>(), It.IsAny<object>())).ReturnsAsync(
+            (string url, object param) =>
+            {
+                if (((Dictionary<string, string>) param)["Hash"] == "9bf75d2841333abb70a417289921cee27c5744a2158e6345176e369d4c48XXXX")
+                {
+                    return new ResponseResultDto<string>
+                    {
+                        Success = false,
+                        Message = "",
+                        Data = null
+                    };
+                }
+                return new ResponseResultDto<string>
+                {
+                    Success = true,
+                    Message = "",
+                    Data = "1234567890"
+                };;
+            });
         return mock.Object;
     }
 }
