@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Cryptography;
+using AElf.Types;
 using CAServer.Account;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
@@ -7,6 +11,8 @@ using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Options;
+using Google.Protobuf.Collections;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -38,7 +44,7 @@ public class RegisterServiceTests : CAServerApplicationTestBase
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
-    
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
@@ -60,7 +66,7 @@ public class RegisterServiceTests : CAServerApplicationTestBase
 
         return provider.Object;
     }
-    
+
     [Fact]
     public async Task RegisterRequestAsync_Register_Success_Test()
     {
@@ -91,7 +97,7 @@ public class RegisterServiceTests : CAServerApplicationTestBase
         result.ShouldNotBeNull();
         result.SessionId.ShouldNotBeEmpty();
     }
-    
+
     [Fact]
     public async Task RegisterRequestAsync_Type_Not_Exist_Test()
     {
@@ -123,6 +129,28 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     [Fact]
     public async Task RegisterRequestAsync_Register_LoginGuardianIdentifier_Is_NullOrEmpty_Test()
     {
+        var privateKey = "36bc3f264aa340d44aada5759a5a86aac6d734f19932397e551d9e69edffe0d2";
+        var map = new Dictionary<string, long> { { "elf", 124 } };
+        var delegateInfo = new Portkey.Contracts.CA.DelegateInfo
+        {
+            ChainId = 9992731,
+            ProjectHash = Hash.LoadFromHex("dc168643a3378c9d89cb0f53474b97a292f324b621edea078653721dfa26bb42"),
+            IdentifierHash = Hash.LoadFromHex("0ea94e35f8eb239684b6c6521895efc78fcf49be2f99dc5792cd7566778117e2"),
+            ExpirationTime = 111,
+            Delegations = 
+            {
+                new Dictionary<string, long>()
+                {
+                    ["ELF"] = 1
+                }
+            },
+            IsUnlimitedDelegate = true,
+            Signature = null
+        };
+        var hashByteArray = ByteStringHelper.FromHexString(HashHelper.ComputeFrom(delegateInfo).ToHex()).ToByteArray();
+        var signature =
+            CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey), hashByteArray).ToHex();
+        
         try
         {
             var message = new AccountCompletedMessageBase
@@ -176,7 +204,7 @@ public class RegisterServiceTests : CAServerApplicationTestBase
             Assert.True(ex is AbpValidationException);
         }
     }
-    
+
     private IOptionsSnapshot<AppleCacheOptions> MockAppleCacheOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AppleCacheOptions>>();
