@@ -1,6 +1,4 @@
-using System;
 using System.Threading.Tasks;
-using AElf;
 using CAServer.Admin;
 using CAServer.Admin.Dtos;
 using CAServer.Commons;
@@ -12,7 +10,6 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using MongoDB.Bson;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 
@@ -77,7 +74,8 @@ public class AdminController : CAServerController
     [HttpGet("ramp/orders")]
     public async Task<CommonResponseDto<PagedResultDto<OrderDto>>> GetOrder(GetThirdPartOrderConditionDto request)
     {
-        var pager = await _thirdPartOrderAppService.GetThirdPartOrdersByPageAsync(request);
+        var pager = await _thirdPartOrderAppService.GetThirdPartOrdersByPageAsync(request, OrderSectionEnum.NftSection,
+            OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
         return new CommonResponseDto<PagedResultDto<OrderDto>>(pager);
     }
 
@@ -102,7 +100,8 @@ public class AdminController : CAServerController
     [HttpPost("treasury/order")]
     public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(MfaRequest<TreasuryOrderDto> updateOrderRequest)
     {
-        await _adminAppService.AssertMfa(updateOrderRequest.TfaPin);
-        return await _treasuryOrderProvider.DoSaveOrder(updateOrderRequest.Data);
+        await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
+        await _treasuryOrderProvider.DoSaveOrder(updateOrderRequest.Data);
+        return new CommonResponseDto<Empty>();
     }
 }

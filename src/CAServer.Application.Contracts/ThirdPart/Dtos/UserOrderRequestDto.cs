@@ -39,6 +39,12 @@ public class GetUserOrdersDto : PagedResultRequestDto
 
 public class GetThirdPartOrderConditionDto : PagedResultRequestDto
 {
+
+    public GetThirdPartOrderConditionDto()
+    {
+        
+    }
+    
     public GetThirdPartOrderConditionDto(int skipCount, int maxResultCount)
     {
         base.SkipCount = skipCount;

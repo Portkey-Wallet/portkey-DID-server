@@ -16,6 +16,7 @@ let App = (function() {
     let user = {
         userId : "",
         userName : "",
+        rules : "",
         mfaExists : false
     }
     
@@ -23,8 +24,10 @@ let App = (function() {
         config : "/api/app/admin/config",
         user : "/api/app/admin/user",
         mfa : "/api/app/admin/mfa",
-        orders : "/api/app/admin/orders",
-        order : "/api/app/admin/order",
+        rampOrders : "/api/app/admin/ramp/orders",
+        rampOrder : "/api/app/admin/ramp/order",
+        treasuryOrders : "/api/app/admin/treasury/orders",
+        treasuryOrder : "/api/app/admin/treasury/order",
     }
 
     let AuthServerURI = {
@@ -61,7 +64,6 @@ let App = (function() {
             }
         });
     };
-
     
     let logout = function () {
         localStorage.removeItem("accessToken");
@@ -85,7 +87,11 @@ let App = (function() {
     };
 
 
-    function loadConfig() {
+    let alertUser = function() {
+        alert(JSON.stringify(user, null, 4));
+    }
+    
+    let loadConfig = function () {
         $.ajax({
             url: URI.config,
             method: 'GET',
@@ -100,7 +106,7 @@ let App = (function() {
         });
     }
     
-    function loadUser() {
+    let loadUser = function () {
         $.ajax({
             url: URI.user,
             method: 'GET',
@@ -141,7 +147,16 @@ let App = (function() {
         return null;
     };
 
-    function showToast(message) {
+    let getQueryString = function (name) {
+        var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)', 'i');
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) {
+            return unescape(r[2]);
+        }
+        return null;
+    };
+
+    let showToast = function (message) {
         let toast = document.getElementById('toast');
         toast.textContent = message;
         toast.style.display = 'block';
@@ -153,12 +168,14 @@ let App = (function() {
     $(document).ready(function() {
         setupAjax();
         loadConfig();
+        $("#user-info span").dblclick(alertUser)
         setCookie("device-id", generateDeviceId(), 3600 * 24 * 30);
     });
 
     return {
         setCookie: setCookie,
         getCookie: getCookie,
+        getQueryString: getQueryString,
         showToast: showToast,
         loadUser: loadUser,
         logout: logout,

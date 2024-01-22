@@ -32,8 +32,8 @@ public class UserMfaGrain : Grain<UserMfaState>, IUserMfaGrain
 
     public async Task<bool> VerifyGoogleTfaPin(string pin, bool resultIfNotSet = false)
     {
-        if (State.GoogleTwoFactorAuthKey.IsNullOrEmpty()) return true;
-        if (pin.IsNullOrEmpty()) return resultIfNotSet;
+        if (State.GoogleTwoFactorAuthKey.IsNullOrEmpty()) return resultIfNotSet;
+        if (pin.IsNullOrEmpty()) return false;
         return GoogleTfaHelper.VerifyOrderExportCode(pin, State.GoogleTwoFactorAuthKey);
     }
 

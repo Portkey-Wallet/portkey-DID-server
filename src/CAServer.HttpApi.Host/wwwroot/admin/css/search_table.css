@@ -1,0 +1,38 @@
+.search-form {
+    margin-bottom: 20px;
+    line-height: 35px;
+}
+
+.search-form input, .search-form select, .search-form button {
+    padding: 5px;
+    margin-right: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+    word-break: break-all;
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+}
+
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pagination button {
+    padding: 5px 10px;
+}
+
+.pagination button.active {
+    background-color: gray;
+    color: white;
+}

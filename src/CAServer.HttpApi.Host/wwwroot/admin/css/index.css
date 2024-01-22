@@ -6,3 +6,7 @@
 #user-info span {
     margin-right: 10px;
 }
+
+#menu ul li a:hover {
+    background-color: #0a53be;
+}

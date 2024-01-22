@@ -33,9 +33,9 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptionsMonitor<RampOptions> rampOptions,
         IObjectMapper objectMapper, IClusterClient clusterClient, IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<AlchemyTreasuryProcessor> logger, ITreasuryOrderProvider treasuryOrderProvider,
-        AlchemyProvider alchemyProvider) :
+        AlchemyProvider alchemyProvider, IContractProvider contractProvider) :
         base(tokenAppService, chainOptions, clusterClient, objectMapper, thirdPartOptions,
-            thirdPartOrderProvider, logger, treasuryOrderProvider)
+            thirdPartOrderProvider, logger, treasuryOrderProvider, contractProvider)
     {
         _tokenAppService = tokenAppService;
         _thirdPartOptions = thirdPartOptions;
@@ -61,7 +61,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
             {
                 OrderNo = orderDto.ThirdPartOrderId,
                 Crypto = orderDto.Crypto,
-                CryptoAmount = orderDto.CryptoAmount,
+                CryptoAmount = orderDto.CryptoAmount.ToString(CultureInfo.InvariantCulture),
                 CryptoPrice = orderDto.CryptoPriceInUsdt.ToString(CultureInfo.InvariantCulture),
                 TxHash = orderDto.TransactionId,
                 Network = achNetwork

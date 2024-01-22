@@ -28,13 +28,14 @@ public class AdminAppService : CAServerAppService, IAdminAppService
     {
         var userId = CurrentUser.IsAuthenticated ? CurrentUser.GetId() : Guid.Empty;
         var userName = CurrentUser.IsAuthenticated ? CurrentUser.UserName : "noName";
-        
+        var roles = CurrentUser.IsAuthenticated ? string.Join(CommonConstant.Comma, CurrentUser.Roles) : CommonConstant.EmptyString; 
         var userMfaGrain = _clusterClient.GetGrain<IUserMfaGrain>(userId);
 
         return new AdminUserResponse
         {
             UserId = userId,
             UserName = userName,
+            Rules = roles,
             MfaExists = await userMfaGrain.MfaExists()
         };
     }
@@ -81,6 +82,6 @@ public class AdminAppService : CAServerAppService, IAdminAppService
     {
         var userId = CurrentUser.IsAuthenticated ? CurrentUser.GetId() : Guid.Empty;
         var userMfaGrain = _clusterClient.GetGrain<IUserMfaGrain>(userId);
-        AssertHelper.IsTrue(await userMfaGrain.VerifyGoogleTfaPin(pin));
+        AssertHelper.IsTrue(await userMfaGrain.VerifyGoogleTfaPin(pin), "Invalid TFA code");
     }
 }
