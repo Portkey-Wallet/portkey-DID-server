@@ -528,6 +528,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             foreach (var searchItem in res.CaHolderSearchTokenNFT.Data)
             {
                 var item = ObjectMapper.Map<IndexerSearchTokenNft, UserAsset>(searchItem);
+                if (searchItem == null || (searchItem.NftInfo == null && searchItem.TokenInfo == null))
+                {
+                    continue;
+                }
 
                 if (searchItem.TokenInfo != null)
                 {
@@ -564,6 +568,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
                 dto.Data.Add(item);
             }
+
+            dto.Data = dto.Data.Where(t => t.TokenInfo != null).OrderBy(t => t.Symbol != CommonConstant.DefaultSymbol)
+                .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
+                .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
 
             return dto;
         }
