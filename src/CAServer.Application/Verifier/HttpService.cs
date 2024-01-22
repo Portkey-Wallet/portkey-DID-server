@@ -11,6 +11,7 @@ using Serilog;
 namespace CAServer.Verifier;
 
 
+[Obsolete("This interface is deprecated.")]
 public interface IHttpService
 {
     Task<T?> PostResponseAsync<T>(string url, Dictionary<string, string> parameters,
@@ -18,6 +19,7 @@ public interface IHttpService
         AuthenticationHeaderValue? authenticationHeaderValue = null);
 }
 
+[Obsolete("This class is deprecated.")]
 public class HttpService : IHttpService
 {
     private readonly bool _useCamelCase;
@@ -48,7 +50,7 @@ public class HttpService : IHttpService
             : new JsonSerializerOptions();
         return await JsonSerializer.DeserializeAsync<T>(stream, jsonSerializerOptions);
     }
-
+    
     private HttpClient GetHttpClient(string? version = null)
     {
         if (Client != null)
