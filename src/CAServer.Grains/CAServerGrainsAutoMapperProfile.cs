@@ -31,6 +31,7 @@ using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Google.Protobuf.Collections;
+using Google.Protobuf.WellKnownTypes;
 using Portkey.Contracts.CA;
 
 namespace CAServer.Grains;
@@ -62,6 +63,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 {
                     e.ProjectDelegateInfo.Delegations
                 },
+                Timestamp = DateTimeOffset.FromUnixTimeSeconds(e.ProjectDelegateInfo.TimeStamp).ToTimestamp(),
                 IsUnlimitedDelegate = true,
                 Signature = e.ProjectDelegateInfo.Signature
             }))

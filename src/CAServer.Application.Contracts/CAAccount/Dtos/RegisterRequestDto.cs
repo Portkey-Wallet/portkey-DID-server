@@ -61,5 +61,6 @@ public class ProjectDelegateInfo
     public Dictionary<string,long> Delegations { get; set; }
     public bool IsUnlimitedDelegate { get; set; }
     public string Signature { get; set; }
+    public long TimeStamp { get; set; }
     
 }
