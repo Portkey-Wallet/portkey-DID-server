@@ -937,7 +937,7 @@ public class ContractAppService : IContractAppService
                     await _contractProvider.ValidateTransactionAsync(chainId, outputGetHolderInfo,
                         unsetLoginGuardians);
 
-                if (transactionDto.TransactionResultDto.Status != TransactionState.Mined)
+                if (transactionDto.TransactionResultDto?.Status != TransactionState.Mined)
                 {
                     _logger.LogError("ValidateQueryEvents on chain: {id} of account: {hash} failed",
                         chainId, record.CaHash);
