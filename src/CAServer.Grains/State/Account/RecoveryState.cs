@@ -1,4 +1,5 @@
 using CAServer.Account;
+using CAServer.CAAccount.Dtos;
 
 namespace CAServer.Grains.State;
 
@@ -16,4 +17,5 @@ public class RecoveryInfo : CAAccountBase
     public DateTime? RecoveryTime { get; set; }
     public bool? RecoverySuccess { get; set; }
     public string RecoveryMessage { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 }
