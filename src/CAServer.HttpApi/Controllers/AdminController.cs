@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.Admin;
 using CAServer.Admin.Dtos;
@@ -12,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
+using Volo.Abp.Users;
 
 namespace CAServer.Controllers;
 
@@ -67,6 +69,23 @@ public class AdminController : CAServerController
     public async Task<CommonResponseDto<Empty>> SetNewMfaCode(MfaRequest mfaRequest)
     {
         await _adminAppService.SetMfa(mfaRequest);
+        return new CommonResponseDto<Empty>();
+    }
+    
+    [Authorize]
+    [HttpDelete("mfa")]
+    public async Task<CommonResponseDto<Empty>> DeleteMfaCode(MfaRequest<Empty> mfaRequest)
+    {
+        await _adminAppService.AssertMfa(mfaRequest.GoogleTfaPin);
+        await _adminAppService.ClearMfa(CurrentUser.GetId());
+        return new CommonResponseDto<Empty>();
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpDelete("user/mfa")]
+    public async Task<CommonResponseDto<Empty>> DeleteUserMfa(MfaRequest<Guid> mfaRequest)
+    {
+        await _adminAppService.ClearMfa(mfaRequest.Data);
         return new CommonResponseDto<Empty>();
     }
 

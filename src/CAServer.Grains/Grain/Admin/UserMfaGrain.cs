@@ -39,7 +39,7 @@ public class UserMfaGrain : Grain<UserMfaState>, IUserMfaGrain
 
     public async Task ClearMftAsync()
     {
-        State.GoogleTwoFactorAuthKey = null;
+        State.GoogleTwoFactorAuthKey = "";
         await WriteStateAsync();
     }
 }

@@ -24,6 +24,7 @@ let App = (function() {
         config : "/api/app/admin/config",
         user : "/api/app/admin/user",
         mfa : "/api/app/admin/mfa",
+        userMfa : "/api/app/admin/user/mfa",
         rampOrders : "/api/app/admin/ramp/orders",
         rampOrder : "/api/app/admin/ramp/order",
         treasuryOrders : "/api/app/admin/treasury/orders",
@@ -44,6 +45,12 @@ let App = (function() {
                 }
             },
             contentType: "application/json",
+            success: function(response) {
+                if (response && response.success) {
+                    return alert("success")
+                }
+                App.showToast(response.message)
+            },
             error: function(xhr) {
                 try {
                     console.warn(JSON.stringify(xhr));

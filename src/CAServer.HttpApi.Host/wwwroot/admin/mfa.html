@@ -3,16 +3,30 @@
 <head>
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 	<link rel="stylesheet" type="text/css" href="css/login.css">
+	<link rel="stylesheet" type="text/css" href="css/modal.css">
 	<link rel="icon" href="https://portkey.finance/favicon.ico">
 	<title>MFA</title>
 </head>
 <body>
 <div id="toast" class="toast" style="display: none;"></div>
+<div id="resetMfaModal" class="modal">
+	<div class="modal-content">
+		<span class="close">&times;</span>
+		<p>
+			<label for="modal-userId">UserId:</label>
+			<input type="text" id="modal-userId" class="modal-input" placeholder=""/>
+		</p>
+		<p style="text-align:center">
+			<button class="private cancel-btn">Cancel</button>
+			<button class="danger confirm-btn">Reset</button>
+		</p>
+	</div>
+</div>
+
 <div class="login-container">
 	<form method="post" id="mfa-form">
 		<h2>Google Authenticator <br/> Two factor authorize</h2>
 
-		<button type="button" id="resetButton">Reset</button>
 		<div id="resetBox" style="display:none">
 			<div class="input-group" id="GoogleTfaCode">
 				<img src=""/>
@@ -28,19 +42,26 @@
 			</div>
 			<button type="submit" id="saveButton">Save</button>
 		</div>
-		
+
+		<button type="button" id="resetButton">Reset</button>
+		<button type="button" id="resetUserButton" class="primary" style="display:none">Reset user MFA</button>
 	</form>
 </div>
 <script src="libs/jquery/jquery.js"></script>
 <script src="js/app.js"></script>
+<script src="js/modal.js"></script>
 <script>
 	
 	$(document).ready(function() {
 		App.loadUser();
-		$("#resetButton").on("click", generateGoogleTfa)
+		$("#resetButton").click(generateGoogleTfa)
+		$("#resetUserButton").click(resetTfa)
 		$("#mfa-form").submit(saveTfa)
 		if (!App.User().mfaExists) {
 			generateGoogleTfa();
+		}
+		if (App.User().rules.split(",").includes("admin")) {
+			$("#resetUserButton").show();
 		}
 	});
 	
@@ -88,6 +109,16 @@
 				}
 			}
 		})
+	}
+	
+	let resetTfa = function() {
+		Modal.showModal("#resetMfaModal", function() {
+			let userId = $("#modal-userId").val();
+			$.ajax({
+				url: `${App.Uri.userMfa}?data=${userId}`,
+				method: "DELETE"
+			})
+		});
 	}
 	
 </script>

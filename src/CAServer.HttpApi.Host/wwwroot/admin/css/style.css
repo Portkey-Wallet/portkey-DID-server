@@ -76,9 +76,17 @@ button.danger {
     background-color: #ff6666;
 }
 
+button.danger:hover {
+    background-color: #ee5555;
+}
 
-button.private {
+
+button.primary {
     background-color: #595959;
+}
+
+button.primary:hover {
+    background-color: #505050;
 }
 
 form button {

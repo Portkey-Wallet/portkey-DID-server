@@ -149,9 +149,9 @@
     
     function updateOrder() {
         Modal.showModal("#updateOrderModal", () => {
-            var orderData = globalEditor.getValue();
-            var reason = $("#modal-reason").val();
-            var googleTfa = $("#modal-googleTfa").val();
+            let orderData = globalEditor.getValue();
+            let reason = $("#modal-reason").val();
+            let googleTfa = $("#modal-googleTfa").val();
             
             $.ajax({
                 url: App.Uri.rampOrder,
@@ -161,13 +161,7 @@
                     reason: reason,
                     googleTfaPin: googleTfa,
                     data : JSON.parse(orderData)
-                }),
-                success: function(response) {
-                    if (!response || !response.success){
-                        return App.showToast(response.message)
-                    }
-                    alert("success")
-                }
+                })
             })
             
         });
