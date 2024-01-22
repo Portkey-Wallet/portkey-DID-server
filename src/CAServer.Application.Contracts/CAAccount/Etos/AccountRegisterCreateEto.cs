@@ -1,5 +1,6 @@
 using System;
 using CAServer.Account;
+using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Hubs;
 using Volo.Abp.EventBus;
@@ -17,4 +18,5 @@ public class AccountRegisterCreateEto : CAAccountBase
     public string RegisterStatus { get; set; }
     public HubRequestContext Context { get; set; }
     public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 }
