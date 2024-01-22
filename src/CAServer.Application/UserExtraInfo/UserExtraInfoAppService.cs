@@ -119,13 +119,8 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
         {
             throw new UserFriendlyException(resultDto.Message);
         }
-
-        userExtraInfo.FirstName = extraInfo.FirstName;
-        userExtraInfo.LastName = extraInfo.LastName;
-        userExtraInfo.Email = extraInfo.Email;
-        userExtraInfo.IsPrivateEmail = extraInfo.IsPrivate;
-        userExtraInfo.VerifiedEmail = extraInfo.VerifiedEmail;
-        userExtraInfo.Picture = extraInfo.Picture;
+        
+        ObjectMapper.Map(extraInfo, userExtraInfo);
         return await AddUserExtraInfoAsync(userExtraInfo);
     }
 
