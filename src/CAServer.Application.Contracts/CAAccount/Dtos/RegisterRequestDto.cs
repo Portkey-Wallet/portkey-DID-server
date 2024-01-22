@@ -55,9 +55,9 @@ public class RegisterRequestDto : IValidatableObject
 public class ProjectDelegateInfo
 {
     public int ChainId { get; set; }
-    public Hash ProjectHash { get; set; }
-    public Hash IdentifierHash { get; set; }
-    public long ExpirationTime { get; set; }
+    public string ProjectHash { get; set; }
+    public string IdentifierHash { get; set; }
+    public int ExpirationTime { get; set; }
     public Dictionary<string,long> Delegations { get; set; }
     public bool IsUnlimitedDelegate { get; set; }
     public string Signature { get; set; }

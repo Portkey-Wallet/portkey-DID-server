@@ -12,7 +12,6 @@ using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
-using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
 using CAServer.Grains.State.Bookmark;
@@ -26,7 +25,6 @@ using CAServer.Grains.State.PrivacyPermission;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Grains.State.RedPackage;
 using CAServer.Grains.State.Tokens;
-using CAServer.Grains.State.Upgrade;
 using CAServer.Grains.State.UserExtraInfo;
 using CAServer.PrivacyPermission.Dtos;
 using CAServer.RedPackage.Dtos;
@@ -54,7 +52,19 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GuardianState, GuardianGrainDto>();
 
         CreateMap<CreateHolderDto, CreateCAHolderInput>()
-            .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => e.ProjectDelegateInfo))
+            .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => new DelegateInfo()
+            {
+                ChainId = e.ProjectDelegateInfo.ChainId,
+                ProjectHash = Hash.LoadFromHex(e.ProjectDelegateInfo.ProjectHash),
+                IdentifierHash = Hash.LoadFromHex(e.ProjectDelegateInfo.IdentifierHash),
+                ExpirationTime = e.ProjectDelegateInfo.ExpirationTime,
+                Delegations =
+                {
+                    e.ProjectDelegateInfo.Delegations
+                },
+                IsUnlimitedDelegate = true,
+                Signature = e.ProjectDelegateInfo.Signature
+            }))
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
             {
                 Type = e.GuardianInfo.Type,
@@ -147,6 +157,5 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
-        CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
     }
 }

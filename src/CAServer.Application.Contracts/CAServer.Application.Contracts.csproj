@@ -50,24 +50,11 @@
           <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Grains.dll</HintPath>
         </Reference>
     </ItemGroup>
-
-    <ItemGroup>
-      <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateRequestDto.cs" />
-      <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateResponseDto.cs" />
-      <Orleans_CodeGenInputs Remove="AppleMigrate\IAppleMigrateAppService.cs" />
-      <Orleans_CodeGenInputs Remove="Commons\Dtos\PageResultDto.cs" />
-    </ItemGroup>
+    
 
     <ItemGroup>
       <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Compile Remove="Amazon\SvgConst.cs" />
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
-    </ItemGroup>
 
-    <ItemGroup>
-      <Compile Remove="Amazon\SvgConst.cs" />
-    </ItemGroup>
 </Project>
