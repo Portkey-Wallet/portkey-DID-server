@@ -61,6 +61,7 @@ public class RecoveryGrain : Grain<RecoveryState>, IRecoveryGrain
         result.Success = true;
         result.Data = _objectMapper.Map<RecoveryInfo, RecoveryGrainDto>(recoveryInfo);
         result.Data.Context = recoveryGrainDto.Context;
+        result.Data.ReferralInfo = recoveryGrainDto.ReferralInfo;
         return result;
     }
 
