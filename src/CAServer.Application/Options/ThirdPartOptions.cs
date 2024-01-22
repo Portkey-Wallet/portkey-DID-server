@@ -39,20 +39,24 @@ public class ThirdPartTimerOptions
     public int HandleUnCompletedSettlementTransferSecondsAgo { get; set; } = 30;
     public int HandleUnCompletedSettlementTransferPageSize { get; set; } = 10;
     public int HandleUnCompletedSettlementTransferHoursAgo { get; set; } = 1;
-    public int NftCheckoutMerchantCallbackCount { get; set; }  = 3;
-    public int NftCheckoutMerchantCallbackPageSize { get; set; }  = 10;
-    public int NftCheckoutResultThirdPartNotifyCount { get; set; }  = 3;
-    public int NftCheckoutResultThirdPartPageSize { get; set; }  = 10;
-    public int NftUnCompletedMerchantCallbackMinuteAgo { get; set; }  = 2;
-    public int NftUnCompletedThirdPartCallbackMinuteAgo { get; set; }  = 2;
-    
+    public int NftCheckoutMerchantCallbackCount { get; set; } = 3;
+    public int NftCheckoutMerchantCallbackPageSize { get; set; } = 10;
+    public int NftCheckoutResultThirdPartNotifyCount { get; set; } = 3;
+    public int NftCheckoutResultThirdPartPageSize { get; set; } = 10;
+    public int NftUnCompletedMerchantCallbackMinuteAgo { get; set; } = 2;
+    public int NftUnCompletedThirdPartCallbackMinuteAgo { get; set; } = 2;
+
     // Handle un complete order settlement from days ago to minutes ago
     public int NftUnCompletedOrderSettlementMinuteAgo { get; set; } = 2;
-    public int NftUnCompletedOrderSettlementDaysAgo { get; set; }  = 2;
-    public int NftUnCompletedOrderSettlementPageSize { get; set; }  = 10;
+    public int NftUnCompletedOrderSettlementDaysAgo { get; set; } = 2;
+    public int NftUnCompletedOrderSettlementPageSize { get; set; } = 10;
+
+    public int RampUnCompletedSettlementMinuteAgo { get; set; } = 2;
+    public int NftOrderExpireSeconds { get; set; } = 60 * 30;
+    public int TreasuryTxConfirmWorkerPageSize { get; set; } = 10;
+    public int TreasuryCallbackFromMinutesAgo { get; set; } = 60;
+    public int TreasuryCallbackMaxCount { get; set; } = 3;
     
-    public int RampUnCompletedSettlementMinuteAgo { get; set; }  = 2;
-    public int NftOrderExpireSeconds { get; set; }  = 60 * 30;
 }
 
 public class AlchemyOptions

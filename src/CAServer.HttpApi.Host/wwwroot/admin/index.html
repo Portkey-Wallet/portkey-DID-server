@@ -36,7 +36,8 @@
 <script>
 
     $(document).ready(function() {
-        
+        App.loadUser();
+        $("#user-info span").html(App.User().userName)
         $.ajax({
             url: App.Uri.user,
             method: 'GET',

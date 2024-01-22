@@ -34,6 +34,7 @@
 <script>
 
     $(document).ready(function() {
+        App.loadUser();
         $("#logout-button").on("click", App.logout);
         $.ajax({
             url: App.Uri.orders,

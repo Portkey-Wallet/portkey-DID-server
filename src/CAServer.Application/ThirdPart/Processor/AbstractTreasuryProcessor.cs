@@ -6,18 +6,21 @@ using System.Threading.Tasks;
 using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Processors;
-using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
+using ChainOptions = CAServer.Options.ChainOptions;
 
 namespace CAServer.ThirdPart.Processor;
 
@@ -31,11 +34,19 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     private readonly IObjectMapper _objectMapper;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly ITreasuryOrderProvider _treasuryOrderProvider;
+    private readonly IContractProvider _contractProvider;
+    
+    private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
+        .WithAElfTypesConverters()
+        .WithCamelCasePropertyNamesResolver()
+        .IgnoreNullValue()
+        .Build();
+
 
     public AbstractTreasuryProcessor(ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions,
         IClusterClient clusterClient, IObjectMapper objectMapper, IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IThirdPartOrderProvider thirdPartOrderProvider, ILogger<AbstractTreasuryProcessor> logger,
-        ITreasuryOrderProvider treasuryOrderProvider)
+        ITreasuryOrderProvider treasuryOrderProvider, IContractProvider contractProvider)
     {
         _tokenAppService = tokenAppService;
         _chainOptions = chainOptions;
@@ -45,6 +56,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _logger = logger;
         _treasuryOrderProvider = treasuryOrderProvider;
+        _contractProvider = contractProvider;
     }
 
     internal abstract Task<string> AdaptPriceInputAsync<TPriceInput>(TPriceInput priceInput)
@@ -111,7 +123,8 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     /// <param name="thirdPartOrderInput"></param>
     /// <typeparam name="TOrderInput"></typeparam>
     /// <returns></returns>
-    public async Task NotifyOrderAsync<TOrderInput>(TOrderInput thirdPartOrderInput) where TOrderInput : TreasuryBaseContext
+    public async Task NotifyOrderAsync<TOrderInput>(TOrderInput thirdPartOrderInput)
+        where TOrderInput : TreasuryBaseContext
     {
         try
         {
@@ -179,13 +192,64 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
         }
     }
 
+    public async Task<CommonResponseDto<Empty>> RefreshTransferMultiConfirmAsync(Guid orderId, long chainHeight,
+        long confirmedHeight)
+    {
+        var validStatus = new List<string>
+        {
+            OrderStatusType.Transferring.ToString(), 
+            OrderStatusType.Transferred.ToString()
+        };
+        try
+        {
+            var orderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderId);
+            var orderResult = await orderGrain.GetAsync();
+            AssertHelper.IsTrue(orderResult.Success && orderResult.Data != null && orderResult.Data.Id == orderId,
+                "Get treasury order failed");
+            
+            var order = orderResult.Data;
+            AssertHelper.IsTrue(validStatus.Contains(order!.Status), "Invalid status {}", order.Status);
+            AssertHelper.NotEmpty(order.TransactionId, "Transaction id not exists");
+
+            var transactionResult = await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId, order.TransactionId);
+            
+            // update order status
+            var newStatus = transactionResult.Status == TransactionState.Mined
+                ? transactionResult.BlockNumber <= confirmedHeight || chainHeight >=
+                transactionResult.BlockNumber + _thirdPartOptions.CurrentValue.Timer.TransactionConfirmHeight
+                    ? OrderStatusType.Finish.ToString()
+                    : OrderStatusType.Transferred.ToString()
+                : OrderStatusType.TransferFailed.ToString();
+            AssertHelper.IsTrue(order.Status != newStatus,
+                "Order status not changed, status={Status}, txBlock={Height}",
+                transactionResult.Status, transactionResult.BlockNumber);
+            
+            // Record transfer data when filed
+            var extraInfo = newStatus == OrderStatusType.TransferFailed.ToString()
+                ? OrderStatusExtensionBuilder.Create()
+                    .Add(ExtensionKey.TxResult, JsonConvert.SerializeObject(transactionResult, JsonSerializerSettings))
+                    .Build()
+                : null;
+
+            order.Status = newStatus;
+            await _treasuryOrderProvider.DoSaveOrder(order, extraInfo);
+            return new CommonResponseDto<Empty>();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(
+                "RefreshTransferMultiConfirmAsync error, orderId={OrderId}, chainHeight={Height}, lib={Lib}", orderId,
+                chainHeight, confirmedHeight);
+            return new CommonResponseDto<Empty>().Error(e);
+        }
+    }
 
     /// <summary>
     ///     Order Status of Callback Tripartite Service
     /// </summary>
     /// <param name="orderId"></param>
     /// <returns></returns>
-    public async Task CallBackAsync(Guid orderId)
+    public async Task<CommonResponseDto<Empty>> CallBackAsync(Guid orderId)
     {
         TreasuryOrderDto orderDto = null;
         try
@@ -203,16 +267,21 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             orderDto.CallBackResult = callBackResult;
             orderDto.CallbackStatus =
                 success ? TreasuryCallBackStatus.Success.ToString() : TreasuryCallBackStatus.Failed.ToString();
-            
+
             await _treasuryOrderProvider.DoSaveOrder(orderDto, OrderStatusExtensionBuilder.Create()
                 .Add(ExtensionKey.CallBackStatus, orderDto.CallbackStatus)
                 .Add(ExtensionKey.CallBackResult, callBackResult)
                 .Build());
+
+            var resp = new CommonResponseDto<Empty>();
+            if (!success) resp.Error(callBackResult);
+            return resp;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Treasury order callback error, orderId={OrderId}, status={Status}", orderId,
                 orderDto?.Status ?? "null");
+            return new CommonResponseDto<Empty>().Error(e);
         }
     }
 }

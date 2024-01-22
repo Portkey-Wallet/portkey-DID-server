@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
@@ -12,6 +13,7 @@ using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.ObjectMapping;
 
@@ -52,26 +54,25 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
     {
         try
         {
-            //TODO
             var networkMapping = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
                 .TryGetValue(orderDto.Network, out var achNetwork);
-            var request = new AlchemyTreasuryCallBackDto
+            AssertHelper.IsTrue(networkMapping, "Alchemy network mapping not found {}", orderDto.Network);
+            var response = await _alchemyProvider.CallBackTreasuryOrder(new AlchemyTreasuryCallBackDto
             {
                 OrderNo = orderDto.ThirdPartOrderId,
                 Crypto = orderDto.Crypto,
                 CryptoAmount = orderDto.CryptoAmount,
                 CryptoPrice = orderDto.CryptoPriceInUsdt.ToString(CultureInfo.InvariantCulture),
                 TxHash = orderDto.TransactionId,
-                Network = orderDto.Network
-            };
+                Network = achNetwork
+            });
+            return Tuple.Create(response.Success, JsonConvert.SerializeObject(response));
         }
         catch (Exception e)
         {
-            
+            _logger.LogError(e, "Alchemy treasury callback error");
+            return Tuple.Create(false, e.Message);
         }
-
-
-        return Tuple.Create(false, "");
     }
 
     internal override async Task<string> AdaptPriceInputAsync<TPriceInput>(TPriceInput priceInput)

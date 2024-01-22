@@ -153,7 +153,6 @@ let App = (function() {
     $(document).ready(function() {
         setupAjax();
         loadConfig();
-        loadUser();
         setCookie("device-id", generateDeviceId(), 3600 * 24 * 30);
     });
 
@@ -161,6 +160,7 @@ let App = (function() {
         setCookie: setCookie,
         getCookie: getCookie,
         showToast: showToast,
+        loadUser: loadUser,
         logout: logout,
         Config: () => configData,
         User : () => user,

@@ -41,6 +41,7 @@
 					username: username,
 					password: password,
 					client_id: App.Config().clientId,
+					scope: "CAServer"
 				},
 				success: function(response) {
 					console.log("login token", JSON.stringify(response));

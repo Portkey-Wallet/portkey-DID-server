@@ -53,7 +53,7 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
             var senderAddress = Address.FromBase58(sender);
             AssertHelper.NotNull(senderAddress, "Invalid settlement sender {}", sender);
 
-            var transferAmount = orderDto.CryptoAmount.SafeToDecimal() * (decimal)Math.Pow(10, orderDto.CryptoDecimals);
+            var transferAmount = orderDto.CryptoAmount * (decimal)Math.Pow(10, orderDto.CryptoDecimals);
             var (txId, tx) = await _contractProvider.GenerateTransferTransactionAsync(orderDto.Crypto,
                 transferAmount.ToString(0, DecimalHelper.RoundingOption.Floor), orderDto.ToAddress,
                 CommonConstant.MainChainId, sender);

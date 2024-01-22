@@ -47,6 +47,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
     private readonly Dictionary<string, IThirdPartAdaptor> _thirdPartAdaptors;
     private readonly Dictionary<string, AbstractRampOrderProcessor> _rampOrderProcessors;
+    private readonly ITreasuryOrderProvider _treasuryOrderProvider;
 
     public ThirdPartOrderAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
@@ -58,7 +59,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         IOrderStatusProvider orderStatusProvider,
         IAbpDistributedLock distributedLock, IOptionsMonitor<RampOptions> rampOptions,
         IEnumerable<IThirdPartAdaptor> thirdPartAdaptors,
-        IEnumerable<AbstractRampOrderProcessor> rampOrderProcessors)
+        IEnumerable<AbstractRampOrderProcessor> rampOrderProcessors, ITreasuryOrderProvider treasuryOrderProvider)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _distributedEventBus = distributedEventBus;
@@ -71,6 +72,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
         _rampOptions = rampOptions;
+        _treasuryOrderProvider = treasuryOrderProvider;
         _thirdPartAdaptors = thirdPartAdaptors.ToDictionary(a => a.ThirdPart(), a => a);
         _rampOrderProcessors = rampOrderProcessors.ToDictionary(p => p.ThirdPartName(), p => p);
     }
@@ -454,5 +456,34 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     public bool VerifyOrderExportCode(string pin)
     {
         return GoogleTfaHelper.VerifyOrderExportCode(pin, _thirdPartOptions.CurrentValue.OrderExportAuth.Key);
+    }
+
+    /// <summary>
+    ///     Update treasury order
+    /// </summary>
+    /// <param name="orderDto"></param>
+    /// <param name="reason"></param>
+    /// <returns></returns>
+    public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(TreasuryOrderDto orderDto, string reason = null)
+    {
+        try
+        {
+            var extensionBuilder = OrderStatusExtensionBuilder.Create();
+            if (reason.NotNullOrEmpty())
+                extensionBuilder.Add(ExtensionKey.Reason, reason);
+            if (CurrentUser.IsAuthenticated)
+            {
+                extensionBuilder.Add(ExtensionKey.AdminUserId, CurrentUser.GetId().ToString());
+                extensionBuilder.Add(ExtensionKey.AdminUserName, CurrentUser.UserName);
+            }
+
+            await _treasuryOrderProvider.DoSaveOrder(orderDto, extensionBuilder.Build());
+            return new CommonResponseDto<Empty>();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Update treasury order error");
+            return new CommonResponseDto<Empty>().Error(e);
+        }
     }
 }

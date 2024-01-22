@@ -223,7 +223,8 @@ public class AlchemyProvider
         return await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<Empty>>(AlchemyOptions().TreasuryBaseUrl,
             AlchemyApi.CallBackTreasury,
             header: GetTreasuryAlchemyRequestHeader(),
-            body: JsonConvert.SerializeObject(input, JsonSerializerSettings)
+            body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
+            withInfoLog: true
         );
     }
 

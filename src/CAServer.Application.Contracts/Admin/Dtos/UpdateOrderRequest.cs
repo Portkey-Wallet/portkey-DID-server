@@ -1,11 +1,9 @@
-using CAServer.ThirdPart.Dtos;
 
 namespace CAServer.Admin.Dtos;
 
-public class UpdateOrderRequest
+public class MfaRequest<T>
 {
-    
-    public string TfaPin { get; set; }
-    public OrderDto OrderDto { get; set; }
-    
-}
+    public string GoogleTfaPin { get; set; }
+
+    public T Data { get; set; }
+}    

@@ -1,3 +1,4 @@
+using CAServer.Common;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using Volo.Abp.DependencyInjection;
@@ -31,7 +32,8 @@ public class TreasuryCallBackHandler : IDistributedEventHandler<TreasuryOrderEto
         var orderDto = eventData.Data;
         try
         {
-            await _treasuryProcessorFactory.Processor(orderDto.ThirdPartName).CallBackAsync(orderDto.Id);
+            var resp= await _treasuryProcessorFactory.Processor(orderDto.ThirdPartName).CallBackAsync(orderDto.Id);
+            AssertHelper.IsTrue(resp.Success, resp.Message);
         }
         catch (Exception e)
         {

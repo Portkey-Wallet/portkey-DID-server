@@ -46,4 +46,7 @@ public interface IThirdPartOrderAppService
     Task<CommonResponseDto<RampDetailDto>> GetRampDetailAsync(RampDetailRequest request);
     Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input);
     
+    // treasury
+    Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(TreasuryOrderDto orderDto, string reason = null);
+    
 }

@@ -36,6 +36,7 @@
 <script>
 	
 	$(document).ready(function() {
+		App.loadUser();
 		$("#resetButton").on("click", generateGoogleTfa)
 		$("#mfa-form").submit(saveTfa)
 		if (!App.User().mfaExists) {
