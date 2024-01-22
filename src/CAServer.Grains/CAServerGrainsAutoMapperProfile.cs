@@ -73,7 +73,11 @@ public class CAServerGrainsAutoMapperProfile : Profile
             {
                 Address = e.ManagerInfo.Address,
                 ExtraData = e.ManagerInfo.ExtraData
-            }));
+            }))
+            .ForMember(t => t.ReferralCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
+            .ForMember(t => t.ProjectCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
 
         CreateMap<SocialRecoveryDto, SocialRecoveryInput>()
             .ForMember(d => d.GuardiansApproved,
@@ -94,7 +98,11 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 ExtraData = e.ManagerInfo.ExtraData
             }))
             .ForMember(d => d.LoginGuardianIdentifierHash,
-                opt => opt.MapFrom(g => g.LoginGuardianIdentifierHash));
+                opt => opt.MapFrom(g => g.LoginGuardianIdentifierHash))
+            .ForMember(t => t.ReferralCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
+            .ForMember(t => t.ProjectCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
 
         CreateMap<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>()
             .ForMember(d => d.LoginGuardians,
