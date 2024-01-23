@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using Microsoft.Extensions.Options;
@@ -16,7 +15,6 @@ public partial class AlchemyServiceAppServiceTest
             Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
-                AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
                 SkipCheckSign = true
             },

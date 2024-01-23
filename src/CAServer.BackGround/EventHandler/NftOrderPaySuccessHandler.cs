@@ -45,7 +45,6 @@ public class NftOrderPaySuccessHandler : IDistributedEventHandler<OrderEto>, ITr
             var orderGrainDto = await _orderStatusProvider.GetRampOrderAsync(orderId);
             AssertHelper.NotNull(orderGrainDto, "Order {orderId} not found", orderId);
             orderGrainDto.Status = OrderStatusType.StartTransfer.ToString();
-            orderGrainDto.TransactionId = null;
             var updateRes = await _orderStatusProvider.UpdateRampOrderAsync(orderGrainDto);
             AssertHelper.IsTrue(updateRes.Success, "Update order status failed, status={Status}", orderGrainDto.Status);
         }

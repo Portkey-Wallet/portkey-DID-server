@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Commons;
+using CAServer.Signature.Options;
+using CAServer.Signature.Provider;
 using CAServer.VerifierCode;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -26,31 +29,37 @@ public class SignatureProviderTest : CAServerApplicationTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(MockSignatureServerOptions());
-        services.AddSingleton(GetMockHttpClientFactory());
+        // services.AddSingleton(GetMockHttpClientFactory());
+        services.AddSingleton(MockHttpFactory());
+        services.AddSingleton(MockSecretProvider());
     }
 
     [Fact]
     public async Task SignTxMsgTest()
     {
+        var sendDto = new SignResponseDto
+        {
+            Signature = "MockSignature"
+        };
+        MockHttpByPath(HttpMethod.Post, "/api/app/signature", new CommonResponseDto<SignResponseDto>(sendDto));
+        
         var publicKey = "test";
         var hexMsg = "test";
 
-        var sendDto = new SignResponseDto
-        {
-            Signature = string.Empty
-        };
 
         var result = await _signatureProvider.SignTxMsg(publicKey, hexMsg);
         result.ShouldNotBeNull();
     }
 
-    private IOptionsSnapshot<SignatureServerOptions> MockSignatureServerOptions()
+    private IOptionsMonitor<SignatureServerOptions> MockSignatureServerOptions()
     {
-        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<SignatureServerOptions>>();
-        mockOptionsSnapshot.Setup(o => o.Value).Returns(
+        var mockOptionsSnapshot = new Mock<IOptionsMonitor<SignatureServerOptions>>();
+        mockOptionsSnapshot.Setup(o => o.CurrentValue).Returns(
             new SignatureServerOptions
             {
-                BaseUrl = "http://127.0.0.1:5577/test"
+                BaseUrl = "http://127.0.0.1:5577",
+                AppId = "caserver",
+                AppSecret = "12345678"
             });
         return mockOptionsSnapshot.Object;
     }

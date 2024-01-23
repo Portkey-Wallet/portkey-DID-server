@@ -6,6 +6,7 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Http;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;

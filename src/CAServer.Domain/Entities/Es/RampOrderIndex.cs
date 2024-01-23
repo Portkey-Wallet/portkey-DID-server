@@ -15,6 +15,7 @@ public class RampOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string Address { get; set; }
     [Keyword] public string Crypto { get; set; }
     [Keyword] public string CryptoPrice { get; set; }
+    public int CryptoDecimals { get; set; }
     [Keyword] public string Network { get; set; }
     [Keyword] public string CryptoAmount { get; set; }
     [Keyword] public string Fiat { get; set; }

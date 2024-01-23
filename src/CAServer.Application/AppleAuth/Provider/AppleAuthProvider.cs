@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using CAServer.AppleVerify;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.SecurityServer;
+using CAServer.Signature.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -31,16 +33,18 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
     private readonly AppleAuthOptions _appleAuthOptions;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<AppleAuthProvider> _logger;
+    private readonly ISecretProvider _secretProvider;
 
     public AppleAuthProvider(JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<AppleAuthOptions> appleAuthOptions,
         IHttpClientFactory httpClientFactory,
-        ILogger<AppleAuthProvider> logger)
+        ILogger<AppleAuthProvider> logger, ISecretProvider secretProvider)
     {
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _appleAuthOptions = appleAuthOptions.Value;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _secretProvider = secretProvider;
     }
 
     public async Task<bool> VerifyAppleId(string identityToken, string appleId)
@@ -57,7 +61,7 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
             return false;
         }
     }
-    
+
     public async Task<SecurityToken> ValidateTokenAsync(string identityToken)
     {
         try
@@ -106,7 +110,7 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
             throw new UserFriendlyException(e.Message);
         }
     }
-    
+
     private async Task<AppleKeys> GetAppleKeyFormAppleAsync()
     {
         var appleKeyUrl = "https://appleid.apple.com/auth/keys";
@@ -117,10 +121,12 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
     public async Task<bool> RevokeAsync(string token)
     {
         var client = _httpClientFactory.CreateClient();
+        var secret = await _secretProvider.GetAppleAuthSignatureAsync(_appleAuthOptions.ExtensionConfig.KeyId,
+            _appleAuthOptions.ExtensionConfig.TeamId, _appleAuthOptions.ExtensionConfig.ClientId);
         var parameters = new Dictionary<string, string>
         {
             { "client_id", _appleAuthOptions.ExtensionConfig.ClientId },
-            { "client_secret", GetSecret() },
+            { "client_secret", secret },
             { "token", token },
             { "token_type_hint", "access_token" }
         };
@@ -136,12 +142,6 @@ public class AppleAuthProvider : IAppleAuthProvider, ISingletonDependency
         }
 
         return true;
-    }
-
-    public string GetSecret()
-    {
-        return GetSecret(_appleAuthOptions.ExtensionConfig.PrivateKey, _appleAuthOptions.ExtensionConfig.KeyId,
-            _appleAuthOptions.ExtensionConfig.TeamId, _appleAuthOptions.ExtensionConfig.ClientId);
     }
 
     private string GetSecret(string privateKey, string keyId, string teamId, string clientId)

@@ -123,7 +123,7 @@ public partial class ThirdPartOrderAppServiceTest
             Type = OrderTransDirect.SELL.ToString(),
             Crypto = "ELF",
             CryptoAmount = 200,
-            Network = "AELF-AELF",
+            Network = "AELF",
             Fiat = "USD",
             FiatAmount = 65,
             Country = "US",
@@ -142,14 +142,14 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Type = OrderTransDirect.SELL.ToString(),
             Crypto = "ELF",
-            Network = "ELF",
+            Network = "AELF",
             Fiat = "USD",
             Country = "US",
         });
         
         usdExchange.ShouldNotBeNull();
         usdExchange.Success.ShouldBeTrue();
-        usdExchange.Data.Exchange.ShouldBe("0.354321");
+        usdExchange.Data.Exchange.ShouldBe("0.355717");
     }
 
 

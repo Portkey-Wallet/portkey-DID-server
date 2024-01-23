@@ -1,4 +1,6 @@
 ﻿using System;
+using CAServer.Cache;
+using CAServer.Signature.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Caching;
 using Volo.Abp.Modularity;
@@ -13,11 +15,9 @@ public class CAServerCoinGeckoApiModule : AbpModule
     {
         var configuration = context.Services.GetConfiguration();
         Configure<CoinGeckoOptions>(configuration.GetSection("CoinGecko"));
-        context.Services.AddHttpClient("CoinGeckoPro", client =>
-        {
-            client.BaseAddress = new Uri(configuration["CoinGecko:BaseUrl"]);
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("x-cg-pro-api-key", configuration["CoinGecko:ApiKey"]);
-        });
+        Configure<SignatureServerOptions>(configuration.GetSection("SignatureServer"));
+        context.Services.AddHttpClient();
+        context.Services.AddMemoryCache();
+        context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
     }
 }

@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
+using CAServer.Signature.Provider;
 using CAServer.Verifier;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Shouldly;
 using Xunit;
 
@@ -22,6 +24,7 @@ public partial class GoogleRecaptchaTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetGoogleRecaptchaOptions());
         services.AddSingleton(GetMockCacheProvider());
+        services.AddSingleton(MockSecretProvider());
     }
 
 

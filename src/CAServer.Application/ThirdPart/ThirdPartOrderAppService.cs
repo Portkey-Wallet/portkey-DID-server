@@ -183,7 +183,10 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
             AssertHelper.NotEmpty(decimalsList?.TokenInfo, "Price symbol of {PriceSymbol} decimal not found",
                 input.PaymentSymbol);
             AssertHelper.IsTrue(double.TryParse(input.PaymentAmount, out var priceAmount), "Invalid priceAmount");
+            var decimals = decimalsList!.TokenInfo[0].Decimals;
+            AssertHelper.IsTrue(decimals > 0, "Merchant crypto settlement address empty");
 
+            
             var merchantAddress = input.MerchantAddress.DefaultIfEmpty(
                 _thirdPartOptions.CurrentValue.Merchant.GetOption(input.MerchantName).ReceivingAddress);
             AssertHelper.NotEmpty(merchantAddress, "Merchant crypto settlement address empty");
@@ -195,8 +198,8 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
             orderGrainData.Status = OrderStatusType.Initialized.ToString();
             orderGrainData.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
             orderGrainData.CryptoQuantity = priceAmount.ToString(CultureInfo.InvariantCulture);
-            orderGrainData.CryptoAmount =
-                (priceAmount / Math.Pow(10, decimalsList.TokenInfo[0].Decimals)).ToString(CultureInfo.InvariantCulture);
+            orderGrainData.CryptoDecimals = decimals;
+            orderGrainData.CryptoAmount = (priceAmount / Math.Pow(10, decimals)).ToString(CultureInfo.InvariantCulture);
             var createResult = await DoCreateOrderAsync(orderGrainData);
             AssertHelper.IsTrue(createResult.Success, "Create main order failed: " + createResult.Message);
 

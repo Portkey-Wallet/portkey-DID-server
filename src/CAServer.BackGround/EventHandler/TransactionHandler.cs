@@ -8,6 +8,7 @@ using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Etos;
@@ -30,6 +31,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
     private readonly IActivityProvider _activityProvider;
     private readonly TransactionOptions _transactionOptions;
     private readonly IOrderStatusProvider _orderStatusProvider;
+    private readonly IOptionsMonitor<ChainOptions> _chainOptions;
 
     public TransactionHandler(
         IObjectMapper objectMapper,
@@ -38,7 +40,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         IThirdPartOrderProvider thirdPartOrderProvider,
         IActivityProvider activityProvider,
         IOptionsSnapshot<TransactionOptions> options,
-        IOrderStatusProvider orderStatusProvider)
+        IOrderStatusProvider orderStatusProvider, IOptionsMonitor<ChainOptions> contractOptions)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -47,6 +49,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         _activityProvider = activityProvider;
         _transactionOptions = options.Value;
         _orderStatusProvider = orderStatusProvider;
+        _chainOptions = contractOptions;
     }
 
     public async Task HandleEventAsync(TransactionEto eventData)
@@ -92,8 +95,9 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 
             var transactionDto = _objectMapper.Map<TransactionEto, HandleTransactionDto>(eventData);
             transactionDto.ChainId = chainId;
-            
-            _logger.LogDebug("HandleAsync transaction: orderId:{OrderId}, rawTransaction:{RawTransaction}, publicKey:{PublicKey}",
+
+            _logger.LogDebug(
+                "HandleAsync transaction: orderId:{OrderId}, rawTransaction:{RawTransaction}, publicKey:{PublicKey}",
                 eventData.OrderId, eventData.RawTransaction, eventData.PublicKey);
             BackgroundJob.Schedule<ITransactionProvider>(provider =>
                 provider.HandleTransactionAsync(transactionDto), TimeSpan.FromSeconds(_transactionOptions.DelayTime));
@@ -120,6 +124,14 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
         if (!VerifyHelper.VerifySignature(transaction, publicKey))
             throw new UserFriendlyException("RawTransaction validation failed");
 
+        var chainExists =
+            _chainOptions.CurrentValue.ChainInfos.TryGetValue(CommonConstant.MainChainId, out var chainInfo);
+        if (!chainExists || chainInfo == null)
+            throw new UserFriendlyException("Chain info missing");
+        
+        if (chainInfo.ContractAddress != transaction.To.ToBase58())
+            throw new UserFriendlyException("Invalid transaction to address");
+
         if (order == null)
             throw new UserFriendlyException("Order not exists");
 
@@ -134,7 +146,10 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
             || forwardCallDto.MethodName != "Transfer"
             || (transferInput = forwardCallDto.ForwardTransactionArgs?.Value as TransferInput) == null)
             throw new UserFriendlyException("NOT Transfer-ManagerForwardCall transaction");
-
+        
+        if (chainInfo.TokenContractAddress != forwardCallDto.ContractAddress.ToBase58())
+            throw new UserFriendlyException("Invalid forward contract address");
+        
         if (order.Address.IsNullOrEmpty())
             throw new UserFriendlyException("Order address not exists");
 

@@ -27,7 +27,8 @@ public class TransakTest : ThirdPartTestBase
         base.AfterAddApplication(services);
         services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(MockRampOptions());
-        
+        services.AddSingleton(MockSecretProvider());
+
         services.AddSingleton(MockHttpFactory());
         
         DateTimeOffset offset = DateTime.UtcNow.AddDays(7);

@@ -67,7 +67,7 @@ public class NftOrderSettlementTransferWorker : IJobWorker, ISingletonDependency
         var secondsAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
         var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds().ToString();
         var modifyTimeGt = DateTime.UtcNow
-            .AddHours(-_thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferHoursAgo).ToUtcMilliSeconds();
+            .AddMinutes(-_thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferMinuteAgo).ToUtcMilliSeconds();
         var total = 0;
         var count = 0;
         while (true)

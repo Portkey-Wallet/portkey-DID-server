@@ -24,7 +24,7 @@ public class AssetsLibraryProvider : IAssetsLibraryProvider, ISingletonDependenc
 
     public string buildSymbolImageUrl(string symbol)
     {
-        if (symbol.IsNullOrWhiteSpace())
+        if (symbol.IsNullOrWhiteSpace() || _tokenInfoOptions?.TokenInfos == null)
         {
             return string.Empty;
         }

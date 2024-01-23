@@ -27,6 +27,7 @@ public class OrderWsNotifyProvider : IOrderWsNotifyProvider
 
     public Task RegisterOrderListenerAsync(string clientId, string orderId, Func<NotifyOrderDto, Task> callback)
     {
+        UnRegisterOrderListenerAsync(clientId);
         _clientOrderListener[clientId] = orderId;
         _orderNotifyListeners[orderId] = callback;
         return Task.CompletedTask;
@@ -34,9 +35,12 @@ public class OrderWsNotifyProvider : IOrderWsNotifyProvider
     
     public Task UnRegisterOrderListenerAsync(string clientId)
     {
-        if (_clientOrderListener.TryGetValue(clientId ?? string.Empty, out var orderId))
+        if (clientId.IsNullOrEmpty()) return Task.CompletedTask;
+        
+        if (_clientOrderListener.TryGetValue(clientId, out var orderId))
         {
             _orderNotifyListeners.Remove(orderId);
+            _clientOrderListener.Remove(clientId);
         }
         return Task.CompletedTask;
     }

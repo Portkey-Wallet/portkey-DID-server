@@ -14,26 +14,15 @@ public class Program
             .AddJsonFile("appsettings.json")
             .Build();
         Log.Logger = new LoggerConfiguration()
-#if DEBUG
-            .MinimumLevel.Debug()
-#else
-            .MinimumLevel.Information()
-#endif
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .ReadFrom.Configuration(configuration)
-#if DEBUG
-            .WriteTo.Async(c => c.Console())
-#endif
             .CreateLogger();
 
         try
         {
             Log.Information("Starting CAServer.Silo.");
-
             await CreateHostBuilder(args).RunConsoleAsync();
-
-
             return 0;
         }
         catch (Exception ex)

@@ -4,6 +4,8 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
+using CAServer.SecurityServer;
+using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
@@ -25,6 +27,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly ITokenAppService _tokenAppService;
     private readonly ILogger<AlchemyNftOrderProcessor> _logger;
+    private readonly ISecretProvider _secretProvider;
 
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
@@ -37,7 +40,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions, AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IContractProvider contractProvider,
         IAbpDistributedLock distributedLock, IThirdPartOrderAppService thirdPartOrderAppService,
-        ITokenAppService tokenAppService)
+        ITokenAppService tokenAppService, ISecretProvider secretProvider)
         : base(logger, clusterClient, thirdPartOptions, orderStatusProvider, contractProvider, distributedLock,
             thirdPartOrderAppService)
     {
@@ -45,6 +48,7 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         _alchemyProvider = alchemyProvider;
         _thirdPartOptions = thirdPartOptions;
         _tokenAppService = tokenAppService;
+        _secretProvider = secretProvider;
     }
 
     public override string ThirdPartName()
@@ -56,8 +60,9 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
     {
         return _thirdPartOptions.CurrentValue.Alchemy;
     }
-    
-    public override IThirdPartValidOrderUpdateRequest VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input)
+
+    public override async Task<IThirdPartValidOrderUpdateRequest> VerifyNftOrderAsync(
+        IThirdPartNftOrderUpdateRequest input)
     {
         // verify input type and data 
         AssertHelper.IsTrue(input is AlchemyNftOrderRequestDto, "Invalid input");
@@ -72,10 +77,10 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         // verify signature 
         var signSource = ThirdPartHelper.ConvertObjectToSortedString(input,
             AlchemyHelper.SignatureField, AlchemyHelper.IdField);
-        var signature = AlchemyHelper.HmacSign(signSource, AlchemyOptions().NftAppSecret);
+        var signature = await _secretProvider.GetAlchemyHmacSignAsync(AlchemyOptions().NftAppId, signSource);
         _logger.LogDebug("Verify Alchemy signature, signature={Signature}, signSource={SignSource}",
             signature, signSource);
-        AssertHelper.IsTrue(signature == (string)inputSignature,
+        AssertHelper.IsTrue(signature == inputSignature,
             "Invalid alchemy signature={InputSign}, signSource={SignSource}",
             inputSignature, signSource);
 
@@ -150,17 +155,19 @@ public class AlchemyNftOrderProcessor : AbstractThirdPartNftOrderProcessor
         var finishDateTime = finishTime == null ? (DateTime?)null : TimeHelper.GetDateTimeFromTimeStamp(finishTimeLong);
 
         var binanceExchange = finishTime == null
-            ? await _tokenAppService.GetLatestExchangeAsync(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
+            ? await _tokenAppService.GetLatestExchangeAsync(ExchangeProviderName.Binance.ToString(),
+                orderGrainDto.Crypto,
                 CommonConstant.USDT)
-            : await _tokenAppService.GetHistoryExchangeAsync(ExchangeProviderName.Binance.ToString(), orderGrainDto.Crypto,
+            : await _tokenAppService.GetHistoryExchangeAsync(ExchangeProviderName.Binance.ToString(),
+                orderGrainDto.Crypto,
                 CommonConstant.USDT, (DateTime)finishDateTime);
 
         var okxExchange = finishTime == null
             ? await _tokenAppService.GetLatestExchangeAsync(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto,
                 CommonConstant.USDT)
-            : await _tokenAppService.GetHistoryExchangeAsync(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto, 
+            : await _tokenAppService.GetHistoryExchangeAsync(ExchangeProviderName.Okx.ToString(), orderGrainDto.Crypto,
                 CommonConstant.USDT, (DateTime)finishDateTime);
-        
+
         var cryptoPrice = orderGrainDto.CryptoAmount.SafeToDecimal();
 
         if (orderSettlementGrainDto.BinanceSettlementAmount == null && binanceExchange != null)

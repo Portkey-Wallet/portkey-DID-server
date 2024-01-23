@@ -75,7 +75,7 @@ public class RedPackageGrainTest : CAServerGrainTestBase
         await redPackageGrain.ExpireRedPackage();
         res = await redPackageGrain.GrabRedPackage(userId3, "xxxx");
         res.Success.ShouldBe(false);
-        res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageExpired);
+        res.Data.ErrorMessage.ShouldBe(RedPackageConsts.RedPackageCancelled);
 
         redPackageGrain = Cluster.Client.GetGrain<ICryptoBoxGrain>(Guid.NewGuid());
         await redPackageGrain.CreateRedPackage(NewSendRedPackageInputDto(Guid.NewGuid()), 8, 1, userId1,86400000);

@@ -7,6 +7,8 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Options;
+using CAServer.SecurityServer;
+using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.Caching.Distributed;
@@ -35,6 +37,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     private readonly IDistributedCache<List<AlchemyCryptoDto>> _cryptoListCache;
     private readonly IDistributedCache<List<AlchemyFiatDto>> _nftFiatListCache;
     private readonly IDistributedCache<AlchemyOrderQuoteDataDto> _orderQuoteCache;
+    private readonly ISecretProvider _secretProvider;
 
     private readonly JsonSerializerSettings _setting = new()
     {
@@ -45,7 +48,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         ILogger<AlchemyServiceAppService> logger, IDistributedCache<List<AlchemyFiatDto>> fiatListCache,
         IDistributedCache<AlchemyOrderQuoteDataDto> orderQuoteCache,
         IDistributedCache<List<AlchemyFiatDto>> nftFiatListCache,
-        IDistributedCache<List<AlchemyCryptoDto>> cryptoListCache, IOptionsMonitor<RampOptions> rampOptions)
+        IDistributedCache<List<AlchemyCryptoDto>> cryptoListCache, IOptionsMonitor<RampOptions> rampOptions,
+        ISecretProvider secretProvider)
     {
         _thirdPartOptions = thirdPartOptions;
         _alchemyProvider = alchemyProvider;
@@ -55,6 +59,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
         _nftFiatListCache = nftFiatListCache;
         _cryptoListCache = cryptoListCache;
         _rampOptions = rampOptions;
+        _secretProvider = secretProvider;
     }
 
     private AlchemyOptions AlchemyOptions()
@@ -173,7 +178,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             });
             AssertHelper.IsTrue(cryptoList.Success, "Query Alchemy crypto list fail");
             AssertHelper.NotEmpty(cryptoList.Data, "Empty Alchemy crypto list");
-            var mappingNetworkExists = AlchemyRampOptions().NetworkMapping.TryGetValue(input.Network, out var mappingNetwork);
+            var mappingNetworkExists =
+                AlchemyRampOptions().NetworkMapping.TryGetValue(input.Network, out var mappingNetwork);
             var cryptoItem = cryptoList.Data
                 .Where(c => c.Network == (mappingNetworkExists ? mappingNetwork : input.Network))
                 .Where(c => c.Crypto == input.Crypto)
@@ -248,10 +254,11 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     {
         try
         {
-            return new CommonResponseDto<AlchemySignatureResultDto>(new AlchemySignatureResultDto()
+            var sign = await _secretProvider.GetAlchemyAesSignAsync(AlchemyOptions().AppId,
+                $"address={input.Address}&appId={AlchemyOptions().AppId}");
+            return new CommonResponseDto<AlchemySignatureResultDto>(new AlchemySignatureResultDto
             {
-                Signature = AlchemyHelper.AesEncrypt($"address={input.Address}&appId={AlchemyOptions().AppId}",
-                    AlchemyOptions().AppSecret)
+                Signature = sign
             });
         }
         catch (Exception e)
@@ -263,26 +270,22 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
     }
 
     /// generate Alchemy API signature
-    public Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, string> input)
+    public async Task<AlchemyBaseResponseDto<string>> GetAlchemyApiSignatureAsync(Dictionary<string, string> input)
     {
         try
         {
             // Ensure input isn't fake webhook data.
             AssertHelper.IsTrue(!input.ContainsKey("status"), "invalid param keys");
             AssertHelper.IsTrue(input.TryGetValue("appId", out var appId), "appId missing");
-            var appSecret = AlchemyOptions().NftAppId == appId
-                ? AlchemyOptions().NftAppSecret
-                : AlchemyOptions().AppSecret;
-
             var src = ThirdPartHelper.ConvertObjectToSortedString(input, AlchemyHelper.SignatureField);
-            var sign = AlchemyHelper.HmacSign(src, appSecret);
+            var sign = await _secretProvider.GetAlchemyHmacSignAsync(appId, src);
             _logger.LogInformation("GetAlchemyApiSignatureAsync, sourceStr={Source}, signature={Sign}", src, sign);
-            return Task.FromResult(new AlchemyBaseResponseDto<string>(sign));
+            return new AlchemyBaseResponseDto<string>(sign);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "GetAlchemyApiSignatureAsync error");
-            return Task.FromResult(AlchemyBaseResponseDto<string>.Fail(e.Message));
+            return AlchemyBaseResponseDto<string>.Fail(e.Message);
         }
     }
 }
