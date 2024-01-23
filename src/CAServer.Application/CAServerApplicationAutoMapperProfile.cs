@@ -46,7 +46,6 @@ using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
 using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
-using CAServer.PrivacyPolicy.Dtos;
 using CAServer.RedDot.Dtos;
 using CAServer.RedDot.Etos;
 using CAServer.Search.Dtos;

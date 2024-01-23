@@ -93,4 +93,5 @@ public class CAAccountController : CAServerController
         var url = await _growthAppService.GetRedirectUrlAsync(shortLinkCode);
         return Redirect(url);
     }
+    
 }

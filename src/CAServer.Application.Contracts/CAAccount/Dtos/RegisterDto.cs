@@ -13,4 +13,5 @@ public class RegisterDto : CAAccountBase
     public string RegisterMessage { get; set; }
     public HubRequestContext Context { get; set; }
     public ReferralInfo ReferralInfo { get; set; }
+    public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
 }

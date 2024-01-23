@@ -37,6 +37,7 @@ using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Google.Protobuf.Collections;
+using Google.Protobuf.WellKnownTypes;
 using Portkey.Contracts.CA;
 
 namespace CAServer.Grains;
@@ -58,6 +59,20 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GuardianState, GuardianGrainDto>();
 
         CreateMap<CreateHolderDto, CreateCAHolderInput>()
+            .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => new DelegateInfo()
+            {
+                ChainId = e.ProjectDelegateInfo.ChainId,
+                ProjectHash = Hash.LoadFromHex(e.ProjectDelegateInfo.ProjectHash),
+                IdentifierHash = Hash.LoadFromHex(e.ProjectDelegateInfo.IdentifierHash),
+                ExpirationTime = e.ProjectDelegateInfo.ExpirationTime,
+                Delegations =
+                {
+                    e.ProjectDelegateInfo.Delegations
+                },
+                Timestamp = DateTimeOffset.FromUnixTimeSeconds(e.ProjectDelegateInfo.TimeStamp).ToTimestamp(),
+                IsUnlimitedDelegate = true,
+                Signature = e.ProjectDelegateInfo.Signature
+            }))
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
             {
                 Type = e.GuardianInfo.Type,
