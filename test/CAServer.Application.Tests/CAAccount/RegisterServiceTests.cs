@@ -1,6 +1,8 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using CAServer.Account;
+using CAServer.amazon;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
@@ -43,8 +45,19 @@ public class RegisterServiceTests : CAServerApplicationTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
+        services.AddSingleton(MockAwsS3Client());
+        services.AddSingleton(MockGraphQlOptions());
+    }
+    
+    protected IAwsS3Client MockAwsS3Client()
+    {
+        var mockImageClient = new Mock<IAwsS3Client>();
+        mockImageClient.Setup(p => p.UpLoadFileAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync("http://s3.test.com/result.svg");
+        return mockImageClient.Object;
     }
 
+    
     private IAppleUserProvider GetMockAppleUserProvider()
     {
         var provider = new Mock<IAppleUserProvider>();
@@ -60,6 +73,28 @@ public class RegisterServiceTests : CAServerApplicationTestBase
 
         return provider.Object;
     }
+
+    private IGraphQLProvider MockGraphQLProvider()
+    {
+
+        var mock = new Mock<IGraphQLProvider>();
+        // mock.Setup()
+        return mock.Object;
+    }
+    
+    
+    protected new IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
+    {
+        var options = new GraphQLOptions()
+        {
+            Configuration = "http://127.0.0.1:9200/AElfIndexer_DApp/PortKeyIndexerCASchema/graphq"
+        };
+
+        var mock = new Mock<IOptionsSnapshot<GraphQLOptions>>();
+        mock.Setup(o => o.Value).Returns(options);
+        return mock.Object;
+    }
+
     
     [Fact]
     public async Task RegisterRequestAsync_Register_Success_Test()

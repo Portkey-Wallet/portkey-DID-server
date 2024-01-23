@@ -15,6 +15,7 @@ using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
 using CAServer.Monitor;
 using CAServer.Signature;
+using CAServer.Signature.Provider;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;

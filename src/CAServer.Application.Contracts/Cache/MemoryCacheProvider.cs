@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.Common
+namespace CAServer.Cache
 {
     public interface ILocalMemoryCache<T>
     {

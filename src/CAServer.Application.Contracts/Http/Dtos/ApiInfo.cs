@@ -1,6 +1,6 @@
 using System.Net.Http;
 
-namespace CAServer.Common.Dtos;
+namespace CAServer.Http.Dtos;
 
 public class ApiInfo
 {
