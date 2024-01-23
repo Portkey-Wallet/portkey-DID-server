@@ -57,115 +57,115 @@ public partial class RedPackageTest : CAServerApplicationTestBase
     }
 
     
-    // [Fact]
-    // public async Task GenerateRedPackageAsync_test()
-    // {
-    //     await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-    //     {
-    //         await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
-    //         {
-    //             ChainId = "AELF",
-    //             Symbol = "ELF"
-    //         });
-    //     });
+    [Fact]
+    public async Task GenerateRedPackageAsync_test()
+    {
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
+            {
+                ChainId = "xxx",
+                Symbol = "xxxx"
+            });
+        });
         
-        // var res = await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
-        // {
-        //     ChainId = "AELF",
-        //     Symbol = "ELF"
-        // });
-        // res.ChainId.ShouldBe("AELF");
-        // res.Symbol.ShouldBe("ELF");
-    // }
+        var res = await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
+        {
+            ChainId = "AELF",
+            Symbol = "ELF"
+        });
+        res.ChainId.ShouldBe("AELF");
+        res.Symbol.ShouldBe("ELF");
+    }
     
     [Fact]
     public async Task SendRedPackageAsync_test()
     {
-        // var redPackage = await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
-        // {
-        //     ChainId = "AELF",
-        //     Symbol = "ELF"
-        // });
-        // redPackageId = redPackage.Id;
-        // var input = NewSendRedPackageInputDto();
-        // input.ChainId = "AELF";
-        // input.Symbol = "XXX";
-        // var ex = await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // //min error
-        // input = NewSendRedPackageInputDto();
-        // input.TotalAmount = "1";
-        // await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // //type  error
-        // input = NewSendRedPackageInputDto();
-        // input.Type = 0;
-        // await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // //id error
-        // input = NewSendRedPackageInputDto();
-        // input.Id = Guid.Empty;
-        // await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // //count error
-        // input = NewSendRedPackageInputDto();
-        // input.Count = 0;
-        // await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // //amount error
-        // input = NewSendRedPackageInputDto();
-        // input.TotalAmount = "10";
-        // await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // //count error
-        // input = NewSendRedPackageInputDto();
-        // input.Count = 2000;
-        // await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // //chain id error
-        // input = NewSendRedPackageInputDto();
-        // input.ChainId = "AELF-1";
-        // await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // //uid error
-        // input = NewSendRedPackageInputDto();
-        // await Assert.ThrowsAsync<UserFriendlyException>(async () =>
-        // {
-        //     await _redPackageAppService.SendRedPackageAsync(input);
-        // });
-        //
-        // Login(userId);
-        // input = NewSendRedPackageInputDto();
-        // var result = await _redPackageAppService.SendRedPackageAsync(input);
-        // result.SessionId.ShouldNotBe(Guid.Empty);
-        //
-        // //get result
-        // var res = await _redPackageAppService.GetCreationResultAsync(result.SessionId);
-        // res.Status.ShouldBe(RedPackageTransactionStatus.Processing);
+        var redPackage = await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
+        {
+            ChainId = "AELF",
+            Symbol = "ELF"
+        });
+        redPackageId = redPackage.Id;
+        var input = NewSendRedPackageInputDto();
+        input.ChainId = "AELF";
+        input.Symbol = "XXX";
+        var ex = await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        //min error
+        input = NewSendRedPackageInputDto();
+        input.TotalAmount = "1";
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        //type  error
+        input = NewSendRedPackageInputDto();
+        input.Type = 0;
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        //id error
+        input = NewSendRedPackageInputDto();
+        input.Id = Guid.Empty;
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        //count error
+        input = NewSendRedPackageInputDto();
+        input.Count = 0;
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        //amount error
+        input = NewSendRedPackageInputDto();
+        input.TotalAmount = "10";
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        //count error
+        input = NewSendRedPackageInputDto();
+        input.Count = 2000;
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        //chain id error
+        input = NewSendRedPackageInputDto();
+        input.ChainId = "AELF-1";
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        //uid error
+        input = NewSendRedPackageInputDto();
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _redPackageAppService.SendRedPackageAsync(input);
+        });
+        
+        Login(userId);
+        input = NewSendRedPackageInputDto();
+        var result = await _redPackageAppService.SendRedPackageAsync(input);
+        result.SessionId.ShouldNotBe(Guid.Empty);
+        
+        //get result
+        var res = await _redPackageAppService.GetCreationResultAsync(result.SessionId);
+        res.Status.ShouldBe(RedPackageTransactionStatus.Processing);
     }
 
     [Fact]
@@ -178,27 +178,27 @@ public partial class RedPackageTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetRedPackageDetailAsync_test()
     {
-        // var res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, 0, 0);
-        // res.Id.ShouldBe(Guid.Empty);
-        //
-        // Login(userId);
-        // var input = NewSendRedPackageInputDto();
-        // await _redPackageAppService.SendRedPackageAsync(input);
-        // res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, -1, -1);
-        // res.Id.ShouldBe(redPackageId);
+        var res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, 0, 0);
+        res.Id.ShouldBe(Guid.Empty);
+        
+        Login(userId);
+        var input = NewSendRedPackageInputDto();
+        await _redPackageAppService.SendRedPackageAsync(input);
+        res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, -1, -1);
+        res.Id.ShouldBe(redPackageId);
     }
 
     [Fact]
     public async Task GetRedPackageConfigAsync_test()
     {
-        // var res = await _redPackageAppService.GetRedPackageConfigAsync(null, null);
-        // res.TokenInfo.Count.ShouldBeGreaterThan(0);
-        //
-        // res = await _redPackageAppService.GetRedPackageConfigAsync("AELF", "ELF");
-        // res.TokenInfo.Count.ShouldBeGreaterThan(0);
-        //
-        // res = await _redPackageAppService.GetRedPackageConfigAsync("AELF-1", "ELF");
-        // res.TokenInfo.Count.ShouldBe(0);
+        var res = await _redPackageAppService.GetRedPackageConfigAsync(null, null);
+        res.TokenInfo.Count.ShouldBeGreaterThan(0);
+        
+        res = await _redPackageAppService.GetRedPackageConfigAsync("AELF", "ELF");
+        res.TokenInfo.Count.ShouldBeGreaterThan(0);
+        
+        res = await _redPackageAppService.GetRedPackageConfigAsync("AELF-1", "ELF");
+        res.TokenInfo.Count.ShouldBe(0);
     }
     
     [Fact]
@@ -226,11 +226,11 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         sendinput.TotalAmount = "100";
         sendinput.Count = 10;
         sendinput.Type = RedPackageType.Fixed;
-        // await _redPackageAppService.SendRedPackageAsync(sendinput);
+        await _redPackageAppService.SendRedPackageAsync(sendinput);
         input.Id = newId;
-        //res = await _redPackageAppService.GrabRedPackageAsync(input);
-        // res.Result.ShouldBe(RedPackageGrabStatus.Success);
-        // res.Amount.ShouldBe("10");
+        res = await _redPackageAppService.GrabRedPackageAsync(input);
+        res.Result.ShouldBe(RedPackageGrabStatus.Success);
+        res.Amount.ShouldBe("10");
     }
     
     private void Login(Guid userId)
