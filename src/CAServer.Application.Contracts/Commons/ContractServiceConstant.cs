@@ -73,9 +73,13 @@ public static class CommonConstant
     public const string DefaultCryptoPrice = "400";
 
     public const string ProtocolName = "http";
+
     public const string UserGrowthPrefix = "UserGrowth";
     public const string RedDotPrefix = "RedDot";
     public const int InitInviteCode = 10000;
     public const string InviteCodeGrainId = "UserGrowth-InviteCode";
+    public const string UrlSegmentation = "?";
+    public const string UpgradeGrainIdPrefix = "UpgradeInfo";
+    public const string GetUserExtraInfoUri = "api/app/userExtraInfo";
 
 }

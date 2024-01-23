@@ -94,19 +94,22 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
             AssertHelper.IsTrue(inputState != OrderStatusType.Unknown, "Unknown order status {Status}",
                 inputOrderDto.Status);
 
-            var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-            AssertHelper.NotNull(esOrderData, "Order not found, id={Id}", grainId);
-            AssertHelper.IsTrue(inputOrderDto.Id == esOrderData.Id, "Order invalid");
+            var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
+            var orderDataResp = await orderGrain.GetOrder();
+            AssertHelper.NotNull(orderDataResp.Success, "Order not found, id={Id}", grainId);
+            AssertHelper.NotNull(orderDataResp.Data, "Order empty, id={Id}", grainId);
+            AssertHelper.IsTrue(inputOrderDto.Id == orderDataResp.Data.Id, "Order invalid");
+            var orderData = orderDataResp.Data;
 
-            var currentStatus = ThirdPartHelper.ParseOrderStatus(esOrderData.Status);
+            var currentStatus = ThirdPartHelper.ParseOrderStatus(orderData.Status);
             AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, inputState),
                 "{ToState} isn't reachable from {FromState}", inputState, currentStatus);
 
-            var dataToBeUpdated = MergeEsAndInput2GrainModel(inputOrderDto, esOrderData);
-            var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
+            var inputOrder = ObjectMapper.Map<OrderDto, OrderGrainDto>(inputOrderDto);
+            var dataToBeUpdated = MergeEsAndInput2GrainModel(inputOrder, orderData);
             dataToBeUpdated.Status = inputState.ToString(); 
             dataToBeUpdated.Id = grainId;
-            dataToBeUpdated.UserId = esOrderData.UserId;
+            dataToBeUpdated.UserId = orderData.UserId;
             dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
             Logger.LogInformation("This {MerchantName} order {GrainId} will be updated", inputOrderDto.MerchantName,
                 grainId);
@@ -138,19 +141,17 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         }
     }
     
-    private OrderGrainDto MergeEsAndInput2GrainModel(OrderDto fromData, OrderDto toData)
+    private OrderGrainDto MergeEsAndInput2GrainModel(OrderGrainDto fromData, OrderGrainDto toData)
     {
-        var orderGrainData = ObjectMapper.Map<OrderDto, OrderGrainDto>(fromData);
-        var orderData = ObjectMapper.Map<OrderDto, OrderGrainDto>(toData);
         foreach (var prop in typeof(OrderGrainDto).GetProperties())
         {
             // When the attribute in UpdateOrderData has been assigned, there is no need to overwrite it with the data in es
-            if (prop.GetValue(orderGrainData) == null && prop.GetValue(orderData) != null)
+            if (prop.GetValue(fromData) == null && prop.GetValue(toData) != null)
             {
-                prop.SetValue(orderGrainData, prop.GetValue(orderData));
+                prop.SetValue(fromData, prop.GetValue(toData));
             }
         }
 
-        return orderGrainData;
+        return fromData;
     }
 }

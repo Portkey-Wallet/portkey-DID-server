@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.amazon;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.UserAssets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualBasic;
+using Moq;
 using NSubstitute;
 using Shouldly;
 using Volo.Abp.Users;
@@ -38,6 +41,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockActivityProvider());
         services.AddSingleton(GetContractProvider());
         services.AddSingleton(GetMockUserAssetsProvider());
+        services.AddSingleton(MockAwsS3Client());
     }
 
     private void Login(Guid userId)
@@ -46,6 +50,15 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         _currentUser.IsAuthenticated.Returns(true);
     }
 
+    
+    protected IAwsS3Client MockAwsS3Client()
+    {
+        var mockImageClient = new Mock<IAwsS3Client>();
+        mockImageClient.Setup(p => p.UpLoadFileAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync("http://s3.test.com/result.svg");
+        return mockImageClient.Object;
+    }
+    
     [Fact]
     public async Task GetActivityTest()
     {
@@ -199,7 +212,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            }
         };
 
         var result = await _userActivityAppService.GetActivitiesAsync(param);
@@ -218,7 +238,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
             TransactionTypes = new List<string>() { "ContractTypes" }
         };
 
@@ -230,8 +257,8 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         //data.TransactionFees.First().FeeInUsd.ShouldBe("0.000002");
         data.TransactionFees.First().Decimals.ShouldBe("8");
     }
-    
-    
+
+
     [Fact]
     public async Task GetActivitiesTransferTypesTest()
     {
@@ -239,7 +266,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
             TransactionTypes = new List<string>() { "TransferTypes" }
         };
 
@@ -259,7 +293,14 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         {
             SkipCount = 0,
             MaxResultCount = 10,
-            CaAddresses = new List<string> { "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo" },
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+                    ChainId = "AELF"
+                }
+            },
             TransactionTypes = new List<string>() { "TEST" }
         };
 
