@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Growth;
 using CAServer.Growth.Dtos;
@@ -36,5 +37,11 @@ public class GrowthController : CAServerController
     public async Task<ShortLinkDto> GetShortLinkAsync(string projectCode)
     {
         return await _growthAppService.GetShortLinkAsync(projectCode);
+    }
+    
+    [HttpGet("referralInfo")]
+    public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
+    {
+        return await _growthAppService.GetReferralInfoAsync(input);
     }
 }
