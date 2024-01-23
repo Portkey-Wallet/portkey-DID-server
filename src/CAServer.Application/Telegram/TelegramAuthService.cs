@@ -43,7 +43,7 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
     {
         if (request == null || request.Id.IsNullOrWhiteSpace() || request.Hash.IsNullOrWhiteSpace())
         {
-            _logger.LogInformation("telegram auth result is null");
+            _logger.LogInformation("Id or Hash is null");
             throw new UserFriendlyException("Invalid Telegram Login Information");
         }
 
