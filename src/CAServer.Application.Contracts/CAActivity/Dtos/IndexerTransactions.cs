@@ -15,7 +15,7 @@ public class TransactionsDto
 
 public class CaHolderTransaction
 {
-    public List<IndexerTransaction> Data { get; set; }
+    public List<IndexerTransaction> Data { get; set; } = new();
     public long TotalRecordCount { get; set; }
 }
 
