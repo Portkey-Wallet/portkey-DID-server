@@ -7,4 +7,5 @@ public interface IUserExtraInfoAppService
 {
     Task<AddAppleUserExtraInfoResultDto> AddAppleUserExtraInfoAsync(AddAppleUserExtraInfoDto extraInfoDto);
     Task<UserExtraInfoResultDto> GetUserExtraInfoAsync(string id);
+    Task<UserExtraInfoResultDto> AddUserExtraInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo);
 }
