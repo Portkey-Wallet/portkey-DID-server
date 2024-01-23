@@ -173,5 +173,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
         CreateMap<RedDotState, RedDotGrainDto>().ReverseMap();
         CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
+        CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
     }
 }
