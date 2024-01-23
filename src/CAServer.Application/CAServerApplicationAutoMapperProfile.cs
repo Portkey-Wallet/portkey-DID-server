@@ -59,8 +59,6 @@ using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
-using CAServer.Upgrade.Dtos;
-using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo.Dtos;
