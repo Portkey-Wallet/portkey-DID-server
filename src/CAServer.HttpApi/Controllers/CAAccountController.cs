@@ -94,10 +94,4 @@ public class CAAccountController : CAServerController
         return Redirect(url);
     }
     
-    [HttpPost("authorize/delegate"), Authorize, IgnoreAntiforgeryToken]
-    public async Task<AuthorizeDelegateResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeRequestDto input)
-    {
-        return await _caAccountService.AuthorizeDelegateAsync(input);
-    }
-    
 }

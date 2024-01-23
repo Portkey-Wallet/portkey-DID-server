@@ -14,7 +14,6 @@ using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
-using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State;
 using CAServer.Grains.State.Bookmark;
@@ -30,13 +29,13 @@ using CAServer.Grains.State.RedDot;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Grains.State.RedPackage;
 using CAServer.Grains.State.Tokens;
-using CAServer.Grains.State.Upgrade;
 using CAServer.Grains.State.UserExtraInfo;
 using CAServer.PrivacyPermission.Dtos;
 using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Google.Protobuf.Collections;
+using Google.Protobuf.WellKnownTypes;
 using Portkey.Contracts.CA;
 
 namespace CAServer.Grains;
@@ -174,6 +173,5 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
         CreateMap<RedDotState, RedDotGrainDto>().ReverseMap();
         CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
-        CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
     }
 }
