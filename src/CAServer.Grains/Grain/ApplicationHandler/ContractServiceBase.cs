@@ -1,5 +1,6 @@
 using AElf.Client.Dto;
 using AElf.Types;
+using CAServer.CAAccount.Dtos;
 using CAServer.Hubs;
 using Portkey.Contracts.CA;
 
@@ -42,4 +43,5 @@ public class ContractDtoBase
     public Hash CaHash { get; set; }
     public Address CaAddress { get; set; }
     public HubRequestContext Context { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 }
