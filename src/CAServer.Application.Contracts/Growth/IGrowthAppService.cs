@@ -11,5 +11,4 @@ public interface IGrowthAppService
     Task<ShortLinkDto> GetShortLinkAsync(string projectCode);
     Task CreateGrowthInfoAsync(string caHash, ReferralInfo referralInfo);
     Task<string> GetRedirectUrlAsync(string shortLinkCode);
-    Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input);
 }

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Growth;
 using CAServer.Growth.Dtos;
@@ -15,10 +14,12 @@ namespace CAServer.Controllers;
 public class GrowthController : CAServerController
 {
     private readonly IGrowthAppService _growthAppService;
+    private readonly IGrowthStatisticAppService _statisticAppService;
 
-    public GrowthController(IGrowthAppService growthAppService)
+    public GrowthController(IGrowthAppService growthAppService, IGrowthStatisticAppService statisticAppService)
     {
         _growthAppService = growthAppService;
+        _statisticAppService = statisticAppService;
     }
 
     [HttpGet("redDot"), Authorize]
@@ -32,16 +33,16 @@ public class GrowthController : CAServerController
     {
         await _growthAppService.SetRedDotAsync();
     }
-    
+
     [HttpGet("shortLink"), Authorize]
     public async Task<ShortLinkDto> GetShortLinkAsync(string projectCode)
     {
         return await _growthAppService.GetShortLinkAsync(projectCode);
     }
-    
+
     [HttpGet("referralInfo")]
     public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
     {
-        return await _growthAppService.GetReferralInfoAsync(input);
+        return await _statisticAppService.GetReferralInfoAsync(input);
     }
 }

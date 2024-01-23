@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CAAccount;
 using CAServer.CAAccount.Dtos;
-using CAServer.Common;
 using CAServer.Commons;
 using CAServer.EnumType;
 using CAServer.Grains;
@@ -14,7 +11,6 @@ using CAServer.Growth.Etos;
 using CAServer.Growth.Provider;
 using CAServer.Options;
 using CAServer.RedDot;
-using GraphQL;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Orleans;
@@ -34,18 +30,16 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private readonly INickNameAppService _nickNameAppService;
     private readonly IGrowthProvider _growthProvider;
     private readonly GrowthOptions _growthOptions;
-    private readonly IGraphQLHelper _graphQlHelper;
 
     public GrowthAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         IRedDotAppService redDotAppService, INickNameAppService nickNameAppService,
-        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider, IGraphQLHelper graphQlHelper)
+        IOptionsSnapshot<GrowthOptions> growthOptions, IGrowthProvider growthProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _redDotAppService = redDotAppService;
         _nickNameAppService = nickNameAppService;
         _growthProvider = growthProvider;
-        _graphQlHelper = graphQlHelper;
         _growthOptions = growthOptions.Value;
     }
 
@@ -154,107 +148,7 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         return
             $"{_growthOptions.RedirectUrl}?referral_code={growthInfo.InviteCode}&project_code={growthInfo.ProjectCode ?? string.Empty}";
     }
-
-    // who i invited
-    public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
-    {
-        var result = new ReferralResponseDto();
-
-        foreach (var caHash in input.CaHashes)
-        {
-            result.ReferralInfos.Add(new Referral()
-            {
-                CaHash = caHash
-            });
-        }
-
-        var growthInfos = await _growthProvider.GetGrowthInfosAsync(input.CaHashes, null);
-        if (growthInfos.IsNullOrEmpty())
-        {
-            return result;
-        }
-
-        foreach (var growthInfo in growthInfos)
-        {
-            var referralInfo = result.ReferralInfos.First(t => t.CaHash == growthInfo.CaHash);
-            referralInfo.ReferralCode = growthInfo.ReferralCode;
-            referralInfo.ProjectCode = growthInfo.ProjectCode;
-            referralInfo.InviteCode = growthInfo.InviteCode;
-        }
-
-        await GetReferralInfoListAsync(result.ReferralInfos);
-        return result;
-    }
-
-    private async Task GetReferralInfoListAsync(List<Referral> referralInfos)
-    {
-        if (referralInfos.IsNullOrEmpty()) return;
-
-        var caHashes = referralInfos.Select(t => t.CaHash).ToList();
-        var growthInfos = await _growthProvider.GetGrowthInfosAsync(caHashes, null);
-        if (growthInfos.IsNullOrEmpty()) return;
-
-        foreach (var growthInfo in growthInfos)
-        {
-            var referral = referralInfos.First(t => t.CaHash == growthInfo.CaHash);
-            referral.InviteCode = growthInfo.InviteCode;
-        }
-        
-        var inviteCodes = growthInfos.Select(t => t.InviteCode).ToList();
-        var indexerReferralInfos = await GetReferralAsync(string.Empty, inviteCodes);
-
-        if (indexerReferralInfos.ReferralInfo.IsNullOrEmpty())
-        {
-            return;
-        }
-
-        foreach (var referralInfo in indexerReferralInfos.ReferralInfo)
-        {
-            var referral = referralInfos.First(t => t.InviteCode == referralInfo.ReferralCode);
-            referral.Children.Add(new Referral()
-            {
-                CaHash = referralInfo.CaHash,
-                ProjectCode = referralInfo.ProjectCode,
-                ReferralCode = referralInfo.ReferralCode
-            });
-        }
-
-        var children = referralInfos.SelectMany(t => t.Children).ToList();
-        await GetReferralInfoListAsync(children);
-    }
-
-    public async Task<ReferralInfoDto> GetReferralAsync(List<string> caHashes)
-    {
-        return await _graphQlHelper.QueryAsync<ReferralInfoDto>(new GraphQLRequest
-        {
-            Query = @"
-			      query($caHashes:[String],$referralCodes:[String]) {
-              referralInfo(dto: {caHashes:$caHashes,referralCodes:$referralCodes}){
-                     caHash,referralCode,projectCode,methodName}
-                }",
-            Variables = new
-            {
-                caHashes
-            }
-        });
-    }
-
-    public async Task<ReferralInfoDto> GetReferralAsync(string caHash, List<string> referralCodes)
-    {
-        return await _graphQlHelper.QueryAsync<ReferralInfoDto>(new GraphQLRequest
-        {
-            Query = @"
-			      query($caHashes:[String],$referralCodes:[String]) {
-              referralInfo(dto: {caHashes:$caHashes,referralCodes:$referralCodes}){
-                     caHash,referralCode,projectCode,methodName}
-                }",
-            Variables = new
-            {
-                caHashes = new List<string>() { caHash }, referralCodes
-            }
-        });
-    }
-
+    
     private async Task<string> GetCaHashAsync()
     {
         var caHolder = await _nickNameAppService.GetCaHolderAsync();
