@@ -1,56 +1,39 @@
 using System.Net.Http;
 using System.Threading.Tasks;
-using CAServer.Commons;
-using CAServer.Monitor;
-using Microsoft.Extensions.Logging;
+using CAServer.Common;
+using CAServer.Http;
+using CAServer.Signature.Options;
+using CAServer.Signature.Provider;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Volo.Abp;
 
 namespace CAServer.IpInfo;
 
 public class IpInfoClient : IIpInfoClient
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IpServiceSettingOptions _ipServiceSetting;
-    private readonly ILogger<IpInfoClient> _logger;
-    private readonly IIndicatorScope _indicatorScope;
+    private readonly IHttpProvider _httpProvider;
+    private readonly IOptionsMonitor<IpServiceSettingOptions> _ipServiceSetting;
+    private readonly IOptionsMonitor<SignatureServerOptions> _signatureOptions;
+    private readonly ISecretProvider _secretProvider;
 
-    public IpInfoClient(IHttpClientFactory httpClientFactory,
-        IOptions<IpServiceSettingOptions> ipServiceSettingOption,
-        ILogger<IpInfoClient> logger, IIndicatorScope indicatorScope)
+
+    public IpInfoClient(
+        IOptionsMonitor<IpServiceSettingOptions> ipServiceSettingOption,
+        ISecretProvider secretProvider, IHttpProvider httpProvider,
+        IOptionsMonitor<SignatureServerOptions> signatureOptions)
     {
-        _httpClientFactory = httpClientFactory;
-        _logger = logger;
-        _indicatorScope = indicatorScope;
-        _ipServiceSetting = ipServiceSettingOption.Value;
+        _secretProvider = secretProvider;
+        _httpProvider = httpProvider;
+        _signatureOptions = signatureOptions;
+        _ipServiceSetting = ipServiceSettingOption;
     }
 
     public async Task<IpInfoDto> GetIpInfoAsync(string ip)
     {
-        var requestUrl = $"{_ipServiceSetting.BaseUrl.TrimEnd('/')}/{ip}";
-        requestUrl += $"?access_key={_ipServiceSetting.AccessKey}&language={_ipServiceSetting.Language}";
-        
-        var interIndicator = _indicatorScope.Begin(MonitorTag.Http);
-        var httpClient = _httpClientFactory.CreateClient();
-        var httpResponseMessage = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUrl));
-
-        if (!httpResponseMessage.IsSuccessStatusCode)
-        {
-            _logger.LogError("{Message}",
-                $"Request for ip info error: {((int)httpResponseMessage.StatusCode).ToString()}");
-            throw new UserFriendlyException("Request error.", ((int)httpResponseMessage.StatusCode).ToString());
-        }
-
-        var content = await httpResponseMessage.Content.ReadAsStringAsync();
-        if (content.Contains("error"))
-        {
-            _logger.LogError("{Message}", $"Request for ip info error: {content}");
-            throw new UserFriendlyException(JObject.Parse(content)["error"]?["info"]?.ToString());
-        }
-
-        _indicatorScope.End(MonitorHelper.GetRequestUrl(httpResponseMessage), interIndicator);
-        return JsonConvert.DeserializeObject<IpInfoDto>(content);
+        var accessKey = await _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.IpService);
+        var requestUrl = _ipServiceSetting.CurrentValue.BaseUrl.TrimEnd('/') + "/" + ip;
+        requestUrl += $"?access_key={accessKey}&language={_ipServiceSetting.CurrentValue.Language}";
+        var response = await _httpProvider.InvokeAsync<IpInfoDto>(HttpMethod.Get, requestUrl);
+        AssertHelper.IsTrue(response.Error == null, response.Error?.Info ?? "Get ip info failed {}", ip);
+        return response;
     }
 }

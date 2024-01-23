@@ -21,14 +21,17 @@ using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
+using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.Growth.Etos;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.ImTransfer.Dtos;
@@ -43,6 +46,9 @@ using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
 using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
+using CAServer.PrivacyPolicy.Dtos;
+using CAServer.RedDot.Dtos;
+using CAServer.RedDot.Etos;
 using CAServer.Search.Dtos;
 using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
@@ -69,6 +75,7 @@ using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
 using GuardianType = CAServer.Account.GuardianType;
 using ImInfo = CAServer.Contacts.ImInfo;
+using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 
@@ -565,6 +572,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
             .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
 
+        CreateMap<RedDotGrainDto, RedDotEto>();
+        CreateMap<GrowthGrainDto, CreateGrowthEto>();
+        CreateMap<RedDotInfo, RedDotInfoDto>();
 
         CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
         CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();

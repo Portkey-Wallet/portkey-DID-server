@@ -5,6 +5,8 @@ namespace CAServer.IpInfo;
 
 public class IpInfoDto
 {
+    public bool Success { get; set; }
+    public Error Error { get; set; }
     public string Ip { get; set; }
     public string Type { get; set; }
 
@@ -19,6 +21,13 @@ public class IpInfoDto
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public LocationInfo Location { get; set; }
+}
+
+public class Error
+{
+    public string Code { get; set; }
+    public string Type { get; set; }
+    public string Info { get; set; }
 }
 
 public class LocationInfo
