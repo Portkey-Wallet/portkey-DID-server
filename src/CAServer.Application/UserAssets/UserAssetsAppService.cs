@@ -92,12 +92,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         try
         {
             var caAddressInfos = requestDto.CaAddressInfos;
-            if (caAddressInfos == null)
-            {
-                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
-            }
-
             var indexerTokenInfos = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
                 0, requestDto.SkipCount + requestDto.MaxResultCount);
 
@@ -111,8 +105,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var tokenKey = $"{CommonConstant.ResourceTokenKey}:{userId.ToString()}";
             var tokenCacheList = await _userTokenCache.GetAsync(tokenKey);
             await CheckNeedAddTokenAsync(userId, indexerTokenInfos, userTokens, tokenCacheList);
-            
-            var chainInfos = await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddresses);
+
+            var chainInfos =
+                await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddressInfos.Select(t => t.CaAddress)
+                    .ToList());
             var chainIds = chainInfos.CaHolderManagerInfo.Select(c => c.ChainId).Distinct().ToList();
 
             var dto = new GetTokenDto
@@ -142,7 +138,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 if (tokenInfo == null)
                 {
                     var data = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos,
-                        symbol.Token.Symbol, 0, requestDto.CaAddresses.Count);
+                        symbol.Token.Symbol, 0, caAddressInfos.Count);
                     tokenInfo = data.CaHolderTokenBalanceInfo.Data.FirstOrDefault(
                         t => t.ChainId == symbol.Token.ChainId);
                     tokenInfo ??= new IndexerTokenInfo
@@ -270,14 +266,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var caAddressInfos = requestDto.CaAddressInfos;
-            if (caAddressInfos == null)
-            {
-                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
-            }
-
-            var res = await _userAssetsProvider.GetUserNftCollectionInfoAsync(caAddressInfos,
+            var res = await _userAssetsProvider.GetUserNftCollectionInfoAsync(requestDto.CaAddressInfos,
                 requestDto.SkipCount, requestDto.MaxResultCount);
 
             var dto = new GetNftCollectionsDto
@@ -325,14 +314,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var caAddressInfos = requestDto.CaAddressInfos;
-            if (caAddressInfos == null)
-            {
-                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
-            }
-
-            var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
+            var res = await _userAssetsProvider.GetUserNftInfoAsync(requestDto.CaAddressInfos,
                 requestDto.Symbol, requestDto.SkipCount, requestDto.MaxResultCount);
 
             var dto = new GetNftItemsDto
@@ -385,14 +367,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var caAddressInfos = requestDto.CaAddressInfos;
-            if (caAddressInfos == null)
-            {
-                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
-            }
-
-            var res = await _userAssetsProvider.GetRecentTransactionUsersAsync(caAddressInfos,
+            var res = await _userAssetsProvider.GetRecentTransactionUsersAsync(requestDto.CaAddressInfos,
                 requestDto.SkipCount, requestDto.MaxResultCount);
 
             var dto = new GetRecentTransactionUsersDto
@@ -531,14 +506,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         try
         {
-            var caAddressInfos = requestDto.CaAddressInfos;
-            if (caAddressInfos == null)
-            {
-                caAddressInfos = requestDto.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
-            }
-
-            var res = await _userAssetsProvider.SearchUserAssetsAsync(caAddressInfos,
+            var res = await _userAssetsProvider.SearchUserAssetsAsync(requestDto.CaAddressInfos,
                 requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword,
                 requestDto.SkipCount, requestDto.MaxResultCount);
 

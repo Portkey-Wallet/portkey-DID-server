@@ -71,6 +71,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
+        Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -139,6 +140,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         AddMessagePushService(context, configuration);
     }
 

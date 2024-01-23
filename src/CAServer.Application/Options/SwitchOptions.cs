@@ -7,4 +7,6 @@ public class SwitchOptions
     public bool GoogleRecaptcha { get; set; }
 
     public bool CheckSwitch { get; set; }
+
+    public bool UpgradePopup { get; set; }
 }

@@ -73,5 +73,8 @@ public static class CommonConstant
     public const string DefaultCryptoPrice = "400";
 
     public const string ProtocolName = "http";
+    public const string UrlSegmentation = "?";
+    public const string UpgradeGrainIdPrefix = "UpgradeInfo";
+    public const string GetUserExtraInfoUri = "api/app/userExtraInfo";
 
 }
