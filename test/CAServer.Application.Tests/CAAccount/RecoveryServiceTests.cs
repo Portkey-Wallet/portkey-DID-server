@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Cryptography;
+using AElf.Types;
 using CAServer.Account;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
@@ -9,6 +12,7 @@ using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Options;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -56,6 +60,29 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
     [Fact]
     public async Task RecoverRequestAsync_Test()
     {
+        var privateKey = "36bc3f264aa340d44aada5759a5a86aac6d734f19932397e551d9e69edffe0d2";
+        var delegateInfo = new Portkey.Contracts.CA.DelegateInfo
+        {
+            IdentifierHash = Hash.LoadFromHex("c95b294d8fa3e154993123785de00cbf125a625710022699df1464a85fc42ad2"),
+            ChainId = 9992731,
+            Timestamp = DateTimeOffset.FromUnixTimeSeconds(1705932935).ToTimestamp(),
+            ExpirationTime = 3600,
+            ProjectHash = Hash.LoadFromHex("dc168643a3378c9d89cb0f53474b97a292f324b621edea078653721dfa26bb42"),
+            Delegations =
+            {
+                new Dictionary<string, long>
+                {
+                    ["ELF"] = 10000000000
+                }
+            },
+            IsUnlimitedDelegate = false,
+            Signature = ""
+        };
+        var signature = CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey), HashHelper.ComputeFrom(delegateInfo).ToByteArray()).ToHex();
+        
+        
+        
+        
         try
         {
             var identifier = DefaultEmailAddress;
