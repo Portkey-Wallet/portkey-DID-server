@@ -29,21 +29,21 @@ public class TreasuryOrderGrain : Grain<TreasuryOrderState>, ITreasuryOrderGrain
     public async Task<GrainResultDto<TreasuryOrderDto>> SaveOrUpdateAsync(TreasuryOrderDto orderDto)
     {
         var createTime = State.CreateTime;
-        _objectMapper.Map(orderDto, State);
-
+        
         if (orderDto.Version != State.Version)
         {
             return new GrainResultDto<TreasuryOrderDto>().Error("Data expired, current version is " + State.Version);
         }
-
+        
+        _objectMapper.Map(orderDto, State);
         State.Id = this.GetPrimaryKey();
         State.CreateTime = createTime == 0 ? DateTime.UtcNow.ToUtcMilliSeconds() : createTime;
         State.LastModifyTime = DateTime.UtcNow.ToUtcMilliSeconds();
-        State.Version = State.Version ++;
+        State.Version ++;
 
         await WriteStateAsync();
 
-        return new GrainResultDto<TreasuryOrderDto>();
+        return new GrainResultDto<TreasuryOrderDto>(_objectMapper.Map<TreasuryOrderState, TreasuryOrderDto>(State));
     }
 
 

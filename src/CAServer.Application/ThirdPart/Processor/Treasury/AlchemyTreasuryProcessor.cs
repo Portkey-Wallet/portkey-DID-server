@@ -11,6 +11,7 @@ using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
+using CAServer.Tokens.Provider;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -27,15 +28,16 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
     private readonly ITokenAppService _tokenAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyProvider _alchemyProvider;
+    private readonly ITokenProvider _tokenProvider;
 
 
     public AlchemyTreasuryProcessor(ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions, IOptionsMonitor<RampOptions> rampOptions,
         IObjectMapper objectMapper, IClusterClient clusterClient, IThirdPartOrderProvider thirdPartOrderProvider,
         ILogger<AlchemyTreasuryProcessor> logger, ITreasuryOrderProvider treasuryOrderProvider,
-        AlchemyProvider alchemyProvider, IContractProvider contractProvider) :
+        AlchemyProvider alchemyProvider, IContractProvider contractProvider, ITokenProvider tokenProvider) :
         base(tokenAppService, chainOptions, clusterClient, objectMapper, thirdPartOptions,
-            thirdPartOrderProvider, logger, treasuryOrderProvider, contractProvider)
+            thirdPartOrderProvider, logger, treasuryOrderProvider, contractProvider, tokenProvider)
     {
         _tokenAppService = tokenAppService;
         _thirdPartOptions = thirdPartOptions;
@@ -43,6 +45,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         _objectMapper = objectMapper;
         _logger = logger;
         _alchemyProvider = alchemyProvider;
+        _tokenProvider = tokenProvider;
     }
 
     public override ThirdPartNameType ThirdPartName()

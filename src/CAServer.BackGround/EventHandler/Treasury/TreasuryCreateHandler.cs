@@ -46,17 +46,17 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
             AssertHelper.IsTrue(orderDto.TransactionId.IsNullOrEmpty(), "Transaction id exists");
             AssertHelper.IsTrue(orderDto.RawTransaction.IsNullOrEmpty(), "Raw transaction empty");
 
-            var settlementAddressKey = orderDto.ThirdPartName + orderDto.Crypto;
+            var settlementAddressKey = string.Join(CommonConstant.Underline, orderDto.ThirdPartName, orderDto.Crypto);
             AssertHelper.IsTrue(
-                _thirdPartOptions.CurrentValue.TreasuryOptions.SettlementAddress.TryGetValue(settlementAddressKey,
-                    out var sender), "Settlement sender not exists {}", settlementAddressKey);
-            var senderAddress = Address.FromBase58(sender);
-            AssertHelper.NotNull(senderAddress, "Invalid settlement sender {}", sender);
+                _thirdPartOptions.CurrentValue.TreasuryOptions.SettlementPublicKey.TryGetValue(settlementAddressKey,
+                    out var senderPublicKey), "Settlement sender not exists {}", settlementAddressKey);
+            var senderAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(senderPublicKey));
+            AssertHelper.NotNull(senderAddress, "Invalid settlement sender {}", senderAddress.ToBase58());
 
             var transferAmount = orderDto.CryptoAmount * (decimal)Math.Pow(10, orderDto.CryptoDecimals);
             var (txId, tx) = await _contractProvider.GenerateTransferTransactionAsync(orderDto.Crypto,
                 transferAmount.ToString(0, DecimalHelper.RoundingOption.Floor), orderDto.ToAddress,
-                CommonConstant.MainChainId, sender);
+                CommonConstant.MainChainId, senderPublicKey);
 
             orderDto.TransactionId = txId;
             orderDto.RawTransaction = tx.ToByteArray().ToHex();

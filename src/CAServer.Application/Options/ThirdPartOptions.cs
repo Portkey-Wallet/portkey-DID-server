@@ -17,7 +17,8 @@ public class ThirdPartOptions
 
 public class TreasuryOptions
 {
-    public Dictionary<string, string> SettlementAddress { get; set; } = new();
+    // ThirdPartName_Crypto => settlementPublicKey
+    public Dictionary<string, string> SettlementPublicKey { get; set; } = new();
 }
 
 public class OrderExportAuth

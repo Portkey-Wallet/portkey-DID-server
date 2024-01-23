@@ -163,8 +163,8 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             AssertHelper.NotNull(orderResp, "Get order grain failed");
             var orderDto = orderResp.Data;
             AssertHelper.NotNull(orderDto, "Get order grain data failed");
-            AssertHelper.IsTrue(orderDto.ThirdPartOrderId.IsNullOrEmpty(), "Order {} of {} exists {}",
-                orderInput.ThirdPartOrderId, orderInput.ThirdPartName, orderId);
+            //TODO AssertHelper.IsTrue(orderDto.ThirdPartOrderId.IsNullOrEmpty(), "Treasury order exists, {}-{}-{}",
+            //     orderInput.ThirdPartOrderId, orderInput.ThirdPartName, orderId);
 
             // Crypto token price 
             var token = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, orderInput.Crypto);
@@ -182,6 +182,10 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             orderDto.Status = OrderStatusType.Created.ToString();
             orderDto.CryptoDecimals = token!.Decimals;
             orderDto.FeeInfo = new List<FeeItem> { await NetworkFeeInElf(CommonConstant.MainChainId) };
+            orderDto.RampOrderId = rampOrder.Id;
+            orderDto.TransferDirection = TransferDirectionType.TokenBuy.ToString();
+            orderDto.ToAddress = orderInput.Address;
+            orderDto.ThirdPartName = orderInput.ThirdPartName;
 
             await _treasuryOrderProvider.DoSaveOrder(orderDto);
         }

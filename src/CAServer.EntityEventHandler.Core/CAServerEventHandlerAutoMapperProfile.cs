@@ -66,5 +66,6 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<DeleteCAHolderEto, CAHolderIndex>();
         CreateMap<GuardianDeleteEto, GuardianIndex>();
         CreateMap<OrderSettlementGrainDto, OrderSettlementIndex>().ReverseMap();
+        CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
     }
 }

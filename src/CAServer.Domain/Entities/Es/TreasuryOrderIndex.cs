@@ -12,6 +12,7 @@ public class TreasuryOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     
     public Guid Id { get; set; }
     public Guid RampOrderId { get; set; }
+    public int Version { get; set; }
     [Keyword] public string ThirdPartName { get; set; }
     
     /// <see cref="TransferDirectionType"/>
