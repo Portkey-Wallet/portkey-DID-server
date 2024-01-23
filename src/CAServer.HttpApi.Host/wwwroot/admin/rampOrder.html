@@ -29,11 +29,14 @@
         <label for="search-UserId">UserId</label>
         <input type="text" id="search-UserId" placeholder="UserId">
         
-        <label for="search-OrderIdIn">OrderIdIn</label>
-        <input type="text" id="search-OrderIdIn" placeholder="OrderIdIn">
+        <label for="search-OrderIdIn">OrderId</label>
+        <input type="text" id="search-OrderIdIn" placeholder="OrderId">
         
-        <label for="search-ThirdPartOrderNoIn">ThirdPartOrderNoIn</label>
-        <input type="text" id="search-ThirdPartOrderNoIn" placeholder="ThirdPartOrderNoIn">
+        <label for="search-TransactionId">TransactionId</label>
+        <input type="text" id="search-TransactionId" placeholder="TransactionId">
+        
+        <label for="search-ThirdPartOrderNoIn">ThirdPartOrderId</label>
+        <input type="text" id="search-ThirdPartOrderNoIn" placeholder="ThirdPartOrderId">
         
         <label for="search-LastModifyTimeLt">LastModifyTimeLt</label>
         <input type="text" id="search-LastModifyTimeLt" placeholder="LastModifyTimeLt">
@@ -48,7 +51,7 @@
             <option value="Transak">Transak</option>
         </select>
         
-        <label for="search-TransDirectIn">TransDirectIn</label>
+        <label for="search-TransDirectIn">TransDirect</label>
         <select id="search-TransDirectIn">
             <option value="">All</option>
             <option value="TokenBuy">TokenBuy</option>
@@ -132,6 +135,7 @@
             ThirdPartName: $("#search-ThirdPartName").val(),
             TransDirectIn: $("#search-TransDirectIn").val(),
             StatusIn: $("#search-StatusIn").val(),
+            TransactionId: $("#search-TransactionId").val(),
             skipCount: (page - 1) * pageSize,
             maxResultCount: pageSize
         };

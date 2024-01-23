@@ -16,7 +16,7 @@ public interface ITreasuryOrderGrain : IGrainWithGuidKey
     
 }
 
-public class TreasuryOrderGrain : Grain<TreasuryOrderState>
+public class TreasuryOrderGrain : Grain<TreasuryOrderState>, ITreasuryOrderGrain
 {
     private readonly IObjectMapper _objectMapper;
 

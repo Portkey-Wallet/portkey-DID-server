@@ -66,4 +66,6 @@ public class GetThirdPartOrderConditionDto : PagedResultRequestDto
     
     /// <see cref="OrderStatusType"/>
     public List<string> StatusIn { get; set; }
+    
+    public string TransactionId { get; set; }
 }

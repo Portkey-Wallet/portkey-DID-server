@@ -13,6 +13,8 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Processors;
 using CAServer.Tokens;
+using CAServer.Tokens.Dtos;
+using CAServer.Tokens.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -35,7 +37,8 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly ITreasuryOrderProvider _treasuryOrderProvider;
     private readonly IContractProvider _contractProvider;
-    
+    private readonly ITokenProvider _tokenProvider;
+
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .WithAElfTypesConverters()
         .WithCamelCasePropertyNamesResolver()
@@ -46,7 +49,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     public AbstractTreasuryProcessor(ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions,
         IClusterClient clusterClient, IObjectMapper objectMapper, IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         IThirdPartOrderProvider thirdPartOrderProvider, ILogger<AbstractTreasuryProcessor> logger,
-        ITreasuryOrderProvider treasuryOrderProvider, IContractProvider contractProvider)
+        ITreasuryOrderProvider treasuryOrderProvider, IContractProvider contractProvider, ITokenProvider tokenProvider)
     {
         _tokenAppService = tokenAppService;
         _chainOptions = chainOptions;
@@ -57,6 +60,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
         _logger = logger;
         _treasuryOrderProvider = treasuryOrderProvider;
         _contractProvider = contractProvider;
+        _tokenProvider = tokenProvider;
     }
 
     internal abstract Task<string> AdaptPriceInputAsync<TPriceInput>(TPriceInput priceInput)
@@ -145,7 +149,8 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             var rampOrder = rampOrderPager.Items.FirstOrDefault();
             AssertHelper.NotNull(rampOrder, "Ramp order not exists");
             AssertHelper.IsTrue(rampOrder!.Crypto == orderInput.Crypto, "Crypto symbol not match");
-            AssertHelper.IsTrue(rampOrder.CryptoAmount == orderInput.CryptoAmount, "Crypto amount not match");
+            AssertHelper.IsTrue(rampOrder.CryptoAmount.SafeToDecimal() == orderInput.CryptoAmount.SafeToDecimal(),
+                "Crypto amount not match");
             AssertHelper.IsTrue(rampOrder.Address == orderInput.Address, "Address not match");
             AssertHelper.IsTrue(rampOrder.TransDirect == TransferDirectionType.TokenBuy.ToString(),
                 "Invalid ramp order transDirect");
@@ -162,7 +167,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
                 orderInput.ThirdPartOrderId, orderInput.ThirdPartName, orderId);
 
             // Crypto token price 
-            var token = await _tokenAppService.GetTokenInfoAsync(CommonConstant.MainChainId, orderInput.Crypto);
+            var token = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, orderInput.Crypto);
             AssertHelper.NotNull(token, "Token {} not found", orderInput.Crypto);
 
             var exchange = await _tokenAppService.GetAvgLatestExchangeAsync(orderInput.Crypto, CommonConstant.USDT);
@@ -175,7 +180,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             _objectMapper.Map(thirdPartOrderInput, orderDto);
             orderDto.Id = orderId;
             orderDto.Status = OrderStatusType.Created.ToString();
-            orderDto.CryptoDecimals = token.Decimals;
+            orderDto.CryptoDecimals = token!.Decimals;
             orderDto.FeeInfo = new List<FeeItem> { await NetworkFeeInElf(CommonConstant.MainChainId) };
 
             await _treasuryOrderProvider.DoSaveOrder(orderDto);
@@ -197,7 +202,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     {
         var validStatus = new List<string>
         {
-            OrderStatusType.Transferring.ToString(), 
+            OrderStatusType.Transferring.ToString(),
             OrderStatusType.Transferred.ToString()
         };
         try
@@ -206,13 +211,14 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             var orderResult = await orderGrain.GetAsync();
             AssertHelper.IsTrue(orderResult.Success && orderResult.Data != null && orderResult.Data.Id == orderId,
                 "Get treasury order failed");
-            
+
             var order = orderResult.Data;
             AssertHelper.IsTrue(validStatus.Contains(order!.Status), "Invalid status {}", order.Status);
             AssertHelper.NotEmpty(order.TransactionId, "Transaction id not exists");
 
-            var transactionResult = await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId, order.TransactionId);
-            
+            var transactionResult =
+                await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId, order.TransactionId);
+
             // update order status
             var newStatus = transactionResult.Status == TransactionState.Mined
                 ? transactionResult.BlockNumber <= confirmedHeight || chainHeight >=
@@ -223,7 +229,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             AssertHelper.IsTrue(order.Status != newStatus,
                 "Order status not changed, status={Status}, txBlock={Height}",
                 transactionResult.Status, transactionResult.BlockNumber);
-            
+
             // Record transfer data when filed
             var extraInfo = newStatus == OrderStatusType.TransferFailed.ToString()
                 ? OrderStatusExtensionBuilder.Create()

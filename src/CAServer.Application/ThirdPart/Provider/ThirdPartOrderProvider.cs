@@ -120,6 +120,9 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>();
         if (condition.UserId != Guid.Empty)
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(condition.UserId)));
+        
+        if (condition.TransactionId.NotNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.TransactionId).Terms(condition.TransactionId)));
 
         if (!condition.OrderIdIn.IsNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(condition.OrderIdIn)));

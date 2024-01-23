@@ -98,8 +98,8 @@ public class OrderStatusProvider : IOrderStatusProvider, ISingletonDependency
         
         var dataToBeUpdated = MergeEsAndInput2GrainModel(orderDto, existsOrderDto);
         dataToBeUpdated.Status = orderDto.Status;
-        dataToBeUpdated.Id = orderDto.Id;
-        dataToBeUpdated.UserId = orderDto.UserId;
+        dataToBeUpdated.Id = existsOrderDto.Id;
+        dataToBeUpdated.UserId = existsOrderDto.UserId;
         dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
         _logger.LogInformation("This {MerchantName} order {GrainId} will be updated", orderDto.MerchantName,
             orderDto.Id);

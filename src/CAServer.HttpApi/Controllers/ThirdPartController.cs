@@ -142,4 +142,5 @@ public class ThirdPartOrderController : CAServerController
         await _treasuryProcessorFactory.Processor(ThirdPartNameType.Alchemy.ToString()).NotifyOrderAsync(input);
         return new AlchemyBaseResponseDto<Empty>();
     }
+    
 }

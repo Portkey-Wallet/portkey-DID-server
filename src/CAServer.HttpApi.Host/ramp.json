@@ -46,7 +46,15 @@
         "Symbol": "ELF",
         "Icon": "https://explorer-test.aelf.io/favicon.test.ico",
         "Decimals": "8",
-        "Network": "aelf",
+        "Network": "AELF",
+        "ChainId": "AELF",
+        "Address": ""
+      },
+      {
+        "Symbol": "USDT",
+        "Icon": "https://portkey-im-dev.s3.ap-northeast-1.amazonaws.com/USDT.jpg",
+        "Decimals": "6",
+        "Network": "AELF",
         "ChainId": "AELF",
         "Address": ""
       }
