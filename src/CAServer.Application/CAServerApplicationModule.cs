@@ -128,6 +128,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
         Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
+        Configure<ManagerCountLimitOptions>(configuration.GetSection("ManagerCountLimit"));
         context.Services.AddHttpClient();
         ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();

@@ -82,4 +82,10 @@ public class CAAccountController : CAServerController
     {
         return await _caAccountService.RevokeAsync(input);
     }
+    
+    [HttpGet("checkManagerCount")]
+    public async Task<bool> CheckManagerCountAsync(string caHash)
+    {
+        return await _caAccountService.CheckManagerCountAsync(caHash);
+    }
 }
