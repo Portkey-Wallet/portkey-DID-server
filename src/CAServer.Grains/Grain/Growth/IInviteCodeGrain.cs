@@ -23,13 +23,16 @@ public class InviteCodeGrain : Grain<InviteCodeState>, IInviteCodeGrain
         await WriteStateAsync();
         await base.OnDeactivateAsync();
     }
-    
-    public Task<string> GenerateInviteCode()
+
+    public async Task<string> GenerateInviteCode()
     {
         if (this.GetPrimaryKeyString() != CommonConstant.InviteCodeGrainId)
         {
             throw new UserFriendlyException("invalid grain id");
         }
-        return Task.FromResult((++State.CurrentInviteCode).ToString());
+
+        State.CurrentInviteCode += 1;
+        await WriteStateAsync();
+        return State.CurrentInviteCode.ToString();
     }
 }
