@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
@@ -53,8 +54,10 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
         });
 
         var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderDto.Id);
-        await treasuryOrderGrain.SaveOrUpdateAsync(orderDto);
+        var resp = await treasuryOrderGrain.SaveOrUpdateAsync(orderDto);
+        AssertHelper.IsTrue(resp.Success, "Update treasury grain failed" + resp.Message);
         await _distributedEventBus.PublishAsync(new TreasuryOrderEto(orderDto));
+        
     }
 
     public async Task<PagedResultDto<TreasuryOrderDto>> QueryOrderAsync(TreasuryOrderCondition condition)
@@ -66,6 +69,8 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.RampOrderId).Terms(condition.RampOrderIdIn)));
         if (!condition.StatusIn.IsNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.Status).Terms(condition.StatusIn)));
+        if (!condition.ThirdPartIdIn.IsNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ThirdPartOrderId).Terms(condition.ThirdPartIdIn)));
         if (!condition.CallBackStatusIn.IsNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.CallbackStatus).Terms(condition.CallBackStatusIn)));
         if (!condition.ThirdPartName.IsNullOrEmpty())

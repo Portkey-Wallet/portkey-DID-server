@@ -26,14 +26,23 @@
 <main>
     
     <div class="search-form">
-        <label for="search-UserId">UserId</label>
-        <input type="text" id="search-UserId" placeholder="UserId">
+        <label for="search-Id">IdIn</label>
+        <input type="text" id="search-Id" placeholder="Id">
         
-        <label for="search-OrderIdIn">OrderIdIn</label>
-        <input type="text" id="search-OrderIdIn" placeholder="OrderIdIn">
+        <label for="search-RampOrderId">RampOrderIdIn</label>
+        <input type="text" id="search-RampOrderId" placeholder="RampOrderId">
         
-        <label for="search-ThirdPartOrderNoIn">ThirdPartOrderNoIn</label>
-        <input type="text" id="search-ThirdPartOrderNoIn" placeholder="ThirdPartOrderNoIn">
+        <label for="search-OrderIdIn">OrderId</label>
+        <input type="text" id="search-OrderIdIn" placeholder="OrderId">
+        
+        <label for="search-ThirdPartOrderNoIn">ThirdPartOrderNo</label>
+        <input type="text" id="search-ThirdPartOrderNoIn" placeholder="ThirdPartOrderNo">
+        
+        <label for="search-ThirdPartIdIn">ThirdPartId</label>
+        <input type="text" id="search-ThirdPartIdIn" placeholder="ThirdPartId">
+        
+        <label for="search-TransactionId">TransactionId</label>
+        <input type="text" id="search-TransactionId" placeholder="TransactionId">
         
         <label for="search-LastModifyTimeLt">LastModifyTimeLt</label>
         <input type="text" id="search-LastModifyTimeLt" placeholder="LastModifyTimeLt">
@@ -41,12 +50,34 @@
         <label for="search-LastModifyTimeGt">LastModifyTimeGt</label>
         <input type="text" id="search-LastModifyTimeGt" placeholder="LastModifyTimeGt">
         
+        <label for="search-CreateTimeLt">CreateTimeLt</label>
+        <input type="text" id="search-CreateTimeLt" placeholder="CreateTimeLt">
+        
+        <label for="search-CreateTimeGtEq">CreateTimeGtEq</label>
+        <input type="text" id="search-CreateTimeGtEq" placeholder="CreateTimeGtEq">
+        
         <label for="search-ThirdPartName">ThirdPartName</label>
         <select id="search-ThirdPartName">
             <option value="">All</option>
             <option value="Alchemy">AlchemyPay</option>
             <option value="Transak">Transak</option>
         </select>
+        
+        <label for="search-Crypto">Crypto</label>
+        <select id="search-Crypto">
+            <option value="">All</option>
+            <option value="ELF">ELF</option>
+            <option value="USDT">USDT</option>
+        </select>
+        
+        
+        <label for="search-CallBackStatusIn">CallBackStatusIn</label>
+        <select id="search-CallBackStatusIn">
+            <option value="">All</option>
+            <option value="ELF">Success</option>
+            <option value="USDT">Failed</option>
+        </select>
+        
         
         <label for="search-TransDirectIn">TransDirectIn</label>
         <select id="search-TransDirectIn">
@@ -82,7 +113,8 @@
     <table id="orders-table">
         <thead>
         <tr>
-            <th>OrderID</th>
+            <th>Id</th>
+            <th>RampOrderId</th>
             <th>UserId</th>
             <th>TransDirect</th>
             <th>MerchantName</th>
@@ -90,9 +122,11 @@
             <th>Address</th>
             <th>Crypto</th>
             <th>Fiat</th>
+            <th>Fee</th>
             <th>Status</th>
             <th>TransactionId</th>
             <th>TxTime</th>
+            <th>CreateTime</th>
             <th>LastModifyTime</th>
             <th>Actions</th>
         </tr>
@@ -112,7 +146,6 @@
 
 <script src="libs/jquery/jquery.js"></script>
 <script src="js/app.js"></script>
-<script src="js/dateFormat.js"></script>
 <script>
 
     let currentPage = 1;
@@ -128,9 +161,16 @@
 
     function fetchOrders(page = 1) {
         let requestData = {
+            LastModifyTimeGtEq: $("#search-LastModifyTimeGtEq").val(),
             LastModifyTimeLt: $("#search-LastModifyTimeLt").val(),
+            CreateTimeGtEq: $("#search-CreateTimeGtEq").val(),
+            CreateTimeLt: $("#search-CreateTimeLt").val(),
             ThirdPartName: $("#search-ThirdPartName").val(),
+            TransferDirection: $("#search-TransferDirection").val(),
             TransDirectIn: $("#search-TransDirectIn").val(),
+            RampOrderIdIn: $("#search-RampOrderIdIn").val(),
+            ThirdPartIdIn: $("#search-ThirdPartIdIn").val(),
+            IdIn: $("#search-IdIn").val(),
             StatusIn: $("#search-StatusIn").val(),
             skipCount: (page - 1) * pageSize,
             maxResultCount: pageSize
@@ -142,7 +182,7 @@
             requestData.OrderIdIn = $("#search-OrderIdIn").val();
         }
         $.ajax({
-            url: App.Uri.rampOrders,
+            url: App.Uri.treasuryOrders,
             method: 'GET',
             contentType: "application/json",
             data: requestData,
@@ -157,7 +197,7 @@
             }
         });
     }
-
+    
     function updateTable(orders) {
         var $tbody = $("#orders-table tbody");
         $tbody.empty();
@@ -166,8 +206,15 @@
             let statusFlowBtn = order.orderStatusSection 
                 ? `<button onclick="showStatusFlow('${order.id}')">Status Flow</button>` 
                 : "";
+            let fee = "";
+            for(let feeItem of order.FeeInfo){
+                fee += feeItem.Amount 
+                fee += Symbol
+                fee += "<br/>"
+            }
             $tbody.append(`<tr>
                 <td>${order.id}</td>
+                <td>${order.rampOrderId}</td>
                 <td>${order.userId}</td>
                 <td>${order.transDirect}</td>
                 <td>${order.merchantName}</td>
@@ -175,10 +222,12 @@
                 <td>${order.address}</td>
                 <td>${order.cryptoQuantity} ${order.crypto}</td>
                 <td>${order.fiatAmount} ${order.fiat}</td>
+                <td>${order.fee}</td>
                 <td>${order.status}</td>
                 <td>${order.transactionId}</td>
                 <td>${order.txTime}</td>
-                <td>${DateFormat.formatUtc(new Date(parseInt(order.lastModifyTime, 10)))}</td>
+                <td>${order.createTime}</td>
+                <td>${order.lastModifyTime}</td>
                 <td>
                     <button onclick="showDetail('${order.id}')">Detail</button>
                     ${statusFlowBtn}

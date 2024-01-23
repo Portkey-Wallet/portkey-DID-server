@@ -9,6 +9,7 @@ public class TreasuryOrderDto
     public Guid Id { get; set; }
     public Guid RampOrderId { get; set; }
     public string ThirdPartName { get; set; }
+    public int Version { get; set; }
     
     /// <see cref="TransferDirectionType"/>
     public string TransferDirection { get; set; }

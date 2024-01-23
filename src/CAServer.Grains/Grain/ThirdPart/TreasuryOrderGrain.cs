@@ -1,3 +1,4 @@
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.State.Order;
 using CAServer.ThirdPart;
@@ -30,9 +31,15 @@ public class TreasuryOrderGrain : Grain<TreasuryOrderState>
         var createTime = State.CreateTime;
         _objectMapper.Map(orderDto, State);
 
+        if (orderDto.Version != State.Version)
+        {
+            return new GrainResultDto<TreasuryOrderDto>().Error("Data expired, current version is " + State.Version);
+        }
+
         State.Id = this.GetPrimaryKey();
         State.CreateTime = createTime == 0 ? DateTime.UtcNow.ToUtcMilliSeconds() : createTime;
         State.LastModifyTime = DateTime.UtcNow.ToUtcMilliSeconds();
+        State.Version = State.Version ++;
 
         await WriteStateAsync();
 

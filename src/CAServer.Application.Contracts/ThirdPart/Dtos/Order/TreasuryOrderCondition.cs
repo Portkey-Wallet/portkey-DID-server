@@ -7,6 +7,8 @@ namespace CAServer.ThirdPart.Dtos.Order;
 public class TreasuryOrderCondition : PagedResultRequestDto
 {
 
+    public TreasuryOrderCondition() {}
+    
     public TreasuryOrderCondition(int skipCount, int maxResultCount)
     {
         base.SkipCount = skipCount;
@@ -16,6 +18,7 @@ public class TreasuryOrderCondition : PagedResultRequestDto
     
     public List<Guid> IdIn { get; set; }
     public List<Guid> RampOrderIdIn { get; set; }
+    public List<string> ThirdPartIdIn { get; set; }
     public string ThirdPartName { get; set; }
     public string TransferDirection { get; set; }
     public string ToAddress { get; set; }

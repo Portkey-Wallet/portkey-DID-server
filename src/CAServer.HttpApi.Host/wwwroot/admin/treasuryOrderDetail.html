@@ -37,7 +37,7 @@
 <header>
     <nav>
         <ul id="menu">
-            <li>Ramp order detail</li>
+            <li>Treasury order detail</li>
         </ul>
     </nav>
     <div id="user-info">
@@ -118,7 +118,7 @@
             return;
         }
         $.ajax({
-            url: App.Uri.rampOrders,
+            url: App.Uri.treasuryOrder,
             method: 'GET',
             contentType: "application/json",
             data: requestData,
@@ -132,15 +132,6 @@
                 if (!globalEditor) {
                     return App.showToast("Editor has not been initialized yet.")
                 }
-                
-                // delete useless section
-                if (!response.data.items[0].nftOrderSection) {
-                    delete response.data.items[0].nftOrderSection
-                }
-                if (!response.data.items[0].orderSettlementSection) {
-                    delete response.data.items[0].orderSettlementSection
-                }
-                delete response.data.items[0].orderStatusSection;
                 const orderData = JSON.stringify(response.data.items[0], null, 4);
                 globalEditor.setValue(orderData);
             }
@@ -154,7 +145,7 @@
             let googleTfa = $("#modal-googleTfa").val();
             
             $.ajax({
-                url: App.Uri.rampOrder,
+                url: App.Uri.treasuryOrder,
                 method: 'POST',
                 contentType: "application/json",
                 data: JSON.stringify({
