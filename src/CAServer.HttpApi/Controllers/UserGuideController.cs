@@ -24,26 +24,20 @@ public class UserGuideController : CAServerController
     [HttpGet("list")]
     public async Task<UserGuideDto> ListUserGuideAsync()
     {
-        var userId = Guid.NewGuid();
-        //return await _userGuildAppService.ListUserGuideAsync(CurrentUser.Id);
-        return await _userGuideAppService.ListUserGuideAsync(userId);
+        return await _userGuideAppService.ListUserGuideAsync(CurrentUser.Id);
     }
 
     [HttpGet("query")]
     public async Task<UserGuideDto> QueryUserGuideAsync(
         UserGuideRequestDto input)
     {
-        var userId = Guid.NewGuid();
-        return await _userGuideAppService.QueryUserGuideAsync(input, userId);
-        //return await _userGuildAppService.QueryUserGuideAsync(input, CurrentUser.Id);
+        return await _userGuideAppService.QueryUserGuideAsync(input, CurrentUser.Id);
     }
 
     [HttpPost("finish")]
     public async Task<bool> FinishUserGuideAsync(
         UserGuideFinishRequestDto input)
     {
-        var userId = Guid.NewGuid();
-        return await _userGuideAppService.FinishUserGuideAsync(input, userId);
-        //return await _userGuildAppService.FinishUserGuideAsync(input,CurrentUser.Id);
+        return await _userGuideAppService.FinishUserGuideAsync(input,CurrentUser.Id);
     }
 }
