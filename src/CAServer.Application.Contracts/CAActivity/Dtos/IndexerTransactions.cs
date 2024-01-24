@@ -13,6 +13,11 @@ public class TransactionsDto
     public CaHolderTransaction TwoCaHolderTransaction { get; set; }
 }
 
+public class AutoReceiveTransactions
+{
+    public CaHolderTransaction AutoReceiveTransaction { get; set; }
+}
+
 public class CaHolderTransaction
 {
     public List<IndexerTransaction> Data { get; set; } = new();
@@ -45,6 +50,7 @@ public class TransferInfo
     public string ToChainId { get; set; }
     public string FromChainId { get; set; }
     public string FromCAAddress { get; set; }
+    public string TransferTransactionId { get; set; }
 }
 
 public class IndexerTransactionFee

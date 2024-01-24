@@ -135,7 +135,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             result.CaHolderTransaction.Data.AddRange(needAddTransactions);
             result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
-            if (result.CaHolderTransaction.Data.Count >= maxResultCount)
+            if (transactionsInfo.totalCount <= maxResultCount ||
+                result.CaHolderTransaction.Data.Count >= maxResultCount)
             {
                 return;
             }
@@ -159,12 +160,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var crossChainTransactions = transactions.CaHolderTransaction.Data
             .Where(t => t.MethodName == CommonConstant.CrossChainTransferMethodName).ToList();
 
-        var transactionIds = crossChainTransactions.Select(t => t.TransactionId).ToList();
-
-        if (!transactionIds.IsNullOrEmpty())
+        if (!crossChainTransactions.IsNullOrEmpty())
         {
-            // get cross chain transfer info from indexer
-            // remove uncomponent..
+            var transactionIds = crossChainTransactions.Select(t => t.TransactionId).ToList();
+            var transactionsDto = await _activityProvider.GetAutoReceiveTransactionsAsync(transactionIds,
+                inputMaxResultCount: transactionIds.Count);
+
+            var completedIds = transactionsDto?.AutoReceiveTransaction?.Data?
+                .Select(t => t.TransferInfo.TransferTransactionId).ToList();
+
+            transactions.CaHolderTransaction.Data
+                .RemoveAll(t => t.MethodName == CommonConstant.CrossChainTransferMethodName &&
+                                !completedIds.Contains(t.TransactionId));
         }
 
         return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
