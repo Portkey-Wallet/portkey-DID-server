@@ -25,13 +25,15 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
 
         if (input.SearchOrigin)
         {
+            await SetOriginAsync(result);
         }
 
         return result;
     }
 
-    public async Task SetOriginAsync(ReferralResponseDto responseDto, List<string> caHashes)
+    public async Task SetOriginAsync(ReferralResponseDto responseDto)
     {
+        var caHashes = responseDto.ReferralInfos.Select(t => t.CaHash).ToList();
         var indexerReferralInfos =
             await _growthProvider.GetReferralInfoAsync(caHashes, new List<string>(),
                 new List<string> { MethodName.CreateCAHolder });
@@ -39,6 +41,12 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         if (indexerReferralInfos == null || indexerReferralInfos.ReferralInfo.IsNullOrEmpty())
         {
             return;
+        }
+
+        foreach (var referralInfo in indexerReferralInfos.ReferralInfo)
+        {
+            var referral = responseDto.ReferralInfos.First(t => t.CaHash == referralInfo.CaHash);
+            referral.ReferralCode = referralInfo.ReferralCode;
         }
 
         var referralCodes = indexerReferralInfos.ReferralInfo.Select(t => t.ReferralCode).ToList();
@@ -67,6 +75,8 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
             responseDto.ReferralInfos.Remove(referral);
             responseDto.ReferralInfos.Add(refs);
         }
+
+        await SetOriginAsync(responseDto);
     }
 
     // who i invited
