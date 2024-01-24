@@ -51,7 +51,7 @@
 </main>
 
 <footer>
-    <p><button id="update-button">Update order</button></p>
+    <p><button id="update-button" data-role="OrderManager">Update order</button></p>
 </footer>
 
 <script src="libs/jquery/jquery.js"></script>
@@ -65,6 +65,7 @@
 
     $(document).ready(function() {
         App.loadUser();
+        App.checkPermission("OrderManager,OrderViewer");
         $("#user-info span").html(App.User().userName)
         $("#logout-button").click(App.logout);
         $("#update-button").click(updateOrder);

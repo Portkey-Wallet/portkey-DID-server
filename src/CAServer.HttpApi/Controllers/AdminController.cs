@@ -79,7 +79,7 @@ public class AdminController : CAServerController
         return new CommonResponseDto<Empty>();
     }
 
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "OrderManager,OrderViewer")]
     [HttpGet("ramp/orders")]
     public async Task<CommonResponseDto<PagedResultDto<OrderDto>>> GetOrder(GetThirdPartOrderConditionDto request)
     {
@@ -88,7 +88,7 @@ public class AdminController : CAServerController
         return new CommonResponseDto<PagedResultDto<OrderDto>>(pager);
     }
 
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "OrderManager")]
     [HttpPost("ramp/order")]
     public async Task<CommonResponseDto<Empty>> UpdateOrder(MfaRequest<OrderDto> updateOrderRequest)
     {
@@ -96,7 +96,7 @@ public class AdminController : CAServerController
         return await _thirdPartOrderAppService.UpdateRampOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "OrderManager,OrderViewer")]
     [HttpGet("treasury/orders")]
     public async Task<CommonResponseDto<PagedResultDto<TreasuryOrderDto>>> GetTreasuryOrder(
         TreasuryOrderCondition request)
@@ -105,7 +105,7 @@ public class AdminController : CAServerController
         return new CommonResponseDto<PagedResultDto<TreasuryOrderDto>>(pager);
     }
 
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "OrderManager")]
     [HttpPost("treasury/order")]
     public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(MfaRequest<TreasuryOrderDto> updateOrderRequest)
     {

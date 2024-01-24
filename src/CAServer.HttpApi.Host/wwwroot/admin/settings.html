@@ -9,26 +9,36 @@
 </head>
 <body>
 <div id="toast" class="toast" style="display: none;"></div>
-<div id="resetMfaModal" class="modal">
+
+<div id="resetPwdModal" class="modal">
 	<div class="modal-content">
 		<span class="close">&times;</span>
 		<p>
-			<label for="modal-userId">UserId:</label>
-			<input type="text" id="modal-userId" class="modal-input" placeholder=""/>
+			<label for="modal-oldPwd">Old password:</label>
+			<input type="password" id="modal-oldPwd" class="modal-input" placeholder=""/>
+		</p>
+		<p>
+			<label for="modal-newPwd">New password:</label>
+			<input type="password" id="modal-newPwd" class="modal-input" placeholder=""/>
+		</p>
+		<p>
+			<label for="modal-repeatPwd">Repeat password:</label>
+			<input type="password" id="modal-repeatPwd" class="modal-input" placeholder="" value=""/>
 		</p>
 		<p style="text-align:center">
 			<button class="private cancel-btn">Cancel</button>
-			<button class="danger confirm-btn">Reset</button>
+			<button class="danger confirm-btn">Save</button>
 		</p>
 	</div>
 </div>
 
 <div class="login-container">
 	<form method="post" id="mfa-form">
-		<h2>Google Authenticator <br/> Two factor authorize</h2>
+		<h2>Settings</h2>
 
 		<div id="resetBox" style="display:none">
 			<div class="input-group" id="GoogleTfaCode">
+				<h5 style="margin-bottom:0;text-align:center;">Google Authenticator Two factor authorize</h5>
 				<img src=""/>
 				<p style="word-break: break-all;margin-top:0"></p>
 			</div>
@@ -43,8 +53,8 @@
 			<button type="submit" id="saveButton">Save</button>
 		</div>
 
-		<button type="button" id="resetButton">Reset</button>
-		<button type="button" id="resetUserButton" class="primary" style="display:none">Reset user MFA</button>
+		<button type="button" id="resetButton" onclick="generateGoogleTfa()">Set google TFA</button>
+		<button type="button" class="danger" onclick="ResetPassword()">Reset password</button>
 	</form>
 </div>
 <script src="libs/jquery/jquery.js"></script>
@@ -54,16 +64,48 @@
 	
 	$(document).ready(function() {
 		App.loadUser();
-		$("#resetButton").click(generateGoogleTfa)
-		$("#resetUserButton").click(resetTfa)
 		$("#mfa-form").submit(saveTfa)
-		if (!App.User().mfaExists) {
-			generateGoogleTfa();
-		}
+		// if (!App.User().mfaExists) {
+		// 	generateGoogleTfa();
+		// }
 		if (App.User().rules.split(",").includes("admin")) {
 			$("#resetUserButton").show();
 		}
 	});
+	
+	
+	let ResetPassword = function() {
+		Modal.showModal("#resetPwdModal", function(){
+			let $oldPwd = $("#modal-oldPwd");
+			let $pwd = $("#modal-newPwd");
+			let $pwd2 = $("#modal-repeatPwd");
+			if (!$pwd.val()) {
+				App.showToast("Invalid password");
+				$pwd.addClass("error");
+				return false;
+			}
+			if ($pwd.val() !== $pwd2.val()) {
+				App.showToast("Password not match");
+				$pwd2.addClass("error");
+				return false;
+			}
+			let success = false;
+			$.ajax({
+				url: App.Uri.changePassword,
+				method: "POST",
+				async: false,
+				data: JSON.stringify({
+					"currentPassword": $oldPwd.val(),
+					"newPassword": $pwd.val()
+				}),
+				success: function (){
+					success = true;
+					alert("success")
+				}
+			})
+			return success;
+		});
+	}
 	
 	let generateGoogleTfa = function() {
 		$("#resetButton").hide();
@@ -111,15 +153,6 @@
 		})
 	}
 	
-	let resetTfa = function() {
-		Modal.showModal("#resetMfaModal", function() {
-			let userId = $("#modal-userId").val();
-			$.ajax({
-				url: `${App.Uri.userMfa}?data=${userId}`,
-				method: "DELETE"
-			})
-		});
-	}
 	
 </script>
 </body>

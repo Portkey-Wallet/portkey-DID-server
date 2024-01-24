@@ -58,6 +58,10 @@ form input {
     border-radius: 4px;
 }
 
+input.error {
+    border-color: red;
+}
+
 button {
     padding: 5px;
     border: none;

@@ -11,25 +11,24 @@ let Modal = (function () {
             setTimeout(() => {
                 $inputs.each(function () {
                     $(this).val('');
+                    $(this).removeClass("error")
                 })
             }, 500);
         }
 
         $modal.show();
 
-        $confirmBtn.off('click').on('click', function () {
-            $modal.hide();
-            clearInputs();
-            if ($.isFunction(onConfirm)) {
-                onConfirm();
+        $confirmBtn.off('click').on('click', function (event) {
+            if ($.isFunction(onConfirm) && onConfirm(event) !== false) {
+                $modal.hide();
+                clearInputs();
             }
         });
 
-        $cancelBtn.off('click').on('click', function () {
-            $modal.hide();
-            clearInputs();
-            if ($.isFunction(onCancel)) {
-                onCancel();
+        $cancelBtn.off('click').on('click', function (event) {
+            if ($.isFunction(onCancel) && onCancel(event) !== false) {
+                $modal.hide();
+                clearInputs();
             }
         });
 

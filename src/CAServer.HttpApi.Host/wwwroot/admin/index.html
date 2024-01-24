@@ -13,8 +13,10 @@
 <header>
     <nav>
         <ul id="menu">
-            <li><a href="./rampOrder.html">Ramp order</a></li>
-            <li><a href="./treasuryOrder.html">Treasury order</a></li>
+            <li id="users" data-role="admin"><a href="./users.html">Users</a></li>
+            <li id="roles" data-role="admin"><a href="./roles.html">Roles</a></li>
+            <li data-role="OrderManager,OrderViewer"><a href="./rampOrder.html">Ramp order</a></li>
+            <li data-role="OrderManager,OrderViewer"><a href="./treasuryOrder.html">Treasury order</a></li>
         </ul>
     </nav>
     <div id="user-info">
@@ -47,7 +49,11 @@
                 console.log("login token", JSON.stringify(response));
             }
         });
-        
+        if (App.User().rules.split(",").includes("admin")) {
+            $("li.admin").show();
+        } else {
+            $("li.admin").remove();
+        }
         $("#logout-button").on("click", App.logout);
         
     });

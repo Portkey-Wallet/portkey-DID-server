@@ -123,6 +123,7 @@
     let items = {};
     $(document).ready(function() {
         App.loadUser();
+        App.checkPermission("OrderManager,OrderViewer");
         $("#user-info span").html(App.User().userName)
         
         fetchOrders();

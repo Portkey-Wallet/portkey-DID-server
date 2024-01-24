@@ -21,6 +21,15 @@ let App = (function() {
     }
     
     let URI = {
+        
+        // admin api
+        users: "/api/identity/users",
+        roles: "/api/identity/roles",
+        userById: (id) => "/api/identity/users/" + id,
+        userRule: (id) => "/api/identity/users/" + (id ?? user.userId) + "/roles",
+        changePassword: "/api/account/my-profile/change-password",
+        
+        // app api
         config : "/api/app/admin/config",
         user : "/api/app/admin/user",
         mfa : "/api/app/admin/mfa",
@@ -128,6 +137,7 @@ let App = (function() {
                 }
             }
         });
+        clearNoPermissionDom();
     }
     
     
@@ -155,8 +165,8 @@ let App = (function() {
     };
 
     let getQueryString = function (name) {
-        var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)', 'i');
-        var r = window.location.search.substr(1).match(reg);
+        let reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)', 'i');
+        let r = window.location.search.substr(1).match(reg);
         if (r != null) {
             return unescape(r[2]);
         }
@@ -170,6 +180,21 @@ let App = (function() {
         setTimeout(function() {
             toast.style.display = 'none';
         }, 3000);
+    }
+    
+    let clearNoPermissionDom = function() {
+        $("[data-role]").each(function() {
+            let $element = $(this);
+            if (!checkPermission($element.data("role"))) {
+                $element.remove();
+            }
+        });
+    }
+    
+    let checkPermission = function(roles) {
+        let expectedRoles = roles.split(",");
+        let userRoles = user.rules.split(",")
+        return expectedRoles.some(role => userRoles.includes(role));
     }
     
     $(document).ready(function() {
@@ -186,6 +211,7 @@ let App = (function() {
         showToast: showToast,
         loadUser: loadUser,
         logout: logout,
+        checkPermission : (permission, url) => checkPermission(permission) || (window.location.href = url ?? "index.html"),
         Config: () => configData,
         User : () => user,
         Uri: URI,
