@@ -127,7 +127,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         }
         catch (UserFriendlyException e)
         {
-            Logger.LogWarning("Order update FAILED, {MerchantName}-{OrderId}-{ThirdPartOrderNo}",
+            Logger.LogWarning(e, "Order update FAILED, {MerchantName}-{OrderId}-{ThirdPartOrderNo}",
                 inputOrderDto?.MerchantName,
                 inputOrderDto?.Id, inputOrderDto?.ThirdPartOrderNo);
             return new CommonResponseDto<Empty>().Error(e);
