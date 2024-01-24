@@ -84,7 +84,7 @@ public class CAAccountController : CAServerController
     }
     
     [HttpGet("checkManagerCount")]
-    public async Task<bool> CheckManagerCountAsync(string caHash)
+    public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
     {
         return await _caAccountService.CheckManagerCountAsync(caHash);
     }

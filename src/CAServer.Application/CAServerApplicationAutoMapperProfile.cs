@@ -28,6 +28,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Guardian;
 using CAServer.Hubs;
@@ -57,7 +58,9 @@ using CAServer.Upgrade.Dtos;
 using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using CAServer.UserExtraInfo;
 using CAServer.UserExtraInfo.Dtos;
+using CAServer.UserGuide.Dtos;
 using CAServer.ValidateOriginChainId.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
@@ -570,5 +573,12 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
         CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
         CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
         CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
+
+        CreateMap<GuideInfo, UserGuideInfo>().ForMember(t => t.GuideType,m => m.MapFrom(f =>(GuideType)f.GuideType));
+        CreateMap<UserGuideInfo, UserGuideInfoGrainDto>();
+        CreateMap<UserGuideInfoGrainDto, UserGuideInfo>();
+        
+        
+
     }
 }

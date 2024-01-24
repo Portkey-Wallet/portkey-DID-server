@@ -336,7 +336,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         };
     }
 
-    public async Task<bool> CheckManagerCountAsync(string caHash)
+    public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
     {
         var guardiansDto = await _guardianProvider.GetGuardiansAsync(null, caHash);
         if (guardiansDto.CaHolderInfo.Count == 0)
@@ -344,7 +344,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             throw new UserFriendlyException("CAHolder is not exist.");
         }
         var guardianDto = guardiansDto.CaHolderInfo.FirstOrDefault();
-        return guardianDto.ManagerInfos.Count > _managerCountLimitOptions.Limit;
+        var checkManagerCount = guardianDto?.ManagerInfos.Count > _managerCountLimitOptions.Limit;
+        return new CheckManagerCountResultDto
+        {
+            ManagersTooMany = checkManagerCount
+        };
     }
 
     private async Task<List<GuardianInfoBase>> GetGuardianAsync(string caHash)
