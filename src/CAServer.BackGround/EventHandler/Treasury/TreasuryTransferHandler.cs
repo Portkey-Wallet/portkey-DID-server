@@ -12,6 +12,7 @@ using Google.Protobuf;
 using Medallion.Threading;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Volo.Abp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
@@ -25,6 +26,7 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly ITreasuryOrderProvider _treasuryOrderProvider;
     private readonly IAbpDistributedLock _distributedLock;
+
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .WithAElfTypesConverters()
         .WithCamelCasePropertyNamesResolver()
@@ -45,7 +47,7 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
 
     private bool Match(TreasuryOrderEto eventData)
     {
-        return eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString() 
+        return eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString()
                && eventData.Data.Status == OrderStatusType.StartTransfer.ToString();
     }
 
@@ -66,9 +68,10 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
                 _logger.LogWarning("Duplicated transaction event, orderId={OrderId}", orderDto.Id);
                 return;
             }
-            
+
             orderDto.Status = OrderStatusType.Transferring.ToString();
-            await _treasuryOrderProvider.DoSaveOrder(orderDto);
+            orderDto = await _treasuryOrderProvider.DoSaveOrder(orderDto);
+
 
             // send transaction to node
             var sendResult =
@@ -78,24 +81,30 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
             // send transaction result
             var txResult = await WaitTransactionResultAsync(CommonConstant.MainChainId, orderDto.TransactionId);
             AssertHelper.NotNull(txResult, "Wait transaction result empty");
-            
+
             orderDto.Status = txResult.Status == TransactionState.Mined
                 ? OrderStatusType.Transferred.ToString()
                 : OrderStatusType.Transferring.ToString();
-            
+
             var resExtensionBuilder = OrderStatusExtensionBuilder.Create()
                 .Add(ExtensionKey.TxStatus, txResult.Status)
                 .Add(ExtensionKey.TxBlockHeight, txResult.BlockNumber.ToString());
-            
+
             if (txResult.Status != TransactionState.Mined)
                 resExtensionBuilder.Add(ExtensionKey.TxResult,
                     JsonConvert.SerializeObject(txResult, JsonSerializerSettings));
-            
+
             await _treasuryOrderProvider.DoSaveOrder(orderDto, resExtensionBuilder.Build());
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning("TreasuryTransferHandler failed: {Message}, orderId={OrderId}, status={Status}",
+                e.Message, orderDto.Id, orderDto.Status);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "TreasuryCreateHandler error, orderId={OrderId}, status={Status}", orderDto.Id, orderDto.Status);
+            _logger.LogError(e, "TreasuryTransferHandler error, orderId={OrderId}, status={Status}", orderDto.Id,
+                orderDto.Status);
         }
     }
 

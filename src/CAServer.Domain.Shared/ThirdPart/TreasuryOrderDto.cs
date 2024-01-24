@@ -15,6 +15,7 @@ public class TreasuryOrderDto
     public string TransferDirection { get; set; }
     public string ThirdPartOrderId { get; set; }
     public string Network { get; set; }
+    public string ThirdPartNetwork { get; set; }
     public string ToAddress { get; set; }
     
     /// <see cref="OrderStatusType"/>

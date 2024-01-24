@@ -49,9 +49,7 @@ public class TreasuryCallbackWorker : IJobWorker
                 return;
             }
 
-            var chainStatus = await _contractProvider.GetChainStatusAsync(CommonConstant.MainChainId);
-            _logger.LogDebug("TreasuryCallbackWorker chainHeight={Height} LIB: {LibHeight}",
-                chainStatus.BestChainHeight, chainStatus.LastIrreversibleBlockHeight);
+            _logger.LogDebug("TreasuryCallbackWorker start");
 
             var minCallbackCount = 1;
             var maxCallbackCount = _thirdPartOptions.CurrentValue.Timer.TreasuryCallbackMaxCount;

@@ -38,8 +38,7 @@ public class AdminController : CAServerController
         _treasuryOrderProvider = treasuryOrderProvider;
     }
 
-    [HttpGet]
-    [Route("config")]
+    [HttpGet("config")]
     public Task<CommonResponseDto<AdminConfigResponse>> Config()
     {
         return Task.FromResult(new CommonResponseDto<AdminConfigResponse>(new AdminConfigResponse
@@ -72,15 +71,6 @@ public class AdminController : CAServerController
         return new CommonResponseDto<Empty>();
     }
     
-    [Authorize]
-    [HttpDelete("mfa")]
-    public async Task<CommonResponseDto<Empty>> DeleteMfaCode(MfaRequest<Empty> mfaRequest)
-    {
-        await _adminAppService.AssertMfa(mfaRequest.GoogleTfaPin);
-        await _adminAppService.ClearMfa(CurrentUser.GetId());
-        return new CommonResponseDto<Empty>();
-    }
-
     [Authorize(Roles = "admin")]
     [HttpDelete("user/mfa")]
     public async Task<CommonResponseDto<Empty>> DeleteUserMfa(MfaRequest<Guid> mfaRequest)
@@ -102,8 +92,8 @@ public class AdminController : CAServerController
     [HttpPost("ramp/order")]
     public async Task<CommonResponseDto<Empty>> UpdateOrder(MfaRequest<OrderDto> updateOrderRequest)
     {
-        await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
-        return await _thirdPartOrderAppService.UpdateRampOrder(updateOrderRequest.Data);
+        //TODO await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
+        return await _thirdPartOrderAppService.UpdateRampOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 
     [Authorize(Roles = "admin")]
@@ -119,8 +109,7 @@ public class AdminController : CAServerController
     [HttpPost("treasury/order")]
     public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(MfaRequest<TreasuryOrderDto> updateOrderRequest)
     {
-        await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
-        await _treasuryOrderProvider.DoSaveOrder(updateOrderRequest.Data);
-        return new CommonResponseDto<Empty>();
+        //TODO await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
+        return await _thirdPartOrderAppService.UpdateTreasuryOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 }

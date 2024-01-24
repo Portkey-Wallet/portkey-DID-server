@@ -43,6 +43,7 @@ public static class ExtensionKey
     public const string Reason = "Reason";
     public const string AdminUserId = "AdminUserId";
     public const string AdminUserName = "AdminUserName";
+    public const string Version = "Version";
 
 
 }

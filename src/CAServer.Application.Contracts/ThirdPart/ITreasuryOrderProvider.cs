@@ -8,8 +8,7 @@ namespace CAServer.ThirdPart;
 
 public interface ITreasuryOrderProvider : ITransientDependency
 {
-    
-    Task DoSaveOrder(TreasuryOrderDto orderDto, Dictionary<string, string> externalData = null);
+    Task<TreasuryOrderDto> DoSaveOrder(TreasuryOrderDto orderDto, Dictionary<string, string> externalData = null);
 
     Task<PagedResultDto<TreasuryOrderDto>> QueryOrderAsync(TreasuryOrderCondition condition);
 

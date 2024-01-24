@@ -5,10 +5,10 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
-using CAServer.Grains;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Etos;
+using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -21,27 +21,40 @@ namespace CAServer.ThirdPart.Provider;
 
 public class TreasuryOrderProvider : ITreasuryOrderProvider
 {
+    private readonly ILogger<TreasuryOrderProvider> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
     private readonly INESTRepository<TreasuryOrderIndex, Guid> _treasuryOrderRepository;
+    private readonly IOrderStatusProvider _orderStatusProvider;
 
     public TreasuryOrderProvider(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        INESTRepository<TreasuryOrderIndex, Guid> treasuryOrderRepository, IObjectMapper objectMapper)
+        INESTRepository<TreasuryOrderIndex, Guid> treasuryOrderRepository, IObjectMapper objectMapper, IOrderStatusProvider orderStatusProvider, ILogger<TreasuryOrderProvider> logger)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _treasuryOrderRepository = treasuryOrderRepository;
         _objectMapper = objectMapper;
+        _orderStatusProvider = orderStatusProvider;
+        _logger = logger;
     }
 
 
-    public async Task DoSaveOrder(TreasuryOrderDto orderDto, Dictionary<string, string> externalData = null)
+
+    public async Task<TreasuryOrderDto> DoSaveOrder(TreasuryOrderDto orderDto, Dictionary<string, string> externalData = null)
     {
-        var orderStatusGrain = _clusterClient.GetGrain<IOrderStatusInfoGrain>(
-            GrainIdHelper.GenerateGrainId(CommonConstant.TreasuryOrderStatusInfoPrefix,
-                orderDto.RampOrderId.ToString()));
-        await orderStatusGrain.AddOrderStatusInfo(new OrderStatusInfoGrainDto
+        
+        var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderDto.Id);
+        var resp = await treasuryOrderGrain.SaveOrUpdateAsync(orderDto);
+        AssertHelper.IsTrue(resp.Success, "Update treasury grain failed: " + resp.Message);
+        orderDto = resp.Data;
+        
+        _logger.LogDebug("Treasury order publish: {OrderId}-{Version}-{Status}", orderDto.Id, orderDto.Version, orderDto.Status);
+        await _distributedEventBus.PublishAsync(new TreasuryOrderEto(orderDto));
+        
+        externalData ??= new Dictionary<string, string>();
+        externalData[ExtensionKey.Version] = orderDto.Version.ToString();
+        await _orderStatusProvider.AddOrderStatusInfoAsync(new OrderStatusInfoGrainDto
         {
             OrderId = orderDto.Id,
             ThirdPartOrderNo = orderDto.ThirdPartOrderId,
@@ -52,12 +65,8 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
                 Extension = externalData.IsNullOrEmpty() ? null : JsonConvert.SerializeObject(externalData),
             }
         });
-
-        var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderDto.Id);
-        var resp = await treasuryOrderGrain.SaveOrUpdateAsync(orderDto);
-        AssertHelper.IsTrue(resp.Success, "Update treasury grain failed" + resp.Message);
-        await _distributedEventBus.PublishAsync(new TreasuryOrderEto(orderDto));
         
+        return orderDto;
     }
 
     public async Task<PagedResultDto<TreasuryOrderDto>> QueryOrderAsync(TreasuryOrderCondition condition)

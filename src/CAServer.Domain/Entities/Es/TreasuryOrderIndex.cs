@@ -8,9 +8,6 @@ namespace CAServer.Entities.Es;
 
 public class TreasuryOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
 {
-    
-    
-    public Guid Id { get; set; }
     public Guid RampOrderId { get; set; }
     public int Version { get; set; }
     [Keyword] public string ThirdPartName { get; set; }
@@ -19,6 +16,7 @@ public class TreasuryOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string TransferDirection { get; set; }
     [Keyword] public string ThirdPartOrderId { get; set; }
     [Keyword] public string Network { get; set; }
+    [Keyword] public string ThirdPartNetwork { get; set; }
     [Keyword] public string ToAddress { get; set; }
     
     /// <see cref="OrderStatusType"/>

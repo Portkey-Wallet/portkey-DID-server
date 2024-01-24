@@ -115,11 +115,10 @@
         <tr>
             <th>Id</th>
             <th>RampOrderId</th>
-            <th>UserId</th>
             <th>TransDirect</th>
-            <th>MerchantName</th>
-            <th>ThirdPartOrderNo</th>
-            <th>Address</th>
+            <th>ThirdPartName</th>
+            <th>ThirdPartOrderId</th>
+            <th>ToAddress</th>
             <th>Crypto</th>
             <th>Fiat</th>
             <th>Fee</th>
@@ -146,6 +145,7 @@
 
 <script src="libs/jquery/jquery.js"></script>
 <script src="js/app.js"></script>
+<script src="js/dateFormat.js"></script>
 <script>
 
     let currentPage = 1;
@@ -207,27 +207,26 @@
                 ? `<button onclick="showStatusFlow('${order.id}')">Status Flow</button>` 
                 : "";
             let fee = "";
-            for(let feeItem of order.FeeInfo){
-                fee += feeItem.Amount 
-                fee += Symbol
+            for(let feeItem of order.feeInfo){
+                fee += feeItem.amount 
+                fee += feeItem.symbol
                 fee += "<br/>"
             }
             $tbody.append(`<tr>
                 <td>${order.id}</td>
                 <td>${order.rampOrderId}</td>
-                <td>${order.userId}</td>
-                <td>${order.transDirect}</td>
-                <td>${order.merchantName}</td>
-                <td>${order.thirdPartOrderNo}</td>
-                <td>${order.address}</td>
-                <td>${order.cryptoQuantity} ${order.crypto}</td>
-                <td>${order.fiatAmount} ${order.fiat}</td>
-                <td>${order.fee}</td>
+                <td>${order.transferDirection}</td>
+                <td>${order.thirdPartName}</td>
+                <td>${order.thirdPartOrderId}</td>
+                <td>${order.toAddress}</td>
+                <td>${order.cryptoAmount} ${order.crypto}</td>
+                <td>${order.fiatAmount} ${order.fiat ?? ""}</td>
+                <td>${fee}</td>
                 <td>${order.status}</td>
-                <td>${order.transactionId}</td>
-                <td>${order.txTime}</td>
-                <td>${order.createTime}</td>
-                <td>${order.lastModifyTime}</td>
+                <td>${order.transactionId ?? ""}</td>
+                <td>${order.txTime ?? ""}</td>
+                <td>${DateFormat.formatUtc(new Date(parseInt(order.createTime, 10)))} UTC</td>
+                <td>${DateFormat.formatUtc(new Date(parseInt(order.lastModifyTime, 10)))} UTC</td>
                 <td>
                     <button onclick="showDetail('${order.id}')">Detail</button>
                     ${statusFlowBtn}
@@ -253,9 +252,8 @@
         }
     }
     
-    
     function showDetail(orderId) {
-        window.open("rampOrderDetail.html?orderId=" + orderId, "_blank")
+        window.open("treasuryOrderDetail.html?orderId=" + orderId, "_blank")
     }
     
     function showStatusFlow(orderId) {

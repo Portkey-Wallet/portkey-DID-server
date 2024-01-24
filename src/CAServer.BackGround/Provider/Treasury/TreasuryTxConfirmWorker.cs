@@ -42,7 +42,7 @@ public class TreasuryTxConfirmWorker : IJobWorker
         try
         {
             await using var handle =
-                await _distributedLock.TryAcquireAsync(name: _transactionOptions.CurrentValue.LockKeyPrefix +
+                await _distributedLock.TryAcquireAsync(_transactionOptions.CurrentValue.LockKeyPrefix +
                                                              "TreasuryTxConfirmWorker");
             if (handle == null)
             {
@@ -77,7 +77,7 @@ public class TreasuryTxConfirmWorker : IJobWorker
                     },
                 });
                 if (pendingData.Items.IsNullOrEmpty()) break;
-                total += pendingData.Items.Count();
+                total += pendingData.Items.Count;
                 lastModifyTimeLt = pendingData.Items.Min(order => order.LastModifyTime);
 
                 var multiConfirmTaskList = new List<Task<CommonResponseDto<Empty>>>();

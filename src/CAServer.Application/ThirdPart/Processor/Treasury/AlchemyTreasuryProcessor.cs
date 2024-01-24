@@ -125,7 +125,8 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
 
         var orderRequest = _objectMapper.Map<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>(input);
         orderRequest.ThirdPartName = ThirdPartName().ToString();
-        input.Network = mappingNetwork;
+        orderRequest.Network = mappingNetwork;
+        orderRequest.ThirdPartName = input.Network;
         return orderRequest;
     }
 

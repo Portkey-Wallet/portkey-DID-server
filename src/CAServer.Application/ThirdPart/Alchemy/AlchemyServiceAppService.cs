@@ -229,7 +229,6 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
 
     private async Task<AlchemyOrderQuoteDataDto> GetOrderQuoteWithCacheAsync(GetAlchemyOrderQuoteDto input)
     {
-        // TODO nzc risk detect
         var cacheKey =
             GrainIdHelper.GenerateGrainId(PriceCacheKey, input.Side, input.Crypto, input.Network, input.Fiat,
                 input.Country);

@@ -41,6 +41,7 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
         if (!Match(eventData)) return;
 
         var orderDto = eventData.Data;
+        _logger.LogDebug("TreasuryCreateHandler start, {OrderId}-{Version}-{Status}", orderDto.Id, orderDto.Version, orderDto.Status);
         try
         {
             AssertHelper.IsTrue(orderDto.TransactionId.IsNullOrEmpty(), "Transaction id exists");

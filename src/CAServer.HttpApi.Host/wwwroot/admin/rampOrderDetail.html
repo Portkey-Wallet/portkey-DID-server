@@ -162,7 +162,7 @@
                     googleTfaPin: googleTfa,
                     data : JSON.parse(orderData)
                 })
-            })
+            }).then(fetchOrders);
             
         });
     }
