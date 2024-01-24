@@ -86,11 +86,11 @@ button.danger:hover {
 
 
 button.primary {
-    background-color: #595959;
+    background-color: #999999;
 }
 
 button.primary:hover {
-    background-color: #505050;
+    background-color: #888888;
 }
 
 form button {

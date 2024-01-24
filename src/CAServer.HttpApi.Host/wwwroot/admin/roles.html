@@ -20,7 +20,7 @@
     </nav>
     <div id="user-info">
         <span></span>
-        <button id="logout-button">Sign out</button>
+        <button id="logout-button" class="primary">Sign out</button>
     </div>
 </header>
 
@@ -35,6 +35,25 @@
             <p style="text-align:center">
                 <button class="primary cancel-btn">Cancel</button>
                 <button class="danger confirm-btn">Add</button>
+            </p>
+        </div>
+    </div>
+    
+    <div id="roleDeleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Are you sure you want to delete the role?</h2>
+            <p>
+                <label for="modal-delRoleId">RoleId:</label>
+                <input type="text" id="modal-delRoleId" disabled class="modal-input" placeholder=""/>
+            </p>
+            <p>
+                <label for="modal-delRoleName">RoleName:</label>
+                <input type="text" id="modal-delRoleName" disabled class="modal-input" placeholder=""/>
+            </p>
+            <p style="text-align:center">
+                <button class="primary cancel-btn">Cancel</button>
+                <button class="danger confirm-btn">DELETE</button>
             </p>
         </div>
     </div>
@@ -109,7 +128,7 @@
         roles.forEach(function(role) {
             items[role.id] = role;
 
-            let deleteBtn = role.isStatic ? "" : `<button class="danger" onclick="DeleteRoles('${role.id}')">Delete</button>`;
+            let deleteBtn = role.isStatic ? "" : `<button class="danger" onclick="DeleteRoles('${role.id}', '${role.name}')">Delete</button>`;
             $tbody.append(`<tr>
                 <td>${role.id}</td>
                 <td>${role.name}</td>
@@ -125,26 +144,16 @@
     
     
     function DeleteRoles(roleId, userName) {
-        $("#modal-rolesUserId").val(userId)
-        $("#modal-rolesUserName").val(userName)
-        $.ajax({
-            url: App.Uri.roles + "/" + roleId,
-            method: "GET",
-            data: { userId: userId },
-            success: function(response) {
-                alert("success")
-            }
-        });
-        Modal.showModal("#rolesModal", function () {
-            let roles = $("#modal-roles").val().split(",");
+        $("#modal-delRoleId").val(roleId)
+        $("#modal-delRoleName").val(userName)
+        Modal.showModal("#roleDeleteModal", function () {
             $.ajax({
-                url: App.Uri.userRule(userId),
-                method: "PUT",
-                data: JSON.stringify({ roleNames: roles }),
+                url: App.Uri.roles + "/" + roleId,
+                method: "DELETE",
                 success: function(response) {
                     alert("success")
                 }
-            });
+            }).then(() => fetchRoles());
         });
     }
     

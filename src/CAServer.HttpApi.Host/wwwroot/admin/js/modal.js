@@ -26,7 +26,7 @@ let Modal = (function () {
         });
 
         $cancelBtn.off('click').on('click', function (event) {
-            if ($.isFunction(onCancel) && onCancel(event) !== false) {
+            if (!$.isFunction(onCancel) || onCancel(event) !== false) {
                 $modal.hide();
                 clearInputs();
             }
