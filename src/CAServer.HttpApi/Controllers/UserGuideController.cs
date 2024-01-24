@@ -1,8 +1,7 @@
-using System;
 using System.Threading.Tasks;
-using CAServer.Security.Dtos;
 using CAServer.UserGuide;
 using CAServer.UserGuide.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -12,6 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Guide")]
 [Route("api/app/user/guide")]
+//[Authorize]
 public class UserGuideController : CAServerController
 {
     private readonly IUserGuideAppService _userGuideAppService;

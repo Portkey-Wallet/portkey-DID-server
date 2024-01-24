@@ -1,4 +1,5 @@
 using CAServer.Grains.State.UserGuide;
+using CAServer.UserExtraInfo;
 
 namespace CAServer.Grains.Grain.UserGuide;
 
@@ -35,5 +36,22 @@ public class UserGuideGrain : Orleans.Grain<UserGuideState>, IUserGuideGrain
     {
         State.UserGuideInfos = input.UserGuideInfoInputs;
         await WriteStateAsync();
+    }
+
+    public async Task<GrainResultDto<bool>> FinishUserGuideInfoAsync(GuideType inputGuideType)
+    {
+        State.UserGuideInfos.ForEach(t =>
+        {
+            if (t.GuideType == inputGuideType)
+            {
+                t.Status = 1;
+            }
+        });
+        await WriteStateAsync();
+        return new GrainResultDto<bool>()
+        {
+            Data = true,
+            Success = true
+        };
     }
 }

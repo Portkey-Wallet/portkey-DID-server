@@ -32,51 +32,46 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
 
     public async Task<UserGuideDto> ListUserGuideAsync(Guid? currentUserId)
     {
-        if (null == currentUserId)
-        {
-            throw new UserFriendlyException("User not found.");
-        }
-
-        var userGuideGrain = _clusterClient.GetGrain<IUserGuideGrain>(currentUserId.Value);
-        var grainDto = await userGuideGrain.ListGrainResultDto();
-        var guideDto = new UserGuideDto();
-        var userGuideInfoGrain = grainDto.Data;
-        var input = new UserGuideGrainInput();
-        if (userGuideInfoGrain.Count == 0)
-        {
-            var userGuideOptions = _userGuideInfoOptions.GuideInfos;
-            foreach (var userGuideInfo in userGuideOptions.Select(guideInfo =>
-                         _objectMapper.Map<GuideInfo, UserGuideInfo>(guideInfo)))
-            {
-                userGuideInfo.Status = 0;
-                guideDto.UserGuideInfos.Add(userGuideInfo);
-            }
-
-            foreach (var guideInfo in guideDto.UserGuideInfos)
-            {
-                input.UserGuideInfoInputs.Add(
-                    _objectMapper.Map<UserGuideInfo, UserGuideInfoGrainDto>(guideInfo));
-            }
-
-            await userGuideGrain.SetUserGuideInfoAsync(input);
-            return guideDto;
-        }
-
-        foreach (var guideInfo in userGuideInfoGrain.Select(guideInfoGrain =>
-                     _objectMapper.Map<UserGuideInfoGrainDto, UserGuideInfo>(guideInfoGrain)))
-        {
-            guideDto.UserGuideInfos.Add(guideInfo);
-        }
-
-
-        return guideDto;
+        var result = await GetAndAddUserGuideInfoAsync(null, currentUserId);
+        return result;
     }
 
     public async Task<UserGuideDto> QueryUserGuideAsync(UserGuideRequestDto input, Guid? currentUserId)
     {
+        var result = await GetAndAddUserGuideInfoAsync(input, currentUserId);
+        return result;
+    }
+
+    public async Task<bool> FinishUserGuideAsync(UserGuideFinishRequestDto input, Guid? currentUserId)
+    {
         if (null == currentUserId)
         {
-            throw new UserFriendlyException("User not found.");
+            throw new UserFriendlyException("User not Login.");
+        }
+
+        var userGuideGrain = _clusterClient.GetGrain<IUserGuideGrain>(currentUserId.Value);
+        var grainDto = await userGuideGrain.ListGrainResultDto();
+        var userGuideInfoGrain = grainDto.Data;
+        if (userGuideInfoGrain.Count == 0)
+        {
+            throw new UserFriendlyException("User guide info not found.");
+        }
+
+        var list = userGuideInfoGrain.Select(t => t.GuideType == input.GuideType).ToList();
+        if (list.Count == 0)
+        {
+            throw new UserFriendlyException("User guide info not found.");
+        }
+
+        var resultDto = await userGuideGrain.FinishUserGuideInfoAsync(input.GuideType);
+        return resultDto.Success;
+    }
+
+    private async Task<UserGuideDto> GetAndAddUserGuideInfoAsync(UserGuideRequestDto input, Guid? currentUserId)
+    {
+        if (null == currentUserId)
+        {
+            throw new UserFriendlyException("User not Login.");
         }
 
         var userGuideGrain = _clusterClient.GetGrain<IUserGuideGrain>(currentUserId.Value);
@@ -101,9 +96,16 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
             }
 
             await userGuideGrain.SetUserGuideInfoAsync(grainInput);
+
+            if (input == null)
+            {
+                return guideDto;
+            }
+
             var result = guideDto.UserGuideInfos.Where(t => input.GuideTypes.Contains(Convert.ToInt32(t.GuideType)))
                 .ToList();
             guideDto.UserGuideInfos = result;
+
             return guideDto;
         }
 
@@ -113,44 +115,15 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
             guideDto.UserGuideInfos.Add(guideInfo);
         }
 
-        var list = guideDto.UserGuideInfos.Where(t => input.GuideTypes.Contains(Convert.ToInt32(t.GuideType))).ToList();
+        if (input == null)
+        {
+            return guideDto;
+        }
+
+        var list = guideDto.UserGuideInfos.Where(t => input.GuideTypes.Contains(Convert.ToInt32(t.GuideType)))
+            .ToList();
         guideDto.UserGuideInfos = list;
+
         return guideDto;
-    }
-
-    public async Task<bool> FinishUserGuideAsync(UserGuideFinishRequestDto input, Guid? currentUserId)
-    {
-        if (null == currentUserId)
-        {
-            throw new UserFriendlyException("User not found.");
-        }
-
-        var userGuideGrain = _clusterClient.GetGrain<IUserGuideGrain>(currentUserId.Value);
-        var grainDto = await userGuideGrain.ListGrainResultDto();
-        var userGuideInfoGrain = grainDto.Data;
-        if (userGuideInfoGrain.Count == 0)
-        {
-            throw new UserFriendlyException("User guide info not found.");
-        }
-
-        var list = userGuideInfoGrain.Select(t => t.GuideType == input.GuideType).ToList();
-        if (list.Count == 0)
-        {
-            throw new UserFriendlyException("User guide info not found.");
-        }
-
-        var updateInput = new UserGuideGrainInput();
-        foreach (var userGuideInfo in userGuideInfoGrain)
-        {
-            if (userGuideInfo.GuideType == input.GuideType)
-            {
-                userGuideInfo.Status = 1;
-            }
-
-            updateInput.UserGuideInfoInputs.Add(userGuideInfo);
-        }
-
-        await userGuideGrain.SetUserGuideInfoAsync(updateInput);
-        return true;
     }
 }

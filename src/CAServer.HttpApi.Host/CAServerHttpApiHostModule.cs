@@ -337,11 +337,11 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAuthorization();
         if (!env.IsDevelopment())
         {
-            app.UseMiddleware<RealIpMiddleware>();
+            //app.UseMiddleware<RealIpMiddleware>();
         }
         app.UseMiddleware<DeviceInfoMiddleware>();
 
-        if (env.IsDevelopment())
+        //if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>
