@@ -90,7 +90,7 @@ public class ThirdPartOrderController : CAServerController
     {
         _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
             HttpContext.Request.Path.ToString(),
-            Encoding.UTF8.GetString(await HttpContext.Request.Body.GetAllBytesAsync()),
+            JsonConvert.SerializeObject(input),
             JsonConvert.SerializeObject(HttpContext.Request.Headers));
         return await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
     }
@@ -100,7 +100,7 @@ public class ThirdPartOrderController : CAServerController
     {
         _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
             HttpContext.Request.Path.ToString(),
-            Encoding.UTF8.GetString(await HttpContext.Request.Body.GetAllBytesAsync()),
+            JsonConvert.SerializeObject(input),
             JsonConvert.SerializeObject(HttpContext.Request.Headers));
         return await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Transak.ToString(), input);
     }

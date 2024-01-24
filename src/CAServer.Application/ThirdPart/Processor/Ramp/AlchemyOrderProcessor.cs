@@ -60,7 +60,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
         // verify signature of input
         var expectedSignature = await GetAlchemySignatureAsync(input.OrderNo, input.Crypto, input.Network, input.Address);
-        AssertHelper.IsTrue(input.Signature == expectedSignature, "signature NOT match");
+        AssertHelper.IsTrue(input.Signature == expectedSignature, "signature NOT match, input sign:{}", input.Signature);
 
         // convert input param to orderDto
         var orderDto = ObjectMapper.Map<AlchemyOrderUpdateDto, OrderDto>(input);
