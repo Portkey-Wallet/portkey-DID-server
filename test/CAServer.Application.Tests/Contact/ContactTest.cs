@@ -268,69 +268,6 @@ public partial class ContactTest : CAServerApplicationTestBase
     }
 
     [Fact]
-    public async Task Merge_Addresses_Empty_Test()
-    {
-        await _contactAppService.MergeAsync(new ContactMergeDto()
-        {
-            Addresses = new List<ContactAddressDto>(),
-            ImInfo = new ImInfo()
-            {
-                RelationId = "test",
-                PortkeyId = Guid.Empty
-            }
-        });
-    }
-
-    [Fact]
-    public async Task MergeTest()
-    {
-        var userId = _currentUser.GetId();
-        var caHolderGrain = _cluster.Client.GetGrain<ICAHolderGrain>(userId);
-        await caHolderGrain.AddHolderAsync(new CAHolderGrainDto()
-        {
-            UserId = userId,
-            CaHash = "test",
-            CreateTime = DateTime.UtcNow,
-            Id = userId,
-            Nickname = "test"
-        });
-
-        var grainId = Guid.NewGuid();
-        var contactGrain = _cluster.Client.GetGrain<IContactGrain>(grainId);
-
-        await contactGrain.AddContactAsync(userId, new ContactGrainDto()
-        {
-            Id = grainId,
-            UserId = userId,
-            IsImputation = false,
-            Addresses = new List<ContactAddressDto>(),
-            Name = "test"
-        });
-
-        await _contactAppService.MergeAsync(new ContactMergeDto()
-        {
-            Addresses = new List<ContactAddressDto>()
-            {
-                new ContactAddressDto()
-                {
-                    Address = grainId.ToString(),
-                    ChainId = "AELF"
-                },
-                new ContactAddressDto()
-                {
-                    Address = "test",
-                    ChainId = "tDVV"
-                }
-            },
-            ImInfo = new ImInfo()
-            {
-                RelationId = "test",
-                PortkeyId = Guid.Empty
-            }
-        });
-    }
-
-    [Fact]
     public async Task GetImputationAsyncTest()
     {
         var result = await _contactAppService.GetImputationAsync();

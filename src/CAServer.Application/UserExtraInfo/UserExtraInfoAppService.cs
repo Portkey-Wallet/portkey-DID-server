@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp;
 using Volo.Abp.Auditing;
-using System.Net.Http;
 using CAServer.AppleAuth;
 using CAServer.AppleAuth.Provider;
 using CAServer.AppleVerify;
@@ -27,7 +26,6 @@ namespace CAServer.UserExtraInfo;
 [DisableAuditing]
 public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppService
 {
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly AppleAuthOptions _appleAuthOptions;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IClusterClient _clusterClient;
@@ -35,7 +33,7 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly IAppleUserProvider _appleUserProvider;
 
-    public UserExtraInfoAppService(IHttpClientFactory httpClientFactory,
+    public UserExtraInfoAppService(
         IOptions<AppleAuthOptions> appleAuthVerifyOption,
         IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
@@ -43,7 +41,6 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IAppleUserProvider appleUserProvider)
     {
-        _httpClientFactory = httpClientFactory;
         _appleAuthOptions = appleAuthVerifyOption.Value;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -102,23 +99,40 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
             return ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoResultDto>(resultDto.Data);
         }
 
-        var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(id);
-        if (userInfo == null)
-        {
-            throw new UserFriendlyException(resultDto.Message);
-        }
-
         var userExtraInfo = new Verifier.Dtos.UserExtraInfo
         {
-            Id = userInfo.UserId,
-            FirstName = userInfo.FirstName,
-            LastName = userInfo.LastName,
-            //Email = UserInfo.Email,
+            Id = id,
             GuardianType = GuardianIdentifierType.Apple.ToString(),
             AuthTime = DateTime.UtcNow
         };
 
+        var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(id);
+        if (userInfo != null)
+        {
+            userExtraInfo.FirstName = userInfo.FirstName;
+            userExtraInfo.LastName = userInfo.LastName;
+            return await AddUserExtraInfoAsync(userExtraInfo);
+        }
+
+        var extraInfo = await _appleUserProvider.GetUserInfoAsync(id);
+        if (extraInfo == null)
+        {
+            throw new UserFriendlyException(resultDto.Message);
+        }
+
+        userExtraInfo.FirstName = extraInfo.FirstName;
+        userExtraInfo.LastName = extraInfo.LastName;
+        userExtraInfo.Email = extraInfo.Email;
+        userExtraInfo.IsPrivateEmail = extraInfo.IsPrivate;
+        userExtraInfo.VerifiedEmail = extraInfo.VerifiedEmail;
+        userExtraInfo.Picture = extraInfo.Picture;
+        return await AddUserExtraInfoAsync(userExtraInfo);
+    }
+
+    public async Task<UserExtraInfoResultDto> AddUserExtraInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)
+    {
         await AddUserInfoAsync(userExtraInfo);
+        await SetUserExtraInfoAsync(userExtraInfo.Id, userExtraInfo.FirstName, userExtraInfo.LastName);
         return ObjectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoResultDto>(userExtraInfo);
     }
 
@@ -134,7 +148,7 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
 
         grainDto.Id = userExtraInfo.Id;
         await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto));
+            ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto), false, false);
     }
 
     private async Task<SecurityToken> ValidateTokenAsync(string identityToken)
@@ -196,9 +210,33 @@ public class UserExtraInfoAppService : CAServerAppService, IUserExtraInfoAppServ
     {
         var userId = userExtraInfo.Id.RemovePreFix("UserExtraInfo-");
         var userInfo = await _appleUserProvider.GetUserExtraInfoAsync(userId);
-        if (userInfo == null) return;
+        if (userInfo != null)
+        {
+            userExtraInfo.FirstName = userInfo.FirstName;
+            userExtraInfo.LastName = userInfo.LastName;
+            return;
+        }
 
-        userExtraInfo.FirstName = userInfo.FirstName;
-        userExtraInfo.LastName = userInfo.LastName;
+        var extraInfo = await _appleUserProvider.GetUserInfoAsync(userId);
+        if (extraInfo == null) return;
+
+        userExtraInfo.FirstName = extraInfo.FirstName;
+        userExtraInfo.LastName = extraInfo.LastName;
+        await SetUserExtraInfoAsync(userId, extraInfo.FirstName, extraInfo.LastName);
+    }
+
+    private async Task SetUserExtraInfoAsync(string userId, string firstName, string lastName)
+    {
+        if (firstName.IsNullOrEmpty() && lastName.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        await _appleUserProvider.SetUserExtraInfoAsync(new AppleUserExtraInfo
+        {
+            UserId = userId,
+            FirstName = firstName,
+            LastName = lastName,
+        });
     }
 }

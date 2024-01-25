@@ -374,7 +374,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<BookmarkGrainDto, BookmarkResultDto>();
         CreateMap<PagedResultDto<BookmarkIndex>, PagedResultDto<BookmarkResultDto>>();
         CreateMap<IndexerToken, UserTokenItem>()
-            .ForMember(t => t.SortWeight, m => m.MapFrom(f => f.ChainId == "AELF" ? 1 : 0))
             .ForPath(t => t.Token.ChainId, m => m.MapFrom(f => f.ChainId))
             .ForPath(t => t.Token.Symbol, m => m.MapFrom(f => f.Symbol))
             .ForPath(t => t.Token.Address, m => m.MapFrom(f => f.TokenContractAddress))
