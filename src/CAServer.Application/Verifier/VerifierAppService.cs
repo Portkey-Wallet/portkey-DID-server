@@ -349,12 +349,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
     {
-        var facebookUser = await GetFacebookTokenAsync(requestDto.AccessToken);
-        
+        var facebookUser = await GetFacebookUserDtoAsync(requestDto.AccessToken);
+        var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.UserId);
         return null;
     }
 
-    private async Task<FacebookUserDtoInfo> GetFacebookTokenAsync(string accessToken)
+    private async Task<FacebookUserDtoInfo> GetFacebookUserDtoAsync(string accessToken)
     {
         var url = "https://graph.facebook.com/debug_token?access_token={App-token}&input_token={User-token}";
         var requestUrl = string.Format(url, "App-token", accessToken);
