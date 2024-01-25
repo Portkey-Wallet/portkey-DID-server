@@ -1,12 +1,10 @@
 {
   "ClientId": "CAServer_HttpApi_Host_001",
   "apollo": {
-    "UseApollo" : true,
+    "UseApollo" : false,
     "AppId": "CAServerService",
-    "MetaServer": "http://192.168.66.212:8080,http://192.168.66.160:8080",
+    "MetaServer": "",
     "Namespaces": [
-      "ramp.json",
-      "admin.json"
     ]
   }
 }
