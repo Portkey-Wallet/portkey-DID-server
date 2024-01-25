@@ -11,7 +11,9 @@ using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NUglify.Helpers;
 using Serilog;
+using Volo.Abp;
 
 namespace CAServer.ThirdPart.Adaptor;
 
@@ -41,6 +43,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     
     public string MappingToAlchemyNetwork(string network)
     {
+        if (network.IsNullOrEmpty()) return network;
         var mappingExists = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
             .TryGetValue(network, out var mappingNetwork);
         return mappingExists ? mappingNetwork : network;
@@ -48,6 +51,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     
     public string MappingFromAlchemyNetwork(string network)
     {
+        if (network.IsNullOrEmpty()) return network;
         var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
             .FirstOrDefault(kv => kv.Value == network);
         return mappingNetwork.Key.DefaultIfEmpty(network);
@@ -55,16 +59,18 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
     public string MappingToAlchemySymbol(string symbol)
     {
+        if (symbol.IsNullOrEmpty()) return symbol;
         var mappingExists = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).SymbolMapping
             .TryGetValue(symbol, out var achSymbol);
         return mappingExists ? achSymbol : symbol;
     }
 
-    public string MappingFromAchSymbol(string achSymbol)
+    public string MappingFromAchSymbol(string symbol)
     {
+        if (symbol.IsNullOrEmpty()) return symbol;
         var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).SymbolMapping
-            .FirstOrDefault(kv => kv.Value == achSymbol);
-        return mappingNetwork.Key.DefaultIfEmpty(achSymbol);
+            .FirstOrDefault(kv => kv.Value == symbol);
+        return mappingNetwork.Key.DefaultIfEmpty(symbol);
     }
 
 
@@ -102,6 +108,39 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         }
     }
 
+    public async Task<List<RampCurrencyItem>> GetCryptoListAsync(RampCryptoRequest request)
+    {
+        try
+        {
+            var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(
+                new GetAlchemyCryptoListDto { Fiat = request.Fiat });
+            AssertHelper.IsTrue(alchemyCryptoList.Success, "Crypto list query failed.");
+
+            var alchemyNetwork = MappingToAlchemyNetwork(request.Network);
+            var cryptoItem = alchemyCryptoList.Data
+                .Where(c => c.Network == alchemyNetwork)
+                .Where(c => request.IsBuy ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0)
+                .GroupBy(c => string.Join(CommonConstant.Underline, c.Crypto, c.Network))
+                .Select(g => g.First());
+        
+            return cryptoItem.Select(item => new RampCurrencyItem()
+            {
+                Symbol = MappingFromAchSymbol(item.Crypto),
+                Network = MappingFromAlchemyNetwork(item.Network),
+            }).ToList();
+        }
+        catch (UserFriendlyException e)
+        {
+            Log.Warning(e, "{ThirdPart} GetCryptoListAsync failed", ThirdPart());
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{ThirdPart} GetCryptoListAsync ERROR", ThirdPart());
+        }
+
+        return new List<RampCurrencyItem>();
+    }
+
     /// <summary>
     ///     Get ramp limit
     /// </summary>
@@ -113,7 +152,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         try
         {
             var (min, max) =
-                await GetRampLimit(rampLimitRequest.Fiat, rampLimitRequest.Crypto, rampLimitRequest.IsBuy());
+                await GetRampLimit(rampLimitRequest.Fiat, rampLimitRequest.Crypto, rampLimitRequest.Network, rampLimitRequest.IsBuy());
             
             return new RampLimitDto
             {
@@ -133,7 +172,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     }
 
 
-    private async Task<Tuple<string, string>> GetRampLimit(string fiat, string crypto, bool isBuy)
+    private async Task<Tuple<string, string>> GetRampLimit(string fiat, string crypto, string network, bool isBuy)
     {
         var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(
             new GetAlchemyCryptoListDto
@@ -142,10 +181,13 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             });
         AssertHelper.IsTrue(alchemyCryptoList.Success, "Crypto list query failed.");
 
+        var alchemyNetwork = MappingToAlchemyNetwork(network);
+        var alchemySymbol = MappingToAlchemySymbol(crypto);
         var cryptoItem = alchemyCryptoList.Data
-            .Where(c => c.Crypto == crypto)
+            .Where(c => c.Crypto == alchemySymbol)
+            .Where(c => c.Network == alchemyNetwork)
             .FirstOrDefault(c => isBuy ? c.BuyEnable.SafeToInt() > 0 : c.SellEnable.SafeToInt() > 0);
-        AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not found", crypto);
+        AssertHelper.NotNull(cryptoItem, "Crypto {Crypto} not support", crypto);
 
         var min = isBuy ? cryptoItem?.MinPurchaseAmount : cryptoItem?.MinSellAmount;
         var max = isBuy ? cryptoItem?.MaxPurchaseAmount : cryptoItem?.MaxSellAmount;
@@ -167,6 +209,8 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         {
             var alchemyOrderQuoteDto =
                 ObjectMapper.Map<RampExchangeRequest, GetAlchemyOrderQuoteDto>(rampExchangeRequest);
+            alchemyOrderQuoteDto.Crypto = MappingToAlchemySymbol(alchemyOrderQuoteDto.Crypto);
+            alchemyOrderQuoteDto.Network = MappingToAlchemyNetwork(alchemyOrderQuoteDto.Network);
             var orderQuote = await GetCommonAlchemyOrderQuoteData(alchemyOrderQuoteDto);
             return orderQuote.CryptoPrice.SafeToDecimal();
         }
@@ -180,7 +224,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
     private async Task<AlchemyOrderQuoteDataDto> GetCommonAlchemyOrderQuoteData(GetAlchemyOrderQuoteDto input)
     {
-        var (min, _) = await GetRampLimit(input.Fiat, input.Crypto, input.IsBuy());
+        var (min, _) = await GetRampLimit(input.Fiat, input.Crypto, input.Network, input.IsBuy());
 
         // query order quote with a valid amount
         var amount = (min ?? "0").SafeToDecimal();
@@ -194,7 +238,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     private async Task<bool> InPriceLimit(RampDetailRequest rampDetailRequest)
     {
         var (min, max) =
-            await GetRampLimit(rampDetailRequest.Fiat, rampDetailRequest.Crypto, rampDetailRequest.IsBuy());
+            await GetRampLimit(rampDetailRequest.Fiat, rampDetailRequest.Crypto, rampDetailRequest.Network, rampDetailRequest.IsBuy());
         var amount = (rampDetailRequest.IsBuy() ? rampDetailRequest.FiatAmount : rampDetailRequest.CryptoAmount) ?? 0;
 
         return amount >= min.SafeToDecimal() && amount <= max.SafeToDecimal();
@@ -213,6 +257,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 
             var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
             alchemyOrderQuoteDto.Crypto = MappingToAlchemySymbol(alchemyOrderQuoteDto.Crypto);
+            alchemyOrderQuoteDto.Network = MappingToAlchemyNetwork(alchemyOrderQuoteDto.Network);
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
             AssertHelper.IsTrue(orderQuote.Success, "Query Alchemy order quote failed, " + orderQuote.Message);
 
@@ -245,6 +290,9 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         {
             var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
             if (!await InPriceLimit(rampDetailRequest)) return null;
+
+            alchemyOrderQuoteDto.Crypto = MappingToAlchemySymbol(alchemyOrderQuoteDto.Crypto);
+            alchemyOrderQuoteDto.Network = MappingToAlchemyNetwork(alchemyOrderQuoteDto.Network);
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
             var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, ProviderRampDetailDto>(orderQuote.Data);
             rampPrice.ThirdPart = ThirdPart();
