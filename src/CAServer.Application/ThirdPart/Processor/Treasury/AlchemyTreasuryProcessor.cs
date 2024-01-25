@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos.ThirdPart;
-using CAServer.ThirdPart.Provider;
 using CAServer.Tokens;
 using CAServer.Tokens.Provider;
 using Microsoft.Extensions.Logging;
@@ -25,10 +23,8 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
     private readonly ILogger<AlchemyTreasuryProcessor> _logger;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
-    private readonly ITokenAppService _tokenAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly AlchemyProvider _alchemyProvider;
-    private readonly ITokenProvider _tokenProvider;
 
 
     public AlchemyTreasuryProcessor(ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions,
@@ -39,13 +35,11 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         base(tokenAppService, chainOptions, clusterClient, objectMapper, thirdPartOptions,
             thirdPartOrderProvider, logger, treasuryOrderProvider, contractProvider, tokenProvider)
     {
-        _tokenAppService = tokenAppService;
         _thirdPartOptions = thirdPartOptions;
         _rampOptions = rampOptions;
         _objectMapper = objectMapper;
         _logger = logger;
         _alchemyProvider = alchemyProvider;
-        _tokenProvider = tokenProvider;
     }
 
     public override ThirdPartNameType ThirdPartName()
@@ -87,7 +81,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         return input!.Crypto;
     }
 
-    internal override async Task<TreasuryBaseResult> AdaptPriceOutputAsync(
+    internal override Task<TreasuryBaseResult> AdaptPriceOutputAsync(
         TreasuryPriceDto treasuryPriceDto)
     {
         var networkList = new List<AlchemyTreasuryPriceResultDto.AlchemyTreasuryNetwork>();
@@ -101,11 +95,11 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
             });
         }
 
-        return new AlchemyTreasuryPriceResultDto
+        return Task.FromResult<TreasuryBaseResult>(new AlchemyTreasuryPriceResultDto
         {
             Price = treasuryPriceDto.Price.ToString(CultureInfo.InvariantCulture),
             NetworkList = networkList
-        };
+        });
     }
 
     internal override async Task<TreasuryOrderRequest> AdaptOrderInputAsync<TOrderInput>(TOrderInput orderInput)
@@ -130,13 +124,13 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         return orderRequest;
     }
 
-    private async Task AssertSignatureAsync(TreasuryBaseContext treasuryBaseContext)
+    private Task AssertSignatureAsync(TreasuryBaseContext treasuryBaseContext)
     {
-        AssertHelper.NotNull(treasuryBaseContext.HttpContext, "Http context empty");
+        AssertHelper.NotNull(treasuryBaseContext.Headers, "Http context empty");
 
-        var headers = treasuryBaseContext.HttpContext!.Request.Headers;
+        var headers = treasuryBaseContext.Headers;
         AssertHelper.NotEmpty(headers, "Http header empty");
-        AssertHelper.IsTrue(headers.TryGetValue("appId", out var appId), "AppId header required");
+        AssertHelper.IsTrue(headers!.TryGetValue("appId", out var appId), "AppId header required");
         AssertHelper.IsTrue(headers.TryGetValue("timestamp", out var timestamp), "Timestamp header required");
         AssertHelper.IsTrue(headers.TryGetValue("sign", out var sign), "Sign header required");
         AssertHelper.IsTrue(appId == _thirdPartOptions.CurrentValue.Alchemy.AppId, "AppId not match");
@@ -145,11 +139,12 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
             .ToUtcMilliSeconds();
         var maxTs = DateTime.UtcNow.AddSeconds(_thirdPartOptions.CurrentValue.Alchemy.TimestampExpireSeconds)
             .ToUtcMilliSeconds();
-        var ts = timestamp.ToString().SafeToLong();
+        var ts = timestamp.SafeToLong();
         AssertHelper.IsTrue(ts >= minTs && ts <= maxTs, "Invalid timestamp");
 
         var signSource = appId + _thirdPartOptions.CurrentValue.Alchemy.AppSecret + timestamp;
         var expectedSign = AlchemyHelper.GenerateAlchemyApiSign(signSource);
         AssertHelper.IsTrue(expectedSign == sign, "Invalid signature");
+        return Task.CompletedTask;
     }
 }

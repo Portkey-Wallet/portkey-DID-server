@@ -50,10 +50,6 @@
         <Reference Include="CAServer.Grains">
           <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Grains.dll</HintPath>
         </Reference>
-        <Reference Include="Microsoft.AspNetCore.Http.Abstractions">
-          <HintPath>..\..\..\..\..\..\..\usr\local\share\dotnet\shared\Microsoft.AspNetCore.App\7.0.5\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
-        </Reference>
-        <Reference Include="Microsoft.AspNetCore.Http.Features" />
     </ItemGroup>
 
     <ItemGroup>

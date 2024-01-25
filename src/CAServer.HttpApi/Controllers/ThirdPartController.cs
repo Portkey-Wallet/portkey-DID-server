@@ -123,8 +123,8 @@ public class ThirdPartOrderController : CAServerController
             HttpContext.Request.Path.ToString(),
             Encoding.UTF8.GetString(await HttpContext.Request.Body.GetAllBytesAsync()),
             JsonConvert.SerializeObject(HttpContext.Request.Headers));
-
-        input.HttpContext = HttpContext;
+        
+        input.Headers = HttpContext.Request.Headers.ToDictionary(kv => kv.Key, kv => kv.Value.ToString());
         var result = await _treasuryProcessorFactory.Processor(ThirdPartNameType.Alchemy.ToString())
             .GetPriceAsync(input);
         return new AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>(result as AlchemyTreasuryPriceResultDto);
@@ -137,10 +137,9 @@ public class ThirdPartOrderController : CAServerController
             HttpContext.Request.Path.ToString(),
             JsonConvert.SerializeObject(input),
             JsonConvert.SerializeObject(HttpContext.Request.Headers));
-            input.HttpContext = HttpContext;
-            
+        
+        input.Headers = HttpContext.Request.Headers.ToDictionary(kv => kv.Key, kv => kv.Value.ToString());
         await _treasuryProcessorFactory.Processor(ThirdPartNameType.Alchemy.ToString()).NotifyOrderAsync(input);
         return new AlchemyBaseResponseDto<Empty>();
     }
-    
 }
