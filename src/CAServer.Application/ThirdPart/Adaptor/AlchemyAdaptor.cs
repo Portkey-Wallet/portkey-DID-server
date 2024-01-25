@@ -39,6 +39,11 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         return _rampOptions.CurrentValue.Providers[ThirdPart()];
     }
 
+    private string MappingToAlchemySymbol(string symbol)
+    {
+        var mappingSymbol = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).SymbolMapping.FirstOrDefault(kv => kv.Value == symbol);
+        return mappingSymbol.Key;
+    }
 
     /// <summary>
     ///     Get fiat list
@@ -184,6 +189,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             if (!await InPriceLimit(rampDetailRequest)) return null;
 
             var alchemyOrderQuoteDto = ObjectMapper.Map<RampDetailRequest, GetAlchemyOrderQuoteDto>(rampDetailRequest);
+            alchemyOrderQuoteDto.Crypto = MappingToAlchemySymbol(alchemyOrderQuoteDto.Crypto);
             var orderQuote = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(alchemyOrderQuoteDto);
             AssertHelper.IsTrue(orderQuote.Success, "Query Alchemy order quote failed, " + orderQuote.Message);
 

@@ -46,7 +46,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
     {
         return ThirdPartNameType.Alchemy;
     }
-
+    
     public override async Task<Tuple<bool, string>> CallBackThirdPart(TreasuryOrderDto orderDto)
     {
         try
@@ -78,7 +78,10 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
             "Treasury price input not AlchemyTreasuryPriceRequestDto");
         var input = priceInput as AlchemyTreasuryPriceRequestDto;
         await AssertSignatureAsync(input);
-        return input!.Crypto;
+
+        var alchemyOption = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy);
+        var mappingSymbolExists = alchemyOption.SymbolMapping.TryGetValue(input!.Crypto, out var mappingSymbol);
+        return mappingSymbolExists ? mappingSymbol : input!.Crypto;
     }
 
     internal override Task<TreasuryBaseResult> AdaptPriceOutputAsync(
