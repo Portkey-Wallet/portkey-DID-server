@@ -40,7 +40,7 @@ public class GrowthController : CAServerController
         return await _growthAppService.GetShortLinkAsync(projectCode);
     }
 
-    [HttpGet("referralInfo")]
+    [HttpGet("referralInfo"), Authorize(Roles = "admin")]
     public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
     {
         return await _statisticAppService.GetReferralInfoAsync(input);

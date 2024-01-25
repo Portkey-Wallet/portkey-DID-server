@@ -19,9 +19,9 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         _growthProvider = growthProvider;
     }
 
-    public async Task<ReferralResponseDto> GetReferralInfo1Async(ReferralRequestDto input)
+    public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
     {
-        var result = await GetReferralInfoAsync(input);
+        var result = await GetReferralInfoTreeAsync(input);
 
         if (input.SearchOrigin)
         {
@@ -31,7 +31,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
         return result;
     }
 
-    public async Task SetOriginAsync(ReferralResponseDto responseDto)
+    private async Task SetOriginAsync(ReferralResponseDto responseDto)
     {
         var caHashes = responseDto.ReferralInfos.Select(t => t.CaHash).ToList();
         var indexerReferralInfos =
@@ -80,7 +80,7 @@ public class GrowthStatisticAppService : CAServerAppService, IGrowthStatisticApp
     }
 
     // who i invited
-    public async Task<ReferralResponseDto> GetReferralInfoAsync(ReferralRequestDto input)
+    public async Task<ReferralResponseDto> GetReferralInfoTreeAsync(ReferralRequestDto input)
     {
         var result = new ReferralResponseDto();
 
