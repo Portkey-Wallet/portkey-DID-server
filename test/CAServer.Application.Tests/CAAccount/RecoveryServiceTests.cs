@@ -60,6 +60,32 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
     [Fact]
     public async Task RecoverRequestAsync_Test()
     {
+        
+        
+        var privateKey = "36bc3f264aa340d44aada5759a5a86aac6d734f19932397e551d9e69edffe0d2";
+        var delegateInfo = new Portkey.Contracts.CA.DelegateInfo
+        {
+            IdentifierHash = Hash.LoadFromHex("a040aeb03991af74ab177243b6b55db5bedf55e4fa7ea3fefa46df12820f5fc2"),
+            ChainId = 9992731,
+            Timestamp = DateTimeOffset.FromUnixTimeSeconds(1706189933).ToTimestamp(),
+            ExpirationTime = 3600,
+            //ProjectHash = Hash.LoadFromHex("dc168643a3378c9d89cb0f53474b97a292f324b621edea078653721dfa26bb42"),
+            ProjectHash = Hash.LoadFromHex("b144905e8a38027de8a059b67570653a0fca8e5841fab8ecb0580f20617ab836"),
+            Delegations =
+            {
+                new Dictionary<string, long>
+                {
+                    ["ELF"] = 10000000000
+                }
+            },
+            IsUnlimitedDelegate = false,
+            Signature = ""
+        };
+        var signature = CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey), HashHelper.ComputeFrom(delegateInfo).ToByteArray()).ToHex();
+
+
+
+        
         try
         {
             var identifier = DefaultEmailAddress;
