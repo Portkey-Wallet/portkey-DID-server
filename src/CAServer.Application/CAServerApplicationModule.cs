@@ -89,6 +89,7 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        context.Services.AddSingleton<ISearchService, GrowthSearchService>();
         
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();

@@ -263,3 +263,15 @@ public class CAHolderSearchService : SearchService<CAHolderIndex, Guid>
     }
     
 }
+
+public class GrowthSearchService : SearchService<GrowthIndex, string>
+{
+    private readonly IndexSettingOptions _indexSettingOptions;
+    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.growthindex";
+
+    public GrowthSearchService(INESTRepository<GrowthIndex, string> nestRepository,
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+    {
+        _indexSettingOptions = indexSettingOptions.Value;
+    }
+}
