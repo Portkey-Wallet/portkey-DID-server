@@ -347,6 +347,45 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+    public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        var facebookUser = await GetFacebookTokenAsync(requestDto.AccessToken);
+        
+        return null;
+    }
+
+    private async Task<FacebookUserDtoInfo> GetFacebookTokenAsync(string accessToken)
+    {
+        var url = "https://graph.facebook.com/debug_token?access_token={App-token}&input_token={User-token}";
+        var requestUrl = string.Format(url, "App-token", accessToken);
+        var client = _httpClientFactory.CreateClient();
+        _logger.LogInformation("{message}", $"GetUserInfo from google {requestUrl}");
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUrl));
+
+        var result = await response.Content.ReadAsStringAsync();
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            _logger.LogError("{Message}", response.ToString());
+            throw new Exception("Invalid token");
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("{Message}", response.ToString());
+            throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
+        }
+
+        _logger.LogInformation("GetUserInfo from Facebook: {userInfo}", result);
+        var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserDtoInfo>(result);
+        if (facebookUserInfo == null)
+        {
+            throw new Exception("Get userInfo from Facebook fail.");
+        }
+
+        return facebookUserInfo;
+    }
+
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
     {
@@ -379,7 +418,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         else
         {
             salt = GetSalt().ToHex();
-            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),  
+            identifierHash = GetHash(Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),
                 ByteArrayHelper.HexStringToByteArray(salt)).ToHex();
         }
 
@@ -470,6 +509,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             throw new Exception($"Salt has to be {maxSaltLength} bytes.");
         }
+
         var hash = HashHelper.ComputeFrom(identifier);
         return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }
