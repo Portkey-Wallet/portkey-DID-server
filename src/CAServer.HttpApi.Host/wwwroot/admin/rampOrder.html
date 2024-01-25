@@ -109,10 +109,6 @@
     
 </main>
 
-<footer>
-    <p>Copyright</p>
-</footer>
-
 <script src="libs/jquery/jquery.js"></script>
 <script src="js/app.js"></script>
 <script src="js/dateFormat.js"></script>
@@ -175,14 +171,14 @@
                 <td>${order.id}</td>
                 <td>${order.userId}</td>
                 <td>${order.transDirect}</td>
-                <td>${order.merchantName}</td>
-                <td>${order.thirdPartOrderNo}</td>
-                <td>${order.address}</td>
-                <td>${order.cryptoAmount} ${order.crypto}</td>
-                <td>${order.fiatAmount} ${order.fiat}</td>
+                <td>${order.merchantName ?? ""}</td>
+                <td>${order.thirdPartOrderNo ?? ""}</td>
+                <td>${order.address ?? ""}</td>
+                <td>${order.cryptoAmount ?? order.cryptoQuantity ?? ""} ${order.crypto ?? ""}</td>
+                <td>${order.fiatAmount  ?? ""} ${order.fiat ?? "" }</td>
                 <td>${order.status}</td>
-                <td>${order.transactionId}</td>
-                <td>${order.txTime}</td>
+                <td>${order.transactionId ?? ""}</td>
+                <td>${order.txTime ?? ""}</td>
                 <td>${DateFormat.formatUtc(new Date(parseInt(order.lastModifyTime, 10)))}</td>
                 <td>
                     <button onclick="showDetail('${order.id}')">Detail</button>
