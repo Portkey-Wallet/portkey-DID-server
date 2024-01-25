@@ -38,9 +38,9 @@ public class ThirdPartProvider
     public string WebhookUrl { get; set; }
     public string CountryIconUrl { get; set; }
     public List<string> PaymentTags { get; set; } = new();
-    // thirdPart-Network => standard-Network
+    // standard-Network => thirdPart-Network
     public Dictionary<string, string> NetworkMapping { get; set; } = new();
-    // thirdPart-Symbol => standard-Symbol
+    // standard-Symbol => thirdPart-Symbol
     public Dictionary<string, string> SymbolMapping { get; set; } = new();
     public ProviderCoverage Coverage { get; set; }
 }

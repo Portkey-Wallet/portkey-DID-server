@@ -38,12 +38,35 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
     {
         return _rampOptions.CurrentValue.Providers[ThirdPart()];
     }
-
-    private string MappingToAlchemySymbol(string symbol)
+    
+    public string MappingToAlchemyNetwork(string network)
     {
-        var mappingSymbol = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).SymbolMapping.FirstOrDefault(kv => kv.Value == symbol);
-        return mappingSymbol.Key;
+        var mappingExists = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
+            .TryGetValue(network, out var mappingNetwork);
+        return mappingExists ? mappingNetwork : network;
     }
+    
+    public string MappingFromAlchemyNetwork(string network)
+    {
+        var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
+            .FirstOrDefault(kv => kv.Value == network);
+        return mappingNetwork.Key.DefaultIfEmpty(network);
+    }
+
+    public string MappingToAlchemySymbol(string symbol)
+    {
+        var mappingExists = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).SymbolMapping
+            .TryGetValue(symbol, out var achSymbol);
+        return mappingExists ? achSymbol : symbol;
+    }
+
+    public string MappingFromAchSymbol(string achSymbol)
+    {
+        var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).SymbolMapping
+            .FirstOrDefault(kv => kv.Value == achSymbol);
+        return mappingNetwork.Key.DefaultIfEmpty(achSymbol);
+    }
+
 
     /// <summary>
     ///     Get fiat list
