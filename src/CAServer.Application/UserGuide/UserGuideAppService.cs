@@ -32,14 +32,14 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
 
     public async Task<UserGuideDto> ListUserGuideAsync(Guid? currentUserId)
     {
-        var result = await GetAndAddUserGuideInfoAsync(null, currentUserId);
-        return result;
+        var guideInfos = await GetUserGuideInfoAsync(null, currentUserId);
+        return guideInfos;
     }
 
     public async Task<UserGuideDto> QueryUserGuideAsync(UserGuideRequestDto input, Guid? currentUserId)
     {
-        var result = await GetAndAddUserGuideInfoAsync(input, currentUserId);
-        return result;
+        var guideInfos = await GetUserGuideInfoAsync(input, currentUserId);
+        return guideInfos;
     }
 
     public async Task<bool> FinishUserGuideAsync(UserGuideFinishRequestDto input, Guid? currentUserId)
@@ -50,24 +50,11 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
         }
 
         var userGuideGrain = _clusterClient.GetGrain<IUserGuideGrain>(currentUserId.Value);
-        var grainDto = await userGuideGrain.ListGrainResultDto();
-        var userGuideInfoGrain = grainDto.Data;
-        if (userGuideInfoGrain.Count == 0)
-        {
-            throw new UserFriendlyException("User guide info not found.");
-        }
-
-        var list = userGuideInfoGrain.Select(t => t.GuideType == input.GuideType).ToList();
-        if (list.Count == 0)
-        {
-            throw new UserFriendlyException("User guide info not found.");
-        }
-
         var resultDto = await userGuideGrain.FinishUserGuideInfoAsync(input.GuideType);
         return resultDto.Success;
     }
 
-    private async Task<UserGuideDto> GetAndAddUserGuideInfoAsync(UserGuideRequestDto input, Guid? currentUserId)
+    private async Task<UserGuideDto> GetUserGuideInfoAsync(UserGuideRequestDto input, Guid? currentUserId)
     {
         if (null == currentUserId)
         {
@@ -78,10 +65,10 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
         var grainDto = await userGuideGrain.ListGrainResultDto();
         var guideDto = new UserGuideDto();
         var userGuideInfoGrain = grainDto.Data;
-        var grainInput = new UserGuideGrainInput();
+
+        var userGuideOptions = _userGuideInfoOptions.GuideInfos;
         if (userGuideInfoGrain.Count == 0)
         {
-            var userGuideOptions = _userGuideInfoOptions.GuideInfos;
             foreach (var guideInfo in userGuideOptions.Select(userGuide =>
                          _objectMapper.Map<GuideInfo, UserGuideInfo>(userGuide)))
             {
@@ -89,40 +76,36 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
                 guideDto.UserGuideInfos.Add(guideInfo);
             }
 
-            foreach (var guideDtoInfo in guideDto.UserGuideInfos)
+            if (input != null)
             {
-                grainInput.UserGuideInfoInputs.Add(
-                    _objectMapper.Map<UserGuideInfo, UserGuideInfoGrainDto>(guideDtoInfo));
+                guideDto.UserGuideInfos = guideDto.UserGuideInfos
+                    .Where(t => input.GuideTypes.Contains(Convert.ToInt32(t.GuideType))).ToList();
             }
-
-            await userGuideGrain.SetUserGuideInfoAsync(grainInput);
-
-            if (input == null)
-            {
-                return guideDto;
-            }
-
-            var result = guideDto.UserGuideInfos.Where(t => input.GuideTypes.Contains(Convert.ToInt32(t.GuideType)))
-                .ToList();
-            guideDto.UserGuideInfos = result;
 
             return guideDto;
         }
 
-        foreach (var guideInfo in userGuideInfoGrain.Select(guideInfoGrain =>
-                     _objectMapper.Map<UserGuideInfoGrainDto, UserGuideInfo>(guideInfoGrain)))
+        foreach (var guideInfo in userGuideOptions)
         {
-            guideDto.UserGuideInfos.Add(guideInfo);
+            var info = _objectMapper.Map<GuideInfo, UserGuideInfo>(guideInfo);
+            var userGuideInfo =
+                userGuideInfoGrain.FirstOrDefault(t => Convert.ToInt32(t.GuideType) == guideInfo.GuideType);
+            if (userGuideInfo == null)
+            {
+                info.Status = 0;
+                guideDto.UserGuideInfos.Add(info);
+                continue;
+            }
+
+            info.Status = userGuideInfo.Status;
+            guideDto.UserGuideInfos.Add(info);
         }
 
-        if (input == null)
+        if (input != null)
         {
-            return guideDto;
+            guideDto.UserGuideInfos = guideDto.UserGuideInfos
+                .Where(t => input.GuideTypes.Contains(Convert.ToInt32(t.GuideType))).ToList();
         }
-
-        var list = guideDto.UserGuideInfos.Where(t => input.GuideTypes.Contains(Convert.ToInt32(t.GuideType)))
-            .ToList();
-        guideDto.UserGuideInfos = list;
 
         return guideDto;
     }

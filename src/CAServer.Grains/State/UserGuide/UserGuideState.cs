@@ -13,7 +13,6 @@ public class UserGuideInfoGrainDto
 
     public GuideType GuideType { get; set; }
 
-    public Dictionary<string, string> ExternalMap { get; set; } = new();
 }
 
 public class UserGuideGrainInput

@@ -32,21 +32,24 @@ public class UserGuideGrain : Orleans.Grain<UserGuideState>, IUserGuideGrain
         };
     }
 
-    public async Task SetUserGuideInfoAsync(UserGuideGrainInput input)
-    {
-        State.UserGuideInfos = input.UserGuideInfoInputs;
-        await WriteStateAsync();
-    }
-
     public async Task<GrainResultDto<bool>> FinishUserGuideInfoAsync(GuideType inputGuideType)
     {
-        State.UserGuideInfos.ForEach(t =>
+        var guideInfoGrainDtos = State.UserGuideInfos;
+        var grainDto = guideInfoGrainDtos.FirstOrDefault(t => t.GuideType == inputGuideType);
+        if (grainDto != null)
         {
-            if (t.GuideType == inputGuideType)
+            grainDto.Status = 1;
+        }
+        else
+        {
+            grainDto = new UserGuideInfoGrainDto
             {
-                t.Status = 1;
-            }
-        });
+                GuideType = inputGuideType,
+                Status = 1
+            };
+            State.UserGuideInfos.Add(grainDto);
+        }
+
         await WriteStateAsync();
         return new GrainResultDto<bool>()
         {
