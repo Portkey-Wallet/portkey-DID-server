@@ -59,8 +59,12 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
     {
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
         // verify signature of input
-        var expectedSignature = await GetAlchemySignatureAsync(input.OrderNo, input.Crypto, input.Network, input.Address);
-        AssertHelper.IsTrue(input.Signature == expectedSignature, "signature NOT match, input sign:{}", input.Signature);
+        var expectedBuySignature =
+            await GetAlchemyBuySignatureAsync(input.OrderNo, input.Crypto, input.Network, input.Address);
+        var expectedSellSignature =
+            await GetAlchemySellSignatureAsync(input.OrderNo, input.Crypto, input.Network, input.Address);
+        AssertHelper.IsTrue(input.Signature == expectedBuySignature || input.Signature == expectedSellSignature,
+            "signature NOT match, input sign:{}", input.Signature);
 
         // convert input param to orderDto
         var orderDto = ObjectMapper.Map<AlchemyOrderUpdateDto, OrderDto>(input);
@@ -89,7 +93,8 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             var orderPendingUpdate = ObjectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
             orderPendingUpdate.TxHash = input.TxHash;
             orderPendingUpdate.AppId = _thirdPartOptions.CurrentValue.Alchemy.AppId;
-            orderPendingUpdate.Signature = await GetAlchemySignatureAsync(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
+            orderPendingUpdate.Signature = await GetAlchemySellSignatureAsync(orderPendingUpdate.OrderNo,
+                orderPendingUpdate.Crypto,
                 orderPendingUpdate.Network, orderPendingUpdate.Address);
 
             await _alchemyProvider.UpdateOffRampOrderAsync(orderPendingUpdate);
@@ -125,7 +130,15 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         }
     }
 
-    private async Task<string> GetAlchemySignatureAsync(string orderNo, string crypto, string network, string address)
+    private async Task<string> GetAlchemyBuySignatureAsync(string orderNo, string crypto, string network,
+        string address)
+    {
+        var source = _thirdPartOptions.CurrentValue.Alchemy.AppId + orderNo + crypto + network + address;
+        return await _secretProvider.GetAlchemyShaSignAsync(_thirdPartOptions.CurrentValue.Alchemy.AppId, source);
+    }
+
+    private async Task<string> GetAlchemySellSignatureAsync(string orderNo, string crypto, string network,
+        string address)
     {
         var source = orderNo + crypto + network + address;
         return await _secretProvider.GetAlchemyShaSignAsync(_thirdPartOptions.CurrentValue.Alchemy.AppId, source);
