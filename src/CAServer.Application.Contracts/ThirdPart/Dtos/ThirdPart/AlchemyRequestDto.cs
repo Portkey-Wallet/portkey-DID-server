@@ -185,7 +185,7 @@ public class AlchemyNftReleaseNoticeRequestDto
 
 public class AlchemyTreasuryPriceRequestDto : TreasuryBaseContext
 {
-    public string Crypto { get; set; }
+    [Required] public string Crypto { get; set; }
 }
 
 

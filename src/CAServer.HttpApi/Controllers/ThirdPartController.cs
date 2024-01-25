@@ -119,9 +119,9 @@ public class ThirdPartOrderController : CAServerController
     public async Task<AlchemyBaseResponseDto<AlchemyTreasuryPriceResultDto>> AlchemyTreasurePrice(
         AlchemyTreasuryPriceRequestDto input)
     {
-        _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
-            HttpContext.Request.Path.ToString(),
-            Encoding.UTF8.GetString(await HttpContext.Request.Body.GetAllBytesAsync()),
+        _logger.LogInformation("Receive request of {Method} [{Uri}{Query}], body={Request}, header={Header}",
+            HttpContext.Request.Method, HttpContext.Request.Path.ToString(), HttpContext.Request.QueryString,
+            JsonConvert.SerializeObject(input),
             JsonConvert.SerializeObject(HttpContext.Request.Headers));
         
         input.Headers = HttpContext.Request.Headers.ToDictionary(kv => kv.Key, kv => kv.Value.ToString());
@@ -133,8 +133,8 @@ public class ThirdPartOrderController : CAServerController
     [HttpPost("treasury/order/alchemy")]
     public async Task<AlchemyBaseResponseDto<Empty>> AlchemyTreasureOrder(AlchemyTreasuryOrderRequestDto input)
     {
-        _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
-            HttpContext.Request.Path.ToString(),
+        _logger.LogInformation("Receive request of {Method} [{Uri}{Query}], body={Request}, header={Header}",
+            HttpContext.Request.Method, HttpContext.Request.Path.ToString(), HttpContext.Request.QueryString,
             JsonConvert.SerializeObject(input),
             JsonConvert.SerializeObject(HttpContext.Request.Headers));
         

@@ -130,7 +130,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
 
         var headers = treasuryBaseContext.Headers;
         AssertHelper.NotEmpty(headers, "Http header empty");
-        AssertHelper.IsTrue(headers!.TryGetValue("appId", out var appId), "AppId header required");
+        AssertHelper.IsTrue(headers!.TryGetValue("appid", out var appId), "AppId header required");
         AssertHelper.IsTrue(headers.TryGetValue("timestamp", out var timestamp), "Timestamp header required");
         AssertHelper.IsTrue(headers.TryGetValue("sign", out var sign), "Sign header required");
         AssertHelper.IsTrue(appId == _thirdPartOptions.CurrentValue.Alchemy.AppId, "AppId not match");

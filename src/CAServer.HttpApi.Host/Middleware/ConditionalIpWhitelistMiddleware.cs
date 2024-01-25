@@ -29,7 +29,6 @@ public class ConditionalIpWhitelistMiddleware
     {
         try
         {
-            var remoteIp = context.Connection.RemoteIpAddress?.ToString();
             if (!IsProtectedResource(context.Request, out var whiteList))
             {
                 await _next(context);
@@ -44,12 +43,13 @@ public class ConditionalIpWhitelistMiddleware
                 return;
             }
 
-            _logger.LogDebug("Protected resource requested from IP: {ClientIp}",
-                DeviceInfoContext.CurrentDeviceInfo.ClientIp);
+            _logger.LogDebug("Protected resource requested from IP: {ClientIp}, Target:{Path}",
+                DeviceInfoContext.CurrentDeviceInfo.ClientIp, context.Request.Path.ToString());
 
             if (!IpHelper.AssertAllowed(DeviceInfoContext.CurrentDeviceInfo.ClientIp, whiteList))
             {
-                _logger.LogWarning("Forbidden request from IP: {RemoteIp}", remoteIp);
+                _logger.LogWarning("Forbidden request from IP: {ClientIp}, Target:{Path}",
+                    DeviceInfoContext.CurrentDeviceInfo.ClientIp, context.Request.Path.ToString());
                 context.Response.StatusCode = 403;
                 return;
             }
