@@ -70,7 +70,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
                     e.ProjectDelegateInfo.Delegations
                 },
                 Timestamp = DateTimeOffset.FromUnixTimeSeconds(e.ProjectDelegateInfo.TimeStamp).ToTimestamp(),
-                IsUnlimitedDelegate = true,
+                IsUnlimitedDelegate = e.ProjectDelegateInfo.IsUnlimitedDelegate,
                 Signature = e.ProjectDelegateInfo.Signature
             }))
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
