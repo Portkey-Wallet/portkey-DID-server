@@ -14,8 +14,3 @@ public class UserGuideInfoGrainDto
     public GuideType GuideType { get; set; }
 
 }
-
-public class UserGuideGrainInput
-{
-    public List<UserGuideInfoGrainDto> UserGuideInfoInputs { get; set; } = new();
-}
