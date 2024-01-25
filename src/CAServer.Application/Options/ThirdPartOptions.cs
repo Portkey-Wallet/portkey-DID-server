@@ -57,7 +57,8 @@ public class ThirdPartTimerOptions
     public int TreasuryTxConfirmWorkerPageSize { get; set; } = 10;
     public int TreasuryCallbackFromMinutesAgo { get; set; } = 60;
     public int TreasuryCallbackMaxCount { get; set; } = 3;
-    
+    public int PendingTreasuryOrderExpireSeconds { get; set; } = 1800;
+
 }
 
 public class AlchemyOptions

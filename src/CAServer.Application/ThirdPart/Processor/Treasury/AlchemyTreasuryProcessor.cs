@@ -53,7 +53,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
             .TryGetValue(network, out var mappingNetwork);
         return mappingExists ? mappingNetwork : network;
     }
-    
+
     public string MappingFromAlchemyNetwork(string network)
     {
         var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
@@ -74,21 +74,19 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
             .FirstOrDefault(kv => kv.Value == achSymbol);
         return mappingNetwork.Key.DefaultIfEmpty(achSymbol);
     }
-    
+
     public override async Task<Tuple<bool, string>> CallBackThirdPart(TreasuryOrderDto orderDto)
     {
         try
         {
-            var achNetwork = MappingToAlchemyNetwork(orderDto.Network);
-            AssertHelper.NotEmpty(achNetwork, "Alchemy network mapping not found {}", orderDto.Network);
             var response = await _alchemyProvider.CallBackTreasuryOrder(new AlchemyTreasuryCallBackDto
             {
                 OrderNo = orderDto.ThirdPartOrderId,
-                Crypto = orderDto.Crypto,
+                Crypto = orderDto.ThirdPartCrypto,
                 CryptoAmount = orderDto.CryptoAmount.ToString(CultureInfo.InvariantCulture),
                 CryptoPrice = orderDto.CryptoPriceInUsdt.ToString(CultureInfo.InvariantCulture),
                 TxHash = orderDto.TransactionId,
-                Network = achNetwork
+                Network = orderDto.ThirdPartNetwork
             });
             return Tuple.Create(response.Success, JsonConvert.SerializeObject(response));
         }
@@ -105,7 +103,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
             "Treasury price input not AlchemyTreasuryPriceRequestDto");
         var input = priceInput as AlchemyTreasuryPriceRequestDto;
         await AssertSignatureAsync(input);
-        
+
         return MappingFromAchSymbol(input!.Crypto);
     }
 
@@ -136,7 +134,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
             "Treasury order input not AlchemyTreasuryOrderRequestDto");
         var input = orderInput as AlchemyTreasuryOrderRequestDto;
         await AssertSignatureAsync(input);
-        
+
         var standardNetwork = MappingFromAlchemyNetwork(input!.Network);
         AssertHelper.NotEmpty(standardNetwork, "Input network not support {}", input.Network);
         AssertHelper.IsTrue(_rampOptions.CurrentValue.CryptoList.Any(crypto =>
@@ -146,7 +144,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         var orderRequest = _objectMapper.Map<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>(input);
         orderRequest.ThirdPartName = ThirdPartName().ToString();
         orderRequest.Network = standardNetwork;
-        orderRequest.ThirdPartName = input.Network;
+        orderRequest.ThirdPartNetwork = input.Network;
         return orderRequest;
     }
 

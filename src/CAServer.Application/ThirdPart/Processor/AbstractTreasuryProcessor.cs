@@ -13,13 +13,13 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Processors;
 using CAServer.Tokens;
-using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
@@ -38,6 +38,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     private readonly ITreasuryOrderProvider _treasuryOrderProvider;
     private readonly IContractProvider _contractProvider;
     private readonly ITokenProvider _tokenProvider;
+
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .WithAElfTypesConverters()
@@ -137,39 +138,6 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             var address = Address.FromBase58(orderInput.Address);
             AssertHelper.NotNull(address, "Invalid address");
 
-            // Query and verify ramp order
-            var rampOrderPager = await _thirdPartOrderProvider.GetThirdPartOrdersByPageAsync(
-                new GetThirdPartOrderConditionDto(0, 1)
-                {
-                    ThirdPartName = orderInput.ThirdPartName,
-                    ThirdPartOrderNoIn = new List<string> { orderInput.ThirdPartOrderId }
-                });
-            AssertHelper.NotNull(rampOrderPager, "Ramp order query result empty");
-
-            var rampOrder = rampOrderPager.Items.FirstOrDefault();
-            AssertHelper.NotNull(rampOrder, "Ramp order not exists");
-            AssertHelper.IsTrue(rampOrder!.Crypto == orderInput.Crypto, "Crypto symbol not match");
-            AssertHelper.IsTrue(rampOrder.CryptoAmount.SafeToDecimal() == orderInput.CryptoAmount.SafeToDecimal(),
-                "Crypto amount not match");
-            AssertHelper.IsTrue(rampOrder.Address == orderInput.Address, "Address not match");
-            AssertHelper.IsTrue(rampOrder.TransDirect == TransferDirectionType.TokenBuy.ToString(),
-                "Invalid ramp order transDirect");
-
-            // Query order grain, verify exists
-            var orderId = GuidHelper.UniqId(orderInput.ThirdPartName, orderInput.ThirdPartOrderId);
-            var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderId);
-
-            var orderResp = await treasuryOrderGrain.GetAsync();
-            AssertHelper.NotNull(orderResp, "Get order grain failed");
-            var orderDto = orderResp.Data;
-            AssertHelper.NotNull(orderDto, "Get order grain data failed");
-            // AssertHelper.IsTrue(orderDto.ThirdPartOrderId.IsNullOrEmpty(), "Treasury order exists, {}-{}-{}",
-            //     orderInput.ThirdPartOrderId, orderInput.ThirdPartName, orderId);
-
-            // Crypto token price 
-            var token = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, orderInput.Crypto);
-            AssertHelper.NotNull(token, "Token {} not found", orderInput.Crypto);
-
             var exchange = await _tokenAppService.GetAvgLatestExchangeAsync(orderInput.Crypto, CommonConstant.USDT);
             var inputExchange = orderInput.CryptoPrice.SafeToDecimal();
             var deltaPercent = (inputExchange - exchange.Exchange) / inputExchange;
@@ -177,17 +145,25 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
                 "Invalid crypto price,from={} to={} input={}, latest={}", orderInput.Crypto, CommonConstant.USDT,
                 inputExchange, exchange.Exchange);
 
-            _objectMapper.Map(thirdPartOrderInput, orderDto);
-            orderDto.Id = orderId;
-            orderDto.Status = OrderStatusType.Created.ToString();
-            orderDto.CryptoDecimals = token!.Decimals;
-            orderDto.FeeInfo = new List<FeeItem> { await NetworkFeeInElf(CommonConstant.MainChainId) };
-            orderDto.RampOrderId = rampOrder.Id;
-            orderDto.TransferDirection = TransferDirectionType.TokenBuy.ToString();
-            orderDto.ToAddress = orderInput.Address;
-            orderDto.ThirdPartName = orderInput.ThirdPartName;
+            var feeInfo = new List<FeeItem> { await NetworkFeeInElf(CommonConstant.MainChainId) };
 
-            await _treasuryOrderProvider.DoSaveOrder(orderDto);
+            var pendingOrderGrainDto = new PendingTreasuryOrderDto
+            {
+                TreasuryOrderRequest = orderInput,
+                TokenExchange = exchange,
+                FeeInfo = feeInfo,
+                ExpireTime = DateTime.UtcNow.ToUtcMilliSeconds() +
+                             _thirdPartOptions.CurrentValue.Timer.PendingTreasuryOrderExpireSeconds * 1000,
+                ThirdPartName = orderInput.ThirdPartName,
+                ThirdPartOrderId = orderInput.ThirdPartOrderId,
+                Status = OrderStatusType.Pending.ToString()
+            };
+
+            // It is likely that the ramp order has not received the webhook yet.
+            _logger.LogInformation(
+                "Pending treasury saved, ramp order not webhook yet, thirdPartName={Name}, thirdPartId={ThirdPartId}, id={Id}",
+                pendingOrderGrainDto.ThirdPartName, pendingOrderGrainDto.ThirdPartOrderId, pendingOrderGrainDto.Id);
+            await _treasuryOrderProvider.AddOrUpdatePendingTreasuryOrder(pendingOrderGrainDto);
         }
         catch (UserFriendlyException e)
         {
@@ -198,6 +174,73 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
         {
             _logger.LogError(e, "AbstractTreasuryProcessor handle notify order error!");
             throw new UserFriendlyException("Internal error, please try again later");
+        }
+    }
+
+
+    /// <summary>
+    ///     Processing previously pending Treasury orders,
+    ///     by which time Ramp Order should have received the webhook
+    /// </summary>
+    /// <param name="rampOrder"></param>
+    /// <param name="pendingTreasuryOrder"></param>
+    public async Task HandlePendingTreasuryOrder(OrderDto rampOrder, PendingTreasuryOrderDto pendingTreasuryOrder)
+    {
+        _logger.LogInformation(
+            "Handle pending treasury order, rampOrderId={RampOrder}, thirdPartName={ThirdPartName}, thirdPartId={ThirdPartId}",
+            rampOrder.Id, pendingTreasuryOrder.ThirdPartName, pendingTreasuryOrder.ThirdPartOrderId);
+
+        var orderInput = pendingTreasuryOrder.TreasuryOrderRequest;
+        AssertHelper.IsTrue(
+            rampOrder!.Status.NotNullOrEmpty() && rampOrder.Status != OrderStatusType.Initialized.ToString(),
+            "Ramp order still in state {}", rampOrder.Status);
+        AssertHelper.IsTrue(rampOrder!.Crypto == orderInput.Crypto, "Crypto symbol not match");
+        AssertHelper.IsTrue(rampOrder.CryptoQuantity.SafeToDecimal() == orderInput.CryptoAmount.SafeToDecimal(),
+            "Crypto amount not match");
+        AssertHelper.IsTrue(rampOrder.Address == orderInput.Address, "Address not match");
+        AssertHelper.IsTrue(rampOrder.TransDirect == TransferDirectionType.TokenBuy.ToString(),
+            "Invalid ramp order transDirect");
+
+        // Query order grain, verify exists
+        var orderId = GuidHelper.UniqId(orderInput.ThirdPartName, orderInput.ThirdPartOrderId);
+        var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderId);
+        var orderResp = await treasuryOrderGrain.GetAsync();
+        AssertHelper.NotNull(orderResp, "Get order grain failed");
+
+        var orderDto = orderResp.Data;
+        AssertHelper.NotNull(orderDto, "Get order grain data failed");
+        AssertHelper.IsTrue(orderDto.ThirdPartOrderId.IsNullOrEmpty(), "Treasury order exists, {}-{}-{}",
+            orderInput.ThirdPartOrderId, orderInput.ThirdPartName, orderId);
+
+        // Crypto token price 
+        var token = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, orderInput.Crypto);
+        AssertHelper.NotNull(token, "Token {} not found", orderInput.Crypto);
+
+        _objectMapper.Map(orderInput, orderDto);
+        orderDto.Id = orderId;
+        orderDto.Status = OrderStatusType.Created.ToString();
+        orderDto.CryptoDecimals = token!.Decimals;
+        orderDto.FeeInfo = pendingTreasuryOrder.FeeInfo;
+        orderDto.RampOrderId = rampOrder.Id;
+        orderDto.TransferDirection = TransferDirectionType.TokenBuy.ToString();
+        orderDto.ToAddress = orderInput.Address;
+        orderDto.ThirdPartName = orderInput.ThirdPartName;
+        orderDto.Fiat = rampOrder.Fiat;
+        orderDto.FiatAmount = rampOrder.FiatAmount.SafeToDecimal();
+
+        await _treasuryOrderProvider.DoSaveOrder(orderDto);
+
+        var pendingOrderGrain = _clusterClient.GetGrain<IPendingTreasuryOrderGrain>(
+            IPendingTreasuryOrderGrain.GenerateId(pendingTreasuryOrder.ThirdPartName,
+                pendingTreasuryOrder.ThirdPartOrderId));
+        var pendingOrderGrainDto = await pendingOrderGrain.GetAsync();
+        if (pendingOrderGrainDto != null)
+        {
+            _logger.LogInformation(
+                "Pending treasury exists, will update to finish, thirdPartName={Name}, thirdPartId={ThirdPartId}, id={Id}",
+                pendingOrderGrainDto.ThirdPartName, pendingOrderGrainDto.ThirdPartOrderId, pendingOrderGrainDto.Id);
+            pendingOrderGrainDto.Status = OrderStatusType.Finish.ToString();
+            await _treasuryOrderProvider.AddOrUpdatePendingTreasuryOrder(pendingOrderGrainDto);
         }
     }
 
@@ -222,7 +265,9 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
 
             var transactionResult =
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId, order.TransactionId);
-
+            _logger.LogDebug("RefreshTransferMultiConfirmAsync, orderId={OrderId}, tx={Tx}, txHeight={TxHeight}",
+                orderId, transactionResult.TransactionId, transactionResult.BlockNumber);
+            
             // update order status
             var newStatus = transactionResult.Status == TransactionState.Mined
                 ? transactionResult.BlockNumber <= confirmedHeight || chainHeight >=
@@ -245,9 +290,16 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             await _treasuryOrderProvider.DoSaveOrder(order, extraInfo);
             return new CommonResponseDto<Empty>();
         }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(
+                "RefreshTransferMultiConfirmAsync error, orderId={OrderId}, chainHeight={Height}, lib={Lib}", orderId,
+                chainHeight, confirmedHeight);
+            return new CommonResponseDto<Empty>().Error(e);
+        }
         catch (Exception e)
         {
-            _logger.LogError(
+            _logger.LogError(e,
                 "RefreshTransferMultiConfirmAsync error, orderId={OrderId}, chainHeight={Height}, lib={Lib}", orderId,
                 chainHeight, confirmedHeight);
             return new CommonResponseDto<Empty>().Error(e);

@@ -145,5 +145,6 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>().ReverseMap();
         CreateMap<TreasuryOrderState, TreasuryOrderDto>().ReverseMap();
+        CreateMap<PendingTreasuryOrderState, PendingTreasuryOrderDto>().ReverseMap();
     }
 }

@@ -220,7 +220,7 @@ public class AlchemyProvider
 
     public async Task<AlchemyBaseResponseDto<Empty>> CallBackTreasuryOrder(AlchemyTreasuryCallBackDto input)
     {
-        return await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<Empty>>(AlchemyOptions().TreasuryBaseUrl,
+        return await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<Empty>>(AlchemyOptions().BaseUrl,
             AlchemyApi.CallBackTreasury,
             header: GetTreasuryAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),

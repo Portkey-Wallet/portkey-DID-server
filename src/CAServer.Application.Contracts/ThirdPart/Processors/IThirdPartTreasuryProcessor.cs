@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CAServer.Commons;
+using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Google.Protobuf.WellKnownTypes;
 
@@ -10,10 +11,14 @@ public interface IThirdPartTreasuryProcessor
 {
     ThirdPartNameType ThirdPartName();
 
-    Task<TreasuryBaseResult> GetPriceAsync<TPriceInput>(TPriceInput priceInput)
-        where TPriceInput : TreasuryBaseContext;
+    Task<TreasuryBaseResult> GetPriceAsync<TPriceInput>(TPriceInput priceInput) where TPriceInput : TreasuryBaseContext;
 
     Task NotifyOrderAsync<TOrderInput>(TOrderInput orderInput) where TOrderInput : TreasuryBaseContext;
+    
+    Task HandlePendingTreasuryOrder(OrderDto rampOrder, PendingTreasuryOrderDto pendingTreasuryOrder);
+    
     Task<CommonResponseDto<Empty>> RefreshTransferMultiConfirmAsync(Guid orderId, long blockHeight, long confirmedHeight);
+    
     Task<CommonResponseDto<Empty>> CallBackAsync(Guid orderId);
+    
 }

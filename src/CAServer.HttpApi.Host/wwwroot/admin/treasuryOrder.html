@@ -208,6 +208,7 @@
                 fee += feeItem.symbol
                 fee += "<br/>"
             }
+            let txTime = order.transactionTime ?? "";
             $tbody.append(`<tr>
                 <td>${order.id}</td>
                 <td>${order.rampOrderId}</td>
@@ -220,7 +221,7 @@
                 <td>${fee}</td>
                 <td>${order.status}</td>
                 <td>${order.transactionId ?? ""}</td>
-                <td>${order.txTime ?? ""}</td>
+                <td>${order.transactionTime ? DateFormat.formatUtc(new Date(parseInt(order.transactionTime, 10))) + " UTC" : ""}</td>
                 <td>${DateFormat.formatUtc(new Date(parseInt(order.createTime, 10)))} UTC</td>
                 <td>${DateFormat.formatUtc(new Date(parseInt(order.lastModifyTime, 10)))} UTC</td>
                 <td>

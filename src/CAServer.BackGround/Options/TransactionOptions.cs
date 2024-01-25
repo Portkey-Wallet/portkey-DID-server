@@ -15,4 +15,5 @@ public class TransactionOptions
     public string NftOrdersSettlementPeriod { get; set; } = "0 0 0/1 * * ?";
     public string HandleUnCompletedTreasuryTransferPeriod { get; set; } = "0/15 * * * * ?";
     public string HandleUnCompletedTreasuryCallbackPeriod { get; set; } = "0 0/1 * * * ?";
+    public string HandlePendingTreasuryOrderPeriod { get; set; } = "0/15 * * * * ?";
 }

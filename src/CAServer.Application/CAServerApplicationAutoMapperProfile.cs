@@ -582,5 +582,6 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ReverseMap();
         
         CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
+        CreateMap<PendingTreasuryOrderIndex, PendingTreasuryOrderDto>().ReverseMap();
     }
 }

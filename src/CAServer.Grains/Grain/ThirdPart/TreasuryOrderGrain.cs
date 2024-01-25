@@ -33,7 +33,7 @@ public class TreasuryOrderGrain : Grain<TreasuryOrderState>, ITreasuryOrderGrain
         var createTime = State.CreateTime;
         _logger.LogDebug("TreasuryOrderGrain SaveOrUpdateAsync {Id}-{Version}, {Json}", orderDto.Id, orderDto.Version,
             JsonConvert.SerializeObject(orderDto));
-        if (orderDto.Version != State.Version)
+        if (orderDto.Version < State.Version)
         {
             _logger.LogDebug(
                 "TreasuryOrderGrain SaveOrUpdateAsync version err, current:{OrderId}-{Version}-{Status}, input:{InOrderId}-{InVersion}-{InStatus}",

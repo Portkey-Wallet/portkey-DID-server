@@ -53,6 +53,12 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
     {
         try
         {
+            if (eventData.OrderId == Guid.Empty)
+            {
+                _logger.LogWarning("TransactionHandler receive empty eto: orderId:{OrderId}, rawTransaction:{RawTransaction}, publicKey:{PublicKey}",
+                    eventData.OrderId, eventData.RawTransaction, eventData.PublicKey);
+                return;
+            } 
             var transaction =
                 Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(eventData.RawTransaction));
             var order = await _thirdPartOrderProvider.GetThirdPartOrderIndexAsync(eventData.OrderId.ToString());

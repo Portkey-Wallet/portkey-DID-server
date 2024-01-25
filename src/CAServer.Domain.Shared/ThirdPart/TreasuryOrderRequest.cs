@@ -8,6 +8,7 @@ public class TreasuryOrderRequest
     /// <see cref="TransferDirectionType"/>
     public string TransferDirection { get; set; } = TransferDirectionType.TokenBuy.ToString();
     public string Network { get; set; }
+    public string ThirdPartNetwork { get; set; }
     public string Address { get; set; }
     public string Crypto { get; set; }
     public string CryptoAmount { get; set; }

@@ -22,6 +22,7 @@ public class TreasuryOrderDto
     public string Status { get; set; }
     
     public string Crypto { get; set; }
+    public string ThirdPartCrypto { get; set; }
     public decimal CryptoPriceInUsdt { get; set; }
     public decimal CryptoAmount { get; set; }
     public int CryptoDecimals { get; set; }

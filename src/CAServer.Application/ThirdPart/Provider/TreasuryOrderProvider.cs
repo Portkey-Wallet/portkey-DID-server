@@ -26,10 +26,11 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
     private readonly INESTRepository<TreasuryOrderIndex, Guid> _treasuryOrderRepository;
+    private readonly INESTRepository<PendingTreasuryOrderIndex, Guid> _pendingTreasuryOrderRepository;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
     public TreasuryOrderProvider(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        INESTRepository<TreasuryOrderIndex, Guid> treasuryOrderRepository, IObjectMapper objectMapper, IOrderStatusProvider orderStatusProvider, ILogger<TreasuryOrderProvider> logger)
+        INESTRepository<TreasuryOrderIndex, Guid> treasuryOrderRepository, IObjectMapper objectMapper, IOrderStatusProvider orderStatusProvider, ILogger<TreasuryOrderProvider> logger, INESTRepository<PendingTreasuryOrderIndex, Guid> pendingTreasuryOrderRepository)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -37,6 +38,7 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
         _objectMapper = objectMapper;
         _orderStatusProvider = orderStatusProvider;
         _logger = logger;
+        _pendingTreasuryOrderRepository = pendingTreasuryOrderRepository;
     }
 
 
@@ -67,6 +69,16 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
         });
         
         return orderDto;
+    }
+    
+    public async Task<PendingTreasuryOrderDto> AddOrUpdatePendingTreasuryOrder(PendingTreasuryOrderDto pendingTreasuryOrderDto)
+    {
+        var pendingOrderGrain = _clusterClient.GetGrain<IPendingTreasuryOrderGrain>(
+            IPendingTreasuryOrderGrain.GenerateId(pendingTreasuryOrderDto.ThirdPartName,
+                pendingTreasuryOrderDto.ThirdPartOrderId));
+        var result = await pendingOrderGrain.AddOrUpdateAsync(pendingTreasuryOrderDto);
+        await _distributedEventBus.PublishAsync(new PendingTreasuryOrderEto(result));
+        return result;
     }
 
     public async Task<PagedResultDto<TreasuryOrderDto>> QueryOrderAsync(TreasuryOrderCondition condition)
@@ -115,5 +127,36 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
 
         var pagerList = _objectMapper.Map<List<TreasuryOrderIndex>, List<TreasuryOrderDto>>(userOrders);
         return new PagedResultDto<TreasuryOrderDto>(totalCount, pagerList);
+    }
+
+    public async Task<PagedResultDto<PendingTreasuryOrderDto>> QueryPendingTreasuryOrder(PendingTreasuryOrderCondition condition)
+    {
+        
+        var mustQuery = new List<Func<QueryContainerDescriptor<PendingTreasuryOrderIndex>, QueryContainer>>();
+        
+        if (!condition.StatusIn.IsNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.Status).Terms(condition.StatusIn)));
+        if (!condition.ThirdPartNameIn.IsNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ThirdPartName).Terms(condition.ThirdPartNameIn))); 
+        if (!condition.ThirdPartOrderId.IsNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.ThirdPartOrderId).Terms(condition.ThirdPartOrderId)));
+        if (condition.LastModifyTimeLt != null)
+            mustQuery.Add(q => q.Range(i => i.Field(f => f.LastModifyTime).LessThan(condition.LastModifyTimeLt)));
+        if (condition.LastModifyTimeGtEq != null)
+            mustQuery.Add(q => q.Range(i => i.Field(f => f.LastModifyTime).GreaterThanOrEquals(condition.LastModifyTimeGtEq)));
+        if (condition.ExpireTimeLt != null)
+            mustQuery.Add(q => q.Range(i => i.Field(f => f.ExpireTime).LessThan(condition.ExpireTimeLt)));
+        if (condition.ExpireTimeGtEq != null)
+            mustQuery.Add(q => q.Range(i => i.Field(f => f.ExpireTime).GreaterThanOrEquals(condition.ExpireTimeGtEq)));
+        
+        QueryContainer Filter(QueryContainerDescriptor<PendingTreasuryOrderIndex> f) => f.Bool(b => b.Must(mustQuery));
+        IPromise<IList<ISort>> Sort(SortDescriptor<PendingTreasuryOrderIndex> s) => s.Descending(a => a.LastModifyTime);
+        
+        var (totalCount, userOrders) =
+            await _pendingTreasuryOrderRepository.GetSortListAsync(Filter, sortFunc: Sort, limit: condition.MaxResultCount,
+                skip: condition.SkipCount);
+
+        var pagerList = _objectMapper.Map<List<PendingTreasuryOrderIndex>, List<PendingTreasuryOrderDto>>(userOrders);
+        return new PagedResultDto<PendingTreasuryOrderDto>(totalCount, pagerList);
     }
 }

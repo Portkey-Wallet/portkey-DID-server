@@ -21,8 +21,8 @@ public class TreasuryOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     
     /// <see cref="OrderStatusType"/>
     [Keyword] public string Status { get; set; }
-    
     [Keyword] public string Crypto { get; set; }
+    [Keyword] public string ThirdPartCrypto { get; set; }
     public decimal CryptoPriceInUsdt { get; set; }
     public decimal CryptoAmount { get; set; }
     public int CryptoDecimals { get; set; }

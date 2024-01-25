@@ -54,6 +54,10 @@ public class InitJobsService : BackgroundService
             _recurringJobs.AddOrUpdate<TreasuryCallbackWorker>("TreasuryCallbackWorker",
                 x => x.HandleAsync(), _transactionOptions.HandleUnCompletedTreasuryCallbackPeriod);
             
+            // fix pending treasury order
+            _recurringJobs.AddOrUpdate<PendingTreasuryOrderWorker>("PendingTreasuryOrderWorker",
+                x => x.HandleAsync(), _transactionOptions.HandlePendingTreasuryOrderPeriod);
+            
         }
         catch (Exception e)
         {
