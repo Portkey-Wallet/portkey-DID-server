@@ -11,7 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Guide")]
 [Route("api/app/user/guide")]
-//[Authorize]
+[Authorize]
 public class UserGuideController : CAServerController
 {
     private readonly IUserGuideAppService _userGuideAppService;
