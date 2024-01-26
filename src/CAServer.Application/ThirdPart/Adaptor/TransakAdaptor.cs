@@ -103,7 +103,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     {
         try
         {
-            var cryptoList = await GetTransakCryptoListWithCacheAsync(request.Type, MappingToTransakNetwork(request.Network));
+            var cryptoList =
+                await GetTransakCryptoListWithCacheAsync(request.Type, MappingToTransakNetwork(request.Network), null, request.Fiat);
             AssertHelper.NotEmpty(cryptoList, "Crypto list empty");
 
             var transakNetwork = MappingToTransakNetwork(request.Network);
@@ -140,7 +141,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
     // cached crypto list
     private async Task<List<TransakCryptoItem>> GetTransakCryptoListWithCacheAsync(string type,
-        [CanBeNull] string network = null, [CanBeNull] string crypto = null)
+        [CanBeNull] string network = null, [CanBeNull] string crypto = null, [CanBeNull] string fiat = null)
     {
         var cachedCryptoList = await _cryptoCache.GetOrAddAsync(CryptoCacheKey,
             async () => await _transakProvider.GetCryptoCurrenciesAsync(),
@@ -150,11 +151,15 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
                     DateTimeOffset.Now.AddMinutes(_thirdPartOptions.CurrentValue.Transak.CryptoListExpirationMinutes)
             });
 
+        var fallBackNotSupportedList = new List<TransakCryptoFiatNotSupported>();
         return cachedCryptoList
             .Where(item => item.IsAllowed)
             .Where(item => item.IsPayInAllowed || type == OrderTransDirect.BUY.ToString())
-            .Where(item => crypto == null || item.Symbol == crypto)
-            .Where(item => network == null || item.Network?.Name == network)
+            .Where(item => crypto.IsNullOrEmpty() || item.Symbol == crypto)
+            .Where(item => network.IsNullOrEmpty() || item.Network?.Name == network)
+            .Where(item =>
+                fiat.IsNullOrEmpty() ||
+                (item.Network?.FiatCurrenciesNotSupported ?? fallBackNotSupportedList).All(c => c.FiatCurrency != fiat))
             .GroupBy(item => string.Join(CommonConstant.Underline, item.Symbol,
                 item.Network?.Name ?? CommonConstant.EmptyString))
             .Select(g => g.First())
