@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Client.MultiToken;
+using AElf.Types;
 using CAServer.Account;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
@@ -42,7 +45,7 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
         _appleCacheOptions = MockAppleCacheOptions().Value;
     }
-    
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
@@ -56,6 +59,14 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
     [Fact]
     public async Task RecoverRequestAsync_Test()
     {
+        var byteArray0 = ByteArrayHelper.HexStringToByteArray(
+            "0a220a2056142bb7a2f8e2a3be3e1721d007abf00854c3e6a00a57b3b9330719216c95f912220a20bc0bb02c3ea8911d27249b12d517bb239954692435314f5db37826c4db2c121418bdffec0e2204541a40de2a0d476574486f6c646572496e666f32240a220a2044013a37c18ddad0be325854c39509df676215f12012f881a9453e9eca0db5b082f10441dbf51523dbc04f6e6a8865a2e7e00da9f6f589011e57f1fb2d07d9510652ba1f52cf244d2c618678521fbe843b4d0e185f01f02006a606291bb84ed8a08e7b0d00");
+        var transaction0 = Transaction.Parser.ParseFrom(byteArray0);
+// var paramByte = ByteString.FromBase64("CiQ5YTFmNzVlNy03ZTk1LTRhMWQtOGM2NS03MzVkMDM2MjE5ZmISBFVTRFQYZCABKLTGpp3EMTABOAFCggEwNGNkZWIwM2Q5YzAzODNmMmQ1OWIwNDE2NDI4NmMwNzg0ZjY4ZjcwNGY3NjY5MjViOGI5YTVkNWMwNjhlYjEzMTUxZTU4N2JmNjM3YmM2MTA1ZjczM2NmYjc1ODE3Njk5YmY2YjkyNTgxYTk3ZGVmNTZkNjk2ZDgwYjI4NzY3ZDY1SoIBMTJlOWI4MWQ2YmU2OGJiMTcxMjZmNjZkOWE0NjNiNDdhMTZhNzI2ZDg0ZDZlMmVhM2VlNWRmN2U3ODI1OWY3YzdlNTQzNDNlZjljNWMzODJhZjdkNjJiODVkZDM4MDg1YjExN2IwNGMzZmEwNzIxZjhkMjk5MGUzYjVjN2I4OTgwMFIiCiBIXoZx6w5ryrklAssDsn864LEhBhQ4xZftfIruwo8Nag==");
+         //var forwardCallInput = ManagerApproveInput.Parser.ParseFrom(transaction0.Params);
+      var createInput = TransferInput.Parser.ParseFrom(transaction0.Params);
+
+
         try
         {
             var identifier = DefaultEmailAddress;
@@ -196,12 +207,12 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
             });
         return mockOptionsSnapshot.Object;
     }
-    
+
     [Fact]
     public async Task Revoke_Check_Test()
     {
         var userId = Guid.NewGuid();
-        var resultDto =  await _caAccountAppService.RevokeCheckAsync(userId);
+        var resultDto = await _caAccountAppService.RevokeCheckAsync(userId);
         resultDto.ValidatedAssets.ShouldBeFalse();
         resultDto.ValidatedDevice.ShouldBeTrue();
         resultDto.ValidatedGuardian.ShouldBeFalse();
@@ -222,14 +233,14 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
 
         return provider.Object;
     }
-    
+
     [Fact]
     public async Task Revoke_Entrance_Test()
     {
         var resultDto = await _caAccountAppService.RevokeEntranceAsync();
         resultDto.EntranceDisplay.ShouldBeTrue();
     }
-    
+
     [Fact]
     public async Task Revoke_Valid_Fail_Test()
     {
@@ -244,7 +255,5 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
         {
             e.Message.ShouldBe(ResponseMessage.ValidFail);
         }
-        
-        
     }
 }

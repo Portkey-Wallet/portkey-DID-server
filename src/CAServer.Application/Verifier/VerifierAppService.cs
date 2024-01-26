@@ -34,6 +34,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using static System.String;
 
 namespace CAServer.Verifier;
 
@@ -350,17 +351,66 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
     {
         var facebookUser = await GetFacebookUserDtoAsync(requestDto.AccessToken);
-        var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.UserId);
-        return null;
+        var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
+        var response =
+            await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
+                userSaltAndHash.Item2);
+        if (!response.Success)
+        {
+            throw new UserFriendlyException($"Validate VerifierGoogle Failed :{response.Message}");
+        }
+
+        if (!userSaltAndHash.Item3)
+        {
+            await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
+        }
+
+        // await AddUserInfoAsync(
+        // ObjectMapper.Map<GoogleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.GoogleUserExtraInfo));
+
+        return new VerificationCodeResponse
+        {
+            VerificationDoc = response.Data.VerificationDoc,
+            Signature = response.Data.Signature
+        };
     }
 
-    private async Task<FacebookUserDtoInfo> GetFacebookUserDtoAsync(string accessToken)
+    private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(string accessToken)
     {
-        var url = "https://graph.facebook.com/debug_token?access_token={App-token}&input_token={User-token}";
-        var requestUrl = string.Format(url, "App-token", accessToken);
+        var requestUrl = Format(
+            "https://graph.facebook.com/debug_token?access_token={appToken}&input_token={userToken}", "app-token",
+            accessToken);
+        var result = await FacebookRequestAsync(requestUrl);
+        var verifyUserInfo = JsonConvert.DeserializeObject<VerifyFacebookUserInfoDto>(result);
+
+        if (verifyUserInfo == null)
+        {
+            throw new Exception("Get userInfo from Facebook fail.");
+        }
+
+        if (!verifyUserInfo.IsValid)
+        {
+            throw new Exception("Verify user from Facebook fail.");
+        }
+
+        if (verifyUserInfo.ExpiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+        {
+            throw new Exception("Token expired.");
+        }
+
+        var getUserInfoUrl =
+            Format("https://graph.facebook.com/{userId}?fields=id,name,email,picture&access_token={accessToken}",
+                verifyUserInfo.UserId, accessToken);
+        var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
+        var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
+        return facebookUserInfo;
+    }
+
+
+    private async Task<string> FacebookRequestAsync(string url)
+    {
         var client = _httpClientFactory.CreateClient();
-        _logger.LogInformation("{message}", $"GetUserInfo from google {requestUrl}");
-        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUrl));
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url));
 
         var result = await response.Content.ReadAsStringAsync();
 
@@ -370,20 +420,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             throw new Exception("Invalid token");
         }
 
-        if (!response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
         {
-            _logger.LogError("{Message}", response.ToString());
-            throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
+            return result;
         }
-
-        _logger.LogInformation("GetUserInfo from Facebook: {userInfo}", result);
-        var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserDtoInfo>(result);
-        if (facebookUserInfo == null)
-        {
-            throw new Exception("Get userInfo from Facebook fail.");
-        }
-
-        return facebookUserInfo;
+        _logger.LogError("{Message}", response.ToString());
+        throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
     }
 
 
