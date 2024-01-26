@@ -19,6 +19,7 @@ using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -333,6 +334,17 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new RevokeResultDto()
         {
             Success = revokeResult
+        };
+    }
+
+    public async Task<AuthorizeDelegateResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeRequestDto input)
+    {
+        Logger.LogInformation("Authorize Delegate : param is {input}",JsonConvert.SerializeObject(input));
+        var assignProjectDelegateeDto = ObjectMapper.Map<AssignProjectDelegateeRequestDto, AssignProjectDelegateeDto>(input);
+        var transactionResult = await _contractProvider.AuthorizeDelegateAsync(assignProjectDelegateeDto);
+        return new AuthorizeDelegateResultDto
+        {
+            Success = string.IsNullOrWhiteSpace(transactionResult.Error)
         };
     }
 

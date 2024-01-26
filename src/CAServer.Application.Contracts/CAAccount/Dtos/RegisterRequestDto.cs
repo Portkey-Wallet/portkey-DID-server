@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using AElf.Types;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.Commons;
@@ -20,6 +21,8 @@ public class RegisterRequestDto : IValidatableObject
     [Required] public string VerificationDoc { get; set; }
     [Required] public string Signature { get; set; }
     [Required] public HubRequestContextDto Context { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
+    public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
@@ -48,4 +51,17 @@ public class RegisterRequestDto : IValidatableObject
         //     );
         // }
     }
+}
+
+public class ProjectDelegateInfo
+{
+    public int ChainId { get; set; }
+    public string ProjectHash { get; set; }
+    public string IdentifierHash { get; set; }
+    public int ExpirationTime { get; set; }
+    public Dictionary<string,long> Delegations { get; set; }
+    public bool IsUnlimitedDelegate { get; set; }
+    public string Signature { get; set; }
+    public long TimeStamp { get; set; }
+    
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Contacts.Provider;
@@ -14,8 +15,8 @@ using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Orleans;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -38,9 +39,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
     private readonly VariablesOptions _variablesOptions;
     private readonly HostInfoOptions _hostInfoOptions;
     private readonly IImRequestProvider _imRequestProvider;
+    private readonly IContractProvider _contractProvider;
     private readonly ChainOptions _chainOptions;
 
-    public ContactAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
+    public ContactAppService(IDistributedEventBus distributedEventBus,
+        IClusterClient clusterClient,
         IHttpContextAccessor httpContextAccessor,
         IContactProvider contactProvider,
         IOptionsSnapshot<ImServerOptions> imServerOptions,
@@ -48,7 +51,8 @@ public class ContactAppService : CAServerAppService, IContactAppService
         IOptions<VariablesOptions> variablesOptions,
         IOptionsSnapshot<HostInfoOptions> hostInfoOptions,
         IImRequestProvider imRequestProvider,
-        IOptionsSnapshot<ChainOptions> chainOptions)
+        IOptionsSnapshot<ChainOptions> chainOptions,
+        IContractProvider contractProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -59,6 +63,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _hostInfoOptions = hostInfoOptions.Value;
         _httpClientService = httpClientService;
         _imRequestProvider = imRequestProvider;
+        _contractProvider = contractProvider;
         _chainOptions = chainOptions.Value;
     }
 
@@ -142,7 +147,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var result =
             await contactGrain.UpdateContactAsync(userId,
                 ObjectMapper.Map<ContactDto, ContactGrainDto>(contactDto));
-
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
@@ -696,20 +700,34 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
         if (contact.ImInfo != null && contact.Addresses.Count < _chainOptions.ChainInfos.Keys.Count)
         {
-            var address = contact.Addresses.First();
             var chainIds = contact.Addresses.Select(t => t.ChainId);
-            var needAddChainIds = _chainOptions.ChainInfos.Keys.Except(chainIds).ToList();
-            
-            foreach (var chainId in needAddChainIds)
+
+            foreach (var chainInfo in _chainOptions.ChainInfos.Where(t => !chainIds.Contains(t.Key)))
             {
+                var result = await GetAddressAsync(chainInfo.Key, contact.CaHolderInfo.CaHash);
+                if (result == null) continue;
+
                 contact.Addresses.Add(new ContactAddressDto()
                 {
-                    Address = address.Address,
-                    ChainId = chainId
+                    Address = result.CaAddress.ToBase58(),
+                    ChainId = chainInfo.Key
                 });
             }
         }
+    }
 
-        contact.Addresses = contact.Addresses.OrderBy(t => t.ChainId).ToList();
+    private async Task<GetHolderInfoOutput> GetAddressAsync(string chainId, string caHash)
+    {
+        try
+        {
+            return await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null, chainId);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "get holder error, caHash:{caHash}, chainId:{chainId}", caHash,
+                chainId);
+
+            return null;
+        }
     }
 }

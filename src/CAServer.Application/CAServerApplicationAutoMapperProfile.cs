@@ -21,15 +21,18 @@ using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
+using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
+using CAServer.Growth.Etos;
 using CAServer.Guardian;
 using CAServer.Hubs;
 using CAServer.ImTransfer.Dtos;
@@ -44,6 +47,8 @@ using CAServer.Options;
 using CAServer.PrivacyPolicy.Dtos;
 using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
+using CAServer.RedDot.Dtos;
+using CAServer.RedDot.Etos;
 using CAServer.Search.Dtos;
 using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
@@ -72,6 +77,7 @@ using ContactAddress = CAServer.Grains.Grain.Contacts.ContactAddress;
 using GuardianInfo = CAServer.Account.GuardianInfo;
 using GuardianType = CAServer.Account.GuardianType;
 using ImInfo = CAServer.Contacts.ImInfo;
+using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
 
@@ -305,6 +311,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderGrainDto, OrderEto>();
         CreateMap<RampOrderIndex, OrderDto>();
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
+            .ForMember(t => t.FiatAmount, m => m.MapFrom(f => f.Amount))
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
             .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo));
@@ -441,7 +448,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.WalletName, m => m.MapFrom(f => f.Nickname));
         CreateMap<HolderInfoWithAvatar, Contacts.CaHolderInfo>().ReverseMap();
         CreateMap<CAHolderIndex, HolderInfoResultDto>();
-        
+
         CreateMap<CreateNftOrderRequestDto, OrderGrainDto>()
             .Ignore(des => des.MerchantName)
             .ForMember(des => des.Address, opt => opt.MapFrom(src => src.UserAddress))
@@ -477,7 +484,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<OrderDto, NftOrderQueryResponseDto>()
             .ForMember(des => des.PaymentSymbol, opt => opt.MapFrom(src => src.Crypto))
             .ForMember(des => des.PaymentAmount, opt => opt.MapFrom(src => src.CryptoAmount));
-CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
+        CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
         CreateMap<Portkey.Contracts.CA.Guardian, GuardianIndexerInfoDto>()
             .ForMember(t => t.IdentifierHash, m => m.MapFrom(f => f.IdentifierHash.ToHex()))
             .ForMember(t => t.VerifierId, m => m.MapFrom(f => f.VerifierId.ToHex()));
@@ -497,7 +504,7 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             m => m.MapFrom(f => Enum.Parse(typeof(TransferTransactionStatus), f.TransactionStatus)));
         CreateMap<TransferIndex, TransferEto>().ReverseMap();
 
-        
+
         CreateMap<ThirdPartProvider, RampCoverageDto>().ReverseMap();
         CreateMap<CryptoItem, RampCurrencyItem>().ReverseMap();
         CreateMap<AlchemyOrderQuoteDataDto, RampPriceDto>()
@@ -566,8 +573,11 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
             .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
-            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
+            .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
 
+        CreateMap<RedDotGrainDto, RedDotEto>();
+        CreateMap<GrowthGrainDto, CreateGrowthEto>();
+        CreateMap<RedDotInfo, RedDotInfoDto>();
 
         CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
         CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
@@ -576,8 +586,8 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
         CreateMap<GuideInfo, UserGuideInfo>().ForMember(t => t.GuideType,m => m.MapFrom(f =>(GuideType)f.GuideType));
         CreateMap<UserGuideInfo, UserGuideInfoGrainDto>();
         CreateMap<UserGuideInfoGrainDto, UserGuideInfo>();
-        
-        
 
+        CreateMap<UserExtraInfoResultDto, Verifier.Dtos.UserExtraInfo>()
+            .ForMember(t => t.IsPrivateEmail, m => m.MapFrom(f => f.IsPrivate));
     }
 }
