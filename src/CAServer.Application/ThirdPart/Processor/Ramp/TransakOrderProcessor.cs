@@ -4,13 +4,16 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using CAServer.ThirdPart.Transak;
+using CAServer.Tokens;
 using MassTransit;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
+using ChainOptions = CAServer.Options.ChainOptions;
 
 namespace CAServer.ThirdPart.Processor.Ramp;
 
@@ -20,8 +23,9 @@ public class TransakOrderProcessor : AbstractRampOrderProcessor
 
     public TransakOrderProcessor(IClusterClient clusterClient, IThirdPartOrderProvider thirdPartOrderProvider,
         IDistributedEventBus distributedEventBus, IOrderStatusProvider orderStatusProvider,
-        TransakProvider transakProvider, IAbpDistributedLock distributedLock, IBus broadcastBus) : base(clusterClient,
-        thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus)
+        TransakProvider transakProvider, IAbpDistributedLock distributedLock, IBus broadcastBus,
+        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions) : base(clusterClient,
+        thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus, tokenAppService, chainOptions)
     {
         _transakProvider = transakProvider;
     }

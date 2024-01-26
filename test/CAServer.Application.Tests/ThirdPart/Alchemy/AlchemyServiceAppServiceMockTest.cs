@@ -1,5 +1,5 @@
 using CAServer.Options;
-using CAServer.ThirdPart.Dtos;
+using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.Options;
 using Moq;
 using Volo.Abp.Caching;

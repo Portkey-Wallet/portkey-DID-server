@@ -24,6 +24,7 @@ using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Transak;
 using CAServer.Tokens.Provider;
 using CAServer.Telegram.Options;
+using CAServer.ThirdPart.Processor.Treasury;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -101,6 +102,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
         
         context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
+        context.Services.AddSingleton<IThirdPartTreasuryProcessor, AlchemyTreasuryProcessor>();
+        
         context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
         context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
         

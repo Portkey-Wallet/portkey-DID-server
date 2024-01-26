@@ -36,6 +36,14 @@ public static class ExtensionKey
     public const string TxResult = "txResult";
     public const string Transaction = "transaction";
     public const string TxBlockHeight = "txBlockHeight";
-    
+
+    public const string CallBackStatus = "callBackStatus";
+    public const string CallBackResult = "callBackResult";
+
+    public const string Reason = "Reason";
+    public const string AdminUserId = "AdminUserId";
+    public const string AdminUserName = "AdminUserName";
+    public const string Version = "Version";
+
 
 }

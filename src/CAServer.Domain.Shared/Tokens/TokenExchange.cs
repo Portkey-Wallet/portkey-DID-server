@@ -1,4 +1,4 @@
-namespace CAServer.Tokens.Dtos;
+namespace CAServer.Tokens;
 
 public class TokenExchange
 {

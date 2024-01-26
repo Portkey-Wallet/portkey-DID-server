@@ -97,10 +97,17 @@ public partial class ThirdPartOrderAppService
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    public Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(RampCryptoRequest request)
+    public async Task<CommonResponseDto<RampCryptoDto>> GetRampCryptoListAsync(RampCryptoRequest request)
     {
         try
         {
+            var cryptoListTasks = GetThirdPartAdaptors(request.Type).Values
+                .Select(adaptor => adaptor.GetCryptoListAsync(request)).ToList();
+            var cryptoLists = (await Task.WhenAll(cryptoListTasks))
+                .Select(list => list.ToDictionary(crypto => string.Join(CommonConstant.Underline, crypto.Symbol, crypto.Network)))
+                .ToList();
+            AssertHelper.NotEmpty(cryptoLists, "Empty crypto list");
+
             // get support crypto from options
             var defaultCurrencyOption = _rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption();
             var cryptoDto = new RampCryptoDto
@@ -110,21 +117,23 @@ public partial class ThirdPartOrderAppService
             var cryptoList = _rampOptions?.CurrentValue?.CryptoList;
             for (var i = 0; cryptoList != null && i < cryptoList.Count; i++)
             {
+                var cryptoKey = string.Join(CommonConstant.Underline, cryptoList[i].Symbol, cryptoList[i].Network);
+                if (!cryptoLists.Any(list => list.ContainsKey(cryptoKey)))
+                    continue;
                 cryptoDto.CryptoList.Add(_objectMapper.Map<CryptoItem, RampCurrencyItem>(cryptoList[i]));
             }
 
-            return Task.FromResult(new CommonResponseDto<RampCryptoDto>(cryptoDto));
+            return new CommonResponseDto<RampCryptoDto>(cryptoDto);
         }
         catch (UserFriendlyException e)
         {
             Logger.LogWarning(e, "GetRampCryptoListAsync failed, type={Type}, fiat={Fiat}", request.Type, request.Fiat);
-            return Task.FromResult(new CommonResponseDto<RampCryptoDto>().Error(e));
+            return new CommonResponseDto<RampCryptoDto>().Error(e);
         }
         catch (Exception e)
         {
             Logger.LogError(e, "GetRampCryptoListAsync ERROR, type={Type}, fiat={Fiat}", request.Type, request.Fiat);
-            return Task.FromResult(
-                new CommonResponseDto<RampCryptoDto>().Error(e, "Internal error, please try again later"));
+            return new CommonResponseDto<RampCryptoDto>().Error(e, "Internal error, please try again later");
         }
     }
 
@@ -211,7 +220,7 @@ public partial class ThirdPartOrderAppService
             var limitList = (await Task.WhenAll(limitTasks)).Where(limit => limit != null).ToList();
             AssertHelper.NotEmpty(limitList, "Empty limit list");
             _logger.LogDebug("Ramp limit: {Limit}", JsonConvert.SerializeObject(limitList));
-            
+
             rampLimit.Crypto = request.IsBuy()
                 ? null
                 : new CurrencyLimit

@@ -11,9 +11,11 @@ using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.DistributedLocking;
@@ -33,9 +35,10 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         IDistributedEventBus distributedEventBus,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider,
-        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus,
-        ISecretProvider secretProvider) : base(
-        clusterClient, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus)
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus, ISecretProvider secretProvider,
+        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions) : base(
+        clusterClient, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus,
+        tokenAppService, chainOptions)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartOptions = thirdPartOptions;
@@ -47,6 +50,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
     {
         if (orderDto is not AlchemyOrderUpdateDto dto)
             throw new UserFriendlyException("not Alchemy-order");
+        Logger.LogInformation("Alchemy order: {Order}", JsonConvert.SerializeObject(dto));
         return dto;
     }
 

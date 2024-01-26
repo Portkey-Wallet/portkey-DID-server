@@ -71,5 +71,6 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<CreateGrowthEto, GrowthIndex>();
         CreateMap<RedDot.Dtos.RedDotInfo, Entities.Es.RedDotInfo>().ReverseMap();
         CreateMap<RedDotEto, RedDotIndex>();
+        CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
     }
 }

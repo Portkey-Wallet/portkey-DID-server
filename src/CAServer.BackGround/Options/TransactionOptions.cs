@@ -13,4 +13,7 @@ public class TransactionOptions
     public long ResendTimeInterval { get; set; }
     public string LockKeyPrefix { get; set; } = "CAServer.BGD:NFT_Order_worker:";
     public string NftOrdersSettlementPeriod { get; set; } = "0 0 0/1 * * ?";
+    public string HandleUnCompletedTreasuryTransferPeriod { get; set; } = "0/15 * * * * ?";
+    public string HandleUnCompletedTreasuryCallbackPeriod { get; set; } = "0 0/1 * * * ?";
+    public string HandlePendingTreasuryOrderPeriod { get; set; } = "0/15 * * * * ?";
 }

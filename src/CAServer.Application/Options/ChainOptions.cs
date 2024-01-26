@@ -11,8 +11,8 @@ public class ChainInfo
 {
     public string ChainId { get; set; }
     public string BaseUrl { get; set; }
+    public decimal TransactionFee { get; set; } = 0.0041M;
     public string ContractAddress { get; set; }
-    public string PrivateKey { get; set; }
     public string TokenContractAddress { get; set; }
     public string RedPackageContractAddress { get; set; }
 }

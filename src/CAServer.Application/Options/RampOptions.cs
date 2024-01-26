@@ -1,4 +1,8 @@
+using System;
 using System.Collections.Generic;
+using CAServer.Common;
+using CAServer.Commons;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos.Ramp;
 using Newtonsoft.Json;
 
@@ -6,13 +10,17 @@ namespace CAServer.Options;
 
 public class RampOptions
 {
-
-    public Dictionary<string, ThirdPartProvider> Providers { get; set; } = new ();
+    public Dictionary<string, ThirdPartProvider> Providers { get; set; } = new();
     public List<string> PortkeyIdWhiteList { get; set; }
     public DefaultCurrencyOption DefaultCurrency { get; set; }
     public List<CryptoItem> CryptoList { get; set; }
-    
     public Dictionary<string, CoverageExpression> CoverageExpressions { get; set; }
+
+    public ThirdPartProvider Provider(ThirdPartNameType thirdPart)
+    {
+        return Providers.TryGetValue(thirdPart.ToString(), out var provider) ? provider : null;
+    }
+
 }
 
 public class CoverageExpression
@@ -30,7 +38,10 @@ public class ThirdPartProvider
     public string WebhookUrl { get; set; }
     public string CountryIconUrl { get; set; }
     public List<string> PaymentTags { get; set; } = new();
+    // standard-Network => thirdPart-Network
     public Dictionary<string, string> NetworkMapping { get; set; } = new();
+    // standard-Symbol => thirdPart-Symbol
+    public Dictionary<string, string> SymbolMapping { get; set; } = new();
     public ProviderCoverage Coverage { get; set; }
 }
 

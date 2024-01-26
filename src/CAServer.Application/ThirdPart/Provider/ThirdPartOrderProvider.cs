@@ -120,6 +120,9 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         var mustQuery = new List<Func<QueryContainerDescriptor<RampOrderIndex>, QueryContainer>>();
         if (condition.UserId != Guid.Empty)
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.UserId).Terms(condition.UserId)));
+        
+        if (condition.TransactionId.NotNullOrEmpty())
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.TransactionId).Terms(condition.TransactionId)));
 
         if (!condition.OrderIdIn.IsNullOrEmpty())
             mustQuery.Add(q => q.Terms(i => i.Field(f => f.Id).Terms(condition.OrderIdIn)));
@@ -136,6 +139,15 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         if (!condition.LastModifyTimeGt.IsNullOrEmpty())
             mustQuery.Add(q =>
                 q.TermRange(i => i.Field(f => f.LastModifyTime).GreaterThan(condition.LastModifyTimeGt)));
+        
+        if (condition.ThirdPartName.NotNullOrEmpty())
+            mustQuery.Add(q =>
+                q.Terms(i => i.Field(f => f.MerchantName).Terms(condition.ThirdPartName)));
+        
+        if (!condition.ThirdPartOrderNoIn.IsNullOrEmpty())
+            mustQuery.Add(q =>
+                q.Terms(i => i.Field(f => f.ThirdPartOrderNo).Terms(condition.ThirdPartOrderNoIn)));
+
 
         QueryContainer Filter(QueryContainerDescriptor<RampOrderIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
@@ -151,8 +163,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             userOrders.Select(i => _objectMapper.Map<RampOrderIndex, OrderDto>(i)).ToList());
         if (pager.Items.IsNullOrEmpty()) return pager;
 
-        var orderIdIn = pager.Items.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id)
-            .ToList();
+        var orderIdIn = pager.Items.Select(order => order.Id).ToList();
         if (withSections.Contains(OrderSectionEnum.NftSection))
         {
             var nftOrderPager = await QueryNftOrderPagerAsync(new NftOrderQueryConditionDto(0, pager.Items.Count)
@@ -272,6 +283,11 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         var (totalCount, nftOrders) = await _nftOrderRepository.GetSortListAsync(Filter, sortFunc: Sort,
             limit: condition.MaxResultCount, skip: condition.SkipCount);
         return new PagedResultDto<NftOrderIndex>(totalCount, nftOrders);
+    }
+
+    public Task UpdateOrder(OrderDto orderDto)
+    {
+        throw new NotImplementedException();
     }
 
     private void MergeNftOrderSection(PagedResultDto<OrderDto> orderPager, PagedResultDto<NftOrderIndex> nftOrderPager)

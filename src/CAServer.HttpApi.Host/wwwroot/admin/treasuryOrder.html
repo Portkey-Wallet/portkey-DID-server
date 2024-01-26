@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramp Order Page</title>
+    <link rel="icon" href="https://portkey.finance/favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/search_table.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+<header>
+    <nav>
+        <ul id="menu">
+            <li><a href="./index.html">Home</a></li>
+        </ul>
+    </nav>
+    <div id="user-info">
+        <span></span>
+        <button id="logout-button" class="primary">Sign out</button>
+    </div>
+</header>
+
+<main>
+    <h3>Treasury order</h3><br/>
+    <div class="search-form">
+        <div class="input-group">
+            <label for="search-Id">Id</label>
+            <input type="text" id="search-Id" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-RampOrderIdIn">RampOrderId</label>
+            <input type="text" id="search-RampOrderIdIn" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-OrderIdIn">OrderId</label>
+            <input type="text" id="search-OrderIdIn" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-ToAddress">ToAddress</label>
+            <input type="text" id="search-ToAddress" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-ThirdPartIdIn">ThirdPartId</label>
+            <input type="text" id="search-ThirdPartIdIn" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-TransactionId">TransactionId</label>
+            <input type="text" id="search-TransactionId" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-LastModifyTimeGtEq">LastModifyTime</label>
+            <input type="text" id="search-LastModifyTimeGtEq" class="faltpickr" placeholder=""/>
+            <label for="search-LastModifyTimeLt">-</label>
+            <input type="text" id="search-LastModifyTimeLt" class="faltpickr" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-CreateTimeGtEq">CreateTime</label>
+            <input type="text" id="search-CreateTimeGtEq" class="faltpickr" placeholder=""/>
+            <label for="search-CreateTimeLt">-</label>
+            <input type="text" id="search-CreateTimeLt" class="faltpickr" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-ThirdPartName">ThirdPart</label>
+            <select id="search-ThirdPartName">
+                <option value="">All</option>
+                <option value="Alchemy">Alchemy</option>
+                <option value="Transak">Transak</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-Crypto">Crypto</label>
+            <select id="search-Crypto">
+                <option value="">All</option>
+                <option value="ELF">ELF</option>
+                <option value="USDT">USDT</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-CallBackStatusIn">CallBackStatusIn</label>
+            <select id="search-CallBackStatusIn">
+                <option value="">All</option>
+                <option value="ELF">Success</option>
+                <option value="USDT">Failed</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-TransferDirection">Type</label>
+            <select id="search-TransferDirection">
+                <option value="">All</option>
+                <option value="TokenBuy">TokenBuy</option>
+                <option value="TokenSell">TokenSell</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-StatusIn">Status</label>
+            <select id="search-StatusIn">
+                <option value="">All</option>
+                <option value="Initialized">Initialized</option>
+                <option value="Created">Created</option>
+                <option value="Expired">Expired</option>
+                <option value="Finish">Finish</option>
+                <option value="Failed">Failed</option>
+                <option value="Pending">Pending</option>
+                <option value="Refunded">Refunded</option>
+                <option value="StartTransfer">StartTransfer</option>
+                <option value="Transferring">Transferring</option>
+                <option value="Transferred">Transferred</option>
+                <option value="TransferFailed">TransferFailed</option>
+                <option value="UserCompletesCoinDeposit">UserCompletesCoinDeposit</option>
+                <option value="StartPayment">StartPayment</option>
+                <option value="SuccessfulPayment">SuccessfulPayment</option>
+                <option value="PaymentFailed">PaymentFailed</option>
+                <option value="RefundSuccessfully">RefundSuccessfully</option>
+            </select>
+        </div>
+
+        <button id="search-button">Search</button>
+    </div>
+
+    <table id="orders-table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>RampOrderId</th>
+            <th>Type</th>
+            <th>ThirdPart</th>
+            <th>ThirdPartOrderId</th>
+            <th>ToAddress</th>
+            <th>Crypto</th>
+            <th>Fiat</th>
+            <th>Fee</th>
+            <th>Status</th>
+            <th>TransactionId</th>
+            <th>TxTime</th>
+            <th>CreateTime</th>
+            <th>LastModifyTime</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Order rows will be added here -->
+        </tbody>
+    </table>
+
+    <div class="pagination" id="pagination-container"></div>
+
+</main>
+
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dateFormat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+
+    let currentPage = 1;
+    let pageSize = 20;
+    let items = {};
+    $(document).ready(function () {
+        App.loadUser();
+        $("#user-info span").html(App.User().userName)
+        $("input.faltpickr").flatpickr({
+            enableTime: true,
+            allowInput: true,
+            time_24hr: true,
+            defaultHour: 0,
+            dateFormat: "Y-m-d H:i",
+            onChange: function(selectedDates, dateStr, instance) {
+                let utcTimestamp = selectedDates[0].getTime() - (selectedDates[0].getTimezoneOffset() * 60000);
+                $(instance.input).data('utcTimestamp', utcTimestamp);
+            },
+            onOpen: (selectedDates, dateStr, instance) => $(instance.input).data('utcTimestamp', null)
+        });
+        fetchOrders();
+        $("#logout-button").on("click", App.logout);
+    });
+
+    function fetchOrders(page = 1) {
+        let requestData = {
+            LastModifyTimeGtEq: $("#search-LastModifyTimeGtEq").data('utcTimestamp'),
+            LastModifyTimeLt: $("#search-LastModifyTimeLt").data('utcTimestamp'),
+            CreateTimeGtEq: $("#search-CreateTimeGtEq").data('utcTimestamp'),
+            CreateTimeLt: $("#search-CreateTimeLt").data('utcTimestamp'),
+            TransferDirection: $("#search-TransferDirection").val(),
+            ThirdPartName: $("#search-ThirdPartName").val(),
+            ThirdPartIdIn: $("#search-ThirdPartIdIn").val(),
+            StatusIn: $("#search-StatusIn").val(),
+            ToAddress: $("#search-ToAddress").val(),
+            Crypto: $("#search-Crypto").val(),
+            skipCount: (page - 1) * pageSize,
+            maxResultCount: pageSize
+        };
+        if ($("#search-RampOrderIdIn").val()) {
+            requestData["RampOrderIdIn"] = $("#search-RampOrderIdIn").val();
+        }
+        if ($("#search-Id").val()) {
+            requestData["IdIn"] = $("#search-Id").val();
+        }
+        $.ajax({
+            url: App.Uri.treasuryOrders,
+            method: 'GET',
+            contentType: "application/json",
+            data: requestData,
+            success: function (response) {
+                if (!response || !response.success) {
+                    return App.showToast(response.message)
+                }
+                updateTable(response.data.items);
+                currentPage = page;
+                let totalPage = Math.ceil(response.data.totalCount / pageSize);
+                generatePagination(totalPage, currentPage);
+            }
+        });
+    }
+
+    function updateTable(orders) {
+        var $tbody = $("#orders-table tbody");
+        $tbody.empty();
+        orders.forEach(function (order) {
+            items[order.id] = order;
+            let statusFlowBtn = order.orderStatusSection
+                ? `<button onclick="showStatusFlow('${order.id}')">Status Flow</button>`
+                : "";
+            let fee = "";
+            for (let feeItem of order.feeInfo) {
+                fee += feeItem.amount
+                fee += feeItem.symbol
+                fee += "<br/>"
+            }
+            let txTime = order.transactionTime ?? "";
+            $tbody.append(`<tr>
+                <td>${shortenText(order.id)}</td>
+                <td>${shortenText(order.rampOrderId)}</td>
+                <td>${order.transferDirection}</td>
+                <td>${order.thirdPartName}</td>
+                <td>${order.thirdPartOrderId}</td>
+                <td>${shortenText(order.toAddress)}</td>
+                <td>${order.cryptoAmount} ${order.crypto}</td>
+                <td>${order.fiatAmount} ${order.fiat ?? ""}</td>
+                <td>${fee}</td>
+                <td>${order.status}</td>
+                <td>${shortenText(order.transactionId ?? "")}</td>
+                <td>${order.transactionTime ? DateFormat.formatUtc(new Date(parseInt(order.transactionTime, 10))) : ""}</td>
+                <td>${DateFormat.formatUtc(new Date(parseInt(order.createTime, 10)))}</td>
+                <td>${DateFormat.formatUtc(new Date(parseInt(order.lastModifyTime, 10)))}</td>
+                <td>
+                    <button onclick="showDetail('${order.id}')">Detail</button>
+                    <button onclick="showStatusFlow('${order.id}')" class="primary">Status Flow</button>
+                </td>
+            </tr>`);
+        });
+    }
+
+    function generatePagination(totalPages, currentPage) {
+        let $paginationContainer = $("#pagination-container");
+        $paginationContainer.empty();
+
+        let startPage = Math.max(1, currentPage - 10);
+        let endPage = Math.min(totalPages, currentPage + 10);
+        if (currentPage > 1) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage - 1})">Prev</button>&nbsp;`);
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${i})" ${i === currentPage ? 'class="active" disabled' : ''}>${i}</button>&nbsp;`);
+        }
+        if (currentPage < totalPages) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage + 1})">Next</button>&nbsp;`);
+        }
+    }
+
+    function showDetail(orderId) {
+        window.open("treasuryOrderDetail.html?orderId=" + orderId, "_blank")
+    }
+
+    function shortenText(text, startLength = 6, endLength = 6) {
+        if (text.length <= startLength + endLength) return text;
+        let shorten = text.substring(0, startLength) + "..." + text.substring(text.length - endLength);
+        return `<span onclick="App.showToast('${text}')" ondblclick="App.copyText('${text}')" style="cursor:pointer">${shorten}</span>`;
+    }
+
+    function showStatusFlow(orderId) {
+        for (let s of items[orderId].orderStatusSection.orderStatusList) {
+            if (!s.lastModifyTime) continue;
+            s["lastModifyTimeStr"] = new Date(s.lastModifyTime).toUTCString()
+        }
+        let content = JSON.stringify(items[orderId].orderStatusSection, null, 4);
+        localStorage.setItem("tmp", content);
+        window.open("jsonViewer.html?title=" + orderId, "_blank");
+    }
+
+    $("#search-button").click(function () {
+        fetchOrders(1);
+    });
+
+    $("#prev-page").click(function () {
+        if (currentPage > 1) fetchOrders(currentPage - 1);
+    });
+    $("#next-page").click(function () {
+        fetchOrders(currentPage + 1);
+    });
+
+</script>
+</body>
+</html>

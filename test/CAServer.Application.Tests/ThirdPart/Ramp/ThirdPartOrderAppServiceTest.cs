@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Client.MultiToken;
 using AElf.Types;
+using CAServer.Commons;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,7 +44,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     [Fact]
     public async Task GoogleCode()
     {
-        var code = _thirdPartOrderAppService.GenerateGoogleAuthCode("authKey", "testUser", "testTitle");
+        var code = GoogleTfaHelper.GenerateGoogleAuthCode("authKey", "testUser", "testTitle");
         code.ShouldNotBeNull();
     }
 
