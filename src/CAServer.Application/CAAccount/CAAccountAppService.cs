@@ -356,6 +356,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             throw new UserFriendlyException("CAHolder is not exist.");
         }
         var guardianDto = guardiansDto.CaHolderInfo.FirstOrDefault();
+        _logger.LogInformation("Current manager count: {count}，Limit count is {Limitcount}", guardianDto?.ManagerInfos.Count,_managerCountLimitOptions.Limit);
         var checkManagerCount = guardianDto?.ManagerInfos.Count >= _managerCountLimitOptions.Limit;
         return new CheckManagerCountResultDto
         {
