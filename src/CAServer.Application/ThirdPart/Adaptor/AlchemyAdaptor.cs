@@ -10,6 +10,7 @@ using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Serilog;
 using Volo.Abp;
 
@@ -106,10 +107,27 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
         }
     }
 
+    private List<AlchemyFiatDto> MatchFiatDto(List<AlchemyFiatDto> fiatList, string fiatCurrency, string country)
+    {
+        return fiatList
+            .Where(fiat => fiatCurrency.IsNullOrEmpty() || fiat.Currency == fiatCurrency)
+            .Where(fiat => country.IsNullOrEmpty() || fiat.Country == country)
+            .ToList();
+    }
+
     public async Task<List<RampCurrencyItem>> GetCryptoListAsync(RampCryptoRequest request)
     {
         try
         {
+            if (request.Fiat.NotNullOrEmpty())
+            {
+                var alchemyFiatList = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(
+                    new GetAlchemyFiatListDto { Type = request.Type });
+                AssertHelper.IsTrue(alchemyFiatList.Success, "GetFiatListAsync error {Msg}", alchemyFiatList.Message);
+                var matchFiatList = MatchFiatDto(alchemyFiatList.Data, request.Fiat, request.Country);
+                AssertHelper.NotEmpty(matchFiatList, "Fiat not support {}-{}", request.Fiat, request.Country);
+            }
+
             var alchemyCryptoList = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(
                 new GetAlchemyCryptoListDto { Fiat = request.Fiat });
             AssertHelper.IsTrue(alchemyCryptoList.Success, "Crypto list query failed.");
