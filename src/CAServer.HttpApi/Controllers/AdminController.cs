@@ -95,7 +95,10 @@ public class AdminController : CAServerController
     [HttpPost("ramp/order")]
     public async Task<CommonResponseDto<Empty>> UpdateOrder(MfaRequest<OrderDto> updateOrderRequest)
     {
-        //TODO await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
+        if (!_authServerOptions.CurrentValue.DebugMod)
+        {
+            await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
+        }
         return await _thirdPartOrderAppService.UpdateRampOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 
@@ -120,7 +123,10 @@ public class AdminController : CAServerController
     [HttpPost("treasury/order")]
     public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(MfaRequest<TreasuryOrderDto> updateOrderRequest)
     {
-        //TODO await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
+        if (!_authServerOptions.CurrentValue.DebugMod)
+        {
+            await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
+        }
         return await _thirdPartOrderAppService.UpdateTreasuryOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 }
