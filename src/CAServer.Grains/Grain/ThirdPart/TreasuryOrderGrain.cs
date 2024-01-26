@@ -31,11 +31,9 @@ public class TreasuryOrderGrain : Grain<TreasuryOrderState>, ITreasuryOrderGrain
     public async Task<GrainResultDto<TreasuryOrderDto>> SaveOrUpdateAsync(TreasuryOrderDto orderDto)
     {
         var createTime = State.CreateTime;
-        _logger.LogDebug("TreasuryOrderGrain SaveOrUpdateAsync {Id}-{Version}, {Json}", orderDto.Id, orderDto.Version,
-            JsonConvert.SerializeObject(orderDto));
         if (orderDto.Version < State.Version)
         {
-            _logger.LogDebug(
+            _logger.LogWarning(
                 "TreasuryOrderGrain SaveOrUpdateAsync version err, current:{OrderId}-{Version}-{Status}, input:{InOrderId}-{InVersion}-{InStatus}",
                 State.Id, State.Version, State.Status, orderDto.Id, orderDto.Version, orderDto.Status);
             return new GrainResultDto<TreasuryOrderDto>().Error("Data expired, current version is " + State.Version);
