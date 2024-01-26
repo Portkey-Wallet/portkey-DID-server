@@ -34,14 +34,14 @@ public class TwitterAuthController : CAServerController
     public async Task<IActionResult> ReceiveAsync([FromQuery] TwitterAuthDto twitterAuthDto)
     {
         _logger.LogInformation("receive twitter callback for test, method is GET");
-        // if (_options.IsTest)
-        // {
-        //     var data = new SortedDictionary<string, object>();
-        //     data.Add("request.body", HttpContext.Request.QueryString.Value);
-        //     _logger.LogInformation("receive twitter callback for test, data:{data}", JsonConvert.SerializeObject(data));
-        //
-        //     return Ok();
-        // }
+        if (_options.IsTest)
+        {
+            var data = new SortedDictionary<string, object>();
+            data.Add("request.body", HttpContext.Request.QueryString.Value);
+            _logger.LogInformation("receive twitter callback for test, data:{data}", JsonConvert.SerializeObject(data));
+        
+            return Ok();
+        }
 
         if (!twitterAuthDto.AccessToken.IsNullOrEmpty())
         {
