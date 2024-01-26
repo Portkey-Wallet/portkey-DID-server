@@ -1,6 +1,8 @@
 let DateFormat = (function() {
 
-    function dateFormat(date, fmt = 'yyyy-MM-dd HH:mm:ss', useUTC = false) {
+    let defaultFmt = 'yyyy-MM-dd HH:mm:ss';
+    let defaultUtcFmt = 'yyyy-MM-ddTHH:mm:ssZ'
+    function dateFormat(date, fmt = defaultFmt, useUTC = false) {
         let ret;
         const opt = useUTC ? {
             "y+": date.getUTCFullYear().toString(),
@@ -29,6 +31,6 @@ let DateFormat = (function() {
 
     return {
         format : dateFormat,
-        formatUtc : (date, fmt) => dateFormat(date, fmt, true)
+        formatUtc : (date, fmt = defaultUtcFmt) => dateFormat(date, fmt, true)
     };
 })();

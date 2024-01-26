@@ -163,8 +163,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
             userOrders.Select(i => _objectMapper.Map<RampOrderIndex, OrderDto>(i)).ToList());
         if (pager.Items.IsNullOrEmpty()) return pager;
 
-        var orderIdIn = pager.Items.Where(order => NftTransDirect.Contains(order.TransDirect)).Select(order => order.Id)
-            .ToList();
+        var orderIdIn = pager.Items.Select(order => order.Id).ToList();
         if (withSections.Contains(OrderSectionEnum.NftSection))
         {
             var nftOrderPager = await QueryNftOrderPagerAsync(new NftOrderQueryConditionDto(0, pager.Items.Count)

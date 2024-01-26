@@ -139,7 +139,16 @@ let App = (function() {
         });
         clearNoPermissionDom();
     }
-    
+
+    function copyText(fullText) {
+        const tempInput = document.createElement('input');
+        tempInput.value = fullText;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy"); 
+        document.body.removeChild(tempInput);
+        showToast('Copied: ' + fullText);
+    }
     
     let setCookie = function(name, value, seconds) {
         let expires = "";
@@ -211,6 +220,7 @@ let App = (function() {
         showToast: showToast,
         loadUser: loadUser,
         logout: logout,
+        copyText: copyText,
         checkPermission : (permission, url) => checkPermission(permission) || (window.location.href = url ?? "index.html"),
         Config: () => configData,
         User : () => user,

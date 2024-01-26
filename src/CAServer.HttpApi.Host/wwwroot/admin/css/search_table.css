@@ -1,11 +1,16 @@
 .search-form {
     margin-bottom: 20px;
-    line-height: 35px;
+    /*line-height: 35px;*/
 }
 
 .search-form input, .search-form select, .search-form button {
-    padding: 5px;
+    padding: 2px;
     margin-right: 10px;
+    font-size: 0.8rem;
+    line-height: initial;
+}
+.search-form button {
+    padding: 5px
 }
 
 table {
@@ -19,8 +24,13 @@ table, th, td {
 }
 
 th, td {
-    padding: 8px;
-    text-align: left;
+    padding: 1px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+tr:hover{
+    background-color: #eee;
 }
 
 .pagination {
@@ -35,4 +45,15 @@ th, td {
 .pagination button.active {
     background-color: gray;
     color: white;
+}
+
+.search-form {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 10px;
+}
+
+.input-group {
+    display: inline-block;
+    flex-direction: column;
 }

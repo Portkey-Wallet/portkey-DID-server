@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Admin;
 using CAServer.Admin.Dtos;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
@@ -70,7 +73,7 @@ public class AdminController : CAServerController
         await _adminAppService.SetMfa(mfaRequest);
         return new CommonResponseDto<Empty>();
     }
-    
+
     [Authorize(Roles = "admin")]
     [HttpDelete("user/mfa")]
     public async Task<CommonResponseDto<Empty>> DeleteUserMfa(MfaRequest<Guid> mfaRequest)
@@ -103,6 +106,14 @@ public class AdminController : CAServerController
     {
         var pager = await _treasuryOrderProvider.QueryOrderAsync(request);
         return new CommonResponseDto<PagedResultDto<TreasuryOrderDto>>(pager);
+    }
+
+    [Authorize(Roles = "OrderManager,OrderViewer")]
+    [HttpGet("treasury/order/statusflow")]
+    public async Task<CommonResponseDto<OrderStatusInfoIndex>> GetTreasuryOrderStatusFlow(string orderId)
+    {
+        var pager = await _treasuryOrderProvider.QueryOrderStatusInfoPagerAsync(new List<string> { orderId });
+        return new CommonResponseDto<OrderStatusInfoIndex>(pager.Items.FirstOrDefault());
     }
 
     [Authorize(Roles = "OrderManager")]

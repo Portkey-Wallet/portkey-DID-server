@@ -27,10 +27,11 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
     private readonly IObjectMapper _objectMapper;
     private readonly INESTRepository<TreasuryOrderIndex, Guid> _treasuryOrderRepository;
     private readonly INESTRepository<PendingTreasuryOrderIndex, Guid> _pendingTreasuryOrderRepository;
+    private readonly INESTRepository<OrderStatusInfoIndex, string> _orderStatusInfoRepository;
     private readonly IOrderStatusProvider _orderStatusProvider;
 
     public TreasuryOrderProvider(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        INESTRepository<TreasuryOrderIndex, Guid> treasuryOrderRepository, IObjectMapper objectMapper, IOrderStatusProvider orderStatusProvider, ILogger<TreasuryOrderProvider> logger, INESTRepository<PendingTreasuryOrderIndex, Guid> pendingTreasuryOrderRepository)
+        INESTRepository<TreasuryOrderIndex, Guid> treasuryOrderRepository, IObjectMapper objectMapper, IOrderStatusProvider orderStatusProvider, ILogger<TreasuryOrderProvider> logger, INESTRepository<PendingTreasuryOrderIndex, Guid> pendingTreasuryOrderRepository, INESTRepository<OrderStatusInfoIndex, string> orderStatusInfoRepository)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -39,6 +40,7 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
         _orderStatusProvider = orderStatusProvider;
         _logger = logger;
         _pendingTreasuryOrderRepository = pendingTreasuryOrderRepository;
+        _orderStatusInfoRepository = orderStatusInfoRepository;
     }
 
 
@@ -81,6 +83,18 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
         return result;
     }
 
+    public async Task<PagedResultDto<OrderStatusInfoIndex>> QueryOrderStatusInfoPagerAsync(List<string> ids)
+    {
+        if (ids.IsNullOrEmpty()) return new PagedResultDto<OrderStatusInfoIndex>();
+        var mustQuery = new List<Func<QueryContainerDescriptor<OrderStatusInfoIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.OrderId).Terms(ids)));
+
+        QueryContainer Filter(QueryContainerDescriptor<OrderStatusInfoIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, orders) = await _orderStatusInfoRepository.GetSortListAsync(Filter, limit: ids.Count);
+        return new PagedResultDto<OrderStatusInfoIndex>(totalCount, orders);
+    }
+
+    
     public async Task<PagedResultDto<TreasuryOrderDto>> QueryOrderAsync(TreasuryOrderCondition condition)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<TreasuryOrderIndex>, QueryContainer>>();

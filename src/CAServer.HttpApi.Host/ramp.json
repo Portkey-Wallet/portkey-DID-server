@@ -14,11 +14,14 @@
           "https://ramp.alchemypay.org/static/img/3.22abdb74.svg"
         ],
         "Coverage": {
-          "OnRamp": false,
-          "OffRamp": false
+          "OnRamp": true,
+          "OffRamp": true
         },
         "NetworkMapping": {
           "AELF": "ELF"
+        },
+        "SymbolMapping": {
+          "USDT": "USDT-aelf"
         }
       },
       "Transak": {
@@ -38,6 +41,9 @@
         },
         "NetworkMapping": {
           "AELF": "aelf"
+        },
+        "SymbolMapping": {
+          "USDT": "USDT-aelf"
         }
       }
     },
@@ -62,7 +68,7 @@
     "DefaultCurrency": {
       "Crypto": "ELF",
       "CryptoAmount": "400",
-      "Network": "aelf",
+      "Network": "AELF",
       "ChainId": "AELF",
       "Fiat": "USD",
       "FiatAmount": "200"
