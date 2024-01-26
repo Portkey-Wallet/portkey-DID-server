@@ -58,7 +58,7 @@ public class TreasuryTxConfirmWorker : IJobWorker
             var secondsAgo = _thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferSecondsAgo;
             var lastModifyTimeLt = DateTime.UtcNow.AddSeconds(-secondsAgo).ToUtcMilliSeconds();
             var lastModifyTimeGtEq = DateTime.UtcNow
-                .AddHours(-_thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferHoursAgo)
+                .AddMinutes(-_thirdPartOptions.CurrentValue.Timer.HandleUnCompletedSettlementTransferMinuteAgo)
                 .ToUtcMilliSeconds();
             var total = 0;
             var count = 0;

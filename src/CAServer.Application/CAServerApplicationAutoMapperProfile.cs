@@ -573,7 +573,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
-            .ForMember(t => t.ProtoUrl, m => m.MapFrom(f => f.Photo_Url));
+            .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
 
         CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>()
             .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
@@ -593,7 +593,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         
         CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
         CreateMap<PendingTreasuryOrderIndex, PendingTreasuryOrderDto>().ReverseMap();
-            .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
 
         CreateMap<RedDotGrainDto, RedDotEto>();
         CreateMap<GrowthGrainDto, CreateGrowthEto>();

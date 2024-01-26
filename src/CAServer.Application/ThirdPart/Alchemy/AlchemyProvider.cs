@@ -224,7 +224,7 @@ public class AlchemyProvider
     {
         return await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<Empty>>(AlchemyOptions().BaseUrl,
             AlchemyApi.CallBackTreasury,
-            header: GetTreasuryAlchemyRequestHeader(),
+            header: await GetTreasuryAlchemyRequestHeader(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
             withInfoLog: true
         );
@@ -242,9 +242,9 @@ public class AlchemyProvider
     }
 
 
-    private Dictionary<string, string> GetTreasuryAlchemyRequestHeader()
+    private async Task<Dictionary<string, string>> GetTreasuryAlchemyRequestHeader()
     {
-        return GetAlchemyRequestHeader(AlchemyOptions().TreasuryAppId, AlchemyOptions().TreasuryAppSecret);
+        return await GetAlchemyRequestHeaderAsync(AlchemyOptions().TreasuryAppId);
     }
 
 
