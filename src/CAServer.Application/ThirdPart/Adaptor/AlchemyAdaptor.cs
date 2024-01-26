@@ -295,6 +295,7 @@ public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
             var rampPrice = ObjectMapper.Map<AlchemyOrderQuoteDataDto, ProviderRampDetailDto>(orderQuote.Data);
             rampPrice.ThirdPart = ThirdPart();
             rampPrice.ProviderNetwork = orderQuote.Data.Network;
+            rampPrice.ProviderSymbol = MappingToAlchemySymbol(rampDetailRequest.Crypto);
             rampPrice.FeeInfo = new RampFeeInfo
             {
                 RampFee = FeeItem.Fiat(orderQuote.Data.Fiat, orderQuote.Data.RampFee),

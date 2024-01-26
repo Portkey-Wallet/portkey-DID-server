@@ -528,6 +528,7 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
         CreateMap<TransakRampPrice, ProviderRampDetailDto>()
             .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.FiatCryptoExchange()))
             .ForMember(des => des.ProviderNetwork, opt => opt.MapFrom(src => src.Network))
+            .ForMember(des => des.ProviderSymbol, opt => opt.MapFrom(src => src.CryptoCurrency))
             .ReverseMap();
         CreateMap<RampExchangeRequest, RampDetailRequest>().ReverseMap();
         CreateMap<RampLimitRequest, RampDetailRequest>().ReverseMap();

@@ -216,7 +216,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
              * off-ramp: input-amount is CryptoQuantity, which user will pay
              */
             quoteData.CryptoQuantity = input.IsBuy()
-                ? (fiatAmount / cryptoPrice).ToString(CultureInfo.InvariantCulture)
+                ? ((fiatAmount - rampFee - networkFee) / cryptoPrice).ToString(CultureInfo.InvariantCulture)
                 : input.Amount;
             return new CommonResponseDto<AlchemyOrderQuoteDataDto>(quoteData);
         }
