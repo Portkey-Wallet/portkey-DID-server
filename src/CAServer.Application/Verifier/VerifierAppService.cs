@@ -26,7 +26,6 @@ using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -51,8 +50,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
-    private readonly IGuardianProvider _guardianProvider;
-    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -70,9 +67,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider,
-        INESTRepository<GuardianIndex, string> guardianRepository,
-        IGuardianProvider guardianProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -85,8 +80,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
-        _guardianRepository = guardianRepository;
-        _guardianProvider = guardianProvider;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -247,6 +240,55 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+    public async Task<VerificationCodeResponse> VerifyTwitterTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        try
+        {
+            var userId = GetAppleUserId(requestDto.AccessToken);
+            var hashInfo = await GetSaltAndHashAsync(userId);
+            var response =
+                await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
+            if (!response.Success)
+            {
+                throw new UserFriendlyException($"Validate twitter failed :{response.Message}");
+            }
+
+            if (!hashInfo.Item3)
+            {
+                await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
+            }
+
+            await AddUserInfoAsync(
+                ObjectMapper.Map<TwitterUserExtraInfo, Dtos.UserExtraInfo>(response.Data.TwitterUserExtraInfo));
+
+            return new VerificationCodeResponse
+            {
+                VerificationDoc = response.Data.VerificationDoc,
+                Signature = response.Data.Signature
+            };
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e,
+                "VerifyTwitterToken error accessToken:{accessToken}, verifierId:{verifierId}, chainId:{chainId}, targetChainId:{targetChainId}, operationType:{operationType}",
+                requestDto.AccessToken, requestDto.VerifierId, requestDto.ChainId,
+                requestDto.TargetChainId ?? string.Empty, requestDto.OperationType.ToString());
+            
+            if (ThirdPartyMessage.MessageDictionary.ContainsKey(e.Message))
+            {
+                throw new UserFriendlyException(e.Message, ThirdPartyMessage.MessageDictionary[e.Message]);
+            }
+
+            if (e.Message.ToLower().Contains("timeout"))
+            {
+                throw new UserFriendlyException("Request time out",
+                    ThirdPartyMessage.MessageDictionary["Request time out"]);
+            }
+
+            throw new UserFriendlyException(e.Message);
+        }
+    }
+
 
     public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {
@@ -379,7 +421,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         else
         {
             salt = GetSalt().ToHex();
-            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),  
+            identifierHash = GetHash(Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),
                 ByteArrayHelper.HexStringToByteArray(salt)).ToHex();
         }
 
@@ -470,6 +512,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             throw new Exception($"Salt has to be {maxSaltLength} bytes.");
         }
+
         var hash = HashHelper.ComputeFrom(identifier);
         return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }

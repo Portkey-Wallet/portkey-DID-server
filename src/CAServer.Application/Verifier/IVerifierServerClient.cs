@@ -17,4 +17,7 @@ public interface IVerifierServerClient
 
     Task<ResponseResultDto<VerifyTokenDto<TelegramUserExtraInfo>>> VerifyTelegramTokenAsync(VerifyTokenRequestDto input,
         string identifierHash, string salt);
+    
+    Task<ResponseResultDto<VerifyTwitterTokenDto>> VerifyTwitterTokenAsync(VerifyTokenRequestDto input,
+        string identifierHash, string salt);
 }

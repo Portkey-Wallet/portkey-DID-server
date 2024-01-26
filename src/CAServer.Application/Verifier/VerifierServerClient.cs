@@ -135,6 +135,13 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await GetResultAsync<VerifyTokenDto<TelegramUserExtraInfo>>(input, requestUri, identifierHash, salt);
     }
 
+    public async Task<ResponseResultDto<VerifyTwitterTokenDto>> VerifyTwitterTokenAsync(VerifyTokenRequestDto input, string identifierHash, string salt)
+    {
+        // todo: verifier twitter
+        var requestUri = "/api/app/account/verifyAppleToken";
+        return await GetResultAsync<VerifyTwitterTokenDto>(input, requestUri, identifierHash, salt);
+    }
+
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,
         string requestUri, string identifierHash, string salt)
     {

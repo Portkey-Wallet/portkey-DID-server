@@ -22,6 +22,7 @@ using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Transak;
 using CAServer.Tokens.Provider;
 using CAServer.Telegram.Options;
+using CAServer.TwitterAuth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -128,6 +129,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
         Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
+        Configure<TwitterAuthOptions>(configuration.GetSection("TwitterAuth"));
         context.Services.AddHttpClient();
         ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
