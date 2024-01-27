@@ -364,10 +364,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
         }
-
-        // await AddUserInfoAsync(
-        // ObjectMapper.Map<GoogleUserExtraInfo, Dtos.UserExtraInfo>(response.Data.GoogleUserExtraInfo));
-
+        
+        await AddUserInfoAsync(
+        ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
         return new VerificationCodeResponse
         {
             VerificationDoc = response.Data.VerificationDoc,
@@ -377,25 +376,26 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(string accessToken)
     {
+        var app_token = "746492673568696%7C71cf85a8ba36c84b22bc3461e143e16b";
         var requestUrl = Format(
-            "https://graph.facebook.com/debug_token?access_token={appToken}&input_token={userToken}", "app-token",
+            "https://graph.facebook.com/debug_token?access_token={appToken}&input_token={userToken}", app_token,
             accessToken);
         var result = await FacebookRequestAsync(requestUrl);
         var verifyUserInfo = JsonConvert.DeserializeObject<VerifyFacebookUserInfoDto>(result);
 
         if (verifyUserInfo == null)
         {
-            throw new Exception("Get userInfo from Facebook fail.");
+            throw new UserFriendlyException("Get userInfo from Facebook fail.");
         }
 
         if (!verifyUserInfo.IsValid)
         {
-            throw new Exception("Verify user from Facebook fail.");
+            throw new UserFriendlyException("Verify user from Facebook fail.");
         }
 
         if (verifyUserInfo.ExpiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
         {
-            throw new Exception("Token expired.");
+            throw new UserFriendlyException("Token expired.");
         }
 
         var getUserInfoUrl =
@@ -403,6 +403,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 verifyUserInfo.UserId, accessToken);
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
+        facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
         return facebookUserInfo;
     }
 

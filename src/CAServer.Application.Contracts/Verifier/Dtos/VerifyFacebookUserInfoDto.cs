@@ -32,4 +32,6 @@ public class FacebookUserInfoDto
     [JsonProperty("email")] public string Email { get; set; }
 
     [JsonProperty("picture")] public Dictionary<string, string> Picture { get; set; }
+    
+    public string GuardianType { get; set; }
 }
