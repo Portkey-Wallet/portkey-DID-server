@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
-using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
@@ -231,7 +229,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         }
     }
 
-    private async Task RefreshTokenDataAsync(int shouldSkip, int limit = 3)
+    private async Task RefreshTokenDataAsync(int shouldSkip, int limit = 10)
     {
         var userTokens = await GetUserTokens(shouldSkip, limit);
         userTokens = userTokens.Where(t => t.Token?.Symbol != "ELF" && t.SortWeight != 0).ToList();
