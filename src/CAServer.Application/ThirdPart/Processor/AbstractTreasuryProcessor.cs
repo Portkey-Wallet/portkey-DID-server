@@ -221,10 +221,8 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
         orderDto.Status = OrderStatusType.Created.ToString();
         orderDto.CryptoDecimals = token!.Decimals;
         orderDto.FeeInfo = pendingTreasuryOrder.FeeInfo;
+        orderDto.TokenExchanges = new List<TokenExchange> { pendingTreasuryOrder.TokenExchange };
         orderDto.RampOrderId = rampOrder.Id;
-        orderDto.TransferDirection = TransferDirectionType.TokenBuy.ToString();
-        orderDto.ToAddress = orderInput.Address;
-        orderDto.ThirdPartName = orderInput.ThirdPartName;
         orderDto.Fiat = rampOrder.Fiat;
         orderDto.FiatAmount = rampOrder.FiatAmount.SafeToDecimal();
 
@@ -284,7 +282,10 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
                 ? OrderStatusExtensionBuilder.Create()
                     .Add(ExtensionKey.TxResult, JsonConvert.SerializeObject(transactionResult, JsonSerializerSettings))
                     .Build()
-                : null;
+                : OrderStatusExtensionBuilder.Create()
+                    .Add(ExtensionKey.ChainHeight, chainHeight.ToString())
+                    .Add(ExtensionKey.ChainLib, confirmedHeight.ToString())
+                    .Build();
 
             order.Status = newStatus;
             await _treasuryOrderProvider.DoSaveOrder(order, extraInfo);

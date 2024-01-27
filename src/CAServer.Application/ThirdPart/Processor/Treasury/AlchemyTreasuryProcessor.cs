@@ -159,7 +159,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         AssertHelper.IsTrue(headers.TryGetValue("sign", out var sign), "Sign header required");
         AssertHelper.IsTrue(appId == _thirdPartOptions.CurrentValue.Alchemy.AppId, "AppId not match");
 
-        var minTs = DateTime.UtcNow.AddSeconds(-_thirdPartOptions.CurrentValue.Alchemy.TimestampExpireSeconds)
+        var minTs = DateTime.UtcNow.AddSeconds( - _thirdPartOptions.CurrentValue.Alchemy.TimestampExpireSeconds)
             .ToUtcMilliSeconds();
         var maxTs = DateTime.UtcNow.AddSeconds(_thirdPartOptions.CurrentValue.Alchemy.TimestampExpireSeconds)
             .ToUtcMilliSeconds();

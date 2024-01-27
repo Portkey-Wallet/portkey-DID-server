@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CAServer.Tokens;
 
 namespace CAServer.ThirdPart;
 
@@ -29,7 +30,8 @@ public class TreasuryOrderDto
     public string Fiat { get; set; }
     public decimal FiatAmount { get; set; }
     public string SettlementAmount { get; set; }
-    public List<FeeItem> FeeInfo { get; set; }
+    public List<FeeItem> FeeInfo { get; set; } = new();
+    public List<TokenExchange> TokenExchanges { get; set; } = new(); 
     
     public string TransactionId { get; set; }
     public string RawTransaction { get; set; }

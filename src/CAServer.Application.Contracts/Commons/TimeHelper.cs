@@ -42,19 +42,19 @@ public static class TimeHelper
         return dateTime.ToZoneString(8, pattern);
     }
     
-    public static DateTime WithSeconds(this DateTime dateTime, int seconds)
+    public static DateTime WithSeconds(this DateTime dateTime, long seconds)
     {
         return dateTime.AddSeconds(- dateTime.Second).AddSeconds(seconds);
     }
     
-    public static DateTime WithMilliSeconds(this DateTime dateTime, int millisecond)
+    public static DateTime WithMilliSeconds(this DateTime dateTime, long millisecond)
     {
-        return dateTime.AddMilliseconds(- dateTime.Millisecond).AddSeconds(millisecond);
+        return dateTime.AddMilliseconds(- dateTime.Millisecond).AddMilliseconds(millisecond);
     }
     
-    public static DateTime WithMicroSeconds(this DateTime dateTime, int microSecond)
+    public static DateTime WithMicroSeconds(this DateTime dateTime, long microSecond)
     {
-        return dateTime.AddMicroseconds(- dateTime.Microsecond).AddSeconds(microSecond);
+        return dateTime.AddMicroseconds(- dateTime.Microsecond).AddMicroseconds(microSecond);
     }
 
     public static string ToZoneString(this DateTime dateTime, int zoneNo, string pattern = DefaultPattern)

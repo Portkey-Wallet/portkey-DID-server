@@ -5,7 +5,9 @@ using CAServer.Admin.Dtos;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.Admin;
+using CAServer.Options;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp.Caching;
 using Volo.Abp.Users;
@@ -16,11 +18,14 @@ public class AdminAppService : CAServerAppService, IAdminAppService
 {
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedCache<GoogleTfaCode> _googleMfaCache;
+    private readonly IOptionsMonitor<AuthServerOptions> _authServerOptions;
 
-    public AdminAppService(IClusterClient clusterClient, IDistributedCache<GoogleTfaCode> googleMfaCache)
+    public AdminAppService(IClusterClient clusterClient, IDistributedCache<GoogleTfaCode> googleMfaCache,
+        IOptionsMonitor<AuthServerOptions> authServerOptions)
     {
         _clusterClient = clusterClient;
         _googleMfaCache = googleMfaCache;
+        _authServerOptions = authServerOptions;
     }
 
 
@@ -28,7 +33,9 @@ public class AdminAppService : CAServerAppService, IAdminAppService
     {
         var userId = CurrentUser.IsAuthenticated ? CurrentUser.GetId() : Guid.Empty;
         var userName = CurrentUser.IsAuthenticated ? CurrentUser.UserName : "noName";
-        var roles = CurrentUser.IsAuthenticated ? string.Join(CommonConstant.Comma, CurrentUser.Roles) : CommonConstant.EmptyString; 
+        var roles = CurrentUser.IsAuthenticated
+            ? string.Join(CommonConstant.Comma, CurrentUser.Roles)
+            : CommonConstant.EmptyString;
         var userMfaGrain = _clusterClient.GetGrain<IUserMfaGrain>(userId);
 
         return new AdminUserResponse
@@ -80,6 +87,8 @@ public class AdminAppService : CAServerAppService, IAdminAppService
 
     public async Task AssertMfa(string pin)
     {
+        if (_authServerOptions.CurrentValue.DebugMod) return;
+        
         var userId = CurrentUser.IsAuthenticated ? CurrentUser.GetId() : Guid.Empty;
         var userMfaGrain = _clusterClient.GetGrain<IUserMfaGrain>(userId);
         AssertHelper.IsTrue(await userMfaGrain.VerifyGoogleTfaPin(pin), "Invalid TFA code");

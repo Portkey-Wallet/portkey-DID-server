@@ -7,7 +7,9 @@ using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
+using Hangfire.Dashboard.Resources;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver.Linq;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 
@@ -32,7 +34,7 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
 
     private bool Match(TreasuryOrderEto eventData)
     {
-        return eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString() 
+        return eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString()
                && eventData.Data.Status == OrderStatusType.Created.ToString();
     }
 
@@ -41,7 +43,8 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
         if (!Match(eventData)) return;
 
         var orderDto = eventData.Data;
-        _logger.LogDebug("TreasuryCreateHandler start, {OrderId}-{Version}-{Status}", orderDto.Id, orderDto.Version, orderDto.Status);
+        _logger.LogDebug("TreasuryCreateHandler start, {OrderId}-{Version}-{Status}", orderDto.Id, orderDto.Version,
+            orderDto.Status);
         try
         {
             AssertHelper.IsTrue(orderDto.TransactionId.IsNullOrEmpty(), "Transaction id exists");
@@ -51,14 +54,24 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
             AssertHelper.IsTrue(
                 _thirdPartOptions.CurrentValue.TreasuryOptions.SettlementPublicKey.TryGetValue(settlementAddressKey,
                     out var senderPublicKey), "Settlement sender not exists {}", settlementAddressKey);
+            
             var senderAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(senderPublicKey));
             AssertHelper.NotNull(senderAddress, "Invalid settlement sender {}", senderAddress.ToBase58());
 
-            var transferAmount = orderDto.CryptoAmount * (decimal)Math.Pow(10, orderDto.CryptoDecimals);
+            var exchange = orderDto.TokenExchanges
+                .Where(ex => ex.FromSymbol == orderDto.Crypto)
+                .FirstOrDefault(ex => ex.ToSymbol == CommonConstant.USDT);
+            AssertHelper.NotNull(exchange, "Exchange in order not found {}-{}", orderDto.Crypto, CommonConstant.USDT);
+
+            var feeInUsdt = orderDto.FeeInfo
+                .Select(fee => fee.Amount.SafeToDecimal() * fee.SymbolPriceInUsdt.SafeToDecimal()).Sum();
+            var feeInCrypto = feeInUsdt / exchange!.Exchange;
+            var transferAmount = (orderDto.CryptoAmount - feeInCrypto) * (decimal)Math.Pow(10, orderDto.CryptoDecimals);
             var (txId, tx) = await _contractProvider.GenerateTransferTransactionAsync(orderDto.Crypto,
                 transferAmount.ToString(0, DecimalHelper.RoundingOption.Floor), orderDto.ToAddress,
                 CommonConstant.MainChainId, senderPublicKey);
 
+            // fill transaction data
             orderDto.TransactionId = txId;
             orderDto.RawTransaction = tx.ToByteArray().ToHex();
             orderDto.TransactionTime = DateTime.UtcNow.ToUtcMilliSeconds();

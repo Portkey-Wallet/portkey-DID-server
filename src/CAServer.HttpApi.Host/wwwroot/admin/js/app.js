@@ -38,6 +38,8 @@ let App = (function() {
         rampOrder : "/api/app/admin/ramp/order",
         treasuryOrders : "/api/app/admin/treasury/orders",
         treasuryOrder : "/api/app/admin/treasury/order",
+        treasuryOrderExport : "/api/app/admin/treasury/order/export",
+        treasuryOrderStatusFlow : "/api/app/admin/treasury/order/statusFlow",
     }
 
     let AuthServerURI = {
