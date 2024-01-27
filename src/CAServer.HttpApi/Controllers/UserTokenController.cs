@@ -29,4 +29,12 @@ public class UserTokenController : CAServerController
         await _userTokenAppService.ChangeTokenDisplayAsync(input.IsDisplay, id);
     }
     
+    
+    [HttpPut]
+    [Route("refreshToken")]
+    public async Task RefreshTokenDataAsync()
+    {
+        await _userTokenAppService.RefreshTokenDataAsync();
+    }
+    
 }

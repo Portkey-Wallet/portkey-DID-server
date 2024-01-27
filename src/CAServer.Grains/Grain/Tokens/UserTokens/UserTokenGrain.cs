@@ -114,4 +114,23 @@ public class UserTokenGrain : Grain<UserTokenState>, IUserTokenGrain
         return GrainFactory.GetGrain<IUserTokenSymbolGrain>(
             GrainIdHelper.GenerateGrainId(userId.ToString("N"), chainId, symbol));
     }
+
+    public async Task<GrainResultDto> ModifySortWeight()
+    {
+        var result = new GrainResultDto();
+        if (State.Id == Guid.Empty)
+        {
+            result.Message = UserTokenMessage.NotExistMessage;
+            return result;
+        }
+
+        if (State.Token != null && State.Token.Symbol != "ELF")
+        {
+            State.SortWeight = 0;
+            await WriteStateAsync();
+        }
+
+        result.Success = true;
+        return result;
+    }
 }

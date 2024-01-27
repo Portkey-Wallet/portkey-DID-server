@@ -8,5 +8,7 @@ namespace CAServer.Tokens
     {
         Task<UserTokenDto> ChangeTokenDisplayAsync(bool isDisplay, string id);
         Task<UserTokenDto> AddUserTokenAsync(Guid userId,AddUserTokenInput input);
+
+        Task RefreshTokenDataAsync();
     }
 }

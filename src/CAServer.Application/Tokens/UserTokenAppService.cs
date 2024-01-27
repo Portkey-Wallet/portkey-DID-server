@@ -1,17 +1,24 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
+using CAServer.CAActivity.Provider;
+using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
+using GraphQL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -33,19 +40,24 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     private readonly IDistributedCache<List<string>> _distributedCache;
     private readonly IDistributedCache<List<Token>> _userTokenCache;
     private readonly ITokenProvider _tokenProvider;
+    private readonly INESTRepository<UserTokenIndex, Guid> _userTokenIndexRepository;
+    private readonly IGraphQLHelper _graphQlHelper;
 
     public UserTokenAppService(
         IClusterClient clusterClient,
         IOptionsSnapshot<TokenListOptions> tokenListOptions,
         IDistributedEventBus distributedEventBus,
         IDistributedCache<List<string>> distributedCache,
-        ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache)
+        ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache,
+        INESTRepository<UserTokenIndex, Guid> userTokenIndexRepository, IGraphQLHelper graphQlHelper)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _distributedCache = distributedCache;
         _tokenProvider = tokenProvider;
         _userTokenCache = userTokenCache;
+        _userTokenIndexRepository = userTokenIndexRepository;
+        _graphQlHelper = graphQlHelper;
         _tokenListOptions = tokenListOptions.Value;
     }
 
@@ -66,7 +78,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         {
             throw new UserFriendlyException(tokenResult.Message);
         }
-        
+
         await HandleTokenCacheAsync(userId, tokenResult.Data);
         await PublishAsync(tokenResult.Data, false);
         return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
@@ -112,6 +124,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         await Task.WhenAll(list);
         return new UserTokenDto();
     }
+
 
     private (string chainId, string symbol) GetTokenInfoFromId(string tokenId)
     {
@@ -184,5 +197,133 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<UserTokenGrainDto, UserTokenEto>(dto));
+    }
+
+    private List<UserTokenIndex> failedUserToken = new List<UserTokenIndex>();
+    private int totalCleanCount = 0;
+    private List<string> NeedSearchSymbols = new List<string>();
+
+    public async Task RefreshTokenDataAsync()
+    {
+        var tokenInfos = await GetTokenInfosAsync();
+        var symbols = tokenInfos.TokenInfo.Select(t => t.Symbol).Where(f => f != "ELF").Distinct().ToList();
+        if (symbols.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException("get token info error");
+        }
+
+        NeedSearchSymbols = symbols;
+
+        await RefreshTokenDataAsync(0);
+        Logger.LogInformation("RefreshTokenDataAsync Finish, total clean count is:{totalCleanCount}", totalCleanCount);
+        if (failedUserToken.IsNullOrEmpty())
+        {
+            Logger.LogInformation("RefreshTokenDataAsync Finish, NO failed data");
+            return;
+        }
+
+        Logger.LogInformation("failed data count:{count}", failedUserToken.Count);
+        foreach (var userToken in failedUserToken)
+        {
+            Logger.LogInformation("failed data info: id:{id}, userId:{userId}, token null{tokenNull}, symbol:{symbol}",
+                userToken.Id, userToken.UserId,
+                userToken.Token == null, userToken.Token?.Symbol ?? "-");
+        }
+    }
+
+    private async Task RefreshTokenDataAsync(int shouldSkip, int limit = 3)
+    {
+        var userTokens = await GetUserTokens(shouldSkip, limit);
+        userTokens = userTokens.Where(t => t.Token?.Symbol != "ELF" && t.SortWeight != 0).ToList();
+        if (userTokens.IsNullOrEmpty())
+        {
+            Logger.LogInformation("clean data finish");
+            return;
+        }
+
+        totalCleanCount += userTokens.Count;
+        var list = await CleanData(userTokens);
+        failedUserToken.AddRange(list);
+
+        shouldSkip += limit;
+        await RefreshTokenDataAsync(shouldSkip);
+    }
+
+    private async Task<List<UserTokenIndex>> CleanData(List<UserTokenIndex> userTokens)
+    {
+        var failedData = new List<UserTokenIndex>();
+        foreach (var userToken in userTokens)
+        {
+            try
+            {
+                var grain = _clusterClient.GetGrain<IUserTokenGrain>(userToken.Id);
+                var resultDto = await grain.ModifySortWeight();
+                if (!resultDto.Success)
+                {
+                    Logger.LogError("modify user token grain fail, message:{message}", resultDto.Message);
+                }
+
+                await ModifyUserToken(userToken.Id);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "CleanData error, token id:{tokenId}", userToken.Id);
+                failedData.Add(userToken);
+            }
+        }
+
+        return failedData;
+    }
+
+    private async Task<List<UserTokenIndex>> GetUserTokens(int skip, int limit)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<UserTokenIndex>, QueryContainer>>();
+        mustQuery.Add(q => q.Terms(i => i.Field(f => f.Token.Symbol).Terms(NeedSearchSymbols)));
+        mustQuery.Add(q => q.Range(i => i.Field(f => f.SortWeight).GreaterThan(0)));
+        QueryContainer QueryFilter(QueryContainerDescriptor<UserTokenIndex> f) => f.Bool(b => b.Must(mustQuery));
+
+        var (totalCount, data) = await _userTokenIndexRepository.GetListAsync(QueryFilter, limit: limit, skip: skip);
+        return data;
+    }
+
+    private async Task ModifyUserToken(Guid id)
+    {
+        var userToken = await _userTokenIndexRepository.GetAsync(id);
+        if (userToken.Token.Symbol == "ELF")
+        {
+            return;
+        }
+
+        userToken.SortWeight = 0;
+        await _userTokenIndexRepository.UpdateAsync(userToken);
+    }
+
+    private async Task<TokenInfoIndexerDto> GetTokenInfosAsync()
+    {
+        return await _graphQlHelper.QueryAsync<TokenInfoIndexerDto>(new GraphQLRequest
+        {
+            Query = @"
+			    query($skipCount:Int!,$maxResultCount:Int!) {
+                    tokenInfo(dto: {skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        id,symbol,chainId
+                    }
+                }",
+            Variables = new
+            {
+                skipCount = 0, maxResultCount = 1000
+            }
+        });
+    }
+
+    class TokenInfoIndexerDto
+    {
+        public List<TokenInfoIndexer> TokenInfo { get; set; }
+    }
+
+    class TokenInfoIndexer
+    {
+        public string Id { get; set; }
+        public string ChainId { get; set; }
+        public string Symbol { get; set; }
     }
 }
