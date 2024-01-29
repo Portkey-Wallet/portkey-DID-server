@@ -33,6 +33,12 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<RegisterGrainDto, AccountRegisterIndex>();
         CreateMap<AccountRegisterCreateEto, AccountRegisterIndex>();
         CreateMap<AccountRecoverCreateEto, AccountRecoverIndex>();
+        CreateMap<AccelerateCreateHolderEto, AccelerateRegisterIndex>()
+            .ForMember(t => t.Id, m => m.MapFrom(u => $"{u.Id.ToString()}_{u.ChainId}"))
+            .ForMember(t => t.SessionId, m => m.MapFrom(u => u.Id));
+        CreateMap<AccelerateSocialRecoveryEto, AccelerateRecoverIndex>()
+            .ForMember(t => t.Id, m => m.MapFrom(u => $"{u.Id.ToString()}_{u.ChainId}"))
+            .ForMember(t => t.SessionId, m => m.MapFrom(u => u.Id));
         CreateMap<SocialRecoveryEto, SocialRecoveryResultGrainDto>();
         CreateMap<RecoveryGrainDto, AccountRecoverIndex>();
         CreateMap<UserTokenEto, UserTokenIndex>()

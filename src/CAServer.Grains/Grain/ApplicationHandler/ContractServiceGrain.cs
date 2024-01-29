@@ -175,6 +175,15 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         return result.TransactionResultDto;
     }
 
+    public async Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(string chainId,
+        CreateHolderDto createHolderDto)
+    {
+        var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderOnNonCreateChainInput>(createHolderDto);
+        var result = await SendTransactionToChainAsync(chainId, param, MethodName.CreateCAHolderOnNonCreateChain);
+        DeactivateOnIdle();
+        return result.TransactionResultDto;
+    }
+
     public async Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto)
     {
         var param = _objectMapper.Map<SocialRecoveryDto, SocialRecoveryInput>(socialRecoveryDto);
@@ -417,5 +426,4 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             return new TransactionInfoDto();
         }
     }
-
 }

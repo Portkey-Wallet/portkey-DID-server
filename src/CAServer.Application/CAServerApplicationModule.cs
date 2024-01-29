@@ -72,6 +72,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
         Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
+        Configure<AccelerateManagerOptions>(configuration.GetSection("AccelerateManager"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -87,6 +88,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
+        context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
         
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();

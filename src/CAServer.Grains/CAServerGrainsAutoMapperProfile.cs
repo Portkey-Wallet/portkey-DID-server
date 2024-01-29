@@ -1,3 +1,4 @@
+using AElf;
 using AElf.Types;
 using AutoMapper;
 using CAServer.Bookmark.Dtos;
@@ -70,6 +71,24 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 Address = e.ManagerInfo.Address,
                 ExtraData = e.ManagerInfo.ExtraData
             }));
+        CreateMap<CreateHolderDto, CreateCAHolderOnNonCreateChainInput>()
+            .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
+            {
+                Type = e.GuardianInfo.Type,
+                IdentifierHash = e.GuardianInfo.IdentifierHash,
+                VerificationInfo = new VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id,
+                    Signature = e.GuardianInfo.VerificationInfo.Signature,
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = e.ManagerInfo.Address,
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
 
         CreateMap<SocialRecoveryDto, SocialRecoveryInput>()
             .ForMember(d => d.GuardiansApproved,

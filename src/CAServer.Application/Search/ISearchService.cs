@@ -263,3 +263,27 @@ public class CAHolderSearchService : SearchService<CAHolderIndex, Guid>
     }
     
 }
+
+public class AccelerateRegisterSearchService : SearchService<AccelerateRegisterIndex, string>
+{
+    private readonly IndexSettingOptions _indexSettingOptions;
+    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.accelerateregisterindex";
+
+    public AccelerateRegisterSearchService(INESTRepository<AccelerateRegisterIndex, string> nestRepository,
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+    {
+        _indexSettingOptions = indexSettingOptions.Value;
+    }
+}
+
+public class AccelerateRecoverySearchService : SearchService<AccelerateRecoverIndex, string>
+{
+    private readonly IndexSettingOptions _indexSettingOptions;
+    public override string IndexName => $"{_indexSettingOptions.IndexPrefix.ToLower()}.acceleraterecoverindex";
+
+    public AccelerateRecoverySearchService(INESTRepository<AccelerateRecoverIndex, string> nestRepository,
+        IOptionsSnapshot<IndexSettingOptions> indexSettingOptions) : base(nestRepository)
+    {
+        _indexSettingOptions = indexSettingOptions.Value;
+    }
+}

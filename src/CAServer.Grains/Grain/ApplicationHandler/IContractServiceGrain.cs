@@ -10,6 +10,7 @@ namespace CAServer.Grains.Grain.ApplicationHandler;
 public interface IContractServiceGrain : IGrainWithGuidKey
 {
     Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto);
+    Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(string chainId, CreateHolderDto createHolderDto);
     Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto);
 
     Task<TransactionInfoDto> ValidateTransactionAsync(string chainId, GetHolderInfoOutput output,

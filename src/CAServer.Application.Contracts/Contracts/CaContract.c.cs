@@ -48,6 +48,40 @@ namespace Portkey.Contracts.CA {
     }
   }
 
+  public partial class NonCreateChainCAHolderCreated : aelf::IEvent<NonCreateChainCAHolderCreated>
+  {
+    public global::System.Collections.Generic.IEnumerable<NonCreateChainCAHolderCreated> GetIndexed()
+    {
+      return new List<NonCreateChainCAHolderCreated>
+      {
+      new NonCreateChainCAHolderCreated
+      {
+        Creator = Creator
+      },
+      new NonCreateChainCAHolderCreated
+      {
+        CaHash = CaHash
+      },
+      new NonCreateChainCAHolderCreated
+      {
+        CaAddress = CaAddress
+      },
+      new NonCreateChainCAHolderCreated
+      {
+        Manager = Manager
+      },
+      };
+    }
+
+    public NonCreateChainCAHolderCreated GetNonIndexed()
+    {
+      return new NonCreateChainCAHolderCreated
+      {
+        ExtraData = ExtraData,
+      };
+    }
+  }
+
   public partial class GuardianAdded : aelf::IEvent<GuardianAdded>
   {
     public global::System.Collections.Generic.IEnumerable<GuardianAdded> GetIndexed()
@@ -144,6 +178,7 @@ namespace Portkey.Contracts.CA {
       return new LoginGuardianAdded
       {
         CaAddress = CaAddress,
+        IsCreateHolder = IsCreateHolder,
       };
     }
   }
@@ -468,6 +503,10 @@ namespace Portkey.Contracts.CA {
       new CAHolderSynced
       {
         GuardiansRemoved = GuardiansRemoved
+      },
+      new CAHolderSynced
+      {
+        CreateChainId = CreateChainId
       },
       };
     }

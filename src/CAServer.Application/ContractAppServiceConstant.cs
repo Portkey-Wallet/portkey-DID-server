@@ -37,6 +37,7 @@ public static class GrainId
 public static class LogEvent
 {
     public const string CAHolderCreated = "CAHolderCreated";
+    public const string NonCreateChainCAHolderCreated = "NonCreateChainCAHolderCreated";
     public const string ManagerInfoSocialRecovered = "ManagerInfoSocialRecovered";
     public const string CryptoBoxCreated = "CryptoBoxCreated";
 }
