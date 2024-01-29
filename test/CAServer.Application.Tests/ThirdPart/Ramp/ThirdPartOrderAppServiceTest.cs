@@ -41,9 +41,9 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(MockMassTransitIBus());
         services.AddSingleton(MockRampOptions());
-        services.AddSingleton(MockChainOptions());
+        services.AddSingleton(MockContractProvider());
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
-        
+        services.AddSingleton(MockChainOptions());
         MockHttpByPath(HttpMethod.Get, "/api/v3/ticker/price",
             new BinanceTickerPrice { Symbol = "ELF", Price = "0.42" });
         MockHttpByPath(HttpMethod.Get, "/api/v5/market/index-candles", new OkxResponse<List<List<string>>>()

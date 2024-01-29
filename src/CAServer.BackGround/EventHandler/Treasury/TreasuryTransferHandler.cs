@@ -59,7 +59,7 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
         try
         {
             AssertHelper.NotEmpty(orderDto.RawTransaction, "RawTransaction empty");
-            AssertHelper.NotEmpty(orderDto.TransactionId, "RawTransaction empty");
+            AssertHelper.NotEmpty(orderDto.TransactionId, "TransactionId empty");
 
             await using var locked =
                 await _distributedLock.TryAcquireAsync("TreasuryTransfer:" + orderDto.TransactionId);
@@ -80,7 +80,7 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
 
             // send transaction result
             var txResult = await WaitTransactionResultAsync(CommonConstant.MainChainId, orderDto.TransactionId);
-            AssertHelper.NotNull(txResult, "Wait transaction result empty");
+            if (txResult == null) return;
 
             orderDto.Status = txResult.Status == TransactionState.Mined
                 ? OrderStatusType.Transferred.ToString()
@@ -109,12 +109,12 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
     }
 
 
-    private async Task<TransactionResultDto> WaitTransactionResultAsync(string chainId, string transactionId)
+    private async Task<TransactionResultDto?> WaitTransactionResultAsync(string chainId, string transactionId)
     {
         var waitingStatus = new List<string> { TransactionState.NotExisted, TransactionState.Pending };
         var maxWaitMillis = _thirdPartOptions.CurrentValue.Timer.TransactionWaitTimeoutSeconds * 1000;
         var delayMillis = _thirdPartOptions.CurrentValue.Timer.TransactionWaitDelaySeconds * 1000;
-        TransactionResultDto rawTxResult = null;
+        TransactionResultDto? rawTxResult = null;
         using var cts = new CancellationTokenSource(maxWaitMillis);
         try
         {

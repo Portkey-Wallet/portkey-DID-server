@@ -9,7 +9,6 @@ using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Hangfire;
-using Hangfire.Dashboard;
 using Hangfire.Mongo;
 using Hangfire.Mongo.CosmosDB;
 using Hangfire.Mongo.Migration.Strategies;
