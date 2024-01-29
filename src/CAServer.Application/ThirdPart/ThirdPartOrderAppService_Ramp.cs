@@ -117,10 +117,15 @@ public partial class ThirdPartOrderAppService
             var cryptoList = _rampOptions?.CurrentValue?.CryptoList;
             for (var i = 0; cryptoList != null && i < cryptoList.Count; i++)
             {
-                var cryptoKey = string.Join(CommonConstant.Underline, cryptoList[i].Symbol, cryptoList[i].Network);
+                var crypto = cryptoList[i];
+                if (!crypto.Enable)
+                    continue;
+                
+                var cryptoKey = string.Join(CommonConstant.Underline, crypto.Symbol, crypto.Network);
                 if (!cryptoLists.Any(list => list.ContainsKey(cryptoKey)))
                     continue;
-                cryptoDto.CryptoList.Add(_objectMapper.Map<CryptoItem, RampCurrencyItem>(cryptoList[i]));
+                
+                cryptoDto.CryptoList.Add(_objectMapper.Map<CryptoItem, RampCurrencyItem>(crypto));
             }
 
             return new CommonResponseDto<RampCryptoDto>(cryptoDto);

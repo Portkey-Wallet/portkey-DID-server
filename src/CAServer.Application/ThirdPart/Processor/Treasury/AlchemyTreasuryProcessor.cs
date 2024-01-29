@@ -141,7 +141,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         var standardNetwork = MappingFromAlchemyNetwork(input!.Network);
         AssertHelper.NotEmpty(standardNetwork, "Input network not support {}", input.Network);
         AssertHelper.IsTrue(_rampOptions.CurrentValue.CryptoList.Any(crypto =>
-                crypto.Network == standardNetwork && crypto.Symbol == input.Crypto),
+                crypto.Enable && crypto.Network == standardNetwork && crypto.Symbol == input.Crypto),
             "Symbol not support {} of network {}", input.Crypto, standardNetwork);
 
         var orderRequest = _objectMapper.Map<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>(input);

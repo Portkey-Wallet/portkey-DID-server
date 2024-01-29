@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ namespace CAServer.ThirdPart.Processor.Ramp;
 public class AlchemyOrderProcessor : AbstractRampOrderProcessor
 {
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
+    private readonly IOptionsMonitor<RampOptions> _rampOptions;
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly ISecretProvider _secretProvider;
@@ -36,7 +38,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus, ISecretProvider secretProvider,
-        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions) : base(
+        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions, IOptionsMonitor<RampOptions> rampOptions) : base(
         clusterClient, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus,
         tokenAppService, chainOptions)
     {
@@ -44,6 +46,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         _thirdPartOptions = thirdPartOptions;
         _alchemyProvider = alchemyProvider;
         _secretProvider = secretProvider;
+        _rampOptions = rampOptions;
     }
 
     private AlchemyOrderUpdateDto ConvertToAlchemyOrder(IThirdPartOrder orderDto)
@@ -59,6 +62,39 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         return ThirdPartNameType.Alchemy.ToString();
     }
 
+        
+    public string MappingToAlchemyNetwork(string network)
+    {
+        if (network.IsNullOrEmpty()) return network;
+        var mappingExists = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
+            .TryGetValue(network, out var mappingNetwork);
+        return mappingExists ? mappingNetwork : network;
+    }
+    
+    public string MappingFromAlchemyNetwork(string network)
+    {
+        if (network.IsNullOrEmpty()) return network;
+        var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).NetworkMapping
+            .FirstOrDefault(kv => kv.Value == network);
+        return mappingNetwork.Key.DefaultIfEmpty(network);
+    }
+
+    public string MappingToAlchemySymbol(string symbol)
+    {
+        if (symbol.IsNullOrEmpty()) return symbol;
+        var mappingExists = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).SymbolMapping
+            .TryGetValue(symbol, out var achSymbol);
+        return mappingExists ? achSymbol : symbol;
+    }
+
+    public string MappingFromAchSymbol(string symbol)
+    {
+        if (symbol.IsNullOrEmpty()) return symbol;
+        var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Alchemy).SymbolMapping
+            .FirstOrDefault(kv => kv.Value == symbol);
+        return mappingNetwork.Key.DefaultIfEmpty(symbol);
+    }
+    
     protected override async Task<OrderDto> VerifyOrderInputAsync<T>(T iThirdPartOrder)
     {
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
@@ -77,6 +113,8 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         orderDto.Id = Guid.Parse(input.MerchantOrderNo);
         orderDto.MerchantName = ThirdPartName();
         orderDto.Status = AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
+        orderDto.Network = MappingFromAlchemyNetwork(input.Network); 
+        orderDto.Crypto = MappingFromAchSymbol(input.Crypto); 
         return orderDto;
     }
 

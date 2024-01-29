@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
 using CAServer.BackGround.Provider;
+using CAServer.BackGround.Provider.Treasury;
 using CAServer.Bookmark;
 using CAServer.Common;
 using CAServer.ContractEventHandler.Core;
@@ -57,6 +58,7 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<NftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
         context.Services.AddSingleton<NftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
         context.Services.AddSingleton<NftOrdersSettlementWorker, NftOrdersSettlementWorker>();
+        context.Services.AddSingleton<PendingTreasuryOrderWorker>();
         
         context.Services.AddSingleton<NftOrderMerchantCallbackHandler>();
         context.Services.AddSingleton<NftOrderUpdateHandler>();
@@ -66,6 +68,8 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<NftOrderSettlementHandler>();
         context.Services.AddSingleton<OrderSettlementUpdateHandler>();
         context.Services.AddSingleton<ThirdPartHandler>();
+        context.Services.AddSingleton<PendingTreasuryOrderUpdateHandler>();
+        context.Services.AddSingleton<TreasuryOrderUpdateHandler>();
         
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
