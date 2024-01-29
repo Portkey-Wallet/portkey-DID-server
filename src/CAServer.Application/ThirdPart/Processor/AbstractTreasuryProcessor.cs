@@ -214,7 +214,9 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
 
         // Crypto token price 
         var token = await _tokenProvider.GetTokenInfoAsync(CommonConstant.MainChainId, orderInput.Crypto);
-        AssertHelper.NotNull(token, "Token {} not found", orderInput.Crypto);
+        var decimals = token?.Decimals ?? (orderDto.Crypto == CommonConstant.ELF ? 8 :
+            orderDto.Crypto == CommonConstant.USDT ? 6 : -1);
+        AssertHelper.IsTrue(decimals >= 0, "Invalid decimals of symbol {}", orderInput.Crypto);
 
         _objectMapper.Map(orderInput, orderDto);
         orderDto.Id = orderId;

@@ -142,12 +142,14 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         var standardCrypto = MappingFromAchSymbol(input.Crypto);
         AssertHelper.NotEmpty(standardNetwork, "Input network not support {}", input.Network);
         AssertHelper.IsTrue(_rampOptions.CurrentValue.CryptoList.Any(crypto =>
-                crypto.Enable && crypto.Network == standardNetwork && crypto.Symbol == input.Crypto),
+                crypto.Enable && crypto.Network == standardNetwork && crypto.Symbol == standardCrypto),
             "Symbol not support {} of network {}", standardCrypto, standardNetwork);
 
         var orderRequest = _objectMapper.Map<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>(input);
         orderRequest.ThirdPartName = ThirdPartName().ToString();
         orderRequest.Network = standardNetwork;
+        orderRequest.Crypto = standardCrypto;
+        orderRequest.ThirdPartCrypto = input.Crypto;
         orderRequest.ThirdPartNetwork = input.Network;
         return orderRequest;
     }
