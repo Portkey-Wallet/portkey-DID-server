@@ -62,13 +62,13 @@ public class ContractProvider : IContractProvider, ISingletonDependency
     private readonly GrainOptions _grainOptions;
 
 
-    public ContractProvider(IOptions<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
+    public ContractProvider(IOptionsMonitor<ChainOptions> chainOptions, ILogger<ContractProvider> logger,
         IClusterClient clusterClient,
         ISignatureProvider signatureProvider, IOptionsSnapshot<ClaimTokenInfoOptions> claimTokenInfoOption,
         IOptionsSnapshot<ContractOptions> contractOptions, IIndicatorScope indicatorScope,
         IRedPackageAppService redPackageAppService, IOptions<GrainOptions> grainOptions)
     {
-        _chainOptions = chainOptions.Value;
+        _chainOptions = chainOptions.CurrentValue;
         _logger = logger;
         _claimTokenInfoOption = claimTokenInfoOption.Value;
         _signatureProvider = signatureProvider;

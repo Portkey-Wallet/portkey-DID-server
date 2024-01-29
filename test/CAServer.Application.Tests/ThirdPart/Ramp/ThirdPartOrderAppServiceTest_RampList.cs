@@ -269,8 +269,8 @@ public partial class ThirdPartOrderAppServiceTest
         var buyFiatList = await _thirdPartOrderAppService.GetRampFiatListAsync(new RampFiatRequest
         {
             Type = OrderTransDirect.BUY.ToString(),
-            Crypto = "ETH",
-            Network = "ETH"
+            Crypto = "ELF",
+            Network = "AELF"
         });
         
         _output.WriteLine(JsonConvert.SerializeObject(buyFiatList));

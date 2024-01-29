@@ -81,6 +81,15 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 HandleUnCompletedOrderMinuteAgo = 0,
                 NftUnCompletedMerchantCallbackMinuteAgo = 0,
                 HandleUnCompletedSettlementTransferSecondsAgo = 0,
+                TransactionWaitTimeoutSeconds = 2,
+                TransactionWaitDelaySeconds = 1,
+            },
+            TreasuryOptions = new TreasuryOptions
+            {
+                SettlementPublicKey = new Dictionary<string, string>
+                {
+                    ["Alchemy_USDT"] = "042dc50fd7d211f16bf4ad870f7790d4f9d98170f3712038c45830947f7d96c691ef2d1ab4880eeeeafb63ab77571be6cbe6bed89d5f89844b0fb095a7015713c8" 
+                }
             },
             Merchant = new MerchantOptions
             {
@@ -263,13 +272,18 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             {
                 TransactionId = MinedTxId,
                 Status = "MINED",
-                Transaction = new TransactionDto()
+                Transaction = new TransactionDto(),
+                BlockNumber = 10,
             });
 
         mockContractProvider
             .Setup(p => p.GenerateTransferTransactionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(new Tuple<string, Transaction>(PendingTxId, new Transaction()));
+            .ReturnsAsync(new Tuple<string, Transaction>(PendingTxId, new Transaction()
+            {
+                From = Address.FromBase58("izyQqrVvraoDC69HvUX8gEAgNrK3hWq9qhUKh5vh4MfzNjfc6"),
+                To = Address.FromBase58("izyQqrVvraoDC69HvUX8gEAgNrK3hWq9qhUKh5vh4MfzNjfc6")
+            }));
 
         mockContractProvider
             .Setup(p => p.GetChainStatusAsync(It.IsAny<string>()))
