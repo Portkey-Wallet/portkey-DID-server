@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
+using System.Text;
 using System.Threading.Tasks;
 using CAServer.Admin;
 using CAServer.Admin.Dtos;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Options;
@@ -12,7 +15,9 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -26,6 +31,7 @@ namespace CAServer.Controllers;
 [Route("api/app/admin/")]
 public class AdminController : CAServerController
 {
+    private readonly ILogger<AdminController> _logger;
     private readonly IOptionsMonitor<AuthServerOptions> _authServerOptions;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly IAdminAppService _adminAppService;
@@ -33,12 +39,13 @@ public class AdminController : CAServerController
 
     public AdminController(IOptionsMonitor<AuthServerOptions> authServerOptions,
         IThirdPartOrderAppService thirdPartOrderAppService, IAdminAppService adminAppService,
-        ITreasuryOrderProvider treasuryOrderProvider)
+        ITreasuryOrderProvider treasuryOrderProvider, ILogger<AdminController> logger)
     {
         _authServerOptions = authServerOptions;
         _thirdPartOrderAppService = thirdPartOrderAppService;
         _adminAppService = adminAppService;
         _treasuryOrderProvider = treasuryOrderProvider;
+        _logger = logger;
     }
 
     [HttpGet("config")]
@@ -95,10 +102,7 @@ public class AdminController : CAServerController
     [HttpPost("ramp/order")]
     public async Task<CommonResponseDto<Empty>> UpdateOrder(MfaRequest<OrderDto> updateOrderRequest)
     {
-        if (!_authServerOptions.CurrentValue.DebugMod)
-        {
-            await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
-        }
+        await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
         return await _thirdPartOrderAppService.UpdateRampOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 
@@ -112,21 +116,51 @@ public class AdminController : CAServerController
     }
 
     [Authorize(Roles = "OrderManager,OrderViewer")]
-    [HttpGet("treasury/order/statusflow")]
+    [HttpGet("treasury/order/statusFlow")]
     public async Task<CommonResponseDto<OrderStatusInfoIndex>> GetTreasuryOrderStatusFlow(string orderId)
     {
         var pager = await _treasuryOrderProvider.QueryOrderStatusInfoPagerAsync(new List<string> { orderId });
         return new CommonResponseDto<OrderStatusInfoIndex>(pager.Items.FirstOrDefault());
     }
 
+
+    [Authorize(Roles = "OrderManager,OrderViewer")]
+    [HttpPost("treasury/order/export")]
+    public async Task<IActionResult> ExportTreasuryOrders(TreasuryOrderExportRequest request)
+    {
+        try
+        {
+            AssertHelper.NotNull(request, "Data request");
+            AssertHelper.NotNull(request.Data, "Data empty");
+            AssertHelper.NotNull(request.Data.CreateTimeLt, "CreateTime start empty");
+            AssertHelper.NotNull(request.Data.CreateTimeGtEq, "CreateTime end empty");
+            await _adminAppService.AssertMfa(request.GoogleTfaPin);
+            var startTime = new DateTime().WithMilliSeconds(request.Data.CreateTimeGtEq ?? 0)
+                .ToZoneString(request.TimeZone);
+            var endTime = new DateTime().WithMilliSeconds(request.Data.CreateTimeLt ?? 0)
+                .ToZoneString(request.TimeZone);
+            var orderList = await _treasuryOrderProvider.ExportOrderAsync(request.Data);
+            var orderResp = new TreasuryOrderExportResponseDto(orderList);
+            return File(Encoding.UTF8.GetBytes(orderResp.ToCsvString()), "text/csv",
+                string.Join(CommonConstant.Dot, "treasuryOrderExport", startTime, endTime, "csv"));
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogError("ExportTreasuryOrders failed: {Message}", e.Message);
+            return BadRequest(e.Message);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "ExportTreasuryOrders error");
+            return StatusCode(StatusCodes.Status502BadGateway, "Internal error, please try again later");
+        }
+    }
+
     [Authorize(Roles = "OrderManager")]
     [HttpPost("treasury/order")]
     public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(MfaRequest<TreasuryOrderDto> updateOrderRequest)
     {
-        if (!_authServerOptions.CurrentValue.DebugMod)
-        {
-            await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
-        }
+        await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
         return await _thirdPartOrderAppService.UpdateTreasuryOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 }

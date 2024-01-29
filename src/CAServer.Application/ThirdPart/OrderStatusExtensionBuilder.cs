@@ -37,6 +37,9 @@ public static class ExtensionKey
     public const string Transaction = "transaction";
     public const string TxBlockHeight = "txBlockHeight";
 
+    public const string ChainHeight = "chainHeight";
+    public const string ChainLib = "chainLib";
+
     public const string CallBackStatus = "callBackStatus";
     public const string CallBackResult = "callBackResult";
 

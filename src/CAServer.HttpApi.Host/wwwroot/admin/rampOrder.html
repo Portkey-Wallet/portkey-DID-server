@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ramp Order Page</title>
-    <link rel="icon" href="https://portkey.finance/favicon.ico">
+    <link rel="icon" href="img/icon.svg">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/search_table.css">
@@ -42,13 +42,13 @@
         </div>
         <div class="input-group">
             <label for="search-ThirdPartOrderNoIn">ThirdPartOrderId</label>
-            <input type="text" id="search-ThirdPartOrderNoIn" placeholder="">
+            <input type="text" id="search-ThirdPartOrderNoIn" placeholder="" autocomplete="false">
         </div>
         <div class="input-group">
             <label for="search-LastModifyTimeGtEq">LastModifyTimeLt</label>
-            <input type="text" id="search-LastModifyTimeGtEq" class="faltpickr" placeholder="">
+            <input type="text" id="search-LastModifyTimeGtEq" class="flatpickr" placeholder="">
             <label for="search-LastModifyTimeLt">-</label>
-            <input type="text" id="search-LastModifyTimeLt" class="faltpickr" placeholder="">
+            <input type="text" id="search-LastModifyTimeLt" class="flatpickr" placeholder="">
         </div>
         <div class="input-group">
             <label for="search-ThirdPartName">ThirdPartName</label>
@@ -133,7 +133,7 @@
         App.loadUser();
         App.checkPermission("OrderManager,OrderViewer");
         $("#user-info span").html(App.User().userName)
-        $("input.faltpickr").flatpickr({
+        $("input.flatpickr").attr('autocomplete', 'off').flatpickr({
             enableTime: true,
             allowInput: true,
             time_24hr: true,
@@ -238,10 +238,10 @@
     function showStatusFlow(orderId) {
         for(let s of items[orderId].orderStatusSection.orderStatusList) {
             if (!s.lastModifyTime) continue;
-            s["lastModifyTimeStr"] = new Date(s.lastModifyTime).toUTCString()
+            s["lastModifyTimeStr"] = DateFormat.formatUtc(new Date(s.lastModifyTime))
         }
         let content = JSON.stringify(items[orderId].orderStatusSection, null, 4);
-        localStorage.setItem("tmp", content);
+        localStorage.setItem("tmp_" + orderId, content);
         window.open("jsonViewer.html?title=" + orderId, "_blank");
     }
     

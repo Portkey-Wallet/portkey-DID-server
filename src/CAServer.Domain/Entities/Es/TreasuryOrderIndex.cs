@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using AElf.Indexing.Elasticsearch;
 using CAServer.ThirdPart;
+using CAServer.Tokens;
 using Nest;
 
 namespace CAServer.Entities.Es;
@@ -29,7 +30,8 @@ public class TreasuryOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string Fiat { get; set; }
     public decimal FiatAmount { get; set; }
     public decimal SettlementAmount { get; set; }
-    public List<FeeItem> FeeInfo { get; set; }
+    public List<FeeItem> FeeInfo { get; set; } = new();
+    public List<TokenExchange> TokenExchanges { get; set; } = new(); 
     
     [Keyword] public string TransactionId { get; set; }
     public string RawTransaction { get; set; }

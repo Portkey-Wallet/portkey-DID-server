@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Json Viewer</title>
+    <link rel="icon" href="img/icon.svg">
 
     <!-- Monaco Editor -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.css"/>
@@ -29,7 +30,7 @@
         var title = App.getQueryString("title");
         debugger
         $(document).ready(function() {
-            const fileContent = localStorage.getItem('tmp');
+            const fileContent = localStorage.getItem('tmp_' + title);
             document.title = title;
 
             const editor = monaco.editor.create(document.getElementById('editor'), {
