@@ -71,6 +71,7 @@ public class TransactionHandler : IDistributedEventHandler<TransactionEto>, ITra
 
             await ValidTransactionAsync(transaction, eventData.PublicKey, order);
             order.TransactionId = transaction.GetHash().ToHex();
+            order.TxTime = DateTime.UtcNow.ToUtcMilliSeconds().ToString();
             order.Status = OrderStatusType.StartTransfer.ToString();
 
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto

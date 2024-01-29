@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.MultiToken;
@@ -6,6 +9,7 @@ using AElf.Types;
 using CAServer.Commons;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Shouldly;
@@ -37,7 +41,18 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         services.AddSingleton(MockThirdPartOptions());
         services.AddSingleton(MockMassTransitIBus());
         services.AddSingleton(MockRampOptions());
+        services.AddSingleton(MockChainOptions());
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
+        
+        MockHttpByPath(HttpMethod.Get, "/api/v3/ticker/price",
+            new BinanceTickerPrice { Symbol = "ELF", Price = "0.42" });
+        MockHttpByPath(HttpMethod.Get, "/api/v5/market/index-candles", new OkxResponse<List<List<string>>>()
+        {
+            Data = new List<List<string>>()
+            {
+                new() { DateTime.UtcNow.ToUtcMilliSeconds().ToString(), "0.42", "0.42", "0.42", "0.42", "0" }
+            }
+        });
     }
 
     [Fact]
@@ -76,6 +91,14 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     }
 
     [Fact]
+    public async Task GetRampInfo()
+    {
+        var result = await _thirdPartOrderAppService.GetRampCoverageAsync();
+        result.Success.ShouldBeTrue();
+        result.Data.ThirdPart.Count.ShouldBe(2);
+    }
+
+    [Fact]
     public async Task GetThirdPartOrderListAsyncTest()
     {
         await CreateThirdPartOrderAsyncTest();
@@ -91,7 +114,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     }
 
     [Fact]
-    public async Task CreateThirdPartOrderAsyncTest()
+    public async Task<OrderCreatedDto> CreateThirdPartOrderAsyncTest()
     {
         var input = new CreateUserOrderDto
         {
@@ -102,6 +125,8 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         var result = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(input);
         result.Success.ShouldBe(true);
         result.Id.ShouldNotBeEmpty();
+
+        return result;
     }
 
     [Fact]

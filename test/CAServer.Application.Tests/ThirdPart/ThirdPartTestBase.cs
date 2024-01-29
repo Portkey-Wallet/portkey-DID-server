@@ -1,19 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Types;
+using CAServer.Common;
 using CAServer.Commons;
-using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Transak;
 using CAServer.Tokens.Provider;
-using GraphQL;
-using GraphQL.Client.Abstractions;
-using GraphQL.Client.Http;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -34,6 +30,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
+        services.AddSingleton(GetMockITokenProvider());
         services.AddSingleton(MockHttpFactory());
         MockHttpByPath(TransakApi.RefreshAccessToken.Method, TransakApi.RefreshAccessToken.Path,
             new TransakMetaResponse<object, TransakAccessToken>
@@ -65,7 +62,8 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 CryptoListUri = "/merchant/crypto/list",
                 OrderQuoteUri = "/merchant/order/quote",
                 GetTokenUri = "/merchant/getToken",
-                MerchantQueryTradeUri = "/merchant/query/trade"
+                MerchantQueryTradeUri = "/merchant/query/trade",
+                TimestampExpireSeconds = int.MaxValue
             },
             Transak = new TransakOptions
             {
@@ -119,6 +117,14 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     WebhookUrl = "http://127.0.0.1:9200",
                     CountryIconUrl = "https://static.alchemypay.org/alchemypay/flag/{ISO}.png",
                     PaymentTags = new List<string> { "ApplePay", "GooglePay" },
+                    NetworkMapping = new Dictionary<string, string>
+                    {
+                        ["AELF"] = "ELF"
+                    },
+                    SymbolMapping = new Dictionary<string, string>
+                    {
+                        ["USDT"] = "USDT-aelf"  
+                    },
                     Coverage = new ProviderCoverage
                     {
                         OffRamp = true,
@@ -139,7 +145,10 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                         OffRamp = true,
                         OnRamp = true
                     },
-                    NetworkMapping = new Dictionary<string, string>() { { "AELF", "aelf" } }
+                    NetworkMapping = new Dictionary<string, string>
+                    {
+                        ["AELF"] = "aelf"
+                    }
                 }
             },
             PortkeyIdWhiteList = new List<string>(),
@@ -151,7 +160,15 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     Symbol = "ELF",
                     Icon = "http://127.0.0.1:9200/elf.png",
                     Decimals = "8",
-                    Network = "AELF-AELF",
+                    Network = "AELF",
+                    Address = "0x00000000"
+                },
+                new()
+                {
+                    Symbol = "USDT",
+                    Icon = "http://127.0.0.1:9200/usdt.png",
+                    Decimals = "8",
+                    Network = "AELF",
                     Address = "0x00000000"
                 }
             },
@@ -162,12 +179,12 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     OnRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
+                        // "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     },
                     OffRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
+                        // "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     }
                 },
                 ["Transak"] = new()
@@ -175,12 +192,12 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     OnRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
+                        // "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     },
                     OffRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
+                        // "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     }
                 }
             }
@@ -192,15 +209,15 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
         return optionMock.Object;
     }
 
-    protected MassTransit.IBus MockMassTransitIBus()
+    protected IBus MockMassTransitIBus()
     {
-        var mockContractProvider = new Mock<MassTransit.IBus>();
+        var mockContractProvider = new Mock<IBus>();
         return mockContractProvider.Object;
     }
 
-    protected CAServer.Common.IContractProvider MockContractProvider()
+    protected IContractProvider MockContractProvider()
     {
-        var mockContractProvider = new Mock<CAServer.Common.IContractProvider>();
+        var mockContractProvider = new Mock<IContractProvider>();
         mockContractProvider
             .Setup(p =>
                 p.SendRawTransactionAsync("AELF", It.IsAny<string>()))
@@ -270,5 +287,45 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             });
 
         return tokenProvider.Object;
+    }
+
+    protected IOptionsMonitor<ChainOptions> MockChainOptions()
+    {
+        var chainOptions = new ChainOptions()
+        {
+            ChainInfos = new Dictionary<string, Options.ChainInfo>()
+            {
+                [CommonConstant.MainChainId] = new()
+                {
+                    ChainId = CommonConstant.MainChainId,
+                }   
+            }
+        };
+        
+        var mock = new Mock<IOptionsMonitor<ChainOptions>>();
+        mock.Setup(p => p.CurrentValue).Returns(chainOptions);
+        return mock.Object;
+    }
+    
+        
+    private ITokenProvider GetMockITokenProvider()
+    {
+        var mockTokenPriceProvider = new Mock<ITokenProvider>();
+        mockTokenPriceProvider
+            .Setup(o => o.GetTokenInfoAsync(It.IsAny<string>(),"ELF"))
+            .ReturnsAsync(new IndexerToken()
+                {
+                    Id = "AELF",
+                    Decimals = 8,
+                });
+        mockTokenPriceProvider
+            .Setup(o => o.GetTokenInfoAsync(It.IsAny<string>(),"USDT"))
+            .ReturnsAsync(new IndexerToken()
+                {
+                    Id = "USDT",
+                    Decimals = 6
+                });
+
+        return mockTokenPriceProvider.Object;
     }
 }
