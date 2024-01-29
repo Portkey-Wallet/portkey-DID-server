@@ -609,5 +609,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<UserExtraInfoResultDto, Verifier.Dtos.UserExtraInfo>()
             .ForMember(t => t.IsPrivateEmail, m => m.MapFrom(f => f.IsPrivate));
+        CreateMap<RampCurrencyItem, DefaultCryptoCurrency>().ReverseMap();
     }
 }

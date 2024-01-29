@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
+using CAServer.BackGround.EventHandler.Treasury;
 using CAServer.BackGround.Provider;
 using CAServer.BackGround.Provider.Treasury;
 using CAServer.Bookmark;
@@ -70,6 +71,9 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<ThirdPartHandler>();
         context.Services.AddSingleton<PendingTreasuryOrderUpdateHandler>();
         context.Services.AddSingleton<TreasuryOrderUpdateHandler>();
+        context.Services.AddSingleton<TreasuryCreateHandler>();
+        context.Services.AddSingleton<TreasuryTransferHandler>();
+        
         
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });

@@ -79,7 +79,7 @@ public class DefaultCurrencyOption
             Symbol = Crypto,
             Amount = CryptoAmount,
             Network = Network,
-            ChainId = ChainId
+            ChainId = ChainId,
         };
     }
 
