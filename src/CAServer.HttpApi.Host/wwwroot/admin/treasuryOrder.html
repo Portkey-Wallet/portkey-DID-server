@@ -321,7 +321,7 @@
     function showStatusFlow(orderId) {
         $.ajax({
             url: App.Uri.treasuryOrderStatusFlow,
-            method: 'Post',
+            method: 'Get',
             contentType: "application/json",
             data: {
                 orderId: orderId
