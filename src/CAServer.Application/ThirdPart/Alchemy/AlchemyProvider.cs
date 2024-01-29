@@ -242,7 +242,7 @@ public class AlchemyProvider
 
     private Dictionary<string, string> GetTreasuryAlchemyRequestHeader()
     {
-        return GetAlchemyRequestHeader(AlchemyOptions().TreasuryAppId, AlchemyOptions().TreasuryAppSecret);
+        return GetAlchemyRequestHeader(AlchemyOptions().AppId, AlchemyOptions().AppSecret);
     }
 
 
