@@ -37,7 +37,7 @@ public class CAServerDomainModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
-        ConfigureEsIndexCreation();
+        //ConfigureEsIndexCreation();
         Configure<AbpMultiTenancyOptions>(options =>
         {
             options.IsEnabled = MultiTenancyConsts.IsEnabled;

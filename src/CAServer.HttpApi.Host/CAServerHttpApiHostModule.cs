@@ -245,7 +245,6 @@ public class CAServerHttpApiHostModule : AbpModule
         var env = context.GetEnvironment();
 
         app.UseAbpRequestLocalization();
-        app.UseCorrelationId();
         app.UseStaticFiles();
         app.UseRouting();
         app.UseCors();
@@ -254,10 +253,8 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseSwagger();
         app.UseAbpSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "CAServer API"); });
-
-        app.UseAuditing();
+        
         app.UseAbpSerilogEnrichers();
-        app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
 
         //StartOrleans(context.ServiceProvider);
