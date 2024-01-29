@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using CAServer.AppleAuth;
 using CAServer.AppleAuth.Dtos;
+using CAServer.Commons;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -27,20 +28,33 @@ public class AppleAuthController : CAServerController
     public async Task<IActionResult> ReceiveAsync([FromForm] AppleAuthDto appleAuthDto)
     {
         await _appleAuthAppService.ReceiveAsync(appleAuthDto);
-        return Redirect($"{_appleAuthOptions.RedirectUrl}?id_token={appleAuthDto.Id_token}");
+        var redirectUrl = GetRedirectUrl(_appleAuthOptions.RedirectUrl, appleAuthDto.Id_token);
+        return Redirect(redirectUrl);
     }
-    
+
     [HttpPost("bingoReceive")]
     public async Task<IActionResult> BingoReceiveAsync([FromForm] AppleAuthDto appleAuthDto)
     {
         await _appleAuthAppService.ReceiveAsync(appleAuthDto);
-        return Redirect($"{_appleAuthOptions.BingoRedirectUrl}?id_token={appleAuthDto.Id_token}");
+        var redirectUrl = GetRedirectUrl(_appleAuthOptions.BingoRedirectUrl, appleAuthDto.Id_token);
+        return Redirect(redirectUrl);
     }
-    
+
     [HttpPost("unifyReceive")]
     public async Task<IActionResult> UnifyReceiveAsync([FromForm] AppleAuthDto appleAuthDto)
     {
         await _appleAuthAppService.ReceiveAsync(appleAuthDto);
-        return Redirect($"{_appleAuthOptions.UnifyRedirectUrl}?id_token={appleAuthDto.Id_token}");
+        var redirectUrl = GetRedirectUrl(_appleAuthOptions.UnifyRedirectUrl, appleAuthDto.Id_token);
+        return Redirect(redirectUrl);
+    }
+
+    private string GetRedirectUrl(string redirectUrl, string token)
+    {
+        if (redirectUrl.Contains(CommonConstant.UrlSegmentation))
+        {
+            return $"{redirectUrl}&id_token={token}";
+        }
+
+        return $"{redirectUrl}?id_token={token}";
     }
 }

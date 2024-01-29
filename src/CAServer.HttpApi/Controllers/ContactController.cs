@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Contacts;
-using CAServer.ImUser.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -59,12 +58,6 @@ public class ContactController : CAServerController
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         return await _contactAppService.GetListAsync(input);
-    }
-
-    [HttpPost("merge")]
-    public async Task MergeAsync(ContactMergeDto input)
-    {
-        await _contactAppService.MergeAsync(input);
     }
 
     [HttpGet("isImputation")]
