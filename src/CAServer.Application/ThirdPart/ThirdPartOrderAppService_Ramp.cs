@@ -111,11 +111,7 @@ public partial class ThirdPartOrderAppService
             AssertHelper.NotEmpty(cryptoLists, "Empty crypto list");
 
             // get support crypto from options
-            var defaultCurrencyOption = _rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption();
-            var cryptoDto = new RampCryptoDto
-            {
-                DefaultCrypto = defaultCurrencyOption.ToCrypto()
-            };
+            var cryptoDto = new RampCryptoDto();
             var cryptoList = _rampOptions?.CurrentValue?.CryptoList;
             for (var i = 0; cryptoList != null && i < cryptoList.Count; i++)
             {
@@ -129,6 +125,12 @@ public partial class ThirdPartOrderAppService
                 
                 cryptoDto.CryptoList.Add(_objectMapper.Map<CryptoItem, RampCurrencyItem>(crypto));
             }
+            
+            var defaultCurrency = (_rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption()).ToCrypto();
+            var defaultCurrencyInList = cryptoDto.CryptoList.FirstOrDefault(crypto => crypto.Symbol == defaultCurrency.Symbol);
+            defaultCurrencyInList ??= cryptoDto.CryptoList.FirstOrDefault();
+            if (defaultCurrencyInList != null) _objectMapper.Map(defaultCurrencyInList, defaultCurrency);
+            cryptoDto.DefaultCrypto = defaultCurrency;
 
             return new CommonResponseDto<RampCryptoDto>(cryptoDto);
         }

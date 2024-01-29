@@ -201,7 +201,7 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
             var theCrypto = cryptoList
                 .Where(c => c.Network?.Name == mappingNetwork)
                 .FirstOrDefault(c => c.Symbol == mappingCrypto);
-            if (theCrypto == null) return null;
+            if (theCrypto == null) return new List<TransakFiatItem>();
 
             foreach (var transakCryptoFiatNotSupported in theCrypto.Network.FiatCurrenciesNotSupported)
             {

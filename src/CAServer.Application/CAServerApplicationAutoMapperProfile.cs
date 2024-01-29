@@ -584,5 +584,6 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
         
         CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
         CreateMap<PendingTreasuryOrderIndex, PendingTreasuryOrderDto>().ReverseMap();
+        CreateMap<RampCurrencyItem, DefaultCryptoCurrency>().ReverseMap();
     }
 }

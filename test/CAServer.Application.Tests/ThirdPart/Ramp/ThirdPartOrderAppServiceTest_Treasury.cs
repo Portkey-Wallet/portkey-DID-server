@@ -75,14 +75,19 @@ public partial class ThirdPartOrderAppServiceTest
             };
             
             await treasuryProcessorFactory.Processor(ThirdPartNameType.Alchemy.ToString()).NotifyOrderAsync(treasuryOrderRequest);
+            #endregion
+            
+        #region Pending treasury order should be Pending status
+        {
             var pendingData = await treasuryOrderProvider.QueryPendingTreasuryOrder(
                 new PendingTreasuryOrderCondition(0, 1)
                 {
-                    StatusIn = new List<string> { OrderStatusType.Pending.ToString() },
                     LastModifyTimeLt = DateTime.UtcNow.AddHours(1).ToUtcMilliSeconds(),
                     ExpireTimeGtEq = DateTime.UtcNow.ToUtcMilliSeconds()
                 });
             pendingData.TotalCount.ShouldBe(1);
+            pendingData.Items[0].Status.ShouldBe(OrderStatusType.Pending.ToString());
+        }
         #endregion
 
         #region Webhook ramp order
@@ -106,15 +111,26 @@ public partial class ThirdPartOrderAppServiceTest
             var updateRamp = await orderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), webhookReq);
             updateRamp.Success.ShouldBeTrue();
         #endregion
+        
+        await pendingTreasuryOrderWorker.HandleAsync();
 
-
-        #region MyRegion
-
-            await pendingTreasuryOrderWorker.HandleAsync();
-
+        #region Pending treasury order should be Pending status
+        {
+            
+            var pendingData = await treasuryOrderProvider.QueryPendingTreasuryOrder(
+                new PendingTreasuryOrderCondition(0, 1)
+                {
+                    LastModifyTimeLt = DateTime.UtcNow.AddHours(1).ToUtcMilliSeconds(),
+                    ExpireTimeGtEq = DateTime.UtcNow.ToUtcMilliSeconds()
+                });
+            pendingData.TotalCount.ShouldBe(1);
+            pendingData.Items[0].Status.ShouldBe(OrderStatusType.Finish.ToString());
+        }
         #endregion
 
-
+        
+        
+        
     }
     
     
