@@ -67,8 +67,6 @@ public class AlchemyOptions
     public string BaseUrl { get; set; }
     public string NftAppId { get; set; }
     public string NftBaseUrl { get; set; }
-    public string TreasuryAppId { get; set; }
-    public string TreasuryBaseUrl { get; set; }
     public string UpdateSellOrderUri { get; set; }
     public string FiatListUri { get; set; }
     public string CryptoListUri { get; set; }

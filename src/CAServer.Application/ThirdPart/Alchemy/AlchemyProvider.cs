@@ -244,7 +244,7 @@ public class AlchemyProvider
 
     private async Task<Dictionary<string, string>> GetTreasuryAlchemyRequestHeader()
     {
-        return await GetAlchemyRequestHeaderAsync(AlchemyOptions().TreasuryAppId);
+        return await GetAlchemyRequestHeaderAsync(AlchemyOptions().AppId);
     }
 
 
