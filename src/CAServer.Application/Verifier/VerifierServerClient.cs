@@ -1,15 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Cryptography;
 using CAServer.Common;
 using CAServer.Dtos;
+using CAServer.Options;
 using CAServer.Settings;
 using CAServer.Switch;
 using CAServer.Verifier.Dtos;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -24,10 +28,11 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-
+    private readonly ChainOptions _chainOptions;
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
+        IOptions<ChainOptions> chainOptions,
         ILogger<VerifierServerClient> logger,
         IHttpClientFactory httpClientFactory)
     {
@@ -35,6 +40,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         _logger = logger;
         _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
+        _chainOptions = chainOptions.Value;
     }
 
     private bool _disposed;
@@ -70,11 +76,20 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var url = endPoint + "/api/app/account/sendVerificationRequest";
+        var verificationRequest = new VerificationRequest
+        {
+            Type = dto.Type,
+            GuardianIdentifier = dto.GuardianIdentifier,
+            VerifierSessionId = dto.VerifierSessionId.ToString()
+        };
+        var hash = HashHelper.ComputeFrom(verificationRequest);
+        var privateKey = _chainOptions.ChainInfos.FirstOrDefault(i => i.Key == dto.ChainId).Value.PrivateKey;
+        var signature = CryptoHelper.SignWithPrivateKey(ByteArrayHelper.HexStringToByteArray(privateKey),
+            hash.ToByteArray());
         var parameters = new Dictionary<string, string>
         {
-            { "type", dto.Type },
-            { "guardianIdentifier", dto.GuardianIdentifier },
-            { "verifierSessionId", dto.VerifierSessionId.ToString() },
+            { "signature", signature.ToHex() },
+            { "verificationRequest", verificationRequest.ToByteArray().ToHex() },
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
     }
