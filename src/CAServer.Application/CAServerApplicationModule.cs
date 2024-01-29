@@ -72,6 +72,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
         Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
+        Configure<FacebookOptions>(configuration.GetSection("Facebook"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));

@@ -50,10 +50,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IContractProvider _contractProvider;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
+    private readonly FacebookOptions _facebookOptions;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
-
 
 
     public VerifierAppService(IEnumerable<IAccountValidator> accountValidator, IObjectMapper objectMapper,
@@ -64,7 +64,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider,
+        IOptionsSnapshot<FacebookOptions> facebookOptions)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -76,8 +77,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
+        _facebookOptions = facebookOptions.Value;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
-
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -354,9 +355,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
         }
-        
+
         await AddUserInfoAsync(
-        ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
+            ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
         return new VerificationCodeResponse
         {
             VerificationDoc = response.Data.VerificationDoc,
@@ -366,31 +367,30 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(string accessToken)
     {
-        var app_token = "746492673568696%7C71cf85a8ba36c84b22bc3461e143e16b";
-        var requestUrl = Format(
-            "https://graph.facebook.com/debug_token?access_token={appToken}&input_token={userToken}", app_token,
-            accessToken);
+        var app_token = _facebookOptions.AppId + "%7C" + _facebookOptions.AppSecret;
+        var requestUrl =
+            "https://graph.facebook.com/debug_token?access_token=" + app_token + "&input_token=" + accessToken;
         var result = await FacebookRequestAsync(requestUrl);
         var verifyUserInfo = JsonConvert.DeserializeObject<VerifyFacebookUserInfoDto>(result);
 
         if (verifyUserInfo == null)
         {
-            throw new UserFriendlyException("Get userInfo from Facebook fail.");
+            throw new UserFriendlyException("verify Facebook userInfo fail.");
         }
 
-        if (!verifyUserInfo.IsValid)
+        if (!verifyUserInfo.Data.IsValid)
         {
-            throw new UserFriendlyException("Verify user from Facebook fail.");
+            throw new UserFriendlyException("Verify accessToken from Facebook fail.");
         }
 
-        if (verifyUserInfo.ExpiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+        if (verifyUserInfo.Data.ExpiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
         {
             throw new UserFriendlyException("Token expired.");
         }
 
         var getUserInfoUrl =
-            Format("https://graph.facebook.com/{userId}?fields=id,name,email,picture&access_token={accessToken}",
-                verifyUserInfo.UserId, accessToken);
+            "https://graph.facebook.com/" + verifyUserInfo.Data.UserId + "?fields=id,name,email,picture&access_token=" +
+            accessToken;
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
         facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
@@ -415,6 +415,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             return result;
         }
+
         _logger.LogError("{Message}", response.ToString());
         throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
     }
