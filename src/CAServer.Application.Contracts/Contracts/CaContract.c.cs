@@ -70,6 +70,10 @@ namespace Portkey.Contracts.CA {
       {
         Manager = Manager
       },
+      new NonCreateChainCAHolderCreated
+      {
+        CreateChainId = CreateChainId
+      },
       };
     }
 
