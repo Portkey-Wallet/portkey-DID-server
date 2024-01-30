@@ -88,6 +88,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         {
             throw new Exception("Failed to get user info");
         }
+        Logger.LogInformation("get twitter user info success, data:{userInfo}",JsonConvert.SerializeObject(userInfo));
 
         var userExtraInfo = new Verifier.Dtos.UserExtraInfo
         {
