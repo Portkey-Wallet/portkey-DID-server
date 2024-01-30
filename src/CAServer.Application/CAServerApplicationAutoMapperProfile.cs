@@ -301,6 +301,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RampOrderIndex, OrderDto>();
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.FiatAmount, m => m.MapFrom(f => f.Amount))
+            .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TxHash))
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
             .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo));
