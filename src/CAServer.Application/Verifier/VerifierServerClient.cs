@@ -139,6 +139,35 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await GetResultAsync<VerifyTokenDto<TelegramUserExtraInfo>>(input, requestUri, identifierHash, salt);
     }
 
+    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto, string identifierHash, string salt)
+    {
+        var requestUri = "/api/app/account/verifyFacebookToken";
+        return await GetResultAsync<VerificationCodeResponse>(requestDto, requestUri, identifierHash, salt);
+    }
+
+    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(VerifyTokenRequestDto input)
+    {
+        var endPoint =
+            await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+        if (null == endPoint)
+        {
+            _logger.LogInformation("No Available Service Tips.{VerifierId}", input.VerifierId);
+            return new ResponseResultDto<VerifyFacebookUserInfoDto>
+            {
+                Success = false,
+                Message = "No Available Service Tips."
+            };
+        }
+        var url = endPoint + "/api/app/account/verifyFacebookAccessTokenAndGetUserId";
+        var parameters = new Dictionary<string, string>
+        {
+            { "accessToken", input.AccessToken }
+        };
+
+
+        return await _httpService.PostResponseAsync<ResponseResultDto<VerifyFacebookUserInfoDto>>(url, parameters);
+    }
+
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,
         string requestUri, string identifierHash, string salt)
     {
