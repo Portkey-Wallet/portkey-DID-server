@@ -82,6 +82,13 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
     {
         try
         {
+            var totalFeeInUsdt = orderDto.FeeInfo
+                .Select(fee => fee.Amount.SafeToDecimal() * fee.SymbolPriceInUsdt.SafeToDecimal())
+                .Sum();
+            var cryptoExchange = orderDto.TokenExchanges.FirstOrDefault(ex =>
+                ex.FromSymbol == orderDto.Crypto && ex.ToSymbol == CommonConstant.USDT);
+            AssertHelper.NotNull(cryptoExchange, "crypto exchange notfound of {}-USDT", orderDto.Crypto);
+            var totalFeeInCrypto = totalFeeInUsdt * cryptoExchange!.Exchange;
             var response = await _alchemyProvider.CallBackTreasuryOrder(new AlchemyTreasuryCallBackDto
             {
                 OrderNo = orderDto.ThirdPartOrderId,
@@ -89,7 +96,9 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
                 CryptoAmount = orderDto.CryptoAmount.ToString(CultureInfo.InvariantCulture),
                 CryptoPrice = orderDto.CryptoPriceInUsdt.ToString(CultureInfo.InvariantCulture),
                 TxHash = orderDto.TransactionId,
-                Network = orderDto.ThirdPartNetwork
+                Network = orderDto.ThirdPartNetwork,
+                Address = orderDto.ToAddress,
+                NetworkFee = totalFeeInCrypto.ToString(8, DecimalHelper.RoundingOption.Ceiling),
             });
             return Tuple.Create(response.Success, JsonConvert.SerializeObject(response));
         }

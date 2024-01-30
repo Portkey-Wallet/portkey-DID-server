@@ -199,11 +199,17 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
         // rampAmount = treasuryAmount - networkFee
         // cryptoAmount in pendingTreasuryOrder = cryptoAmount + networkFeee
         var totalFeeInUsdt = pendingTreasuryOrder.FeeInfo
-            .Select(fee => fee.Amount.SafeToDecimal() * fee.SymbolPriceInUsdt.SafeToDecimal()).Sum() ;
+            .Select(fee => fee.Amount.SafeToDecimal() * fee.SymbolPriceInUsdt.SafeToDecimal()).Sum();
         var totalFeeInCrypto = totalFeeInUsdt * pendingTreasuryOrder.TokenExchange.Exchange;
-        var cryptoAmountDelta = rampOrder.CryptoQuantity.SafeToDecimal() - totalFeeInCrypto - orderInput.CryptoAmount.SafeToDecimal();
-        AssertHelper.IsTrue(Math.Abs(cryptoAmountDelta) / rampOrder.CryptoQuantity.SafeToDecimal() <
-                            _thirdPartOptions.CurrentValue.TreasuryOptions.ValidAmountPercent,
+        var cryptoAmountDiff = rampOrder.CryptoQuantity.SafeToDecimal() - totalFeeInCrypto -
+                               orderInput.CryptoAmount.SafeToDecimal();
+        var cryptoAmountDiffPercent = Math.Abs(cryptoAmountDiff) / rampOrder.CryptoQuantity.SafeToDecimal();
+        _logger.LogInformation(
+            "HandlePendingTreasuryOrder, crypto={Crypto}, totalFee={Fee}, rampAmount={RampAmount}, treasuryAmount={TreasuryAmount}, diffPercent={Percent}",
+            orderInput.Crypto, totalFeeInCrypto, rampOrder.CryptoQuantity,
+            pendingTreasuryOrder.TreasuryOrderRequest.CryptoAmount, cryptoAmountDiff);
+        AssertHelper.IsTrue(
+            cryptoAmountDiffPercent <= _thirdPartOptions.CurrentValue.TreasuryOptions.ValidAmountPercent,
             "Crypto amount not match, rampOrderAmount={}, treasuryOrderAmount={}", rampOrder.CryptoQuantity,
             orderInput.CryptoAmount);
         AssertHelper.IsTrue(rampOrder.Address == orderInput.Address, "Address not match");
