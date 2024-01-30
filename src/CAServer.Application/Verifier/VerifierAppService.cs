@@ -356,6 +356,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
         }
 
+        facebookUser.Picture = facebookUser.PictureDic["picture"].Url;
         await AddUserInfoAsync(
             ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
         return new VerificationCodeResponse

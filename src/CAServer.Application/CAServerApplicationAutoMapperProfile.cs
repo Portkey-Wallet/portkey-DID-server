@@ -571,5 +571,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
         CreateMap<UserExtraInfoResultDto, Verifier.Dtos.UserExtraInfo>()
             .ForMember(t => t.IsPrivateEmail, m => m.MapFrom(f => f.IsPrivate));
+        CreateMap<FacebookUserInfoDto, Verifier.Dtos.UserExtraInfo>().ReverseMap();
     }
 }
