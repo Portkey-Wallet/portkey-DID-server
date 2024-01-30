@@ -658,7 +658,7 @@ public class ContractAppService : IContractAppService
                 AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
             }
         );
-        return bool.Parse(enable??"false");
+        return bool.Parse(enable ?? "false");
     }
 
     private async Task CreateHolderInfoOnNonCreateChainAsync(
@@ -672,6 +672,7 @@ public class ContractAppService : IContractAppService
             {
                 return;
             }
+
             var createChainId = createHolderDto.ChainId;
             var chainInfos = _chainOptions.ChainInfos.Values.Where(
                 c => c.ChainId != createChainId);
@@ -685,6 +686,8 @@ public class ContractAppService : IContractAppService
                         var result = await _contractProvider.CreateHolderInfoOnNonCreateChainAsync(chain,
                             outputGetHolderInfo,
                             createHolderDto);
+                        _logger.LogInformation("accelerate registration: {0}, transactionId:{1}",
+                            JsonConvert.SerializeObject(createHolderDto), result.TransactionId);
 
                         await SendCreateHolderInfoOnNonCreateChainMessageAsync(chain, createHolderDto,
                             outputGetHolderInfo,
@@ -769,8 +772,9 @@ public class ContractAppService : IContractAppService
             {
                 return;
             }
+
             var chainId = socialRecoveryDto.ChainId;
-            var chainInfos = _chainOptions.ChainInfos.Values.Where(c => c.ChainId == chainId);
+            var chainInfos = _chainOptions.ChainInfos.Values.Where(c => c.ChainId != chainId);
             using var semaphore = new SemaphoreSlim(3);
             var tasks = chainInfos.Select(async chain =>
             {
@@ -779,6 +783,8 @@ public class ContractAppService : IContractAppService
                 {
                     socialRecoveryDto.ChainId = chain.ChainId;
                     var transactionResultDto = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
+                    _logger.LogInformation("accelerate recovery: {0}, transactionId:{1}",
+                        JsonConvert.SerializeObject(socialRecoveryDto), transactionResultDto.TransactionId);
 
                     await SendSocialRecoveryOnNonCreateChainMessageAsync(chain, socialRecoveryDto,
                         transactionResultDto);
@@ -1040,7 +1046,8 @@ public class ContractAppService : IContractAppService
             if (lastEndHeight == 0)
             {
                 _logger.LogError(
-                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. \nLastEndHeight: {last}", chainId, lastEndHeight);
+                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. \nLastEndHeight: {last}",
+                    chainId, lastEndHeight);
                 return;
             }
 
@@ -1137,7 +1144,7 @@ public class ContractAppService : IContractAppService
 
             storedToBeValidatedRecords = storedToBeValidatedRecords
                 .Where(r => r.BlockHeight >= _indexOptions.AutoSyncStartHeight[chainId]).ToList();
-            
+
             storedToBeValidatedRecords = OptimizeSyncRecords(storedToBeValidatedRecords
                 .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
 
