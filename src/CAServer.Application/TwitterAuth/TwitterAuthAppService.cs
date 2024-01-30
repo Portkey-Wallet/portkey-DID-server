@@ -38,7 +38,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             ["code"] = twitterAuthDto.Code,
             ["grant_type"] = "authorization_code",
             ["redirect_uri"] = _options.RedirectUrl, 
-            ["client_id"] = _options.ClientId,
+            // ["client_id"] = _options.ClientId,
             ["code_verifier"] = "challenge"
         };
 
@@ -47,7 +47,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             ["Authorization"] = basicAuth
         };
 
-        var response = await _httpClientService.PostAsync<string>(_options.TwitterTokenUrl, RequestMediaType.Form,
+        var response = await _httpClientService.PostAsync<TwitterTokenDto>(_options.TwitterTokenUrl, RequestMediaType.Form,
             requestParam,
             header);
 

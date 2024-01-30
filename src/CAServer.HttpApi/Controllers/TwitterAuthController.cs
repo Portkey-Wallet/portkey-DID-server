@@ -39,15 +39,13 @@ public class TwitterAuthController : CAServerController
             var data = new SortedDictionary<string, object>();
             data.Add("request.body", HttpContext.Request.QueryString.Value);
             _logger.LogInformation("receive twitter callback for test, data:{data}", JsonConvert.SerializeObject(data));
-        
-            return Ok();
         }
 
-        if (!twitterAuthDto.AccessToken.IsNullOrEmpty())
-        {
-            _logger.LogInformation("receive twitter callback, token:{token}", twitterAuthDto.AccessToken);
-            return Redirect($"{_options.RedirectUrl}?id_token={twitterAuthDto.AccessToken}");
-        }
+        // if (!twitterAuthDto.AccessToken.IsNullOrEmpty())
+        // {
+        //     _logger.LogInformation("receive twitter callback, token:{token}", twitterAuthDto.AccessToken);
+        //     return Redirect($"{_options.RedirectUrl}?id_token={twitterAuthDto.AccessToken}");
+        // }
 
         await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
         return Ok();
