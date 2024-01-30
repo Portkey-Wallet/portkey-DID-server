@@ -348,7 +348,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 userSaltAndHash.Item2);
         if (!response.Success)
         {
-            throw new UserFriendlyException($"Validate VerifierGoogle Failed :{response.Message}");
+            throw new UserFriendlyException($"Validate Facebook Failed :{response.Message}");
         }
 
         if (!userSaltAndHash.Item3)
