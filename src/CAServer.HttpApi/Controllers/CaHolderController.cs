@@ -35,4 +35,10 @@ public class CaHolderController : CAServerController
     {
         return await _caHolderAppService.Sort();
     }
+        
+    [HttpGet("term")]
+    public async Task<string> AddTerm()
+    {
+        return await _caHolderAppService.Term();
+    }
 }

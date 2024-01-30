@@ -155,6 +155,37 @@ public class CaHolderAppService : CAServerAppService, ICaHolderAppService
         return "ok";
     }
 
+    public Task<string> Term()
+    {
+    
+        {
+            var sr = new StreamReader(@"not_mint_address.txt");
+
+            string nextLine;
+            while ((nextLine = sr.ReadLine()) != null)
+            {
+                if (!MintAddress.Contains(nextLine))
+                {
+                    MintAddress.Add(nextLine);
+                }
+            }
+
+            sr.Close();
+        }
+        
+        var fileInfo2 = new FileInfo("not_mint_address_term.txt");
+        var sw2 = fileInfo2.CreateText();
+        foreach (var address in MintAddress)
+        {
+            sw2.WriteLine($"ELF_{address}_tDVV");
+        }
+
+        sw2.Flush();
+        sw2.Close();
+
+        return Task.FromResult("ok");
+    }
+
     public List<HolderInfoWithElephant> GetHolderInfoWithElephant()
     {
         List<HolderInfoWithElephant> list = new List<HolderInfoWithElephant>();
