@@ -341,7 +341,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
     {
-        var facebookUser = await GetFacebookUserDtoAsync(requestDto.AccessToken);
+        var facebookUser = await GetFacebookUserDtoAsync(requestDto);
         var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
         var response =
             await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
@@ -365,32 +365,19 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         };
     }
 
-    private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(string accessToken)
+    private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(VerifyTokenRequestDto requestDto)
     {
-        var app_token = _facebookOptions.AppId + "%7C" + _facebookOptions.AppSecret;
-        var requestUrl =
-            "https://graph.facebook.com/debug_token?access_token=" + app_token + "&input_token=" + accessToken;
-        var result = await FacebookRequestAsync(requestUrl);
-        var verifyUserInfo = JsonConvert.DeserializeObject<VerifyFacebookUserInfoDto>(result);
+        var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyACTokenAsync(requestDto);
 
-        if (verifyUserInfo == null)
+        if (!verifyFacebookUserInfoDto.Success)
         {
-            throw new UserFriendlyException("verify Facebook userInfo fail.");
-        }
-
-        if (!verifyUserInfo.Data.IsValid)
-        {
-            throw new UserFriendlyException("Verify accessToken from Facebook fail.");
-        }
-
-        if (verifyUserInfo.Data.ExpiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-        {
-            throw new UserFriendlyException("Token expired.");
+            throw new UserFriendlyException(verifyFacebookUserInfoDto.Message);
         }
 
         var getUserInfoUrl =
-            "https://graph.facebook.com/" + verifyUserInfo.Data.UserId + "?fields=id,name,email,picture&access_token=" +
-            accessToken;
+            "https://graph.facebook.com/" + verifyFacebookUserInfoDto.Data.UserId +
+            "?fields=id,name,email,picture&access_token=" +
+            requestDto.AccessToken;
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
         facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
