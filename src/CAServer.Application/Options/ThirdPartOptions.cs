@@ -19,6 +19,8 @@ public class TreasuryOptions
 {
     // ThirdPartName_Crypto => settlementPublicKey
     public Dictionary<string, string> SettlementPublicKey { get; set; } = new();
+
+    public decimal ValidAmountPercent = 0.01M;
 }
 
 public class OrderExportAuth

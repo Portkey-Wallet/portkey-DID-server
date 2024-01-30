@@ -195,8 +195,13 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             rampOrder!.Status.NotNullOrEmpty() && rampOrder.Status != OrderStatusType.Initialized.ToString(),
             "Ramp order still in state {}", rampOrder.Status);
         AssertHelper.IsTrue(rampOrder!.Crypto == orderInput.Crypto, "Crypto symbol not match");
-        AssertHelper.IsTrue(rampOrder.CryptoQuantity.SafeToDecimal() == orderInput.CryptoAmount.SafeToDecimal(),
-            "Crypto amount not match");
+
+        var cryptoAmountDelta = rampOrder.CryptoQuantity.SafeToDecimal() - orderInput.CryptoAmount.SafeToDecimal();
+        AssertHelper.IsTrue(
+            Math.Abs(cryptoAmountDelta) / rampOrder.CryptoQuantity.SafeToDecimal() <
+            _thirdPartOptions.CurrentValue.TreasuryOptions.ValidAmountPercent,
+            "Crypto amount not match, rampOrderAmount={}, treasuryOrderAmount={}", rampOrder.CryptoQuantity,
+            orderInput.CryptoAmount);
         AssertHelper.IsTrue(rampOrder.Address == orderInput.Address, "Address not match");
         AssertHelper.IsTrue(rampOrder.TransDirect == TransferDirectionType.TokenBuy.ToString(),
             "Invalid ramp order transDirect");
@@ -267,7 +272,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
                 await _contractProvider.GetTransactionResultAsync(CommonConstant.MainChainId, order.TransactionId);
             _logger.LogDebug("RefreshTransferMultiConfirmAsync, orderId={OrderId}, tx={Tx}, txHeight={TxHeight}",
                 orderId, transactionResult.TransactionId, transactionResult.BlockNumber);
-            
+
             // update order status
             var newStatus = transactionResult.Status == TransactionState.Mined
                 ? transactionResult.BlockNumber <= confirmedHeight || chainHeight >=
