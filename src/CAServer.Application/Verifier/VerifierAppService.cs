@@ -30,7 +30,6 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
-using static System.String;
 
 namespace CAServer.Verifier;
 
@@ -355,7 +354,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
         }
-
+        facebookUser.Picture = facebookUser.PictureDic["data"].Url;
         await AddUserInfoAsync(
             ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
         return new VerificationCodeResponse
