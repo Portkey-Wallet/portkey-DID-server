@@ -27,10 +27,14 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     IDistributedEventHandler<AccountRecoverCreateEto>,
     IDistributedEventHandler<CreateHolderEto>,
     IDistributedEventHandler<SocialRecoveryEto>,
+    IDistributedEventHandler<AccelerateCreateHolderEto>,
+    IDistributedEventHandler<AccelerateSocialRecoveryEto>,
     ITransientDependency
 {
     private readonly INESTRepository<AccountRegisterIndex, Guid> _registerRepository;
     private readonly INESTRepository<AccountRecoverIndex, Guid> _recoverRepository;
+    private readonly INESTRepository<AccelerateRegisterIndex, string> _accelerateRegisterRepository;
+    private readonly INESTRepository<AccelerateRecoverIndex, string> _accelerateRecoverRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CaAccountHandler> _logger;
     private readonly IClusterClient _clusterClient;
@@ -44,7 +48,9 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         ILogger<CaAccountHandler> logger,
         IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
-        IIndicatorLogger indicatorLogger, IGrowthAppService growthAppService)
+        IIndicatorLogger indicatorLogger, IGrowthAppService growthAppService,
+        INESTRepository<AccelerateRegisterIndex, string> accelerateRegisterRepository,
+        INESTRepository<AccelerateRecoverIndex, string> accelerateRecoverRepository)
     {
         _registerRepository = registerRepository;
         _recoverRepository = recoverRepository;
@@ -54,6 +60,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _distributedEventBus = distributedEventBus;
         _indicatorLogger = indicatorLogger;
         _growthAppService = growthAppService;
+        _accelerateRegisterRepository = accelerateRegisterRepository;
+        _accelerateRecoverRepository = accelerateRecoverRepository;
     }
 
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
@@ -226,5 +234,17 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _logger.LogInformation(
             "create growth info success, caHash:{caHash}, referralCode:{referralCode}, projectCode:{projectCode}",
             caHash, referralInfo.ReferralCode, referralInfo.ProjectCode ?? string.Empty);
+    }
+
+    public async Task HandleEventAsync(AccelerateCreateHolderEto eventData)
+    {
+        var accelerateRegisterIndex = _objectMapper.Map<AccelerateCreateHolderEto, AccelerateRegisterIndex>(eventData);
+        await _accelerateRegisterRepository.AddAsync(accelerateRegisterIndex);
+    }
+
+    public async Task HandleEventAsync(AccelerateSocialRecoveryEto eventData)
+    {
+        var accelerateRecoverIndex = _objectMapper.Map<AccelerateSocialRecoveryEto, AccelerateRecoverIndex>(eventData);
+        await _accelerateRecoverRepository.AddAsync(accelerateRecoverIndex);
     }
 }

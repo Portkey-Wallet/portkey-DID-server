@@ -8,6 +8,7 @@ using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
@@ -17,6 +18,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -40,6 +42,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private const int MaxResultCount = 10;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ActivityTypeOptions _activityTypeOptions;
+    
+    private const string CreateCAHolderOnNonCreateChain = "CreateCAHolderOnNonCreateChain";
+    private const string SocialRecovery = "SocialRecovery";
 
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
@@ -368,6 +373,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 result.TotalRecordCount -= 1;
                 continue;
+            }
+
+            //filter transaction for accelerated registration and accelerated recovery
+            if (ht.MethodName == CreateCAHolderOnNonCreateChain)
+            {
+                result.TotalRecordCount -= 1;
+                continue;
+            }
+            if (ht.MethodName == SocialRecovery)
+            {
+                var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
+                var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
+                if (holderInfo?.OriginChainId != null && holderInfo?.OriginChainId != ht.ChainId)
+                {
+                    result.TotalRecordCount -= 1;
+                    continue;
+                }
             }
 
             var transactionTime = MsToDateTime(ht.Timestamp * 1000);

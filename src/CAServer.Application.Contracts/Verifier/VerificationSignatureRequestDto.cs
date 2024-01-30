@@ -12,10 +12,12 @@ public class VerificationSignatureRequestDto : IValidatableObject
 
     [Required] public string VerifierId { get; set; }
     [Required] public string ChainId { get; set; }
-    
+
     public string TargetChainId { get; set; }
 
     [Required] public OperationType OperationType { get; set; }
+
+    public string OperationDetails { get; set; }
 
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
