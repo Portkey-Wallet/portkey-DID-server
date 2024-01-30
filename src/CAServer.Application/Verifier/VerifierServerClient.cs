@@ -168,6 +168,12 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifyFacebookUserInfoDto>>(url, parameters);
     }
 
+    public async Task<ResponseResultDto<VerifyTwitterTokenDto>> VerifyTwitterTokenAsync(VerifyTokenRequestDto input, string identifierHash, string salt)
+    {
+        var requestUri = "/api/app/account/verifyAppleToken";
+        return await GetResultAsync<VerifyTwitterTokenDto>(input, requestUri, identifierHash, salt);
+    }
+
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,
         string requestUri, string identifierHash, string salt)
     {

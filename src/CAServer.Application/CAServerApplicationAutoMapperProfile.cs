@@ -614,5 +614,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RampCurrencyItem, DefaultCryptoCurrency>().ReverseMap();
         CreateMap<FacebookUserInfoDto, Verifier.Dtos.UserExtraInfo>().ReverseMap();
 
+        CreateMap<TwitterUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
     }
 }
