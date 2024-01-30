@@ -145,7 +145,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await GetResultAsync<VerificationCodeResponse>(requestDto, requestUri, identifierHash, salt);
     }
 
-    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyACTokenAsync(VerifyTokenRequestDto input)
+    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(VerifyTokenRequestDto input)
     {
         var endPoint =
             await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
@@ -158,8 +158,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 Message = "No Available Service Tips."
             };
         }
-        var url = "http://127.0.0.1:5588" + "/api/app/account/verifyFacebookAccessTokenAndGetUserId";
-        //var url = endPoint + "/api/app/account/verifyFacebookAccessTokenAndGetUserId";
+        var url = endPoint + "/api/app/account/verifyFacebookAccessTokenAndGetUserId";
         var parameters = new Dictionary<string, string>
         {
             { "accessToken", input.AccessToken }

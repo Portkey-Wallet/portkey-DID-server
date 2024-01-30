@@ -367,7 +367,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(VerifyTokenRequestDto requestDto)
     {
-        var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyACTokenAsync(requestDto);
+        var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyFacebookAccessTokenAsync(requestDto);
 
         if (!verifyFacebookUserInfoDto.Success)
         {

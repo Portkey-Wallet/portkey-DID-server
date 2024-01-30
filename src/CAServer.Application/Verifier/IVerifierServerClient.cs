@@ -19,5 +19,5 @@ public interface IVerifierServerClient
         string identifierHash, string salt);
 
     Task<ResponseResultDto<VerificationCodeResponse>> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto, string identifierHash, string salt);
-    Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyACTokenAsync(VerifyTokenRequestDto requestDto);
+    Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(VerifyTokenRequestDto requestDto);
 }
