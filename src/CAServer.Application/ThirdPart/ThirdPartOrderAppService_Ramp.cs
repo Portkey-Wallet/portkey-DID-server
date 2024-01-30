@@ -18,6 +18,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
+using Volo.Abp.Threading;
 
 namespace CAServer.ThirdPart;
 
@@ -27,45 +28,50 @@ public partial class ThirdPartOrderAppService
     ///     Ramp coverage
     /// </summary>
     /// <returns></returns>
-    public Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync()
+    public async Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync()
     {
         var coverageDto = new RampCoverageDto();
-        var providers = GetRampProviders();
+        var providers = await GetRampProvidersAsync();
         foreach (var (k, v) in providers)
         {
             coverageDto.ThirdPart[k] = _objectMapper.Map<ThirdPartProvider, RampProviderDto>(v);
         }
 
-        return Task.FromResult(new CommonResponseDto<RampCoverageDto>(coverageDto));
+        return new CommonResponseDto<RampCoverageDto>(coverageDto);
     }
 
-    private Dictionary<string, ThirdPartProvider> GetRampProviders(string type = null)
+    private async Task<Dictionary<string, ThirdPartProvider>> GetRampProvidersAsync(string type = null)
     {
         if (_rampOptions?.CurrentValue?.Providers == null) return new Dictionary<string, ThirdPartProvider>();
 
         // expression params
-        var getParamDict = (bool baseCoverage) => new Dictionary<string, object>
+        var getParamDict = (ThirdPartProvider provider, string rampType) =>
         {
-            [RampConditionParams.BaseCoverage] = baseCoverage,
-            [RampConditionParams.PortkeyId] = (CurrentUser.Id ?? new Guid()).ToString(),
-            [RampConditionParams.PortkeyIdWhitelist] = _rampOptions.CurrentValue.PortkeyIdWhiteList,
-            [RampConditionParams.DeviceType] = DeviceInfoContext.CurrentDeviceInfo?.ClientType,
-            [RampConditionParams.DeviceVersion] = DeviceInfoContext.CurrentDeviceInfo?.Version,
+            var paramDict = new Dictionary<string, object>();
+            var isBuy = rampType == OrderTransDirect.BUY.ToString();
+            var cryptos = _rampOptions.CurrentValue.CryptoList
+                .Where(c => isBuy ? c.OnRampEnable : c.OffRampEnable)
+                .Select(c => c.Symbol).ToList();
+            paramDict[RampConditionParams.BaseCoverage] = isBuy ? provider.Coverage.OnRamp : provider.Coverage.OffRamp;
+            paramDict[RampConditionParams.PortkeyId] = (CurrentUser.Id ?? new Guid()).ToString();
+            paramDict[RampConditionParams.PortkeyIdWhitelist] = _rampOptions.CurrentValue.PortkeyIdWhiteList;
+            paramDict[RampConditionParams.DeviceType] = DeviceInfoContext.CurrentDeviceInfo?.ClientType;
+            paramDict[RampConditionParams.DeviceVersion] = DeviceInfoContext.CurrentDeviceInfo?.Version;
+            paramDict[RampConditionParams.CryptoList] = cryptos;
+            paramDict[RampConditionParams.CryptoCount] = cryptos.Count;
+            return paramDict;
         };
 
         var calculateCoverage = (string providerName, ThirdPartProvider provider) =>
         {
-            var paramDict = getParamDict(provider.Coverage.OffRamp);
             // if off-ramp support
             var supportOffRamp = ExpressionHelper.Evaluate(
                 _rampOptions.CurrentValue.CoverageExpressions[providerName].OffRamp,
-                getParamDict(provider.Coverage.OffRamp));
-            var currentDeviceInfo = DeviceInfoContext.CurrentDeviceInfo;
-            var dictionary = getParamDict(provider.Coverage.OnRamp);
+                getParamDict(provider, OrderTransDirect.SELL.ToString()));
             // if on-ramp support
             var supportOnRamp = ExpressionHelper.Evaluate(
                 _rampOptions.CurrentValue.CoverageExpressions[providerName].OnRamp,
-                getParamDict(provider.Coverage.OnRamp));
+                getParamDict(provider, OrderTransDirect.BUY.ToString()));
 
             // calculate by input-type
             if (!supportOffRamp && !supportOnRamp) return null;
@@ -84,9 +90,9 @@ public partial class ThirdPartOrderAppService
     }
 
 
-    private Dictionary<string, IThirdPartAdaptor> GetThirdPartAdaptors(string type = null)
+    private async Task<Dictionary<string, IThirdPartAdaptor>> GetThirdPartAdaptors(string type = null)
     {
-        var providers = GetRampProviders(type);
+        var providers = await GetRampProvidersAsync(type);
         return providers.IsNullOrEmpty()
             ? new Dictionary<string, IThirdPartAdaptor>()
             : _thirdPartAdaptors
@@ -103,10 +109,11 @@ public partial class ThirdPartOrderAppService
     {
         try
         {
-            var cryptoListTasks = GetThirdPartAdaptors(request.Type).Values
+            var cryptoListTasks = (await GetThirdPartAdaptors(request.Type)).Values
                 .Select(adaptor => adaptor.GetCryptoListAsync(request)).ToList();
             var cryptoLists = (await Task.WhenAll(cryptoListTasks))
-                .Select(list => list.ToDictionary(crypto => string.Join(CommonConstant.Underline, crypto.Symbol, crypto.Network)))
+                .Select(list =>
+                    list.ToDictionary(crypto => string.Join(CommonConstant.Underline, crypto.Symbol, crypto.Network)))
                 .ToList();
             AssertHelper.NotEmpty(cryptoLists, "Empty crypto list");
 
@@ -116,18 +123,20 @@ public partial class ThirdPartOrderAppService
             for (var i = 0; cryptoList != null && i < cryptoList.Count; i++)
             {
                 var crypto = cryptoList[i];
-                if (!crypto.Enable)
+                if (!(request.IsBuy ? crypto.OnRampEnable : crypto.OffRampEnable))
                     continue;
-                
+
                 var cryptoKey = string.Join(CommonConstant.Underline, crypto.Symbol, crypto.Network);
                 if (!cryptoLists.Any(list => list.ContainsKey(cryptoKey)))
                     continue;
-                
+
                 cryptoDto.CryptoList.Add(_objectMapper.Map<CryptoItem, RampCurrencyItem>(crypto));
             }
-            
-            var defaultCurrency = (_rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption()).ToCrypto();
-            var defaultCurrencyInList = cryptoDto.CryptoList.FirstOrDefault(crypto => crypto.Symbol == defaultCurrency.Symbol);
+
+            var defaultCurrency =
+                (_rampOptions?.CurrentValue?.DefaultCurrency ?? new DefaultCurrencyOption()).ToCrypto();
+            var defaultCurrencyInList =
+                cryptoDto.CryptoList.FirstOrDefault(crypto => crypto.Symbol == defaultCurrency.Symbol);
             defaultCurrencyInList ??= cryptoDto.CryptoList.FirstOrDefault();
             if (defaultCurrencyInList != null) _objectMapper.Map(defaultCurrencyInList, defaultCurrency);
             cryptoDto.DefaultCrypto = defaultCurrency;
@@ -159,7 +168,7 @@ public partial class ThirdPartOrderAppService
             var fiatDict = new SortedDictionary<string, RampFiatItem>();
 
             // invoke provider-adaptors ASYNC
-            var fiatTask = GetThirdPartAdaptors(rampFiatRequest.Type).Values
+            var fiatTask = (await GetThirdPartAdaptors(rampFiatRequest.Type)).Values
                 .Select(adaptor => adaptor.GetFiatListAsync(rampFiatRequest)).ToList();
 
             var fiatList = (await Task.WhenAll(fiatTask))
@@ -223,7 +232,7 @@ public partial class ThirdPartOrderAppService
             var rampLimit = new RampLimitDto();
 
             // invoke provider-adaptors ASYNC
-            var limitTasks = GetThirdPartAdaptors(request.Type).Values
+            var limitTasks = (await GetThirdPartAdaptors(request.Type)).Values
                 .Select(adaptor => adaptor.GetRampLimitAsync(request)).ToList();
 
             var limitList = (await Task.WhenAll(limitTasks)).Where(limit => limit != null).ToList();
@@ -275,7 +284,7 @@ public partial class ThirdPartOrderAppService
         try
         {
             // invoke provider-adaptors ASYNC
-            var exchangeTasks = GetThirdPartAdaptors(request.Type).Values
+            var exchangeTasks = (await GetThirdPartAdaptors(request.Type)).Values
                 .Select(adaptor => adaptor.GetRampExchangeAsync(request)).ToList();
 
             // choose the MAX crypto-fiat exchange rate
@@ -318,7 +327,7 @@ public partial class ThirdPartOrderAppService
                 "Invalid crypto amount");
 
             // invoke provider-adaptors ASYNC
-            var priceTask = GetThirdPartAdaptors(request.Type).Values
+            var priceTask = (await GetThirdPartAdaptors(request.Type)).Values
                 .Select(adaptor => adaptor.GetRampPriceAsync(request)).ToList();
 
             // order by price and choose the MAX one
@@ -359,7 +368,7 @@ public partial class ThirdPartOrderAppService
             AssertHelper.NotEmpty(request.Fiat, "Param fiat empty");
 
             // invoke provider-adaptors ASYNC
-            var detailTasks = GetThirdPartAdaptors(request.Type).Values
+            var detailTasks = (await GetThirdPartAdaptors(request.Type)).Values
                 .Select(adaptor => adaptor.GetRampDetailAsync(request))
                 .ToList();
 
