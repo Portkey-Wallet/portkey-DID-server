@@ -24,6 +24,12 @@ public class CaHolderController : CAServerController
         return await _caHolderAppService.Statistic();
     }
     
+    [HttpGet("statistic2")]
+    public async Task<string> Statistic2()
+    {
+        return await _caHolderAppService.Statistic2();
+    }
+    
     [HttpGet("sort")]
     public async Task<string> Sort()
     {

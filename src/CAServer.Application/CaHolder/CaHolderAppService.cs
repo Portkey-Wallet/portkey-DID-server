@@ -49,24 +49,25 @@ public class CaHolderAppService : CAServerAppService, ICaHolderAppService
         Console.WriteLine($"total create holder count:{activity.CaHolderTransaction.TotalRecordCount}");
         Console.WriteLine($"total create holder count:{activity.CaHolderTransaction.Data.Count}");
         var newAddresses = activity.CaHolderTransaction.Data.Select(t => t.FromAddress).ToList();
-        
+
         var newHolders = HolderInfos.Where(t => newAddresses.Contains(t.CaAddress)).ToList();
         var newHashes = newHolders.Select(t => t.CaHash).ToList();
-        
+
         var newHoldersWithAddress = HolderInfos.Where(t => newHashes.Contains(t.CaHash)).ToList();
         var newSideAddresses = newHoldersWithAddress.Where(t => t.ChainId == "tDVV").Select(f => f.CaAddress).ToList();
 
         var notMintAddresses = newSideAddresses.Except(MintAddress).ToList();
-        
+
         var fileInfo = new FileInfo("not_mint_address.txt");
         var sw = fileInfo.CreateText();
         foreach (var address in notMintAddresses)
         {
             sw.WriteLine(address);
         }
+
         sw.Flush();
         sw.Close();
-        
+
         // var nftInfo = await GetUserNftInfoAsync(new List<CAAddressInfo>(), "ELEPHANT-1", 0, 10000);
         //
         // var addresses = nftInfo.CaHolderNFTBalanceInfo.Data.Select(t => new { t.CaAddress, t.Balance }).ToList();
@@ -90,6 +91,56 @@ public class CaHolderAppService : CAServerAppService, ICaHolderAppService
         //
         // sw.Flush();
         // sw.Close();
+
+        return "ok";
+    }
+
+    public async Task<string> Statistic2()
+    {
+        ReadHolderInfo();
+        ReadMintAddressesInfo();
+        // var activityInfo1 = await GetMintInfo2(1706025600, 1706184000);
+        // var activityInfo2 = await GetMintInfo2(1706443200, 1706585067);
+        ReadMintAddressesInfo2();
+        
+        
+        var minAll = MintAddress;//.Union(activityInfo1).Union(activityInfo2).ToList();
+
+        var createCAHolder1 = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty, string.Empty,
+            new List<string>() { "CreateCAHolder" }, 0, 5000, 1706025600, 1706184000);
+
+        Console.WriteLine($"total create holder1 count:{createCAHolder1.CaHolderTransaction.TotalRecordCount}");
+        Console.WriteLine($"total create holder1 count:{createCAHolder1.CaHolderTransaction.Data.Count}");
+
+        var createCAHolder2 = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty, string.Empty,
+            new List<string>() { "CreateCAHolder" }, 0, 5000, 1706443200, 1706585067);
+
+        Console.WriteLine($"total create holder2 count:{createCAHolder2.CaHolderTransaction.TotalRecordCount}");
+        Console.WriteLine($"total create holder2 count:{createCAHolder2.CaHolderTransaction.Data.Count}");
+        var newAddress1 = createCAHolder1.CaHolderTransaction.Data.Select(t => t.FromAddress).ToList();
+        var newAddress2 = createCAHolder2.CaHolderTransaction.Data.Select(t => t.FromAddress).ToList();
+        var newAddresses = newAddress1.Union(newAddress2);
+
+        var newHolders = HolderInfos.Where(t => newAddresses.Contains(t.CaAddress)).ToList();
+        var newHashes = newHolders.Select(t => t.CaHash).ToList();
+
+        var newHoldersWithAddress = HolderInfos.Where(t => newHashes.Contains(t.CaHash)).ToList();
+        var newSideAddresses = newHoldersWithAddress.Where(t => t.ChainId == "tDVV").Select(f => f.CaAddress).ToList();
+
+        var nftInfo = await GetUserNftInfoAsync(new List<CAAddressInfo>(), "ELEPHANT-1", 0, 10000);
+        var hasNftAddresses = nftInfo.CaHolderNFTBalanceInfo.Data.Select(t => t.CaAddress).ToList();
+
+        var addresses = newSideAddresses.Except(minAll).Except(hasNftAddresses).ToList();
+
+        var fileInfo = new FileInfo("not_mint_and_no_elephant_address.txt");
+        var sw = fileInfo.CreateText();
+        foreach (var address in addresses)
+        {
+            sw.WriteLine(address);
+        }
+
+        sw.Flush();
+        sw.Close();
 
         return "ok";
     }
@@ -160,6 +211,23 @@ public class CaHolderAppService : CAServerAppService, ICaHolderAppService
         string nextLine;
         while ((nextLine = sr.ReadLine()) != null)
         {
+            if (!MintAddress.Contains(nextLine))
+            {
+                MintAddress.Add(nextLine);
+            }
+        }
+
+        sr.Close();
+    }
+    
+    private void ReadMintAddressesInfo2()
+    {
+        var sr = new StreamReader(@"not_mint_address2.txt");
+
+        string nextLine;
+        while ((nextLine = sr.ReadLine()) != null)
+        {
+            nextLine = nextLine.Trim(' ').Trim('"').TrimEnd('"').TrimEnd(' ');
             if (!MintAddress.Contains(nextLine))
             {
                 MintAddress.Add(nextLine);
@@ -259,6 +327,35 @@ public class CaHolderAppService : CAServerAppService, ICaHolderAppService
         Console.WriteLine($"mint success address count:{count}");
     }
 
+    public async Task<List<string>> GetMintInfo2(long startTime, long endTime)
+    {
+        var list = new List<string>();
+        var onceCount = 8000;
+        var count = 0;
+        for (var i = 0; i < 200000; i = i + onceCount)
+        {
+            var activity = await GetActivitiesAsync(new List<CAAddressInfo>(), string.Empty, string.Empty,
+                new List<string>() { "Inscribe", "MintInscription" }, i, onceCount, startTime, endTime);
+            if (activity == null || activity.CaHolderTransaction.Data.IsNullOrEmpty())
+            {
+                break;
+            }
+
+            foreach (var transaction in activity.CaHolderTransaction.Data)
+            {
+                if (MintAddress.Contains(transaction.FromAddress) || list.Contains(transaction.FromAddress))
+                {
+                    continue;
+                }
+
+                list.Add(transaction.FromAddress);
+                count++;
+            }
+        }
+
+        Console.WriteLine($"mint success address count:{count}");
+        return list;
+    }
 
     private async Task<GuardiansDto> GetHolderInfoAsync(string chainId, string caHash, List<string> caAddresses,
         int inputSkipCount, int inputMaxResultCount)
@@ -278,7 +375,8 @@ public class CaHolderAppService : CAServerAppService, ICaHolderAppService
     }
 
     private async Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> caAddressInfos, string inputChainId,
-        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount)
+        string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount,
+        long startTime = 1706184000, long endTime = 1706443200)
     {
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
@@ -292,7 +390,7 @@ public class CaHolderAppService : CAServerAppService, ICaHolderAppService
             {
                 caAddressInfos = caAddressInfos, chainId = inputChainId, symbol = symbolOpt,
                 methodNames = inputTransactionTypes, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount,
-                startBlockHeight = 0, endBlockHeight = 0, startTime = 1706184000, endTime = 1706443200
+                startBlockHeight = 0, endBlockHeight = 0, startTime = startTime, endTime = endTime
             }
         });
     }
