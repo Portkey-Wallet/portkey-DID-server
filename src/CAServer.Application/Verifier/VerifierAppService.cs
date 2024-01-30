@@ -49,7 +49,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly IContractProvider _contractProvider;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
-    private readonly FacebookOptions _facebookOptions;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
@@ -63,8 +62,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider,
-        IOptionsSnapshot<FacebookOptions> facebookOptions)
+        ICacheProvider cacheProvider, IContractProvider contractProvider)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -76,7 +74,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
-        _facebookOptions = facebookOptions.Value;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -354,7 +351,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
         }
-        facebookUser.Picture = facebookUser.PictureDic["picture"].Url;
+
+        
         await AddUserInfoAsync(
             ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
         return new VerificationCodeResponse
@@ -379,6 +377,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             requestDto.AccessToken;
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
+        facebookUserInfo.Picture = facebookUserInfo.PictureDic["picture"].Url;
         facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
         return facebookUserInfo;
     }

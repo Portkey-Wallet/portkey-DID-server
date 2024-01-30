@@ -8,6 +8,7 @@ using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.DataReporting;
+using CAServer.Facebook;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Options;
