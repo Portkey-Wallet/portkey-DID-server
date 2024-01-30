@@ -3,12 +3,17 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.Common;
+using CAServer.Grains;
+using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.TwitterAuth.Dtos;
+using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.TwitterAuth;
 
@@ -17,10 +22,15 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 {
     private readonly IHttpClientService _httpClientService;
     private readonly TwitterAuthOptions _options;
+    private readonly IDistributedEventBus _distributedEventBus;
+    private readonly IClusterClient _clusterClient;
 
-    public TwitterAuthAppService(IHttpClientService httpClientService, IOptionsSnapshot<TwitterAuthOptions> options)
+    public TwitterAuthAppService(IHttpClientService httpClientService, IOptionsSnapshot<TwitterAuthOptions> options,
+        IClusterClient clusterClient, IDistributedEventBus distributedEventBus)
     {
         _httpClientService = httpClientService;
+        _clusterClient = clusterClient;
+        _distributedEventBus = distributedEventBus;
         _options = options.Value;
     }
 
@@ -37,7 +47,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         {
             ["code"] = twitterAuthDto.Code,
             ["grant_type"] = "authorization_code",
-            ["redirect_uri"] = _options.RedirectUrl, 
+            ["redirect_uri"] = _options.RedirectUrl,
             // ["client_id"] = _options.ClientId,
             ["code_verifier"] = "challenge"
         };
@@ -47,16 +57,49 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             ["Authorization"] = basicAuth
         };
 
-        var response = await _httpClientService.PostAsync<TwitterTokenDto>(_options.TwitterTokenUrl, RequestMediaType.Form,
+        var response = await _httpClientService.PostAsync<TwitterTokenDto>(_options.TwitterTokenUrl,
+            RequestMediaType.Form,
             requestParam,
             header);
 
-        Logger.LogInformation("send code to twitter success, response:{response}", response);
+        Logger.LogInformation("send code to twitter success, response:{response}",
+            JsonConvert.SerializeObject(response));
+
+       // await SaveUserExtraInfoAsync(response.AccessToken);
     }
 
     private string GetBasicAuth(string clientId, string clientSecret)
     {
         var basicToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
         return $"Basic {basicToken}";
+    }
+
+    private async Task SaveUserExtraInfoAsync(string accessToken)
+    {
+        var url = "https://api.twitter.com/2/users/:id";
+        
+        var header = new Dictionary<string, string>
+        {
+            ["Authorization"] = accessToken
+        };
+        var response = await _httpClientService.GetAsync<object>(url,
+            header);
+        
+        
+    }
+
+    private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)
+    {
+        var userExtraInfoGrainId =
+            GrainIdHelper.GenerateGrainId("UserExtraInfo", userExtraInfo.Id);
+
+        var userExtraInfoGrain = _clusterClient.GetGrain<IUserExtraInfoGrain>(userExtraInfoGrainId);
+
+        var grainDto = await userExtraInfoGrain.AddOrUpdateAppleUserAsync(
+            ObjectMapper.Map<Verifier.Dtos.UserExtraInfo, UserExtraInfoGrainDto>(userExtraInfo));
+
+        grainDto.Id = userExtraInfo.Id;
+        await _distributedEventBus.PublishAsync(
+            ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto));
     }
 }
