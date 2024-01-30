@@ -353,7 +353,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
         }
 
-        facebookUser.Picture = facebookUser.PictureDic["picture"].Url;
+        
         await AddUserInfoAsync(
             ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
         return new VerificationCodeResponse
@@ -378,6 +378,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             requestDto.AccessToken;
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
+        facebookUserInfo.Picture = facebookUserInfo.PictureDic["picture"].Url;
         facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
         return facebookUserInfo;
     }
