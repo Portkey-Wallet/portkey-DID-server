@@ -49,3 +49,43 @@ public class FacebookPictureDto
     [JsonProperty("width")] public int Width { get; set; }
     
 }
+
+
+public class FacebookOauthResponse
+{
+    [JsonProperty("access_token")] public string AccessToken { get; set; }
+    
+    [JsonProperty("token_type")] public string TokenType { get; set; }
+    
+    [JsonProperty("expires_in")] public int ExpiresIn { get; set; }
+    
+}
+
+
+public class VerifyFacebookUserInfoResponseDto
+{
+    [JsonProperty("data")]
+    public VerifyFacebookUserInfoResponse Data { get; set; }
+    
+}
+
+
+public class VerifyFacebookUserInfoResponse
+{
+    [JsonProperty("app_id")] public string AppId { get; set; }
+
+    [JsonProperty("type")] public string Type { get; set; }
+
+    [JsonProperty("application")] public string Application { get; set; }
+
+    [JsonProperty("data_access_expires_at")]
+    public long DataAccessExpiresAt { get; set; }
+
+    [JsonProperty("expires_at")] public long ExpiresAt { get; set; }
+
+    [JsonProperty("is_valid")] public bool IsValid { get; set; }
+
+    [JsonProperty("scopes")] public List<string> Scopes { get; set; }
+
+    [JsonProperty("user_id")] public string UserId { get; set; }
+}
