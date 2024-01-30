@@ -57,13 +57,13 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             ["Authorization"] = basicAuth
         };
 
-        var response = await _httpClientService.PostAsync<TwitterTokenDto>(_options.TwitterTokenUrl,
+        var response = await _httpClientService.PostAsync<string>(_options.TwitterTokenUrl,
             RequestMediaType.Form,
             requestParam,
             header);
 
         Logger.LogInformation("send code to twitter success, response:{response}",
-            JsonConvert.SerializeObject(response));
+            response);
 
        // await SaveUserExtraInfoAsync(response.AccessToken);
     }
