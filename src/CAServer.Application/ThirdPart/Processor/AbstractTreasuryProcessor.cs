@@ -196,10 +196,14 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             "Ramp order still in state {}", rampOrder.Status);
         AssertHelper.IsTrue(rampOrder!.Crypto == orderInput.Crypto, "Crypto symbol not match");
 
-        var cryptoAmountDelta = rampOrder.CryptoQuantity.SafeToDecimal() - orderInput.CryptoAmount.SafeToDecimal();
-        AssertHelper.IsTrue(
-            Math.Abs(cryptoAmountDelta) / rampOrder.CryptoQuantity.SafeToDecimal() <
-            _thirdPartOptions.CurrentValue.TreasuryOptions.ValidAmountPercent,
+        // rampAmount = treasuryAmount - networkFee
+        // cryptoAmount in pendingTreasuryOrder = cryptoAmount + networkFeee
+        var totalFeeInUsdt = pendingTreasuryOrder.FeeInfo
+            .Select(fee => fee.Amount.SafeToDecimal() * fee.SymbolPriceInUsdt.SafeToDecimal()).Sum() ;
+        var totalFeeInCrypto = totalFeeInUsdt * pendingTreasuryOrder.TokenExchange.Exchange;
+        var cryptoAmountDelta = rampOrder.CryptoQuantity.SafeToDecimal() - totalFeeInCrypto - orderInput.CryptoAmount.SafeToDecimal();
+        AssertHelper.IsTrue(Math.Abs(cryptoAmountDelta) / rampOrder.CryptoQuantity.SafeToDecimal() <
+                            _thirdPartOptions.CurrentValue.TreasuryOptions.ValidAmountPercent,
             "Crypto amount not match, rampOrderAmount={}, treasuryOrderAmount={}", rampOrder.CryptoQuantity,
             orderInput.CryptoAmount);
         AssertHelper.IsTrue(rampOrder.Address == orderInput.Address, "Address not match");
