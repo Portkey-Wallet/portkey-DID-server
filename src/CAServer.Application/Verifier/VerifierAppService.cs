@@ -347,14 +347,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 userSaltAndHash.Item2);
         if (!response.Success)
         {
-            throw new UserFriendlyException($"Validate VerifierGoogle Failed :{response.Message}");
+            throw new UserFriendlyException($"Validate Facebook Failed :{response.Message}");
         }
 
         if (!userSaltAndHash.Item3)
         {
             await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
         }
-        facebookUser.Picture = facebookUser.PictureDic["data"].Url;
+        facebookUser.Picture = facebookUser.PictureDic["picture"].Url;
         await AddUserInfoAsync(
             ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
         return new VerificationCodeResponse
