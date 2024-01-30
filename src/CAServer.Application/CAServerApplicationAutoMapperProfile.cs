@@ -570,5 +570,6 @@ CreateMap<GuardianInfoBase, GuardianIndexerInfoDto>();
         CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
         CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
         CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
+        CreateMap<TwitterUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
     }
 }

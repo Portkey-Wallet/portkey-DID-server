@@ -12,12 +12,9 @@ public class VerifyTwitterTokenDto
 public class TwitterUserExtraInfo
 {
     public string Id { get; set; }
-    public string FullName { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
-    public string Email { get; set; }
-    public string Picture { get; set; }
-    public bool VerifiedEmail { get; set; }
+    public string Name { get; set; }
+    public string UserName { get; set; }
+    public bool Verified { get; set; }
     public string GuardianType { get; set; }
     public DateTime AuthTime { get; set; }
 }

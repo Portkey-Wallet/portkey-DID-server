@@ -10,6 +10,7 @@ using AElf;
 using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.AccountValidator;
+using CAServer.CAAccount.Dtos;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Dtos;
@@ -22,6 +23,7 @@ using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Telegram;
+using CAServer.TwitterAuth.Dtos;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
@@ -50,6 +52,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
+    private readonly IHttpClientService _httpClientService;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -67,7 +70,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider)
+        ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -79,6 +82,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
+        _httpClientService = httpClientService;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -244,7 +248,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         try
         {
-            var userId = GetAppleUserId(requestDto.AccessToken);
+            var userId = await GetTwitterUserIdAsync(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -289,6 +293,22 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+    private async Task<string> GetTwitterUserIdAsync(string accessToken)
+    {
+        var url = "https://api.twitter.com/2/users/me";
+        var header = new Dictionary<string, string>
+        {
+            ["Authorization"] = $"Bearer {accessToken}"
+        };
+        var userInfo = await _httpClientService.GetAsync<TwitterUserInfoDto>(url, header);
+
+        if (userInfo == null)
+        {
+            throw new Exception("Failed to get user info");
+        }
+
+        return userInfo.Data.Id;
+    }
 
     public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)
     {

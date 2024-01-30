@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
@@ -34,7 +35,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         _options = options.Value;
     }
 
-    public async Task ReceiveAsync(TwitterAuthDto twitterAuthDto)
+    public async Task<string> ReceiveAsync(TwitterAuthDto twitterAuthDto)
     {
         Logger.LogInformation("receive twitter callback, data: {data}", JsonConvert.SerializeObject(twitterAuthDto));
         if (twitterAuthDto.Code.IsNullOrEmpty())
@@ -48,7 +49,6 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             ["code"] = twitterAuthDto.Code,
             ["grant_type"] = "authorization_code",
             ["redirect_uri"] = _options.RedirectUrl,
-            // ["client_id"] = _options.ClientId,
             ["code_verifier"] = "challenge"
         };
 
@@ -65,7 +65,8 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         Logger.LogInformation("send code to twitter success, response:{response}",
             JsonConvert.SerializeObject(response));
 
-       // await SaveUserExtraInfoAsync(response.AccessToken);
+        await SaveUserExtraInfoAsync(response.AccessToken);
+        return response.AccessToken;
     }
 
     private string GetBasicAuth(string clientId, string clientSecret)
@@ -76,16 +77,29 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
     private async Task SaveUserExtraInfoAsync(string accessToken)
     {
-        var url = "https://api.twitter.com/2/users/:id";
-        
+        var url = "https://api.twitter.com/2/users/me";
         var header = new Dictionary<string, string>
         {
-            ["Authorization"] = accessToken
+            ["Authorization"] = $"Bearer {accessToken}"
         };
-        var response = await _httpClientService.GetAsync<object>(url,
-            header);
-        
-        
+        var userInfo = await _httpClientService.GetAsync<TwitterUserInfoDto>(url, header);
+
+        if (userInfo == null)
+        {
+            throw new Exception("Failed to get user info");
+        }
+
+        var userExtraInfo = new Verifier.Dtos.UserExtraInfo
+        {
+            Id = userInfo.Data.Id,
+            FullName = userInfo.Data.UserName,
+            FirstName = userInfo.Data.Name,
+            //Email = userExtraInfo.Email,
+            GuardianType = GuardianIdentifierType.Twitter.ToString(),
+            AuthTime = DateTime.UtcNow
+        };
+
+        await AddUserInfoAsync(userExtraInfo);
     }
 
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)

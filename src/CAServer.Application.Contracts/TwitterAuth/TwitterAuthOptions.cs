@@ -10,6 +10,5 @@ public class TwitterAuthOptions
 
     public string ClientId { get; set; }
     public string ClientSecret { get; set; }
-
-    public bool IsTest { get; set; } = true;
+    public string UnifyRedirectUrl { get; set; }
 }
