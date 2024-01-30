@@ -75,6 +75,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
         Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
+        Configure<FacebookOptions>(configuration.GetSection("Facebook"));
         Configure<AccelerateManagerOptions>(configuration.GetSection("AccelerateManager"));
 
         context.Services.AddMemoryCache();

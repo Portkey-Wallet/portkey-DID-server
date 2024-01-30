@@ -221,7 +221,14 @@ public class CAVerifierController : CAServerController
         ValidateOperationType(requestDto.OperationType);
         return await _verifierAppService.VerifyAppleTokenAsync(requestDto);
     }
-
+    
+    [HttpPost("verifyFacebookToken")]
+    public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        ValidateOperationType(requestDto.OperationType);
+        return await _verifierAppService.VerifyFacebookTokenAsync(requestDto);
+    }
+    
     [HttpPost("verifyTelegramToken")]
     public async Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto)
     {

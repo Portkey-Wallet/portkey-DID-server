@@ -7,26 +7,22 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
-using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.AccountValidator;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Dtos;
-using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Guardian;
-using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Telegram;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -34,6 +30,7 @@ using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using static System.String;
 
 namespace CAServer.Verifier;
 
@@ -51,15 +48,12 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly JwtSecurityTokenHandler _jwtSecurityTokenHandler;
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
-    private readonly IGuardianProvider _guardianProvider;
-    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
+    private readonly FacebookOptions _facebookOptions;
 
     private const string SendVerifierCodeInterfaceRequestCountCacheKey =
         "SendVerifierCodeInterfaceRequestCountCacheKey";
-
-    private const string TelegramUserIdPrefix = "telegram_";
 
 
     public VerifierAppService(IEnumerable<IAccountValidator> accountValidator, IObjectMapper objectMapper,
@@ -71,8 +65,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
         ICacheProvider cacheProvider, IContractProvider contractProvider,
-        INESTRepository<GuardianIndex, string> guardianRepository,
-        IGuardianProvider guardianProvider)
+        IOptionsSnapshot<FacebookOptions> facebookOptions)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -84,9 +77,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
+        _facebookOptions = facebookOptions.Value;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
-        _guardianRepository = guardianRepository;
-        _guardianProvider = guardianProvider;
     }
 
     public async Task<VerifierServerResponse> SendVerificationRequestAsync(SendVerificationRequestInput input)
@@ -347,6 +339,74 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
+    public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
+    {
+        var facebookUser = await GetFacebookUserDtoAsync(requestDto);
+        var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
+        var response =
+            await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
+                userSaltAndHash.Item2);
+        if (!response.Success)
+        {
+            throw new UserFriendlyException($"Validate VerifierGoogle Failed :{response.Message}");
+        }
+
+        if (!userSaltAndHash.Item3)
+        {
+            await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
+        }
+
+        await AddUserInfoAsync(
+            ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
+        return new VerificationCodeResponse
+        {
+            VerificationDoc = response.Data.VerificationDoc,
+            Signature = response.Data.Signature
+        };
+    }
+
+    private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(VerifyTokenRequestDto requestDto)
+    {
+        var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyACTokenAsync(requestDto);
+
+        if (!verifyFacebookUserInfoDto.Success)
+        {
+            throw new UserFriendlyException(verifyFacebookUserInfoDto.Message);
+        }
+
+        var getUserInfoUrl =
+            "https://graph.facebook.com/" + verifyFacebookUserInfoDto.Data.UserId +
+            "?fields=id,name,email,picture&access_token=" +
+            requestDto.AccessToken;
+        var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
+        var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
+        facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
+        return facebookUserInfo;
+    }
+
+
+    private async Task<string> FacebookRequestAsync(string url)
+    {
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url));
+
+        var result = await response.Content.ReadAsStringAsync();
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            _logger.LogError("{Message}", response.ToString());
+            throw new Exception("Invalid token");
+        }
+
+        if (response.IsSuccessStatusCode)
+        {
+            return result;
+        }
+
+        _logger.LogError("{Message}", response.ToString());
+        throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
+    }
+
 
     private async Task AddUserInfoAsync(Dtos.UserExtraInfo userExtraInfo)
     {
@@ -379,7 +439,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         else
         {
             salt = GetSalt().ToHex();
-            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),  
+            identifierHash = GetHash(Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),
                 ByteArrayHelper.HexStringToByteArray(salt)).ToHex();
         }
 
@@ -470,6 +530,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             throw new Exception($"Salt has to be {maxSaltLength} bytes.");
         }
+
         var hash = HashHelper.ComputeFrom(identifier);
         return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }
