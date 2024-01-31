@@ -453,7 +453,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             requestDto.AccessToken;
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
-        facebookUserInfo.Picture = facebookUserInfo.PictureDic["picture"].Url;
+        facebookUserInfo.Picture = facebookUserInfo.PictureDic["data"].Url;
         facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
         return facebookUserInfo;
     }
