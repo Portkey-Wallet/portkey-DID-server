@@ -5,5 +5,5 @@ namespace CAServer.TwitterAuth;
 
 public interface ITwitterAuthAppService
 {
-    Task<TwitterRedirectInfoDto> ReceiveAsync(TwitterAuthDto appleAuthDto);
+    Task<TwitterUserAuthInfoDto> ReceiveAsync(TwitterAuthDto appleAuthDto);
 }

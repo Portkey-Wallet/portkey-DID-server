@@ -24,6 +24,12 @@ public class TwitterAuthController : CAServerController
         _options = options.Value;
     }
 
+    [HttpGet("userInfo")]
+    public async Task<TwitterUserAuthInfoDto> GetUserAuthAsync(TwitterAuthDto twitterAuthDto)
+    {
+        return await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
+    }
+
     [HttpGet("receive")]
     public async Task<IActionResult> ReceiveAsync([FromQuery] TwitterAuthDto twitterAuthDto)
     {
@@ -40,15 +46,15 @@ public class TwitterAuthController : CAServerController
         return Redirect(redirectUrl);
     }
 
-    private string GetRedirectUrl(string redirectUrl, TwitterRedirectInfoDto redirectInfo)
+    private string GetRedirectUrl(string redirectUrl, TwitterUserAuthInfoDto userAuthInfo)
     {
         if (redirectUrl.Contains("?"))
         {
             return
-                $"{redirectUrl}&token={redirectInfo.AccessToken}&id={redirectInfo.UserInfo.Id}&name={redirectInfo.UserInfo.Name}&username={redirectInfo.UserInfo.UserName}&type={redirectInfo.AuthType}";
+                $"{redirectUrl}&token={userAuthInfo.AccessToken}&id={userAuthInfo.UserInfo.Id}&name={userAuthInfo.UserInfo.Name}&username={userAuthInfo.UserInfo.UserName}&type={userAuthInfo.AuthType}";
         }
 
         return
-            $"{redirectUrl}?token={redirectInfo.AccessToken}&id={redirectInfo.UserInfo.Id}&name={redirectInfo.UserInfo.Name}&username={redirectInfo.UserInfo.UserName}&type={redirectInfo.AuthType}";
+            $"{redirectUrl}?token={userAuthInfo.AccessToken}&id={userAuthInfo.UserInfo.Id}&name={userAuthInfo.UserInfo.Name}&username={userAuthInfo.UserInfo.UserName}&type={userAuthInfo.AuthType}";
     }
 }

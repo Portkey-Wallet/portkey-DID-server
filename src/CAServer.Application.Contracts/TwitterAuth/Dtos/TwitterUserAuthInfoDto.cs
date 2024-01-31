@@ -1,6 +1,6 @@
 namespace CAServer.TwitterAuth.Dtos;
 
-public class TwitterRedirectInfoDto
+public class TwitterUserAuthInfoDto
 {
     public TwitterUserInfo UserInfo { get; set; }
     public string AccessToken { get; set; }

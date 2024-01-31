@@ -35,7 +35,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         _options = options.Value;
     }
 
-    public async Task<TwitterRedirectInfoDto> ReceiveAsync(TwitterAuthDto twitterAuthDto)
+    public async Task<TwitterUserAuthInfoDto> ReceiveAsync(TwitterAuthDto twitterAuthDto)
     {
         Logger.LogInformation("receive twitter callback, data: {data}", JsonConvert.SerializeObject(twitterAuthDto));
         if (twitterAuthDto.Code.IsNullOrEmpty())
@@ -67,7 +67,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
         var userInfo = await SaveUserExtraInfoAsync(response.AccessToken);
 
-        return new TwitterRedirectInfoDto()
+        return new TwitterUserAuthInfoDto()
         {
             AccessToken = response.AccessToken,
             UserInfo = userInfo.Data
