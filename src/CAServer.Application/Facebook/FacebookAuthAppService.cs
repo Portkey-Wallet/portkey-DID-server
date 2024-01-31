@@ -54,7 +54,6 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
         {
             throw new UserFriendlyException("Invalid token.");
         }
-
         var app_token = _facebookOptions.AppId + "%7C" + _facebookOptions.AppSecret;
         var requestUrl =
             "https://graph.facebook.com/debug_token?access_token=" + app_token + "&input_token=" +
