@@ -14,6 +14,7 @@ public class AccelerateRecoverIndex : CAServerEsEntity<string>, IIndexBuild
     public ManagerInfo ManagerInfo { get; set; }
     [Keyword] public string CaHash { get; set; }
     [Keyword] public string CaAddress { get; set; }
+    [Keyword] public string IdentifierHash { get; set; }
     public DateTime? RecoveryTime { get; set; }
     public bool? RecoverySuccess { get; set; }
     [Keyword] public string RecoveryMessage { get; set; }
