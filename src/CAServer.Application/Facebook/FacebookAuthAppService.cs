@@ -35,7 +35,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
 
     public async Task<FacebookAuthResponse> ReceiveAsync(string code, ApplicationType applicationType)
     {
-        //var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
+        var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
         var redirectUrl = applicationType switch
         {
             ApplicationType.Recevie => _facebookOptions.RedirectUrl,
@@ -45,7 +45,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
 
         var url = "https://graph.facebook.com/v19.0/oauth/access_token?client_id=" + _facebookOptions.AppId +
                   "&redirect_uri=" + redirectUrl +
-                  "&client_secret=" + _facebookOptions.AppSecret +
+                  "&client_secret=" + secret +
                   "&code=" + code;
 
         var result = await HttpRequestAsync(url);
@@ -54,7 +54,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
         {
             throw new UserFriendlyException("Invalid token.");
         }
-        var app_token = _facebookOptions.AppId + "%7C" + _facebookOptions.AppSecret;
+        var app_token = _facebookOptions.AppId + "%7C" + secret;
         var requestUrl =
             "https://graph.facebook.com/debug_token?access_token=" + app_token + "&input_token=" +
             facebookOauthInfo.AccessToken;
