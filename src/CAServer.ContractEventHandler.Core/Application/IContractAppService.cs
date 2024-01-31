@@ -343,6 +343,7 @@ public class ContractAppService : IContractAppService
             return;
         }
 
+        var originalChainId = socialRecoveryDto.ChainId;
         _ = SocialRecoveryOnNonCreateChainAsync(socialRecoveryDto);
 
         recoveryResult.RecoverySuccess = true;
@@ -358,9 +359,9 @@ public class ContractAppService : IContractAppService
         //     JsonConvert.SerializeObject(outputGetHolderInfo));
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
         // if the social recovery is executed on 'NonCreateChain', there is no synchronization
-        if (socialRecoveryDto.ChainId != ChainHelper.ConvertChainIdToBase58(outputGetHolderInfo.CreateChainId))
+        if (originalChainId == ChainHelper.ConvertChainIdToBase58(outputGetHolderInfo.CreateChainId))
         {
-            _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "",
+            _ = ValidateTransactionAndSyncAsync(originalChainId, outputGetHolderInfo, "",
                 MonitorTag.SocialRecover);
         }
         else
