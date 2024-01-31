@@ -10,4 +10,6 @@ public class FacebookOptions
     
     public string UnifyRedirectUrl { get; set; }
     
+    public string FacebookAuthUrl { get; set; }
+    
 }
