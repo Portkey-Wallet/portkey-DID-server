@@ -170,7 +170,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
     public async Task<ResponseResultDto<VerifyTwitterTokenDto>> VerifyTwitterTokenAsync(VerifyTokenRequestDto input, string identifierHash, string salt)
     {
-        var requestUri = "/api/app/account/verifyAppleToken";
+        var requestUri = "/api/app/account/verifyTwitterToken";
         return await GetResultAsync<VerifyTwitterTokenDto>(input, requestUri, identifierHash, salt);
     }
 
