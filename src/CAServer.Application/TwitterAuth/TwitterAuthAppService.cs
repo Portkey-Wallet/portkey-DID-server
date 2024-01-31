@@ -8,6 +8,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.TwitterAuth.Dtos;
 using CAServer.Verifier.Etos;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -25,13 +26,16 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
     private readonly TwitterAuthOptions _options;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IClusterClient _clusterClient;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public TwitterAuthAppService(IHttpClientService httpClientService, IOptionsSnapshot<TwitterAuthOptions> options,
-        IClusterClient clusterClient, IDistributedEventBus distributedEventBus)
+        IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
+        IHttpContextAccessor httpContextAccessor)
     {
         _httpClientService = httpClientService;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
+        _httpContextAccessor = httpContextAccessor;
         _options = options.Value;
     }
 
@@ -48,7 +52,8 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         {
             ["code"] = twitterAuthDto.Code,
             ["grant_type"] = "authorization_code",
-            ["redirect_uri"] = twitterAuthDto.RedirectUrl ?? _options.RequestRedirectUrl,
+            ["redirect_uri"] = twitterAuthDto.RedirectUrl ??
+                               $"{_options.RequestRedirectUrl}{_httpContextAccessor.HttpContext.Request.Path}",
             ["code_verifier"] = "challenge"
         };
 
