@@ -179,6 +179,8 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         CreateHolderDto createHolderDto)
     {
         var param = _objectMapper.Map<CreateHolderDto, CreateCAHolderOnNonCreateChainInput>(createHolderDto);
+        param.CreateChainId = ChainHelper.ConvertBase58ToChainId(createHolderDto.ChainId);
+        param.CaHash = createHolderDto.CaHash;
         var result = await SendTransactionToChainAsync(chainId, param, MethodName.CreateCAHolderOnNonCreateChain);
         DeactivateOnIdle();
         return result.TransactionResultDto;
