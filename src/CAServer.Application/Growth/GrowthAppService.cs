@@ -148,7 +148,7 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         return
             $"{_growthOptions.RedirectUrl}?referral_code={growthInfo.InviteCode}&project_code={growthInfo.ProjectCode ?? string.Empty}";
     }
-    
+
     private async Task<string> GetCaHashAsync()
     {
         var caHolder = await _nickNameAppService.GetCaHolderAsync();
@@ -163,6 +163,7 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private async Task<string> GenerateShortLinkCodeAsync(string plainText)
     {
         var shortLinkCode = MurmurHashHelper.GenerateHash(plainText);
+        shortLinkCode = shortLinkCode.Replace("/", "");
         var growthInfo = await _growthProvider.GetGrowthInfoByLinkCodeAsync(shortLinkCode);
         if (growthInfo == null)
         {
