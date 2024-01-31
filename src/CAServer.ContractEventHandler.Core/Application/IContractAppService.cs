@@ -727,9 +727,9 @@ public class ContractAppService : IContractAppService
         var registerResult = new AccelerateCreateHolderEto
         {
             Id = createHolderDto.Id,
-            Context = createHolderDto.Context,
             CaAddress = outputGetHolderInfo.CaAddress.ToBase58(),
             CaHash = outputGetHolderInfo.CaHash.ToHex(),
+            IdentifierHash = createHolderDto.GuardianInfo?.IdentifierHash?.ToHex(),
             ChainId = chainInfo.ChainId,
             ManagerInfo = new ManagerInfo
             {
@@ -821,9 +821,9 @@ public class ContractAppService : IContractAppService
         var recoveryResult = new AccelerateSocialRecoveryEto
         {
             Id = socialRecoveryDto.Id,
-            Context = socialRecoveryDto.Context,
             CaHash = socialRecoveryDto.CaHash.ToHex(),
             CaAddress = socialRecoveryDto.CaAddress.ToBase58(),
+            IdentifierHash = socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex(),
             ChainId = chainInfo.ChainId,
             ManagerInfo = new ManagerInfo
             {
