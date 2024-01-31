@@ -242,6 +242,12 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                         guardian.FirstName = extraInfo.FirstName;
                         guardian.IsPrivate = false;
                         break;
+                    case GuardianIdentifierType.Facebook:
+                        guardian.FirstName = extraInfo.FirstName;
+                        guardian.LastName = extraInfo.LastName;
+                        guardian.IsPrivate = true;
+                        guardian.ImageUrl = extraInfo.Picture;
+                        break;
                 }
             }
         }
