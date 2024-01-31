@@ -163,6 +163,7 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
     private async Task<string> GenerateShortLinkCodeAsync(string plainText)
     {
         var shortLinkCode = MurmurHashHelper.GenerateHash(plainText);
+        shortLinkCode = shortLinkCode.Replace("/", "").Replace("\"", "").Replace(" ", "");
         var growthInfo = await _growthProvider.GetGrowthInfoByLinkCodeAsync(shortLinkCode);
         if (growthInfo == null)
         {
