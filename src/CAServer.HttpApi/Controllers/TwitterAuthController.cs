@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using CAServer.Commons;
 using CAServer.TwitterAuth;
 using CAServer.TwitterAuth.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -34,11 +33,11 @@ public class TwitterAuthController : CAServerController
     public async Task<IActionResult> ReceiveAsync([FromQuery] TwitterAuthDto twitterAuthDto)
     {
         var accessToken = await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
-        var redirectUrl = GetRedirectUrl(_options.UnifyRedirectUrl, accessToken);
+        var redirectUrl = GetRedirectUrl(_options.RedirectUrl, accessToken);
         return Redirect(redirectUrl);
     }
 
-    [HttpPost("unifyReceive")]
+    [HttpGet("unifyReceive")]
     public async Task<IActionResult> UnifyReceiveAsync([FromQuery] TwitterAuthDto twitterAuthDto)
     {
         var accessToken = await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
