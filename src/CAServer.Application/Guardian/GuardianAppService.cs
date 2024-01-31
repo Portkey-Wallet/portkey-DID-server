@@ -240,6 +240,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                         break;
                     case GuardianIdentifierType.Twitter:
                         guardian.FirstName = extraInfo.FirstName;
+                        guardian.IsPrivate = false;
                         break;
                 }
             }
