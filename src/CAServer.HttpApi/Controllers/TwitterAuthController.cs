@@ -45,9 +45,10 @@ public class TwitterAuthController : CAServerController
         if (redirectUrl.Contains("?"))
         {
             return
-                $"{redirectUrl}&token={redirectInfo.AccessToken}&id={redirectInfo.UserInfo.Id}&name={redirectInfo.UserInfo.Name}&username={redirectInfo.UserInfo.UserName}";
+                $"{redirectUrl}&token={redirectInfo.AccessToken}&id={redirectInfo.UserInfo.Id}&name={redirectInfo.UserInfo.Name}&username={redirectInfo.UserInfo.UserName}&type={redirectInfo.AuthType}";
         }
 
-        return $"{redirectUrl}?token={redirectInfo.AccessToken}&id={redirectInfo.UserInfo.Id}&name={redirectInfo.UserInfo.Name}&username={redirectInfo.UserInfo.UserName}";
+        return
+            $"{redirectUrl}?token={redirectInfo.AccessToken}&id={redirectInfo.UserInfo.Id}&name={redirectInfo.UserInfo.Name}&username={redirectInfo.UserInfo.UserName}&type={redirectInfo.AuthType}";
     }
 }
