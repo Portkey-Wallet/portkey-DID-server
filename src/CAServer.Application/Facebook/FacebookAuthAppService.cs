@@ -38,7 +38,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
         var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
         var redirectUrl = applicationType switch
         {
-            ApplicationType.Recevie => _facebookOptions.RedirectUrl,
+            ApplicationType.Receive => _facebookOptions.RedirectUrl,
             ApplicationType.UnifyReceive => _facebookOptions.UnifyRedirectUrl,
             _ => _facebookOptions.RedirectUrl
         };

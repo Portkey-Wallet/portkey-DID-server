@@ -2,6 +2,6 @@ namespace CAServer.Verifier;
 
 public enum ApplicationType
 {
-    Recevie = 1,
+    Receive = 1,
     UnifyReceive = 2
 }
