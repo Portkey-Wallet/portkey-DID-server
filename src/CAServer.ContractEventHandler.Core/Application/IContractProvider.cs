@@ -360,7 +360,7 @@ public class ContractProvider : IContractProvider
             }
 
             createHolderDto.CaHash = outputGetHolderInfo.CaHash;
-            createHolderDto.ChainId = chainInfo.ChainId;
+            createHolderDto.ChainId = createChainId;
 
             var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
             var result =
