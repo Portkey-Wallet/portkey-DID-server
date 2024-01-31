@@ -31,8 +31,8 @@ public class FacebookAuthController : CAServerController
     public async Task<IActionResult> ReceiveAsync(string code)
     {
         var result = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.Receive);
-        var redirectUrl = _facebookOptions.RedirectUrl + "/portkey-auth-callback?token=" + result.UserId + "." +
-                          result.AccessToken + "." + result.ExpiresTime + ".&type=facebook";
+        var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback?userId=" + result.UserId + "&token=" +
+                          result.AccessToken + "&expiresTime=" + result.ExpiresTime + "&type=Facebook";
         _logger.LogInformation("RedirectUrl is {url}: ", redirectUrl);
         return Redirect(redirectUrl);
     }
@@ -41,8 +41,8 @@ public class FacebookAuthController : CAServerController
     public async Task<IActionResult> UnifyReceiveAsync(string code)
     {
         var result = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.UnifyReceive);
-        var redirectUrl = _facebookOptions.UnifyRedirectUrl + "/auth-callback?token=" + result.UserId + "." +
-                          result.AccessToken + "." + result.ExpiresTime + ".&type=facebook";
+        var redirectUrl = _facebookOptions.FacebookAuthUrl + "/auth-callback?userId=" + result.UserId + "&token=" +
+                          result.AccessToken + "&expiresTime=" + result.ExpiresTime + "&type=Facebook";
         _logger.LogInformation("RedirectUrl is {url}: ", redirectUrl);
         return Redirect(redirectUrl);
     }
