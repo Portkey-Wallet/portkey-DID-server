@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using CAServer.AccountValidator;
-using CAServer.CAAccount.Dtos;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Dtos;
@@ -272,7 +271,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 "VerifyTwitterToken error accessToken:{accessToken}, verifierId:{verifierId}, chainId:{chainId}, targetChainId:{targetChainId}, operationType:{operationType}",
                 requestDto.AccessToken, requestDto.VerifierId, requestDto.ChainId,
                 requestDto.TargetChainId ?? string.Empty, requestDto.OperationType.ToString());
-            
+
             if (ThirdPartyMessage.MessageDictionary.ContainsKey(e.Message))
             {
                 throw new UserFriendlyException(e.Message, ThirdPartyMessage.MessageDictionary[e.Message]);
@@ -406,29 +405,37 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     public async Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto)
     {
-        var facebookUser = await GetFacebookUserDtoAsync(requestDto);
-        var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
-        var response =
-            await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
-                userSaltAndHash.Item2);
-        if (!response.Success)
+        try
         {
-            throw new UserFriendlyException($"Validate Facebook Failed :{response.Message}");
-        }
+            var facebookUser = await GetFacebookUserDtoAsync(requestDto);
+            var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
+            var response =
+                await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
+                    userSaltAndHash.Item2);
+            if (!response.Success)
+            {
+                throw new UserFriendlyException($"Validate Facebook Failed :{response.Message}");
+            }
 
-        if (!userSaltAndHash.Item3)
-        {
-            await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
-        }
+            if (!userSaltAndHash.Item3)
+            {
+                await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
+            }
 
-        
-        await AddUserInfoAsync(
-            ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
-        return new VerificationCodeResponse
+
+            await AddUserInfoAsync(
+                ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
+            return new VerificationCodeResponse
+            {
+                VerificationDoc = response.Data.VerificationDoc,
+                Signature = response.Data.Signature
+            };
+        }
+        catch (Exception e)
         {
-            VerificationDoc = response.Data.VerificationDoc,
-            Signature = response.Data.Signature
-        };
+            _logger.LogError("Verify Facebook Failed, {Message}", e.Message);
+            throw new UserFriendlyException("Verify Facebook Failed.");
+        }
     }
 
     private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(VerifyTokenRequestDto requestDto)
@@ -506,7 +513,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         else
         {
             salt = GetSalt().ToHex();
-            identifierHash = GetHash( Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),  
+            identifierHash = GetHash(Encoding.UTF8.GetBytes(requestInput.GuardianIdentifier),
                 ByteArrayHelper.HexStringToByteArray(salt)).ToHex();
         }
 
@@ -597,6 +604,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         {
             throw new Exception($"Salt has to be {maxSaltLength} bytes.");
         }
+
         var hash = HashHelper.ComputeFrom(identifier);
         return HashHelper.ComputeFrom(hash.Concat(salt).ToArray());
     }

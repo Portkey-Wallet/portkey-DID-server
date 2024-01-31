@@ -35,43 +35,52 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
 
     public async Task<FacebookAuthResponse> ReceiveAsync(string code, ApplicationType applicationType)
     {
-        var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
-        var redirectUrl = applicationType switch
+        try
         {
-            ApplicationType.Receive => _facebookOptions.RedirectUrl,
-            ApplicationType.UnifyReceive => _facebookOptions.UnifyRedirectUrl,
-            _ => _facebookOptions.RedirectUrl
-        };
+            var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
+            var redirectUrl = applicationType switch
+            {
+                ApplicationType.Receive => _facebookOptions.RedirectUrl,
+                ApplicationType.UnifyReceive => _facebookOptions.UnifyRedirectUrl,
+                _ => _facebookOptions.RedirectUrl
+            };
+            var url = "https://graph.facebook.com/v19.0/oauth/access_token?client_id=" + _facebookOptions.AppId +
+                      "&redirect_uri=" + redirectUrl +
+                      "&client_secret=" + secret +
+                      "&code=" + code;
 
-        var url = "https://graph.facebook.com/v19.0/oauth/access_token?client_id=" + _facebookOptions.AppId +
-                  "&redirect_uri=" + redirectUrl +
-                  "&client_secret=" + secret +
-                  "&code=" + code;
+            var result = await HttpRequestAsync(url);
+            var facebookOauthInfo = JsonConvert.DeserializeObject<FacebookOauthResponse>(result);
+            if (facebookOauthInfo.AccessToken.IsNullOrEmpty())
+            {
+                throw new UserFriendlyException("Invalid token.");
+            }
 
-        var result = await HttpRequestAsync(url);
-        var facebookOauthInfo = JsonConvert.DeserializeObject<FacebookOauthResponse>(result);
-        if (facebookOauthInfo.AccessToken.IsNullOrEmpty())
-        {
-            throw new UserFriendlyException("Invalid token.");
+            var app_token = _facebookOptions.AppId + "%7C" + secret;
+            var requestUrl =
+                "https://graph.facebook.com/debug_token?access_token=" + app_token + "&input_token=" +
+                facebookOauthInfo.AccessToken;
+
+            var verifyResponse = await HttpRequestAsync(requestUrl);
+            var facebookVerifyResponse =
+                JsonConvert.DeserializeObject<VerifyFacebookUserInfoResponseDto>(verifyResponse);
+            if (!facebookVerifyResponse.Data.IsValid)
+            {
+                throw new UserFriendlyException("Invalid token.");
+            }
+
+            return new FacebookAuthResponse
+            {
+                UserId = facebookVerifyResponse.Data.UserId,
+                AccessToken = facebookOauthInfo.AccessToken,
+                ExpiresTime = facebookVerifyResponse.Data.ExpiresAt
+            };
         }
-        var app_token = _facebookOptions.AppId + "%7C" + secret;
-        var requestUrl =
-            "https://graph.facebook.com/debug_token?access_token=" + app_token + "&input_token=" +
-            facebookOauthInfo.AccessToken;
-
-        var verifyResponse = await HttpRequestAsync(requestUrl);
-        var facebookVerifyResponse = JsonConvert.DeserializeObject<VerifyFacebookUserInfoResponseDto>(verifyResponse);
-        if (!facebookVerifyResponse.Data.IsValid)
+        catch (Exception e)
         {
-            throw new UserFriendlyException("Invalid token.");
+            _logger.LogError("Facebook auth failed : {Message}", e.Message);
+            throw new UserFriendlyException("Facebook auth failed.");
         }
-
-        return new FacebookAuthResponse
-        {
-            UserId = facebookVerifyResponse.Data.UserId,
-            AccessToken = facebookOauthInfo.AccessToken,
-            ExpiresTime = facebookVerifyResponse.Data.ExpiresAt
-        };
     }
 
     private async Task<string> HttpRequestAsync(string url)
