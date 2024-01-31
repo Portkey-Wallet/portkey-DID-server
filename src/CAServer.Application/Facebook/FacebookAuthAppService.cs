@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Facebook.Dtos;
-using CAServer.Options;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Logging;
@@ -21,6 +20,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
     private readonly FacebookOptions _facebookOptions;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<FacebookAuthAppService> _logger;
+    // private readonly ISecretProvider _secretProvider;
 
     public FacebookAuthAppService(IOptionsSnapshot<FacebookOptions> facebookOptions,
         IHttpClientFactory httpClientFactory, ILogger<FacebookAuthAppService> logger)
@@ -31,12 +31,20 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
     }
 
 
-    public async Task<FacebookAuthResponse> ReceiveAsync(FacebookAuthDto authDto)
+    public async Task<FacebookAuthResponse> ReceiveAsync(string code, ApplicationType applicationType)
     {
+        //var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
+        var redirectUrl = applicationType switch
+        {
+            ApplicationType.Receive => _facebookOptions.RedirectUrl,
+            ApplicationType.UnifyReceive => _facebookOptions.UnifyRedirectUrl,
+            _ => _facebookOptions.RedirectUrl
+        };
+
         var url = "https://graph.facebook.com/v19.0/oauth/access_token?client_id=" + _facebookOptions.AppId +
-                  "&redirect_uri=" + _facebookOptions.RedirectUrl +
+                  "&redirect_uri=" + redirectUrl +
                   "/&client_secret=" + _facebookOptions.AppSecret +
-                  "&code=" + authDto.Code;
+                  "&code=" + code;
 
         var result = await HttpRequestAsync(url);
         var facebookOauthInfo = JsonConvert.DeserializeObject<FacebookOauthResponse>(result);
