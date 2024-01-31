@@ -238,6 +238,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
                         await SetNameAsync(guardian);
                         guardian.IsPrivate = extraInfo.IsPrivateEmail;
                         break;
+                    case GuardianIdentifierType.Twitter:
+                        guardian.FirstName = extraInfo.FirstName;
+                        break;
                 }
             }
         }
