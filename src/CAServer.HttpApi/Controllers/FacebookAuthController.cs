@@ -32,7 +32,7 @@ public class FacebookAuthController : CAServerController
     {
         var result = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.Recevie);
         var redirectUrl = _facebookOptions.RedirectUrl + "/portkey-auth-callback?token=" + result.UserId + "." +
-                          result.AccessToken + "." + result.ExpiresTime + ".&type=facebook";
+                          result.AccessToken + "." + result.ExpiresTime + "&type=facebook";
         _logger.LogInformation("RedirectUrl is {url}: ", redirectUrl);
         return Redirect(redirectUrl);
     }
@@ -42,7 +42,7 @@ public class FacebookAuthController : CAServerController
     {
         var result = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.UnifyReceive);
         var redirectUrl = _facebookOptions.UnifyRedirectUrl + "/auth-callback?token=" + result.UserId + "." +
-                          result.AccessToken + "." + result.ExpiresTime + ".&type=facebook";
+                          result.AccessToken + "." + result.ExpiresTime + "&type=facebook";
         _logger.LogInformation("RedirectUrl is {url}: ", redirectUrl);
         return Redirect(redirectUrl);
     }
