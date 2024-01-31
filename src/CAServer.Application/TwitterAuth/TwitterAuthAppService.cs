@@ -48,7 +48,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         {
             ["code"] = twitterAuthDto.Code,
             ["grant_type"] = "authorization_code",
-            ["redirect_uri"] = _options.RedirectUrl,
+            ["redirect_uri"] = twitterAuthDto.RedirectUrl ?? _options.RequestRedirectUrl,
             ["code_verifier"] = "challenge"
         };
 
