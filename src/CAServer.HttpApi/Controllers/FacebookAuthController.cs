@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using CAServer.Facebook;
 using CAServer.Facebook.Dtos;
+using CAServer.Verifier;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,23 +27,23 @@ public class FacebookAuthController : CAServerController
         _facebookOptions = facebookOptions.Value;
     }
 
-    [HttpPost("receive")]
-    public async Task<IActionResult> ReceiveAsync([FromForm] FacebookAuthDto authDto)
+    [HttpGet("receive")]
+    public async Task<IActionResult> ReceiveAsync(string code)
     {
-        var result = await _facebookAuthAppService.ReceiveAsync(authDto);
+        var result = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.Recevie);
         var redirectUrl = _facebookOptions.RedirectUrl + "/portkey-auth-callback?token=" + result.UserId + "." +
                           result.AccessToken + "." + result.ExpiresTime + ".&type=facebook";
-        _logger.LogInformation("RedirectUrl is {url}: " , redirectUrl);
+        _logger.LogInformation("RedirectUrl is {url}: ", redirectUrl);
         return Redirect(redirectUrl);
     }
 
-    [HttpPost("unifyReceive")]
-    public async Task<IActionResult> UnifyReceiveAsync([FromForm] FacebookAuthDto authDto)
+    [HttpGet("unifyReceive")]
+    public async Task<IActionResult> UnifyReceiveAsync(string code)
     {
-        var result = await _facebookAuthAppService.ReceiveAsync(authDto);
-        var redirectUrl = _facebookOptions.UnifyRedirectUrl + "/portkey-auth-callback?token=" + result.UserId + "." +
+        var result = await _facebookAuthAppService.ReceiveAsync(code, ApplicationType.UnifyReceive);
+        var redirectUrl = _facebookOptions.UnifyRedirectUrl + "/auth-callback?token=" + result.UserId + "." +
                           result.AccessToken + "." + result.ExpiresTime + ".&type=facebook";
-        _logger.LogInformation("RedirectUrl is {url}: " , redirectUrl);
+        _logger.LogInformation("RedirectUrl is {url}: ", redirectUrl);
         return Redirect(redirectUrl);
     }
 }

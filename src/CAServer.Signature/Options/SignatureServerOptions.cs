@@ -17,5 +17,6 @@ public class KeyIds
     public string IpService { get; set; } = "IpServiceCaServer";
     public string AwsS3IdentityPool { get; set; } = "AwsS3IdentityPoolIm";
     public string GoogleRecaptcha { get; set; } = "GoogleRecaptchaCaServer";
+    public string FacebookAppSecret { get; set; } = "FacebookAppSecretCaServer";
 
 }
