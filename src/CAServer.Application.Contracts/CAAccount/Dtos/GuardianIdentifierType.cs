@@ -7,5 +7,6 @@ public enum GuardianIdentifierType
     Google = 2,
     Apple = 3,
     Telegram = 4,
-    Twitter=5
+    Facebook = 5,
+    Twitter=6
 }
