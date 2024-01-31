@@ -821,8 +821,8 @@ public class ContractAppService : IContractAppService
         var recoveryResult = new AccelerateSocialRecoveryEto
         {
             Id = socialRecoveryDto.Id,
-            CaHash = socialRecoveryDto.CaHash.ToHex(),
-            CaAddress = socialRecoveryDto.CaAddress.ToBase58(),
+            CaHash = socialRecoveryDto.CaHash?.ToHex(),
+            CaAddress = socialRecoveryDto.CaAddress?.ToBase58(),
             IdentifierHash = socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex(),
             ChainId = chainInfo.ChainId,
             ManagerInfo = new ManagerInfo
