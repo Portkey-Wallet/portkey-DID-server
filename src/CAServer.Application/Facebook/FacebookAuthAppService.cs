@@ -45,7 +45,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
 
         var url = "https://graph.facebook.com/v19.0/oauth/access_token?client_id=" + _facebookOptions.AppId +
                   "&redirect_uri=" + redirectUrl +
-                  "/&client_secret=" + _facebookOptions.AppSecret +
+                  "&client_secret=" + _facebookOptions.AppSecret +
                   "&code=" + code;
 
         var result = await HttpRequestAsync(url);
