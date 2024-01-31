@@ -141,7 +141,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await GetResultAsync<VerificationCodeResponse>(requestDto, requestUri, identifierHash, salt);
     }
 
-    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyACTokenAsync(VerifyTokenRequestDto input)
+    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(VerifyTokenRequestDto input)
     {
         var endPoint =
             await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
