@@ -40,13 +40,15 @@ public class TwitterAuthController : CAServerController
         return Redirect(redirectUrl);
     }
 
-    private string GetRedirectUrl(string redirectUrl, string token)
+    private string GetRedirectUrl(string redirectUrl, TwitterRedirectInfoDto redirectInfo)
     {
         if (redirectUrl.Contains("?"))
         {
-            return $"{redirectUrl}&id_token={token}";
+            return
+                $"{redirectUrl}&token={redirectInfo.AccessToken}&id={redirectInfo.UserInfo.Id}&name={redirectInfo.UserInfo.Name}&username={redirectInfo.UserInfo.UserName}&type={redirectInfo.AuthType}";
         }
 
-        return $"{redirectUrl}?id_token={token}";
+        return
+            $"{redirectUrl}?token={redirectInfo.AccessToken}&id={redirectInfo.UserInfo.Id}&name={redirectInfo.UserInfo.Name}&username={redirectInfo.UserInfo.UserName}&type={redirectInfo.AuthType}";
     }
 }

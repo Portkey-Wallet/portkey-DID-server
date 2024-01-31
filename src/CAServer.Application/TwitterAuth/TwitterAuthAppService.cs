@@ -35,7 +35,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         _options = options.Value;
     }
 
-    public async Task<string> ReceiveAsync(TwitterAuthDto twitterAuthDto)
+    public async Task<TwitterRedirectInfoDto> ReceiveAsync(TwitterAuthDto twitterAuthDto)
     {
         Logger.LogInformation("receive twitter callback, data: {data}", JsonConvert.SerializeObject(twitterAuthDto));
         if (twitterAuthDto.Code.IsNullOrEmpty())
@@ -65,8 +65,13 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         Logger.LogInformation("send code to twitter success, response:{response}",
             JsonConvert.SerializeObject(response));
 
-        await SaveUserExtraInfoAsync(response.AccessToken);
-        return response.AccessToken;
+        var userInfo = await SaveUserExtraInfoAsync(response.AccessToken);
+
+        return new TwitterRedirectInfoDto()
+        {
+            AccessToken = response.AccessToken,
+            UserInfo = userInfo.Data
+        };
     }
 
     private string GetBasicAuth(string clientId, string clientSecret)
@@ -75,7 +80,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         return $"Basic {basicToken}";
     }
 
-    private async Task SaveUserExtraInfoAsync(string accessToken)
+    private async Task<TwitterUserInfoDto> SaveUserExtraInfoAsync(string accessToken)
     {
         var url = "https://api.twitter.com/2/users/me";
         var header = new Dictionary<string, string>
@@ -88,7 +93,8 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         {
             throw new Exception("Failed to get user info");
         }
-        Logger.LogInformation("get twitter user info success, data:{userInfo}",JsonConvert.SerializeObject(userInfo));
+
+        Logger.LogInformation("get twitter user info success, data:{userInfo}", JsonConvert.SerializeObject(userInfo));
 
         var userExtraInfo = new Verifier.Dtos.UserExtraInfo
         {
@@ -101,6 +107,8 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         };
 
         await AddUserInfoAsync(userExtraInfo);
+
+        return userInfo;
     }
 
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)
