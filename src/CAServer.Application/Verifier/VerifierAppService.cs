@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using CAServer.AccountValidator;
+using CAServer.CAAccount.Dtos;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Dtos;
@@ -355,7 +356,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 await AddGuardianAsync(facebookUser.Id, userSaltAndHash.Item2, userSaltAndHash.Item1);
             }
 
-
             await AddUserInfoAsync(
                 ObjectMapper.Map<FacebookUserInfoDto, Dtos.UserExtraInfo>(facebookUser));
             return new VerificationCodeResponse
@@ -387,7 +387,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
         facebookUserInfo.Picture = facebookUserInfo.PictureDic["data"].Url;
-        facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
+        facebookUserInfo.GuardianType = GuardianIdentifierType.Facebook.ToString();
         return facebookUserInfo;
     }
 

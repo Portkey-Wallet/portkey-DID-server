@@ -20,15 +20,15 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
 {
     private readonly FacebookOptions _facebookOptions;
     private readonly IHttpClientFactory _httpClientFactory;
-
     private readonly ILogger<FacebookAuthAppService> _logger;
-    //private readonly ISecretProvider _secretProvider;
+    private readonly ISecretProvider _secretProvider;
 
     public FacebookAuthAppService(IOptionsSnapshot<FacebookOptions> facebookOptions,
-        IHttpClientFactory httpClientFactory, ILogger<FacebookAuthAppService> logger)
+        IHttpClientFactory httpClientFactory, ILogger<FacebookAuthAppService> logger, ISecretProvider secretProvider)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _secretProvider = secretProvider;
         _facebookOptions = facebookOptions.Value;
     }
 
@@ -37,7 +37,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
     {
         try
         {
-            //var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
+            var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
             var redirectUrl = applicationType switch
             {
                 ApplicationType.Receive => _facebookOptions.RedirectUrl,
@@ -46,7 +46,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
             };
             var url = "https://graph.facebook.com/v19.0/oauth/access_token?client_id=" + _facebookOptions.AppId +
                       "&redirect_uri=" + redirectUrl +
-                      "&client_secret=" + _facebookOptions.AppId +
+                      "&client_secret=" + secret +
                       "&code=" + code;
 
             var result = await HttpRequestAsync(url);
@@ -56,7 +56,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
                 throw new UserFriendlyException("Invalid token.");
             }
 
-            var app_token = _facebookOptions.AppId + "%7C" + facebookOauthInfo.AccessToken;
+            var app_token = _facebookOptions.AppId + "%7C" + secret;
             var requestUrl =
                 "https://graph.facebook.com/debug_token?access_token=" + app_token + "&input_token=" +
                 facebookOauthInfo.AccessToken;
