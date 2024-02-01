@@ -495,8 +495,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         Logger.LogInformation("Add or update user extra info success, Publish to MQ: {data}",
             JsonConvert.SerializeObject(userExtraInfo));
 
-        await _distributedEventBus.PublishAsync(
-            _objectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto));
+        var userExtraInfoEto = _objectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto);
+        _logger.LogDebug("Publish user extra info to mq: {data}", JsonConvert.SerializeObject(userExtraInfoEto));
+        await _distributedEventBus.PublishAsync(userExtraInfoEto);
     }
 
     private GrainResultDto<GuardianGrainDto> GetSaltAndHash(VierifierCodeRequestInput requestInput)
