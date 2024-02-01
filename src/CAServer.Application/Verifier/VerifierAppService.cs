@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
 using CAServer.AccountValidator;
+using CAServer.CAAccount.Dtos;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Dtos;
@@ -407,7 +408,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         try
         {
-            var facebookUser = await GetFacebookUserDtoAsync(requestDto);
+            var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
             var response =
                 await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
@@ -437,7 +438,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(VerifyTokenRequestDto requestDto)
+    private async Task<FacebookUserInfoDto> GetFacebookUserInfoAsync(VerifyTokenRequestDto requestDto)
     {
         var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyFacebookAccessTokenAsync(requestDto);
 
@@ -453,7 +454,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         var facebookUserResponse = await FacebookRequestAsync(getUserInfoUrl);
         var facebookUserInfo = JsonConvert.DeserializeObject<FacebookUserInfoDto>(facebookUserResponse);
         facebookUserInfo.Picture = facebookUserInfo.PictureDic["data"].Url;
-        facebookUserInfo.GuardianType = Account.GuardianType.GUARDIAN_TYPE_OF_FACEBOOK.ToString();
+        facebookUserInfo.GuardianType = GuardianIdentifierType.Facebook.ToString();
         return facebookUserInfo;
     }
 
