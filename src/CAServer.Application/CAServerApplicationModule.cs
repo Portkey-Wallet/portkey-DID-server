@@ -141,6 +141,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        Configure<GetBalanceFromChainOption>(configuration.GetSection("GetBalanceFromChain"));
         AddMessagePushService(context, configuration);
     }
 

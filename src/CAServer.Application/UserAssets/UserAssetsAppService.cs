@@ -13,6 +13,7 @@ using CAServer.Tokens;
 using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -45,6 +46,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ITokenProvider _tokenProvider;
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
     private readonly IDistributedCache<List<Token>> _userTokenCache;
+    private readonly IDistributedCache<string> _userTokenBalanceCache;
+    private readonly GetBalanceFromChainOption _getBalanceFromChainOption;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -53,7 +56,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IContractProvider contractProvider, IDistributedEventBus distributedEventBus,
         IOptionsSnapshot<SeedImageOptions> seedImageOptions, IUserTokenAppService userTokenAppService,
         ITokenProvider tokenProvider, IAssetsLibraryProvider assetsLibraryProvider,
-        IDistributedCache<List<Token>> userTokenCache)
+        IDistributedCache<List<Token>> userTokenCache, IDistributedCache<string> userTokenBalanceCache,
+        IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -69,6 +73,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenProvider = tokenProvider;
         _assetsLibraryProvider = assetsLibraryProvider;
         _userTokenCache = userTokenCache;
+        _userTokenBalanceCache = userTokenBalanceCache;
+        _getBalanceFromChainOption = getBalanceFromChainOption.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -189,6 +195,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 .ToList();
             var symbols = resultList.Select(t => t.Symbol).ToList();
             dto.Data.AddRange(resultList);
+
+            if (_getBalanceFromChainOption.IsOpen)
+            {
+                foreach (var token in dto.Data)
+                {
+                    if (_getBalanceFromChainOption.Symbols.Contains(token.Symbol))
+                    {
+                        var correctBalance = await CorrectTokenBalanceAsync(token.Symbol,
+                            requestDto.CaAddressInfos.First(t => t.ChainId == token.ChainId).CaAddress, token.ChainId);
+                        token.Balance = correctBalance >= 0 ? correctBalance.ToString() : token.Balance;
+                    }
+                }
+            }
 
             var priceDict = await GetSymbolPrice(symbols);
             foreach (var token in dto.Data)
@@ -350,6 +369,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     ImageResizeType.Forest);
 
                 dto.Data.Add(nftItem);
+            }
+
+            if (_getBalanceFromChainOption.IsOpen)
+            {
+                foreach (var nftItem in dto.Data)
+                {
+                    if (_getBalanceFromChainOption.Symbols.Contains(nftItem.Symbol))
+                    {
+                        var correctBalance = await CorrectTokenBalanceAsync(nftItem.Symbol,
+                            requestDto.CaAddressInfos.First(t => t.ChainId == nftItem.ChainId).CaAddress, nftItem.ChainId);
+                        nftItem.Balance = correctBalance >= 0 ? correctBalance.ToString() : nftItem.Balance;
+                    }
+                }
             }
 
             return dto;
@@ -538,6 +570,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     }
 
                     var tokenInfo = ObjectMapper.Map<IndexerSearchTokenNft, TokenInfoDto>(searchItem);
+                    if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(item.Symbol))
+                    {
+                        var correctBalance = await CorrectTokenBalanceAsync(item.Symbol, searchItem.CaAddress, searchItem.ChainId);
+                        if (correctBalance >= 0)
+                        {
+                            searchItem.Balance = correctBalance;
+                            tokenInfo.Balance = correctBalance.ToString();
+                        }
+                    }
+
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
                         .GetBalanceInUsd(price, searchItem.Balance, Convert.ToInt32(tokenInfo.Decimals)).ToString();
 
@@ -554,6 +596,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     }
 
                     item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
+                    if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(item.Symbol))
+                    {
+                        var correctBalance = await CorrectTokenBalanceAsync(item.Symbol, searchItem.CaAddress, searchItem.ChainId);
+                        item.NftInfo.Balance = correctBalance >= 0 ? correctBalance.ToString() : item.NftInfo.Balance;
+                    }
 
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
 
@@ -660,5 +707,30 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "get symbols price failed, symbol={symbols}", symbols);
             return new Dictionary<string, decimal>();
         }
+    }
+
+    private async Task<long> CorrectTokenBalanceAsync(string symbol, string address, string chainId)
+    {
+        var cacheKey = string.Format(CommonConstant.CacheCorrectUserTokenBalancePre, chainId, address, symbol);
+        try
+        {
+            var userTokenBalanceCache = await _userTokenBalanceCache.GetAsync(cacheKey);
+            if (string.IsNullOrWhiteSpace(userTokenBalanceCache))
+            {
+                var output = await _contractProvider.GetBalanceAsync(symbol, address, chainId);
+                await _userTokenBalanceCache.SetAsync(cacheKey, output.Balance.ToString(), new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(_getBalanceFromChainOption?.ExpireSeconds ?? CommonConstant.CacheTokenBalanceExpirationSeconds )
+                });
+                return output.Balance;
+            }
+            return long.Parse(userTokenBalanceCache);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "CorrectTokenBalance fail: symbol={symbol}, address={address}, chainId={chainId}", symbol, address, chainId);
+            return -1;
+        }
+        
     }
 }
