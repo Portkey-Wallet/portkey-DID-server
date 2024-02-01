@@ -32,7 +32,7 @@ public class UserExtraInfoHandler : IDistributedEventHandler<UserExtraInfoEto>, 
         try
         {
             var userInfo = _objectMapper.Map<UserExtraInfoEto, UserExtraInfoIndex>(eventData);
-
+            _logger.LogDebug("User extra info add or update: {eventData}", JsonConvert.SerializeObject(userInfo));
             await _userExtraInfoRepository.AddOrUpdateAsync(userInfo);
 
             _logger.LogDebug($"User extra info add or update success: {JsonConvert.SerializeObject(userInfo)}");
