@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using CAServer.AuthServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,8 +37,10 @@ public class Program
         {
             Log.Information("Starting CAServer.AuthServer.");
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("apollosettings.json");
             builder.Host.AddAppSettingsSecretsJson()
                 .UseAutofac()
+                .UseApollo()
                 .UseSerilog();
             await builder.AddApplicationAsync<CAServerAuthServerModule>();
             var app = builder.Build();

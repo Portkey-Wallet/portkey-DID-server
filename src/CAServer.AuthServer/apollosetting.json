@@ -1,0 +1,13 @@
+{
+  "apollo": {
+    "AppId": "CAServerService",
+    "ConfigServer": [
+      "http://localhost:8080"
+    ],
+    "Namespaces": [
+      "Test1.default.appsettings.json",
+      "Test1.phone.json"
+    ],
+    "Env": "DEV"
+  }
+}
