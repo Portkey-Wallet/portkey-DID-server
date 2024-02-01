@@ -167,16 +167,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         if (!crossChainTransactions.IsNullOrEmpty())
         {
-            var transactionIds = crossChainTransactions.Select(t => t.TransactionId).ToList();
-            var transactionsDto = await _activityProvider.GetAutoReceiveTransactionsAsync(transactionIds,
-                inputMaxResultCount: transactionIds.Count);
-
-            var completedIds = transactionsDto?.AutoReceiveTransaction?.Data?
-                .Select(t => t.TransferInfo.TransferTransactionId).ToList();
-
-            transactions.CaHolderTransaction.Data
-                .RemoveAll(t => t.MethodName == CommonConstant.CrossChainTransferMethodName &&
-                                !completedIds.Contains(t.TransactionId));
+            // var transactionIds = crossChainTransactions.Select(t => t.TransactionId).ToList();
+            // var transactionsDto = await _activityProvider.GetAutoReceiveTransactionsAsync(transactionIds,
+            //     inputMaxResultCount: transactionIds.Count);
+            //
+            // var completedIds = transactionsDto?.AutoReceiveTransaction?.Data?
+            //     .Select(t => t.TransferInfo.TransferTransactionId).ToList();
+            //
+            // transactions.CaHolderTransaction.Data
+            //     .RemoveAll(t => t.MethodName == CommonConstant.CrossChainTransferMethodName &&
+            //                     !completedIds.Contains(t.TransactionId));
         }
 
         //filter transaction for accelerated registration and accelerated recovery
