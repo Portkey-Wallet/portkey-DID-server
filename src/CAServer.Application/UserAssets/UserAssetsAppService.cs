@@ -204,7 +204,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     {
                         var correctBalance = await CorrectTokenBalanceAsync(token.Symbol,
                             requestDto.CaAddressInfos.First(t => t.ChainId == token.ChainId).CaAddress, token.ChainId);
-                        token.Balance = correctBalance.ToString();
+                        token.Balance = correctBalance >= 0 ? correctBalance.ToString() : token.Balance;
                     }
                 }
             }
@@ -379,7 +379,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     {
                         var correctBalance = await CorrectTokenBalanceAsync(nftItem.Symbol,
                             requestDto.CaAddressInfos.First(t => t.ChainId == nftItem.ChainId).CaAddress, nftItem.ChainId);
-                        nftItem.Balance = correctBalance.ToString();
+                        nftItem.Balance = correctBalance >= 0 ? correctBalance.ToString() : nftItem.Balance;
                     }
                 }
             }
@@ -573,8 +573,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(item.Symbol))
                     {
                         var correctBalance = await CorrectTokenBalanceAsync(item.Symbol, searchItem.CaAddress, searchItem.ChainId);
-                        searchItem.Balance = correctBalance;
-                        tokenInfo.Balance = correctBalance.ToString();
+                        if (correctBalance >= 0)
+                        {
+                            searchItem.Balance = correctBalance;
+                            tokenInfo.Balance = correctBalance.ToString();
+                        }
                     }
 
                     tokenInfo.BalanceInUsd = tokenInfo.BalanceInUsd = CalculationHelper
@@ -596,7 +599,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(item.Symbol))
                     {
                         var correctBalance = await CorrectTokenBalanceAsync(item.Symbol, searchItem.CaAddress, searchItem.ChainId);
-                        item.NftInfo.Balance = correctBalance.ToString();
+                        item.NftInfo.Balance = correctBalance >= 0 ? correctBalance.ToString() : item.NftInfo.Balance;
                     }
 
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
@@ -709,16 +712,25 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task<long> CorrectTokenBalanceAsync(string symbol, string address, string chainId)
     {
         var cacheKey = string.Format(CommonConstant.CacheCorrectUserTokenBalancePre, chainId, address, symbol);
-        var userTokenBalanceCache = await _userTokenBalanceCache.GetAsync(cacheKey);
-        if (string.IsNullOrWhiteSpace(userTokenBalanceCache))
+        try
         {
-            var output = await _contractProvider.GetBalanceAsync(symbol, address, chainId);
-            await _userTokenBalanceCache.SetAsync(cacheKey, output.Balance.ToString(), new DistributedCacheEntryOptions
+            var userTokenBalanceCache = await _userTokenBalanceCache.GetAsync(cacheKey);
+            if (string.IsNullOrWhiteSpace(userTokenBalanceCache))
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(_getBalanceFromChainOption?.ExpireSeconds ?? CommonConstant.CacheTokenBalanceExpirationSeconds )
-            });
-            return output.Balance;
+                var output = await _contractProvider.GetBalanceAsync(symbol, address, chainId);
+                await _userTokenBalanceCache.SetAsync(cacheKey, output.Balance.ToString(), new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(_getBalanceFromChainOption?.ExpireSeconds ?? CommonConstant.CacheTokenBalanceExpirationSeconds )
+                });
+                return output.Balance;
+            }
+            return long.Parse(userTokenBalanceCache);
         }
-        return long.Parse(userTokenBalanceCache);
+        catch (Exception e)
+        {
+            _logger.LogError(e, "CorrectTokenBalance fail: symbol={symbol}, address={address}, chainId={chainId}", symbol, address, chainId);
+            return -1;
+        }
+        
     }
 }
