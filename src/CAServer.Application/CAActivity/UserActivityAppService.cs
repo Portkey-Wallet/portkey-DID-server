@@ -42,7 +42,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private const int MaxResultCount = 10;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ActivityTypeOptions _activityTypeOptions;
-    
+
     private const string CreateCAHolderOnNonCreateChain = "CreateCAHolderOnNonCreateChain";
     private const string SocialRecovery = "SocialRecovery";
 
@@ -178,6 +178,21 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 .RemoveAll(t => t.MethodName == CommonConstant.CrossChainTransferMethodName &&
                                 !completedIds.Contains(t.TransactionId));
         }
+
+        //filter transaction for accelerated registration and accelerated recovery
+        var exists = transactions?.CaHolderTransaction?.Data.Exists(t => t.MethodName == SocialRecovery);
+        string originChainId = null;
+        if (exists ?? false)
+        {
+            var caaddress = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            var guardian = await _activityProvider.GetCaHolderInfoAsync(caaddress, string.Empty);
+            var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
+            originChainId = holderInfo?.OriginChainId ?? "AELF";
+        }
+
+        transactions?.CaHolderTransaction?.Data?.RemoveAll(t =>
+            t.MethodName == CreateCAHolderOnNonCreateChain ||
+            (t.MethodName == SocialRecovery && originChainId != t.ChainId));
 
         return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
     }
@@ -373,23 +388,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 result.TotalRecordCount -= 1;
                 continue;
-            }
-
-            //filter transaction for accelerated registration and accelerated recovery
-            if (ht.MethodName == CreateCAHolderOnNonCreateChain)
-            {
-                result.TotalRecordCount -= 1;
-                continue;
-            }
-            if (ht.MethodName == SocialRecovery)
-            {
-                var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
-                var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
-                if (holderInfo?.OriginChainId != null && holderInfo?.OriginChainId != ht.ChainId)
-                {
-                    result.TotalRecordCount -= 1;
-                    continue;
-                }
             }
 
             var transactionTime = MsToDateTime(ht.Timestamp * 1000);
