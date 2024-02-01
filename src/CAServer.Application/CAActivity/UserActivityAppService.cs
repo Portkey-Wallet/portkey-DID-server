@@ -184,8 +184,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         string originChainId = null;
         if (exists ?? false)
         {
-            var caaddress = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
-            var guardian = await _activityProvider.GetCaHolderInfoAsync(caaddress, string.Empty);
+            var caAddress = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddress, string.Empty);
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
             originChainId = holderInfo?.OriginChainId ?? "AELF";
         }
