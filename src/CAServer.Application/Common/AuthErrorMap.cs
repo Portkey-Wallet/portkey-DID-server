@@ -9,12 +9,12 @@ public class AuthErrorMap
     public const string TwitterVerifyErrorCode = "40003";
     public const string DefaultCode = "50000";
 
-    private static readonly Dictionary<string, string> ErrorMapInfo = new Dictionary<string, string>()
+    public static readonly Dictionary<string, string> ErrorMapInfo = new Dictionary<string, string>()
     {
-        [FacebookCancelCode] = "40001",
-        [TwitterCancelCode] = "40002",
-        [TwitterVerifyErrorCode] = "40003",
-        [DefaultCode] = "50000"
+        [FacebookCancelCode] = "Portkey needs to verify your account info to continue. Please try again.",
+        [TwitterCancelCode] = "Portkey needs to verify your account info to continue. Please try again.",
+        [TwitterVerifyErrorCode] = "Verification has reached the daily limit. Please try again after 24 hours.",
+        [DefaultCode] = "Account verification failed. Please try again."
     };
 
 
