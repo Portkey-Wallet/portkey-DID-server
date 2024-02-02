@@ -194,8 +194,8 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             // var fixedFee = fiat.FixedFee.SafeToDecimal();
             
             // Exchange of [ fiat : crypto ]
-            var networkFee = quoteData.NetworkFee.SafeToDecimal();
-            var cryptoNetworkFee = networkFee > 0 ? 0 : quoteData.CryptoNetworkFee.SafeToDecimal();
+            var cryptoNetworkFee = quoteData.CryptoNetworkFee.SafeToDecimal();
+            var networkFee = cryptoNetworkFee > 0 ? 0 : quoteData.NetworkFee.SafeToDecimal();
             var cryptoPrice = quoteData.CryptoPrice.SafeToDecimal();
             var rampFee = quoteData.RampFee.SafeToDecimal();
             
