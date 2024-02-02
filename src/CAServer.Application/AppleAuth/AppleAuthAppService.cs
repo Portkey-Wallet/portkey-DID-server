@@ -15,6 +15,8 @@ using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Options;
+using CAServer.SecurityServer;
+using CAServer.Signature.Provider;
 using CAServer.Verifier.Etos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -41,6 +43,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly AppleTransferOptions _appleTransferOptions;
+    private readonly ISecretProvider _secretProvider;
 
     public AppleAuthAppService(IHttpClientFactory httpClientFactory,
         IOptions<AppleAuthOptions> appleAuthVerifyOption,
@@ -50,7 +53,8 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IHttpContextAccessor httpContextAccessor,
         IAppleUserProvider appleUserProvider,
-        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions)
+        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions, 
+        ISecretProvider secretProvider)
     {
         _httpClientFactory = httpClientFactory;
         _appleAuthOptions = appleAuthVerifyOption.Value;
@@ -60,12 +64,13 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _httpContextAccessor = httpContextAccessor;
         _appleUserProvider = appleUserProvider;
+        _secretProvider = secretProvider;
         _appleTransferOptions = appleTransferOptions.Value;
     }
 
     public async Task ReceiveAsync(AppleAuthDto appleAuthDto)
     {
-        Logger.LogInformation($"Apple token:  {JsonConvert.SerializeObject(appleAuthDto)}");
+        Logger.LogInformation("Apple token: {token}", JsonConvert.SerializeObject(appleAuthDto));
 
         var identityToken = appleAuthDto.Id_token;
         if (string.IsNullOrEmpty(appleAuthDto.Id_token))
@@ -80,7 +85,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
 
         var securityToken = await ValidateTokenAsync(identityToken);
         var jwtPayload = ((JwtSecurityToken)securityToken).Payload;
-        
+
         if (_appleTransferOptions.IsNeedIntercept(jwtPayload.Sub))
         {
             throw new UserFriendlyException(_appleTransferOptions.ErrorMessage);
@@ -88,6 +93,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
 
         if (string.IsNullOrWhiteSpace(appleAuthDto.User))
         {
+            await CheckUserAsync(jwtPayload.Sub);
             return;
         }
 
@@ -127,6 +133,47 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         await AddUserInfoAsync(userInfo);
     }
 
+    private async Task CheckUserAsync(string userId)
+    {
+        try
+        {
+            var exist = await _appleUserProvider.UserExtraInfoExistAsync(userId);
+            if (exist) return;
+
+            var extraInfo = await _appleUserProvider.GetUserInfoAsync(userId);
+            if (extraInfo == null)
+            {
+                Logger.LogInformation("user not exist.");
+                return;
+            }
+
+            var userExtraInfo = new Verifier.Dtos.UserExtraInfo
+            {
+                Id = userId,
+                GuardianType = GuardianIdentifierType.Apple.ToString(),
+                AuthTime = DateTime.UtcNow,
+                FirstName = extraInfo.FirstName,
+                LastName = extraInfo.LastName,
+                Email = extraInfo.Email,
+                IsPrivateEmail = extraInfo.IsPrivate,
+                VerifiedEmail = extraInfo.VerifiedEmail,
+                Picture = extraInfo.Picture
+            };
+
+            await _appleUserProvider.SetUserExtraInfoAsync(new AppleUserExtraInfo
+            {
+                UserId = userExtraInfo.Id,
+                FirstName = userExtraInfo.FirstName,
+                LastName = userExtraInfo.LastName,
+            });
+            await AddUserInfoAsync(userExtraInfo);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "check apple user exist error, userId:{userId}", userId);
+        }
+    }
+
     private async Task AddUserInfoAsync(Verifier.Dtos.UserExtraInfo userExtraInfo)
     {
         var userExtraInfoGrainId =
@@ -139,7 +186,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
 
         grainDto.Id = userExtraInfo.Id;
         await _distributedEventBus.PublishAsync(
-            ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto));
+            ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto), false, false);
     }
 
     private async Task<SecurityToken> ValidateTokenAsync(string identityToken)
@@ -171,22 +218,22 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         }
         catch (SecurityTokenExpiredException e)
         {
-            Logger.LogError(e, e.Message);
+            Logger.LogError(e, "The token has expired, {token}", identityToken);
             throw new UserFriendlyException("The token has expired.");
         }
         catch (SecurityTokenException e)
         {
-            Logger.LogError(e, e.Message);
+            Logger.LogError(e, "Valid token fail, {token}", identityToken);
             throw new UserFriendlyException("Valid token fail.");
         }
         catch (ArgumentException e)
         {
-            Logger.LogError(e, e.Message);
+            Logger.LogError(e, "Invalid token, {token}", identityToken);
             throw new UserFriendlyException("Invalid token.");
         }
         catch (Exception e)
         {
-            Logger.LogError(e, e.Message);
+            Logger.LogError(e, "Valid token error, {token}", identityToken);
             throw new UserFriendlyException(e.Message);
         }
     }
@@ -200,11 +247,12 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
     private async Task<string> GetTokenAsync(string code)
     {
         var url = "https://appleid.apple.com/auth/token";
-        var secret = GetSecret(_appleAuthOptions.ExtensionConfig.PrivateKey, _appleAuthOptions.ExtensionConfig.KeyId,
+        
+        var secret = await _secretProvider.GetAppleAuthSignatureAsync(_appleAuthOptions.ExtensionConfig.KeyId,
             _appleAuthOptions.ExtensionConfig.TeamId, _appleAuthOptions.ExtensionConfig.ClientId);
 
         var response = await GetTokenFromAppleAsync(url, code, _appleAuthOptions.ExtensionConfig.ClientId, secret);
-        Logger.LogInformation("Get token from apple: {response}", response);
+        Logger.LogInformation("Get token from apple: {Response}", response);
 
         if (response.Contains("error"))
         {

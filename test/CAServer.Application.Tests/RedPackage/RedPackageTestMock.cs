@@ -236,16 +236,4 @@ public partial class RedPackageTest
         });
         return mock.Object;
     }
-    
-    private IRedPackageKeyGrain getMockOrderGrain()
-    {
-        var keyPair = CryptoHelper.GenerateKeyPair();
-        string publicKey = keyPair.PublicKey.ToHex();
-        string privateKey = keyPair.PrivateKey.ToHex();
-        
-        var mockockOrderGrain = new Mock<IRedPackageKeyGrain>();
-        mockockOrderGrain.Setup(o => o.GenerateKey())
-            .ReturnsAsync(publicKey);
-        return mockockOrderGrain.Object;
-    }
 }

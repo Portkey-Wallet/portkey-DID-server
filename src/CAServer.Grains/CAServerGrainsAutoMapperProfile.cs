@@ -7,9 +7,11 @@ using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.CrossChain;
+using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
 using CAServer.Grains.Grain.Notify;
+using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
@@ -19,10 +21,12 @@ using CAServer.Grains.State.Bookmark;
 using CAServer.Grains.State.Chain;
 using CAServer.Grains.State.Contacts;
 using CAServer.Grains.State.CrossChain;
+using CAServer.Grains.State.Growth;
 using CAServer.Grains.State.ImTransfer;
 using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
 using CAServer.Grains.State.PrivacyPermission;
+using CAServer.Grains.State.RedDot;
 using CAServer.Grains.State.ThirdPart;
 using CAServer.Grains.State.RedPackage;
 using CAServer.Grains.State.Tokens;
@@ -33,6 +37,7 @@ using CAServer.RedPackage.Dtos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using Google.Protobuf.Collections;
+using Google.Protobuf.WellKnownTypes;
 using Portkey.Contracts.CA;
 
 namespace CAServer.Grains;
@@ -54,6 +59,20 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<GuardianState, GuardianGrainDto>();
 
         CreateMap<CreateHolderDto, CreateCAHolderInput>()
+            .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => new DelegateInfo()
+            {
+                ChainId = e.ProjectDelegateInfo.ChainId,
+                ProjectHash = Hash.LoadFromHex(e.ProjectDelegateInfo.ProjectHash),
+                IdentifierHash = Hash.LoadFromHex(e.ProjectDelegateInfo.IdentifierHash),
+                ExpirationTime = e.ProjectDelegateInfo.ExpirationTime,
+                Delegations =
+                {
+                    e.ProjectDelegateInfo.Delegations
+                },
+                Timestamp = DateTimeOffset.FromUnixTimeSeconds(e.ProjectDelegateInfo.TimeStamp).ToTimestamp(),
+                IsUnlimitedDelegate = e.ProjectDelegateInfo.IsUnlimitedDelegate,
+                Signature = e.ProjectDelegateInfo.Signature
+            }))
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
             {
                 Type = e.GuardianInfo.Type,
@@ -69,7 +88,11 @@ public class CAServerGrainsAutoMapperProfile : Profile
             {
                 Address = e.ManagerInfo.Address,
                 ExtraData = e.ManagerInfo.ExtraData
-            }));
+            }))
+            .ForMember(t => t.ReferralCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
+            .ForMember(t => t.ProjectCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
 
         CreateMap<SocialRecoveryDto, SocialRecoveryInput>()
             .ForMember(d => d.GuardiansApproved,
@@ -90,7 +113,11 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 ExtraData = e.ManagerInfo.ExtraData
             }))
             .ForMember(d => d.LoginGuardianIdentifierHash,
-                opt => opt.MapFrom(g => g.LoginGuardianIdentifierHash));
+                opt => opt.MapFrom(g => g.LoginGuardianIdentifierHash))
+            .ForMember(t => t.ReferralCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
+            .ForMember(t => t.ProjectCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
 
         CreateMap<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>()
             .ForMember(d => d.LoginGuardians,
@@ -146,6 +173,8 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
         CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
+        CreateMap<RedDotState, RedDotGrainDto>().ReverseMap();
+        CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
         CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();
     }
 }

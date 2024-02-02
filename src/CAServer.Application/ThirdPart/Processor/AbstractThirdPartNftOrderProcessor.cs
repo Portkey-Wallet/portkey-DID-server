@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
+using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -66,7 +67,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
     /// </summary>
     /// <param name="input"></param>
     /// <returns>decrypted and verified data</returns>
-    public abstract IThirdPartValidOrderUpdateRequest VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
+    public abstract Task<IThirdPartValidOrderUpdateRequest> VerifyNftOrderAsync(IThirdPartNftOrderUpdateRequest input);
 
     /// <summary>
     ///     Query new order via ThirdPart API and verify
@@ -129,7 +130,7 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
         try
         {
             // verify webhook input
-            updateRequest = VerifyNftOrderAsync(request);
+            updateRequest = await VerifyNftOrderAsync(request);
             AssertHelper.NotEmpty(updateRequest.Id, "Order id missing");
             AssertHelper.NotEmpty(updateRequest.Status, "Order status missing");
 
@@ -253,25 +254,34 @@ public abstract class AbstractThirdPartNftOrderProcessor : IThirdPartNftOrderPro
             var currentStatus = ThirdPartHelper.ParseOrderStatus(orderGrainDto.Status);
             AssertHelper.IsTrue(currentStatus == OrderStatusType.StartTransfer,
                 "Order not in settlement StartTransfer state, current: {Status}", currentStatus);
-            AssertHelper.NullOrEmpty(orderGrainDto.TransactionId, "TransactionId exists: {TxId}",
-                orderGrainDto.TransactionId);
 
             // query nft-order data and verify
             var nftOrderGrainDto = await _orderStatusProvider.GetNftOrderAsync(orderId);
             AssertHelper.NotNull(nftOrderGrainDto, "No nft order found for {OrderId}", orderId);
             AssertHelper.NotEmpty(nftOrderGrainDto.MerchantAddress, "NFT order merchant address missing");
 
-            // generate transfer transaction
-            var (txHash, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
-                orderGrainDto.CryptoAmount,
-                nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
-                _thirdPartOptions.CurrentValue.Merchant.NftOrderSettlementPublicKey);
-
-            // update main-order, record transactionId first
-            orderGrainDto.TransactionId = txHash;
+            // generate transfer transaction or use an old transaction data
+            Transaction transferTx;
+            if (orderGrainDto.RawTransaction.IsNullOrEmpty())
+            {
+                var amount = orderGrainDto.CryptoAmount.SafeToDecimal() * (decimal)Math.Pow(10, orderGrainDto.CryptoDecimals);
+                (var txId, transferTx) = await _contractProvider.GenerateTransferTransactionAsync(orderGrainDto.Crypto,
+                    amount.ToString(0, DecimalHelper.RoundingOption.Floor),
+                    nftOrderGrainDto.MerchantAddress, CommonConstant.MainChainId,
+                    _thirdPartOptions.CurrentValue.Merchant.NftOrderSettlementPublicKey);
+                // update main-order, record transactionId first
+                orderGrainDto.TransactionId = txId;
+                orderGrainDto.RawTransaction = transferTx.ToByteArray().ToHex();
+            }
+            else
+            {
+                transferTx =
+                    Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(orderGrainDto.RawTransaction));
+            }
+            
             orderGrainDto.Status = OrderStatusType.Transferring.ToString();
             var transferringExtension = OrderStatusExtensionBuilder.Create()
-                .Add(ExtensionKey.TxHash, txHash)
+                .Add(ExtensionKey.TxHash, orderGrainDto.TransactionId)
                 .Add(ExtensionKey.Transaction, JsonConvert.SerializeObject(transferTx, JsonSerializerSettings))
                 .Build();
             var transferringResult =

@@ -30,6 +30,7 @@ public partial class PhoneInfoServiceTests : CAServerApplicationTestBase
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetPhoneInfoOptions());
         services.AddSingleton(IpInfoClientTest.MockIpInfoHttpClient());
+        services.AddSingleton(IpInfoClientTest.MockSecretProvider());
     }
 
     [Fact]
