@@ -75,7 +75,7 @@ public static class ThirdPartHelper
     }
 }
 
-public static class AlchemyHelper
+public static class /**/AlchemyHelper
 {
     public const string SignatureField = "signature";
     public const string IdField = "id";

@@ -3,10 +3,12 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
+using CAServer.CAAccount;
 using CAServer.Commons;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
 using CAServer.Signature;
+using CAServer.Signature.Provider;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -418,4 +420,13 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
+      
+
+        public async Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto)
+        {
+            var param = _objectMapper.Map<AssignProjectDelegateeDto, AssignProjectDelegateeInput>(assignProjectDelegateeDto);
+            var result = await SendTransactionToChainAsync(assignProjectDelegateeDto.ChainId, param, MethodName.AssignProjectDelegatee);
+            DeactivateOnIdle();
+            return result.TransactionResultDto;
+        }
 }
