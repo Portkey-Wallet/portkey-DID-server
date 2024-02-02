@@ -70,7 +70,9 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             userTokenAppService: userTokenAppServiceMock.Object,
             tokenProvider: tokenProvider.Object,
             assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(), 
-            userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>());
+            userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>(),
+            userTokenBalanceCache: GetRequiredService<IDistributedCache<string>>(),
+            getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>());
         return userAssetsAppService;
     }
 
