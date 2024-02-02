@@ -61,6 +61,7 @@ public class RegisterGrain : Grain<RegisterState>, IRegisterGrain
         result.Success = true;
         result.Data = _objectMapper.Map<RegisterInfo, RegisterGrainDto>(registerInfo);
         result.Data.Context = recoveryDto.Context;
+        result.Data.ReferralInfo = recoveryDto.ReferralInfo;
         return result;
     }
 

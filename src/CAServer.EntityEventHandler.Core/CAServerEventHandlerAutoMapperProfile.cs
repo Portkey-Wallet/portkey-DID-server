@@ -7,7 +7,9 @@ using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Growth.Etos;
 using CAServer.Notify.Etos;
+using CAServer.RedDot.Etos;
 using CAServer.Security.Etos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
@@ -66,5 +68,8 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<DeleteCAHolderEto, CAHolderIndex>();
         CreateMap<GuardianDeleteEto, GuardianIndex>();
         CreateMap<OrderSettlementGrainDto, OrderSettlementIndex>().ReverseMap();
+        CreateMap<CreateGrowthEto, GrowthIndex>();
+        CreateMap<RedDot.Dtos.RedDotInfo, Entities.Es.RedDotInfo>().ReverseMap();
+        CreateMap<RedDotEto, RedDotIndex>();
     }
 }

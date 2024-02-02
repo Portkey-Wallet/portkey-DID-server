@@ -8,7 +8,5 @@ public class SwitchOptions
 
     public bool CheckSwitch { get; set; }
 
-    public bool TelegramLogin { get; set; }
-    
     public bool UpgradePopup { get; set; }
 }

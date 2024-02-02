@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
@@ -11,7 +10,6 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
-using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
@@ -21,14 +19,11 @@ using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
-using CAServer.UserBehavior;
-using CAServer.UserBehavior.Etos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
-using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
@@ -338,6 +333,17 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new RevokeResultDto()
         {
             Success = revokeResult
+        };
+    }
+
+    public async Task<AuthorizeDelegateResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeRequestDto input)
+    {
+        Logger.LogInformation("Authorize Delegate : param is {input}",JsonConvert.SerializeObject(input));
+        var assignProjectDelegateeDto = ObjectMapper.Map<AssignProjectDelegateeRequestDto, AssignProjectDelegateeDto>(input);
+        var transactionResult = await _contractProvider.AuthorizeDelegateAsync(assignProjectDelegateeDto);
+        return new AuthorizeDelegateResultDto
+        {
+            Success = string.IsNullOrWhiteSpace(transactionResult.Error)
         };
     }
 

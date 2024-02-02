@@ -1,4 +1,5 @@
 using System;
+using CAServer.CAAccount.Dtos;
 using Volo.Abp.EventBus;
 
 namespace CAServer.ContractEventHandler;
@@ -16,4 +17,5 @@ public class CreateHolderEto : ContractServiceEto
     public DateTime RegisteredTime { get; set; }
     public string RegisterMessage { get; set; }
     public bool? RegisterSuccess { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 }

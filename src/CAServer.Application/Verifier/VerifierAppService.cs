@@ -592,10 +592,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         try
         {
-            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken((identityToken));
+            var jwtToken = _jwtSecurityTokenHandler.ReadJwtToken(identityToken);
             var claims = jwtToken.Payload.Claims;
             var idClaims = claims.FirstOrDefault(c => c.Type.Equals(TelegramTokenClaimNames.UserId));
-            string userId = idClaims?.Value;
+            var userId = idClaims?.Value;
             if (userId.IsNullOrWhiteSpace())
             {
                 throw new Exception("userId is empty");

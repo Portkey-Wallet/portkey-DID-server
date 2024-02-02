@@ -1,7 +1,10 @@
 using AElf.Client.Dto;
 using AElf.Types;
+using CAServer.CAAccount.Dtos;
+using CAServer.Dtos;
 using CAServer.Hubs;
 using Portkey.Contracts.CA;
+using ProjectDelegateInfo = CAServer.Dtos.ProjectDelegateInfo;
 
 namespace CAServer.Grains.Grain.ApplicationHandler;
 
@@ -25,6 +28,9 @@ public class ChainInfo
 public class CreateHolderDto : ContractDtoBase
 {
     public GuardianInfo GuardianInfo { get; set; }
+    
+    public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
+
 }
 
 public class SocialRecoveryDto : ContractDtoBase
@@ -42,4 +48,5 @@ public class ContractDtoBase
     public Hash CaHash { get; set; }
     public Address CaAddress { get; set; }
     public HubRequestContext Context { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 }

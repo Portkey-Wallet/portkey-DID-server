@@ -47,7 +47,7 @@ public class LoginGuardianChangeRecordReceiveWorker : AsyncPeriodicBackgroundWor
                 lastEndHeight = newIndexHeight - WorkerConst.MaxOlderBlockHeightFromNow;
             }
             
-            var queryList = await _graphQlProvider.GetLoginGuardianTransactionInfosAsync(chainOptionsChainInfo.Key, lastEndHeight, newIndexHeight);
+            var queryList = await _graphQlProvider.GetLoginGuardianTransactionInfosAsync(chainOptionsChainInfo.Key, lastEndHeight + 1, newIndexHeight);
             var blockHeight = lastEndHeight;
             foreach (var queryEventDto in queryList)
             {
