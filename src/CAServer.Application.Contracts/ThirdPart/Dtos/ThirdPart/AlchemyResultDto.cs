@@ -88,6 +88,8 @@ public class AlchemyOrderQuoteDataDto
     
     // not from ach
     public string Network { get; set; }
+
+    public string CryptoNetworkFee { get; set; }
 }
 
 public class AlchemySignatureResultDto : AlchemyBaseResponseDto<Empty>
