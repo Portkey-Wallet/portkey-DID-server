@@ -6,6 +6,7 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Signature.Provider;
 using CAServer.TwitterAuth.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.AspNetCore.Http;
@@ -27,27 +28,30 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IClusterClient _clusterClient;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ISecretProvider _secretProvider;
 
     public TwitterAuthAppService(IHttpClientService httpClientService, IOptionsSnapshot<TwitterAuthOptions> options,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider)
     {
         _httpClientService = httpClientService;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _httpContextAccessor = httpContextAccessor;
+        _secretProvider = secretProvider;
         _options = options.Value;
     }
 
     public async Task<TwitterUserAuthInfoDto> ReceiveAsync(TwitterAuthDto twitterAuthDto)
     {
+        var clientSecret = await _secretProvider.GetSecretWithCacheAsync(_options.ClientId);
         Logger.LogInformation("receive twitter callback, data: {data}", JsonConvert.SerializeObject(twitterAuthDto));
         if (twitterAuthDto.Code.IsNullOrEmpty())
         {
             throw new UserFriendlyException("auth code is empty");
         }
 
-        var basicAuth = GetBasicAuth(_options.ClientId, _options.ClientSecret);
+        var basicAuth = GetBasicAuth(_options.ClientId, clientSecret);
         var requestParam = new Dictionary<string, string>
         {
             ["code"] = twitterAuthDto.Code,
