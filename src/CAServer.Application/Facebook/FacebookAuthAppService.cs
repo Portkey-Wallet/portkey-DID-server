@@ -39,7 +39,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
     {
         if (string.IsNullOrEmpty(code))
         {
-            return new FacebookAuthResponseDto()
+            return new FacebookAuthResponseDto
             {
                 Code = AuthErrorMap.FacebookCancelCode,
                 Message = AuthErrorMap.ErrorMapInfo[AuthErrorMap.FacebookCancelCode]
@@ -95,8 +95,8 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
             _logger.LogError("Facebook auth failed : {Message}", e.Message);
             return new FacebookAuthResponseDto
             {
-                Code = AuthErrorMap.FacebookVerifyErrorCode,
-                Message = AuthErrorMap.ErrorMapInfo[AuthErrorMap.FacebookVerifyErrorCode]
+                Code = AuthErrorMap.DefaultCode,
+                Message = AuthErrorMap.ErrorMapInfo[AuthErrorMap.DefaultCode]
             };
         }
     }
@@ -118,7 +118,6 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
         {
             return result;
         }
-
         _logger.LogError("{Message}", response.ToString());
         throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
     }
