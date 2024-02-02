@@ -4,23 +4,25 @@ namespace CAServer.Common;
 
 public class AuthErrorMap
 {
-    public const string DefaultCode = "50000";
+    public const string FacebookCancelCode = "40001";
     public const string TwitterCancelCode = "40002";
-    private static readonly Dictionary<string, string> ErrorMapInfo = new Dictionary<string, string>()
+    public const string TwitterVerifyErrorCode = "40003";
+    public const string DefaultCode = "50000";
+
+    public static readonly Dictionary<string, string> ErrorMapInfo = new Dictionary<string, string>()
     {
-        ["40001"] = "facebook cancel auth",
-        ["40002"] = "twitter cancel auth",
-        ["40003"] = "limit rate",
-        ["50000"] = "auth fail"
+        [FacebookCancelCode] = "Portkey needs to verify your account info to continue. Please try again.",
+        [TwitterCancelCode] = "Portkey needs to verify your account info to continue. Please try again.",
+        [TwitterVerifyErrorCode] = "Verification has reached the daily limit. Please try again after 24 hours.",
+        [DefaultCode] = "Account verification failed. Please try again."
     };
+
+
+   
 
     public static string GetMessage(string code)
     {
-        if (!ErrorMapInfo.ContainsKey(code))
-        {
-            return ErrorMapInfo.GetOrDefault(DefaultCode);
-        }
-       
-        return ErrorMapInfo.GetOrDefault(code);
+        return ErrorMapInfo.GetOrDefault(!ErrorMapInfo.ContainsKey(code) ? DefaultCode : code);
     }
+    
 }
