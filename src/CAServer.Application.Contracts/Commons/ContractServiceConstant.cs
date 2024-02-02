@@ -25,6 +25,8 @@ public static class CommonConstant
     
     public const string ResourceTokenKey = "ResourceToken";
     public const int CacheExpirationDays = 365;
+    public const string CacheCorrectUserTokenBalancePre = "CorrectUserTokenBalance:{0}:{1}:{2}";
+    public const long CacheTokenBalanceExpirationSeconds = 60;
 
     public const string FiatListKey = "FiatList";
     public const string NftFiatListKey = "NftFiatList";

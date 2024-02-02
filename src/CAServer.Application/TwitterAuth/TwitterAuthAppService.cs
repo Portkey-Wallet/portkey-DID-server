@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
@@ -29,21 +32,29 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
     private readonly IClusterClient _clusterClient;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ISecretProvider _secretProvider;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public TwitterAuthAppService(IHttpClientService httpClientService, IOptionsSnapshot<TwitterAuthOptions> options,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider)
+        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider, IHttpClientFactory httpClientFactory)
     {
         _httpClientService = httpClientService;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _httpContextAccessor = httpContextAccessor;
         _secretProvider = secretProvider;
+        _httpClientFactory = httpClientFactory;
         _options = options.Value;
     }
 
     public async Task<TwitterAuthResultDto> ReceiveAsync(TwitterAuthDto twitterAuthDto)
     {
+        if (_httpContextAccessor.HttpContext.Request.Headers != null)
+        {
+            Logger.LogInformation("#### request header:{data}",
+                JsonConvert.SerializeObject(_httpContextAccessor.HttpContext.Request.Headers));
+        }
+
         var authResult = new TwitterAuthResultDto();
         try
         {
@@ -66,7 +77,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         var clientSecret = await _secretProvider.GetSecretWithCacheAsync(_options.ClientId);
         Logger.LogInformation("receive twitter callback, data: {data}",
             JsonConvert.SerializeObject(twitterAuthDto));
-        
+
         if (twitterAuthDto.Code.IsNullOrEmpty())
         {
             throw new UserFriendlyException("auth code is empty", AuthErrorMap.TwitterCancelCode);
@@ -87,10 +98,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             ["Authorization"] = basicAuth
         };
 
-        var response = await _httpClientService.PostAsync<TwitterTokenDto>(_options.TwitterTokenUrl,
-            RequestMediaType.Form,
-            requestParam,
-            header);
+        var response = await PostFormAsync<TwitterTokenDto>(_options.TwitterTokenUrl, requestParam, header);
 
         Logger.LogInformation("send code to twitter success, response:{response}",
             JsonConvert.SerializeObject(response));
@@ -163,5 +171,45 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
         var message = AuthErrorMap.GetMessage(errorCode);
         return (errorCode, message);
+    }
+
+    private async Task<T> PostFormAsync<T>(string url, Dictionary<string, string> paramDic,
+        Dictionary<string, string> headers)
+    {
+        var client = _httpClientFactory.CreateClient();
+
+        if (headers is { Count: > 0 })
+        {
+            foreach (var header in headers)
+            {
+                client.DefaultRequestHeaders.Add(header.Key, header.Value);
+            }
+        }
+
+        var param = new List<KeyValuePair<string, string>>();
+        if (paramDic is { Count: > 0 })
+        {
+            param.AddRange(paramDic.ToList());
+        }
+
+        var response = await client.PostAsync(url, new FormUrlEncodedContent(param));
+        var content = await response.Content.ReadAsStringAsync();
+        Logger.LogInformation(content);
+        var responseHeaders = response.Headers;
+        if (responseHeaders != null)
+        {
+            Logger.LogInformation("#### response header:{data}", JsonConvert.SerializeObject(responseHeaders));
+        }
+
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
+            Logger.LogError(
+                "Response not success, url:{url}, code:{code}, message: {message}, params:{param}",
+                url, response.StatusCode, content, JsonConvert.SerializeObject(paramDic));
+
+            throw new UserFriendlyException(content, ((int)response.StatusCode).ToString());
+        }
+
+        return JsonConvert.DeserializeObject<T>(content);
     }
 }
