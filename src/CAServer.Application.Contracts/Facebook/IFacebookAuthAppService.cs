@@ -6,5 +6,5 @@ namespace CAServer.Facebook;
 
 public interface IFacebookAuthAppService
 {
-    Task<FacebookAuthResponse> ReceiveAsync(string code, ApplicationType applicationType);
+    Task<FacebookAuthResponseDto> ReceiveAsync(string code, ApplicationType applicationType);
 }

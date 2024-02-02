@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Facebook.Dtos;
 using CAServer.Signature.Provider;
 using CAServer.Verifier;
@@ -22,6 +23,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<FacebookAuthAppService> _logger;
     private readonly ISecretProvider _secretProvider;
+    private const string UrlCode = "%7C";
 
     public FacebookAuthAppService(IOptionsSnapshot<FacebookOptions> facebookOptions,
         IHttpClientFactory httpClientFactory, ILogger<FacebookAuthAppService> logger, ISecretProvider secretProvider)
@@ -33,8 +35,17 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
     }
 
 
-    public async Task<FacebookAuthResponse> ReceiveAsync(string code, ApplicationType applicationType)
+    public async Task<FacebookAuthResponseDto> ReceiveAsync(string code, ApplicationType applicationType)
     {
+        if (string.IsNullOrEmpty(code))
+        {
+            return new FacebookAuthResponseDto()
+            {
+                Code = AuthErrorMap.FacebookCancelCode,
+                Message = AuthErrorMap.ErrorMapInfo[AuthErrorMap.FacebookCancelCode]
+            };
+        }
+
         try
         {
             var secret = await _secretProvider.GetSecretWithCacheAsync(_facebookOptions.AppId);
@@ -56,7 +67,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
                 throw new UserFriendlyException("Invalid token.");
             }
 
-            var app_token = _facebookOptions.AppId + "%7C" + secret;
+            var app_token = _facebookOptions.AppId + UrlCode + secret;
             var requestUrl =
                 "https://graph.facebook.com/debug_token?access_token=" + app_token + "&input_token=" +
                 facebookOauthInfo.AccessToken;
@@ -69,17 +80,24 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
                 throw new UserFriendlyException("Invalid token.");
             }
 
-            return new FacebookAuthResponse
+            return new FacebookAuthResponseDto
             {
-                UserId = facebookVerifyResponse.Data.UserId,
-                AccessToken = facebookOauthInfo.AccessToken,
-                ExpiresTime = facebookVerifyResponse.Data.ExpiresAt
+                Data = new FacebookAuthResponse
+                {
+                    UserId = facebookVerifyResponse.Data.UserId,
+                    AccessToken = facebookOauthInfo.AccessToken,
+                    ExpiresTime = facebookVerifyResponse.Data.ExpiresAt
+                }
             };
         }
         catch (Exception e)
         {
             _logger.LogError("Facebook auth failed : {Message}", e.Message);
-            throw new UserFriendlyException("Facebook auth failed.");
+            return new FacebookAuthResponseDto
+            {
+                Code = AuthErrorMap.FacebookVerifyErrorCode,
+                Message = AuthErrorMap.ErrorMapInfo[AuthErrorMap.FacebookVerifyErrorCode]
+            };
         }
     }
 
