@@ -49,12 +49,6 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
     public async Task<TwitterAuthResultDto> ReceiveAsync(TwitterAuthDto twitterAuthDto)
     {
-        if (_httpContextAccessor.HttpContext.Request.Headers != null)
-        {
-            Logger.LogInformation("#### request header:{data}",
-                JsonConvert.SerializeObject(_httpContextAccessor.HttpContext.Request.Headers));
-        }
-
         var authResult = new TwitterAuthResultDto();
         try
         {
@@ -98,7 +92,8 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             ["Authorization"] = basicAuth
         };
 
-        var response = await PostFormAsync<TwitterTokenDto>(_options.TwitterTokenUrl, requestParam, header);
+        var response = await _httpClientService.PostAsync<TwitterTokenDto>(_options.TwitterTokenUrl,
+            RequestMediaType.Form, requestParam, header);
 
         Logger.LogInformation("send code to twitter success, response:{response}",
             JsonConvert.SerializeObject(response));
@@ -125,7 +120,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         {
             ["Authorization"] = $"Bearer {accessToken}"
         };
-        var userInfo = await _httpClientService.GetAsync<TwitterUserInfoDto>(url, header);
+        var userInfo = await GetAsync<TwitterUserInfoDto>(url, header);
 
         if (userInfo == null)
         {
@@ -166,46 +161,28 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         string errorCode = "50000";
         if (exception is UserFriendlyException friendlyException)
         {
-            errorCode = friendlyException.Code;
+            errorCode = friendlyException.Code == "429" ? "40003" : errorCode;
         }
 
         var message = AuthErrorMap.GetMessage(errorCode);
         return (errorCode, message);
     }
 
-    private async Task<T> PostFormAsync<T>(string url, Dictionary<string, string> paramDic,
-        Dictionary<string, string> headers)
+    private async Task<T> GetAsync<T>(string url, Dictionary<string, string> headers)
     {
         var client = _httpClientFactory.CreateClient();
-
-        if (headers is { Count: > 0 })
+        foreach (var keyValuePair in headers)
         {
-            foreach (var header in headers)
-            {
-                client.DefaultRequestHeaders.Add(header.Key, header.Value);
-            }
+            client.DefaultRequestHeaders.Add(keyValuePair.Key, keyValuePair.Value);
         }
 
-        var param = new List<KeyValuePair<string, string>>();
-        if (paramDic is { Count: > 0 })
-        {
-            param.AddRange(paramDic.ToList());
-        }
-
-        var response = await client.PostAsync(url, new FormUrlEncodedContent(param));
+        var response = await client.GetAsync(url);
         var content = await response.Content.ReadAsStringAsync();
-        Logger.LogInformation(content);
-        var responseHeaders = response.Headers;
-        if (responseHeaders != null)
-        {
-            Logger.LogInformation("#### response header:{data}", JsonConvert.SerializeObject(responseHeaders));
-        }
-
         if (response.StatusCode != HttpStatusCode.OK)
         {
             Logger.LogError(
-                "Response not success, url:{url}, code:{code}, message: {message}, params:{param}",
-                url, response.StatusCode, content, JsonConvert.SerializeObject(paramDic));
+                "Response not success, url:{url}, code:{code}, message: {message}",
+                url, response.StatusCode, content);
 
             throw new UserFriendlyException(content, ((int)response.StatusCode).ToString());
         }
