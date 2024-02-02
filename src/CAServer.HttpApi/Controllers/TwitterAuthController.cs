@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CAServer.TwitterAuth;
 using CAServer.TwitterAuth.Dtos;
@@ -26,23 +27,46 @@ public class TwitterAuthController : CAServerController
     [HttpGet("userInfo")]
     public async Task<TwitterUserAuthInfoDto> GetUserAuthAsync(TwitterAuthDto twitterAuthDto)
     {
-        return await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
+        var authResult = await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
+        if (!authResult.Code.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException(authResult.Message, authResult.Code);
+        }
+
+        return authResult.Data;
     }
 
     [HttpGet("receive")]
     public async Task<IActionResult> ReceiveAsync([FromQuery] TwitterAuthDto twitterAuthDto)
     {
-        var accessToken = await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
-        var redirectUrl = GetRedirectUrl(_options.RedirectUrl, accessToken);
+        var authResult = await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
+        var redirectUrl = GetRedirectUrl(_options.RedirectUrl, authResult);
         return Redirect(redirectUrl);
     }
 
     [HttpGet("unifyReceive")]
     public async Task<IActionResult> UnifyReceiveAsync([FromQuery] TwitterAuthDto twitterAuthDto)
     {
-        var accessToken = await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
-        var redirectUrl = GetRedirectUrl(_options.UnifyRedirectUrl, accessToken);
+        var authResult = await _twitterAuthAppService.ReceiveAsync(twitterAuthDto);
+        var redirectUrl = GetRedirectUrl(_options.UnifyRedirectUrl, authResult);
         return Redirect(redirectUrl);
+    }
+
+    private string GetRedirectUrl(string redirectUrl, TwitterAuthResultDto twitterAuthResultDto)
+    {
+        if (twitterAuthResultDto.Code.IsNullOrEmpty())
+        {
+            return GetRedirectUrl(redirectUrl, twitterAuthResultDto.Data);
+        }
+
+        if (redirectUrl.Contains("?"))
+        {
+            return
+                $"{redirectUrl}&code={twitterAuthResultDto.Code}&message={twitterAuthResultDto.Message}";
+        }
+
+        return
+            $"{redirectUrl}?code={twitterAuthResultDto.Code}&message={twitterAuthResultDto.Message}";
     }
 
     private string GetRedirectUrl(string redirectUrl, TwitterUserAuthInfoDto userAuthInfo)

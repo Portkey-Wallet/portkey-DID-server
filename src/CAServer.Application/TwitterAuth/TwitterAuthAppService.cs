@@ -42,13 +42,34 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         _options = options.Value;
     }
 
-    public async Task<TwitterUserAuthInfoDto> ReceiveAsync(TwitterAuthDto twitterAuthDto)
+    public async Task<TwitterAuthResultDto> ReceiveAsync(TwitterAuthDto twitterAuthDto)
+    {
+        var authResult = new TwitterAuthResultDto();
+        try
+        {
+            var authUserInfo = await ValidAuthCodeAsync(twitterAuthDto);
+            authResult.Data = authUserInfo;
+            return authResult;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "valid twitter code error, code:{code}", twitterAuthDto.Code ?? string.Empty);
+            var errorInfo = GetErrorInfo(e);
+            authResult.Code = errorInfo.code;
+            authResult.Message = errorInfo.message;
+            return authResult;
+        }
+    }
+
+    private async Task<TwitterUserAuthInfoDto> ValidAuthCodeAsync(TwitterAuthDto twitterAuthDto)
     {
         var clientSecret = await _secretProvider.GetSecretWithCacheAsync(_options.ClientId);
-        Logger.LogInformation("receive twitter callback, data: {data}", JsonConvert.SerializeObject(twitterAuthDto));
+        Logger.LogInformation("receive twitter callback, data: {data}",
+            JsonConvert.SerializeObject(twitterAuthDto));
+        
         if (twitterAuthDto.Code.IsNullOrEmpty())
         {
-            throw new UserFriendlyException("auth code is empty");
+            throw new UserFriendlyException("auth code is empty", AuthErrorMap.TwitterCancelCode);
         }
 
         var basicAuth = GetBasicAuth(_options.ClientId, clientSecret);
@@ -76,7 +97,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
         var userInfo = await SaveUserExtraInfoAsync(response.AccessToken);
 
-        return new TwitterUserAuthInfoDto()
+        return new TwitterUserAuthInfoDto
         {
             AccessToken = response.AccessToken,
             UserInfo = userInfo.Data
@@ -104,19 +125,16 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         }
 
         Logger.LogInformation("get twitter user info success, data:{userInfo}", JsonConvert.SerializeObject(userInfo));
-
         var userExtraInfo = new Verifier.Dtos.UserExtraInfo
         {
             Id = userInfo.Data.Id,
             FullName = userInfo.Data.UserName,
             FirstName = userInfo.Data.Name,
-            //Email = userExtraInfo.Email,
             GuardianType = GuardianIdentifierType.Twitter.ToString(),
             AuthTime = DateTime.UtcNow
         };
 
         await AddUserInfoAsync(userExtraInfo);
-
         return userInfo;
     }
 
@@ -133,5 +151,17 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         grainDto.Id = userExtraInfo.Id;
         await _distributedEventBus.PublishAsync(
             ObjectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto));
+    }
+
+    private (string code, string message) GetErrorInfo(Exception exception)
+    {
+        string errorCode = "50000";
+        if (exception is UserFriendlyException friendlyException)
+        {
+            errorCode = friendlyException.Code;
+        }
+
+        var message = AuthErrorMap.GetMessage(errorCode);
+        return (errorCode, message);
     }
 }

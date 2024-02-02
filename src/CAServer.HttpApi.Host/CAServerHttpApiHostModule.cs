@@ -333,11 +333,11 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAuthorization();
         if (!env.IsDevelopment())
         {
-            app.UseMiddleware<RealIpMiddleware>();
+      //      app.UseMiddleware<RealIpMiddleware>();
         }
         app.UseMiddleware<DeviceInfoMiddleware>();
 
-        if (env.IsDevelopment())
+     //   if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>
@@ -355,15 +355,15 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
 
-        StartOrleans(context.ServiceProvider);
+       // StartOrleans(context.ServiceProvider);
 
         // to start pre heat
-        context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync().GetAwaiter().GetResult();
+      //  context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync().GetAwaiter().GetResult();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        StopOrleans(context.ServiceProvider);
+       /// StopOrleans(context.ServiceProvider);
     }
 
     private static void StartOrleans(IServiceProvider serviceProvider)
