@@ -62,6 +62,8 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             var errorInfo = GetErrorInfo(e);
             authResult.Code = errorInfo.code;
             authResult.Message = errorInfo.message;
+            
+            Logger.LogInformation("auth result: {result}",JsonConvert.SerializeObject(authResult));
             return authResult;
         }
     }
