@@ -30,7 +30,7 @@ public class UserTokenController : CAServerController
     }
     
     
-    [HttpPut]
+    [HttpGet]
     [Route("refreshToken")]
     public async Task RefreshTokenDataAsync()
     {
