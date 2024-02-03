@@ -8,5 +8,7 @@ public static class ActivityConstants
     public const string DepositName = "Deposit";
     public const string TransferName = "Transfer";
     public const string AddGuardianName = "AddGuardian";
+    public const string AddManagerInfo = "AddManagerInfo";
     public const string NotRegisterChainAddGuardianName = "Security upgrade-add guardian";
+    public const string NotRegisterChainAddManagerName = "Security upgrade-Scan code login";
 }

@@ -176,9 +176,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         //filter transaction for accelerated registration and accelerated recovery
-        var exists = transactions?.CaHolderTransaction?.Data.Exists(t =>
-            t.MethodName == AElfContractMethodName.SocialRecovery ||
-            t.MethodName == AElfContractMethodName.AddManagerInfo);
+        var exists = transactions.CaHolderTransaction?.Data?.Exists(t =>
+            t.MethodName == AElfContractMethodName.SocialRecovery);
         string originChainId = null;
         if (exists ?? false)
         {
@@ -190,8 +189,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         transactions?.CaHolderTransaction?.Data?.RemoveAll(t =>
             t.MethodName == AElfContractMethodName.CreateCAHolderOnNonCreateChain ||
-            (t.MethodName == AElfContractMethodName.SocialRecovery && originChainId != t.ChainId) ||
-            (t.MethodName == AElfContractMethodName.AddManagerInfo && originChainId != t.ChainId));
+            (t.MethodName == AElfContractMethodName.SocialRecovery && originChainId != t.ChainId));
 
         return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
     }
@@ -380,6 +378,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var getActivitiesDto = new List<GetActivityDto>();
         var dict = new Dictionary<string, string>();
 
+        GuardiansDto guardian = null;
+        var exists = indexerTransactions.CaHolderTransaction?.Data?.Exists(
+            t => t.MethodName == AElfContractMethodName.AddManagerInfo ||
+                 t.MethodName == AElfContractMethodName.AddGuardian);
+        if (exists ?? false && needMap)
+        {
+            guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
+        }
+
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
             var dto = ObjectMapper.Map<IndexerTransaction, GetActivityDto>(ht);
@@ -482,7 +489,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (needMap)
             {
-                await MapMethodNameAsync(caAddresses, dto);
+                await MapMethodNameAsync(caAddresses, dto, guardian);
             }
 
             getActivitiesDto.Add(dto);
@@ -493,17 +500,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return result;
     }
 
-    private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto)
+    private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
+        GuardiansDto guardian = null)
     {
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
-        if (activityDto.TransactionType == ActivityConstants.AddGuardianName)
+        if (activityDto.TransactionType == ActivityConstants.AddGuardianName ||
+            activityDto.TransactionType == ActivityConstants.AddManagerInfo)
         {
-            var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
+            guardian ??= await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
             if (holderInfo?.OriginChainId != null && holderInfo?.OriginChainId != activityDto.FromChainId)
             {
-                activityDto.TransactionName = ActivityConstants.NotRegisterChainAddGuardianName;
+                activityDto.TransactionName = GetTransactionDisplayName(activityDto.TransactionType, typeName);
             }
             else
             {
@@ -532,6 +541,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.TransactionType =
             _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType,
                 activityDto.TransactionType);
+    }
+
+    private string GetTransactionDisplayName(string transactionType, string defaultName)
+    {
+        return transactionType switch
+        {
+            ActivityConstants.AddGuardianName => ActivityConstants.NotRegisterChainAddGuardianName,
+            ActivityConstants.AddManagerInfo => ActivityConstants.NotRegisterChainAddManagerName,
+            _ => defaultName
+        };
     }
 
     private string GetIconByType(string transactionType)
