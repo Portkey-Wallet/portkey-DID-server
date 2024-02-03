@@ -161,7 +161,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         string errorCode = "50000";
         if (exception is UserFriendlyException friendlyException)
         {
-            errorCode = friendlyException.Code == "429" ? "40003" : errorCode;
+            errorCode = friendlyException.Code == "429" ? "40003" : friendlyException.Code;
         }
 
         var message = AuthErrorMap.GetMessage(errorCode);
