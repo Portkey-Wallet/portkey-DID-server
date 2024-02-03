@@ -9,6 +9,9 @@ public static class AElfContractMethodName
     public const string GetBalance = "GetBalance";
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
+    public const string AddManagerInfo = "AddManagerInfo";
+    public const string CreateCAHolderOnNonCreateChain = "CreateCAHolderOnNonCreateChain";
+    public const string SocialRecovery = "SocialRecovery";
 }
 
 public static class CommonConstant
@@ -22,7 +25,7 @@ public static class CommonConstant
 
     public const string CurrencyFiat = "Fiat";
     public const string CurrencyCrypto = "Crypto";
-    
+
     public const string ResourceTokenKey = "ResourceToken";
     public const int CacheExpirationDays = 365;
 
@@ -56,17 +59,17 @@ public static class CommonConstant
     public const string AppleRevokeUrl = "https://appleid.apple.com/auth/revoke";
     public const string ImFollowUrl = "api/v1/contacts/follow";
     public const string ImUnFollowUrl = "api/v1/contacts/unfollow";
-    
+
     public const string UserExtraInfoIdPrefix = "UserExtraInfo-";
-    
+
     public const string ApplicationName = "Portkey";
     public const string ModuleName = "Api";
-    
+
     public const int WalletNameDefaultLength = 8;
     public const string AppVersionKeyPrefix = "AppVersion";
     public const string DefaultSymbol = "ELF";
     public const string TransferCard = "transfer-card";
-    
+
     public const string DefaultFiatUSD = "USD";
     public const string DefaultCryptoELF = "ELF";
     public const string DefaultFiatPrice = "200";
