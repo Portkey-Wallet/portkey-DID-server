@@ -10,6 +10,7 @@ public static class AElfContractMethodName
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
     public const string AddManagerInfo = "AddManagerInfo";
+    public const string AddGuardian = "AddGuardian";
     public const string CreateCAHolderOnNonCreateChain = "CreateCAHolderOnNonCreateChain";
     public const string SocialRecovery = "SocialRecovery";
 }
