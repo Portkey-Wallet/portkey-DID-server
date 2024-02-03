@@ -43,10 +43,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ActivityTypeOptions _activityTypeOptions;
 
-    private const string CreateCAHolderOnNonCreateChain = "CreateCAHolderOnNonCreateChain";
-    private const string SocialRecovery = "SocialRecovery";
-
-
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
@@ -180,7 +176,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         //filter transaction for accelerated registration and accelerated recovery
-        var exists = transactions?.CaHolderTransaction?.Data.Exists(t => t.MethodName == SocialRecovery);
+        var exists = transactions?.CaHolderTransaction?.Data.Exists(t =>
+            t.MethodName == AElfContractMethodName.SocialRecovery ||
+            t.MethodName == AElfContractMethodName.AddManagerInfo);
         string originChainId = null;
         if (exists ?? false)
         {
@@ -191,8 +189,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         transactions?.CaHolderTransaction?.Data?.RemoveAll(t =>
-            t.MethodName == CreateCAHolderOnNonCreateChain ||
-            (t.MethodName == SocialRecovery && originChainId != t.ChainId));
+            t.MethodName == AElfContractMethodName.CreateCAHolderOnNonCreateChain ||
+            (t.MethodName == AElfContractMethodName.SocialRecovery && originChainId != t.ChainId) ||
+            (t.MethodName == AElfContractMethodName.AddManagerInfo && originChainId != t.ChainId));
 
         return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
     }
