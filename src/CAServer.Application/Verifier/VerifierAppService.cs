@@ -341,7 +341,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         try
         {
-            var facebookUser = await GetFacebookUserDtoAsync(requestDto);
+            var facebookUser = await GetFacebookUserInfoAsync(requestDto);
             var userSaltAndHash = await GetSaltAndHashAsync(facebookUser.Id);
             var response =
                 await _verifierServerClient.VerifyFacebookTokenAsync(requestDto, userSaltAndHash.Item1,
@@ -371,7 +371,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private async Task<FacebookUserInfoDto> GetFacebookUserDtoAsync(VerifyTokenRequestDto requestDto)
+    private async Task<FacebookUserInfoDto> GetFacebookUserInfoAsync(VerifyTokenRequestDto requestDto)
     {
         var verifyFacebookUserInfoDto = await _verifierServerClient.VerifyFacebookAccessTokenAsync(requestDto);
 
@@ -429,8 +429,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         Logger.LogInformation("Add or update user extra info success, Publish to MQ: {data}",
             JsonConvert.SerializeObject(userExtraInfo));
 
-        await _distributedEventBus.PublishAsync(
-            _objectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto));
+        var userExtraInfoEto = _objectMapper.Map<UserExtraInfoGrainDto, UserExtraInfoEto>(grainDto);
+        _logger.LogDebug("Publish user extra info to mq: {data}", JsonConvert.SerializeObject(userExtraInfoEto));
+        await _distributedEventBus.PublishAsync(userExtraInfoEto);
     }
 
     private GrainResultDto<GuardianGrainDto> GetSaltAndHash(VierifierCodeRequestInput requestInput)
