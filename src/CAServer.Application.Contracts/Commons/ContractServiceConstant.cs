@@ -90,4 +90,9 @@ public static class CommonConstant
     public const string GetUserExtraInfoUri = "api/app/userExtraInfo";
 
     public const string CrossChainTransferMethodName = "CrossChainTransfer";
+    
+    public const string TwitterTokenUrl = "https://api.twitter.com/2/oauth2/token";
+    public const string TwitterUserInfoUrl = "https://api.twitter.com/2/users/me";
+    public const string JwtTokenPrefix = "Bearer";
+
 }

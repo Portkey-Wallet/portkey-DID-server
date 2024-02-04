@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.TwitterAuth;
 using CAServer.TwitterAuth.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -59,25 +60,28 @@ public class TwitterAuthController : CAServerController
             return GetRedirectUrl(redirectUrl, twitterAuthResultDto.Data);
         }
 
-        if (redirectUrl.Contains("?"))
+        var requestParams = $"code={twitterAuthResultDto.Code}&message={twitterAuthResultDto.Message}";
+        if (redirectUrl.Contains(CommonConstant.UrlSegmentation))
         {
             return
-                $"{redirectUrl}&code={twitterAuthResultDto.Code}&message={twitterAuthResultDto.Message}";
+                $"{redirectUrl}&{requestParams}";
         }
 
         return
-            $"{redirectUrl}?code={twitterAuthResultDto.Code}&message={twitterAuthResultDto.Message}";
+            $"{redirectUrl}?{requestParams}";
     }
 
     private string GetRedirectUrl(string redirectUrl, TwitterUserAuthInfoDto userAuthInfo)
     {
-        if (redirectUrl.Contains("?"))
+        var requestParams =
+            $"token={userAuthInfo.AccessToken}&id={userAuthInfo.UserInfo.Id}&name={userAuthInfo.UserInfo.Name}&username={userAuthInfo.UserInfo.UserName}&type={userAuthInfo.AuthType}";
+        if (redirectUrl.Contains(CommonConstant.UrlSegmentation))
         {
             return
-                $"{redirectUrl}&token={userAuthInfo.AccessToken}&id={userAuthInfo.UserInfo.Id}&name={userAuthInfo.UserInfo.Name}&username={userAuthInfo.UserInfo.UserName}&type={userAuthInfo.AuthType}";
+                $"{redirectUrl}&{requestParams}";
         }
 
         return
-            $"{redirectUrl}?token={userAuthInfo.AccessToken}&id={userAuthInfo.UserInfo.Id}&name={userAuthInfo.UserInfo.Name}&username={userAuthInfo.UserInfo.UserName}&type={userAuthInfo.AuthType}";
+            $"{redirectUrl}?{requestParams}";
     }
 }
