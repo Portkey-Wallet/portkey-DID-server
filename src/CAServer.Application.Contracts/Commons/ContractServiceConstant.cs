@@ -83,5 +83,6 @@ public static class CommonConstant
     public const string GetUserExtraInfoUri = "api/app/userExtraInfo";
 
     public const string TwitterUserInfoUrl = "https://api.twitter.com/2/users/me";
+    public const string JwtTokenPrefix = "Bearer";
 
 }

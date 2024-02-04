@@ -121,13 +121,13 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
     {
         var header = new Dictionary<string, string>
         {
-            [CommonConstant.AuthHeader] = $"Bearer {accessToken}"
+            [CommonConstant.AuthHeader] = $"{CommonConstant.JwtTokenPrefix} {accessToken}"
         };
         var userInfo = await _twitterAuthProvider.GetUserInfoAsync(CommonConstant.TwitterUserInfoUrl, header);
 
         if (userInfo == null)
         {
-            throw new Exception("Failed to get user info");
+            throw new UserFriendlyException("Failed to get user info");
         }
 
         Logger.LogInformation("get twitter user info success, data:{userInfo}", JsonConvert.SerializeObject(userInfo));

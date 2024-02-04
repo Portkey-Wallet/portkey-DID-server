@@ -13,6 +13,7 @@ using CAServer.AccountValidator;
 using CAServer.CAAccount.Dtos;
 using CAServer.Cache;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Grains;
@@ -295,16 +296,15 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
     private async Task<string> GetTwitterUserIdAsync(string accessToken)
     {
-        var url = "https://api.twitter.com/2/users/me";
         var header = new Dictionary<string, string>
         {
-            ["Authorization"] = $"Bearer {accessToken}"
+            [CommonConstant.AuthHeader] = $"{CommonConstant.JwtTokenPrefix} {accessToken}"
         };
-        var userInfo = await _httpClientService.GetAsync<TwitterUserInfoDto>(url, header);
+        var userInfo = await _httpClientService.GetAsync<TwitterUserInfoDto>(CommonConstant.TwitterUserInfoUrl, header);
 
         if (userInfo == null)
         {
-            throw new Exception("Failed to get user info");
+            throw new UserFriendlyException("Failed to get user info");
         }
 
         return userInfo.Data.Id;
