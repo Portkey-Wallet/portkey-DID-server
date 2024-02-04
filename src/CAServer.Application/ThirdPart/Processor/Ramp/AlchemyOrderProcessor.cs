@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
+using CAServer.SecurityServer;
+using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
@@ -28,6 +30,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
     private readonly IOptionsMonitor<RampOptions> _rampOptions;
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
+    private readonly ISecretProvider _secretProvider;
 
     public AlchemyOrderProcessor(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider,
@@ -35,13 +38,13 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider,
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus,
-        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions, IOptionsMonitor<RampOptions> rampOptions) : base(
-        clusterClient, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus,
-        tokenAppService, chainOptions)
+        ISecretProvider secretProvider, ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions, IOptionsMonitor<RampOptions> rampOptions) : base(
+        clusterClient, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus, tokenAppService, chainOptions)
     {
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _thirdPartOptions = thirdPartOptions;
         _alchemyProvider = alchemyProvider;
+        _secretProvider = secretProvider;
         _rampOptions = rampOptions;
     }
 
@@ -91,12 +94,16 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         return mappingNetwork.Key.DefaultIfEmpty(symbol);
     }
     
-    protected override Task<OrderDto> VerifyOrderInputAsync<T>(T iThirdPartOrder)
+    protected override async Task<OrderDto> VerifyOrderInputAsync<T>(T iThirdPartOrder)
     {
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
         // verify signature of input
-        var expectedSignature = GetAlchemySignature(input.OrderNo, input.Crypto, input.Network, input.Address);
-        AssertHelper.IsTrue(input.Signature == expectedSignature, "signature NOT match");
+        var expectedBuySignature =
+            await GetAlchemyBuySignatureAsync(input.OrderNo, input.Crypto, input.Network, input.Address);
+        var expectedSellSignature =
+            await GetAlchemySellSignatureAsync(input.OrderNo, input.Crypto, input.Network, input.Address);
+        AssertHelper.IsTrue(input.Signature == expectedBuySignature || input.Signature == expectedSellSignature,
+            "signature NOT match, input sign:{}", input.Signature);
 
         // convert input param to orderDto
         var orderDto = ObjectMapper.Map<AlchemyOrderUpdateDto, OrderDto>(input);
@@ -107,7 +114,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         orderDto.Status = AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
         orderDto.Network = MappingFromAlchemyNetwork(input.Network); 
         orderDto.Crypto = MappingFromAchSymbol(input.Crypto); 
-        return Task.FromResult(orderDto);
+        return orderDto;
     }
 
     public override async Task UpdateTxHashAsync(TransactionHashDto input)
@@ -127,7 +134,8 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             var orderPendingUpdate = ObjectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
             orderPendingUpdate.TxHash = input.TxHash;
             orderPendingUpdate.AppId = _thirdPartOptions.CurrentValue.Alchemy.AppId;
-            orderPendingUpdate.Signature = GetAlchemySignature(orderPendingUpdate.OrderNo, orderPendingUpdate.Crypto,
+            orderPendingUpdate.Signature = await GetAlchemySellSignatureAsync(orderPendingUpdate.OrderNo,
+                orderPendingUpdate.Crypto,
                 orderPendingUpdate.Network, orderPendingUpdate.Address);
 
             await _alchemyProvider.UpdateOffRampOrderAsync(orderPendingUpdate);
@@ -163,29 +171,17 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         }
     }
 
-    private string GetAlchemySignature(string orderNo, string crypto, string network, string address)
+    private async Task<string> GetAlchemyBuySignatureAsync(string orderNo, string crypto, string network,
+        string address)
     {
-        try
-        {
-            var bytes = Encoding.UTF8.GetBytes(_thirdPartOptions.CurrentValue.Alchemy.AppId +
-                                               _thirdPartOptions.CurrentValue.Alchemy.AppSecret + orderNo + crypto +
-                                               network + address);
-            var hashBytes = SHA1.Create().ComputeHash(bytes);
+        var source = _thirdPartOptions.CurrentValue.Alchemy.AppId + orderNo + crypto + network + address;
+        return await _secretProvider.GetAlchemyShaSignAsync(_thirdPartOptions.CurrentValue.Alchemy.AppId, source);
+    }
 
-            var sb = new StringBuilder();
-            foreach (var t in hashBytes)
-            {
-                sb.Append(t.ToString("X2"));
-            }
-
-            Logger.LogDebug("Generate Alchemy sell order signature successfully. Signature: {Signature}",
-                sb.ToString().ToLower());
-            return sb.ToString().ToLower();
-        }
-        catch (Exception e)
-        {
-            Logger.LogError(e, "Generator alchemy update txHash signature failed, OrderNo: {OrderNo}", orderNo);
-            return CommonConstant.EmptyString;
-        }
+    private async Task<string> GetAlchemySellSignatureAsync(string orderNo, string crypto, string network,
+        string address)
+    {
+        var source = orderNo + crypto + network + address;
+        return await _secretProvider.GetAlchemyShaSignAsync(_thirdPartOptions.CurrentValue.Alchemy.AppId, source);
     }
 }

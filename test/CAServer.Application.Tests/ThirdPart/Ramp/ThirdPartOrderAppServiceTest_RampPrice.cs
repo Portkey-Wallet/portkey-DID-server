@@ -149,7 +149,7 @@ public partial class ThirdPartOrderAppServiceTest
         
         usdExchange.ShouldNotBeNull();
         usdExchange.Success.ShouldBeTrue();
-        usdExchange.Data.Exchange.ShouldBe("0.354321");
+        usdExchange.Data.Exchange.ShouldBe("0.355717");
     }
 
 

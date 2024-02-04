@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,15 +25,14 @@ namespace CAServer.Controllers;
 [IgnoreAntiforgeryToken]
 public class ThirdPartOrderController : CAServerController
 {
+    private readonly ILogger<ThirdPartOrderController> _logger;
     private readonly IThirdPartOrderAppService _thirdPartOrderAppService;
     private readonly INftCheckoutService _nftCheckoutService;
-    private readonly ILogger<ThirdPartOrderController> _logger;
     private readonly ITreasuryProcessorFactory _treasuryProcessorFactory;
 
     public ThirdPartOrderController(
-        INftCheckoutService nftCheckoutService,
-        IThirdPartOrderAppService thirdPartOrderAppService, ILogger<ThirdPartOrderController> logger,
-        ITreasuryProcessorFactory treasuryProcessorFactory)
+        INftCheckoutService nftCheckoutService, 
+        IThirdPartOrderAppService thirdPartOrderAppService, ILogger<ThirdPartOrderController> logger, ITreasuryProcessorFactory treasuryProcessorFactory)
     {
         _nftCheckoutService = nftCheckoutService;
         _thirdPartOrderAppService = thirdPartOrderAppService;
@@ -92,12 +92,20 @@ public class ThirdPartOrderController : CAServerController
     [HttpPost("order/alchemy")]
     public async Task<CommonResponseDto<Empty>> UpdateAlchemyOrderAsync(AlchemyOrderUpdateDto input)
     {
+        _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
+            HttpContext.Request.Path.ToString(),
+            JsonConvert.SerializeObject(input),
+            JsonConvert.SerializeObject(HttpContext.Request.Headers));
         return await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
     }
 
     [HttpPost("order/transak")]
     public async Task<CommonResponseDto<Empty>> UpdateTransakOrderAsync(TransakEventRawDataDto input)
     {
+        _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
+            HttpContext.Request.Path.ToString(),
+            JsonConvert.SerializeObject(input),
+            JsonConvert.SerializeObject(HttpContext.Request.Headers));
         return await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Transak.ToString(), input);
     }
 
@@ -105,6 +113,10 @@ public class ThirdPartOrderController : CAServerController
     public async Task<string> UpdateAlchemyNftOrderAsync(
         AlchemyNftOrderRequestDto input)
     {
+        _logger.LogInformation("Receive request of [{Uri}], body={Request}, header={Header}",
+            HttpContext.Request.Path.ToString(),
+            Encoding.UTF8.GetString(await HttpContext.Request.Body.GetAllBytesAsync()),
+            JsonConvert.SerializeObject(HttpContext.Request.Headers));
         var res = await _nftCheckoutService
             .GetProcessor(ThirdPartNameType.Alchemy.ToString())
             .UpdateThirdPartNftOrderAsync(input);

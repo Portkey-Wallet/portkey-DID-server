@@ -15,6 +15,7 @@ public class RecoveryRequestDto
     [Required] public string ExtraData { get; set; }
     [Required] public string ChainId { get; set; }
     [Required] public HubRequestContextDto Context { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 }
 
 public class RecoveryGuardian : IValidatableObject

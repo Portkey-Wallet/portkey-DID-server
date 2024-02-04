@@ -183,7 +183,6 @@ public class HubServiceTest : CAServerApplicationTestBase
             Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
-                AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
                 SkipCheckSign = true
             },

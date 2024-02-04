@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
+using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Transak;
 using CAServer.Tokens.Provider;
@@ -52,10 +54,8 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             Alchemy = new AlchemyOptions()
             {
                 AppId = "ramp",
-                AppSecret = "rampTest",
                 BaseUrl = "http://localhost:9200/book/_search",
                 NftAppId = "test",
-                NftAppSecret = "testTest",
                 NftBaseUrl = "http://localhost:9200/book/_search",
                 UpdateSellOrderUri = "/webhooks/off/merchant",
                 FiatListUri = "/merchant/fiat/list",
@@ -68,7 +68,6 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             Transak = new TransakOptions
             {
                 AppId = "transakAppId",
-                AppSecret = "transakAppSecret",
                 BaseUrl = "http://127.0.0.1:9200"
             },
             OrderExportAuth = new OrderExportAuth
@@ -77,7 +76,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             },
             Timer = new ThirdPartTimerOptions()
             {
-                TimeoutMillis = 5000,
+                TimeoutMillis = 100,
                 DelaySeconds = 1,
                 HandleUnCompletedOrderMinuteAgo = 0,
                 NftUnCompletedMerchantCallbackMinuteAgo = 0,
@@ -110,6 +109,32 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
         optionMock.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
         return optionMock.Object;
     }
+    
+    
+    protected static ISecretProvider MockSecretProvider()
+    {
+        var rampSecret = "rampTest";
+        var nftSecret = "testTest";
+        var option = MockThirdPartOptions();
+        var mock = new Mock<ISecretProvider>();
+        mock.Setup(ser => ser.GetSecretWithCacheAsync(option.CurrentValue.Transak.AppId)).Returns(Task.FromResult("transakAppSecret"));
+        
+        mock.Setup(ser => ser.GetAlchemyShaSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.GenerateAlchemyApiSign(appid + rampSecret + source)));
+        mock.Setup(ser => ser.GetAlchemyAesSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.AesEncrypt(source, rampSecret)));
+        mock.Setup(ser => ser.GetAlchemyHmacSignAsync(option.CurrentValue.Alchemy.AppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.HmacSign(source, rampSecret)));
+        
+        mock.Setup(ser => ser.GetAlchemyShaSignAsync(option.CurrentValue.Alchemy.NftAppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.GenerateAlchemyApiSign(appid + nftSecret + source)));
+        mock.Setup(ser => ser.GetAlchemyAesSignAsync(option.CurrentValue.Alchemy.NftAppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.AesEncrypt(source, nftSecret)));
+        mock.Setup(ser => ser.GetAlchemyHmacSignAsync(option.CurrentValue.Alchemy.NftAppId, It.IsAny<string>()))
+            .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.HmacSign(source, nftSecret)));
+        return mock.Object;
+    }
+
 
     protected static IOptionsMonitor<RampOptions> MockRampOptions()
     {
@@ -138,7 +163,9 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     {
                         OffRamp = true,
                         OnRamp = true
-                    }
+                    },
+                    NetworkMapping = new Dictionary<string, string>() { { "AELF", "aelf" } }
+                        
                 },
                 ["Transak"] = new()
                 {

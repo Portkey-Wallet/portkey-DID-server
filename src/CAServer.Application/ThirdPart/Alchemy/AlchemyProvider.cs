@@ -1,13 +1,14 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using CAServer.Common;
-using CAServer.Common.Dtos;
 using CAServer.Commons;
+using CAServer.Http;
+using CAServer.Http.Dtos;
 using CAServer.Options;
+using CAServer.SecurityServer;
+using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Google.Apis.Auth;
@@ -15,7 +16,6 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart.Alchemy;
 
@@ -46,6 +46,7 @@ public class AlchemyProvider
     private readonly ILogger<AlchemyProvider> _logger;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly IHttpProvider _httpProvider;
+    private readonly ISecretProvider _secretProvider;
 
     private static readonly JsonSerializerSettings JsonSerializerSettings = JsonSettingsBuilder.New()
         .IgnoreNullValue()
@@ -55,11 +56,12 @@ public class AlchemyProvider
 
     public AlchemyProvider(
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
-        IHttpProvider httpProvider, ILogger<AlchemyProvider> logger)
+        IHttpProvider httpProvider, ILogger<AlchemyProvider> logger, ISecretProvider secretProvider)
     {
         _thirdPartOptions = thirdPartOptions;
         _httpProvider = httpProvider;
         _logger = logger;
+        _secretProvider = secretProvider;
     }
 
     private AlchemyOptions AlchemyOptions()
@@ -73,7 +75,7 @@ public class AlchemyProvider
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>>(
             AlchemyOptions().BaseUrl,
             AlchemyApi.RampOrderQuote,
-            header: GetRampAlchemyRequestHeader(),
+            header: await GetRampAlchemyRequestHeaderAsync(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
             withInfoLog: true
         );
@@ -88,7 +90,7 @@ public class AlchemyProvider
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyCryptoDto>>>(
             AlchemyOptions().BaseUrl,
             AlchemyApi.QueryCryptoList,
-            header: GetRampAlchemyRequestHeader(),
+            header: await GetRampAlchemyRequestHeaderAsync(),
             param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
                 JsonConvert.SerializeObject(input, JsonSerializerSettings)),
             withInfoLog: false
@@ -104,7 +106,7 @@ public class AlchemyProvider
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(
             AlchemyOptions().BaseUrl,
             AlchemyApi.QueryFiatList,
-            header: GetRampAlchemyRequestHeader(),
+            header: await GetRampAlchemyRequestHeaderAsync(),
             param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
                 JsonConvert.SerializeObject(input, JsonSerializerSettings)),
             withInfoLog: false
@@ -121,7 +123,7 @@ public class AlchemyProvider
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<QueryAlchemyOrderInfo>>(
             AlchemyOptions().BaseUrl,
             AlchemyApi.QueryOrderTrade,
-            header: GetRampAlchemyRequestHeader(),
+            header: await GetRampAlchemyRequestHeaderAsync(),
             param: JsonConvert.DeserializeObject<Dictionary<string, string>>(
                 JsonConvert.SerializeObject(input, JsonSerializerSettings)),
             withInfoLog: true
@@ -138,7 +140,7 @@ public class AlchemyProvider
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyTokenDataDto>>(
             AlchemyOptions().BaseUrl,
             AlchemyApi.RampFreeLoginToken,
-            header: GetRampAlchemyRequestHeader(),
+            header: await GetRampAlchemyRequestHeaderAsync(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings)
         );
         AssertHelper.IsTrue(result.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
@@ -152,7 +154,7 @@ public class AlchemyProvider
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(
             AlchemyOptions().BaseUrl,
             AlchemyApi.UpdateSellOrder,
-            header: GetRampAlchemyRequestHeader(),
+            header: await GetRampAlchemyRequestHeaderAsync(),
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
             withInfoLog: true
         );
@@ -166,7 +168,7 @@ public class AlchemyProvider
         var result = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<AlchemyNftOrderDto>>(
             AlchemyOptions().NftBaseUrl,
             AlchemyApi.QueryNftTrade,
-            header: GetNftAlchemyRequestHeader(),
+            header: await GetNftAlchemyRequestHeaderAsync(),
             param: new Dictionary<string, string>
             {
                 ["orderNo"] = request.OrderNo
@@ -182,7 +184,7 @@ public class AlchemyProvider
     {
         var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<Empty>>(AlchemyOptions().NftBaseUrl,
             AlchemyApi.NftResultNotice,
-            header: GetNftAlchemyRequestHeader(),
+            header: await GetNftAlchemyRequestHeaderAsync(),
             body: JsonConvert.SerializeObject(request, JsonSerializerSettings),
             withInfoLog: true);
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
@@ -196,7 +198,7 @@ public class AlchemyProvider
         var res = await _httpProvider.InvokeAsync<AlchemyBaseResponseDto<List<AlchemyFiatDto>>>(
             AlchemyOptions().NftBaseUrl,
             AlchemyApi.QueryNftFiatList,
-            header: GetNftAlchemyRequestHeader(),
+            header: await GetNftAlchemyRequestHeaderAsync(),
             withDebugLog: false
         );
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
@@ -211,7 +213,7 @@ public class AlchemyProvider
             AlchemyOptions().NftBaseUrl,
             AlchemyApi.GetFreeLoginToken,
             body: JsonConvert.SerializeObject(input, JsonSerializerSettings),
-            header: GetNftAlchemyRequestHeader()
+            header: await GetNftAlchemyRequestHeaderAsync()
         );
         AssertHelper.IsTrue(res.ReturnCode == AlchemyBaseResponseDto<Empty>.SuccessCode,
             JsonConvert.SerializeObject(res));
@@ -228,15 +230,15 @@ public class AlchemyProvider
         );
     }
 
-    private Dictionary<string, string> GetRampAlchemyRequestHeader()
+    private async Task<Dictionary<string, string>> GetRampAlchemyRequestHeaderAsync()
     {
-        return GetAlchemyRequestHeader(AlchemyOptions().AppId, AlchemyOptions().AppSecret);
+        return await GetAlchemyRequestHeaderAsync(AlchemyOptions().AppId);
     }
 
 
-    private Dictionary<string, string> GetNftAlchemyRequestHeader()
+    private async Task<Dictionary<string, string>> GetNftAlchemyRequestHeaderAsync()
     {
-        return GetAlchemyRequestHeader(AlchemyOptions().NftAppId, AlchemyOptions().NftAppSecret);
+        return await GetAlchemyRequestHeaderAsync(AlchemyOptions().NftAppId);
     }
 
 
@@ -246,11 +248,10 @@ public class AlchemyProvider
     }
 
 
-    private Dictionary<string, string> GetAlchemyRequestHeader(string appId, string appSecret)
+    private async Task<Dictionary<string, string>> GetAlchemyRequestHeaderAsync(string appId)
     {
         var timeStamp = TimeHelper.GetTimeStampInMilliseconds().ToString();
-        var source = appId + appSecret + timeStamp;
-        var sign = AlchemyHelper.GenerateAlchemyApiSign(source);
+        var sign = await _secretProvider.GetAlchemyShaSignAsync(appId, timeStamp);
         _logger.LogDebug("appId: {AppId}, timeStamp: {TimeStamp}, signature: {Signature}", appId,
             timeStamp, sign);
         return new Dictionary<string, string>

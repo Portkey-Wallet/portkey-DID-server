@@ -90,11 +90,14 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
             AssertHelper.IsTrue(inputState != OrderStatusType.Unknown, "Unknown order status {Status}",
                 inputOrderDto.Status);
 
-            var esOrderData = await _thirdPartOrderProvider.GetThirdPartOrderAsync(grainId.ToString());
-            AssertHelper.NotNull(esOrderData, "Order not found, id={Id}", grainId);
-            AssertHelper.IsTrue(inputOrderDto.Id == esOrderData.Id, "Order invalid");
+            var orderGrain = _clusterClient.GetGrain<IOrderGrain>(grainId);
+            var orderDataResp = await orderGrain.GetOrder();
+            AssertHelper.NotNull(orderDataResp.Success, "Order not found, id={Id}", grainId);
+            AssertHelper.NotNull(orderDataResp.Data, "Order empty, id={Id}", grainId);
+            AssertHelper.IsTrue(inputOrderDto.Id == orderDataResp.Data.Id, "Order invalid");
+            var orderData = orderDataResp.Data;
 
-            var currentStatus = ThirdPartHelper.ParseOrderStatus(esOrderData.Status);
+            var currentStatus = ThirdPartHelper.ParseOrderStatus(orderData.Status);
             AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, inputState),
                 "{ToState} isn't reachable from {FromState}", inputState, currentStatus);
 
@@ -102,7 +105,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         }
         catch (UserFriendlyException e)
         {
-            Logger.LogWarning("Order update FAILED, {MerchantName}-{OrderId}-{ThirdPartOrderNo}",
+            Logger.LogWarning(e, "Order update FAILED, {MerchantName}-{OrderId}-{ThirdPartOrderNo}",
                 inputOrderDto?.MerchantName,
                 inputOrderDto?.Id, inputOrderDto?.ThirdPartOrderNo);
             return new CommonResponseDto<Empty>().Error(e);

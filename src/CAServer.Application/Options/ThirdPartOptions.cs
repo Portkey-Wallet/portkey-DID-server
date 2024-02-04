@@ -43,14 +43,13 @@ public class ThirdPartTimerOptions
     public int HandleUnCompletedOrderPageSize { get; set; } = 10;
     public int HandleUnCompletedSettlementTransferSecondsAgo { get; set; } = 30;
     public int HandleUnCompletedSettlementTransferPageSize { get; set; } = 10;
-    public int HandleUnCompletedSettlementTransferHoursAgo { get; set; } = 1;
+    public int HandleUnCompletedSettlementTransferMinuteAgo { get; set; } = 15;
     public int NftCheckoutMerchantCallbackCount { get; set; } = 3;
     public int NftCheckoutMerchantCallbackPageSize { get; set; } = 10;
     public int NftCheckoutResultThirdPartNotifyCount { get; set; } = 3;
     public int NftCheckoutResultThirdPartPageSize { get; set; } = 10;
     public int NftUnCompletedMerchantCallbackMinuteAgo { get; set; } = 2;
     public int NftUnCompletedThirdPartCallbackMinuteAgo { get; set; } = 2;
-
     // Handle un complete order settlement from days ago to minutes ago
     public int NftUnCompletedOrderSettlementMinuteAgo { get; set; } = 2;
     public int NftUnCompletedOrderSettlementDaysAgo { get; set; } = 2;
@@ -68,10 +67,8 @@ public class ThirdPartTimerOptions
 public class AlchemyOptions
 {
     public string AppId { get; set; }
-    public string AppSecret { get; set; }
     public string BaseUrl { get; set; }
     public string NftAppId { get; set; }
-    public string NftAppSecret { get; set; }
     public string NftBaseUrl { get; set; }
     public string TreasuryAppId { get; set; }
     public string TreasuryAppSecret { get; set; }
@@ -94,7 +91,6 @@ public class AlchemyOptions
 public class TransakOptions
 {
     public string AppId { get; set; }
-    public string AppSecret { get; set; }
     public string BaseUrl { get; set; }
     public double RefreshTokenDurationPercent { get; set; } = 0.8;
     public int FiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;

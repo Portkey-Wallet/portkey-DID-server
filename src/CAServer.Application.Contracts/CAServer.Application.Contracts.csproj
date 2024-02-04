@@ -11,7 +11,6 @@
         <ProjectReference Include="..\CAServer.Domain.Shared\CAServer.Domain.Shared.csproj" />
         <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
         <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
-        <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -23,6 +22,7 @@
         <PackageReference Include="GraphQL.Client" Version="5.1.0" />
         <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="5.1.0" />
         <PackageReference Include="GraphQL.Primitives" Version="5.1.0" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
         <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.6.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -32,6 +32,7 @@
         <PackageReference Include="Orleans.Providers.MongoDB" Version="3.8.0" />
         <PackageReference Include="AElf.Cryptography" Version="1.2.3" />
         <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
+        <PackageReference Include="System.Data.HashFunction.MurmurHash" Version="2.0.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
         <PackageReference Include="Volo.Abp.Ddd.Domain" Version="7.0.0" />
         <PackageReference Include="Volo.Abp.ObjectExtending" Version="7.0.0" />
@@ -51,24 +52,11 @@
           <HintPath>..\..\test\CAServer.Application.Tests\bin\Debug\net7.0\CAServer.Grains.dll</HintPath>
         </Reference>
     </ItemGroup>
-
-    <ItemGroup>
-      <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateRequestDto.cs" />
-      <Orleans_CodeGenInputs Remove="AppleMigrate\Dtos\AppleMigrateResponseDto.cs" />
-      <Orleans_CodeGenInputs Remove="AppleMigrate\IAppleMigrateAppService.cs" />
-      <Orleans_CodeGenInputs Remove="Commons\Dtos\PageResultDto.cs" />
-    </ItemGroup>
+    
 
     <ItemGroup>
       <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Compile Remove="Amazon\SvgConst.cs" />
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.25.1" />
-    </ItemGroup>
 
-    <ItemGroup>
-      <Compile Remove="Amazon\SvgConst.cs" />
-    </ItemGroup>
 </Project>

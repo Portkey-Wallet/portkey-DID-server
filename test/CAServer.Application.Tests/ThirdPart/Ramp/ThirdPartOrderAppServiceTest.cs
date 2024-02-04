@@ -39,6 +39,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(MockThirdPartOptions());
+        services.AddSingleton(MockSecretProvider());
         services.AddSingleton(MockMassTransitIBus());
         services.AddSingleton(MockRampOptions());
         services.AddSingleton(MockContractProvider());

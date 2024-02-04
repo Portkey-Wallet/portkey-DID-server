@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
+using CAServer.amazon;
 using CAServer.Amazon;
 using CAServer.AppleAuth;
+using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.DataReporting;
@@ -72,6 +74,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
+        Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -87,6 +90,7 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        context.Services.AddSingleton<ISearchService, GrowthSearchService>();
         
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
@@ -129,7 +133,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
-        Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
         context.Services.AddHttpClient();
         ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
@@ -143,6 +146,8 @@ public class CAServerApplicationModule : AbpModule
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        Configure<GrowthOptions>(configuration.GetSection("Growth"));
+        Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         AddMessagePushService(context, configuration);
     }
 

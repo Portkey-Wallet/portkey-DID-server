@@ -70,6 +70,7 @@ public partial class NftOrderTest : ThirdPartTestBase
         services.AddSingleton(MockActivityProviderCaHolder("2e701e62-0953-4dd3-910b-dc6cc93ccb0d"));
         services.AddSingleton(MockRampOptions());
         services.AddSingleton(MockThirdPartOptions());
+        services.AddSingleton(MockSecretProvider());
         services.AddSingleton(MockContractProvider());
         services.AddSingleton(MockGraphQlProvider());
         services.AddSingleton(MockTokenPrivider());

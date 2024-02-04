@@ -1,10 +1,11 @@
 using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
+using CAServer.Common;
 using CAServer.Telegram.Dtos;
 using CAServer.Telegram.Options;
-using CAServer.Telegram.Provider;
+using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -17,66 +18,50 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
     private readonly ILogger<TelegramAuthService> _logger;
     private readonly TelegramAuthOptions _telegramAuthOptions;
     private readonly IObjectMapper _objectMapper;
-    private readonly ITelegramAuthProvider _telegramAuthProvider;
-    private readonly IJwtTokenProvider _jwtTokenProvider;
-    
-    private const string Pattern = @"(\w+)#(\w+)=(\w+)";
+    private readonly IHttpClientService _httpClientService;
 
     public TelegramAuthService(ILogger<TelegramAuthService> logger,
         IOptionsSnapshot<TelegramAuthOptions> telegramAuthOptions, IObjectMapper objectMapper,
-        ITelegramAuthProvider telegramAuthProvider, IJwtTokenProvider jwtTokenProvider)
+        IHttpClientService httpClientService)
     {
         _logger = logger;
         _telegramAuthOptions = telegramAuthOptions.Value;
         _objectMapper = objectMapper;
-        _telegramAuthProvider = telegramAuthProvider;
-        _jwtTokenProvider = jwtTokenProvider;
-    }
-    
-    public Task<Tuple<string, string>>  GetTelegramAuthResultAsync(string param)
-    {
-        Match match = Regex.Match(param, Pattern);
-        if (match.Success)
-        {
-            return Task.FromResult(new Tuple<string, string>(match.Groups[1].Value, match.Groups[3].Value));
-        }
-        _logger.LogInformation("telegram auth result is valid");
-        throw new UserFriendlyException("Invalid Telegram Login Information");
+        _httpClientService = httpClientService;
     }
 
     public Task<TelegramBotDto> GetTelegramBotInfoAsync()
     {
         return Task.FromResult(new TelegramBotDto()
         {
-            BotId = _telegramAuthOptions.Bots[_telegramAuthOptions.DefaultUsed ?? ""]?.BotId,
-            BotName = _telegramAuthOptions.Bots[_telegramAuthOptions.DefaultUsed ?? ""]?.BotName
+            BotId = _telegramAuthOptions.BotId,
+            BotName = _telegramAuthOptions.BotName
         });
     }
 
     public async Task<string> ValidateTelegramHashAndGenerateTokenAsync(TelegramAuthReceiveRequest request)
     {
-        if (request == null)
+        if (request == null || request.Id.IsNullOrWhiteSpace() || request.Hash.IsNullOrWhiteSpace())
         {
-            _logger.LogInformation("telegram auth result is null");
-            throw new UserFriendlyException("Invalid Telegram Login Information");
-        }
-        
-        var telegramAuthDto = _objectMapper.Map<TelegramAuthReceiveRequest, TelegramAuthDto>(request);
-        if (!await _telegramAuthProvider.ValidateTelegramHashAsync(telegramAuthDto))
-        {
-            _logger.LogError("Invalid Telegram Login Information, id={0}", telegramAuthDto.Id);
+            _logger.LogInformation("Id or Hash is null");
             throw new UserFriendlyException("Invalid Telegram Login Information");
         }
 
-        return await _jwtTokenProvider.GenerateTokenAsync(new Dictionary<string, string>()
+        var telegramAuthDto = _objectMapper.Map<TelegramAuthReceiveRequest, TelegramAuthDto>(request);
+
+        var url = $"{_telegramAuthOptions.BaseUrl}/api/app/auth/token";
+        var properties = telegramAuthDto.GetType().GetProperties();
+        var parameters = properties.ToDictionary(property => property.Name,
+            property => property.GetValue(telegramAuthDto)?.ToString());
+
+        var resultDto = await _httpClientService.PostAsync<ResponseResultDto<string>>(url, parameters);
+
+        if (resultDto == null || !resultDto.Success || resultDto.Data.IsNullOrWhiteSpace())
         {
-            { TelegramTokenClaimNames.UserId, telegramAuthDto.Id },
-            { TelegramTokenClaimNames.UserName, telegramAuthDto.UserName },
-            { TelegramTokenClaimNames.AuthDate, telegramAuthDto.AuthDate },
-            { TelegramTokenClaimNames.FirstName, telegramAuthDto.FirstName },
-            { TelegramTokenClaimNames.LastName, telegramAuthDto.LastName },
-            { TelegramTokenClaimNames.Hash, telegramAuthDto.Hash },
-            { TelegramTokenClaimNames.ProtoUrl, telegramAuthDto.ProtoUrl }
-        });
+            _logger.LogInformation("verification of the telegram information has failed, {0}", resultDto?.Message);
+            throw new UserFriendlyException("Invalid Telegram Login Information");
+        }
+
+        return resultDto.Data;
     }
 }

@@ -34,7 +34,7 @@ public partial class ThirdPartOrderAppServiceTest
         """
         {
         	"crypto": "ELF",
-        	"network": "ELF",
+        	"network": "aelf",
         	"buyEnable": "1",
         	"sellEnable": "1",
         	"minPurchaseAmount": "15.75",
@@ -193,6 +193,41 @@ public partial class ThirdPartOrderAppServiceTest
         """);
 
     
+
+    private readonly TransakCryptoItem _transakCryptoUsdt = JsonConvert.DeserializeObject<TransakCryptoItem>(
+        """
+        {
+          "coinId": "usdt-coin",
+          "decimals": 8,
+          "image": {
+            "large": "https://assets-stg.transak.com/images/cryptoCurrency/usd-coin_large.png",
+            "small": "https://assets-stg.transak.com/images/cryptoCurrency/usd-coin_small.png",
+            "thumb": "https://assets-stg.transak.com/images/cryptoCurrency/usd-coin_thumb.png"
+          },
+          "isAllowed": true,
+          "isPopular": false,
+          "isStable": true,
+          "name": "USDT Coin",
+          "roundOff": 2,
+          "symbol": "USDT",
+          "network": {
+            "name": "ethereum",
+            "fiatCurrenciesNotSupported": [
+              {
+                "fiatCurrency": "HKD",
+                "paymentMethod": "credit_debit_card"
+              }
+            ],
+            "chainId": null
+          },
+          "uniqueId": "ETh",
+          "isPayInAllowed": true,
+          "minAmountForPayIn": 1,
+          "maxAmountForPayIn": 10
+        }
+        """);
+
+    
     private void MockRampLists() {
          
         MockHttpByPath(AlchemyApi.QueryFiatList, new AlchemyBaseResponseDto<List<AlchemyFiatDto>>
@@ -217,7 +252,7 @@ public partial class ThirdPartOrderAppServiceTest
 
         MockHttpByPath(TransakApi.GetCryptoCurrencies, new TransakBaseResponse<List<TransakCryptoItem>>
         {
-            Response = new List<TransakCryptoItem> { _transakCryptoElf } 
+            Response = new List<TransakCryptoItem> { _transakCryptoElf, _transakCryptoUsdt } 
         });
         DeviceInfoContext.CurrentDeviceInfo = new DeviceInfo()
         {

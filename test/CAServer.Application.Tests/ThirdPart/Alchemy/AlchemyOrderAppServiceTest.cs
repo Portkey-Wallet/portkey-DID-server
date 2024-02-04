@@ -26,6 +26,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(GetMockThirdPartOptions());
+        services.AddSingleton(MockSecretProvider());
         services.AddSingleton(MockRampOptions());
     }
 

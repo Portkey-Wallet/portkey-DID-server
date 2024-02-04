@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.HubsEventHandler;
@@ -9,8 +8,6 @@ using CAServer.MongoDB;
 using CAServer.MultiTenancy;
 using CAServer.Options;
 using CAServer.Redis;
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
 using CAServer.ThirdPart.Adaptor;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
@@ -43,7 +40,6 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
-using Volo.Abp.RabbitMQ;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
@@ -355,7 +351,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
                 // var configuration = context.GetConfiguration();
                 // options.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
-                // options.OAuthScopes("CAServer");
+                // options.OAuthSc+opes("CAServer");
             });
         }
 
