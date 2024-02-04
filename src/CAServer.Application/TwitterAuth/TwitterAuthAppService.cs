@@ -97,7 +97,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             [CommonConstant.AuthHeader] = basicAuth
         };
 
-        var response = await _httpClientService.PostAsync<TwitterTokenDto>(_options.TwitterTokenUrl,
+        var response = await _httpClientService.PostAsync<TwitterTokenDto>(CommonConstant.TwitterTokenUrl,
             RequestMediaType.Form, requestParam, header);
 
         Logger.LogInformation("get accessToken from twitter success, response:{response}",
