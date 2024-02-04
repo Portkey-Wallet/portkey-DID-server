@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Signature.Provider;
 using CAServer.TwitterAuth.Dtos;
+using CAServer.TwitterAuth.Provider;
 using CAServer.Verifier.Etos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -32,18 +32,18 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
     private readonly IClusterClient _clusterClient;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ISecretProvider _secretProvider;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ITwitterAuthProvider _twitterAuthProvider;
 
     public TwitterAuthAppService(IHttpClientService httpClientService, IOptionsSnapshot<TwitterAuthOptions> options,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider, IHttpClientFactory httpClientFactory)
+        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider, ITwitterAuthProvider twitterAuthProvider)
     {
         _httpClientService = httpClientService;
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _httpContextAccessor = httpContextAccessor;
         _secretProvider = secretProvider;
-        _httpClientFactory = httpClientFactory;
+        _twitterAuthProvider = twitterAuthProvider;
         _options = options.Value;
     }
 
@@ -62,6 +62,10 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             var errorInfo = GetErrorInfo(e);
             authResult.Code = errorInfo.code;
             authResult.Message = errorInfo.message;
+
+            Logger.LogInformation("twitter auth result error info, code:{code},message:{message}",
+                authResult.Code ?? string.Empty,
+                authResult.Message ?? string.Empty);
             return authResult;
         }
     }
@@ -69,8 +73,9 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
     private async Task<TwitterUserAuthInfoDto> ValidAuthCodeAsync(TwitterAuthDto twitterAuthDto)
     {
         var clientSecret = await _secretProvider.GetSecretWithCacheAsync(_options.ClientId);
-        Logger.LogInformation("receive twitter callback, data: {data}",
-            JsonConvert.SerializeObject(twitterAuthDto));
+        Logger.LogInformation("receive twitter callback, code:{code}, redirectUrl:{redirectUrl}",
+            twitterAuthDto.Code ?? string.Empty,
+            twitterAuthDto.RedirectUrl ?? string.Empty);
 
         if (twitterAuthDto.Code.IsNullOrEmpty())
         {
@@ -89,17 +94,16 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
         var header = new Dictionary<string, string>
         {
-            ["Authorization"] = basicAuth
+            [CommonConstant.AuthHeader] = basicAuth
         };
 
         var response = await _httpClientService.PostAsync<TwitterTokenDto>(_options.TwitterTokenUrl,
             RequestMediaType.Form, requestParam, header);
 
-        Logger.LogInformation("send code to twitter success, response:{response}",
+        Logger.LogInformation("get accessToken from twitter success, response:{response}",
             JsonConvert.SerializeObject(response));
 
         var userInfo = await SaveUserExtraInfoAsync(response.AccessToken);
-
         return new TwitterUserAuthInfoDto
         {
             AccessToken = response.AccessToken,
@@ -115,12 +119,11 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
     private async Task<TwitterUserInfoDto> SaveUserExtraInfoAsync(string accessToken)
     {
-        var url = "https://api.twitter.com/2/users/me";
         var header = new Dictionary<string, string>
         {
-            ["Authorization"] = $"Bearer {accessToken}"
+            [CommonConstant.AuthHeader] = $"Bearer {accessToken}"
         };
-        var userInfo = await GetAsync<TwitterUserInfoDto>(url, header);
+        var userInfo = await _twitterAuthProvider.GetUserInfoAsync(CommonConstant.TwitterUserInfoUrl, header);
 
         if (userInfo == null)
         {
@@ -158,35 +161,14 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
     private (string code, string message) GetErrorInfo(Exception exception)
     {
-        string errorCode = "50000";
+        string errorCode = AuthErrorMap.DefaultCode;
         if (exception is UserFriendlyException friendlyException)
         {
-            errorCode = friendlyException.Code == "429" ? "40003" : friendlyException.Code;
+            errorCode = friendlyException.Code == HttpStatusCode.TooManyRequests.ToString() ? AuthErrorMap.TwitterCancelCode : friendlyException.Code;
         }
 
         var message = AuthErrorMap.GetMessage(errorCode);
         return (errorCode, message);
     }
-
-    private async Task<T> GetAsync<T>(string url, Dictionary<string, string> headers)
-    {
-        var client = _httpClientFactory.CreateClient();
-        foreach (var keyValuePair in headers)
-        {
-            client.DefaultRequestHeaders.Add(keyValuePair.Key, keyValuePair.Value);
-        }
-
-        var response = await client.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
-        if (response.StatusCode != HttpStatusCode.OK)
-        {
-            Logger.LogError(
-                "Response not success, url:{url}, code:{code}, message: {message}",
-                url, response.StatusCode, content);
-
-            throw new UserFriendlyException(content, ((int)response.StatusCode).ToString());
-        }
-
-        return JsonConvert.DeserializeObject<T>(content);
-    }
+    
 }

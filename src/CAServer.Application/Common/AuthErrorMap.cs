@@ -6,6 +6,7 @@ public class AuthErrorMap
 {
     public const string DefaultCode = "50000";
     public const string TwitterCancelCode = "40002";
+    public const string TwitterRequestLimitCode = "40003";
     private static readonly Dictionary<string, string> ErrorMapInfo = new Dictionary<string, string>()
     {
         ["40001"] = "Portkey needs to verify your account info to continue. Please try again.",
