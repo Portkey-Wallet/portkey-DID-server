@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
@@ -25,6 +26,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
+    private readonly IClusterClient _clusterClient;
 
     protected readonly JsonSerializerSettings JsonDecodeSettings = new()
     {
@@ -36,6 +38,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus,
         ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions)
     {
+        _clusterClient = clusterClient;
         _thirdPartOrderProvider = thirdPartOrderProvider;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
