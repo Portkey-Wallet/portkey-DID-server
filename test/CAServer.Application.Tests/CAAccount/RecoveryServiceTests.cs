@@ -1,7 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Cryptography;
+using AElf.Types;
 using CAServer.Account;
+using CAServer.amazon;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Commons;
@@ -9,6 +14,7 @@ using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Options;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -51,8 +57,18 @@ public partial class RecoveryServiceTests : CAServerApplicationTestBase
         services.AddSingleton(GetContractProvider());
         services.AddSingleton(GetMockGuardianProvider());
         services.AddSingleton(GetMockCaAccountProvider());
+        services.AddSingleton(MockAwsS3Client());
     }
 
+    
+    protected IAwsS3Client MockAwsS3Client()
+    {
+        var mockImageClient = new Mock<IAwsS3Client>();
+        mockImageClient.Setup(p => p.UpLoadFileAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync("http://s3.test.com/result.svg");
+        return mockImageClient.Object;
+    }
+    
     [Fact]
     public async Task RecoverRequestAsync_Test()
     {

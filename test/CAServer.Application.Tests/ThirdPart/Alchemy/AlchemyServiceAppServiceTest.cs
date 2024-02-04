@@ -29,6 +29,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         var mockOptions = MockThirdPartOptions();
         services.AddSingleton(mockOptions);
         services.AddSingleton(MockRampOptions());
+        services.AddSingleton(MockSecretProvider());
 
         // mock http
         services.AddSingleton(MockHttpFactory(_testOutputHelper,

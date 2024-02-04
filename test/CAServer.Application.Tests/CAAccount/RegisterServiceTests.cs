@@ -1,12 +1,20 @@
 using System;
+using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Cryptography;
+using AElf.Types;
 using CAServer.Account;
+using CAServer.amazon;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Dtos;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Options;
+using Google.Protobuf.Collections;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -38,13 +46,24 @@ public class RegisterServiceTests : CAServerApplicationTestBase
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
-    
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
+        services.AddSingleton(MockAwsS3Client());
+        services.AddSingleton(MockGraphQlOptions());
+    }
+    
+    protected IAwsS3Client MockAwsS3Client()
+    {
+        var mockImageClient = new Mock<IAwsS3Client>();
+        mockImageClient.Setup(p => p.UpLoadFileAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync("http://s3.test.com/result.svg");
+        return mockImageClient.Object;
     }
 
+    
     private IAppleUserProvider GetMockAppleUserProvider()
     {
         var provider = new Mock<IAppleUserProvider>();
@@ -60,7 +79,30 @@ public class RegisterServiceTests : CAServerApplicationTestBase
 
         return provider.Object;
     }
+
+    private IGraphQLProvider MockGraphQLProvider()
+    {
+
+        var mock = new Mock<IGraphQLProvider>();
+        // mock.Setup()
+        return mock.Object;
+    }
     
+    
+    protected new IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
+    {
+        var options = new GraphQLOptions()
+        {
+            Configuration = "http://127.0.0.1:9200/AElfIndexer_DApp/PortKeyIndexerCASchema/graphq"
+        };
+
+        var mock = new Mock<IOptionsSnapshot<GraphQLOptions>>();
+        mock.Setup(o => o.Value).Returns(options);
+        return mock.Object;
+    }
+
+    
+
     [Fact]
     public async Task RegisterRequestAsync_Register_Success_Test()
     {
@@ -91,7 +133,7 @@ public class RegisterServiceTests : CAServerApplicationTestBase
         result.ShouldNotBeNull();
         result.SessionId.ShouldNotBeEmpty();
     }
-    
+
     [Fact]
     public async Task RegisterRequestAsync_Type_Not_Exist_Test()
     {
@@ -176,7 +218,7 @@ public class RegisterServiceTests : CAServerApplicationTestBase
             Assert.True(ex is AbpValidationException);
         }
     }
-    
+
     private IOptionsSnapshot<AppleCacheOptions> MockAppleCacheOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsSnapshot<AppleCacheOptions>>();

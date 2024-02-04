@@ -15,6 +15,8 @@ using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Options;
+using CAServer.SecurityServer;
+using CAServer.Signature.Provider;
 using CAServer.Verifier.Etos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -41,6 +43,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly AppleTransferOptions _appleTransferOptions;
+    private readonly ISecretProvider _secretProvider;
 
     public AppleAuthAppService(IHttpClientFactory httpClientFactory,
         IOptions<AppleAuthOptions> appleAuthVerifyOption,
@@ -50,7 +53,8 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IHttpContextAccessor httpContextAccessor,
         IAppleUserProvider appleUserProvider,
-        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions)
+        IOptionsSnapshot<AppleTransferOptions> appleTransferOptions, 
+        ISecretProvider secretProvider)
     {
         _httpClientFactory = httpClientFactory;
         _appleAuthOptions = appleAuthVerifyOption.Value;
@@ -60,6 +64,7 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
         _jwtSecurityTokenHandler = jwtSecurityTokenHandler;
         _httpContextAccessor = httpContextAccessor;
         _appleUserProvider = appleUserProvider;
+        _secretProvider = secretProvider;
         _appleTransferOptions = appleTransferOptions.Value;
     }
 
@@ -242,11 +247,12 @@ public class AppleAuthAppService : CAServerAppService, IAppleAuthAppService
     private async Task<string> GetTokenAsync(string code)
     {
         var url = "https://appleid.apple.com/auth/token";
-        var secret = GetSecret(_appleAuthOptions.ExtensionConfig.PrivateKey, _appleAuthOptions.ExtensionConfig.KeyId,
+        
+        var secret = await _secretProvider.GetAppleAuthSignatureAsync(_appleAuthOptions.ExtensionConfig.KeyId,
             _appleAuthOptions.ExtensionConfig.TeamId, _appleAuthOptions.ExtensionConfig.ClientId);
 
         var response = await GetTokenFromAppleAsync(url, code, _appleAuthOptions.ExtensionConfig.ClientId, secret);
-        Logger.LogInformation("Get token from apple: {response}", response);
+        Logger.LogInformation("Get token from apple: {Response}", response);
 
         if (response.Contains("error"))
         {
