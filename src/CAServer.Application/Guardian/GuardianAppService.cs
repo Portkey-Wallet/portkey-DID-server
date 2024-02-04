@@ -127,7 +127,10 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var guardians = await _guardianProvider.GetGuardiansAsync(guardianIdentifierHash, requestDto.CaHash);
         var guardian = guardians?.CaHolderInfo?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.OriginChainId));
 
-        var originChainId = await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash);
+        var originChainId = guardian == null
+            ? await GetOriginChainIdAsync(guardianIdentifierHash, requestDto.CaHash)
+            : guardian.OriginChainId;
+
         return new RegisterInfoResultDto { OriginChainId = originChainId };
     }
 
