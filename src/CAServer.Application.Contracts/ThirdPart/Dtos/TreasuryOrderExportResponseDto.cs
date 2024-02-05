@@ -88,22 +88,22 @@ public class TreasuryOrderExportResponseDto
                 order.ThirdPartOrderId,
                 order.CallbackTime == 0
                     ? CommonConstant.EmptyString
-                    : new DateTime().WithMilliSeconds(order.CallbackTime).ToZoneString(timeZone),
+                    : TimeHelper.GetDateTimeFromTimeStamp(order.CallbackTime).ToZoneString(timeZone),
 
                 // addresses
                 order.ToAddress,
                 order.TransactionId,
                 order.TransactionTime == 0
                     ? CommonConstant.EmptyString
-                    : new DateTime().WithMilliSeconds(order.TransactionTime).ToZoneString(timeZone),
+                    : TimeHelper.GetDateTimeFromTimeStamp(order.TransactionTime).ToZoneString(timeZone),
 
                 // times
                 order.CreateTime == 0
                     ? CommonConstant.EmptyString
-                    : new DateTime().WithMilliSeconds(order.CreateTime).ToZoneString(timeZone),
+                    : TimeHelper.GetDateTimeFromTimeStamp(order.CreateTime).ToZoneString(timeZone),
                 order.LastModifyTime == 0
                     ? CommonConstant.EmptyString
-                    : new DateTime().WithMilliSeconds(order.LastModifyTime).ToZoneString(timeZone)
+                    : TimeHelper.GetDateTimeFromTimeStamp(order.LastModifyTime).ToZoneString(timeZone)
             ));
         }
 
