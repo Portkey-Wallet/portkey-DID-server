@@ -95,7 +95,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
             .ForMember(t => t.ProjectCode,
                 f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
         
-        CreateMap<CreateHolderDto, CreateCAHolderOnNonCreateChainInput>()
+        CreateMap<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>()
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
             {
                 Type = e.GuardianInfo.Type,

@@ -6,6 +6,6 @@ public class FacebookAuthResponse
     
     public string UserId { get; set; }
     
-    public long ExpiresTime { get; set; }
+    public long ExpirationTime { get; set; }
     
 }
