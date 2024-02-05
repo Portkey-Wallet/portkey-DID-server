@@ -48,38 +48,38 @@ namespace Portkey.Contracts.CA {
     }
   }
 
-  public partial class NonCreateChainCAHolderCreated : aelf::IEvent<NonCreateChainCAHolderCreated>
+  public partial class PreCrossChainSyncHolderInfoCreated : aelf::IEvent<PreCrossChainSyncHolderInfoCreated>
   {
-    public global::System.Collections.Generic.IEnumerable<NonCreateChainCAHolderCreated> GetIndexed()
+    public global::System.Collections.Generic.IEnumerable<PreCrossChainSyncHolderInfoCreated> GetIndexed()
     {
-      return new List<NonCreateChainCAHolderCreated>
+      return new List<PreCrossChainSyncHolderInfoCreated>
       {
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         Creator = Creator
       },
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         CaHash = CaHash
       },
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         CaAddress = CaAddress
       },
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         Manager = Manager
       },
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         CreateChainId = CreateChainId
       },
       };
     }
 
-    public NonCreateChainCAHolderCreated GetNonIndexed()
+    public PreCrossChainSyncHolderInfoCreated GetNonIndexed()
     {
-      return new NonCreateChainCAHolderCreated
+      return new PreCrossChainSyncHolderInfoCreated
       {
         ExtraData = ExtraData,
       };

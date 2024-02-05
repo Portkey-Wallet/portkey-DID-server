@@ -3,7 +3,7 @@ namespace CAServer.Grains.Grain.ApplicationHandler;
 public static class MethodName
 {
     public const string CreateCAHolder = "CreateCAHolder";
-    public const string CreateCAHolderOnNonCreateChain = "CreateCAHolderOnNonCreateChain";
+    public const string CreateCAHolderOnNonCreateChain = "ReportPreCrossChainSyncHolderInfoInput";
     public const string SocialRecovery = "SocialRecovery";
     public const string Validate = "ValidateCAHolderInfoWithManagerInfosExists";
     public const string UpdateMerkleTree = "GetBoundParentChainHeightAndMerklePathByHeight";
