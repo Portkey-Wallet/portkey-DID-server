@@ -70,7 +70,7 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
             }
 
             orderDto.Status = OrderStatusType.Transferring.ToString();
-            orderDto = await _treasuryOrderProvider.DoSaveOrder(orderDto);
+            orderDto = await _treasuryOrderProvider.DoSaveOrderAsync(orderDto);
 
 
             // send transaction to node
@@ -94,7 +94,7 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
                 resExtensionBuilder.Add(ExtensionKey.TxResult,
                     JsonConvert.SerializeObject(txResult, JsonSerializerSettings));
 
-            await _treasuryOrderProvider.DoSaveOrder(orderDto, resExtensionBuilder.Build());
+            await _treasuryOrderProvider.DoSaveOrderAsync(orderDto, resExtensionBuilder.Build());
         }
         catch (UserFriendlyException e)
         {

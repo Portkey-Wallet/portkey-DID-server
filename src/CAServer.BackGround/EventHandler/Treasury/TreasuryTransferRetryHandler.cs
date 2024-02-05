@@ -67,7 +67,7 @@ public class TreasuryTransferRetryHandler : IDistributedEventHandler<TreasuryOrd
 
             orderDto.Status = OrderStatusType.StartTransfer.ToString();
             orderDto.TxRetryTimes++;
-            await _treasuryOrderProvider.DoSaveOrder(orderDto);
+            await _treasuryOrderProvider.DoSaveOrderAsync(orderDto);
         }
         catch (UserFriendlyException e)
         {

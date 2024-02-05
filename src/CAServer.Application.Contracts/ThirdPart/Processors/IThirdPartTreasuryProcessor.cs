@@ -15,7 +15,7 @@ public interface IThirdPartTreasuryProcessor
 
     Task NotifyOrderAsync<TOrderInput>(TOrderInput orderInput) where TOrderInput : TreasuryBaseContext;
     
-    Task HandlePendingTreasuryOrder(OrderDto rampOrder, PendingTreasuryOrderDto pendingTreasuryOrder);
+    Task HandlePendingTreasuryOrderAsync(OrderDto rampOrder, PendingTreasuryOrderDto pendingTreasuryOrder);
     
     Task<CommonResponseDto<Empty>> RefreshTransferMultiConfirmAsync(Guid orderId, long blockHeight, long confirmedHeight);
     

@@ -82,7 +82,7 @@ public partial class ThirdPartOrderAppServiceTest
 
         #region Pending treasury order should be Pending status
         {
-            var pendingData = await treasuryOrderProvider.QueryPendingTreasuryOrder(
+            var pendingData = await treasuryOrderProvider.QueryPendingTreasuryOrderAsync(
                 new PendingTreasuryOrderCondition(0, 1)
                 {
                     LastModifyTimeLt = DateTime.UtcNow.AddHours(1).ToUtcMilliSeconds(),
@@ -120,7 +120,7 @@ public partial class ThirdPartOrderAppServiceTest
 
         #region Pending treasury order should be Pending status
         {
-            var pendingData = await treasuryOrderProvider.QueryPendingTreasuryOrder(
+            var pendingData = await treasuryOrderProvider.QueryPendingTreasuryOrderAsync(
                 new PendingTreasuryOrderCondition(0, 1)
                 {
                     LastModifyTimeLt = DateTime.UtcNow.AddHours(1).ToUtcMilliSeconds(),
@@ -143,7 +143,7 @@ public partial class ThirdPartOrderAppServiceTest
 
         // mock transactionId as MinedTxId
         treasuryOrder.TransactionId = MinedTxId;
-        await orderAppService.UpdateTreasuryOrder(treasuryOrder);
+        await orderAppService.UpdateTreasuryOrderAsync(treasuryOrder);
 
         // handle tx multi confirm
         await treasuryTxConfirmWorker.HandleAsync();

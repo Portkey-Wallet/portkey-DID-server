@@ -56,7 +56,7 @@ public class PendingTreasuryOrderWorker : IJobWorker
             var count = 0;
             while (true)
             {
-                var pendingData = await _treasuryOrderProvider.QueryPendingTreasuryOrder(
+                var pendingData = await _treasuryOrderProvider.QueryPendingTreasuryOrderAsync(
                     new PendingTreasuryOrderCondition(0, pageSize)
                     {
                         StatusIn = new List<string>() { OrderStatusType.Pending.ToString() },
@@ -96,7 +96,7 @@ public class PendingTreasuryOrderWorker : IJobWorker
                         continue;
 
                     multiTaskList.Add(_processorFactory.Processor(pendingTreasuryOrderDto.ThirdPartName)
-                        .HandlePendingTreasuryOrder(rampOrder, pendingTreasuryOrderDto));
+                        .HandlePendingTreasuryOrderAsync(rampOrder, pendingTreasuryOrderDto));
                 }
                 await Task.WhenAll(multiTaskList);
                 count += multiTaskList.Count;
