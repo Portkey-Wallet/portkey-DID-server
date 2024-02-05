@@ -288,17 +288,15 @@ public class CAServerHttpApiHostModule : AbpModule
             x.AddConsumer<OrderWsBroadcastConsumer>();
             x.UsingRabbitMq((ctx, cfg) =>
             {
-                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port,
                     "/", h =>
                     {
                         h.Username(rabbitMqConfig.Connections.Default.UserName);
                         h.Password(rabbitMqConfig.Connections.Default.Password);
                     });
-                
-                cfg.ReceiveEndpoint("BroadcastClient_" + clientId, e =>
-                {
-                    e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
-                });
+
+                cfg.ReceiveEndpoint("BroadcastClient_" + clientId,
+                    e => { e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx); });
             });
         });
     }
@@ -307,7 +305,7 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
-    
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -333,11 +331,12 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAuthorization();
         if (!env.IsDevelopment())
         {
-      //      app.UseMiddleware<RealIpMiddleware>();
+            app.UseMiddleware<RealIpMiddleware>();
         }
+
         app.UseMiddleware<DeviceInfoMiddleware>();
 
-     //   if (env.IsDevelopment())
+        if (env.IsDevelopment())
         {
             app.UseSwagger();
             app.UseAbpSwaggerUI(options =>
@@ -350,20 +349,20 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();      
+        app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
 
-       // StartOrleans(context.ServiceProvider);
+        StartOrleans(context.ServiceProvider);
 
         // to start pre heat
-      //  context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync().GetAwaiter().GetResult();
+        context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync().GetAwaiter().GetResult();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-       /// StopOrleans(context.ServiceProvider);
+        StopOrleans(context.ServiceProvider);
     }
 
     private static void StartOrleans(IServiceProvider serviceProvider)
