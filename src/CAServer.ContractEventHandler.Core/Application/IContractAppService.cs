@@ -74,7 +74,7 @@ public class ContractAppService : IContractAppService
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly PayRedPackageAccount _packageAccount;
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
-    public const int AcceleratedThreadCount = 3;
+    private const int AcceleratedThreadCount = 3;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
