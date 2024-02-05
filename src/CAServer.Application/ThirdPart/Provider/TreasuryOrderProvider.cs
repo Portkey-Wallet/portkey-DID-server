@@ -53,6 +53,48 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
         Dictionary<string, string> externalData = null)
     {
         var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderDto.Id);
+        var oldOrder = await treasuryOrderGrain.GetAsync();
+        AssertHelper.IsTrue(oldOrder.Success, "old order not exists");
+        AssertHelper.IsTrue(oldOrder.Data.Version <= orderDto.Version,
+            "order expired Id={}, version={}, inputVersion={}", orderDto.Id, oldOrder.Data.Version, orderDto.Version);
+        AssertHelper.IsTrue(oldOrder.Data.ToAddress.IsNullOrEmpty() || oldOrder.Data.ToAddress == orderDto.ToAddress,
+            "To address modify not support");
+        AssertHelper.IsTrue(oldOrder.Data.Crypto.IsNullOrEmpty() || oldOrder.Data.Crypto == orderDto.Crypto,
+            "Order crypto modify not support");
+        AssertHelper.IsTrue(oldOrder.Data.CryptoAmount == 0 || oldOrder.Data.CryptoAmount == orderDto.CryptoAmount,
+            "Order CryptoAmount modify not support");
+        AssertHelper.IsTrue(
+            oldOrder.Data.CryptoDecimals == 0 || oldOrder.Data.CryptoDecimals == orderDto.CryptoDecimals,
+            "Order CryptoDecimals modify not support");
+        AssertHelper.IsTrue(oldOrder.Data.Fiat.IsNullOrEmpty() || oldOrder.Data.Fiat == orderDto.Fiat,
+            "Order Fiat modify not support");
+        AssertHelper.IsTrue(oldOrder.Data.FiatAmount == 0 || oldOrder.Data.FiatAmount == orderDto.FiatAmount,
+            "Order FiatAmount modify not support");
+        AssertHelper.IsTrue(
+            oldOrder.Data.SettlementAmount.IsNullOrEmpty() ||
+            oldOrder.Data.SettlementAmount.SafeToDecimal() == orderDto.SettlementAmount.SafeToDecimal(),
+            "Order SettlementAmount modify not support");
+        AssertHelper.IsTrue(oldOrder.Data.Network.IsNullOrEmpty() || oldOrder.Data.Network == orderDto.Network,
+            "Order Network modify not support");
+        AssertHelper.IsTrue(
+            oldOrder.Data.ThirdPartName.IsNullOrEmpty() || oldOrder.Data.ThirdPartName == orderDto.ThirdPartName,
+            "Order ThirdPartName modify not support");
+        AssertHelper.IsTrue(
+            oldOrder.Data.ThirdPartOrderId.IsNullOrEmpty() ||
+            oldOrder.Data.ThirdPartOrderId == orderDto.ThirdPartOrderId,
+            "Order ThirdPartOrderId modify not support");
+        AssertHelper.IsTrue(
+            oldOrder.Data.ThirdPartCrypto.IsNullOrEmpty() || oldOrder.Data.ThirdPartCrypto == orderDto.ThirdPartCrypto,
+            "Order ThirdPartOrderId modify not support");
+        AssertHelper.IsTrue(
+            oldOrder.Data.ThirdPartCrypto.IsNullOrEmpty() || oldOrder.Data.ThirdPartCrypto == orderDto.ThirdPartCrypto,
+            "Order ThirdPartOrderId modify not support");
+        var fromStatus = ThirdPartHelper.ParseOrderStatus(oldOrder.Data.Status);
+        var newStatus = ThirdPartHelper.ParseOrderStatus(orderDto.Status);
+        AssertHelper.IsTrue(OrderStatusTransitions.Reachable(fromStatus, newStatus), "Status unreachable {}-{}",
+            fromStatus.ToString(), newStatus.ToString());
+
+
         var resp = await treasuryOrderGrain.SaveOrUpdateAsync(orderDto);
         AssertHelper.IsTrue(resp.Success, "Update treasury grain failed: " + resp.Message);
         orderDto = resp.Data;
@@ -158,6 +200,7 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
             mustQuery.Add(q => q.Range(i => i.Field(f => f.LastModifyTime).LessThan(condition.LastModifyTimeLt)));
 
         QueryContainer Filter(QueryContainerDescriptor<TreasuryOrderIndex> f) => f.Bool(b => b.Must(mustQuery));
+
         IPromise<IList<ISort>> Sort(SortDescriptor<TreasuryOrderIndex> s)
         {
             return customSort != null ? customSort(s) : s.Descending(a => a.LastModifyTime);

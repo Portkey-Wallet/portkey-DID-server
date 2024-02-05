@@ -5,12 +5,10 @@ using CAServer.Commons;
 using CAServer.Options;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
-using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
-using Hangfire.Dashboard.Resources;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Volo.Abp.DependencyInjection;
+using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.BackGround.EventHandler.Treasury;
@@ -21,14 +19,16 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
     private readonly IContractProvider _contractProvider;
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;
     private readonly ITreasuryOrderProvider _treasuryOrderProvider;
+    private readonly IAbpDistributedLock _distributedLock;
 
     public TreasuryCreateHandler(ILogger<TreasuryCreateHandler> logger, IContractProvider contractProvider,
-        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, ITreasuryOrderProvider treasuryOrderProvider)
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, ITreasuryOrderProvider treasuryOrderProvider, IAbpDistributedLock distributedLock)
     {
         _logger = logger;
         _contractProvider = contractProvider;
         _thirdPartOptions = thirdPartOptions;
         _treasuryOrderProvider = treasuryOrderProvider;
+        _distributedLock = distributedLock;
     }
 
 
@@ -45,8 +45,18 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
         var orderDto = eventData.Data;
         _logger.LogDebug("TreasuryCreateHandler start, {OrderId}-{Version}-{Status}", orderDto.Id, orderDto.Version,
             orderDto.Status);
+        
+        await using var locked =
+            await _distributedLock.TryAcquireAsync("TreasuryTxCreate:" + orderDto.TransactionId);
+        if (locked == null)
+        {
+            _logger.LogWarning("Duplicated create event, orderId={OrderId}", orderDto.Id);
+            return;
+        }
+        
         try
         {
+            
             AssertHelper.IsTrue(orderDto.TransactionId.IsNullOrEmpty(), "Transaction id exists");
             AssertHelper.IsTrue(orderDto.RawTransaction.IsNullOrEmpty(), "Raw transaction empty");
 
