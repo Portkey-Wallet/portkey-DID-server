@@ -77,7 +77,7 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
             orderDto.TransactionTime = DateTime.UtcNow.ToUtcMilliSeconds();
             orderDto.Status = OrderStatusType.StartTransfer.ToString();
 
-            await _treasuryOrderProvider.DoSaveOrder(orderDto, OrderStatusExtensionBuilder.Create()
+            await _treasuryOrderProvider.DoSaveOrderAsync(orderDto, OrderStatusExtensionBuilder.Create()
                 .Add(ExtensionKey.TxHash, txId)
                 .Add(ExtensionKey.Transaction, orderDto.RawTransaction)
                 .Build());

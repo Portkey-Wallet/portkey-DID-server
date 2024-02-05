@@ -49,7 +49,7 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
     }
 
 
-    public async Task<TreasuryOrderDto> DoSaveOrder(TreasuryOrderDto orderDto,
+    public async Task<TreasuryOrderDto> DoSaveOrderAsync(TreasuryOrderDto orderDto,
         Dictionary<string, string> externalData = null)
     {
         var treasuryOrderGrain = _clusterClient.GetGrain<ITreasuryOrderGrain>(orderDto.Id);
@@ -78,7 +78,7 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
         return orderDto;
     }
 
-    public async Task<PendingTreasuryOrderDto> AddOrUpdatePendingTreasuryOrder(
+    public async Task<PendingTreasuryOrderDto> AddOrUpdatePendingTreasuryOrderAsync(
         PendingTreasuryOrderDto pendingTreasuryOrderDto)
     {
         var pendingOrderGrain = _clusterClient.GetGrain<IPendingTreasuryOrderGrain>(
@@ -171,7 +171,7 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
         return new PagedResultDto<TreasuryOrderDto>(totalCount, pagerList);
     }
 
-    public async Task<PagedResultDto<PendingTreasuryOrderDto>> QueryPendingTreasuryOrder(
+    public async Task<PagedResultDto<PendingTreasuryOrderDto>> QueryPendingTreasuryOrderAsync(
         PendingTreasuryOrderCondition condition)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<PendingTreasuryOrderIndex>, QueryContainer>>();

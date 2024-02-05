@@ -72,7 +72,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     internal abstract Task<TreasuryOrderRequest> AdaptOrderInputAsync<TOrderInput>(TOrderInput orderInput)
         where TOrderInput : TreasuryBaseContext;
 
-    public abstract Task<Tuple<bool, string>> CallBackThirdPart(TreasuryOrderDto orderDto);
+    public abstract Task<Tuple<bool, string>> CallBackThirdPartAsync(TreasuryOrderDto orderDto);
 
 
     /// <summary>
@@ -163,7 +163,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             _logger.LogInformation(
                 "Pending treasury saved, ramp order not webhook yet, thirdPartName={Name}, thirdPartId={ThirdPartId}, id={Id}",
                 pendingOrderGrainDto.ThirdPartName, pendingOrderGrainDto.ThirdPartOrderId, pendingOrderGrainDto.Id);
-            await _treasuryOrderProvider.AddOrUpdatePendingTreasuryOrder(pendingOrderGrainDto);
+            await _treasuryOrderProvider.AddOrUpdatePendingTreasuryOrderAsync(pendingOrderGrainDto);
         }
         catch (UserFriendlyException e)
         {
@@ -184,7 +184,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
     /// </summary>
     /// <param name="rampOrder"></param>
     /// <param name="pendingTreasuryOrder"></param>
-    public async Task HandlePendingTreasuryOrder(OrderDto rampOrder, PendingTreasuryOrderDto pendingTreasuryOrder)
+    public async Task HandlePendingTreasuryOrderAsync(OrderDto rampOrder, PendingTreasuryOrderDto pendingTreasuryOrder)
     {
         _logger.LogInformation(
             "Handle pending treasury order, rampOrderId={RampOrder}, thirdPartName={ThirdPartName}, thirdPartId={ThirdPartId}",
@@ -205,7 +205,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
                                orderInput.CryptoAmount.SafeToDecimal();
         var cryptoAmountDiffPercent = Math.Abs(cryptoAmountDiff) / rampOrder.CryptoQuantity.SafeToDecimal();
         _logger.LogInformation(
-            "HandlePendingTreasuryOrder, crypto={Crypto}, totalFee={Fee}, rampAmount={RampAmount}, treasuryAmount={TreasuryAmount}, diffPercent={Percent}",
+            "HandlePendingTreasuryOrderAsync, crypto={Crypto}, totalFee={Fee}, rampAmount={RampAmount}, treasuryAmount={TreasuryAmount}, diffPercent={Percent}",
             orderInput.Crypto, totalFeeInCrypto, rampOrder.CryptoQuantity,
             pendingTreasuryOrder.TreasuryOrderRequest.CryptoAmount, cryptoAmountDiff);
         AssertHelper.IsTrue(
@@ -243,7 +243,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
         orderDto.Fiat = rampOrder.Fiat;
         orderDto.FiatAmount = rampOrder.FiatAmount.SafeToDecimal();
 
-        await _treasuryOrderProvider.DoSaveOrder(orderDto);
+        await _treasuryOrderProvider.DoSaveOrderAsync(orderDto);
 
         var pendingOrderGrain = _clusterClient.GetGrain<IPendingTreasuryOrderGrain>(
             IPendingTreasuryOrderGrain.GenerateId(pendingTreasuryOrder.ThirdPartName,
@@ -255,7 +255,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
                 "Pending treasury exists, will update to finish, thirdPartName={Name}, thirdPartId={ThirdPartId}, id={Id}",
                 pendingOrderGrainDto.ThirdPartName, pendingOrderGrainDto.ThirdPartOrderId, pendingOrderGrainDto.Id);
             pendingOrderGrainDto.Status = OrderStatusType.Finish.ToString();
-            await _treasuryOrderProvider.AddOrUpdatePendingTreasuryOrder(pendingOrderGrainDto);
+            await _treasuryOrderProvider.AddOrUpdatePendingTreasuryOrderAsync(pendingOrderGrainDto);
         }
     }
 
@@ -305,7 +305,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
                     .Build();
 
             order.Status = newStatus;
-            await _treasuryOrderProvider.DoSaveOrder(order, extraInfo);
+            await _treasuryOrderProvider.DoSaveOrderAsync(order, extraInfo);
             return new CommonResponseDto<Empty>();
         }
         catch (UserFriendlyException e)
@@ -341,14 +341,14 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
             orderDto = orderResp.Data;
             AssertHelper.NotNull(orderDto, "Get order grain data failed");
 
-            var (success, callBackResult) = await CallBackThirdPart(orderDto);
+            var (success, callBackResult) = await CallBackThirdPartAsync(orderDto);
             orderDto.CallbackCount++;
             orderDto.CallbackTime = DateTime.UtcNow.ToUtcMilliSeconds();
             orderDto.CallBackResult = callBackResult;
             orderDto.CallbackStatus =
                 success ? TreasuryCallBackStatus.Success.ToString() : TreasuryCallBackStatus.Failed.ToString();
 
-            await _treasuryOrderProvider.DoSaveOrder(orderDto, OrderStatusExtensionBuilder.Create()
+            await _treasuryOrderProvider.DoSaveOrderAsync(orderDto, OrderStatusExtensionBuilder.Create()
                 .Add(ExtensionKey.CallBackStatus, orderDto.CallbackStatus)
                 .Add(ExtensionKey.CallBackResult, callBackResult)
                 .Build());

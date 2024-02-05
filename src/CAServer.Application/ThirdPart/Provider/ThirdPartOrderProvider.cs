@@ -285,7 +285,7 @@ public class ThirdPartOrderProvider : IThirdPartOrderProvider, ISingletonDepende
         return new PagedResultDto<NftOrderIndex>(totalCount, nftOrders);
     }
 
-    public Task UpdateOrder(OrderDto orderDto)
+    public Task UpdateOrderAsync(OrderDto orderDto)
     {
         throw new NotImplementedException();
     }

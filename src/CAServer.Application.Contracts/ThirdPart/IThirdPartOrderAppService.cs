@@ -28,7 +28,7 @@ public interface IThirdPartOrderAppService
     Task UpdateOffRampTxHashAsync(TransactionHashDto input);
     Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrderAsync(OrderDto orderDto);
     Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input);
-    Task<CommonResponseDto<Empty>> UpdateRampOrder(OrderDto orderDto, string reason = null);
+    Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderDto orderDto, string reason = null);
     Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
     
     // nft
@@ -47,6 +47,6 @@ public interface IThirdPartOrderAppService
     Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input);
     
     // treasury
-    Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(TreasuryOrderDto orderDto, string reason = null);
+    Task<CommonResponseDto<Empty>> UpdateTreasuryOrderAsync(TreasuryOrderDto orderDto, string reason = null);
     
 }

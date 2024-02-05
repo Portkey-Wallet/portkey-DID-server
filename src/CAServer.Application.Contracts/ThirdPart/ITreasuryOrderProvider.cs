@@ -11,9 +11,9 @@ namespace CAServer.ThirdPart;
 
 public interface ITreasuryOrderProvider : ITransientDependency
 {
-    Task<TreasuryOrderDto> DoSaveOrder(TreasuryOrderDto orderDto, Dictionary<string, string> externalData = null);
+    Task<TreasuryOrderDto> DoSaveOrderAsync(TreasuryOrderDto orderDto, Dictionary<string, string> externalData = null);
 
-    Task<PendingTreasuryOrderDto> AddOrUpdatePendingTreasuryOrder(PendingTreasuryOrderDto pendingTreasuryOrderDto);
+    Task<PendingTreasuryOrderDto> AddOrUpdatePendingTreasuryOrderAsync(PendingTreasuryOrderDto pendingTreasuryOrderDto);
 
     Task<List<TreasuryOrderDto>> ExportOrderAsync(TreasuryOrderCondition condition);
 
@@ -22,5 +22,5 @@ public interface ITreasuryOrderProvider : ITransientDependency
 
     Task<PagedResultDto<OrderStatusInfoIndex>> QueryOrderStatusInfoPagerAsync(List<string> ids);
 
-    Task<PagedResultDto<PendingTreasuryOrderDto>> QueryPendingTreasuryOrder(PendingTreasuryOrderCondition condition);
+    Task<PagedResultDto<PendingTreasuryOrderDto>> QueryPendingTreasuryOrderAsync(PendingTreasuryOrderCondition condition);
 }
