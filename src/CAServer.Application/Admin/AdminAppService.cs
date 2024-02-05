@@ -66,7 +66,7 @@ public class AdminAppService : CAServerAppService, IAdminAppService
         };
     }
 
-    public async Task SetMfa(MfaRequest mfaRequest)
+    public async Task SetMfaAsync(MfaRequest mfaRequest)
     {
         var userId = CurrentUser.IsAuthenticated ? CurrentUser.GetId() : Guid.Empty;
         var userMfaGrain = _clusterClient.GetGrain<IUserMfaGrain>(userId);
@@ -79,13 +79,13 @@ public class AdminAppService : CAServerAppService, IAdminAppService
         await userMfaGrain.SetMfaAsync(mfaRequest.OldPin, mfaRequest.NewPin, setupCode.SourceKey);
     }
 
-    public async Task ClearMfa(Guid userId)
+    public async Task ClearMfaAsync(Guid userId)
     {
         var userMfaGrain = _clusterClient.GetGrain<IUserMfaGrain>(userId);
         await userMfaGrain.ClearMftAsync();
     }
 
-    public async Task AssertMfa(string pin)
+    public async Task AssertMfaAsync(string pin)
     {
         if (_authServerOptions.CurrentValue.DebugMod) return;
         

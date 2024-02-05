@@ -78,7 +78,7 @@ public class AlchemyTreasuryProcessor : AbstractTreasuryProcessor
         return mappingNetwork.Key.DefaultIfEmpty(achSymbol);
     }
 
-    public override async Task<Tuple<bool, string>> CallBackThirdPart(TreasuryOrderDto orderDto)
+    public override async Task<Tuple<bool, string>> CallBackThirdPartAsync(TreasuryOrderDto orderDto)
     {
         try
         {

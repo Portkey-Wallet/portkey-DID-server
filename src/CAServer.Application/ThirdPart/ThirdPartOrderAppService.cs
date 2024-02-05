@@ -313,7 +313,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     /// <param name="orderDto"></param>
     /// <param name="reason"></param>
     /// <returns></returns>
-    public async Task<CommonResponseDto<Empty>> UpdateRampOrder(OrderDto orderDto, string reason = null)
+    public async Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderDto orderDto, string reason = null)
     {
         var extensionBuilder = OrderStatusExtensionBuilder.Create();
         if (reason.NotNullOrEmpty())
@@ -467,7 +467,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
     /// <param name="orderDto"></param>
     /// <param name="reason"></param>
     /// <returns></returns>
-    public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(TreasuryOrderDto orderDto, string reason = null)
+    public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrderAsync(TreasuryOrderDto orderDto, string reason = null)
     {
         try
         {
@@ -480,7 +480,7 @@ public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOr
                 extensionBuilder.Add(ExtensionKey.AdminUserName, CurrentUser.UserName);
             }
 
-            await _treasuryOrderProvider.DoSaveOrder(orderDto, extensionBuilder.Build());
+            await _treasuryOrderProvider.DoSaveOrderAsync(orderDto, extensionBuilder.Build());
             return new CommonResponseDto<Empty>();
         }
         catch (Exception e)
