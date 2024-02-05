@@ -137,7 +137,6 @@ public class HttpClientService : IHttpClientService
 
         var response = await client.PostAsync(url, new FormUrlEncodedContent(param));
         var content = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation(content);
         if (!ResponseSuccess(response.StatusCode))
         {
             _logger.LogError(
