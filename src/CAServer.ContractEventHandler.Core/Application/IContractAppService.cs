@@ -74,6 +74,7 @@ public class ContractAppService : IContractAppService
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly PayRedPackageAccount _packageAccount;
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
+    public const int AcceleratedThreadCount = 3;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -678,7 +679,7 @@ public class ContractAppService : IContractAppService
             var chainInfos = _chainOptions.ChainInfos.Values.Where(
                 c => c.ChainId != createChainId);
 
-            using var semaphore = new SemaphoreSlim(3);
+            using var semaphore = new SemaphoreSlim(AcceleratedThreadCount);
             var tasks = chainInfos.Select(async chain =>
                 {
                     await semaphore.WaitAsync();
@@ -776,7 +777,7 @@ public class ContractAppService : IContractAppService
 
             var chainId = socialRecoveryDto.ChainId;
             var chainInfos = _chainOptions.ChainInfos.Values.Where(c => c.ChainId != chainId);
-            using var semaphore = new SemaphoreSlim(3);
+            using var semaphore = new SemaphoreSlim(AcceleratedThreadCount);
             var tasks = chainInfos.Select(async chain =>
             {
                 await semaphore.WaitAsync();
