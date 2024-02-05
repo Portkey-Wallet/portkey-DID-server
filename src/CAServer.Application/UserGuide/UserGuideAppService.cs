@@ -62,9 +62,9 @@ public class UserGuideAppService : IUserGuideAppService, ITransientDependency
         }
 
         var userGuideGrain = _clusterClient.GetGrain<IUserGuideGrain>(currentUserId.Value);
-        var userGuideGrainResultList = await userGuideGrain.ListGrainResultDto();
+        var userGuideGrainResult = await userGuideGrain.ListGrainResultDto();
         var guideDto = new UserGuideDto();
-        var userGuideInfoGrain = userGuideGrainResultList.Data;
+        var userGuideInfoGrain = userGuideGrainResult.Data;
 
         var userGuideOptions = _userGuideInfoOptions.GuideInfos;
         if (userGuideInfoGrain.Count == 0)
