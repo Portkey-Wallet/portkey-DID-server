@@ -135,13 +135,13 @@ public class AdminController : CAServerController
             AssertHelper.NotNull(request.Data.CreateTimeLt, "CreateTime start empty");
             AssertHelper.NotNull(request.Data.CreateTimeGtEq, "CreateTime end empty");
             await _adminAppService.AssertMfaAsync(request.GoogleTfaPin);
-            var startTime = new DateTime().WithMilliSeconds(request.Data.CreateTimeGtEq ?? 0)
-                .ToZoneString(request.TimeZone);
-            var endTime = new DateTime().WithMilliSeconds(request.Data.CreateTimeLt ?? 0)
-                .ToZoneString(request.TimeZone);
+            var startTime = TimeHelper.GetDateTimeFromTimeStamp(request.Data.CreateTimeGtEq ?? 0)
+                .ToZoneString(request.TimeZone, TimeHelper.DatePattern);
+            var endTime = TimeHelper.GetDateTimeFromTimeStamp(request.Data.CreateTimeLt ?? 0)
+                .ToZoneString(request.TimeZone, TimeHelper.DatePattern);
             var orderList = await _treasuryOrderProvider.ExportOrderAsync(request.Data);
             var orderResp = new TreasuryOrderExportResponseDto(orderList);
-            return File(Encoding.UTF8.GetBytes(orderResp.ToCsvString()), "text/csv",
+            return File(Encoding.UTF8.GetBytes(orderResp.ToCsvString(request.TimeZone)), "text/csv",
                 string.Join(CommonConstant.Dot, "treasuryOrderExport", startTime, endTime, "csv"));
         }
         catch (UserFriendlyException e)

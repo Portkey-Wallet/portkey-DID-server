@@ -74,7 +74,7 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
     {
         var options = new GraphQLOptions()
         {
-            Configuration = ""
+            Configuration = "http://127.0.0.1:9200"
         };
 
         var mock = new Mock<IOptionsSnapshot<GraphQLOptions>>();
