@@ -91,7 +91,7 @@ public class TreasuryOrderProvider : ITreasuryOrderProvider
             "Order ThirdPartOrderId modify not support");
         var fromStatus = ThirdPartHelper.ParseOrderStatus(oldOrder.Data.Status);
         var newStatus = ThirdPartHelper.ParseOrderStatus(orderDto.Status);
-        AssertHelper.IsTrue(OrderStatusTransitions.Reachable(fromStatus, newStatus), "Status unreachable {}-{}",
+        AssertHelper.IsTrue(oldOrder.Data.Status.IsNullOrEmpty() || OrderStatusTransitions.Reachable(fromStatus, newStatus), "Status unreachable {}-{}",
             fromStatus.ToString(), newStatus.ToString());
 
 
