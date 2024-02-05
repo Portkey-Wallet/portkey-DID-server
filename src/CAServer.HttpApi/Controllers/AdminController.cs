@@ -77,7 +77,7 @@ public class AdminController : CAServerController
     [HttpPost("mfa")]
     public async Task<CommonResponseDto<Empty>> SetNewMfaCode(MfaRequest mfaRequest)
     {
-        await _adminAppService.SetMfa(mfaRequest);
+        await _adminAppService.SetMfaAsync(mfaRequest);
         return new CommonResponseDto<Empty>();
     }
 
@@ -85,7 +85,7 @@ public class AdminController : CAServerController
     [HttpDelete("user/mfa")]
     public async Task<CommonResponseDto<Empty>> DeleteUserMfa(MfaRequest<Guid> mfaRequest)
     {
-        await _adminAppService.ClearMfa(mfaRequest.Data);
+        await _adminAppService.ClearMfaAsync(mfaRequest.Data);
         return new CommonResponseDto<Empty>();
     }
 
@@ -102,8 +102,8 @@ public class AdminController : CAServerController
     [HttpPost("ramp/order")]
     public async Task<CommonResponseDto<Empty>> UpdateOrder(MfaRequest<OrderDto> updateOrderRequest)
     {
-        await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
-        return await _thirdPartOrderAppService.UpdateRampOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
+        await _adminAppService.AssertMfaAsync(updateOrderRequest.GoogleTfaPin);
+        return await _thirdPartOrderAppService.UpdateRampOrderAsync(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 
     [Authorize(Roles = "OrderManager,OrderViewer")]
@@ -134,7 +134,7 @@ public class AdminController : CAServerController
             AssertHelper.NotNull(request.Data, "Data empty");
             AssertHelper.NotNull(request.Data.CreateTimeLt, "CreateTime start empty");
             AssertHelper.NotNull(request.Data.CreateTimeGtEq, "CreateTime end empty");
-            await _adminAppService.AssertMfa(request.GoogleTfaPin);
+            await _adminAppService.AssertMfaAsync(request.GoogleTfaPin);
             var startTime = new DateTime().WithMilliSeconds(request.Data.CreateTimeGtEq ?? 0)
                 .ToZoneString(request.TimeZone);
             var endTime = new DateTime().WithMilliSeconds(request.Data.CreateTimeLt ?? 0)
@@ -160,7 +160,7 @@ public class AdminController : CAServerController
     [HttpPost("treasury/order")]
     public async Task<CommonResponseDto<Empty>> UpdateTreasuryOrder(MfaRequest<TreasuryOrderDto> updateOrderRequest)
     {
-        await _adminAppService.AssertMfa(updateOrderRequest.GoogleTfaPin);
-        return await _thirdPartOrderAppService.UpdateTreasuryOrder(updateOrderRequest.Data, updateOrderRequest.Reason);
+        await _adminAppService.AssertMfaAsync(updateOrderRequest.GoogleTfaPin);
+        return await _thirdPartOrderAppService.UpdateTreasuryOrderAsync(updateOrderRequest.Data, updateOrderRequest.Reason);
     }
 }

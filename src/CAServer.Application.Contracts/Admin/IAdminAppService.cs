@@ -13,11 +13,11 @@ public interface IAdminAppService: ITransientDependency
     
     public MfaResponse GenerateRandomMfa();
 
-    public Task SetMfa(MfaRequest mfaRequest);
+    public Task SetMfaAsync(MfaRequest mfaRequest);
 
-    public Task ClearMfa(Guid userId);
+    public Task ClearMfaAsync(Guid userId);
     
-    public Task AssertMfa(string code);
+    public Task AssertMfaAsync(string code);
 
 
 }

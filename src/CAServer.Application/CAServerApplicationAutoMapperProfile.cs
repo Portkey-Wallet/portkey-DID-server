@@ -577,6 +577,16 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
             .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
 
+        CreateMap<RedDotGrainDto, RedDotEto>();
+        CreateMap<GrowthGrainDto, CreateGrowthEto>();
+        CreateMap<RedDotInfo, RedDotInfoDto>();
+
+        CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
+        CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
+        CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
+        CreateMap<UserExtraInfoResultDto, Verifier.Dtos.UserExtraInfo>()
+            .ForMember(t => t.IsPrivateEmail, m => m.MapFrom(f => f.IsPrivate));
+        
         CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>()
             .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
             .ReverseMap();
