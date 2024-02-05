@@ -152,7 +152,6 @@ public class OrderStatusTransitions
         [OrderStatusType.Expired] = Empty,
         [OrderStatusType.Finish] = Empty,
         [OrderStatusType.Failed] = Empty,
-        [OrderStatusType.TransferFailed] = Empty,
         [OrderStatusType.PaymentFailed] = Empty,
         [OrderStatusType.RefundSuccessfully] = Empty,
 
@@ -262,6 +261,21 @@ public class OrderStatusTransitions
             OrderStatusType.PaymentFailed,
             OrderStatusType.Finish,
             OrderStatusType.Failed,
+        },
+        
+        [OrderStatusType.TransferFailed] = new()
+        {
+            OrderStatusType.Created,
+            OrderStatusType.Invalid,
+            OrderStatusType.Canceled,
+            OrderStatusType.Expired,
+            OrderStatusType.Finish,
+            OrderStatusType.Failed,
+            OrderStatusType.Pending,
+            OrderStatusType.Refunded,
+            OrderStatusType.StartTransfer,
+            OrderStatusType.Transferring,
+            OrderStatusType.Transferred
         },
 
         // by third webhook : off-ramp user transfer crypto complete

@@ -5,6 +5,7 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 using AElf;
+using CAServer.Accelerate;
 using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Settings;
@@ -23,18 +24,19 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly IGetVerifierServerProvider _getVerifierServerProvider;
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IAccelerateManagerProvider _accelerateManagerProvider;
 
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory, IAccelerateManagerProvider accelerateManagerProvider)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
         _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
-
+        _accelerateManagerProvider = accelerateManagerProvider;
     }
 
     private bool _disposed;
@@ -93,7 +95,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
-
+        var operationDetails =
+            _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
         var type = Convert.ToInt32(input.OperationType).ToString();
         var url = endPoint + "/api/app/account/verifyCode";
         var parameters = new Dictionary<string, string>
@@ -108,7 +111,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 "chainId", string.IsNullOrWhiteSpace(input.TargetChainId)
                     ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
                     : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString()
-            }
+            },
+            { "operationDetails", operationDetails }
         };
 
 
@@ -135,6 +139,41 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await GetResultAsync<VerifyTokenDto<TelegramUserExtraInfo>>(input, requestUri, identifierHash, salt);
     }
 
+    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto, string identifierHash, string salt)
+    {
+        var requestUri = "/api/app/account/verifyFacebookToken";
+        return await GetResultAsync<VerificationCodeResponse>(requestDto, requestUri, identifierHash, salt);
+    }
+
+    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(VerifyTokenRequestDto input)
+    {
+        var endPoint =
+            await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+        if (null == endPoint)
+        {
+            _logger.LogInformation("No Available Service Tips.{VerifierId}", input.VerifierId);
+            return new ResponseResultDto<VerifyFacebookUserInfoDto>
+            {
+                Success = false,
+                Message = "No Available Service Tips."
+            };
+        }
+        var url = endPoint + "/api/app/account/verifyFacebookAccessTokenAndGetUserId";
+        var parameters = new Dictionary<string, string>
+        {
+            { "accessToken", input.AccessToken }
+        };
+
+
+        return await _httpService.PostResponseAsync<ResponseResultDto<VerifyFacebookUserInfoDto>>(url, parameters);
+    }
+
+    public async Task<ResponseResultDto<VerifyTwitterTokenDto>> VerifyTwitterTokenAsync(VerifyTokenRequestDto input, string identifierHash, string salt)
+    {
+        var requestUri = "/api/app/account/verifyTwitterToken";
+        return await GetResultAsync<VerifyTwitterTokenDto>(input, requestUri, identifierHash, salt);
+    }
+
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,
         string requestUri, string identifierHash, string salt)
     {
@@ -151,22 +190,25 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         }
 
         var url = endPoint + requestUri;
-
+        
+        var operationDetails =
+            _accelerateManagerProvider.GenerateOperationDetails(input.OperationType, input.OperationDetails);
 
         return await GetResultFromVerifierAsync<T>(url, input.AccessToken, identifierHash, salt,
             input.OperationType,
             string.IsNullOrWhiteSpace(input.TargetChainId)
                 ? ChainHelper.ConvertBase58ToChainId(input.ChainId).ToString()
-                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString());
+                : ChainHelper.ConvertBase58ToChainId(input.TargetChainId).ToString(), operationDetails);
     }
 
     private async Task<ResponseResultDto<T>> GetResultFromVerifierAsync<T>(string url,
         string accessToken, string identifierHash, string salt,
-        OperationType verifierCodeOperationType, string chainId)
+        OperationType verifierCodeOperationType, string chainId, string operationDetails)
     {
         var client = _httpClientFactory.CreateClient();
         var operationType = Convert.ToInt32(verifierCodeOperationType).ToString();
-        var tokenParam = JsonConvert.SerializeObject(new { accessToken, identifierHash, salt, operationType, chainId });
+        var tokenParam = JsonConvert.SerializeObject(new
+            { accessToken, identifierHash, salt, operationType, chainId, operationDetails });
         var param = new StringContent(tokenParam,
             Encoding.UTF8,
             MediaTypeNames.Application.Json);

@@ -14,11 +14,14 @@
           "https://ramp.alchemypay.org/static/img/3.22abdb74.svg"
         ],
         "Coverage": {
-          "OnRamp": false,
-          "OffRamp": false
+          "OnRamp": true,
+          "OffRamp": true
         },
         "NetworkMapping": {
           "AELF": "ELF"
+        },
+        "SymbolMapping": {
+          "USDT": "USDT-aelf"
         }
       },
       "Transak": {
@@ -38,6 +41,8 @@
         },
         "NetworkMapping": {
           "AELF": "aelf"
+        },
+        "SymbolMapping": {
         }
       }
     },
@@ -46,7 +51,15 @@
         "Symbol": "ELF",
         "Icon": "https://explorer-test.aelf.io/favicon.test.ico",
         "Decimals": "8",
-        "Network": "aelf",
+        "Network": "AELF",
+        "ChainId": "AELF",
+        "Address": ""
+      },
+      {
+        "Symbol": "USDT",
+        "Icon": "https://portkey-im-dev.s3.ap-northeast-1.amazonaws.com/USDT.jpg",
+        "Decimals": "6",
+        "Network": "AELF",
         "ChainId": "AELF",
         "Address": ""
       }
@@ -54,7 +67,7 @@
     "DefaultCurrency": {
       "Crypto": "ELF",
       "CryptoAmount": "400",
-      "Network": "aelf",
+      "Network": "AELF",
       "ChainId": "AELF",
       "Fiat": "USD",
       "FiatAmount": "200"

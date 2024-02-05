@@ -86,6 +86,12 @@ public class CAAccountController : CAServerController
     {
         return await _caAccountService.RevokeAsync(input);
     }
+    
+    [HttpGet("checkManagerCount")]
+    public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
+    {
+        return await _caAccountService.CheckManagerCountAsync(caHash);
+    }
 
     [HttpGet("{shortLinkCode}")]
     public async Task<IActionResult> GetRedirectUrlAsync(string shortLinkCode)

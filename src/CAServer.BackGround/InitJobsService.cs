@@ -1,5 +1,6 @@
 using CAServer.BackGround.Options;
 using CAServer.BackGround.Provider;
+using CAServer.BackGround.Provider.Treasury;
 using Hangfire;
 using Microsoft.Extensions.Options;
 
@@ -44,6 +45,19 @@ public class InitJobsService : BackgroundService
             // fix uncompleted ELF order count value
             _recurringJobs.AddOrUpdate<NftOrdersSettlementWorker>("NftOrdersSettlementWorker",
                 x => x.HandleAsync(), _transactionOptions.NftOrdersSettlementPeriod);
+            
+            // fix uncompleted treasury transfer transaction confirm
+            _recurringJobs.AddOrUpdate<TreasuryTxConfirmWorker>("TreasuryTxConfirmWorker",
+                x => x.HandleAsync(), _transactionOptions.HandleUnCompletedTreasuryTransferPeriod);
+            
+            // fix uncompleted treasury thirdPart callback
+            _recurringJobs.AddOrUpdate<TreasuryCallbackWorker>("TreasuryCallbackWorker",
+                x => x.HandleAsync(), _transactionOptions.HandleUnCompletedTreasuryCallbackPeriod);
+            
+            // fix pending treasury order
+            _recurringJobs.AddOrUpdate<PendingTreasuryOrderWorker>("PendingTreasuryOrderWorker",
+                x => x.HandleAsync(), _transactionOptions.HandlePendingTreasuryOrderPeriod);
+            
         }
         catch (Exception e)
         {

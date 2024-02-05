@@ -16,7 +16,8 @@ public interface IActivityProvider
     Task<IndexerTransactions> GetActivitiesAsync(List<CAAddressInfo> addressInfos, string inputChainId,
         string symbolOpt, List<string> inputTransactionTypes, int inputSkipCount, int inputMaxResultCount);
 
-    Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash, List<CAAddressInfo> addressInfos);
+    Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash,
+        List<CAAddressInfo> addressInfos);
 
     Task<string> GetCaHolderNickName(Guid userId);
 
@@ -26,4 +27,7 @@ public interface IActivityProvider
 
     Task<GuardiansDto> GetCaHolderInfoAsync(List<string> caAddresses, string caHash, int skipCount = 0,
         int maxResultCount = 10);
+
+    Task<AutoReceiveTransactions> GetAutoReceiveTransactionsAsync(List<string> transferTransactionIds,
+        int inputSkipCount = 0, int inputMaxResultCount = 10);
 }

@@ -8,6 +8,7 @@ using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.DataReporting;
+using CAServer.Facebook;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Options;
@@ -24,6 +25,8 @@ using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Transak;
 using CAServer.Tokens.Provider;
 using CAServer.Telegram.Options;
+using CAServer.ThirdPart.Processor.Treasury;
+using CAServer.TwitterAuth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -74,6 +77,8 @@ public class CAServerApplicationModule : AbpModule
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
         Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
+        Configure<FacebookOptions>(configuration.GetSection("Facebook"));
+        Configure<AccelerateManagerOptions>(configuration.GetSection("AccelerateManager"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -90,6 +95,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
         context.Services.AddSingleton<ISearchService, GrowthSearchService>();
+        context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
+        context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
         
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
@@ -101,6 +108,8 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
         
         context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
+        context.Services.AddSingleton<IThirdPartTreasuryProcessor, AlchemyTreasuryProcessor>();
+        
         context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
         context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
         
@@ -130,6 +139,10 @@ public class CAServerApplicationModule : AbpModule
         Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
         Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
+        // Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
+        Configure<ManagerCountLimitOptions>(configuration.GetSection("ManagerCountLimit"));
+        Configure<UserGuideInfoOptions>(configuration.GetSection("GuideInfo"));
+        Configure<TwitterAuthOptions>(configuration.GetSection("TwitterAuth"));
         context.Services.AddHttpClient();
         ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
@@ -143,6 +156,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        Configure<GetBalanceFromChainOption>(configuration.GetSection("GetBalanceFromChain"));
         Configure<GrowthOptions>(configuration.GetSection("Growth"));
         Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         AddMessagePushService(context, configuration);

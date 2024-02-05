@@ -2,6 +2,7 @@ using System;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CAServer.Admin.Dtos;
 using CAServer.Commons;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Ramp;
@@ -18,6 +19,8 @@ public interface IThirdPartOrderAppService
     
     // order
     Task<PagedResultDto<OrderDto>> GetThirdPartOrdersAsync(GetUserOrdersDto input);
+    Task<PagedResultDto<OrderDto>> GetThirdPartOrdersByPageAsync(GetThirdPartOrderConditionDto condition,
+        params OrderSectionEnum?[] withSections);
     Task<List<OrderDto>> ExportOrderListAsync(GetThirdPartOrderConditionDto condition, params OrderSectionEnum?[] orderSectionEnums);
     Task<OrderCreatedDto> CreateThirdPartOrderAsync(CreateUserOrderDto input);
     Task<CommonResponseDto<string>> InitOrderAsync(Guid orderId, Guid userId);
@@ -25,12 +28,12 @@ public interface IThirdPartOrderAppService
     Task UpdateOffRampTxHashAsync(TransactionHashDto input);
     Task<CommonResponseDto<OrderDto>> QueryThirdPartRampOrderAsync(OrderDto orderDto);
     Task<CommonResponseDto<CreateNftOrderResponseDto>> CreateNftOrderAsync(CreateNftOrderRequestDto input);
+    Task<CommonResponseDto<Empty>> UpdateRampOrderAsync(OrderDto orderDto, string reason = null);
     Task<CommonResponseDto<NftOrderQueryResponseDto>> QueryMerchantNftOrderAsync(OrderQueryRequestDto input);
     
     // nft
     Task<OrderSettlementGrainDto> GetOrderSettlementAsync(Guid orderId);
     Task AddUpdateOrderSettlementAsync(OrderSettlementGrainDto grainDto);
-    SetupCode GenerateGoogleAuthCode(string key, string userName, string accountTitle);
     bool VerifyOrderExportCode(string pin);
     
     // ramp
@@ -42,5 +45,8 @@ public interface IThirdPartOrderAppService
     Task<CommonResponseDto<RampPriceDto>> GetRampPriceAsync(RampDetailRequest request);
     Task<CommonResponseDto<RampDetailDto>> GetRampDetailAsync(RampDetailRequest request);
     Task<CommonResponseDto<Empty>> TransactionForwardCallAsync(TransactionDto input);
+    
+    // treasury
+    Task<CommonResponseDto<Empty>> UpdateTreasuryOrderAsync(TreasuryOrderDto orderDto, string reason = null);
     
 }

@@ -177,6 +177,17 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         return result.TransactionResultDto;
     }
 
+    public async Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(string chainId,
+        CreateHolderDto createHolderDto)
+    {
+        var param = _objectMapper.Map<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>(createHolderDto);
+        param.CreateChainId = ChainHelper.ConvertBase58ToChainId(createHolderDto.ChainId);
+        param.CaHash = createHolderDto.CaHash;
+        var result = await SendTransactionToChainAsync(chainId, param, MethodName.CreateCAHolderOnNonCreateChain);
+        DeactivateOnIdle();
+        return result.TransactionResultDto;
+    }
+
     public async Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto)
     {
         var param = _objectMapper.Map<SocialRecoveryDto, SocialRecoveryInput>(socialRecoveryDto);

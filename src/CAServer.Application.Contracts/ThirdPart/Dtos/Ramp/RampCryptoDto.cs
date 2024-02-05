@@ -9,6 +9,9 @@ public class RampCryptoRequest
     public string Type { get; set; }
     public string Fiat { get; set; }
     public string Country { get; set; }
+    public string Network { get; set; } = CommonConstant.MainChainId;
+
+    public bool IsBuy => Type == OrderTransDirect.BUY.ToString();
 }
 
 public class RampCryptoDto

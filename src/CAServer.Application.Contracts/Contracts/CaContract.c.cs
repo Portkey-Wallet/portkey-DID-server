@@ -48,6 +48,44 @@ namespace Portkey.Contracts.CA {
     }
   }
 
+  public partial class PreCrossChainSyncHolderInfoCreated : aelf::IEvent<PreCrossChainSyncHolderInfoCreated>
+  {
+    public global::System.Collections.Generic.IEnumerable<PreCrossChainSyncHolderInfoCreated> GetIndexed()
+    {
+      return new List<PreCrossChainSyncHolderInfoCreated>
+      {
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        Creator = Creator
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        CaHash = CaHash
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        CaAddress = CaAddress
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        Manager = Manager
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        CreateChainId = CreateChainId
+      },
+      };
+    }
+
+    public PreCrossChainSyncHolderInfoCreated GetNonIndexed()
+    {
+      return new PreCrossChainSyncHolderInfoCreated
+      {
+        ExtraData = ExtraData,
+      };
+    }
+  }
+
   public partial class GuardianAdded : aelf::IEvent<GuardianAdded>
   {
     public global::System.Collections.Generic.IEnumerable<GuardianAdded> GetIndexed()

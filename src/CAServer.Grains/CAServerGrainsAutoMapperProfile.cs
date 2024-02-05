@@ -1,3 +1,4 @@
+using AElf;
 using AElf.Types;
 using AutoMapper;
 using CAServer.Bookmark.Dtos;
@@ -93,6 +94,25 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
             .ForMember(t => t.ProjectCode,
                 f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+        
+        CreateMap<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>()
+            .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
+            {
+                Type = e.GuardianInfo.Type,
+                IdentifierHash = e.GuardianInfo.IdentifierHash,
+                VerificationInfo = new VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id,
+                    Signature = e.GuardianInfo.VerificationInfo.Signature,
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = e.ManagerInfo.Address,
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
 
         CreateMap<SocialRecoveryDto, SocialRecoveryInput>()
             .ForMember(d => d.GuardiansApproved,
@@ -172,7 +192,9 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<TransferGrainDto, ImTransferState>().ReverseMap();
         CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();
-        CreateMap<TransakAccessTokenDto, TransakAccessTokenState>();
+        CreateMap<TransakAccessTokenDto, TransakAccessTokenState>().ReverseMap();
+        CreateMap<TreasuryOrderState, TreasuryOrderDto>().ReverseMap();
+        CreateMap<PendingTreasuryOrderState, PendingTreasuryOrderDto>().ReverseMap();
         CreateMap<RedDotState, RedDotGrainDto>().ReverseMap();
         CreateMap<GrowthState, GrowthGrainDto>().ReverseMap();
         CreateMap<UpgradeState, UpgradeGrainDto>().ReverseMap();

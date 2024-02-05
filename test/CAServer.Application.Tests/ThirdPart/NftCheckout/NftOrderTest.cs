@@ -14,6 +14,7 @@ using CAServer.ThirdPart.Dtos.Order;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Processors;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens.Provider;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -43,6 +44,7 @@ public partial class NftOrderTest : ThirdPartTestBase
     private readonly NftOrderThirdPartNftResultNotifyWorker _orderThirdPartNftResultNotifyWorker;
     private readonly AlchemyProvider _alchemyProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
+
     private static readonly JsonSerializerSettings JsonSettings = JsonSettingsBuilder.New()
         .WithCamelCasePropertyNamesResolver()
         .IgnoreNullValue()
@@ -83,6 +85,16 @@ public partial class NftOrderTest : ThirdPartTestBase
             }));
         MockHttpByPath(HttpMethod.Post, "/myWebhookFail",
             new CommonResponseDto<Empty>().Error(new Exception("MockError")));
+
+        MockHttpByPath(HttpMethod.Get, "/api/v3/ticker/price",
+            new BinanceTickerPrice { Symbol = "ELF", Price = "0.42" });
+        MockHttpByPath(HttpMethod.Get, "/api/v5/market/index-candles", new OkxResponse<List<List<string>>>()
+        {
+            Data = new List<List<string>>()
+            {
+                new() { DateTime.UtcNow.ToUtcMilliSeconds().ToString(), "0.42", "0.42", "0.42", "0.42", "0" }
+            }
+        });
     }
 
     [Fact]
@@ -176,59 +188,58 @@ public partial class NftOrderTest : ThirdPartTestBase
         await CreateTest();
 
         #region Mock Alchemy callback PAY_SUCCESS
-            
-            
-            var orderId = "994864610797428736";
-            var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
 
-            var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
-            {
-                ["orderNo"] = orderId,
-                ["merchantOrderNo"] = merchantOrderId,
-                ["amount"] = "100",
-                ["fiat"] = "USD",
-                ["payTime"] = "2022-07-08 15:18:43",
-                ["payType"] = "CREDIT_CARD",
-                ["type"] = "MARKET",
-                ["name"] = "LUCK",
-                ["quantity"] = "1",
-                ["uniqueId"] = "LUCK",
-                ["appId"] = "test",
-                ["message"] = "",
-                ["status"] = "PAY_SUCCESS",
-                ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
-            };
-            var result = await _nftCheckoutService
-                .GetProcessor(ThirdPartNameType.Alchemy.ToString())
-                .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
-            result.ShouldNotBeNull();
-            result.Success.ShouldBe(true);
+        var orderId = "994864610797428736";
+        var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
 
-            var order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
-            order.ShouldNotBeNull();
-            order.Status.ShouldBe(OrderStatusType.Transferring.ToString());
-        
+        var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
+        {
+            ["orderNo"] = orderId,
+            ["merchantOrderNo"] = merchantOrderId,
+            ["amount"] = "100",
+            ["fiat"] = "USD",
+            ["payTime"] = "2022-07-08 15:18:43",
+            ["payType"] = "CREDIT_CARD",
+            ["type"] = "MARKET",
+            ["name"] = "LUCK",
+            ["quantity"] = "1",
+            ["uniqueId"] = "LUCK",
+            ["appId"] = "test",
+            ["message"] = "",
+            ["status"] = "PAY_SUCCESS",
+            ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
+        };
+        var result = await _nftCheckoutService
+            .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+            .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
+        result.ShouldNotBeNull();
+        result.Success.ShouldBe(true);
+
+        var order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
+        order.ShouldNotBeNull();
+        order.Status.ShouldBe(OrderStatusType.Transferring.ToString());
+
         #endregion
 
         #region update to Mined transactionId (just for test)
-        
-            order.TransactionId = MinedTxId;
-            var updMindTxId = await _orderStatusProvider.UpdateRampOrderAsync(order);
+
+        order.TransactionId = MinedTxId;
+        var updMindTxId = await _orderStatusProvider.UpdateRampOrderAsync(order);
 
         #endregion
 
         #region run worker to fix transaction status
-        
-            await _nftOrderSettlementTransferWorker.HandleAsync();
-            order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
-            order.ShouldNotBeNull();
-            order.Status.ShouldBe(OrderStatusType.Finish.ToString());
 
-            var nftOrder = await _orderStatusProvider.GetNftOrderAsync(Guid.Parse(merchantOrderId));
-            nftOrder.ShouldNotBeNull();
-            nftOrder.WebhookStatus.ShouldBe("SUCCESS");
-            nftOrder.ThirdPartNotifyStatus.ShouldBe("SUCCESS");
-            
+        await _nftOrderSettlementTransferWorker.HandleAsync();
+        order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
+        order.ShouldNotBeNull();
+        order.Status.ShouldBe(OrderStatusType.Finish.ToString());
+
+        var nftOrder = await _orderStatusProvider.GetNftOrderAsync(Guid.Parse(merchantOrderId));
+        nftOrder.ShouldNotBeNull();
+        nftOrder.WebhookStatus.ShouldBe("SUCCESS");
+        nftOrder.ThirdPartNotifyStatus.ShouldBe("SUCCESS");
+
         #endregion
     }
 
@@ -241,8 +252,8 @@ public partial class NftOrderTest : ThirdPartTestBase
         {
             LastModifyTimeGt = "2023-11-01",
             LastModifyTimeLt = DateTime.UtcNow.AddDays(1).ToUtc8String(TimeHelper.DatePattern),
-            TransDirectIn = new List<string>{ TransferDirectionType.NFTBuy.ToString() },
-            StatusIn = new List<string>{ OrderStatusType.Finish.ToString() }
+            TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() },
+            StatusIn = new List<string> { OrderStatusType.Finish.ToString() }
         }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
 
         orderList.ShouldNotBeNull();

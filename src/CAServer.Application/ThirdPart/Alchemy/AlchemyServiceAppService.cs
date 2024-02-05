@@ -197,17 +197,17 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
             var fiat = fiatListData.Data.FirstOrDefault(t => t.Currency == input.Fiat && t.Country == input.Country);
             AssertHelper.NotNull(fiat, "{Fiat} not found in Alchemy fiat list", input.Fiat);
 
-            var fixedFee = fiat.FixedFee.SafeToDecimal();
-            var feeRate = fiat.FeeRate.SafeToDecimal();
-            var networkFee = quoteData.NetworkFee.SafeToDecimal();
-
+            // var fixedFee = fiat.FixedFee.SafeToDecimal();
+            
             // Exchange of [ fiat : crypto ]
+            var cryptoNetworkFee = quoteData.CryptoNetworkFee.SafeToDecimal();
+            var networkFee = cryptoNetworkFee > 0 ? 0 : quoteData.NetworkFee.SafeToDecimal();
             var cryptoPrice = quoteData.CryptoPrice.SafeToDecimal();
-
+            var rampFee = quoteData.RampFee.SafeToDecimal();
+            
             var inputAmount = input.Amount.SafeToDecimal();
             var fiatAmount = input.IsBuy() ? inputAmount : inputAmount * cryptoPrice;
-            var rampFee = fixedFee + fiatAmount * feeRate;
-
+            
             /*
              * on-ramp: input-amount is FiatQuantity, which user will pay
              * off-ramp: FiatQuantity = (CryptoQuantity * fiat-crypto-exchange) - fee
@@ -222,7 +222,7 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
              * off-ramp: input-amount is CryptoQuantity, which user will pay
              */
             quoteData.CryptoQuantity = input.IsBuy()
-                ? (fiatAmount / cryptoPrice).ToString(CultureInfo.InvariantCulture)
+                ? ((fiatAmount - rampFee - networkFee) / cryptoPrice - cryptoNetworkFee).ToString(CultureInfo.InvariantCulture)
                 : input.Amount;
             return new CommonResponseDto<AlchemyOrderQuoteDataDto>(quoteData);
         }
@@ -235,10 +235,10 @@ public class AlchemyServiceAppService : CAServerAppService, IAlchemyServiceAppSe
 
     private async Task<AlchemyOrderQuoteDataDto> GetOrderQuoteWithCacheAsync(GetAlchemyOrderQuoteDto input)
     {
-        // TODO nzc risk detect
+        // cache with amount as int value 
         var cacheKey =
             GrainIdHelper.GenerateGrainId(PriceCacheKey, input.Side, input.Crypto, input.Network, input.Fiat,
-                input.Country);
+                input.Country, input.Amount.SafeToInt());
         return await _orderQuoteCache.GetOrAddAsync(cacheKey,
             async () => await _alchemyProvider.GetAlchemyOrderQuoteAsync(input),
             () => new DistributedCacheEntryOptions

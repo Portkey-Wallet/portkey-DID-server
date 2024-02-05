@@ -9,6 +9,10 @@ public static class AElfContractMethodName
     public const string GetBalance = "GetBalance";
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
+    public const string AddManagerInfo = "AddManagerInfo";
+    public const string AddGuardian = "AddGuardian";
+    public const string CreateCAHolderOnNonCreateChain = "ReportPreCrossChainSyncHolderInfo";
+    public const string SocialRecovery = "SocialRecovery";
 }
 
 public static class CommonConstant
@@ -22,9 +26,11 @@ public static class CommonConstant
 
     public const string CurrencyFiat = "Fiat";
     public const string CurrencyCrypto = "Crypto";
-    
+
     public const string ResourceTokenKey = "ResourceToken";
     public const int CacheExpirationDays = 365;
+    public const string CacheCorrectUserTokenBalancePre = "CorrectUserTokenBalance:{0}:{1}:{2}";
+    public const long CacheTokenBalanceExpirationSeconds = 60;
 
     public const string FiatListKey = "FiatList";
     public const string NftFiatListKey = "NftFiatList";
@@ -33,6 +39,7 @@ public static class CommonConstant
     public const int OrderQuoteExpirationMinutes = 30;
     public static DateTimeOffset DefaultAbsoluteExpiration = DateTime.Parse("2099-01-01 12:00:00");
     public const string OrderStatusInfoPrefix = "OrderStatusInfo";
+    public const string TreasuryOrderStatusInfoPrefix = "TreasuryOrderStatusInfo";
 
     public const string ChainName = "aelf";
     public const string ELF = "ELF";
@@ -56,17 +63,17 @@ public static class CommonConstant
     public const string AppleRevokeUrl = "https://appleid.apple.com/auth/revoke";
     public const string ImFollowUrl = "api/v1/contacts/follow";
     public const string ImUnFollowUrl = "api/v1/contacts/unfollow";
-    
+
     public const string UserExtraInfoIdPrefix = "UserExtraInfo-";
-    
+
     public const string ApplicationName = "Portkey";
     public const string ModuleName = "Api";
-    
+
     public const int WalletNameDefaultLength = 8;
     public const string AppVersionKeyPrefix = "AppVersion";
     public const string DefaultSymbol = "ELF";
     public const string TransferCard = "transfer-card";
-    
+
     public const string DefaultFiatUSD = "USD";
     public const string DefaultCryptoELF = "ELF";
     public const string DefaultFiatPrice = "200";
@@ -81,5 +88,11 @@ public static class CommonConstant
     public const string UrlSegmentation = "?";
     public const string UpgradeGrainIdPrefix = "UpgradeInfo";
     public const string GetUserExtraInfoUri = "api/app/userExtraInfo";
+
+    public const string CrossChainTransferMethodName = "CrossChainTransfer";
+    
+    public const string TwitterTokenUrl = "https://api.twitter.com/2/oauth2/token";
+    public const string TwitterUserInfoUrl = "https://api.twitter.com/2/users/me";
+    public const string JwtTokenPrefix = "Bearer";
 
 }

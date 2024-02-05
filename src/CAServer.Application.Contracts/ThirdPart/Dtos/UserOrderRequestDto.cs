@@ -39,6 +39,12 @@ public class GetUserOrdersDto : PagedResultRequestDto
 
 public class GetThirdPartOrderConditionDto : PagedResultRequestDto
 {
+
+    public GetThirdPartOrderConditionDto()
+    {
+        
+    }
+    
     public GetThirdPartOrderConditionDto(int skipCount, int maxResultCount)
     {
         base.SkipCount = skipCount;
@@ -52,9 +58,14 @@ public class GetThirdPartOrderConditionDto : PagedResultRequestDto
     public string LastModifyTimeGt { get; set; }
     public List<Guid> OrderIdIn { get; set; }
     
+    public string ThirdPartName { get; set; }
+    public List<string> ThirdPartOrderNoIn { get; set; }
+    
     /// <see cref="TransferDirectionType"/>
     public List<string> TransDirectIn { get; set; }
     
     /// <see cref="OrderStatusType"/>
     public List<string> StatusIn { get; set; }
+    
+    public string TransactionId { get; set; }
 }

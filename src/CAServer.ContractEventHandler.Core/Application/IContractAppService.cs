@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Client.Dto;
 using AElf.Types;
+using CAServer.Account;
 using CAServer.Commons;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -30,6 +33,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using ManagerInfo = CAServer.Account.ManagerInfo;
 
 namespace CAServer.ContractEventHandler.Core.Application;
 
@@ -70,6 +74,7 @@ public class ContractAppService : IContractAppService
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly PayRedPackageAccount _packageAccount;
     private readonly IRedPackageCreateResultService _redPackageCreateResultService;
+    private const int AcceleratedThreadCount = 3;
 
     public ContractAppService(IDistributedEventBus distributedEventBus, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IGraphQLProvider graphQLProvider,
@@ -248,6 +253,9 @@ public class ContractAppService : IContractAppService
             return;
         }
 
+        //Speed up registration
+        _ = CreateHolderInfoOnNonCreateChainAsync(outputGetHolderInfo, createHolderDto);
+
         registerResult.CaAddress = outputGetHolderInfo.CaAddress.ToBase58();
         registerResult.RegisterSuccess = true;
         registerResult.CaHash = outputGetHolderInfo.CaHash.ToHex();
@@ -336,6 +344,9 @@ public class ContractAppService : IContractAppService
             return;
         }
 
+        var originalChainId = socialRecoveryDto.ChainId;
+        _ = SocialRecoveryOnNonCreateChainAsync(socialRecoveryDto);
+
         recoveryResult.RecoverySuccess = true;
         recoveryResult.CaHash = outputGetHolderInfo.CaHash.ToHex();
         recoveryResult.CaAddress = outputGetHolderInfo.CaAddress.ToBase58();
@@ -348,8 +359,17 @@ public class ContractAppService : IContractAppService
         // _logger.LogInformation("ValidateTransactionAndSyncAsync, holderInfo: {holderInfo}",
         //     JsonConvert.SerializeObject(outputGetHolderInfo));
         // ValidateAndSync can be very time consuming, so don't wait for it to finish
-        _ = ValidateTransactionAndSyncAsync(socialRecoveryDto.ChainId, outputGetHolderInfo, "",
-            MonitorTag.SocialRecover);
+        // if the social recovery is executed on 'NonCreateChain', there is no synchronization
+        if (originalChainId == ChainHelper.ConvertChainIdToBase58(outputGetHolderInfo.CreateChainId))
+        {
+            _ = ValidateTransactionAndSyncAsync(originalChainId, outputGetHolderInfo, "",
+                MonitorTag.SocialRecover);
+        }
+        else
+        {
+            _logger.LogInformation("social recovery is executed on 'NonCreateChain', IdentifierHash={0}, CaHash={1}",
+                socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex(), socialRecoveryDto.CaHash?.ToHex());
+        }
     }
 
     public async Task SyncOriginChainIdAsync(UserLoginEto userLoginEto)
@@ -597,28 +617,246 @@ public class ContractAppService : IContractAppService
 
     private async Task<bool> CheckHolderExistsOnBothChains(Hash loginGuardian)
     {
-        var tasks = new List<Task<bool>>();
+        var tasks = new List<Task<Tuple<bool, bool>>>();
         foreach (var chainId in _chainOptions.ChainInfos.Keys)
         {
             tasks.Add(CheckHolderExists(chainId, loginGuardian));
         }
 
         var results = await tasks.WhenAll();
-
-        return results.All(r => !r);
+        //CAHolder does not exist or CAHolder can only be registered in NonCreateChain.
+        return results.All(r => !r.Item1 || (r.Item1 && !r.Item2));
     }
 
-    private async Task<bool> CheckHolderExists(string chainId, Hash loginGuardian)
+    private async Task<Tuple<bool, bool>> CheckHolderExists(string chainId, Hash loginGuardian)
     {
         var outputMain = await _contractProvider.GetHolderInfoFromChainAsync(chainId, loginGuardian, null);
         if (outputMain.CaHash == null || outputMain.CaHash.Value.IsEmpty)
         {
-            return false;
+            return new Tuple<bool, bool>(false, false);
         }
+
+
+        var createChainId = ChainHelper.ConvertChainIdToBase58(outputMain.CreateChainId);
 
         _logger.LogInformation("LoginGuardian: {loginGuardian} on chain {id} is occupied",
             loginGuardian.ToHex(), chainId);
-        return true;
+        return new Tuple<bool, bool>(true, chainId == createChainId);
+    }
+
+    private async Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync()
+    {
+        var enable = await _distributedCache.GetOrAddAsync(
+            "CheckOperationDetailsInSignatureEnabled",
+            async () =>
+            {
+                var tasks = _chainOptions.ChainInfos.Values.Select(chainInfo =>
+                    _contractProvider.GetCheckOperationDetailsInSignatureEnabledAsync(chainInfo.ChainId)).ToList();
+                var results = await tasks.WhenAll();
+                return results.All(r => r).ToString();
+            },
+            () => new DistributedCacheEntryOptions
+            {
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
+            }
+        );
+        return bool.Parse(enable ?? "false");
+    }
+
+    private async Task CreateHolderInfoOnNonCreateChainAsync(
+        GetHolderInfoOutput outputGetHolderInfo,
+        CreateHolderDto createHolderDto)
+    {
+        var watcher = Stopwatch.StartNew();
+        try
+        {
+            if (!await GetCheckOperationDetailsInSignatureEnabledAsync())
+            {
+                return;
+            }
+
+            var createChainId = createHolderDto.ChainId;
+            var chainInfos = _chainOptions.ChainInfos.Values.Where(
+                c => c.ChainId != createChainId);
+
+            using var semaphore = new SemaphoreSlim(AcceleratedThreadCount);
+            var tasks = chainInfos.Select(async chain =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        var result = await _contractProvider.CreateHolderInfoOnNonCreateChainAsync(chain,
+                            outputGetHolderInfo,
+                            createHolderDto);
+                        _logger.LogInformation("accelerate registration: {0}, transactionId:{1}",
+                            JsonConvert.SerializeObject(createHolderDto), result.TransactionId);
+
+                        await SendCreateHolderInfoOnNonCreateChainMessageAsync(chain, createHolderDto,
+                            outputGetHolderInfo,
+                            result);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(e, "create HolderInfo on 'NonCreateChain' error, caHash = {0}",
+                            outputGetHolderInfo.CaHash?.ToHex());
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                })
+                .ToList();
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "accelerated registration error: CaHash={caHash}", outputGetHolderInfo.CaHash);
+        }
+        finally
+        {
+            watcher.Stop();
+            _indicatorLogger.LogInformation(MonitorTag.Accelerate, Enum.GetName(MonitorTag.Accelerate) ?? string.Empty,
+                (int)watcher.ElapsedMilliseconds);
+        }
+    }
+
+    private async Task SendCreateHolderInfoOnNonCreateChainMessageAsync(ChainInfo chainInfo,
+        CreateHolderDto createHolderDto, GetHolderInfoOutput outputGetHolderInfo,
+        TransactionResultDto transactionResultDto
+    )
+    {
+        var registerResult = new AccelerateCreateHolderEto
+        {
+            Id = createHolderDto.Id,
+            CaAddress = outputGetHolderInfo.CaAddress.ToBase58(),
+            CaHash = outputGetHolderInfo.CaHash.ToHex(),
+            IdentifierHash = createHolderDto.GuardianInfo?.IdentifierHash?.ToHex(),
+            ChainId = chainInfo.ChainId,
+            ManagerInfo = new ManagerInfo
+            {
+                Address = createHolderDto.ManagerInfo.Address?.ToBase58(),
+                ExtraData = createHolderDto.ManagerInfo.ExtraData
+            }
+        };
+
+        if (transactionResultDto.Status != TransactionState.Mined)
+        {
+            registerResult.RegisterMessage = "Transaction status: " + transactionResultDto.Status + ". Error: " +
+                                             transactionResultDto.Error;
+            registerResult.RegisterSuccess = false;
+
+            _logger.LogInformation("accelerated registration state: " + "\n{result}",
+                JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+        }
+
+        if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.NonCreateChainCAHolderCreated))
+        {
+            registerResult.RegisterMessage = "Transaction status: FAILED" + ". Error: Verification failed";
+            registerResult.RegisterSuccess = false;
+
+            _logger.LogInformation("accelerated registration state: , id:{id}, grainId:{chainId}, message:{result}",
+                registerResult.Id.ToString(), chainInfo.ChainId, registerResult.RegisterMessage);
+        }
+
+        registerResult.RegisterSuccess = true;
+        await _distributedEventBus.PublishAsync(registerResult);
+
+        _logger.LogInformation("accelerated registration state: " + "\n{result}",
+            JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+    }
+
+    private async Task SocialRecoveryOnNonCreateChainAsync(SocialRecoveryDto socialRecoveryDto)
+    {
+        var watcher = Stopwatch.StartNew();
+        try
+        {
+            if (!await GetCheckOperationDetailsInSignatureEnabledAsync())
+            {
+                return;
+            }
+
+            var chainId = socialRecoveryDto.ChainId;
+            var chainInfos = _chainOptions.ChainInfos.Values.Where(c => c.ChainId != chainId);
+            using var semaphore = new SemaphoreSlim(AcceleratedThreadCount);
+            var tasks = chainInfos.Select(async chain =>
+            {
+                await semaphore.WaitAsync();
+                try
+                {
+                    socialRecoveryDto.ChainId = chain.ChainId;
+                    var transactionResultDto = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
+                    _logger.LogInformation("accelerate recovery: {0}, transactionId:{1}",
+                        JsonConvert.SerializeObject(socialRecoveryDto), transactionResultDto.TransactionId);
+
+                    await SendSocialRecoveryOnNonCreateChainMessageAsync(chain, socialRecoveryDto,
+                        transactionResultDto);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "social recover on 'NonCreateChain' error, caHash = {0}",
+                        socialRecoveryDto.CaHash?.ToHex());
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }).ToList();
+            await tasks.WhenAll();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "accelerated social recover error: CaHash={caHash}", socialRecoveryDto.CaHash?.ToHex());
+        }
+        finally
+        {
+            watcher.Stop();
+            _indicatorLogger.LogInformation(MonitorTag.Accelerate,
+                Enum.GetName(MonitorTag.AccelerateRecover) ?? string.Empty,
+                (int)watcher.ElapsedMilliseconds);
+        }
+    }
+
+    private async Task SendSocialRecoveryOnNonCreateChainMessageAsync(ChainInfo chainInfo,
+        SocialRecoveryDto socialRecoveryDto, TransactionResultDto transactionResultDto)
+    {
+        var recoveryResult = new AccelerateSocialRecoveryEto
+        {
+            Id = socialRecoveryDto.Id,
+            CaHash = socialRecoveryDto.CaHash?.ToHex(),
+            CaAddress = socialRecoveryDto.CaAddress?.ToBase58(),
+            IdentifierHash = socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex(),
+            ChainId = chainInfo.ChainId,
+            ManagerInfo = new ManagerInfo
+            {
+                Address = socialRecoveryDto.ManagerInfo.Address?.ToBase58(),
+                ExtraData = socialRecoveryDto.ManagerInfo.ExtraData
+            }
+        };
+
+        if (transactionResultDto.Status != TransactionState.Mined)
+        {
+            recoveryResult.RecoveryMessage = "Transaction status: " + transactionResultDto.Status + ". Error: " +
+                                             transactionResultDto.Error;
+            recoveryResult.RecoverySuccess = false;
+
+            _logger.LogInformation("accelerated social recover state: " + "\n{result}",
+                JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
+        }
+
+        if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
+        {
+            recoveryResult.RecoveryMessage = "Transaction status: FAILED" + ". Error: Verification failed";
+            recoveryResult.RecoverySuccess = false;
+
+            _logger.LogInformation("accelerated social recover state: id:{id}, chainId:{chainId}, message:{result}",
+                recoveryResult.Id.ToString(), chainInfo.ChainId, recoveryResult.RecoveryMessage);
+        }
+
+        recoveryResult.RecoverySuccess = true;
+        await _distributedEventBus.PublishAsync(recoveryResult);
+
+        _logger.LogInformation("accelerated social recover state: " + "\n{result}",
+            JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
     }
 
     public async Task QueryAndSyncAsync()
@@ -810,7 +1048,8 @@ public class ContractAppService : IContractAppService
             if (lastEndHeight == 0)
             {
                 _logger.LogError(
-                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. \nLastEndHeight: {last}", chainId, lastEndHeight);
+                    "QueryEventsAsync on chain: {id}. Last End Height is 0. Skipped querying this time. \nLastEndHeight: {last}",
+                    chainId, lastEndHeight);
                 return;
             }
 
@@ -907,7 +1146,7 @@ public class ContractAppService : IContractAppService
 
             storedToBeValidatedRecords = storedToBeValidatedRecords
                 .Where(r => r.BlockHeight >= _indexOptions.AutoSyncStartHeight[chainId]).ToList();
-            
+
             storedToBeValidatedRecords = OptimizeSyncRecords(storedToBeValidatedRecords
                 .Where(r => r.RetryTimes <= _indexOptions.MaxRetryTimes).ToList());
 

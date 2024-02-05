@@ -38,7 +38,9 @@ public class UserExtraInfoGrain : Grain<UserExtraInfoState>, IUserExtraInfoGrain
         }
 
         if (State.GuardianType == GuardianIdentifierType.Google.ToString()
-            || State.GuardianType == GuardianIdentifierType.Telegram.ToString())
+            || State.GuardianType == GuardianIdentifierType.Telegram.ToString()
+            || State.GuardianType == GuardianIdentifierType.Facebook.ToString()
+            )
         {
             State.FullName = userExtraInfoGrainDto.FullName;
             State.FirstName = userExtraInfoGrainDto.FirstName;

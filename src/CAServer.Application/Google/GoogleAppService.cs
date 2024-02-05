@@ -77,7 +77,6 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
     {
         var key = _signatureOptions.CurrentValue.KeyIds.GoogleRecaptcha + platformType;
         var secret = await _secretProvider.GetSecretWithCacheAsync(key); 
-        
         if (string.IsNullOrWhiteSpace(recaptchaToken))
         {
             _logger.LogDebug("Google Recaptcha Token is Empty");
