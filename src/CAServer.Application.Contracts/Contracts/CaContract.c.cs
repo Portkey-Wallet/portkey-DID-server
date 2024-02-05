@@ -48,34 +48,38 @@ namespace Portkey.Contracts.CA {
     }
   }
 
-  public partial class NonCreateChainCAHolderCreated : aelf::IEvent<NonCreateChainCAHolderCreated>
+  public partial class PreCrossChainSyncHolderInfoCreated : aelf::IEvent<PreCrossChainSyncHolderInfoCreated>
   {
-    public global::System.Collections.Generic.IEnumerable<NonCreateChainCAHolderCreated> GetIndexed()
+    public global::System.Collections.Generic.IEnumerable<PreCrossChainSyncHolderInfoCreated> GetIndexed()
     {
-      return new List<NonCreateChainCAHolderCreated>
+      return new List<PreCrossChainSyncHolderInfoCreated>
       {
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         Creator = Creator
       },
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         CaHash = CaHash
       },
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         CaAddress = CaAddress
       },
-      new NonCreateChainCAHolderCreated
+      new PreCrossChainSyncHolderInfoCreated
       {
         Manager = Manager
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        CreateChainId = CreateChainId
       },
       };
     }
 
-    public NonCreateChainCAHolderCreated GetNonIndexed()
+    public PreCrossChainSyncHolderInfoCreated GetNonIndexed()
     {
-      return new NonCreateChainCAHolderCreated
+      return new PreCrossChainSyncHolderInfoCreated
       {
         ExtraData = ExtraData,
       };
@@ -620,6 +624,28 @@ namespace Portkey.Contracts.CA {
     {
       return new AdminChanged
       {
+      };
+    }
+  }
+
+  public partial class Invited : aelf::IEvent<Invited>
+  {
+    public global::System.Collections.Generic.IEnumerable<Invited> GetIndexed()
+    {
+      return new List<Invited>
+      {
+      };
+    }
+
+    public Invited GetNonIndexed()
+    {
+      return new Invited
+      {
+        CaHash = CaHash,
+        ContractAddress = ContractAddress,
+        MethodName = MethodName,
+        ReferralCode = ReferralCode,
+        ProjectCode = ProjectCode,
       };
     }
   }

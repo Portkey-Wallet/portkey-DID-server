@@ -71,7 +71,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
                 Address = e.ManagerInfo.Address,
                 ExtraData = e.ManagerInfo.ExtraData
             }));
-        CreateMap<CreateHolderDto, CreateCAHolderOnNonCreateChainInput>()
+        CreateMap<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>()
             .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new GuardianInfo
             {
                 Type = e.GuardianInfo.Type,
