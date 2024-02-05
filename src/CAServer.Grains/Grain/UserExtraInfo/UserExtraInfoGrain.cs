@@ -37,10 +37,8 @@ public class UserExtraInfoGrain : Grain<UserExtraInfoState>, IUserExtraInfoGrain
             return _objectMapper.Map<UserExtraInfoState, UserExtraInfoGrainDto>(State);
         }
 
-        if (State.GuardianType == GuardianIdentifierType.Google.ToString()
-            || State.GuardianType == GuardianIdentifierType.Telegram.ToString()
-            || State.GuardianType == GuardianIdentifierType.Facebook.ToString()
-            )
+        var needTobeExchangeTypes = NeedToBeExchangedGuardianIdentifierType();
+        if (needTobeExchangeTypes.Contains(State.GuardianType))
         {
             State.FullName = userExtraInfoGrainDto.FullName;
             State.FirstName = userExtraInfoGrainDto.FirstName;
@@ -79,5 +77,16 @@ public class UserExtraInfoGrain : Grain<UserExtraInfoState>, IUserExtraInfoGrain
         result.Data = _objectMapper.Map<UserExtraInfoState, UserExtraInfoGrainDto>(State);
 
         return Task.FromResult(result);
+    }
+
+    private List<string> NeedToBeExchangedGuardianIdentifierType()
+    {
+        var list = new List<string>
+        {
+            GuardianIdentifierType.Google.ToString(),
+            GuardianIdentifierType.Facebook.ToString(),
+            GuardianIdentifierType.Telegram.ToString()
+        };
+        return list;
     }
 }

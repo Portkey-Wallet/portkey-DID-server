@@ -366,7 +366,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError("Verify Facebook Failed, {Message}", e.Message);
+            _logger.LogError(e,"Verify Facebook Failed, AccessToken is {accessToken},", requestDto.AccessToken);
             throw new UserFriendlyException("Verify Facebook Failed.");
         }
     }
