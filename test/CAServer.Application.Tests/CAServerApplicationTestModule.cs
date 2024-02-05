@@ -31,7 +31,6 @@ namespace CAServer;
 [DependsOn(
     typeof(CAServerApplicationModule),
     typeof(CAServerApplicationContractsModule),
-    typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),
     typeof(CAServerDomainTestModule)
@@ -218,6 +217,11 @@ public class CAServerApplicationTestModule : AbpModule
 
     private void ConfigureGraphQl(ServiceConfigurationContext context)
     {
+        context.Services.Configure<GraphQLOptions>(o =>
+        {
+            o.Configuration = "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql";
+        });
+        
         context.Services.AddSingleton(new GraphQLHttpClient(
             "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
             new NewtonsoftJsonSerializer()));

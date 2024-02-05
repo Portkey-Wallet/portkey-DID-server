@@ -367,4 +367,24 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
 
         return mockTokenPriceProvider.Object;
     }
+
+    protected IOptionsMonitor<ExchangeOptions> MockExchangeOptions()
+    {
+        var options = new ExchangeOptions
+        {
+            Binance = new BinanceOptions
+            {
+                BaseUrl = "http://127.0.0.1:9200"
+            },
+            Okx = new OkxOptions
+            {
+                BaseUrl = "http://127.0.0.1:9200"
+            }
+        };
+        
+        
+        var mock = new Mock<IOptionsMonitor<ExchangeOptions>>();
+        mock.Setup(p => p.CurrentValue).Returns(options);
+        return mock.Object;
+    }
 }
