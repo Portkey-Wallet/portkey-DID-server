@@ -35,7 +35,7 @@ public class FacebookAuthController : CAServerController
         {
             var redirectUrl = _facebookOptions.FacebookAuthUrl + "/portkey-auth-callback?userId="
                                                                + result.UserId + "&token=" + result.AccessToken +
-                                                               "&expiresTime=" + result.ExpiresTime + "&type=Facebook";
+                                                               "&expiresTime=" + result.ExpirationTime + "&type=Facebook";
             return Redirect(redirectUrl);
         }
 
@@ -55,7 +55,7 @@ public class FacebookAuthController : CAServerController
         if (string.IsNullOrEmpty(response.Code))
         {
             var redirectUrl = _facebookOptions.FacebookAuthUrl + "/auth-callback?userId=" + result.UserId + "&token=" +
-                              result.AccessToken + "&expiresTime=" + result.ExpiresTime + "&type=Facebook";
+                              result.AccessToken + "&expiresTime=" + result.ExpirationTime + "&type=Facebook";
             return Redirect(redirectUrl);
         }
 
