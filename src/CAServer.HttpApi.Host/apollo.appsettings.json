@@ -1,11 +1,13 @@
 {
-  "ClientId": "CAServer_HttpApi_Host_001",
+  "ClientId": "CAServer_HttpApi_Host_000",
   "apollo": {
-    "UseApollo" : true,
-    "AppId": "CAServerService",
+    "UseApollo" : false,
+    "AppId": "CAServerServiceV2",
     "MetaServer": "http://192.168.66.212:8080,http://192.168.66.160:8080",
     "Namespaces": [
-      "ramp.json"
+      "ramp.json",
+      "appsettings.json",
+      "serilog.json"
     ]
   }
 }

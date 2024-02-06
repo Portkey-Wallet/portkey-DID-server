@@ -132,7 +132,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Email = "test@portkey.finance"
         };
         var result = await _alchemyServiceAppService.GetAlchemyNftFreeLoginTokenAsync(input);
-        result.Success.ShouldBe("Success");
+        result.Success.ShouldBe(true);
     }
 
     [Fact]

@@ -3,13 +3,15 @@ using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains.Grain.ThirdPart;
+using CAServer.Options;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
-using CAServer.ThirdPart.Etos;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
 using Google.Protobuf.WellKnownTypes;
 using MassTransit;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
@@ -21,12 +23,10 @@ namespace CAServer.ThirdPart.Processor;
 
 public abstract class AbstractRampOrderProcessor : CAServerAppService
 {
-    private readonly IClusterClient _clusterClient;
-    private readonly IDistributedEventBus _distributedEventBus;
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;
     private readonly IOrderStatusProvider _orderStatusProvider;
     private readonly IAbpDistributedLock _distributedLock;
-    private readonly IBus _broadcastBus;
+    private readonly IClusterClient _clusterClient;
 
     protected readonly JsonSerializerSettings JsonDecodeSettings = new()
     {
@@ -35,14 +35,13 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
 
     protected AbstractRampOrderProcessor(IClusterClient clusterClient,
         IThirdPartOrderProvider thirdPartOrderProvider, IDistributedEventBus distributedEventBus,
-        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus)
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus,
+        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions)
     {
         _clusterClient = clusterClient;
         _thirdPartOrderProvider = thirdPartOrderProvider;
-        _distributedEventBus = distributedEventBus;
         _orderStatusProvider = orderStatusProvider;
         _distributedLock = distributedLock;
-        _broadcastBus = broadcastBus;
     }
 
     /// <summary>
@@ -77,7 +76,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
     /// <returns></returns>
     public abstract Task<OrderDto> QueryThirdOrderAsync(OrderDto orderDto);
 
-    
+
     public async Task<CommonResponseDto<Empty>> OrderUpdateAsync(IThirdPartOrder thirdPartOrder)
     {
         OrderDto inputOrderDto = null;
@@ -105,25 +104,7 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
             AssertHelper.IsTrue(OrderStatusTransitions.Reachable(currentStatus, inputState),
                 "{ToState} isn't reachable from {FromState}", inputState, currentStatus);
 
-            var inputOrder = ObjectMapper.Map<OrderDto, OrderGrainDto>(inputOrderDto);
-            var dataToBeUpdated = MergeEsAndInput2GrainModel(inputOrder, orderData);
-            dataToBeUpdated.Status = inputState.ToString(); 
-            dataToBeUpdated.Id = grainId;
-            dataToBeUpdated.UserId = orderData.UserId;
-            dataToBeUpdated.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
-            Logger.LogInformation("This {MerchantName} order {GrainId} will be updated", inputOrderDto.MerchantName,
-                grainId);
-
-            var result = await orderGrain.UpdateOrderAsync(dataToBeUpdated);
-            
-            AssertHelper.IsTrue(result.Success, "Update order failed,{Message}", result.Message);
-
-            var orderEto = ObjectMapper.Map<OrderGrainDto, OrderEto>(result.Data);
-            await _distributedEventBus.PublishAsync(orderEto);
-            await _orderStatusProvider.AddOrderStatusInfoAsync(
-                ObjectMapper.Map<OrderGrainDto, OrderStatusInfoGrainDto>(result.Data));
-            await _broadcastBus.Publish(orderEto);
-            return new CommonResponseDto<Empty>();
+            return await _orderStatusProvider.UpdateOrderAsync(inputOrderDto);
         }
         catch (UserFriendlyException e)
         {
@@ -141,17 +122,4 @@ public abstract class AbstractRampOrderProcessor : CAServerAppService
         }
     }
     
-    private OrderGrainDto MergeEsAndInput2GrainModel(OrderGrainDto fromData, OrderGrainDto toData)
-    {
-        foreach (var prop in typeof(OrderGrainDto).GetProperties())
-        {
-            // When the attribute in UpdateOrderData has been assigned, there is no need to overwrite it with the data in es
-            if (prop.GetValue(fromData) == null && prop.GetValue(toData) != null)
-            {
-                prop.SetValue(fromData, prop.GetValue(toData));
-            }
-        }
-
-        return fromData;
-    }
 }

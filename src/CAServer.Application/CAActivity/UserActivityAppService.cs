@@ -8,6 +8,7 @@ using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
@@ -16,6 +17,8 @@ using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -39,7 +42,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private const int MaxResultCount = 10;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ActivityTypeOptions _activityTypeOptions;
-
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -100,8 +102,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
-            var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddressInfos, request.ChainId,
-                request.Symbol, null, request.SkipCount, request.MaxResultCount);
+            var transactions = new IndexerTransactions
+            {
+                CaHolderTransaction = new CaHolderTransaction()
+            };
+
+            await GetActivitiesAsync(request, transactions);
             return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
                 request.Height, needMap: true);
         }
@@ -110,6 +116,82 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             _logger.LogError(e, "GetActivitiesAsync Error. {dto}", request);
             return new GetActivitiesDto { Data = new List<GetActivityDto>(), TotalRecordCount = 0 };
         }
+    }
+
+    private async Task GetActivitiesAsync(GetActivitiesRequestDto request,
+        IndexerTransactions result)
+    {
+        try
+        {
+            var skipCount = request.SkipCount;
+            var maxResultCount = request.MaxResultCount;
+            var transactionsInfo = await GetTransactionsAsync(request);
+            if (transactionsInfo.data.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            var needAddCount = request.MaxResultCount - result.CaHolderTransaction.Data.Count;
+            var needAddTransactions = transactionsInfo.data.Take(needAddCount).ToList();
+
+            result.CaHolderTransaction.Data.AddRange(needAddTransactions);
+            result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
+            if (transactionsInfo.totalCount <= maxResultCount ||
+                result.CaHolderTransaction.Data.Count >= maxResultCount)
+            {
+                return;
+            }
+
+            request.SkipCount = skipCount + maxResultCount;
+            await GetActivitiesAsync(request, result);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetActivitiesAsync Error. {dto}", JsonConvert.SerializeObject(request));
+            throw new UserFriendlyException("get activities error.");
+        }
+    }
+
+    private async Task<(List<IndexerTransaction> data, long totalCount)> GetTransactionsAsync(
+        GetActivitiesRequestDto request)
+    {
+        var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddressInfos, request.ChainId,
+            request.Symbol, null, request.SkipCount, request.MaxResultCount);
+
+        var crossChainTransactions = transactions.CaHolderTransaction.Data
+            .Where(t => t.MethodName == CommonConstant.CrossChainTransferMethodName).ToList();
+
+        if (!crossChainTransactions.IsNullOrEmpty())
+        {
+            var transactionIds = crossChainTransactions.Select(t => t.TransactionId).ToList();
+            var transactionsDto = await _activityProvider.GetAutoReceiveTransactionsAsync(transactionIds,
+                inputMaxResultCount: transactionIds.Count);
+
+            var completedIds = transactionsDto?.AutoReceiveTransaction?.Data?
+                .Select(t => t.TransferInfo.TransferTransactionId).ToList();
+
+            transactions.CaHolderTransaction.Data
+                .RemoveAll(t => t.MethodName == CommonConstant.CrossChainTransferMethodName &&
+                                !completedIds.Contains(t.TransactionId));
+        }
+
+        //filter transaction for accelerated registration and accelerated recovery
+        var exists = transactions.CaHolderTransaction?.Data?.Exists(t =>
+            t.MethodName == AElfContractMethodName.SocialRecovery);
+        string originChainId = null;
+        if (exists ?? false)
+        {
+            var caAddress = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddress, string.Empty);
+            var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
+            originChainId = holderInfo?.OriginChainId ?? "AELF";
+        }
+
+        transactions?.CaHolderTransaction?.Data?.RemoveAll(t =>
+            t.MethodName == AElfContractMethodName.CreateCAHolderOnNonCreateChain ||
+            (t.MethodName == AElfContractMethodName.SocialRecovery && originChainId != t.ChainId));
+
+        return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
     }
 
     public async Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request)
@@ -122,7 +204,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
             }
-          
+
             if (request.ActivityType != CommonConstant.TransferCard)
             {
                 caAddressInfos = caAddresses.Select(address => new CAAddressInfo { CaAddress = address })
@@ -262,7 +344,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             anotherAddresses.Add(transaction.TransferInfo?.ToAddress);
             anotherAddresses.Add(dto.FromAddress);
             dto.From = nameList.FirstOrDefault(t => t.Item1?.Address == dto.FromAddress)?.Item2;
-            dto.To =  nameList.FirstOrDefault(t => t.Item1?.Address == transaction.TransferInfo?.ToAddress)?.Item2;
+            dto.To = nameList.FirstOrDefault(t => t.Item1?.Address == transaction.TransferInfo?.ToAddress)?.Item2;
             return;
         }
 
@@ -295,6 +377,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         var getActivitiesDto = new List<GetActivityDto>();
         var dict = new Dictionary<string, string>();
+
+        GuardiansDto guardian = null;
+        var exists = indexerTransactions.CaHolderTransaction?.Data?.Exists(
+            t => t.MethodName == AElfContractMethodName.AddManagerInfo ||
+                 t.MethodName == AElfContractMethodName.AddGuardian);
+        if (exists ?? false && needMap)
+        {
+            guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
+        }
 
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
@@ -398,7 +489,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (needMap)
             {
-                await MapMethodNameAsync(caAddresses, dto);
+                await MapMethodNameAsync(caAddresses, dto, guardian);
             }
 
             getActivitiesDto.Add(dto);
@@ -409,17 +500,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return result;
     }
 
-    private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto)
+    private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
+        GuardiansDto guardian = null)
     {
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
-        if (activityDto.TransactionType == ActivityConstants.AddGuardianName)
+        if (activityDto.TransactionType == ActivityConstants.AddGuardianName ||
+            activityDto.TransactionType == ActivityConstants.AddManagerInfo)
         {
-            var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
+            guardian ??= await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
             if (holderInfo?.OriginChainId != null && holderInfo?.OriginChainId != activityDto.FromChainId)
             {
-                activityDto.TransactionName = ActivityConstants.NotRegisterChainAddGuardianName;
+                activityDto.TransactionName = GetTransactionDisplayName(activityDto.TransactionType, typeName);
             }
             else
             {
@@ -448,6 +541,16 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.TransactionType =
             _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType,
                 activityDto.TransactionType);
+    }
+
+    private string GetTransactionDisplayName(string transactionType, string defaultName)
+    {
+        return transactionType switch
+        {
+            ActivityConstants.AddGuardianName => ActivityConstants.NotRegisterChainAddGuardianName,
+            ActivityConstants.AddManagerInfo => ActivityConstants.NotRegisterChainAddManagerName,
+            _ => defaultName
+        };
     }
 
     private string GetIconByType(string transactionType)

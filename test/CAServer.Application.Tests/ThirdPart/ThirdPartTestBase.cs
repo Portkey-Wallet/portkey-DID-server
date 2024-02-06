@@ -32,6 +32,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
+        services.AddSingleton(GetMockITokenProvider());
         services.AddSingleton(MockHttpFactory());
         MockHttpByPath(TransakApi.RefreshAccessToken.Method, TransakApi.RefreshAccessToken.Path,
             new TransakMetaResponse<object, TransakAccessToken>
@@ -61,7 +62,8 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 CryptoListUri = "/merchant/crypto/list",
                 OrderQuoteUri = "/merchant/order/quote",
                 GetTokenUri = "/merchant/getToken",
-                MerchantQueryTradeUri = "/merchant/query/trade"
+                MerchantQueryTradeUri = "/merchant/query/trade",
+                TimestampExpireSeconds = int.MaxValue
             },
             Transak = new TransakOptions
             {
@@ -79,6 +81,15 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 HandleUnCompletedOrderMinuteAgo = 0,
                 NftUnCompletedMerchantCallbackMinuteAgo = 0,
                 HandleUnCompletedSettlementTransferSecondsAgo = 0,
+                TransactionWaitTimeoutSeconds = 2,
+                TransactionWaitDelaySeconds = 1,
+            },
+            TreasuryOptions = new TreasuryOptions
+            {
+                SettlementPublicKey = new Dictionary<string, string>
+                {
+                    ["Alchemy_USDT"] = "042dc50fd7d211f16bf4ad870f7790d4f9d98170f3712038c45830947f7d96c691ef2d1ab4880eeeeafb63ab77571be6cbe6bed89d5f89844b0fb095a7015713c8" 
+                }
             },
             Merchant = new MerchantOptions
             {
@@ -140,13 +151,19 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     WebhookUrl = "http://127.0.0.1:9200",
                     CountryIconUrl = "https://static.alchemypay.org/alchemypay/flag/{ISO}.png",
                     PaymentTags = new List<string> { "ApplePay", "GooglePay" },
+                    NetworkMapping = new Dictionary<string, string>
+                    {
+                        ["AELF"] = "ELF"
+                    },
+                    SymbolMapping = new Dictionary<string, string>
+                    {
+                        ["USDT"] = "USDT-aelf"  
+                    },
                     Coverage = new ProviderCoverage
                     {
                         OffRamp = true,
                         OnRamp = true
-                    },
-                    NetworkMapping = new Dictionary<string, string>() { { "AELF", "aelf" } }
-                        
+                    }
                 },
                 ["Transak"] = new()
                 {
@@ -162,7 +179,10 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                         OffRamp = true,
                         OnRamp = true
                     },
-                    NetworkMapping = new Dictionary<string, string>() { { "AELF", "aelf" } }
+                    NetworkMapping = new Dictionary<string, string>
+                    {
+                        ["AELF"] = "aelf"
+                    }
                 }
             },
             PortkeyIdWhiteList = new List<string>(),
@@ -174,7 +194,15 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     Symbol = "ELF",
                     Icon = "http://127.0.0.1:9200/elf.png",
                     Decimals = "8",
-                    Network = "AELF-AELF",
+                    Network = "AELF",
+                    Address = "0x00000000"
+                },
+                new()
+                {
+                    Symbol = "USDT",
+                    Icon = "http://127.0.0.1:9200/usdt.png",
+                    Decimals = "8",
+                    Network = "AELF",
                     Address = "0x00000000"
                 }
             },
@@ -185,12 +213,12 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     OnRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
+                        // "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     },
                     OffRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
+                        // "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     }
                 },
                 ["Transak"] = new()
@@ -198,12 +226,12 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                     OnRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
+                        // "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     },
                     OffRamp = new List<string>
                     {
                         "(baseCoverage || InList(portkeyId, portkeyIdWhitelist))",
-                        "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
+                        // "&& InList(clientType, List(\"WebSDK\",\"Chrome\"))"
                     }
                 }
             }
@@ -244,13 +272,18 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             {
                 TransactionId = MinedTxId,
                 Status = "MINED",
-                Transaction = new TransactionDto()
+                Transaction = new TransactionDto(),
+                BlockNumber = 10,
             });
 
         mockContractProvider
             .Setup(p => p.GenerateTransferTransactionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(new Tuple<string, Transaction>(PendingTxId, new Transaction()));
+            .ReturnsAsync(new Tuple<string, Transaction>(PendingTxId, new Transaction()
+            {
+                From = Address.FromBase58("izyQqrVvraoDC69HvUX8gEAgNrK3hWq9qhUKh5vh4MfzNjfc6"),
+                To = Address.FromBase58("izyQqrVvraoDC69HvUX8gEAgNrK3hWq9qhUKh5vh4MfzNjfc6")
+            }));
 
         mockContractProvider
             .Setup(p => p.GetChainStatusAsync(It.IsAny<string>()))
@@ -293,5 +326,65 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             });
 
         return tokenProvider.Object;
+    }
+
+    protected IOptionsMonitor<ChainOptions> MockChainOptions()
+    {
+        var chainOptions = new ChainOptions()
+        {
+            ChainInfos = new Dictionary<string, Options.ChainInfo>()
+            {
+                [CommonConstant.MainChainId] = new()
+                {
+                    ChainId = CommonConstant.MainChainId,
+                }   
+            }
+        };
+        
+        var mock = new Mock<IOptionsMonitor<ChainOptions>>();
+        mock.Setup(p => p.CurrentValue).Returns(chainOptions);
+        return mock.Object;
+    }
+    
+        
+    private ITokenProvider GetMockITokenProvider()
+    {
+        var mockTokenPriceProvider = new Mock<ITokenProvider>();
+        mockTokenPriceProvider
+            .Setup(o => o.GetTokenInfoAsync(It.IsAny<string>(),"ELF"))
+            .ReturnsAsync(new IndexerToken()
+                {
+                    Id = "AELF",
+                    Decimals = 8,
+                });
+        mockTokenPriceProvider
+            .Setup(o => o.GetTokenInfoAsync(It.IsAny<string>(),"USDT"))
+            .ReturnsAsync(new IndexerToken()
+                {
+                    Id = "USDT",
+                    Decimals = 6
+                });
+
+        return mockTokenPriceProvider.Object;
+    }
+
+    protected IOptionsMonitor<ExchangeOptions> MockExchangeOptions()
+    {
+        var options = new ExchangeOptions
+        {
+            Binance = new BinanceOptions
+            {
+                BaseUrl = "http://127.0.0.1:9200"
+            },
+            Okx = new OkxOptions
+            {
+                BaseUrl = "http://127.0.0.1:9200"
+            }
+        };
+        
+        
+        var mock = new Mock<IOptionsMonitor<ExchangeOptions>>();
+        mock.Setup(p => p.CurrentValue).Returns(options);
+        return mock.Object;
     }
 }

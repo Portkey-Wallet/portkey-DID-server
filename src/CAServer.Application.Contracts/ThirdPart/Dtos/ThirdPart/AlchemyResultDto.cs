@@ -1,15 +1,14 @@
-using System;
+using System.Collections.Generic;
 using CAServer.Commons;
 using Google.Protobuf.WellKnownTypes;
-using Nest;
 
-namespace CAServer.ThirdPart.Dtos;
+namespace CAServer.ThirdPart.Dtos.ThirdPart;
 
 public class AlchemyBaseResponseDto<T>
 {
     public const string SuccessCode = "0000";
 
-    public string Success { get; set; } = "Success";
+    public bool Success => ReturnCode == SuccessCode;
     public string ReturnCode { get; set; } = SuccessCode;
     public string ReturnMsg { get; set; } = "SUCCESS";
     public string Extend { get; set; } = "";
@@ -36,8 +35,6 @@ public class AlchemyBaseResponseDto<T>
     {
         return new AlchemyBaseResponseDto<T>
         {
-
-            Success = "Fail",
             ReturnMsg = msg,
             ReturnCode = code.ToString()
         };
@@ -91,9 +88,38 @@ public class AlchemyOrderQuoteDataDto
     
     // not from ach
     public string Network { get; set; }
+
+    public string CryptoNetworkFee { get; set; }
 }
 
 public class AlchemySignatureResultDto : AlchemyBaseResponseDto<Empty>
 {
     public string Signature { get; set; }
+}
+
+public class AlchemyTreasuryPriceResultDto : TreasuryBaseResult
+{
+    public string Price { get; set; }
+
+    public List<AlchemyTreasuryNetwork> NetworkList { get; set; }
+    
+    public class AlchemyTreasuryNetwork
+    {
+        public string Network { get; set; }
+        public string NetworkFee { get; set; }
+    }
+    
+}
+
+public class AlchemyTreasuryCallBackDto
+{
+    public string OrderNo {get;set;}
+    public string Crypto {get;set;}
+    public string CryptoAmount {get;set;}
+    public string CryptoPrice {get;set;}
+    public string TxHash {get;set;}
+    public string Network {get;set;}
+    public string NetworkFee {get;set;}
+    public string Address {get;set;}
+    public string Status {get;set;}
 }

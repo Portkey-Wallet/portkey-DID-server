@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Entities.Es;
-using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Guardian.Provider;
 using CAServer.UserAssets;
 using GraphQL;
@@ -65,7 +64,8 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         });
     }
 
-    public async Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash, List<CAAddressInfo> caAddressInfos)
+    public async Task<IndexerTransactions> GetActivityAsync(string inputTransactionId, string inputBlockHash,
+        List<CAAddressInfo> caAddressInfos)
     {
         return await _graphQlHelper.QueryAsync<IndexerTransactions>(new GraphQLRequest
         {
@@ -94,7 +94,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
 
         if (caHolder == null || caHolder.IsDeleted) return null;
-        
+
         return caHolder?.NickName;
     }
 
@@ -114,7 +114,7 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
             }
         });
     }
-    
+
     public async Task<GuardiansDto> GetCaHolderInfoAsync(List<string> caAddresses, string caHash, int skipCount = 0,
         int maxResultCount = 10)
     {
@@ -140,5 +140,22 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         QueryContainer Filter(QueryContainerDescriptor<CAHolderIndex> f) => f.Bool(b => b.Must(mustQuery));
         var caHolder = await _caHolderIndexRepository.GetAsync(Filter);
         return caHolder;
+    }
+
+    public async Task<AutoReceiveTransactions> GetAutoReceiveTransactionsAsync(List<string> transferTransactionIds,
+        int inputSkipCount, int inputMaxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<AutoReceiveTransactions>(new GraphQLRequest
+        {
+            Query = @"
+			    query ($transferTransactionIds:[String],$skipCount:Int!,$maxResultCount:Int!){
+                    autoReceiveTransaction(dto: {transferTransactionIds:$transferTransactionIds,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                    data{chainId,blockHash,blockHeight,transactionId,methodName,status,timestamp,transferInfo{fromAddress,toAddress,amount,toChainId,fromChainId,fromCAAddress,transferTransactionId},fromAddress},totalRecordCount}
+                }",
+            Variables = new
+            {
+                transferTransactionIds, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
+            }
+        });
     }
 }

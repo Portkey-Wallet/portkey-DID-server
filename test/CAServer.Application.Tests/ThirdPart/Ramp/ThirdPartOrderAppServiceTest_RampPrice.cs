@@ -163,7 +163,7 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Type = OrderTransDirect.SELL.ToString(),
             Crypto = "ELF",
-            Network = "AELF-AELF",
+            Network = "AELF",
             Fiat = "USD",
             Country = "US",
         });
@@ -174,7 +174,7 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Type = OrderTransDirect.BUY.ToString(),
             Crypto = "ELF",
-            Network = "AELF-AELF",
+            Network = "AELF",
             Fiat = "USD",
             Country = "US",
         });

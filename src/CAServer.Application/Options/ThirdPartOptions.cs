@@ -11,7 +11,18 @@ public class ThirdPartOptions
     public ThirdPartTimerOptions Timer { get; set; } = new();
     public MerchantOptions Merchant { get; set; } = new();
     public OrderExportAuth OrderExportAuth { get; set; }
+    public TreasuryOptions TreasuryOptions { get; set; }
 
+}
+
+public class TreasuryOptions
+{
+    // ThirdPartName_Crypto => settlementPublicKey
+    public Dictionary<string, string> SettlementPublicKey { get; set; } = new();
+
+    public int TransferRetryMaxCount = 5;
+    
+    public decimal ValidAmountPercent = 0.01M;
 }
 
 public class OrderExportAuth
@@ -46,7 +57,12 @@ public class ThirdPartTimerOptions
     public int NftUnCompletedOrderSettlementPageSize { get; set; }  = 10;
     
     public int RampUnCompletedSettlementMinuteAgo { get; set; }  = 2;
-    public int NftOrderExpireSeconds { get; set; }  = 60 * 30;
+    public int NftOrderExpireSeconds { get; set; } = 60 * 30;
+    public int TreasuryTxConfirmWorkerPageSize { get; set; } = 10;
+    public int TreasuryCallbackFromMinutesAgo { get; set; } = 60;
+    public int TreasuryCallbackMaxCount { get; set; } = 3;
+    public int PendingTreasuryOrderExpireSeconds { get; set; } = 1800;
+
 }
 
 public class AlchemyOptions
@@ -66,6 +82,8 @@ public class AlchemyOptions
     public int NftFiatListExpirationMinutes { get; set; } = CommonConstant.FiatListExpirationMinutes;
     public int OrderQuoteExpirationMinutes { get; set; } = CommonConstant.OrderQuoteExpirationMinutes;
     public string MerchantQueryTradeUri { get; set; }
+    public int TimestampExpireSeconds { get; set; } = 300;
+    public decimal EffectivePricePercentage { get; set; }  = 0.1M;
 }
 
 public class TransakOptions

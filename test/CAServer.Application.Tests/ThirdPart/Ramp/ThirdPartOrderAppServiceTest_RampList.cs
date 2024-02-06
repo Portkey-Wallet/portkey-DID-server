@@ -47,6 +47,23 @@ public partial class ThirdPartOrderAppServiceTest
         """
     );
 
+    private readonly AlchemyCryptoDto _alchemyUSDT = JsonConvert.DeserializeObject<AlchemyCryptoDto>(
+        """
+        {
+        	"crypto": "USDT-aelf",
+        	"network": "ELF",
+        	"buyEnable": "1",
+        	"sellEnable": "1",
+        	"minPurchaseAmount": "15.75",
+        	"maxPurchaseAmount": "1900.00",
+        	"address": null,
+        	"icon": "https://portkey-im-dev.s3.ap-northeast-1.amazonaws.com/USDT.jpg",
+        	"minSellAmount": "78.318571463",
+        	"maxSellAmount": "16051.747216122"
+        }
+        """
+    );
+
     private readonly TransakFiatItem _transakUsd = JsonConvert.DeserializeObject<TransakFiatItem>(
         """
         {
@@ -220,7 +237,7 @@ public partial class ThirdPartOrderAppServiceTest
 
         MockHttpByPath(AlchemyApi.QueryCryptoList, new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>
         {
-            Data = new List<AlchemyCryptoDto> { _alchemyElf }
+            Data = new List<AlchemyCryptoDto> { _alchemyElf, _alchemyUSDT }
         });
         
         MockHttpByPath(TransakApi.GetFiatCurrencies, new TransakBaseResponse<List<TransakFiatItem>>
@@ -252,8 +269,8 @@ public partial class ThirdPartOrderAppServiceTest
         var buyFiatList = await _thirdPartOrderAppService.GetRampFiatListAsync(new RampFiatRequest
         {
             Type = OrderTransDirect.BUY.ToString(),
-            Crypto = "ETH",
-            Network = "ETH"
+            Crypto = "ELF",
+            Network = "AELF"
         });
         
         _output.WriteLine(JsonConvert.SerializeObject(buyFiatList));
@@ -276,15 +293,17 @@ public partial class ThirdPartOrderAppServiceTest
     [Fact]
     public async Task RampCryptoTest()
     {
+        MockRampLists();
+        
         var cryptoList = await _thirdPartOrderAppService.GetRampCryptoListAsync(new RampCryptoRequest
         {
-            Type = OrderTransDirect.BUY.ToString()
+            Type = OrderTransDirect.BUY.ToString(),
+            Fiat = "USD"
         });
 
         cryptoList.ShouldNotBeNull();
-        cryptoList.Data.CryptoList.Count.ShouldBe(1);
+        cryptoList.Data.CryptoList.Count.ShouldBeGreaterThan(0);
 
-        
         
     }
 

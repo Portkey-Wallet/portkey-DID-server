@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
+using CAServer.BackGround.EventHandler.Treasury;
 using CAServer.BackGround.Provider;
+using CAServer.BackGround.Provider.Treasury;
 using CAServer.Bookmark;
 using CAServer.Common;
 using CAServer.ContractEventHandler.Core;
@@ -29,7 +31,6 @@ namespace CAServer;
 [DependsOn(
     typeof(CAServerApplicationModule),
     typeof(CAServerApplicationContractsModule),
-    typeof(CAServerContractEventHandlerCoreModule),
     typeof(AbpEventBusModule),
     typeof(CAServerGrainTestModule),
     typeof(CAServerDomainTestModule)
@@ -47,17 +48,20 @@ public class CAServerApplicationTestModule : AbpModule
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
 
         ConfigureGraphQl(context);
-        
+
         context.Services.AddMemoryCache();
 
         context.Services.AddSingleton<INftCheckoutService, NftCheckoutService>();
-        
-        context.Services.AddSingleton<NftOrderSettlementTransferWorker, NftOrderSettlementTransferWorker>();
-        context.Services.AddSingleton<NftOrderThirdPartOrderStatusWorker, NftOrderThirdPartOrderStatusWorker>();
-        context.Services.AddSingleton<NftOrderThirdPartNftResultNotifyWorker, NftOrderThirdPartNftResultNotifyWorker>();
-        context.Services.AddSingleton<NftOrderMerchantCallbackWorker, NftOrderMerchantCallbackWorker>();
-        context.Services.AddSingleton<NftOrdersSettlementWorker, NftOrdersSettlementWorker>();
-        
+
+        context.Services.AddSingleton<NftOrderSettlementTransferWorker>();
+        context.Services.AddSingleton<NftOrderThirdPartOrderStatusWorker>();
+        context.Services.AddSingleton<NftOrderThirdPartNftResultNotifyWorker>();
+        context.Services.AddSingleton<NftOrderMerchantCallbackWorker>();
+        context.Services.AddSingleton<NftOrdersSettlementWorker>();
+        context.Services.AddSingleton<PendingTreasuryOrderWorker>();
+        context.Services.AddSingleton<TreasuryTxConfirmWorker>();
+        context.Services.AddSingleton<TreasuryCallbackWorker>();
+
         context.Services.AddSingleton<NftOrderMerchantCallbackHandler>();
         context.Services.AddSingleton<NftOrderUpdateHandler>();
         context.Services.AddSingleton<NftOrderReleaseResultHandler>();
@@ -66,7 +70,13 @@ public class CAServerApplicationTestModule : AbpModule
         context.Services.AddSingleton<NftOrderSettlementHandler>();
         context.Services.AddSingleton<OrderSettlementUpdateHandler>();
         context.Services.AddSingleton<ThirdPartHandler>();
-        
+        context.Services.AddSingleton<PendingTreasuryOrderUpdateHandler>();
+        context.Services.AddSingleton<TreasuryOrderUpdateHandler>();
+        context.Services.AddSingleton<TreasuryCreateHandler>();
+        context.Services.AddSingleton<TreasuryTransferHandler>();
+        context.Services.AddSingleton<TreasuryCallBackHandler>();
+
+
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerApplicationModule>(); });
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CABackGroundModule>(); });
         Configure<AbpAutoMapperOptions>(options => { options.AddMaps<CAServerContractEventHandlerCoreModule>(); });
@@ -135,10 +145,13 @@ public class CAServerApplicationTestModule : AbpModule
             o.TransactionTypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
             o.Zero = "0";
         });
-        context.Services.Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(option =>
+        context.Services.Configure<ChainOptions>(option =>
         {
             option.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
-                { { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() } };
+            {
+                { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() },
+                { "AELF", new Grains.Grain.ApplicationHandler.ChainInfo() }
+            };
         });
 
         context.Services.Configure<Options.ChainOptions>(option =>
@@ -150,7 +163,6 @@ public class CAServerApplicationTestModule : AbpModule
                     {
                         BaseUrl = "http://127.0.0.1:6889",
                         ChainId = "TEST",
-                        PrivateKey = "28d2520e2c480ef6f42c2803dcf4348807491237fd294c0f0a3d7c8f9ab8fb91"
                     }
                 }
             };
@@ -192,10 +204,12 @@ public class CAServerApplicationTestModule : AbpModule
         {
             option.TokenInfos = new Dictionary<string, TokenInfo>
             {
-                {"ELF", new TokenInfo()
                 {
-                    ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/Coin_ELF.png"
-                }} 
+                    "ELF", new TokenInfo()
+                    {
+                        ImageUrl = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/aelf/Coin_ELF.png"
+                    }
+                }
             };
         });
         base.ConfigureServices(context);
@@ -203,6 +217,11 @@ public class CAServerApplicationTestModule : AbpModule
 
     private void ConfigureGraphQl(ServiceConfigurationContext context)
     {
+        context.Services.Configure<GraphQLOptions>(o =>
+        {
+            o.Configuration = "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql";
+        });
+        
         context.Services.AddSingleton(new GraphQLHttpClient(
             "http://127.0.0.1:8083/AElfIndexer_DApp/PortKeyIndexerCASchema/graphql",
             new NewtonsoftJsonSerializer()));

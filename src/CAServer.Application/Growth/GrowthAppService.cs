@@ -146,7 +146,7 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
         }
 
         return
-            $"{_growthOptions.RedirectUrl}?referral_code={growthInfo.InviteCode}&project_code={growthInfo.ProjectCode ?? string.Empty}";
+            $"{_growthOptions.RedirectUrl}?referral_code={growthInfo.InviteCode}&project_code={growthInfo.ProjectCode ?? string.Empty}&networkType={_growthOptions.NetworkType ?? string.Empty}";
     }
 
     private async Task<string> GetCaHashAsync()

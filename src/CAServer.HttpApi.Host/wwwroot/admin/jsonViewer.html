@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Json Viewer</title>
+    <link rel="icon" href="img/icon.svg">
+
+    <!-- Monaco Editor -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/editor/editor.main.css"/>
+    <style>
+        body, html {margin: 0;padding: 0;height: 100%;width: 100%;overflow: hidden;box-sizing: border-box;}
+        #editor {position: absolute;top: 0;bottom: 0;left: 0;right: 0;}
+    </style>
+</head>
+
+<body>
+<div id="editor"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
+<script src="./libs/jquery/jquery.js"></script>
+<script src="./js/app.js"></script>
+<script>
+    require.config({
+        paths: {
+            'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs'
+        }
+    });
+
+    require(['vs/editor/editor.main'], function () {
+        var title = App.getQueryString("title");
+        debugger
+        $(document).ready(function() {
+            const fileContent = localStorage.getItem('tmp_' + title);
+            document.title = title;
+
+            const editor = monaco.editor.create(document.getElementById('editor'), {
+                value: fileContent,
+                language: 'json',
+                theme: 'vs-light',
+                roundedSelection: true,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                wordWrap: "on",
+                scrollbar :{
+                    vertical: 'auto',
+                }
+            });
+
+            let editContainer = $('#editor');
+
+            let resize = function() {
+                let textHeight = window.innerHeight - 10 - editContainer.offset().top;
+                editContainer.height(textHeight + "px");
+                console.log("textHeight="+ textHeight)
+                $(".view-lines").css("height", textHeight + "px");
+                editor.layout();
+            }
+
+            resize();
+
+            $(window).resize(resize);
+        });
+    });
+</script>
+</body>
+
+</html>

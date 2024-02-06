@@ -15,4 +15,6 @@ public interface IVerifierAppService
     public Task<bool> GuardianExistsAsync(string guardianIdentifier);
     public Task<GetVerifierServerResponse> GetVerifierServerAsync(string chainId);
     public Task<VerificationCodeResponse> VerifyTelegramTokenAsync(VerifyTokenRequestDto requestDto);
+    public Task<VerificationCodeResponse> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto);
+    Task<VerificationCodeResponse> VerifyTwitterTokenAsync(VerifyTokenRequestDto requestDto);
 }

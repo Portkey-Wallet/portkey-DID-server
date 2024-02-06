@@ -16,6 +16,8 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver.Linq;
 using Volo.Abp;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
@@ -65,12 +67,74 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         return ThirdPartNameType.Transak.ToString();
     }
 
+    public string MappingToTransakNetwork(string network)
+    {
+        if (network.IsNullOrEmpty()) return network;
+        var mappingExists = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Transak).NetworkMapping
+            .TryGetValue(network, out var mappingNetwork);
+        return mappingExists ? mappingNetwork : network;
+    }
+
+    public string MappingFromTransakNetwork(string network)
+    {
+        if (network.IsNullOrEmpty()) return network;
+        var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Transak).NetworkMapping
+            .FirstOrDefault(kv => kv.Value == network);
+        return mappingNetwork.Key.DefaultIfEmpty(network);
+    }
+
+    public string MappingToTransakSymbol(string symbol)
+    {
+        if (symbol.IsNullOrEmpty()) return symbol;
+        var mappingExists = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Transak).SymbolMapping
+            .TryGetValue(symbol, out var mappingSymbol);
+        return mappingExists ? mappingSymbol : symbol;
+    }
+
+    public string MappingFromTransakSymbol(string symbol)
+    {
+        if (symbol.IsNullOrEmpty()) return symbol;
+        var mappingNetwork = _rampOptions.CurrentValue.Provider(ThirdPartNameType.Transak).SymbolMapping
+            .FirstOrDefault(kv => kv.Value == symbol);
+        return mappingNetwork.Key.DefaultIfEmpty(symbol);
+    }
+
+
+    public async Task<List<RampCurrencyItem>> GetCryptoListAsync(RampCryptoRequest request)
+    {
+        try
+        {
+            var cryptoList =
+                await GetTransakCryptoListWithCacheAsync(request.Type, MappingToTransakNetwork(request.Network), null,
+                    request.Fiat);
+            AssertHelper.NotEmpty(cryptoList, "Crypto list empty");
+
+            var transakNetwork = MappingToTransakNetwork(request.Network);
+            return cryptoList.Select(item => new RampCurrencyItem()
+            {
+                Symbol = MappingFromTransakSymbol(item.Symbol),
+                Network = MappingFromTransakNetwork(item.Network?.Name ?? transakNetwork)
+            }).ToList();
+        }
+        catch (UserFriendlyException e)
+        {
+            _logger.LogWarning(e, "{ThirdPart} GetCryptoListAsync failed", ThirdPart());
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "{ThirdPart} GetCryptoListAsync ERROR", ThirdPart());
+        }
+
+        return new List<RampCurrencyItem>();
+    }
+
     public async Task PreHeatCachesAsync()
     {
-        if (_thirdPartOptions?.CurrentValue?.Transak == null) return;
+        if (_thirdPartOptions?.CurrentValue?.Transak == null ||
+            (_thirdPartOptions?.CurrentValue?.Transak.AppId.IsNullOrEmpty() ?? true)) return;
 
         _logger.LogInformation("Transak adaptor pre heat start");
-        var cryptoTask = GetTransakCryptoListWithCacheAsync();
+        var cryptoTask = GetTransakCryptoListWithCacheAsync(OrderTransDirect.BUY.ToString());
         var fiatTask = GetTransakFiatListWithCacheAsync(OrderTransDirect.BUY.ToString());
         var countryTask = GetTransakCountryWithCacheAsync();
         await Task.WhenAll(cryptoTask, fiatTask, countryTask);
@@ -78,15 +142,30 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     }
 
     // cached crypto list
-    private async Task<List<TransakCryptoItem>> GetTransakCryptoListWithCacheAsync()
+    private async Task<List<TransakCryptoItem>> GetTransakCryptoListWithCacheAsync(string type,
+        [CanBeNull] string network = null, [CanBeNull] string crypto = null, [CanBeNull] string fiat = null)
     {
-        return await _cryptoCache.GetOrAddAsync(CryptoCacheKey,
+        var cachedCryptoList = await _cryptoCache.GetOrAddAsync(CryptoCacheKey,
             async () => await _transakProvider.GetCryptoCurrenciesAsync(),
             new MemoryCacheEntryOptions
             {
                 AbsoluteExpiration =
                     DateTimeOffset.Now.AddMinutes(_thirdPartOptions.CurrentValue.Transak.CryptoListExpirationMinutes)
             });
+
+        var fallBackNotSupportedList = new List<TransakCryptoFiatNotSupported>();
+        return cachedCryptoList
+            .Where(item => item.IsAllowed)
+            .Where(item => item.IsPayInAllowed || type == OrderTransDirect.BUY.ToString())
+            .Where(item => crypto.IsNullOrEmpty() || item.Symbol == crypto)
+            .Where(item => network.IsNullOrEmpty() || item.Network?.Name == network)
+            .Where(item =>
+                fiat.IsNullOrEmpty() ||
+                (item.Network?.FiatCurrenciesNotSupported ?? fallBackNotSupportedList).All(c => c.FiatCurrency != fiat))
+            .GroupBy(item => string.Join(CommonConstant.Underline, item.Symbol,
+                item.Network?.Name ?? CommonConstant.EmptyString))
+            .Select(g => g.First())
+            .ToList();
     }
 
     private async Task<List<TransakFiatItem>> GetTransakFiatCurrenciesAsync()
@@ -105,6 +184,8 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     private async Task<List<TransakFiatItem>> GetTransakFiatListWithCacheAsync(string type,
         string crypto = null)
     {
+        var mappingCrypto = MappingToTransakSymbol(crypto);
+        var mappingNetwork = MappingToTransakNetwork(CommonConstant.MainChainId);
         var fiatList = await _fiatCache.GetOrAddAsync(FiatCacheKey,
             async () => await GetTransakFiatCurrenciesAsync(),
             new MemoryCacheEntryOptions
@@ -115,19 +196,19 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
         // filter input crypto
         var notSupportedFiat = new ConcurrentDictionary<string, List<string>>();
-        if (crypto.NotNullOrEmpty())
+        if (mappingCrypto.NotNullOrEmpty())
         {
-            var cryptoList = await GetTransakCryptoListWithCacheAsync();
+            var cryptoList = await GetTransakCryptoListWithCacheAsync(type, crypto: mappingCrypto);
             var theCrypto = cryptoList
-                .FirstOrDefault(c => c.Symbol == crypto);
-            if (theCrypto != null)
+                .Where(c => c.Network?.Name == mappingNetwork)
+                .FirstOrDefault(c => c.Symbol == mappingCrypto);
+            if (theCrypto == null) return new List<TransakFiatItem>();
+
+            foreach (var transakCryptoFiatNotSupported in theCrypto.Network.FiatCurrenciesNotSupported)
             {
-                foreach (var transakCryptoFiatNotSupported in theCrypto.Network.FiatCurrenciesNotSupported)
-                {
-                    notSupportedFiat
-                        .GetOrAdd(transakCryptoFiatNotSupported.FiatCurrency, k => new List<string>())
-                        .Add(transakCryptoFiatNotSupported.PaymentMethod);
-                }
+                notSupportedFiat
+                    .GetOrAdd(transakCryptoFiatNotSupported.FiatCurrency, k => new List<string>())
+                    .Add(transakCryptoFiatNotSupported.PaymentMethod);
             }
         }
 
@@ -157,29 +238,31 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
     private async Task<TransakRampPrice> GetTransakPriceWithCacheAsync(string paymentMethod,
         RampDetailRequest rampPriceRequest)
     {
-        rampPriceRequest = _objectMapper.Map<RampDetailRequest, RampDetailRequest>(rampPriceRequest);
-        rampPriceRequest.Network =
-            _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping
-                .GetValueOrDefault(rampPriceRequest.Network, rampPriceRequest.Network);
         var transakPriceRequest = _objectMapper.Map<RampDetailRequest, GetRampPriceRequest>(rampPriceRequest);
         transakPriceRequest.PaymentMethod = paymentMethod;
+        transakPriceRequest.Network = MappingToTransakNetwork(transakPriceRequest.Network);
+        transakPriceRequest.CryptoCurrency = MappingToTransakSymbol(transakPriceRequest.CryptoCurrency);
 
+        var crypto =
+            await GetTransakCryptoListWithCacheAsync(rampPriceRequest.Type, transakPriceRequest.Network,
+                transakPriceRequest.CryptoCurrency);
+        AssertHelper.NotEmpty(crypto, "Crypto not support, type={}, network={}, crypto={}", rampPriceRequest.Type,
+            transakPriceRequest.Network, transakPriceRequest.CryptoCurrency);
 
         Func<RampDetailRequest, string> priceCacheKey = req => "Ramp:transak:price:" + string.Join(
             CommonConstant.Underline, req.Crypto,
             req.Network, req.CryptoAmount ?? 0, req.Fiat,
             req.Country, req.FiatAmount ?? 0);
 
-        DistributedCacheEntryOptions options = new DistributedCacheEntryOptions
+        var options = new DistributedCacheEntryOptions
         {
             AbsoluteExpiration =
                 DateTimeOffset.Now.AddMinutes(_thirdPartOptions.CurrentValue.Transak.OrderQuoteExpirationMinutes)
         };
-        Func<DistributedCacheEntryOptions> optionsFunc = () => options;
 
         return await _rampPrice.GetOrAddAsync(priceCacheKey(rampPriceRequest),
             async () => await _transakProvider.GetRampPriceAsync(transakPriceRequest),
-            optionsFunc);
+            () => options);
     }
 
 
@@ -254,26 +337,19 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
             // find any payment option
             var paymentOption = fiat.MaxLimitPayment(rampLimitRequest.Type);
-
             AssertHelper.NotNull(paymentOption, "Fiat {Fiat} paymentOption missing", rampLimitRequest.Fiat);
 
             var rampDetailRequest = _objectMapper.Map<RampLimitRequest, RampDetailRequest>(rampLimitRequest);
-
-            if (rampDetailRequest.IsBuy())
-            {
-                rampDetailRequest.FiatAmount = paymentOption.MinAmount;
-            }
-            else
-            {
-                rampDetailRequest.FiatAmount = paymentOption.MinAmountForPayOut;
-            }
-
+            rampDetailRequest.Crypto = MappingToTransakSymbol(rampDetailRequest.Crypto);
+            rampDetailRequest.Network = MappingToTransakNetwork(rampDetailRequest.Network);
+            rampDetailRequest.FiatAmount =
+                rampDetailRequest.IsBuy() ? paymentOption.MinAmount : paymentOption.MinAmountForPayOut;
 
             var priceInfo = await GetTransakPriceWithCacheAsync(paymentOption.Id, rampDetailRequest);
 
 
             var fiatLimit = new CurrencyLimit(fiat.Symbol, "", "");
-            var cryptoLimit = new CurrencyLimit(rampLimitRequest.Crypto, "", "");
+            var cryptoLimit = new CurrencyLimit(rampDetailRequest.Crypto, "", "");
 
             if (rampDetailRequest.IsBuy())
             {
@@ -316,18 +392,13 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         {
             // copy request
             var rampDetailRequest = _objectMapper.Map<RampExchangeRequest, RampDetailRequest>(rampExchangeRequest);
-            rampDetailRequest.Network =
-                _rampOptions.CurrentValue.Providers["Transak"].NetworkMapping
-                    .GetValueOrDefault(rampDetailRequest.Network, rampDetailRequest.Network);
-            var cryptoList = await GetTransakCryptoListWithCacheAsync();
-            var theCrypto = cryptoList
-                .Where(c => rampDetailRequest.Network.IsNullOrEmpty() || c.Network.Name == rampDetailRequest.Network)
-                .FirstOrDefault(c => c.Symbol == rampDetailRequest.Crypto);
-            if (theCrypto == null)
-            {
-                _logger.LogWarning($"Crypto is invalid,param:{rampDetailRequest}");
-                return null;
-            }
+            rampDetailRequest.Network = MappingToTransakNetwork(rampDetailRequest.Network);
+            rampDetailRequest.Crypto = MappingToTransakSymbol(rampDetailRequest.Crypto);
+            var cryptoList = await GetTransakCryptoListWithCacheAsync(rampDetailRequest.Type, rampDetailRequest.Network,
+                rampDetailRequest.Crypto);
+            var theCrypto = cryptoList.FirstOrDefault(c => c.Symbol == rampDetailRequest.Crypto);
+            AssertHelper.NotNull(theCrypto, "Crypto not support: type={Type}, network={Net}, crypto={Crypto}",
+                rampExchangeRequest.Type, rampExchangeRequest.Network, rampExchangeRequest.Crypto);
 
             var notSupportedFiat = new ConcurrentDictionary<string, List<string>>();
             foreach (var transakCryptoFiatNotSupported in theCrypto.Network.FiatCurrenciesNotSupported)
@@ -336,7 +407,6 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
                     .GetOrAdd(transakCryptoFiatNotSupported.FiatCurrency, k => new List<string>())
                     .Add(transakCryptoFiatNotSupported.PaymentMethod);
             }
-
 
             var fiatList = await _fiatCache.GetOrAddAsync(FiatCacheKey,
                 async () => await GetTransakFiatCurrenciesAsync(),
@@ -417,14 +487,10 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 
     private async Task<bool> InRampLimit(RampDetailRequest rampDetailRequest)
     {
-        var limit = await GetRampLimitAsync(new RampLimitRequest
-        {
-            Type = rampDetailRequest.Type,
-            Fiat = rampDetailRequest.Fiat,
-            Crypto = rampDetailRequest.Crypto,
-            Network = rampDetailRequest.Network,
-            Country = rampDetailRequest.Country
-        });
+        var rampLimitRequest = _objectMapper.Map<RampDetailRequest, RampLimitRequest>(rampDetailRequest);
+        var limit = await GetRampLimitAsync(rampLimitRequest);
+        if (limit == null) return false;
+
         var currencyLimit = rampDetailRequest.IsBuy() ? limit.Fiat : limit.Crypto;
         var amount = (rampDetailRequest.IsBuy() ? rampDetailRequest.FiatAmount : rampDetailRequest.CryptoAmount) ?? 0;
         return amount >= currencyLimit.MinLimit.SafeToDecimal() && amount <= currencyLimit.MaxLimit.SafeToDecimal();
@@ -436,9 +502,10 @@ public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
         {
             if (!await InRampLimit(rampDetailRequest)) return null;
 
+            var transakNetwork = MappingToTransakNetwork(rampDetailRequest.Network);
+            var transakCrypto = MappingToTransakSymbol(rampDetailRequest.Crypto);
             var fiat = await GetTransakFiatItemAsync(rampDetailRequest.Type, rampDetailRequest.Fiat,
-                rampDetailRequest.Country, rampDetailRequest.Crypto);
-
+                rampDetailRequest.Country, MappingToTransakSymbol(rampDetailRequest.Crypto));
             var paymentOption = fiat.MaxLimitPayment(rampDetailRequest.Type);
             AssertHelper.NotNull(paymentOption, "Fiat {Fiat} paymentOption missing", rampDetailRequest.Fiat);
 

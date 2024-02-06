@@ -44,7 +44,6 @@ public partial class RedPackageTest
                             ChainId = "AELF",
                             BaseUrl = "http://127.0.0.1:8000",
                             ContractAddress = "XXX",
-                            PrivateKey = "XXX",
                             TokenContractAddress = "XXX",
                             RedPackageContractAddress = "XXX"
                         }

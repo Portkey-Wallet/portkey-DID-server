@@ -30,6 +30,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Growth.Etos;
 using CAServer.Guardian;
@@ -62,7 +63,9 @@ using CAServer.Upgrade.Dtos;
 using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using CAServer.UserExtraInfo;
 using CAServer.UserExtraInfo.Dtos;
+using CAServer.UserGuide.Dtos;
 using CAServer.ValidateOriginChainId.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
@@ -309,6 +312,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<RampOrderIndex, OrderDto>();
         CreateMap<AlchemyOrderUpdateDto, OrderGrainDto>()
             .ForMember(t => t.FiatAmount, m => m.MapFrom(f => f.Amount))
+            .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TxHash))
             .ForMember(t => t.PaymentMethod, m => m.MapFrom(f => f.PayType))
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
             .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo));
@@ -535,6 +539,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TransakRampPrice, ProviderRampDetailDto>()
             .ForMember(des => des.Exchange, opt => opt.MapFrom(src => src.FiatCryptoExchange()))
             .ForMember(des => des.ProviderNetwork, opt => opt.MapFrom(src => src.Network))
+            .ForMember(des => des.ProviderSymbol, opt => opt.MapFrom(src => src.CryptoCurrency))
             .ReverseMap();
         CreateMap<RampExchangeRequest, RampDetailRequest>().ReverseMap();
         CreateMap<RampLimitRequest, RampDetailRequest>().ReverseMap();
@@ -571,6 +576,28 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
             .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
+        
+        CreateMap<UserExtraInfoResultDto, Verifier.Dtos.UserExtraInfo>()
+            .ForMember(t => t.IsPrivateEmail, m => m.MapFrom(f => f.IsPrivate));
+        
+        CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>()
+            .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
+            .ReverseMap();
+        
+        CreateMap<TreasuryOrderRequest, TreasuryOrderDto>()
+            .ForMember(des => des.ToAddress, opt => opt.MapFrom(src => src.Address))
+            .ForMember(des => des.CryptoPriceInUsdt, opt => opt.MapFrom(src => src.CryptoPrice))
+            .ForMember(des => des.SettlementAmount, opt => opt.MapFrom(src => src.UsdtAmount))
+            .ReverseMap();
+        
+        CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderDto>()
+            .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
+            .ForMember(des => des.CryptoPriceInUsdt, opt => opt.MapFrom(src => src.CryptoPrice))
+            .ForMember(des => des.SettlementAmount, opt => opt.MapFrom(src => src.UsdtAmount))
+            .ReverseMap();
+        
+        CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
+        CreateMap<PendingTreasuryOrderIndex, PendingTreasuryOrderDto>().ReverseMap();
 
         CreateMap<RedDotGrainDto, RedDotEto>();
         CreateMap<GrowthGrainDto, CreateGrowthEto>();
@@ -579,7 +606,17 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<UpgradeInfoIndex, UpgradeResponseDto>();
         CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
         CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
+
+        CreateMap<GuideInfo, UserGuideInfo>().ForMember(t => t.GuideType,m => m.MapFrom(f =>(GuideType)f.GuideType));
+        CreateMap<UserGuideInfo, UserGuideInfoGrainDto>();
+        CreateMap<UserGuideInfoGrainDto, UserGuideInfo>();
+
         CreateMap<UserExtraInfoResultDto, Verifier.Dtos.UserExtraInfo>()
             .ForMember(t => t.IsPrivateEmail, m => m.MapFrom(f => f.IsPrivate));
+        CreateMap<FacebookUserInfoDto, Verifier.Dtos.UserExtraInfo>().ReverseMap();
+        CreateMap<RampCurrencyItem, DefaultCryptoCurrency>().ReverseMap();
+        CreateMap<FacebookUserInfoDto, Verifier.Dtos.UserExtraInfo>().ReverseMap();
+
+        CreateMap<TwitterUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
     }
 }

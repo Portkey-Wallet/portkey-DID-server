@@ -9,5 +9,7 @@ public enum MonitorTag
     SocialRecover,
     LoginSync,
     ChainDataSync,
-    DataSyncHeightIndex
+    DataSyncHeightIndex,
+    Accelerate,
+    AccelerateRecover
 }

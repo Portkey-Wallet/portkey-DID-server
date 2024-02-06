@@ -38,12 +38,19 @@ public interface IContractProvider : ISingletonDependency
 {
     Task<GetHolderInfoOutput> GetHolderInfoFromChainAsync(string chainId,
         Hash loginGuardian, string caHash);
+
     Task<int> GetChainIdAsync(string chainId);
     Task<long> GetBlockHeightAsync(string chainId);
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string txId);
     Task<long> GetIndexHeightFromSideChainAsync(string sideChainId);
     Task<long> GetIndexHeightFromMainChainAsync(string chainId, int sideChainId);
+    Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync(string chainId);
     Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto);
+
+    Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(ChainInfo chainInfo,
+        GetHolderInfoOutput outputGetHolderInfo,
+        CreateHolderDto createHolderDto);
+
     Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto);
 
     Task<TransactionInfoDto> ValidateTransactionAsync(string chainId,
@@ -282,6 +289,19 @@ public class ContractProvider : IContractProvider
         return ContractAppServiceConstant.LongError;
     }
 
+    public async Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync(string chainId)
+    {
+        var result = await CallTransactionAsync<GetCheckOperationDetailsInSignatureEnabledOutput>(chainId,
+            MethodName.GetCheckOperationDetailsInSignatureEnabled, new Empty(), false);
+        if (result != null)
+        {
+            return result.CheckOperationDetailsEnabled;
+        }
+
+        _logger.LogError(MethodName.GetCheckOperationDetailsInSignatureEnabled + ": Empty result");
+        return false;
+    }
+
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
     {
         try
@@ -306,6 +326,61 @@ public class ContractProvider : IContractProvider
             {
                 Status = TransactionState.Failed,
                 Error = e.Message
+            };
+        }
+    }
+
+    public async Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(ChainInfo chainInfo,
+        GetHolderInfoOutput outputGetHolderInfo,
+        CreateHolderDto createHolderDto)
+    {
+        try
+        {
+            if (outputGetHolderInfo == null || outputGetHolderInfo.CaHash == null ||
+                outputGetHolderInfo.CaHash.Value.IsNullOrEmpty())
+            {
+                _logger.LogInformation("cannot execute accelerated registration, 'CaHash' is null");
+                return new TransactionResultDto
+                {
+                    Status = TransactionState.Failed,
+                    Error = "cannot execute accelerated registration, 'CaHash' is null"
+                };
+            }
+
+            var createChainId = ChainHelper.ConvertChainIdToBase58(outputGetHolderInfo.CreateChainId);
+            if (createChainId == chainInfo.ChainId)
+            {
+                _logger.LogInformation("cannot execute accelerated registration on the Create Chain, {0}",
+                    createHolderDto?.GuardianInfo?.IdentifierHash);
+                return new TransactionResultDto
+                {
+                    Status = TransactionState.Failed,
+                    Error = "cannot execute accelerated registration on the Create Chain"
+                };
+            }
+
+            createHolderDto.CaHash = outputGetHolderInfo.CaHash;
+            createHolderDto.ChainId = createChainId;
+
+            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
+            var result =
+                await grain.CreateHolderInfoOnNonCreateChainAsync(chainInfo.ChainId, createHolderDto);
+
+            _logger.LogInformation(
+                "accelerated registration on chain: {id} result:" +
+                "\nTransactionId: {transactionId}, BlockNumber: {number}, Status: {status}, ErrorInfo: {error}",
+                createHolderDto.ChainId,
+                result.TransactionId, result.BlockNumber, result.Status, result.Error);
+            return result;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "accelerated registration error: {chainId}, {message}", chainInfo.ChainId,
+                JsonConvert.SerializeObject(createHolderDto.ToString(), Formatting.Indented));
+            return new TransactionResultDto
+            {
+                Status = TransactionState.Failed,
+                Error = $"accelerated registration error:{e.Message}"
             };
         }
     }

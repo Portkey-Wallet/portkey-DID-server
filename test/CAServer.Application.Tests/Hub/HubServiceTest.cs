@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Hubs;
 using CAServer.Options;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasury Order Page</title>
+    <link rel="icon" href="img/icon.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/search_table.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+
+<div id="exportOrderModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <p>
+            <label for="modal-timeZone">TimeZone:</label><br/>
+            <input type="number" min="-12" max="12" id="modal-timeZone" class="modal-input"/>
+        </p>
+        <p>
+            <label for="modal-exportStartTime">StartTime:</label><br/>
+            <input type="text" id="modal-exportStartTime" class="modal-input flatpickr" data-enable-time="false"/>
+        </p>
+        <p>
+            <label for="modal-exportEndTime">EndTime:</label><br/>
+            <input type="text" id="modal-exportEndTime" class="modal-input flatpickr" data-enable-time="false"/>
+        </p>
+        <p>
+            <label for="modal-exportStatus">Status:</label><br/>
+            <select type="text" id="modal-exportStatus" class="modal-input"></select>
+        </p>
+        <p>
+            <label for="modal-exportGoogleTfa">Google two factor code:</label>
+            <input type="text" id="modal-exportGoogleTfa" class="modal-input" placeholder=""/>
+        </p>
+        <p style="text-align:center">
+            <button class="private cancel-btn">Cancel</button>
+            <button class="danger confirm-btn">Export</button>
+        </p>
+    </div>
+</div>
+
+<header>
+    <nav>
+        <ul id="menu">
+            <li><a href="./index.html">Home</a></li>
+        </ul>
+    </nav>
+    <div id="user-info">
+        <span></span>
+        <button id="logout-button" class="primary">Sign out</button>
+    </div>
+</header>
+
+<main>
+    <h3>Treasury order</h3><br/>
+    <div class="search-form">
+        <div class="input-group">
+            <label for="search-Id">Id</label>
+            <input type="text" id="search-Id" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-RampOrderIdIn">RampOrderId</label>
+            <input type="text" id="search-RampOrderIdIn" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-OrderIdIn">OrderId</label>
+            <input type="text" id="search-OrderIdIn" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-ToAddress">ToAddress</label>
+            <input type="text" id="search-ToAddress" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-ThirdPartIdIn">ThirdPartId</label>
+            <input type="text" id="search-ThirdPartIdIn" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-TransactionId">TransactionId</label>
+            <input type="text" id="search-TransactionId" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-LastModifyTimeGtEq">LastModifyTime</label>
+            <input type="text" id="search-LastModifyTimeGtEq" class="flatpickr" placeholder=""/>
+            <label for="search-LastModifyTimeLt">-</label>
+            <input type="text" id="search-LastModifyTimeLt" class="flatpickr" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-CreateTimeGtEq">CreateTime</label>
+            <input type="text" id="search-CreateTimeGtEq" class="flatpickr" placeholder=""/>
+            <label for="search-CreateTimeLt">-</label>
+            <input type="text" id="search-CreateTimeLt" class="flatpickr" placeholder=""/>
+        </div>
+        <div class="input-group">
+            <label for="search-ThirdPartName">ThirdPart</label>
+            <select id="search-ThirdPartName">
+                <option value="">All</option>
+                <option value="Alchemy">Alchemy</option>
+                <option value="Transak">Transak</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-Crypto">Crypto</label>
+            <select id="search-Crypto">
+                <option value="">All</option>
+                <option value="ELF">ELF</option>
+                <option value="USDT">USDT</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-CallBackStatusIn">CallBackStatusIn</label>
+            <select id="search-CallBackStatusIn">
+                <option value="">All</option>
+                <option value="ELF">Success</option>
+                <option value="USDT">Failed</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-TransferDirection">Type</label>
+            <select id="search-TransferDirection">
+                <option value="">All</option>
+                <option value="TokenBuy">TokenBuy</option>
+                <option value="TokenSell">TokenSell</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-StatusIn">Status</label>
+            <select id="search-StatusIn">
+                <option value="">All</option>
+                <option value="Initialized">Initialized</option>
+                <option value="Created">Created</option>
+                <option value="Expired">Expired</option>
+                <option value="Finish">Finish</option>
+                <option value="Failed">Failed</option>
+                <option value="Pending">Pending</option>
+                <option value="Refunded">Refunded</option>
+                <option value="StartTransfer">StartTransfer</option>
+                <option value="Transferring">Transferring</option>
+                <option value="Transferred">Transferred</option>
+                <option value="TransferFailed">TransferFailed</option>
+                <option value="UserCompletesCoinDeposit">UserCompletesCoinDeposit</option>
+                <option value="StartPayment">StartPayment</option>
+                <option value="SuccessfulPayment">SuccessfulPayment</option>
+                <option value="PaymentFailed">PaymentFailed</option>
+                <option value="RefundSuccessfully">RefundSuccessfully</option>
+            </select>
+        </div>
+
+        <button id="search-button">Search</button>
+        <button id="export-button" class="primary" onclick="ExportOrder()">Export</button>
+    </div>
+
+    <table id="orders-table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>RampOrderId</th>
+            <th>Type</th>
+            <th>ThirdPart</th>
+            <th>ThirdPartOrderId</th>
+            <th>ToAddress</th>
+            <th>Crypto</th>
+            <th>Fiat</th>
+            <th>Fee</th>
+            <th>Status</th>
+            <th>TransactionId</th>
+            <th>TxTime</th>
+            <th>CreateTime</th>
+            <th>LastModifyTime</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Order rows will be added here -->
+        </tbody>
+    </table>
+
+    <div class="pagination" id="pagination-container"></div>
+
+</main>
+
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dateFormat.js"></script>
+<script src="js/modal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+
+    let currentPage = 1;
+    let pageSize = 20;
+    let items = {};
+    $(document).ready(function () {
+        App.loadUser();
+        $("#user-info span").html(App.User().userName)
+        $("input.flatpickr").each(function () {
+            let enableTime = $(this).data('enable-time') !== undefined ? $(this).data('enable-time') === "true" : true;
+            let format = enableTime ? "Y-m-d H:i" : "Y-m-d";
+            $(this).flatpickr({
+                enableTime: enableTime,
+                dateFormat: format,
+                allowInput: true,
+                time_24hr: true,
+                defaultHour: 0,
+                onChange: function (selectedDates, dateStr, instance) {
+                    let timezoneOffset = $(instance.input).data('timezone') ?? 0;
+                    let timestamp = selectedDates[0].getTime() - (selectedDates[0].getTimezoneOffset() * 60000);
+                    timestamp -= timezoneOffset * 60 * 60000;
+                    $(instance.input).data('timestamp', timestamp);
+                },
+                onOpen: (selectedDates, dateStr, instance) => $(instance.input).data('timestamp', null)
+            });
+        });
+        fetchOrders();
+        $("#logout-button").on("click", App.logout);
+    });
+
+    function fetchOrders(page = 1) {
+        let requestData = {
+            LastModifyTimeGtEq: $("#search-LastModifyTimeGtEq").data('timestamp'),
+            LastModifyTimeLt: $("#search-LastModifyTimeLt").data('timestamp'),
+            CreateTimeGtEq: $("#search-CreateTimeGtEq").data('timestamp'),
+            CreateTimeLt: $("#search-CreateTimeLt").data('timestamp'),
+            TransferDirection: $("#search-TransferDirection").val(),
+            ThirdPartName: $("#search-ThirdPartName").val(),
+            ThirdPartIdIn: $("#search-ThirdPartIdIn").val(),
+            StatusIn: $("#search-StatusIn").val(),
+            ToAddress: $("#search-ToAddress").val(),
+            Crypto: $("#search-Crypto").val(),
+            skipCount: (page - 1) * pageSize,
+            maxResultCount: pageSize
+        };
+        if ($("#search-RampOrderIdIn").val()) {
+            requestData["RampOrderIdIn"] = $("#search-RampOrderIdIn").val();
+        }
+        if ($("#search-Id").val()) {
+            requestData["IdIn"] = $("#search-Id").val();
+        }
+        $.ajax({
+            url: App.Uri.treasuryOrders,
+            method: 'GET',
+            contentType: "application/json",
+            data: requestData,
+            success: function (response) {
+                if (!response || !response.success) {
+                    return App.showToast(response.message)
+                }
+                updateTable(response.data.items);
+                currentPage = page;
+                let totalPage = Math.ceil(response.data.totalCount / pageSize);
+                generatePagination(totalPage, currentPage);
+            }
+        });
+    }
+
+    function updateTable(orders) {
+        var $tbody = $("#orders-table tbody");
+        $tbody.empty();
+        orders.forEach(function (order) {
+            items[order.id] = order;
+            let fee = "";
+            for (let feeItem of order.feeInfo) {
+                fee += feeItem.amount
+                fee += feeItem.symbol
+                fee += "<br/>"
+            }
+            let txTime = order.transactionTime ?? "";
+            $tbody.append(`<tr>
+                <td>${shortenText(order.id)}</td>
+                <td>${shortenText(order.rampOrderId)}</td>
+                <td>${order.transferDirection}</td>
+                <td>${order.thirdPartName}</td>
+                <td>${order.thirdPartOrderId}</td>
+                <td>${shortenText(order.toAddress)}</td>
+                <td>${order.cryptoAmount} ${order.crypto}</td>
+                <td>${order.fiatAmount} ${order.fiat ?? ""}</td>
+                <td>${fee}</td>
+                <td>${order.status}</td>
+                <td>${shortenText(order.transactionId ?? "")}</td>
+                <td>${order.transactionTime ? DateFormat.formatUtc(new Date(parseInt(order.transactionTime, 10))) : ""}</td>
+                <td>${DateFormat.formatUtc(new Date(parseInt(order.createTime, 10)))}</td>
+                <td>${DateFormat.formatUtc(new Date(parseInt(order.lastModifyTime, 10)))}</td>
+                <td>
+                    <button onclick="showDetail('${order.id}')">Detail</button>
+                    <button onclick="showStatusFlow('${order.id}')" class="primary">Status Flow</button>
+                </td>
+            </tr>`);
+        });
+    }
+
+    function generatePagination(totalPages, currentPage) {
+        let $paginationContainer = $("#pagination-container");
+        $paginationContainer.empty();
+
+        let startPage = Math.max(1, currentPage - 10);
+        let endPage = Math.min(totalPages, currentPage + 10);
+        if (currentPage > 1) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage - 1})">Prev</button>&nbsp;`);
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${i})" ${i === currentPage ? 'class="active" disabled' : ''}>${i}</button>&nbsp;`);
+        }
+        if (currentPage < totalPages) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage + 1})">Next</button>&nbsp;`);
+        }
+    }
+
+    function showDetail(orderId) {
+        window.open("treasuryOrderDetail.html?orderId=" + orderId, "_blank")
+    }
+
+    function shortenText(text, startLength = 6, endLength = 6) {
+        if (text.length <= startLength + endLength) return text;
+        let shorten = text.substring(0, startLength) + "..." + text.substring(text.length - endLength);
+        return `<span onclick="App.showToast('${text}')" ondblclick="App.copyText('${text}')" style="cursor:pointer">${shorten}</span>`;
+    }
+
+    function showStatusFlow(orderId) {
+        $.ajax({
+            url: App.Uri.treasuryOrderStatusFlow,
+            method: 'Get',
+            contentType: "application/json",
+            data: {
+                orderId: orderId
+            },
+            success: function (resp) {
+                if (resp.data && resp.data.orderStatusList) {
+                    for (let item of resp.data.orderStatusList) {
+                        item["lastModifyTimeStr"] = DateFormat.formatUtc(new Date(item.lastModifyTime));
+                    }
+                }
+                let content = JSON.stringify(resp, null, 4);
+                localStorage.setItem("tmp_" + orderId, content);
+                debugger
+                window.open("jsonViewer.html?title=" + orderId, "_blank");
+            }
+        });
+    }
+
+    function ExportOrder() {
+        let $selectedStatus = $("#search-StatusIn");
+        let $startTime = $("#modal-exportStartTime");
+        let $endTime = $("#modal-exportEndTime");
+        let $status = $("#modal-exportStatus");
+        let $timeZone = $("#modal-timeZone").val(localStorage.getItem("timezone") || 0);
+
+        // set export time value as same as search form
+        $status.html($selectedStatus.html()).val($selectedStatus.val());
+        $startTime.val($("#search-CreateTimeGtEq").val());
+        $endTime.val($("#search-CreateTimeLt").val());
+        // if val exists, trigger OnChange method of flatpickr
+        $startTime.val() && $startTime[0]._flatpickr.setDate($startTime.val(), true);
+        $endTime.val() && $endTime[0]._flatpickr.setDate($endTime.val(), true);
+
+        $timeZone.off("input change").on("input change", function () {
+            let timeZone = $(this).val();
+            $startTime.data("timezone", timeZone);
+            $endTime.data("timezone", timeZone);
+        })
+        $timeZone.change();
+        Modal.showModal("#exportOrderModal", function () {
+            localStorage.setItem("timezone", $timeZone.val());
+            doExportOrder($("#modal-exportGoogleTfa").val(), $status.val(), $timeZone.val(), 
+                $startTime.data("timestamp"), $endTime.data("timestamp") + 3600 * 24 * 1000, );
+        })
+    }
+
+    function doExportOrder(googleTfaPin, status, timeZone, startTime, endTime) {
+        let requestData = {
+            Data: {
+                StatusIn: [status],
+                CreateTimeGtEq: startTime,
+                CreateTimeLt: endTime
+            },
+            GoogleTfaPin: googleTfaPin,
+            TimeZone: timeZone
+        };
+        $.ajax({
+            url: App.Uri.treasuryOrderExport,
+            type: 'POST',
+            data: JSON.stringify(requestData),
+            xhrFields: {
+                responseType: 'blob'
+            },
+            success: function (response, status, xhr) {
+                let filename = "";
+                let disposition = xhr.getResponseHeader('Content-Disposition');
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    let filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    let matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) {
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+                let blob = new Blob([response], {type: 'text/csv'});
+                let link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+    }
+
+    $("#search-button").click(function () {
+        fetchOrders(1);
+    });
+
+    $("#prev-page").click(function () {
+        if (currentPage > 1) fetchOrders(currentPage - 1);
+    });
+    $("#next-page").click(function () {
+        fetchOrders(currentPage + 1);
+    });
+
+</script>
+</body>
+</html>
