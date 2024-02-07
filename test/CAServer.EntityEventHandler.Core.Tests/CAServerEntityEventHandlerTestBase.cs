@@ -10,6 +10,7 @@ public class CAServerEntityEventHandlerTestBase : CAServerOrleansTestBase<CAServ
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        
         base.AfterAddApplication(services);
         services.AddSingleton(GetMockAbpDistributedLock());
     }
