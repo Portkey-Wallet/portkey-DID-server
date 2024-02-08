@@ -570,7 +570,12 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.FiatAmount, m => m.MapFrom(f => f.FiatAmount))
             .ForMember(t => t.Status, m => m.MapFrom(f => f.Status))
             ;
-        CreateMap<QueryAlchemyOrderInfo, OrderDto>().ReverseMap();
+        CreateMap<QueryAlchemyOrderInfo, OrderDto>()
+            .ForMember(t => t.Id, m => m.MapFrom(f => Guid.Parse(f.MerchantOrderNo)))
+            .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo))
+            .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TxHash))
+            .ReverseMap();
+        
         CreateMap<TelegramAuthReceiveRequest, TelegramAuthDto>()
             .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))

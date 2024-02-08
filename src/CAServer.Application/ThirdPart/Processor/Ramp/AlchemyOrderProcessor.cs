@@ -37,8 +37,10 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         IDistributedEventBus distributedEventBus,
         IOptionsMonitor<ThirdPartOptions> thirdPartOptions,
         AlchemyProvider alchemyProvider,
-        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus, ISecretProvider secretProvider,
-        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions, IOptionsMonitor<RampOptions> rampOptions) : base(
+        IOrderStatusProvider orderStatusProvider, IAbpDistributedLock distributedLock, IBus broadcastBus,
+        ISecretProvider secretProvider,
+        ITokenAppService tokenAppService, IOptionsMonitor<ChainOptions> chainOptions,
+        IOptionsMonitor<RampOptions> rampOptions) : base(
         clusterClient, thirdPartOrderProvider, distributedEventBus, orderStatusProvider, distributedLock, broadcastBus,
         tokenAppService, chainOptions)
     {
@@ -62,7 +64,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         return ThirdPartNameType.Alchemy.ToString();
     }
 
-        
+
     public string MappingToAlchemyNetwork(string network)
     {
         if (network.IsNullOrEmpty()) return network;
@@ -70,7 +72,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             .TryGetValue(network, out var mappingNetwork);
         return mappingExists ? mappingNetwork : network;
     }
-    
+
     public string MappingFromAlchemyNetwork(string network)
     {
         if (network.IsNullOrEmpty()) return network;
@@ -94,7 +96,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             .FirstOrDefault(kv => kv.Value == symbol);
         return mappingNetwork.Key.DefaultIfEmpty(symbol);
     }
-    
+
     protected override async Task<OrderDto> VerifyOrderInputAsync<T>(T iThirdPartOrder)
     {
         var input = ConvertToAlchemyOrder(iThirdPartOrder);
@@ -136,8 +138,9 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             orderPendingUpdate.TxHash = input.TxHash;
             orderPendingUpdate.AppId = _thirdPartOptions.CurrentValue.Alchemy.AppId;
             orderPendingUpdate.Signature = await GetAlchemySellSignatureAsync(orderPendingUpdate.OrderNo,
-                orderPendingUpdate.Crypto,
-                orderPendingUpdate.Network, orderPendingUpdate.Address);
+                MappingToAlchemySymbol(orderPendingUpdate.Crypto), 
+                MappingToAlchemyNetwork(orderPendingUpdate.Network),
+                orderPendingUpdate.Address);
 
             await _alchemyProvider.UpdateOffRampOrderAsync(orderPendingUpdate);
         }
@@ -161,6 +164,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             var queryResult = await _alchemyProvider.QueryAlchemyOrderInfoAsync(orderQueryDto);
             var achOrder = ObjectMapper.Map<QueryAlchemyOrderInfo, OrderDto>(queryResult);
             achOrder.Status = AlchemyHelper.GetOrderStatus(achOrder.Status).ToString();
+            achOrder.MerchantName = ThirdPartName();
             return achOrder;
         }
         catch (Exception e)
