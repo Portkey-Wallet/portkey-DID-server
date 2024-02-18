@@ -22,7 +22,8 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
     private readonly IAbpDistributedLock _distributedLock;
 
     public TreasuryCreateHandler(ILogger<TreasuryCreateHandler> logger, IContractProvider contractProvider,
-        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, ITreasuryOrderProvider treasuryOrderProvider, IAbpDistributedLock distributedLock)
+        IOptionsMonitor<ThirdPartOptions> thirdPartOptions, ITreasuryOrderProvider treasuryOrderProvider,
+        IAbpDistributedLock distributedLock)
     {
         _logger = logger;
         _contractProvider = contractProvider;
@@ -34,8 +35,9 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
 
     private bool Match(TreasuryOrderEto eventData)
     {
-        return eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString()
-               && eventData.Data.Status == OrderStatusType.Created.ToString();
+        return eventData?.Data != null &&
+               eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString() &&
+               eventData.Data.Status == OrderStatusType.Created.ToString();
     }
 
     public async Task HandleEventAsync(TreasuryOrderEto eventData)
@@ -45,7 +47,7 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
         var orderDto = eventData.Data;
         _logger.LogDebug("TreasuryCreateHandler start, {OrderId}-{Version}-{Status}", orderDto.Id, orderDto.Version,
             orderDto.Status);
-        
+
         await using var locked =
             await _distributedLock.TryAcquireAsync("TreasuryTxCreate:" + orderDto.TransactionId);
         if (locked == null)
@@ -53,10 +55,9 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
             _logger.LogWarning("Duplicated create event, orderId={OrderId}", orderDto.Id);
             return;
         }
-        
+
         try
         {
-            
             AssertHelper.IsTrue(orderDto.TransactionId.IsNullOrEmpty(), "Transaction id exists");
             AssertHelper.IsTrue(orderDto.RawTransaction.IsNullOrEmpty(), "Raw transaction empty");
 
@@ -64,7 +65,7 @@ public class TreasuryCreateHandler : IDistributedEventHandler<TreasuryOrderEto>,
             AssertHelper.IsTrue(
                 _thirdPartOptions.CurrentValue.TreasuryOptions.SettlementPublicKey.TryGetValue(settlementAddressKey,
                     out var senderPublicKey), "Settlement sender not exists {}", settlementAddressKey);
-            
+
             var senderAddress = Address.FromPublicKey(ByteArrayHelper.HexStringToByteArray(senderPublicKey));
             AssertHelper.NotNull(senderAddress, "Invalid settlement sender {}", senderAddress.ToBase58());
 
