@@ -116,7 +116,9 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         orderDto.MerchantName = ThirdPartName();
         orderDto.Status = AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
         orderDto.Network = MappingFromAlchemyNetwork(input.Network); 
-        orderDto.Crypto = MappingFromAchSymbol(input.Crypto); 
+        orderDto.Crypto = MappingFromAchSymbol(input.Crypto);
+        orderDto.ThirdPartCrypto = input.Crypto;
+        orderDto.ThirdPartNetwork = input.Network;
         return orderDto;
     }
 
@@ -138,8 +140,8 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             orderPendingUpdate.TxHash = input.TxHash;
             orderPendingUpdate.AppId = _thirdPartOptions.CurrentValue.Alchemy.AppId;
             orderPendingUpdate.Signature = await GetAlchemySellSignatureAsync(orderPendingUpdate.OrderNo,
-                MappingToAlchemySymbol(orderPendingUpdate.Crypto), 
-                MappingToAlchemyNetwork(orderPendingUpdate.Network),
+                orderData.ThirdPartCrypto, 
+                orderData.ThirdPartNetwork,
                 orderPendingUpdate.Address);
 
             await _alchemyProvider.UpdateOffRampOrderAsync(orderPendingUpdate);
