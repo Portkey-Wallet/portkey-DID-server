@@ -115,10 +115,10 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
         orderDto.Id = Guid.Parse(input.MerchantOrderNo);
         orderDto.MerchantName = ThirdPartName();
         orderDto.Status = AlchemyHelper.GetOrderStatus(orderDto.Status).ToString();
-        orderDto.Network = MappingFromAlchemyNetwork(input.Network); 
-        orderDto.Crypto = MappingFromAchSymbol(input.Crypto);
         orderDto.ThirdPartCrypto = input.Crypto;
         orderDto.ThirdPartNetwork = input.Network;
+        orderDto.Network = MappingFromAlchemyNetwork(input.Network); 
+        orderDto.Crypto = MappingFromAchSymbol(input.Crypto);
         return orderDto;
     }
 
