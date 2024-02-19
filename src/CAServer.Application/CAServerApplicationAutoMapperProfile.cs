@@ -317,7 +317,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.ReceivingMethod, m => m.MapFrom(f => f.PaymentType))
             .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo));
         CreateMap<OrderDto, WaitToSendOrderInfoDto>()
-            .ForMember(t => t.OrderNo, m => m.MapFrom(f => f.ThirdPartOrderNo));
+            .ForMember(t => t.OrderNo, m => m.MapFrom(f => f.ThirdPartOrderNo))
+            .ForMember(t => t.Network, m => m.MapFrom(f => f.ThirdPartNetwork))
+            .ForMember(t => t.Crypto, m => m.MapFrom(f => f.ThirdPartCrypto));
 
         CreateMap<CreateNotifyDto, NotifyGrainDto>();
         CreateMap<UpdateNotifyDto, NotifyGrainDto>();
