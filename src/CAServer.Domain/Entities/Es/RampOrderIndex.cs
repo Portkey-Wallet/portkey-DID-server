@@ -24,7 +24,7 @@ public class RampOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public bool IsDeleted { get; set; } = false;
     [Keyword] public string Status { get; set; }
     [Keyword] public string ThirdPartCrypto { get; set; }
-    [Keyword] public string ThirdPartSymbol { get; set; }
+    [Keyword] public string ThirdPartNetwork { get; set; }
 
 
     // buy order
