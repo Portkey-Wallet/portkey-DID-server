@@ -140,8 +140,8 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
             orderPendingUpdate.TxHash = input.TxHash;
             orderPendingUpdate.AppId = _thirdPartOptions.CurrentValue.Alchemy.AppId;
             orderPendingUpdate.Signature = await GetAlchemySellSignatureAsync(orderPendingUpdate.OrderNo,
-                orderData.ThirdPartCrypto, 
-                orderData.ThirdPartNetwork,
+                orderPendingUpdate.Crypto, 
+                orderPendingUpdate.Network,
                 orderPendingUpdate.Address);
 
             await _alchemyProvider.UpdateOffRampOrderAsync(orderPendingUpdate);
