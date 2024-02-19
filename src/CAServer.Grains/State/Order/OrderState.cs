@@ -17,6 +17,8 @@ public class OrderState
     public string Fiat { get; set; }
     public string FiatAmount { get; set; }
     public string Status { get; set; }
+    public string ThirdPartCrypto { get; set; }
+    public string ThirdPartNetwork { get; set; }
 
     // buy direction order
     public string CryptoQuantity { get; set; }
