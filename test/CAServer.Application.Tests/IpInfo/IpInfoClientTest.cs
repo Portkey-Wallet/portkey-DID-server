@@ -30,7 +30,7 @@ public class IpInfoClientTest : CAServerApplicationTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(MockIpInfoHttpClient());
-        services.AddSingleton(MockSecretProvider());
+        //services.AddSingleton(MockSecretProvider());
     }
 
 

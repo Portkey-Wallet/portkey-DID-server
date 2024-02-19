@@ -41,8 +41,8 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
         base.AfterAddApplication(services);
         services.AddSingleton(GetMockAbpDistributedLockAlwaysSuccess());
         services.AddSingleton(GetMockInMemoryHarness());
-        services.AddSingleton(MockGraphQlOptions());
-        services.AddSingleton(MockAwsS3Client());
+        // services.AddSingleton(MockGraphQlOptions());
+        // services.AddSingleton(MockAwsS3Client());
     }
     
     
@@ -53,13 +53,13 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
         return mock.Object;
     }
     
-    protected IAwsS3Client MockAwsS3Client()
-    {
-        var mockImageClient = new Mock<IAwsS3Client>();
-        mockImageClient.Setup(p => p.UpLoadFileAsync(It.IsAny<Stream>(), It.IsAny<string>()))
-            .ReturnsAsync("http://s3.test.com/result.svg");
-        return mockImageClient.Object;
-    }
+    // protected IAwsS3Client MockAwsS3Client()
+    // {
+    //     var mockImageClient = new Mock<IAwsS3Client>();
+    //     mockImageClient.Setup(p => p.UpLoadFileAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+    //         .ReturnsAsync("http://s3.test.com/result.svg");
+    //     return mockImageClient.Object;
+    // }
     
 
     protected IActivityProvider MockActivityProviderCaHolder(string guidVal = null)
@@ -70,17 +70,17 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
         });
     }
 
-    protected IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
-    {
-        var options = new GraphQLOptions()
-        {
-            Configuration = "http://127.0.0.1:9200"
-        };
-
-        var mock = new Mock<IOptionsSnapshot<GraphQLOptions>>();
-        mock.Setup(o => o.Value).Returns(options);
-        return mock.Object;
-    }
+    // protected IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
+    // {
+    //     var options = new GraphQLOptions()
+    //     {
+    //         Configuration = "http://127.0.0.1:9200"
+    //     };
+    //
+    //     var mock = new Mock<IOptionsSnapshot<GraphQLOptions>>();
+    //     mock.Setup(o => o.Value).Returns(options);
+    //     return mock.Object;
+    // }
     
     protected IBus GetMockInMemoryHarness(params IConsumer[] consumers)
     {
