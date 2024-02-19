@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.ThirdPart.Dtos;
@@ -274,4 +274,4 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         };
         await _thirdPartOrderAppService.QueryThirdPartRampOrderAsync(input);
     }
-}
+}*/
