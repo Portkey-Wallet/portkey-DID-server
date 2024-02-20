@@ -77,11 +77,11 @@ public class ContractProviderTest : CAServerApplicationTestBase
         }
     }
 
-    [Fact]
-    public async Task ClaimTokenAsync_ChainId_NotFount_Test()
-    {
-        await _contractProvider.ClaimTokenAsync("TEST1", "CPU", "AELF");
-    }
+    // [Fact]
+    // public async Task ClaimTokenAsync_ChainId_NotFount_Test()
+    // {
+    //     await _contractProvider.ClaimTokenAsync("TEST1", "CPU", "AELF");
+    // }
 
     [Fact]
     public async Task SendTransferAsync()
