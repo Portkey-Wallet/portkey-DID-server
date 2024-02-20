@@ -29,7 +29,7 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
 
     protected CAServerApplicationTestBase(ITestOutputHelper output)
     {
-        _output = output;
+        // _output = output;
     }
 
     protected CAServerApplicationTestBase()
@@ -57,7 +57,7 @@ public abstract partial class CAServerApplicationTestBase : CAServerTestBase<CAS
     {
         var mockImageClient = new Mock<IAwsS3Client>();
         mockImageClient.Setup(p => p.UpLoadFileAsync(It.IsAny<Stream>(), It.IsAny<string>()))
-            .ReturnsAsync("http://s3.test.com/result.svg");
+            .ReturnsAsync("http://127.0.0.1:9200/result.svg");
         return mockImageClient.Object;
     }
     
