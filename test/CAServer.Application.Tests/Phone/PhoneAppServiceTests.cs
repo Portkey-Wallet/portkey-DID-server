@@ -30,7 +30,7 @@
 //         services.AddSingleton(_currentUser);
 //         services.AddSingleton(GetPhoneInfoOptions());
 //         services.AddSingleton(IpInfoClientTest.MockIpInfoHttpClient());
-//         //services.AddSingleton(IpInfoClientTest.MockSecretProvider());
+//         services.AddSingleton(IpInfoClientTest.MockSecretProvider());
 //     }
 //
 //     [Fact]
