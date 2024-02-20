@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
@@ -27,22 +28,26 @@ public class PendingTreasuryOrderUpdateHandler : IDistributedEventHandler<Pendin
 
     public async Task HandleEventAsync(PendingTreasuryOrderEto eventData)
     {
-        var orderGrainDto = eventData.Data;
+        PendingTreasuryOrderDto orderGrainDto = null;
         try
         {
+            orderGrainDto = eventData?.Data;
+            AssertHelper.NotNull(orderGrainDto, "Empty message");
+
+            
             var nftOrderInfo = _objectMapper.Map<PendingTreasuryOrderDto, PendingTreasuryOrderIndex>(orderGrainDto);
 
             await _pendingTreasuryOrderRepository.AddOrUpdateAsync(nftOrderInfo);
 
             _logger.LogInformation(
                 "Pending Treasury order index add or update success, Id:{Id}, ThirdPartName:{ThirdPartName}, ThirdPartOrderId:{ThirdPartOrderId}",
-                orderGrainDto.Id, orderGrainDto.ThirdPartName, orderGrainDto.ThirdPartOrderId);
+                orderGrainDto?.Id, orderGrainDto?.ThirdPartName, orderGrainDto?.ThirdPartOrderId);
         }
         catch (Exception e)
         {
             _logger.LogError(e,
                 "An error occurred while processing the event, Id:{Id}, ThirdPartName:{ThirdPartName}, ThirdPartOrderId:{ThirdPartOrderId}",
-                orderGrainDto.Id, orderGrainDto.ThirdPartName, orderGrainDto.ThirdPartOrderId);
+                orderGrainDto?.Id, orderGrainDto?.ThirdPartName, orderGrainDto?.ThirdPartOrderId);
         }
         
         

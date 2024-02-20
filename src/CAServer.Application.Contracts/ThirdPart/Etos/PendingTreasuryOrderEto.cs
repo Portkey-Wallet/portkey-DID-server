@@ -3,7 +3,7 @@ using Volo.Abp.EventBus;
 
 namespace CAServer.ThirdPart.Etos;
 
-[EventName("TransactionEto")]
+[EventName("PendingTreasuryOrderEto")]
 public class PendingTreasuryOrderEto: BaseEto<PendingTreasuryOrderDto>
 {
     
