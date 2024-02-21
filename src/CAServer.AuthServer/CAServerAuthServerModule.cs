@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using CAServer.Commons;
 using CAServer.Contract;
 using Localization.Resources.AbpUi;
 using Medallion.Threading;
@@ -15,8 +16,6 @@ using CAServer.Localization;
 using CAServer.Model;
 using CAServer.MultiTenancy;
 using CAServer.Signature;
-using Microsoft.Extensions.Configuration;
-using Serilog;
 using StackExchange.Redis;
 using Volo.Abp;
 using Volo.Abp.Account;
@@ -234,28 +233,6 @@ public class CAServerAuthServerModule : AbpModule
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
 
-        DisplayConfigurationProviders(context);
-    }
-
-    /// <summary>
-    /// The Method displays the enabled configuration providers in the order they were added,
-    /// configuration providers that are added later have higher priority and override previous key settings.
-    /// </summary>
-    /// <param name="context"></param>
-    private static void DisplayConfigurationProviders(ApplicationInitializationContext context)
-    {
-        try
-        {
-            var configuration = context.GetConfiguration();
-            var configurationRoot = (IConfigurationRoot)configuration;
-            foreach (var provider in configurationRoot.Providers.ToList())
-            {
-                Log.Warning("ConfigurationProvider: {0}", provider.ToString());
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "display configuration providers error.");
-        }
+        ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 }

@@ -1,24 +1,13 @@
 ﻿using CAServer.Silo.Extensions;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Events;
 
 namespace CAServer.Silo;
 public class Program
 {
     public async static Task<int> Main(string[] args)
     {
-        var configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-            .Enrich.FromLogContext()
-            .ReadFrom.Configuration(configuration)
-            .CreateLogger();
-
         try
         {
             Log.Information("Starting CAServer.Silo.");
@@ -38,13 +27,9 @@ public class Program
 
     internal static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
+            .InitAppConfiguration(true)
+            .UseApolloForSilo()
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
-
-
-// #if !DEBUG
-            // .ConfigureAppConfiguration((h,c)=>c.AddJsonFile("apollo.appsettings.json")) 
-            // .UseApollo()
-// #endif
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();
