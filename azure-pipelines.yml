@@ -79,7 +79,7 @@ jobs:
       - task: PublishTestResults@2
         condition: always()
         inputs:
-          testRunner: VSTest
+          testRunner: Test
           testResultsFiles: '**/*.trx'
       - task: reportgenerator@5
         displayName: ReportGenerator
