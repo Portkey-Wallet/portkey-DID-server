@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using CAServer.AppleAuth.Provider;
 using CAServer.AppleVerify;
-using CAServer.Signature.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;

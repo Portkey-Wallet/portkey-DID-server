@@ -24,7 +24,6 @@ using Portkey.Contracts.CA;
 using Shouldly;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace CAServer.AppleAuth;
 
