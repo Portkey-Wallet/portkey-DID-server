@@ -29,10 +29,10 @@ public interface IGraphQLProvider
         long startBlockHeight, long endBlockHeight);
 
     Task<CaHolderTransactionInfos> GetToReceiveTransactionsAsync(string chainId, long startHeight,
-        long endHeight);
+        long endHeight, bool excludeCompatibleCrossChain);
 
     Task<IndexerTransaction> GetReceiveTransactionAsync(string chainId, string transferTxId, long endHeight);
-    
+
     Task<List<QueryEventDto>> GetGuardianTransactionInfosAsync(string chainId,
         long startBlockHeight, long endBlockHeight);
 
@@ -196,12 +196,12 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
     }
 
     public async Task<CaHolderTransactionInfos> GetToReceiveTransactionsAsync(string chainId, long startHeight,
-        long endHeight)
+        long endHeight, bool excludeCompatibleCrossChain)
     {
         var graphQLResponse = await _graphQLClient.SendQueryAsync<CaHolderTransactionInfos>(new GraphQLRequest
         {
             Query =
-                @"query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$methodNames: [String],$skipCount:Int!,$maxResultCount:Int!){
+                @"query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!,$methodNames: [String],$excludeCompatibleCrossChain:Boolean,$skipCount:Int!,$maxResultCount:Int!){
             caHolderTransactionInfo(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight, methodNames:$methodNames,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                 totalRecordCount,
                 data{
@@ -222,6 +222,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
                 startBlockHeight = startHeight,
                 endBlockHeight = endHeight,
                 methodNames = new List<string> { "CrossChainTransfer" },
+                excludeCompatibleCrossChain,
                 skipCount = 0,
                 maxResultCount = 10000
             }
@@ -262,7 +263,8 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
         return txs.Data.CaHolderTransactionInfo.Data.FirstOrDefault();
     }
 
-    public async Task<List<QueryEventDto>> GetGuardianTransactionInfosAsync(string chainId, long startBlockHeight, long endBlockHeight)
+    public async Task<List<QueryEventDto>> GetGuardianTransactionInfosAsync(string chainId, long startBlockHeight,
+        long endBlockHeight)
     {
         try
         {
@@ -311,7 +313,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             return new List<QueryEventDto>();
         }
     }
-    
+
     public async Task<CaHolderQueryDto> GetCaHolderInfoAsync(string caHash, int skipCount = 0, int maxResultCount = 1)
     {
         var response = await _graphQLClient.SendQueryAsync<CaHolderQueryDto>(new GraphQLRequest

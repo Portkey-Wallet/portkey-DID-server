@@ -88,9 +88,9 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     private async Task<List<CrossChainTransferDto>> GetToReceiveTransactionsAsync(string chainId)
     {
         var grain = _clusterClient.GetGrain<ICrossChainTransferGrain>(chainId);
-        
+
         var transfers = (await grain.GetUnFinishedTransfersAsync()).Data;
-        
+
         transfers = transfers.Where(o => o.RetryTimes < MaxRetryTimes).ToList();
 
         if (transfers.Count < MaxTransferQueryCount)
@@ -107,7 +107,8 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
             while (true)
             {
-                var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endHeight);
+                var list = await _graphQlProvider.GetToReceiveTransactionsAsync(chainId, startHeight, endHeight,
+                    excludeCompatibleCrossChain: true);
                 var queryTransfers = list.CaHolderTransactionInfo.Data.Select(tx => new CrossChainTransferDto
                 {
                     Id = tx.TransactionId,
