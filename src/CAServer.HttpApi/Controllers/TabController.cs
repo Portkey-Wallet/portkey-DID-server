@@ -19,7 +19,7 @@ public class TabController : CAServerController
         _tabAppService = tabAppService;
     }
 
-    [HttpPost("complete"), Authorize]
+    [HttpPost("complete")]
     public async Task CompleteAsync(TabCompleteDto input)
     {
         await _tabAppService.CompleteAsync(input);
