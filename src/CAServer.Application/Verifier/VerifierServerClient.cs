@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Cryptography;
+using AElf.Kernel;
 using CAServer.Common;
 using CAServer.Dtos;
 using CAServer.Options;
@@ -80,7 +81,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         {
             Type = dto.Type,
             GuardianIdentifier = dto.GuardianIdentifier,
-            VerifierSessionId = dto.VerifierSessionId.ToString()
+            VerifierSessionId = dto.VerifierSessionId.ToString(),
+            Timestamp = TimestampHelper.GetUtcNow()
         };
         var hash = HashHelper.ComputeFrom(verificationRequest);
         var privateKey = _chainOptions.ChainInfos.FirstOrDefault(i => i.Key == dto.ChainId).Value.PrivateKey;

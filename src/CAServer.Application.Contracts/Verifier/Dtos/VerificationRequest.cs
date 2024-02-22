@@ -22,14 +22,15 @@ public static partial class VerificationRequestReflection {
   static VerificationRequestReflection() {
     byte[] descriptorData = global::System.Convert.FromBase64String(
         string.Concat(
-          "Chp2ZXJpZmljYXRpb25fcmVxdWVzdC5wcm90bxoPYWVsZi9jb3JlLnByb3Rv",
-          "Il0KE1ZlcmlmaWNhdGlvblJlcXVlc3QSDAoEdHlwZRgBIAEoCRIbChNndWFy",
-          "ZGlhbl9pZGVudGlmaWVyGAIgASgJEhsKE3ZlcmlmaWVyX3Nlc3Npb25faWQY",
-          "AyABKAliBnByb3RvMw=="));
+          "Chp2ZXJpZmljYXRpb25fcmVxdWVzdC5wcm90bxofZ29vZ2xlL3Byb3RvYnVm",
+          "L3RpbWVzdGFtcC5wcm90byKMAQoTVmVyaWZpY2F0aW9uUmVxdWVzdBIMCgR0",
+          "eXBlGAEgASgJEhsKE2d1YXJkaWFuX2lkZW50aWZpZXIYAiABKAkSGwoTdmVy",
+          "aWZpZXJfc2Vzc2lvbl9pZBgDIAEoCRItCgl0aW1lc3RhbXAYBCABKAsyGi5n",
+          "b29nbGUucHJvdG9idWYuVGltZXN0YW1wYgZwcm90bzM="));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
-        new pbr::FileDescriptor[] { global::AElf.Types.CoreReflection.Descriptor, },
+        new pbr::FileDescriptor[] { global::Google.Protobuf.WellKnownTypes.TimestampReflection.Descriptor, },
         new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-          new pbr::GeneratedClrTypeInfo(typeof(global::VerificationRequest), global::VerificationRequest.Parser, new[]{ "Type", "GuardianIdentifier", "VerifierSessionId" }, null, null, null, null)
+          new pbr::GeneratedClrTypeInfo(typeof(global::VerificationRequest), global::VerificationRequest.Parser, new[]{ "Type", "GuardianIdentifier", "VerifierSessionId", "Timestamp" }, null, null, null, null)
         }));
   }
   #endregion
@@ -73,6 +74,7 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
     type_ = other.type_;
     guardianIdentifier_ = other.guardianIdentifier_;
     verifierSessionId_ = other.verifierSessionId_;
+    timestamp_ = other.timestamp_ != null ? other.timestamp_.Clone() : null;
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
 
@@ -118,6 +120,18 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
     }
   }
 
+  /// <summary>Field number for the "timestamp" field.</summary>
+  public const int TimestampFieldNumber = 4;
+  private global::Google.Protobuf.WellKnownTypes.Timestamp timestamp_;
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+  public global::Google.Protobuf.WellKnownTypes.Timestamp Timestamp {
+    get { return timestamp_; }
+    set {
+      timestamp_ = value;
+    }
+  }
+
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
   public override bool Equals(object other) {
@@ -136,6 +150,7 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
     if (Type != other.Type) return false;
     if (GuardianIdentifier != other.GuardianIdentifier) return false;
     if (VerifierSessionId != other.VerifierSessionId) return false;
+    if (!object.Equals(Timestamp, other.Timestamp)) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
 
@@ -146,6 +161,7 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
     if (Type.Length != 0) hash ^= Type.GetHashCode();
     if (GuardianIdentifier.Length != 0) hash ^= GuardianIdentifier.GetHashCode();
     if (VerifierSessionId.Length != 0) hash ^= VerifierSessionId.GetHashCode();
+    if (timestamp_ != null) hash ^= Timestamp.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
     }
@@ -176,6 +192,10 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
       output.WriteRawTag(26);
       output.WriteString(VerifierSessionId);
     }
+    if (timestamp_ != null) {
+      output.WriteRawTag(34);
+      output.WriteMessage(Timestamp);
+    }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(output);
     }
@@ -198,6 +218,10 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
       output.WriteRawTag(26);
       output.WriteString(VerifierSessionId);
     }
+    if (timestamp_ != null) {
+      output.WriteRawTag(34);
+      output.WriteMessage(Timestamp);
+    }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(ref output);
     }
@@ -216,6 +240,9 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
     }
     if (VerifierSessionId.Length != 0) {
       size += 1 + pb::CodedOutputStream.ComputeStringSize(VerifierSessionId);
+    }
+    if (timestamp_ != null) {
+      size += 1 + pb::CodedOutputStream.ComputeMessageSize(Timestamp);
     }
     if (_unknownFields != null) {
       size += _unknownFields.CalculateSize();
@@ -237,6 +264,12 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
     }
     if (other.VerifierSessionId.Length != 0) {
       VerifierSessionId = other.VerifierSessionId;
+    }
+    if (other.timestamp_ != null) {
+      if (timestamp_ == null) {
+        Timestamp = new global::Google.Protobuf.WellKnownTypes.Timestamp();
+      }
+      Timestamp.MergeFrom(other.Timestamp);
     }
     _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
   }
@@ -265,6 +298,13 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
           VerifierSessionId = input.ReadString();
           break;
         }
+        case 34: {
+          if (timestamp_ == null) {
+            Timestamp = new global::Google.Protobuf.WellKnownTypes.Timestamp();
+          }
+          input.ReadMessage(Timestamp);
+          break;
+        }
       }
     }
   #endif
@@ -290,6 +330,13 @@ public sealed partial class VerificationRequest : pb::IMessage<VerificationReque
         }
         case 26: {
           VerifierSessionId = input.ReadString();
+          break;
+        }
+        case 34: {
+          if (timestamp_ == null) {
+            Timestamp = new global::Google.Protobuf.WellKnownTypes.Timestamp();
+          }
+          input.ReadMessage(Timestamp);
           break;
         }
       }
