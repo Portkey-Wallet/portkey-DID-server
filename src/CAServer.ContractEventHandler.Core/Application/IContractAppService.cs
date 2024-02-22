@@ -644,7 +644,7 @@ public class ContractAppService : IContractAppService
         return new Tuple<bool, bool>(true, chainId == createChainId);
     }
 
-    private async Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync(List<GuardianInfo> guardianInfos)
+    private bool EnableAcceleration(List<GuardianInfo> guardianInfos)
     {
         if (guardianInfos == null || guardianInfos.Count == 0)
         {
@@ -670,7 +670,7 @@ public class ContractAppService : IContractAppService
         try
         {
             var list = new List<GuardianInfo> { createHolderDto.GuardianInfo };
-            if (!await GetCheckOperationDetailsInSignatureEnabledAsync(list))
+            if (!EnableAcceleration(list))
             {
                 _logger.LogWarning("CreateHolderInfo, OperationDetails is not signed in，caHash = {0}",
                     outputGetHolderInfo.CaHash?.ToHex());
@@ -772,7 +772,7 @@ public class ContractAppService : IContractAppService
         var watcher = Stopwatch.StartNew();
         try
         {
-            if (!await GetCheckOperationDetailsInSignatureEnabledAsync(socialRecoveryDto.GuardianApproved))
+            if (!EnableAcceleration(socialRecoveryDto.GuardianApproved))
             {
                 _logger.LogWarning("SocialRecovery, OperationDetails is not signed in，identifierHash = {0}",
                     socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex());
