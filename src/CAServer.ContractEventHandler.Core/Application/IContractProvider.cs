@@ -14,7 +14,6 @@ using CAServer.Grains.State.ApplicationHandler;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
 using CAServer.Monitor;
-using CAServer.Signature;
 using CAServer.Signature.Provider;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
@@ -44,7 +43,6 @@ public interface IContractProvider : ISingletonDependency
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string txId);
     Task<long> GetIndexHeightFromSideChainAsync(string sideChainId);
     Task<long> GetIndexHeightFromMainChainAsync(string chainId, int sideChainId);
-    Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync(string chainId);
     Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto);
 
     Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(ChainInfo chainInfo,
@@ -287,19 +285,6 @@ public class ContractProvider : IContractProvider
 
         _logger.LogError(MethodName.GetSideChainHeight + ": Empty result");
         return ContractAppServiceConstant.LongError;
-    }
-
-    public async Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync(string chainId)
-    {
-        var result = await CallTransactionAsync<GetCheckOperationDetailsInSignatureEnabledOutput>(chainId,
-            MethodName.GetCheckOperationDetailsInSignatureEnabled, new Empty(), false);
-        if (result != null)
-        {
-            return result.CheckOperationDetailsEnabled;
-        }
-
-        _logger.LogError(MethodName.GetCheckOperationDetailsInSignatureEnabled + ": Empty result");
-        return false;
     }
 
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
