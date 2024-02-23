@@ -142,7 +142,7 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         {
             ["authorization"] = $"OAuth {authorizationHeaderParams}"
         };
-        
+
         var response = await _twitterAuthProvider.PostFormAsync(baseUrl, new Dictionary<string, string>(), headers);
 
         Logger.LogInformation("get twitter access token success: {token}", response);
@@ -157,9 +157,40 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         var oauthAccessToken = resList[0].Substring(resList[0].IndexOf('=') + 1);
         var oauthTokenSecret = resList[1].Substring(resList[1].IndexOf('=') + 1);
 
-        // get user info
-        return new TwitterAuthResultDto();
+        var userInfo = await SaveAuthUserExtraInfoAsync(oauthAccessToken, oauthTokenSecret);
+        var authResult = new TwitterAuthResultDto();
+        authResult.Data = userInfo;
+
+        return authResult;
     }
+
+    private async Task<TwitterUserAuthInfoDto> SaveAuthUserExtraInfoAsync(string oauthAccessToken,
+        string oauthTokenSecret)
+    {
+        var url = "https://api.twitter.com/2/users/me";
+        var timestamp = TimeHelper.GetTimeStampInSeconds().ToString();
+        var nonce = Auth10aHelper.GenerateNonce();
+
+        var signature = Auth10aHelper.GenerateSignature(new Uri(url), _options.CustomKey, _options.CustomSecret,
+            token: oauthAccessToken, tokenSecret: oauthTokenSecret,
+            httpMethod: "GET", timestamp, nonce, verifier: string.Empty, string.Empty,
+            out string normalizedUrl, out string normalizedRequestParameters);
+
+        var authorizationHeaderParams =
+            "oauth_consumer_key=\"" + _options.CustomKey + "\",oauth_nonce=\"" + nonce +
+            "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + timestamp +
+            "\",oauth_token=\"" + oauthAccessToken +
+            "\",oauth_version=\"1.0A\",oauth_signature=\"" +
+            Auth10aHelper.UrlEncode(signature) + "\"";
+
+        var userInfo = await SaveUserExtraInfoAsync(authorizationHeaderParams, version: "1.0A");
+        return new TwitterUserAuthInfoDto
+        {
+            AccessToken = authorizationHeaderParams,
+            UserInfo = userInfo.Data
+        };
+    }
+
 
     private async Task<TwitterUserAuthInfoDto> ValidAuthCodeAsync(TwitterAuthDto twitterAuthDto)
     {
@@ -208,11 +239,18 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         return $"Basic {basicToken}";
     }
 
-    private async Task<TwitterUserInfoDto> SaveUserExtraInfoAsync(string accessToken)
+    private async Task<TwitterUserInfoDto> SaveUserExtraInfoAsync(string accessToken, string version = "2.0")
     {
+        var authToken = $"{CommonConstant.JwtTokenPrefix} {accessToken}";
+        if (version != "2.0")
+        {
+            authToken = $"OAuth {accessToken}";
+            Logger.LogInformation("1.0a token: {token}", accessToken);
+        }
+
         var header = new Dictionary<string, string>
         {
-            [CommonConstant.AuthHeader] = $"{CommonConstant.JwtTokenPrefix} {accessToken}"
+            [CommonConstant.AuthHeader] = authToken
         };
         var userInfo = await _twitterAuthProvider.GetUserInfoAsync(CommonConstant.TwitterUserInfoUrl, header);
 
