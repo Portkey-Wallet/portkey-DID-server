@@ -36,10 +36,9 @@ public class TwitterAuthController : CAServerController
     [HttpGet("callback")]
     public async Task<IActionResult> LoginCallBackAsync(string oauth_token, string oauth_verifier)
     {
-        var authToken = await _twitterAuthAppService.LoginCallBackAsync(oauth_token, oauth_verifier);
-        // return Redirect(url);
-
-        return Ok();
+        var authResult = await _twitterAuthAppService.LoginCallBackAsync(oauth_token, oauth_verifier);
+        var redirectUrl = GetRedirectUrl(_options.UnifyRedirectUrl, authResult);
+        return Redirect(redirectUrl);
     }
 
     [HttpGet("userInfo")]
