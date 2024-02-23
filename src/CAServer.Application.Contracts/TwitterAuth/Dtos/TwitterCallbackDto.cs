@@ -1,6 +1,6 @@
 namespace CAServer.TwitterAuth.Dtos;
 
-public class TwitterCallBackDto
+public class TwitterCallbackDto
 {
     
 }

@@ -108,8 +108,54 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
         var oauthToken = resList[0].Substring(resList[0].IndexOf('=') + 1);
         var oauthTokenSecret = resList[1].Substring(resList[1].IndexOf('=') + 1);
-        
+
         return oauthToken;
+    }
+
+    public async Task<TwitterAuthResultDto> LoginCallBackAsync(string oauthToken, string oauthVerifier)
+    {
+        Logger.LogInformation("twitter login callback, oauthToken:{oauthToken}, oauthVerifier:{oauthVerifier}",
+            oauthToken, oauthVerifier);
+
+        var baseUrl = "https://twitter.com/oauth/access_token";
+        var timestamp = TimeHelper.GetTimeStampInSeconds().ToString();
+        var nonce = Auth10aHelper.GenerateNonce();
+        var signature = Auth10aHelper.GenerateSignature(new Uri(baseUrl), _options.CustomKey, _options.CustomSecret,
+            token: string.Empty, tokenSecret: string.Empty,
+            httpMethod: "POST", timestamp, nonce, verifier: string.Empty, callback: string.Empty,
+            out string normalizedUrl, out string normalizedRequestParameters);
+
+        var authorizationHeaderParams =
+            "oauth_consumer_key=\"" + _options.CustomKey + "\",oauth_nonce=\"" + nonce +
+            "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + timestamp +
+            "\",oauth_version=\"1.0A\",oauth_signature=\"" +
+            Auth10aHelper.UrlEncode(signature) + "\"";
+
+        var headers = new Dictionary<string, string>
+        {
+            ["authorization"] = $"OAuth {authorizationHeaderParams}"
+        };
+
+        var dicParams = new Dictionary<string, string>
+        {
+            ["oauth_verifier"] = oauthVerifier
+        };
+        var response = await _twitterAuthProvider.PostFormAsync(baseUrl, dicParams, headers);
+        
+        Logger.LogInformation("get twitter access token success: {token}",response);
+        
+        var resList = response.Split('&');
+
+        if (!response.Contains("oauth_token") && !response.Contains("oauth_token_secret"))
+        {
+            throw new UserFriendlyException("twitter auth fail");
+        }
+        
+        var oauthAccessToken = resList[0].Substring(resList[0].IndexOf('=') + 1);
+        var oauthTokenSecret = resList[1].Substring(resList[1].IndexOf('=') + 1);
+        
+        // get user info
+        return new TwitterAuthResultDto();
     }
 
     private async Task<TwitterUserAuthInfoDto> ValidAuthCodeAsync(TwitterAuthDto twitterAuthDto)
