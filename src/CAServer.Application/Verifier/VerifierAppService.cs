@@ -24,6 +24,7 @@ using CAServer.Telegram;
 using CAServer.TwitterAuth.Dtos;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -51,6 +52,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     private readonly ICacheProvider _cacheProvider;
     private readonly IContractProvider _contractProvider;
     private readonly IHttpClientService _httpClientService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private readonly SendVerifierCodeRequestLimitOptions _sendVerifierCodeRequestLimitOption;
 
@@ -66,7 +68,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         IHttpClientFactory httpClientFactory,
         JwtSecurityTokenHandler jwtSecurityTokenHandler,
         IOptionsSnapshot<SendVerifierCodeRequestLimitOptions> sendVerifierCodeRequestLimitOption,
-        ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService)
+        ICacheProvider cacheProvider, IContractProvider contractProvider, IHttpClientService httpClientService,
+        IHttpContextAccessor httpContextAccessor)
     {
         _accountValidator = accountValidator;
         _objectMapper = objectMapper;
@@ -79,6 +82,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         _cacheProvider = cacheProvider;
         _contractProvider = contractProvider;
         _httpClientService = httpClientService;
+        _httpContextAccessor = httpContextAccessor;
         _sendVerifierCodeRequestLimitOption = sendVerifierCodeRequestLimitOption.Value;
     }
 
@@ -244,7 +248,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         try
         {
-            var userId = await GetTwitterUserIdAsync(requestDto.AccessToken);
+            _httpContextAccessor.HttpContext.Request.Headers.TryGetValue("oauth_version", out var version);
+            var userId = await GetTwitterUserIdAsync(requestDto.AccessToken, version);
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -289,8 +294,14 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private async Task<string> GetTwitterUserIdAsync(string accessToken)
+    private async Task<string> GetTwitterUserIdAsync(string accessToken, string version = "2.0")
     {
+        var authToken = $"{CommonConstant.JwtTokenPrefix} {accessToken}";
+        if (version == "1.0A")
+        {
+            authToken = $"OAuth {accessToken}";
+        }
+
         var header = new Dictionary<string, string>
         {
             [CommonConstant.AuthHeader] = $"{CommonConstant.JwtTokenPrefix} {accessToken}"
@@ -433,7 +444,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError("Verify Facebook Failed, {Message}", e.Message);
+            _logger.LogError(e,"Verify Facebook Failed, AccessToken is {accessToken},", requestDto.AccessToken);
             throw new UserFriendlyException("Verify Facebook Failed.");
         }
     }

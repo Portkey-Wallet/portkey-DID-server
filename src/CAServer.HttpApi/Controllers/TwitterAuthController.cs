@@ -25,6 +25,22 @@ public class TwitterAuthController : CAServerController
         _options = options.Value;
     }
 
+    [HttpGet("login")]
+    public async Task<IActionResult> LoginAsync()
+    {
+        var authToken = await _twitterAuthAppService.LoginAsync();
+        var url = $"https://api.twitter.com/oauth/authenticate?oauth_token={authToken}";
+        return Redirect(url);
+    }
+
+    [HttpGet("callback")]
+    public async Task<IActionResult> LoginCallBackAsync(string oauth_token, string oauth_verifier)
+    {
+        var authResult = await _twitterAuthAppService.LoginCallBackAsync(oauth_token, oauth_verifier);
+        var redirectUrl = GetRedirectUrl(_options.UnifyRedirectUrl, authResult);
+        return Redirect(redirectUrl);
+    }
+
     [HttpGet("userInfo")]
     public async Task<TwitterUserAuthInfoDto> GetUserAuthAsync(TwitterAuthDto twitterAuthDto)
     {

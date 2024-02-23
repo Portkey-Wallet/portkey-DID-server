@@ -86,13 +86,13 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
                 {
                     UserId = facebookVerifyResponse.Data.UserId,
                     AccessToken = facebookOauthInfo.AccessToken,
-                    ExpiresTime = facebookVerifyResponse.Data.ExpiresAt
+                    ExpirationTime = facebookVerifyResponse.Data.ExpiresAt
                 }
             };
         }
         catch (Exception e)
         {
-            _logger.LogError("Facebook auth failed : {Message}", e.Message);
+            _logger.LogError(e, "Facebook auth failed : Facebook VerifyCode  is {code}", code);
             return new FacebookAuthResponseDto
             {
                 Code = AuthErrorMap.DefaultCode,
@@ -118,6 +118,7 @@ public class FacebookAuthAppService : CAServerAppService, IFacebookAuthAppServic
         {
             return result;
         }
+
         _logger.LogError("{Message}", response.ToString());
         throw new Exception($"StatusCode: {response.StatusCode.ToString()}, Content: {result}");
     }

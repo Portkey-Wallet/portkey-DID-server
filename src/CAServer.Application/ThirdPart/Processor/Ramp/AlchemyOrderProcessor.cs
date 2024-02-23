@@ -135,6 +135,7 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
                 Logger.LogError("No order found for {OrderId}", orderId);
                 throw new UserFriendlyException($"No order found for {orderId}");
             }
+            Logger.LogDebug("orderData = {Data}", JsonConvert.SerializeObject(orderData));
 
             var orderPendingUpdate = ObjectMapper.Map<OrderDto, WaitToSendOrderInfoDto>(orderData);
             orderPendingUpdate.TxHash = input.TxHash;
@@ -143,7 +144,8 @@ public class AlchemyOrderProcessor : AbstractRampOrderProcessor
                 orderPendingUpdate.Crypto, 
                 orderPendingUpdate.Network,
                 orderPendingUpdate.Address);
-
+            Logger.LogDebug("orderData = {Data}", JsonConvert.SerializeObject(orderPendingUpdate));
+            
             await _alchemyProvider.UpdateOffRampOrderAsync(orderPendingUpdate);
         }
         catch (Exception e)
