@@ -247,7 +247,11 @@ public class Auth10aHelper
         parameters.Add(new QueryParameter(OAuthTimestampKey, timeStamp));
         parameters.Add(new QueryParameter(OAuthSignatureMethodKey, signatureType));
         parameters.Add(new QueryParameter(OAuthConsumerKeyKey, consumerKey));
-        parameters.Add(new QueryParameter(OAuthCallbackKey, UrlEncode(callback)));
+
+        if (!string.IsNullOrEmpty(callback))
+        {
+            parameters.Add(new QueryParameter(OAuthCallbackKey, UrlEncode(callback)));
+        }
 
         if (!string.IsNullOrEmpty(token))
         {

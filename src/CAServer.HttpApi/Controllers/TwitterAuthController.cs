@@ -32,13 +32,14 @@ public class TwitterAuthController : CAServerController
         var url = $"https://api.twitter.com/oauth/authenticate?oauth_token={authToken}";
         return Redirect(url);
     }
-    
+
     [HttpGet("callback")]
-    public async Task<IActionResult> LoginCallBackAsync()
+    public async Task<IActionResult> LoginCallBackAsync(string oauth_token, string oauth_verifier)
     {
-        var authToken = await _twitterAuthAppService.LoginAsync();
-        var url = $"https://api.twitter.com/oauth/authenticate?oauth_token={authToken}";
-        return Redirect(url);
+        var authToken = await _twitterAuthAppService.LoginCallBackAsync(oauth_token, oauth_verifier);
+        // return Redirect(url);
+
+        return Ok();
     }
 
     [HttpGet("userInfo")]
