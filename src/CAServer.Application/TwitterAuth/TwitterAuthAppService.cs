@@ -36,7 +36,8 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
     public TwitterAuthAppService(IHttpClientService httpClientService, IOptionsSnapshot<TwitterAuthOptions> options,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider, ITwitterAuthProvider twitterAuthProvider)
+        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider,
+        ITwitterAuthProvider twitterAuthProvider)
     {
         _httpClientService = httpClientService;
         _clusterClient = clusterClient;
@@ -68,6 +69,47 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
                 authResult.Message ?? string.Empty);
             return authResult;
         }
+    }
+
+    public async Task<string> LoginAsync()
+    {
+        var baseUrl = "https://twitter.com/oauth/request_token";
+        var callback = "https://test4-applesign-v2.portkey.finance/api/app/twitterAuth/callback";
+        var timestamp = TimeHelper.GetTimeStampInSeconds().ToString();
+        var nonce = Auth10aHelper.GenerateNonce();
+        var signature = Auth10aHelper.GenerateSignature(new Uri(baseUrl), _options.CustomKey, _options.CustomSecret,
+            token: string.Empty, tokenSecret: string.Empty,
+            httpMethod: "POST", timestamp, nonce, verifier: string.Empty, callback,
+            out string normalizedUrl, out string normalizedRequestParameters);
+
+        var authorizationHeaderParams =
+            "oauth_callback=\"https%3A%2F%2Ftest4-applesign-v2.portkey.finance%2Fapi%2Fapp%2FtwitterAuth%2Fcallback\"," +
+            "oauth_consumer_key=\"" + _options.CustomKey + "\",oauth_nonce=\"" + nonce +
+            "\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"" + timestamp +
+            "\",oauth_version=\"1.0A\",oauth_signature=\"" +
+            Auth10aHelper.UrlEncode(signature) + "\"";
+
+        var dic = new Dictionary<string, string>
+        {
+            ["authorization"] = $"OAuth {authorizationHeaderParams}"
+        };
+
+        var response = await _twitterAuthProvider.PostFormAsync(baseUrl,
+            new Dictionary<string, string>(), dic);
+
+        Logger.LogInformation("response from twitter request token: {token}", response);
+
+        if (!response.Contains("oauth_token") && !response.Contains("oauth_token_secret"))
+        {
+            throw new UserFriendlyException("twitter auth fail");
+        }
+
+        var resList = response.Split('&');
+
+        var oauthToken = resList[0].Substring(resList[0].IndexOf('=') + 1);
+        var oauthTokenSecret = resList[1].Substring(resList[1].IndexOf('=') + 1);
+        
+        return oauthToken;
     }
 
     private async Task<TwitterUserAuthInfoDto> ValidAuthCodeAsync(TwitterAuthDto twitterAuthDto)
@@ -164,11 +206,12 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         string errorCode = AuthErrorMap.DefaultCode;
         if (exception is UserFriendlyException friendlyException)
         {
-            errorCode = friendlyException.Code == HttpStatusCode.TooManyRequests.ToString() ? AuthErrorMap.TwitterCancelCode : friendlyException.Code;
+            errorCode = friendlyException.Code == HttpStatusCode.TooManyRequests.ToString()
+                ? AuthErrorMap.TwitterCancelCode
+                : friendlyException.Code;
         }
 
         var message = AuthErrorMap.GetMessage(errorCode);
         return (errorCode, message);
     }
-    
 }
