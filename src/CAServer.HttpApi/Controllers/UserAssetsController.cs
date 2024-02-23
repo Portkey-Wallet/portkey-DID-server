@@ -51,6 +51,12 @@ public class UserAssetsController
     {
         return await _userAssetsAppService.SearchUserAssetsAsync(requestDto);
     }
+    
+    [HttpPost("searchUserPackageAssets")]
+    public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(SearchUserPackageAssetsRequestDto requestDto)
+    {
+        return await _userAssetsAppService.SearchUserPackageAssetsAsync(requestDto);
+    }
 
     [AllowAnonymous]
     [HttpGet("symbolImages")]

@@ -27,6 +27,8 @@ public class RedPackageState
     public List<BucketItem> BucketNotClaimed { get; set; }
     public List<BucketItem> BucketClaimed { get; set; }
     public bool IfRefund{ get; set; }
+    
+    public int AssetType { get; set; }
 }
 
 public class GrabItem

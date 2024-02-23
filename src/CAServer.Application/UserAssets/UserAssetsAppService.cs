@@ -9,6 +9,8 @@ using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Options;
+using CAServer.Search;
+using CAServer.Search.Dtos;
 using CAServer.Tokens;
 using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
@@ -16,7 +18,10 @@ using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
@@ -48,6 +53,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IDistributedCache<List<Token>> _userTokenCache;
     private readonly IDistributedCache<string> _userTokenBalanceCache;
     private readonly GetBalanceFromChainOption _getBalanceFromChainOption;
+    private readonly ISearchAppService _searchAppService;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -57,7 +63,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<SeedImageOptions> seedImageOptions, IUserTokenAppService userTokenAppService,
         ITokenProvider tokenProvider, IAssetsLibraryProvider assetsLibraryProvider,
         IDistributedCache<List<Token>> userTokenCache, IDistributedCache<string> userTokenBalanceCache,
-        IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption)
+        IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption, ISearchAppService searchAppService)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -75,6 +81,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _userTokenCache = userTokenCache;
         _userTokenBalanceCache = userTokenBalanceCache;
         _getBalanceFromChainOption = getBalanceFromChainOption.Value;
+        _searchAppService = searchAppService;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -628,6 +635,133 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return new SearchUserAssetsDto { Data = new List<UserAsset>(), TotalRecordCount = 0 };
         }
     }
+
+    public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(SearchUserPackageAssetsRequestDto requestDto)
+    {
+        var userPackageFtAssets = await GetUserPackageFtAssetsAsync(requestDto);
+
+        var userPackageAssets = await GetUserPackageAssetsAsync(requestDto);
+        
+        var userPackageFtAssetsWithPositiveBalance = userPackageAssets.Data
+            .Where(asset => asset.TokenInfo?.Balance != null && long.Parse(asset.TokenInfo.Balance) > 0)
+            .ToList();
+        
+        var userPackageNftAssetsWithPositiveBalance = userPackageAssets.Data
+            .Where(asset => asset.NftInfo?.Balance != null && long.Parse(asset.NftInfo.Balance) > 0)
+            .ToList();
+        
+        var matchedItems = userPackageFtAssets.Items
+            .Where(item => userPackageFtAssetsWithPositiveBalance.Any(asset => asset.ChainId == item.Token.ChainId && asset.Symbol == item.Token.Symbol))
+            .ToList();
+        
+        var unmatchedItems = userPackageFtAssets.Items
+            .Where(item => userPackageFtAssetsWithPositiveBalance.All(asset => !(asset.ChainId == item.Token.ChainId && asset.Symbol == item.Token.Symbol)))
+            .ToList();
+        
+        return MergeAndBuildDto(ConvertToUserPackageAssets(matchedItems), ConvertToUserPackageAssets(userPackageNftAssetsWithPositiveBalance), ConvertToUserPackageAssets(unmatchedItems));
+    }
+    
+    private  List<UserPackageAsset> ConvertToUserPackageAssets(List<UserAsset> userPackageNftAssetsWithPositiveBalance)
+    {
+        var userPackageAssets = new List<UserPackageAsset>();
+
+        foreach (var asset in userPackageNftAssetsWithPositiveBalance)
+        {
+            var userPackageAsset = new UserPackageAsset
+            {
+                ChainId = asset.ChainId,
+                Symbol = asset.Symbol,
+                Address = asset.Address,
+                Decimals = asset.NftInfo?.Decimals,
+                ImageUrl = asset.NftInfo?.ImageUrl,
+                Alias = asset.NftInfo?.Alias,
+                TokenId = asset.NftInfo?.TokenId,
+                AssetType = (int)AssetType.NFT
+            };
+
+            userPackageAssets.Add(userPackageAsset);
+        }
+
+        return userPackageAssets;
+    }
+    
+    private List<UserPackageAsset> ConvertToUserPackageAssets(List<UserTokenIndexDto> matchedItems)
+    {
+        var userPackageAssets = new List<UserPackageAsset>();
+
+        foreach (var item in matchedItems)
+        {
+            var userPackageAsset = new UserPackageAsset
+            {
+                ChainId = item.Token.ChainId,
+                Symbol = item.Token.Symbol,
+                Address = item.Token.Address,
+                Decimals = item.Token.Decimals.ToString(),
+                ImageUrl = item.Token.ImageUrl,
+                AssetType = (int)AssetType.FT
+            };
+
+            userPackageAssets.Add(userPackageAsset);
+        }
+
+        return userPackageAssets;
+    }
+    
+    private SearchUserPackageAssetsDto MergeAndBuildDto(
+        List<UserPackageAsset> userPackageFtAssetsWithPositiveBalance,
+        List<UserPackageAsset> userPackageNftAssetsWithPositiveBalance,
+        List<UserPackageAsset> userPackageFtAssetsWithNoBalance)
+    {
+        var dto = new SearchUserPackageAssetsDto
+        {
+            TotalRecordCount = userPackageFtAssetsWithPositiveBalance.Count + userPackageNftAssetsWithPositiveBalance.Count + userPackageFtAssetsWithNoBalance.Count,
+            FtRecordCount = userPackageFtAssetsWithPositiveBalance.Count + userPackageFtAssetsWithNoBalance.Count,
+            NftRecordCount = userPackageNftAssetsWithPositiveBalance.Count,
+            Data = new List<UserPackageAsset>()
+        };
+
+        dto.Data.AddRange(userPackageFtAssetsWithPositiveBalance);
+        dto.Data.AddRange(userPackageNftAssetsWithPositiveBalance);
+        dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
+
+        return dto;
+    }
+
+    private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsAsync(
+        SearchUserPackageAssetsRequestDto requestDto)
+    {
+        var input = new GetListInput
+        {
+            Filter = "token.symbol: ** AND (token.chainId:AELF OR token.chainId:tDVV)",
+            Sort = "sortWeight desc,isDisplay desc,token.symbol acs,token.chainId acs",
+            MaxResultCount = requestDto.MaxResultCount,
+            SkipCount = requestDto.SkipCount
+        };
+
+        return JsonConvert.DeserializeObject<PagedResultDto<UserTokenIndexDto>>(
+            await _searchAppService.GetListByLucenceAsync("usertokenindex", input), new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            });
+    }
+
+    private async Task<SearchUserAssetsDto> GetUserPackageAssetsAsync(
+        SearchUserPackageAssetsRequestDto requestDto)
+    {
+
+        SearchUserAssetsRequestDto input = new SearchUserAssetsRequestDto
+        {
+            CaAddressInfos = requestDto.CaAddressInfos,
+            Keyword = requestDto.Keyword,
+            SkipCount = requestDto.SkipCount,
+            MaxResultCount = requestDto.MaxResultCount
+        };
+        
+        return await SearchUserAssetsAsync(input);
+    }
+
+
+
 
     public SymbolImagesDto GetSymbolImagesAsync()
     {
