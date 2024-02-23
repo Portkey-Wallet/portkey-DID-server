@@ -30,6 +30,9 @@ public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
     public RedPackageTransactionStatus TransactionStatus { get; set; }
     
     public List<GrabItemDto> Items { get; set; }
+    
+    public int AssetType { get; set; }
+    
     public class GrabItemDto
     {
         public string Amount { get; set; }
