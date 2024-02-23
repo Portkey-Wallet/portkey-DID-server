@@ -28,7 +28,7 @@ public class Program
     internal static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
             .InitAppConfiguration(true)
-            .UseApolloForSilo()
+            .UseApolloForHostBuilder()
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
             .UseOrleansSnapshot()
             .UseAutofac()

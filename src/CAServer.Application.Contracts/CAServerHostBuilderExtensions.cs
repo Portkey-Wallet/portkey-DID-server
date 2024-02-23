@@ -14,7 +14,7 @@ public static class CAServerHostBuilderExtensions
             .InitConfigurationHelper(configureService);
     }
 
-    public static IHostBuilder UseApollo(this IHostBuilder hostBuilder)
+    public static IHostBuilder UseApolloForConfigureHostBuilder(this IHostBuilder hostBuilder)
     {
         if (!CAServer.Commons.ConfigurationHelper.IsApolloEnabled())
         {
@@ -117,7 +117,7 @@ public static class CAServerHostBuilderExtensions
         };
     }
 
-    public static IHostBuilder UseApolloForSilo(this IHostBuilder hostBuilder)
+    public static IHostBuilder UseApolloForHostBuilder(this IHostBuilder hostBuilder)
     {
         hostBuilder = hostBuilder
             .ConfigureAppConfiguration((_, builder) =>

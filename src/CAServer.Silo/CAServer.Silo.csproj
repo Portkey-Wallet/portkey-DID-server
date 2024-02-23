@@ -44,9 +44,6 @@
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </Content>
-        <Content Include="apollo.appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
         <Content Update="apollo.appsettings.json">
           <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
