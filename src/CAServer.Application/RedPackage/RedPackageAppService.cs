@@ -19,10 +19,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
+using Volo.Abp.Users;
 using Volo.Abp.Users;
 
 namespace CAServer.RedPackage;
@@ -63,7 +65,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _userAssetsProvider = userAssetsProvider;
     }
 
-    public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol, string chainId)
+    public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol,string chainId)
     {
         // nft package
         if (symbol.Contains('-'))
@@ -82,7 +84,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             .ToList().FirstOrDefault();
         if (result == null)
         {
-            var tokenInfo = await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
+            var tokenInfo =  await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
             if (tokenInfo == null)
             {
                 throw new UserFriendlyException("Symbol not found");
@@ -94,7 +96,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 MinAmount = "1"
             };
         }
-
         return result;
     }
 
@@ -141,7 +142,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             }
             
             var result = await GetRedPackageOptionAsync(input.Symbol, input.ChainId);
-            
+
             var checkResult =
                 await CheckSendRedPackageInputAsync(input, long.Parse(result.MinAmount), _redPackageOptions.MaxCount);
             if (!checkResult.Item1)
