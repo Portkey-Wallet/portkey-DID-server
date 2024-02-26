@@ -730,12 +730,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsAsync(
         SearchUserPackageAssetsRequestDto requestDto)
     {
+        var keyword = requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword.ToUpper();
         var input = new GetListInput
         {
-            Filter = "token.symbol: ** AND (token.chainId:AELF OR token.chainId:tDVV)",
+            Filter = $"token.symbol: *{keyword}* AND (token.chainId:AELF OR token.chainId:tDVV)",
             Sort = "sortWeight desc,isDisplay desc,token.symbol acs,token.chainId acs",
             MaxResultCount = requestDto.MaxResultCount,
-            SkipCount = requestDto.SkipCount
+            SkipCount = requestDto.SkipCount,
         };
 
         return JsonConvert.DeserializeObject<PagedResultDto<UserTokenIndexDto>>(
