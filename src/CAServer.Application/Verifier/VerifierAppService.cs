@@ -248,8 +248,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     {
         try
         {
-            _httpContextAccessor.HttpContext.Request.Headers.TryGetValue("oauth_version", out var version);
-            var userId = await GetTwitterUserIdAsync(requestDto.AccessToken, version);
+            var userId = await GetTwitterUserIdAsync(requestDto.AccessToken);
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -294,10 +293,10 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
     }
 
-    private async Task<string> GetTwitterUserIdAsync(string accessToken, string version = "2.0")
+    private async Task<string> GetTwitterUserIdAsync(string accessToken)
     {
         var authToken = $"{CommonConstant.JwtTokenPrefix} {accessToken}";
-        if (version == "1.0A")
+        if (accessToken.Contains("oauth_signature"))
         {
             authToken = $"OAuth {accessToken}";
         }
