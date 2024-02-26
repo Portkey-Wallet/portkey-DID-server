@@ -13,15 +13,18 @@ using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
 using CAServer.Tokens;
 using CAServer.UserAssets.Dtos;
+using CAServer.UserAssets.Provider;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
+using Volo.Abp.Users;
 using Volo.Abp.Users;
 
 namespace CAServer.RedPackage;
@@ -38,6 +41,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly IContactProvider _contactProvider;
     private readonly ILogger<RedPackageAppService> _logger;
     private readonly ITokenAppService _tokenAppService;
+    private readonly IUserAssetsProvider _userAssetsProvider;
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -46,7 +50,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IOptionsSnapshot<RedPackageOptions> redPackageOptions,
         IContactProvider contactProvider,
         IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger,
-        ITokenAppService tokenAppService)
+        ITokenAppService tokenAppService, IUserAssetsProvider userAssetsProvider)
     {
         _redPackageOptions = redPackageOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -58,9 +62,10 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _contactProvider = contactProvider;
         _logger = logger;
         _tokenAppService = tokenAppService;
+        _userAssetsProvider = userAssetsProvider;
     }
 
-    public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol, string chainId)
+    public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol,string chainId)
     {
         // nft package
         if (symbol.Contains('-'))
@@ -79,7 +84,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             .ToList().FirstOrDefault();
         if (result == null)
         {
-            var tokenInfo = await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
+            var tokenInfo =  await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
             if (tokenInfo == null)
             {
                 throw new UserFriendlyException("Symbol not found");
@@ -91,7 +96,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 MinAmount = "1"
             };
         }
-
         return result;
     }
 
@@ -138,7 +142,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             }
             
             var result = await GetRedPackageOptionAsync(input.Symbol, input.ChainId);
-            
+
             var checkResult =
                 await CheckSendRedPackageInputAsync(input, long.Parse(result.MinAmount), _redPackageOptions.MaxCount);
             if (!checkResult.Item1)
@@ -292,9 +296,16 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
         if (detail.AssetType == (int) AssetType.NFT)
         {
-            detail.Alias = "aaa";
-            detail.TokenId = detail.Symbol.Split('-')[1];
-            detail.ImageUrl = "https://www.baidu.com";
+            var getNftItemInfosDto = CreateGetNftItemInfosDto(detail.Symbol, detail.ChainId);
+            var indexerNftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
+            List<NftItemInfo> nftItemInfos = indexerNftItemInfos.NftItemInfos;
+
+            if (nftItemInfos != null && nftItemInfos.Count > 0)
+            {
+                detail.Alias = nftItemInfos[0].TokenName;
+                detail.TokenId = detail.Symbol.Split('-')[1];
+                detail.ImageUrl = nftItemInfos[0].ImageUrl;
+            }
         }
 
         CheckLuckKing(detail);
@@ -312,6 +323,18 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             detail.IsRedPackageFullyClaimed = true;
         }
         return detail; 
+    }
+    
+    private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)
+    {
+        var getNftItemInfosDto = new GetNftItemInfosDto();
+        getNftItemInfosDto.GetNftItemInfos = new List<GetNftItemInfo>();
+        var nftItemInfo = new GetNftItemInfo();
+        nftItemInfo.Symbol = symbol;
+        nftItemInfo.ChainId = chainId;
+        getNftItemInfosDto.GetNftItemInfos.Add(nftItemInfo);
+
+        return getNftItemInfosDto;
     }
 
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
