@@ -304,7 +304,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
 
         var header = new Dictionary<string, string>
         {
-            [CommonConstant.AuthHeader] = $"{CommonConstant.JwtTokenPrefix} {accessToken}"
+            [CommonConstant.AuthHeader] = authToken
         };
         var userInfo = await _httpClientService.GetAsync<TwitterUserInfoDto>(CommonConstant.TwitterUserInfoUrl, header);
 
