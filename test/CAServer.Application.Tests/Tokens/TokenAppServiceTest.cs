@@ -48,6 +48,7 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(graphQlClient);
         services.AddSingleton(graphQlHelper);
         services.AddSingleton(GetMockITokenProvider());
+        services.AddSingleton(GetMockITokenCacheProvider());
     }
 
     [Fact]
@@ -91,6 +92,10 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
     {
         var tokenInfo = await _tokenAppService.GetTokenInfoAsync("AELF", "CPU");
         tokenInfo.Symbol.ShouldBe("CPU");
+        
+        tokenInfo = await _tokenAppService.GetTokenInfoAsync("AELF", "AXX");
+        tokenInfo.Symbol.ShouldBe("AXX");
+        tokenInfo.Decimals.ShouldBe(8);
     }
 
     [Fact]
