@@ -249,6 +249,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             _httpContextAccessor.HttpContext.Request.Headers.TryGetValue("oauth_version", out var version);
+            Logger.LogInformation("version: {version}", version);
             var userId = await GetTwitterUserIdAsync(requestDto.AccessToken, version);
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
@@ -302,6 +303,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
             authToken = $"OAuth {accessToken}";
         }
 
+        Logger.LogInformation("authToken:{authToken}", authToken);
         var header = new Dictionary<string, string>
         {
             [CommonConstant.AuthHeader] = authToken
@@ -444,7 +446,7 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
         catch (Exception e)
         {
-            _logger.LogError(e,"Verify Facebook Failed, AccessToken is {accessToken},", requestDto.AccessToken);
+            _logger.LogError(e, "Verify Facebook Failed, AccessToken is {accessToken},", requestDto.AccessToken);
             throw new UserFriendlyException("Verify Facebook Failed.");
         }
     }
