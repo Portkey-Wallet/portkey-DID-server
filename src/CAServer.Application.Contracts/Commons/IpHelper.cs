@@ -3,13 +3,12 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
-using JetBrains.Annotations;
+using Castle.Core.Internal;
 
 namespace CAServer.Commons;
 
 public static class IpHelper
 {
-    
     /*
      IpHelper.AssertAllowed("192.1.1.1", new string[]
        {
@@ -22,7 +21,7 @@ public static class IpHelper
     {
         return whiteList.Any(item => IsMatch(ip, item));
     }
-    
+
     private static bool IsMatch(string ip, string whitelistItem)
     {
         // Check common IP address
@@ -61,10 +60,22 @@ public static class IpHelper
     public static string GetLocalIp()
     {
         var localIp = NetworkInterface.GetAllNetworkInterfaces()
-                .Select(p => p.GetIPProperties())
-                .SelectMany(p => p.UnicastAddresses)
-                .FirstOrDefault(p => p.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(p.Address))?.Address.ToString();
+            .Select(p => p.GetIPProperties())
+            .SelectMany(p => p.UnicastAddresses)
+            .FirstOrDefault(p =>
+                p.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(p.Address))?.Address
+            .ToString();
 
         return localIp;
+    }
+
+    public static string GetRouteTableKey(string connectionId, string ip = "")
+    {
+        if (ip.IsNullOrEmpty())
+        {
+            ip = GetLocalIp();
+        }
+
+        return $"{ip}:{connectionId}";
     }
 }

@@ -1,6 +1,6 @@
 namespace CAServer.Hub;
 
-public class IpTableInfo
+public class RouteTableInfo
 {
     public string ConnectionIp { get; set; }
     public string ClientId { get; set; }
