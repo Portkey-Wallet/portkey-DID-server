@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
@@ -52,8 +53,18 @@ public class HttpClientService : IHttpClientService
             client.DefaultRequestHeaders.Add(keyValuePair.Key, keyValuePair.Value);
         }
 
-        var response = await client.GetStringAsync(url);
-        return JsonConvert.DeserializeObject<T>(response);
+        var response = await client.GetAsync(url);
+
+        var content = await response.Content.ReadAsStringAsync();
+        if (!ResponseSuccess(response.StatusCode))
+        {
+            _logger.LogError(
+                "Response not success, url:{url}, code:{code}, message: {message}",
+                url, response.StatusCode, content);
+
+            throw new UserFriendlyException(content, ((int)response.StatusCode).ToString());
+        }
+        return JsonConvert.DeserializeObject<T>(content);
     }
 
     public async Task<T> PostAsync<T>(string url)

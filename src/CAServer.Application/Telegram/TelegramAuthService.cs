@@ -8,6 +8,7 @@ using CAServer.Telegram.Options;
 using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -41,6 +42,7 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
 
     public async Task<string> ValidateTelegramHashAndGenerateTokenAsync(TelegramAuthReceiveRequest request)
     {
+        Logger.LogInformation("tg request params: {request}", JsonConvert.SerializeObject(request));
         if (request == null || request.Id.IsNullOrWhiteSpace() || request.Hash.IsNullOrWhiteSpace())
         {
             _logger.LogInformation("Id or Hash is null");
