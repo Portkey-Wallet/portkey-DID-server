@@ -5,4 +5,5 @@ namespace CAServer.IpInfo;
 public interface IIpInfoAppService
 {
     Task<IpInfoResultDto> GetIpInfoAsync();
+    Task<string> GetLocalIpAsync();
 }

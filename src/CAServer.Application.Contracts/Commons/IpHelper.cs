@@ -1,5 +1,7 @@
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 
@@ -54,5 +56,15 @@ public static class IpHelper
     {
         var bytes = ip.GetAddressBytes();
         return ((long)bytes[0] << 24) | ((long)bytes[1] << 16) | ((long)bytes[2] << 8) | bytes[3];
+    }
+
+    public static string GetLocalIp()
+    {
+        var localIp = NetworkInterface.GetAllNetworkInterfaces()
+                .Select(p => p.GetIPProperties())
+                .SelectMany(p => p.UnicastAddresses)
+                .FirstOrDefault(p => p.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(p.Address))?.Address.ToString();
+
+        return localIp;
     }
 }
