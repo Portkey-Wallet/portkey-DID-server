@@ -8,6 +8,7 @@ using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
+using CAServer.Tokens.Cache;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
 using Microsoft.Extensions.Caching.Distributed;
@@ -32,11 +33,13 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     private readonly IDistributedCache<TokenExchange> _latestExchange;
     private readonly IDistributedCache<TokenExchange> _historyExchange;
     private readonly Dictionary<string, IExchangeProvider> _exchangeProviders;
+    private readonly ITokenCacheProvider _tokenCacheProvider;
 
     public TokenAppService(IClusterClient clusterClient, IOptions<ContractAddressOptions> contractAddressesOptions,
         ITokenProvider tokenProvider, IEnumerable<IExchangeProvider> exchangeProviders,
         IDistributedCache<TokenExchange> latestExchange,
-        IDistributedCache<TokenExchange> historyExchange)
+        IDistributedCache<TokenExchange> historyExchange,
+        ITokenCacheProvider tokenCacheProvider)
     {
         _clusterClient = clusterClient;
         _tokenProvider = tokenProvider;
@@ -44,6 +47,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         _historyExchange = historyExchange;
         _contractAddressOptions = contractAddressesOptions.Value;
         _exchangeProviders = exchangeProviders.ToDictionary(p => p.Name().ToString(), p => p);
+        _tokenCacheProvider = tokenCacheProvider;
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -156,7 +160,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var tokenInfo = dto?.TokenInfo?.FirstOrDefault();
         if (tokenInfo == null)
         {
-            return new GetTokenInfoDto();
+            return await _tokenCacheProvider.GetTokenInfoAsync(chainId, symbol);
         }
 
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
