@@ -271,15 +271,15 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
             if (transfer.MainChainIndexHeight != 0)
             {
-                var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.FromChainId);
-                if (indexHeight < transfer.MainChainIndexHeight)
-                {
-                    return;
-                }
+                // var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.FromChainId);
+                // if (indexHeight < transfer.MainChainIndexHeight)
+                // {
+                //     return;
+                // }
 
                 if (transfer.ToChainId != CAServerConsts.AElfMainChainId)
                 {
-                    indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.ToChainId);
+                    var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.ToChainId);
                     if (indexHeight < transfer.MainChainIndexHeight)
                     {
                         return;
