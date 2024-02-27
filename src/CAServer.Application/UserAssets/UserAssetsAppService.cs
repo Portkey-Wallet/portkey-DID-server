@@ -638,7 +638,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(SearchUserPackageAssetsRequestDto requestDto)
     {
-        var userPackageFtAssets = await GetUserPackageFtAssetsAsync(requestDto);
+        var userPackageFtAssetsIndex = await GetUserPackageFtAssetsIndexAsync(requestDto);
 
         var userPackageAssets = await GetUserPackageAssetsAsync(requestDto);
         
@@ -649,16 +649,70 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var userPackageNftAssetsWithPositiveBalance = userPackageAssets.Data
             .Where(asset => asset.NftInfo?.Balance != null && long.Parse(asset.NftInfo.Balance) > 0)
             .ToList();
+
+        var matchedItems =
+            MatchAndConvertToUserPackageAssets(userPackageFtAssetsIndex, userPackageFtAssetsWithPositiveBalance);
+
+        var unmatchedItems =
+            UnMatchAndConvertToUserPackageAssets(userPackageFtAssetsIndex, userPackageFtAssetsWithPositiveBalance);
         
-        var matchedItems = userPackageFtAssets.Items
+        return MergeAndBuildDto(matchedItems, ConvertToUserPackageAssets(userPackageNftAssetsWithPositiveBalance), unmatchedItems);
+    }
+    
+    private List<UserPackageAsset> MatchAndConvertToUserPackageAssets(PagedResultDto<UserTokenIndexDto> userPackageFtAssetsIndex, List<UserAsset> userPackageFtAssetsWithPositiveBalance)
+    {
+        var matchedItems = userPackageFtAssetsIndex.Items
             .Where(item => userPackageFtAssetsWithPositiveBalance.Any(asset => asset.ChainId == item.Token.ChainId && asset.Symbol == item.Token.Symbol))
             .ToList();
-        
-        var unmatchedItems = userPackageFtAssets.Items
+
+        var userPackageAssets = new List<UserPackageAsset>();
+
+        foreach (var item in matchedItems)
+        {
+            var correspondingAsset = userPackageFtAssetsWithPositiveBalance.First(asset => asset.ChainId == item.Token.ChainId && asset.Symbol == item.Token.Symbol);
+
+            var userPackageAsset = new UserPackageAsset
+            {
+                ChainId = item.Token.ChainId,
+                Symbol = item.Token.Symbol,
+                Address = item.Token.Address,
+                Decimals = item.Token.Decimals.ToString(),
+                ImageUrl = item.Token.ImageUrl,
+                AssetType = (int)AssetType.FT,
+                Balance = correspondingAsset.TokenInfo.Balance
+            };
+
+            userPackageAssets.Add(userPackageAsset);
+        }
+
+        return userPackageAssets;
+    }
+    
+    private List<UserPackageAsset> UnMatchAndConvertToUserPackageAssets(PagedResultDto<UserTokenIndexDto> userPackageFtAssetsIndex, List<UserAsset> userPackageFtAssetsWithPositiveBalance)
+    {
+        var matchedItems = userPackageFtAssetsIndex.Items
             .Where(item => userPackageFtAssetsWithPositiveBalance.All(asset => !(asset.ChainId == item.Token.ChainId && asset.Symbol == item.Token.Symbol)))
             .ToList();
-        
-        return MergeAndBuildDto(ConvertToUserPackageAssets(matchedItems), ConvertToUserPackageAssets(userPackageNftAssetsWithPositiveBalance), ConvertToUserPackageAssets(unmatchedItems));
+
+        var userPackageAssets = new List<UserPackageAsset>();
+
+        foreach (var item in matchedItems)
+        {
+            var userPackageAsset = new UserPackageAsset
+            {
+                ChainId = item.Token.ChainId,
+                Symbol = item.Token.Symbol,
+                Address = item.Token.Address,
+                Decimals = item.Token.Decimals.ToString(),
+                ImageUrl = item.Token.ImageUrl,
+                AssetType = (int)AssetType.FT,
+                Balance = "0"
+            };
+
+            userPackageAssets.Add(userPackageAsset);
+        }
+
+        return userPackageAssets;
     }
     
     private  List<UserPackageAsset> ConvertToUserPackageAssets(List<UserAsset> userPackageNftAssetsWithPositiveBalance)
@@ -676,6 +730,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 ImageUrl = asset.NftInfo?.ImageUrl,
                 Alias = asset.NftInfo?.Alias,
                 TokenId = asset.NftInfo?.TokenId,
+                Balance = asset.NftInfo?.Balance,
                 AssetType = (int)AssetType.NFT
             };
 
@@ -684,29 +739,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         return userPackageAssets;
     }
-    
-    private List<UserPackageAsset> ConvertToUserPackageAssets(List<UserTokenIndexDto> matchedItems)
-    {
-        var userPackageAssets = new List<UserPackageAsset>();
 
-        foreach (var item in matchedItems)
-        {
-            var userPackageAsset = new UserPackageAsset
-            {
-                ChainId = item.Token.ChainId,
-                Symbol = item.Token.Symbol,
-                Address = item.Token.Address,
-                Decimals = item.Token.Decimals.ToString(),
-                ImageUrl = item.Token.ImageUrl,
-                AssetType = (int)AssetType.FT
-            };
-
-            userPackageAssets.Add(userPackageAsset);
-        }
-
-        return userPackageAssets;
-    }
-    
     private SearchUserPackageAssetsDto MergeAndBuildDto(
         List<UserPackageAsset> userPackageFtAssetsWithPositiveBalance,
         List<UserPackageAsset> userPackageNftAssetsWithPositiveBalance,
@@ -727,7 +760,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         return dto;
     }
 
-    private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsAsync(
+    private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsIndexAsync(
         SearchUserPackageAssetsRequestDto requestDto)
     {
         var keyword = requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword.ToUpper();
