@@ -31,6 +31,8 @@ public class UserPackageAsset
     public string Alias { get; set; }
     
     public string TokenId { get; set; } 
+    
+    public string Balance { get; set; }
 }
 
 public enum AssetType
