@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using CAServer.Tab;
 using CAServer.Tab.Dtos;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -9,24 +8,18 @@ namespace CAServer.Controllers;
 
 [RemoteService]
 [Area("app")]
-[ControllerName("Tab")]
-[Route("api/app/tab")]
-public class TabController : CAServerController
+[ControllerName("Hub")]
+[Route("api/app/hub")]
+public class HubController: CAServerController
 {
     private readonly ITabAppService _tabAppService;
-    public TabController(ITabAppService tabAppService)
+    public HubController(ITabAppService tabAppService)
     {
         _tabAppService = tabAppService;
     }
 
-    [HttpPost("complete")]
+    [HttpPost("send")]
     public async Task CompleteAsync(TabCompleteDto input)
-    {
-        await _tabAppService.CompleteAsync(input);
-    }
-    
-    [HttpPost("receive")]
-    public async Task ReceiveAsync(TabCompleteDto input)
     {
         await _tabAppService.CompleteAsync(input);
     }

@@ -9,6 +9,8 @@ namespace CAServer.Commons;
 
 public static class IpHelper
 {
+    public static string LocalIp { get; set; } = GetLocalIp();
+
     /*
      IpHelper.AssertAllowed("192.1.1.1", new string[]
        {
@@ -59,23 +61,21 @@ public static class IpHelper
 
     public static string GetLocalIp()
     {
-        var localIp = NetworkInterface.GetAllNetworkInterfaces()
+        return NetworkInterface.GetAllNetworkInterfaces()
             .Select(p => p.GetIPProperties())
             .SelectMany(p => p.UnicastAddresses)
             .FirstOrDefault(p =>
                 p.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(p.Address))?.Address
             .ToString();
-
-        return localIp;
     }
 
-    public static string GetRouteTableKey(string connectionId, string ip = "")
+    public static string GetRouteTableKey(string clientId, int port, string ip = "")
     {
         if (ip.IsNullOrEmpty())
         {
-            ip = GetLocalIp();
+            ip = LocalIp;
         }
 
-        return $"{ip}:{connectionId}";
+        return $"{ip}:{port}:{clientId}";
     }
 }

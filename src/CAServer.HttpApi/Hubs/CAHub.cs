@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.Commons;
 using CAServer.Hub;
 using CAServer.Message.Dtos;
 using Microsoft.Extensions.Logging;
@@ -30,10 +29,7 @@ public class CAHub : AbpHub
         }
 
         await _hubService.RegisterClient(clientId, Context.ConnectionId);
-        var ip = IpHelper.GetLocalIp();
-        await _routeTableProvider.SetRouteTableInfoAsync(IpHelper.GetRouteTableKey(ip, Context.ConnectionId), ip,
-            clientId,
-            Context.ConnectionId);
+        await _routeTableProvider.SetRouteTableInfoAsync(clientId, Context.ConnectionId);
         _logger.LogInformation("clientId={clientId} connect", clientId);
         await _hubService.SendAllUnreadRes(clientId);
     }
@@ -71,7 +67,7 @@ public class CAHub : AbpHub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var clientId = _hubService.UnRegisterClient(Context.ConnectionId);
-        await _routeTableProvider.RemoveRouteTableInfoAsync(IpHelper.GetRouteTableKey(Context.ConnectionId));
+        await _routeTableProvider.RemoveRouteTableInfoAsync(clientId);
         _logger.LogInformation("clientId={clientId} disconnected!!!", clientId);
         await base.OnDisconnectedAsync(exception);
     }
