@@ -14,7 +14,7 @@ public static class LogHelper
                 c.Console(
                     outputTemplate:
                     "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}{Offset:zzz}][{Level:u3}] [{SourceContext}] {Message}{NewLine}{Exception}"))
-            .WriteTo.Async(c => c.File("Logsss/log-.log", rollingInterval: RollingInterval.Day,
+            .WriteTo.Async(c => c.File("Logs/log-.log", rollingInterval: RollingInterval.Day,
                 outputTemplate:
                 "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}{Offset:zzz}][{Level:u3}] [{SourceContext}] {Message}{NewLine}{Exception}"))
             .CreateLogger();
