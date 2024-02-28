@@ -1,13 +1,17 @@
-﻿using CAServer.Silo.Extensions;
+﻿using CAServer.Commons;
+using CAServer.Silo.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Events;
 
 namespace CAServer.Silo;
 public class Program
 {
     public async static Task<int> Main(string[] args)
     {
+        Log.Logger = LogHelper.CreateLogger(LogEventLevel.Debug);
+        
         try
         {
             Log.Information("Starting CAServer.Silo.");

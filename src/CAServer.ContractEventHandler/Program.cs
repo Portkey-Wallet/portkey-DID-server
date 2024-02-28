@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,6 +13,8 @@ namespace CAServer.ContractEventHandler
     {
         public static async Task<int> Main(string[] args)
         {
+            Log.Logger = LogHelper.CreateLogger(LogEventLevel.Debug);
+            
             try
             {
                 Log.Information("Starting CAServer.ContractEventHandler.");
