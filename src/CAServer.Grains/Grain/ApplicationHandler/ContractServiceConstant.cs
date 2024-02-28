@@ -14,8 +14,6 @@ public static class MethodName
     public const string TransferCryptoBoxes = "TransferCryptoBoxes";
     public const string RefundCryptoBox = "RefundCryptoBox";
     public const string AssignProjectDelegatee = "AssignProjectDelegatee";
-    public const string GetCheckOperationDetailsInSignatureEnabled = "GetCheckOperationDetailsInSignatureEnabled";
-
 }
 
 public static class TransactionState

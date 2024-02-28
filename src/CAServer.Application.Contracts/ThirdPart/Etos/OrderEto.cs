@@ -22,6 +22,10 @@ public class OrderEto
     public string Status { get; set; }
     public string LastModifyTime { get; set; }
     public bool IsDeleted { get; set; } = false;
+    
+    public string ThirdPartCrypto { get; set; }
+    public string ThirdPartNetwork { get; set; }
+
 
     // buy order
     public string CryptoQuantity { get; set; }

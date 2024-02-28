@@ -20,9 +20,9 @@ public class TreasuryCallBackHandler : IDistributedEventHandler<TreasuryOrderEto
 
     private bool Match(TreasuryOrderEto eventData)
     {
-        return eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString()
-               && eventData.Data.Status == OrderStatusType.Finish.ToString()
-               && eventData.Data.CallbackCount == 0;
+        return eventData?.Data != null &&
+               eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString() &&
+               eventData.Data.Status == OrderStatusType.Finish.ToString() && eventData.Data.CallbackCount == 0;
     }
 
     public async Task HandleEventAsync(TreasuryOrderEto eventData)
@@ -32,7 +32,7 @@ public class TreasuryCallBackHandler : IDistributedEventHandler<TreasuryOrderEto
         var orderDto = eventData.Data;
         try
         {
-            var resp= await _treasuryProcessorFactory.Processor(orderDto.ThirdPartName).CallBackAsync(orderDto.Id);
+            var resp = await _treasuryProcessorFactory.Processor(orderDto.ThirdPartName).CallBackAsync(orderDto.Id);
             AssertHelper.IsTrue(resp.Success, resp.Message);
         }
         catch (Exception e)

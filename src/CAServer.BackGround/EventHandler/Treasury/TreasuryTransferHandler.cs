@@ -47,8 +47,9 @@ public class TreasuryTransferHandler : IDistributedEventHandler<TreasuryOrderEto
 
     private bool Match(TreasuryOrderEto eventData)
     {
-        return eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString()
-               && eventData.Data.Status == OrderStatusType.StartTransfer.ToString();
+        return eventData?.Data != null &&
+               eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString() &&
+               eventData.Data.Status == OrderStatusType.StartTransfer.ToString();
     }
 
     public async Task HandleEventAsync(TreasuryOrderEto eventData)

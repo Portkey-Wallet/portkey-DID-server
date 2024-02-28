@@ -19,6 +19,9 @@ public class OrderGrainDto
     public string Network { get; set; }
     public string Status { get; set; }
 
+    public string ThirdPartCrypto { get; set; }
+    public string ThirdPartNetwork { get; set; }
+    
     // buy order
     public string CryptoQuantity { get; set; }
     public string PaymentMethod { get; set; }

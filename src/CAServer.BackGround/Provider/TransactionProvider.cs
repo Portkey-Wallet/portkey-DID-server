@@ -11,6 +11,7 @@ using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Google.Protobuf;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -54,7 +55,8 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 
             // not existed->retry  pending->wait  other->fail
             var times = 0;
-            while (transactionResult.Status == TransactionState.NotExisted && times < _transactionOptions.CurrentValue.RetryTime)
+            while (transactionResult.Status == TransactionState.NotExisted &&
+                   times < _transactionOptions.CurrentValue.RetryTime)
             {
                 times++;
                 await _contractProvider.SendRawTransactionAsync(transactionDto.ChainId,
@@ -125,7 +127,11 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
                 var thirdPartOrder = await _thirdPartOrderAppService.QueryThirdPartRampOrderAsync(order);
                 AssertHelper.IsTrue(thirdPartOrder.Success, "Query order Fail");
                 if (thirdPartOrder.Data == null || thirdPartOrder.Data.Id == Guid.Empty)
+                {
+                    _logger.LogWarning("Invalid order data :{Order}", JsonConvert.SerializeObject(thirdPartOrder));
                     continue;
+                }
+
                 await HandleUnCompletedOrderAsync(order, thirdPartOrder.Data.Status);
             }
             catch (Exception e)
@@ -150,7 +156,13 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
 
     private async Task HandleUnCompletedOrderAsync(OrderDto order, string thirdPartOrderStatus)
     {
-        if (order.Status == thirdPartOrderStatus) return;
+        if (order.Status == thirdPartOrderStatus)
+        {
+            _logger.LogDebug(
+                "HandleUnCompletedOrderAsync status not changed orderId={OrderId}, status={Status}, newStatus={NewStatus}",
+                order.Id, order.Status, thirdPartOrderStatus);
+            return;
+        }
 
         if (order.Status != OrderStatusType.Transferred.ToString() &&
             order.Status != OrderStatusType.StartTransfer.ToString() &&
@@ -158,6 +170,9 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
             order.Status != OrderStatusType.TransferFailed.ToString() &&
             order.Status != thirdPartOrderStatus)
         {
+            _logger.LogInformation(
+                "HandleUnCompletedOrderAsync updateOrderStatus orderId={OrderId}, status={Status}, newStatus={NewStatus}",
+                order.Id, order.Status, thirdPartOrderStatus);
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
             {
                 OrderId = order.Id.ToString(),
@@ -170,6 +185,9 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         if (order.Status == OrderStatusType.Transferred.ToString() &&
             thirdPartOrderStatus != OrderStatusType.Created.ToString())
         {
+            _logger.LogInformation(
+                "HandleUnCompletedOrderAsync fix transferred status orderId={OrderId}, status={Status}, newStatus={NewStatus}",
+                order.Id, order.Status, thirdPartOrderStatus);
             await _orderStatusProvider.UpdateOrderStatusAsync(new OrderStatusUpdateDto
             {
                 OrderId = order.Id.ToString(),
@@ -186,6 +204,9 @@ public class TransactionProvider : ITransactionProvider, ISingletonDependency
         if (order.Status == OrderStatusType.Transferred.ToString() &&
             thirdPartOrderStatus == OrderStatusType.Created.ToString() && isOverInterval)
         {
+            _logger.LogInformation(
+                "HandleUnCompletedOrderAsync ResendTxHash orderId={OrderId}, status={Status}, newStatus={NewStatus}",
+                order.Id, order.Status, thirdPartOrderStatus);
             await _thirdPartOrderAppService.UpdateOffRampTxHashAsync(new TransactionHashDto
             {
                 MerchantName = order.MerchantName,

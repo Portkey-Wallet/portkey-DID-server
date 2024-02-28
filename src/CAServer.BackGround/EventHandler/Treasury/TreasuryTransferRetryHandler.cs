@@ -48,8 +48,9 @@ public class TreasuryTransferRetryHandler : IDistributedEventHandler<TreasuryOrd
 
     private bool Match(TreasuryOrderEto eventData)
     {
-        return eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString()
-               && eventData.Data.Status == OrderStatusType.TransferFailed.ToString();
+        return eventData?.Data != null &&
+               eventData.Data.TransferDirection == TransferDirectionType.TokenBuy.ToString() &&
+               eventData.Data.Status == OrderStatusType.TransferFailed.ToString();
     }
 
     public async Task HandleEventAsync(TreasuryOrderEto eventData)

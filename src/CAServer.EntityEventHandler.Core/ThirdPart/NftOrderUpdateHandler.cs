@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
@@ -28,22 +29,24 @@ public class NftOrderUpdateHandler : IDistributedEventHandler<NftOrderEto>, ITra
     
     public async Task HandleEventAsync(NftOrderEto eventData)
     {
-        var nftOrderGrainDto = eventData.Data;
+        NftOrderGrainDto nftOrderGrainDto = null;
         try
         {
-            var nftOrderInfo = _objectMapper.Map<NftOrderGrainDto, NftOrderIndex>(nftOrderGrainDto);
+            nftOrderGrainDto = eventData?.Data;
+            AssertHelper.NotNull(nftOrderGrainDto, "Empty message");
 
+            var nftOrderInfo = _objectMapper.Map<NftOrderGrainDto, NftOrderIndex>(nftOrderGrainDto);
             await _nftOrderRepository.AddOrUpdateAsync(nftOrderInfo);
 
             _logger.LogInformation(
                 "nft order index add or update success, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
-                nftOrderGrainDto.Id, nftOrderGrainDto.MerchantName, nftOrderGrainDto.MerchantOrderId);
+                nftOrderGrainDto?.Id, nftOrderGrainDto?.MerchantName, nftOrderGrainDto?.MerchantOrderId);
         }
         catch (Exception e)
         {
             _logger.LogError(e,
                 "An error occurred while processing the event, Id:{Id}, merchantName:{MerchantName}, merchantOrderId:{MerchantOrderId}",
-                nftOrderGrainDto.Id, nftOrderGrainDto.MerchantName, nftOrderGrainDto.MerchantOrderId);
+                nftOrderGrainDto?.Id, nftOrderGrainDto?.MerchantName, nftOrderGrainDto?.MerchantOrderId);
         }
     }
 }

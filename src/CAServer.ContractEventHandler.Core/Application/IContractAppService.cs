@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
 using AElf.Types;
-using CAServer.Account;
 using CAServer.Commons;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -33,6 +32,7 @@ using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
+using GuardianInfo = Portkey.Contracts.CA.GuardianInfo;
 using ManagerInfo = CAServer.Account.ManagerInfo;
 
 namespace CAServer.ContractEventHandler.Core.Application;
@@ -644,23 +644,22 @@ public class ContractAppService : IContractAppService
         return new Tuple<bool, bool>(true, chainId == createChainId);
     }
 
-    private async Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync()
+    private bool EnableAcceleration(List<GuardianInfo> guardianInfos)
     {
-        var enable = await _distributedCache.GetOrAddAsync(
-            "CheckOperationDetailsInSignatureEnabled",
-            async () =>
-            {
-                var tasks = _chainOptions.ChainInfos.Values.Select(chainInfo =>
-                    _contractProvider.GetCheckOperationDetailsInSignatureEnabledAsync(chainInfo.ChainId)).ToList();
-                var results = await tasks.WhenAll();
-                return results.All(r => r).ToString();
-            },
-            () => new DistributedCacheEntryOptions
-            {
-                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1)
-            }
-        );
-        return bool.Parse(enable ?? "false");
+        if (guardianInfos == null || guardianInfos.Count == 0)
+        {
+            return false;
+        }
+
+        return guardianInfos.All(guardianInfo => guardianInfo?.VerificationInfo != null &&
+                                                 !guardianInfo.VerificationInfo.VerificationDoc.IsNullOrWhiteSpace() &&
+                                                 GetVerificationDocLength(guardianInfo.VerificationInfo
+                                                     .VerificationDoc) >= 8);
+    }
+
+    private int GetVerificationDocLength(string verificationDoc)
+    {
+        return string.IsNullOrWhiteSpace(verificationDoc) ? 0 : verificationDoc.Split(",").Length;
     }
 
     private async Task CreateHolderInfoOnNonCreateChainAsync(
@@ -670,8 +669,11 @@ public class ContractAppService : IContractAppService
         var watcher = Stopwatch.StartNew();
         try
         {
-            if (!await GetCheckOperationDetailsInSignatureEnabledAsync())
+            var list = new List<GuardianInfo> { createHolderDto.GuardianInfo };
+            if (!EnableAcceleration(list))
             {
+                _logger.LogWarning("CreateHolderInfo, OperationDetails is not signed in，caHash = {0}",
+                    outputGetHolderInfo.CaHash?.ToHex());
                 return;
             }
 
@@ -770,8 +772,10 @@ public class ContractAppService : IContractAppService
         var watcher = Stopwatch.StartNew();
         try
         {
-            if (!await GetCheckOperationDetailsInSignatureEnabledAsync())
+            if (!EnableAcceleration(socialRecoveryDto.GuardianApproved))
             {
+                _logger.LogWarning("SocialRecovery, OperationDetails is not signed in，identifierHash = {0}",
+                    socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex());
                 return;
             }
 
@@ -793,8 +797,8 @@ public class ContractAppService : IContractAppService
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError(e, "social recover on 'NonCreateChain' error, caHash = {0}",
-                        socialRecoveryDto.CaHash?.ToHex());
+                    _logger.LogError(e, "social recover on 'NonCreateChain' error, identifierHash = {0}",
+                        socialRecoveryDto.LoginGuardianIdentifierHash?.ToHex());
                 }
                 finally
                 {
