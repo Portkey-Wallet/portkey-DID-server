@@ -67,17 +67,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol,string chainId)
     {
-        // nft package
-        if (symbol.Contains('-'))
-        {
-            return new RedPackageTokenInfo
-            {
-                Decimal = 0,
-                MinAmount = "1"
-            };
-        }
-
-        // ft package
         var result = _redPackageOptions.TokenInfo.Where(x =>
                 string.Equals(x.Symbol, symbol, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(x.ChainId, chainId, StringComparison.OrdinalIgnoreCase))
@@ -85,18 +74,35 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         if (result == null)
         {
             var tokenInfo =  await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
-            if (tokenInfo == null)
+            if (tokenInfo != null)
             {
-                throw new UserFriendlyException("Symbol not found");
+                return CreateRedPackageTokenInfo(tokenInfo.Decimals);
             }
 
-            result = new RedPackageTokenInfo
+            var getNftItemInfosDto = CreateGetNftItemInfosDto(symbol, chainId);
+            var nftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
+
+            if (nftItemInfos?.NftItemInfos?.Count > 0)
             {
-                Decimal = tokenInfo.Decimals,
-                MinAmount = "1"
-            };
+                var firstNftItemInfo = nftItemInfos.NftItemInfos.FirstOrDefault();
+                if (firstNftItemInfo != null)
+                {
+                    return CreateRedPackageTokenInfo(firstNftItemInfo.Decimals);
+                }
+            }
+
+            throw new UserFriendlyException("Symbol not found");
         }
         return result;
+    }
+    
+    private RedPackageTokenInfo CreateRedPackageTokenInfo(int decimals)
+    {
+        return new RedPackageTokenInfo
+        {
+            Decimal = decimals,
+            MinAmount = "1"
+        };
     }
 
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
