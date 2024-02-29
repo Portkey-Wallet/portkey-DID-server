@@ -725,7 +725,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 ChainId = asset.ChainId,
                 Symbol = asset.Symbol,
-                Address = asset.Address,
+                // Here, what 'Address' actually needs is 'TokenContractAddress'
+                Address = asset.NftInfo?.TokenContractAddress,
                 Decimals = asset.NftInfo?.Decimals,
                 ImageUrl = asset.NftInfo?.ImageUrl,
                 Alias = asset.NftInfo?.Alias,

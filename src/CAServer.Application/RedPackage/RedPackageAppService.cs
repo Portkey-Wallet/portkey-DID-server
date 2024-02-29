@@ -544,14 +544,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             return (false, "Symbol must not contain '-' for FT assets");
         }
 
-        if (input.AssetType == (int)AssetType.NFT)
-        {
-            if (!decimal.TryParse(input.TotalAmount, out var totalAmount) || totalAmount <= 0 || totalAmount % 1 != 0)
-            {
-                return (false, "TotalAmount must be a positive integer for NFT assets");
-            }
-        }
-
         return (true, "");
     }
     
