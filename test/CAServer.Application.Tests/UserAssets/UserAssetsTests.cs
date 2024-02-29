@@ -7,6 +7,7 @@ using CAServer.Common;
 using CAServer.Contacts.Provider;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
+using CAServer.Search;
 using CAServer.Tokens;
 using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
@@ -55,6 +56,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var seedImageOptionsMock = new Mock<IOptionsSnapshot<SeedImageOptions>>();
         seedImageOptionsMock.Setup(o => o.Value).Returns(new SeedImageOptions());
         var userTokenAppServiceMock = new Mock<IUserTokenAppService>();
+        var searchAppServiceMock = new Mock<ISearchAppService>();
         var tokenProvider = new Mock<ITokenProvider>();
         var userAssetsAppService = new UserAssetsAppService(
             logger: loggerMock.Object,
@@ -72,7 +74,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(), 
             userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>(),
             userTokenBalanceCache: GetRequiredService<IDistributedCache<string>>(),
-            getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>());
+            getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(), 
+            searchAppService: searchAppServiceMock.Object);
         return userAssetsAppService;
     }
 
