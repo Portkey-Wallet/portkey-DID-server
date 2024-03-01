@@ -675,10 +675,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 ChainId = item.Token.ChainId,
                 Symbol = item.Token.Symbol,
-                Address = item.Token.Address,
                 Decimals = item.Token.Decimals.ToString(),
                 ImageUrl = item.Token.ImageUrl,
                 AssetType = (int)AssetType.FT,
+                TokenContractAddress = item.Token.Address,
                 Balance = correspondingAsset.TokenInfo.Balance
             };
 
@@ -702,10 +702,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 ChainId = item.Token.ChainId,
                 Symbol = item.Token.Symbol,
-                Address = item.Token.Address,
                 Decimals = item.Token.Decimals.ToString(),
                 ImageUrl = item.Token.ImageUrl,
                 AssetType = (int)AssetType.FT,
+                TokenContractAddress = item.Token.Address,
                 Balance = "0"
             };
 
@@ -725,13 +725,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 ChainId = asset.ChainId,
                 Symbol = asset.Symbol,
-                // Here, what 'Address' actually needs is 'TokenContractAddress'
-                Address = asset.NftInfo?.TokenContractAddress,
                 Decimals = asset.NftInfo?.Decimals,
                 ImageUrl = asset.NftInfo?.ImageUrl,
                 Alias = asset.NftInfo?.Alias,
                 TokenId = asset.NftInfo?.TokenId,
                 Balance = asset.NftInfo?.Balance,
+                TokenContractAddress = asset.NftInfo?.TokenContractAddress,
                 AssetType = (int)AssetType.NFT
             };
 

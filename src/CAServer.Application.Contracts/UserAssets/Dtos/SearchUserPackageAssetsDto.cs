@@ -19,8 +19,6 @@ public class UserPackageAsset
     public string ChainId { get; set; }
     
     public string Symbol { get; set; }
-    
-    public string Address { get; set; }
 
     public string Decimals { get; set; }
     
@@ -33,6 +31,8 @@ public class UserPackageAsset
     public string TokenId { get; set; } 
     
     public string Balance { get; set; }
+    
+    public string TokenContractAddress { get; set; }
 }
 
 public enum AssetType
