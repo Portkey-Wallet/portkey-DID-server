@@ -12,6 +12,8 @@ using CAServer.Grains.Grain.RedPackage;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
 using CAServer.Tokens;
+using CAServer.UserAssets.Dtos;
+using CAServer.UserAssets.Provider;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -39,7 +41,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly IContactProvider _contactProvider;
     private readonly ILogger<RedPackageAppService> _logger;
     private readonly ITokenAppService _tokenAppService;
-
+    private readonly IUserAssetsProvider _userAssetsProvider;
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -48,7 +50,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IOptionsSnapshot<RedPackageOptions> redPackageOptions,
         IContactProvider contactProvider,
         IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger,
-        ITokenAppService tokenAppService)
+        ITokenAppService tokenAppService, IUserAssetsProvider userAssetsProvider)
     {
         _redPackageOptions = redPackageOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -60,29 +62,47 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _contactProvider = contactProvider;
         _logger = logger;
         _tokenAppService = tokenAppService;
+        _userAssetsProvider = userAssetsProvider;
     }
 
     public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol,string chainId)
     {
-        var result =  _redPackageOptions.TokenInfo.Where(x =>
+        var result = _redPackageOptions.TokenInfo.Where(x =>
                 string.Equals(x.Symbol, symbol, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(x.ChainId, chainId, StringComparison.OrdinalIgnoreCase))
             .ToList().FirstOrDefault();
         if (result == null)
         {
             var tokenInfo =  await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
-            if (tokenInfo == null)
+            if (tokenInfo != null)
             {
-                throw new UserFriendlyException("Symbol not found");
+                return CreateRedPackageTokenInfo(tokenInfo.Decimals);
             }
 
-            result = new RedPackageTokenInfo
+            var getNftItemInfosDto = CreateGetNftItemInfosDto(symbol, chainId);
+            var nftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
+
+            if (nftItemInfos?.NftItemInfos?.Count > 0)
             {
-                Decimal = tokenInfo.Decimals,
-                MinAmount = "1"
-            };
+                var firstNftItemInfo = nftItemInfos.NftItemInfos.FirstOrDefault();
+                if (firstNftItemInfo != null)
+                {
+                    return CreateRedPackageTokenInfo(firstNftItemInfo.Decimals);
+                }
+            }
+
+            throw new UserFriendlyException("Symbol not found");
         }
         return result;
+    }
+    
+    private RedPackageTokenInfo CreateRedPackageTokenInfo(int decimals)
+    {
+        return new RedPackageTokenInfo
+        {
+            Decimal = decimals,
+            MinAmount = "1"
+        };
     }
 
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
@@ -120,6 +140,13 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         try
         {
             _logger.LogInformation("SendRedPackageAsync start input param is {input}", JsonConvert.SerializeObject(input));
+            
+            var validationResult = ValidateAndAdaptAssetType(input);
+            if (!validationResult.Item1)
+            {
+                throw new UserFriendlyException(validationResult.Item2);
+            }
+            
             var result = await GetRedPackageOptionAsync(input.Symbol, input.ChainId);
 
             var checkResult =
@@ -164,6 +191,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             redPackageIndex.SenderRelationToken = relationToken;
             redPackageIndex.SenderPortkeyToken = portkeyToken;
             redPackageIndex.Message = input.Message;
+            redPackageIndex.AssetType = input.AssetType;
             await _redPackageIndexRepository.AddOrUpdateAsync(redPackageIndex);
             _logger.LogInformation("SendRedPackageAsync AddOrUpdateAsync redPackageIndex is {redPackageIndex}",
                 redPackageIndex);
@@ -271,7 +299,21 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             _logger.LogError(e, "getredpackage failed, id={id}", id);
         }
-       
+
+        if (detail.AssetType == (int) AssetType.NFT)
+        {
+            var getNftItemInfosDto = CreateGetNftItemInfosDto(detail.Symbol, detail.ChainId);
+            var indexerNftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
+            List<NftItemInfo> nftItemInfos = indexerNftItemInfos.NftItemInfos;
+
+            if (nftItemInfos != null && nftItemInfos.Count > 0)
+            {
+                detail.Alias = nftItemInfos[0].TokenName;
+                detail.TokenId = detail.Symbol.Split('-')[1];
+                detail.ImageUrl = nftItemInfos[0].ImageUrl;
+            }
+        }
+
         CheckLuckKing(detail);
         
         await BuildAvatarAndNameAsync(detail);
@@ -287,6 +329,18 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             detail.IsRedPackageFullyClaimed = true;
         }
         return detail; 
+    }
+    
+    private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)
+    {
+        var getNftItemInfosDto = new GetNftItemInfosDto();
+        getNftItemInfosDto.GetNftItemInfos = new List<GetNftItemInfo>();
+        var nftItemInfo = new GetNftItemInfo();
+        nftItemInfo.Symbol = symbol;
+        nftItemInfo.ChainId = chainId;
+        getNftItemInfosDto.GetNftItemInfos.Add(nftItemInfo);
+
+        return getNftItemInfosDto;
     }
 
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
@@ -465,4 +519,32 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         return (true, "");
     }
+
+    private (bool, string) ValidateAndAdaptAssetType(SendRedPackageInputDto input)
+    {
+        if (!Enum.IsDefined(typeof(AssetType), input.AssetType))
+        {
+            input.AssetType = (int)AssetType.FT;
+        }
+
+        return ValidateAssetDetails(input);
+    }
+
+    private (bool, string) ValidateAssetDetails(SendRedPackageInputDto input)
+    {
+        var containsDash = input.Symbol.Contains('-');
+
+        if (input.AssetType == (int)AssetType.NFT && !containsDash)
+        {
+            return (false, "Symbol must contain '-' for NFT assets");
+        }
+
+        if (input.AssetType == (int)AssetType.FT && containsDash)
+        {
+            return (false, "Symbol must not contain '-' for FT assets");
+        }
+
+        return (true, "");
+    }
+    
 }
