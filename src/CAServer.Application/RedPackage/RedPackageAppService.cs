@@ -328,7 +328,23 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             detail.IsRedPackageFullyClaimed = true;
         }
+        
+        SetSeedStatusAndTypeForDetail(detail);
+        
         return detail; 
+    }
+    
+    private void SetSeedStatusAndTypeForDetail(RedPackageDetailDto detail)
+    {
+        if (detail.Symbol.StartsWith("SEED-"))
+        {
+            detail.IsSeed = true;
+            detail.SeedType = detail.Symbol.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+        }
+        else
+        {
+            detail.IsSeed = false;
+        }
     }
     
     private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)

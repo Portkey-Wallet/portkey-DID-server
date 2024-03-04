@@ -37,4 +37,8 @@ public class NftInfoDto
     public string Balance { get; set; }
     public string TokenContractAddress { get; set; }
     public string Decimals { get; set; }
+    
+    public  bool IsSeed { get; set; }
+    
+    public int SeedType { get; set; }
 }
