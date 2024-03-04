@@ -33,6 +33,10 @@ public class UserPackageAsset
     public string Balance { get; set; }
     
     public string TokenContractAddress { get; set; }
+    
+    public bool IsSeed { get; set; }
+    
+    public int SeedType { get; set; }  
 }
 
 public enum AssetType

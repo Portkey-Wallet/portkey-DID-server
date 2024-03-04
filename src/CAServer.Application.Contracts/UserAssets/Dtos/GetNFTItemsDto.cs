@@ -20,4 +20,22 @@ public class NftItem
     public string TokenContractAddress { get; set; }
     public string ImageLargeUrl { get; set; }
     public string Decimals { get; set; }
+
+    public string Traits { get; set; }
+    public string GenerationInfo { get; set; }
+    
+    public string InscriptionName;
+
+    public int LimitPerMint;
+    
+    public bool IsSeed { get; set; }
+    
+    public int SeedType { get; set; }
 }
+
+public enum SeedType
+{
+    FT = 1,
+    NFT = 2
+}
+

@@ -326,6 +326,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     dto.Data.Add(nftCollection);
                 }
             }
+            
+            SetSeedStatusAndTrimCollectionNameForCollections(dto.Data);
 
             return dto;
         }
@@ -333,6 +335,27 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             _logger.LogError(e, "GetNFTCollectionsAsync Error. {dto}", requestDto);
             return new GetNftCollectionsDto { Data = new List<NftCollection>(), TotalRecordCount = 0 };
+        }
+    }
+    
+    private void SetSeedStatusAndTrimCollectionNameForCollections(List<NftCollection> collections)
+    {
+        foreach (var collection in collections)
+        {
+            // If Symbol is null or empty, skip this iteration
+            if (string.IsNullOrEmpty(collection.Symbol))
+            {
+                continue;
+            }
+            
+            // If Symbol starts with "SEED-", set IsSeed to true, otherwise set it to false
+            collection.IsSeed = collection.Symbol.StartsWith("SEED-");
+
+            // If IsSeed is true and CollectionName ends with "-0", remove "-0"
+            if (collection.IsSeed && collection.CollectionName.EndsWith("-0"))
+            {
+                collection.CollectionName = collection.CollectionName.TrimEnd("-0".ToCharArray());
+            }
         }
     }
 
@@ -374,7 +397,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
                     (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
                     ImageResizeType.Forest);
-
+                
                 dto.Data.Add(nftItem);
             }
 
@@ -390,6 +413,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     }
                 }
             }
+            
+            SetSeedStatusAndTypeForNftItems(dto.Data);
 
             return dto;
         }
@@ -399,6 +424,22 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return new GetNftItemsDto { Data = new List<NftItem>(), TotalRecordCount = 0 };
         }
     }
+    
+    private void SetSeedStatusAndTypeForNftItems(List<NftItem> nftItems)
+    {
+        foreach (var nftItem in nftItems)
+        {
+            // If the Symbol starts with "SEED", we set IsSeed to true.
+            if (nftItem.Symbol.StartsWith("SEED-"))
+            {
+                nftItem.IsSeed = true;
+
+                // Remove "SEED-" from the Symbol and check if it contains "-"
+                nftItem.SeedType = nftItem.Symbol.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int)SeedType.FT;
+            }
+        }
+    }
+
 
     //Data with the same name needs to be deduplicated
     public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(
@@ -627,12 +668,29 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
                 .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
 
+            SetSeedStatusAndTypeForUserAssets(dto.Data);
+            
             return dto;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "SearchUserAssetsAsync Error. {dto}", requestDto);
             return new SearchUserAssetsDto { Data = new List<UserAsset>(), TotalRecordCount = 0 };
+        }
+    }
+    
+    private void SetSeedStatusAndTypeForUserAssets(List<UserAsset> userAssets)
+    {
+        foreach (var userAsset in userAssets)
+        {
+            // If Symbol starts with "SEED", set IsSeed to true
+            if (userAsset.Symbol.StartsWith("SEED-") && userAsset.NftInfo != null)
+            {
+                userAsset.NftInfo.IsSeed = true;
+                
+                // Remove "SEED-" from the Symbol and check if it contains "-"
+                userAsset.NftInfo.SeedType = userAsset.Symbol.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int)SeedType.FT;
+            }
         }
     }
 
@@ -757,7 +815,24 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         dto.Data.AddRange(userPackageNftAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
 
+        SetSeedStatusAndTypeForUserPackageAssets(dto.Data);
+        
         return dto;
+    }
+    
+    private void SetSeedStatusAndTypeForUserPackageAssets(List<UserPackageAsset> userPackageAssets)
+    {
+        foreach (var userPackageAsset in userPackageAssets)
+        {
+            // If AssetType is NFT and Symbol starts with "SEED", set IsSeed to true
+            if (userPackageAsset.AssetType == (int)AssetType.NFT && userPackageAsset.Symbol.StartsWith("SEED-"))
+            {
+                userPackageAsset.IsSeed = true;
+                
+                // Remove "SEED-" from the Symbol and check if it contains "-"
+                userPackageAsset.SeedType = userPackageAsset.Symbol.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int)SeedType.FT;
+            }
+        }
     }
 
     private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsIndexAsync(

@@ -13,6 +13,7 @@ using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using CAServer.UserAssets;
+using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
@@ -227,6 +228,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 await GetActivityName(caAddresses, activityDto,
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
+            
+            SetSeedStatusAndTypeForActivityDto(activityDto);
 
             return activityDto;
         }
@@ -234,6 +237,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             _logger.LogError(e, "GetActivityAsync Error {request}", request);
             return new GetActivityDto();
+        }
+    }
+    
+    private void SetSeedStatusAndTypeForActivityDto(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null)
+        {
+            // Set IsSeed to true if Symbol starts with "SEED-", otherwise set it to false
+            activityDto.NftInfo.IsSeed = activityDto.Symbol.StartsWith("SEED-");
+
+            if (activityDto.NftInfo.IsSeed)
+            {
+                // If Symbol contains "-", set SeedType to NFT, otherwise set it to FT
+                activityDto.NftInfo.SeedType = activityDto.Symbol.Remove(0, 5).Contains("-")
+                    ? (int)SeedType.NFT
+                    : (int)SeedType.FT;
+            }
         }
     }
 
