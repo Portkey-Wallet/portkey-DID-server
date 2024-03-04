@@ -42,8 +42,6 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         services.AddSingleton(MockGraphQlOptions());
     }
     
-    
-    
     protected new IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
     {
         var options = new GraphQLOptions()
@@ -55,11 +53,11 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         mock.Setup(o => o.Value).Returns(options);
         return mock.Object;
     }
-
     
     [Fact]
     public async Task GenerateRedPackageAsync_test()
     {
+        Login(userId);
         await Assert.ThrowsAsync<UserFriendlyException>(async () =>
         {
             await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
