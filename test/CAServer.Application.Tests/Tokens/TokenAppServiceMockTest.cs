@@ -10,6 +10,7 @@ using CAServer.Entities.Es;
 using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
+using CAServer.Tokens.Cache;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
 using Microsoft.Extensions.Options;
@@ -118,6 +119,27 @@ public partial class TokenAppServiceTest
         return mockClusterClient.Object;
     }
 
+    private ITokenCacheProvider GetMockITokenCacheProvider()
+    {
+        var mockTokenCacheProvider = new Mock<ITokenCacheProvider>();
+        mockTokenCacheProvider.Setup(o =>
+            o.GetTokenInfoAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((string chainId, string symbol) =>
+            {
+                if (symbol == "AXX")
+                {
+                    return new GetTokenInfoDto
+                    {
+                        Symbol = "AXX",
+                        Decimals = 8
+                    };
+                }
+
+                return new GetTokenInfoDto();
+            });
+        return mockTokenCacheProvider.Object;
+    }
+
     private ITokenProvider GetMockITokenProvider()
     {
         var mockTokenPriceProvider = new Mock<ITokenProvider>();
@@ -211,6 +233,11 @@ public partial class TokenAppServiceTest
             .ReturnsAsync((Guid userId, string chainId, string symbol) =>
             {
                 if (symbol == "VOTE")
+                {
+                    return null;
+                }
+
+                if (symbol == "AXX")
                 {
                     return null;
                 }
