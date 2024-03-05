@@ -350,12 +350,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             
             // If Symbol starts with "SEED-", set IsSeed to true, otherwise set it to false
             collection.IsSeed = collection.Symbol.StartsWith("SEED-");
-
-            // If IsSeed is true and CollectionName ends with "-0", remove "-0"
-            if (collection.IsSeed && collection.CollectionName.EndsWith("-0"))
-            {
-                collection.CollectionName = collection.CollectionName.TrimEnd("-0".ToCharArray());
-            }
         }
     }
 
@@ -397,6 +391,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
                     (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
                     ImageResizeType.Forest);
+                nftItem.TokenName = nftInfo.NftInfo.TokenName;
                 
                 dto.Data.Add(nftItem);
             }
@@ -416,6 +411,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             
             SetSeedStatusAndTypeForNftItems(dto.Data);
 
+            OptimizeSeedAliasDisplay(dto.Data);
+            
             return dto;
         }
         catch (Exception e)
@@ -433,9 +430,27 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (nftItem.Symbol.StartsWith("SEED-"))
             {
                 nftItem.IsSeed = true;
+                nftItem.SeedType = (int) SeedType.FT;
 
-                // Remove "SEED-" from the Symbol and check if it contains "-"
-                nftItem.SeedType = nftItem.Symbol.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int)SeedType.FT;
+                // If the TokenName starts with "SEED-", we remove "SEED-" and check if it contains "-"
+                if (!string.IsNullOrEmpty(nftItem.TokenName) && nftItem.TokenName.StartsWith("SEED-"))
+                {
+                    var tokenNameWithoutSeed = nftItem.TokenName.Remove(0, 5);
+
+                    // If TokenName contains "-", set SeedType to NFT, otherwise set it to FT
+                    nftItem.SeedType = tokenNameWithoutSeed.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+                }
+            }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplay(List<NftItem> nftItems)
+    {
+        foreach (var item in nftItems)
+        {
+            if (item.IsSeed && item.Alias.EndsWith("-0"))
+            {
+                item.Alias = item.Alias.TrimEnd("-0".ToCharArray());
             }
         }
     }
@@ -659,6 +674,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     item.NftInfo.ImageUrl =
                         await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl, requestDto.Width,
                             requestDto.Height, ImageResizeType.Forest);
+                    item.NftInfo.TokenName = searchItem.NftInfo.TokenName;
                 }
 
                 dto.Data.Add(item);
@@ -687,9 +703,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (userAsset.Symbol.StartsWith("SEED-") && userAsset.NftInfo != null)
             {
                 userAsset.NftInfo.IsSeed = true;
+                userAsset.NftInfo.SeedType = (int) SeedType.FT;
                 
-                // Remove "SEED-" from the Symbol and check if it contains "-"
-                userAsset.NftInfo.SeedType = userAsset.Symbol.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int)SeedType.FT;
+                // If the TokenName is not null and starts with "SEED-", we remove "SEED-" and check if it contains "-"
+                if (!string.IsNullOrEmpty(userAsset.NftInfo.TokenName) && userAsset.NftInfo.TokenName.StartsWith("SEED-"))
+                {
+                    var tokenNameWithoutSeed = userAsset.NftInfo.TokenName.Remove(0, 5);
+
+                    // If TokenName contains "-", set SeedType to NFT, otherwise set it to FT
+                    userAsset.NftInfo.SeedType = tokenNameWithoutSeed.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+                }
             }
         }
     }
@@ -789,6 +812,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 TokenId = asset.NftInfo?.TokenId,
                 Balance = asset.NftInfo?.Balance,
                 TokenContractAddress = asset.NftInfo?.TokenContractAddress,
+                TokenName = asset.NftInfo?.TokenName,
                 AssetType = (int)AssetType.NFT
             };
 
@@ -828,9 +852,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (userPackageAsset.AssetType == (int)AssetType.NFT && userPackageAsset.Symbol.StartsWith("SEED-"))
             {
                 userPackageAsset.IsSeed = true;
+                userPackageAsset.SeedType = (int) SeedType.FT;
                 
-                // Remove "SEED-" from the Symbol and check if it contains "-"
-                userPackageAsset.SeedType = userPackageAsset.Symbol.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int)SeedType.FT;
+                // If the TokenName is not null and starts with "SEED-", we remove "SEED-" and check if it contains "-"
+                if (!string.IsNullOrEmpty(userPackageAsset.TokenName) && userPackageAsset.TokenName.StartsWith("SEED-"))
+                {
+                    var tokenNameWithoutSeed = userPackageAsset.TokenName.Remove(0, 5);
+
+                    // If TokenName contains "-", set SeedType to NFT, otherwise set it to FT
+                    userPackageAsset.SeedType = tokenNameWithoutSeed.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+                }
             }
         }
     }

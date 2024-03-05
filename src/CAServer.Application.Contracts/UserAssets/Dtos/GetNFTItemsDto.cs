@@ -28,6 +28,8 @@ public class NftItem
 
     public int LimitPerMint;
     
+    public string TokenName { get; set; }
+    
     public bool IsSeed { get; set; }
     
     public int SeedType { get; set; }

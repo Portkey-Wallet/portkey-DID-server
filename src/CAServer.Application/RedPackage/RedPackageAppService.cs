@@ -336,14 +336,17 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     
     private void SetSeedStatusAndTypeForDetail(RedPackageDetailDto detail)
     {
-        if (detail.Symbol.StartsWith("SEED-"))
+
+        detail.IsSeed = detail.AssetType == (int)AssetType.NFT && detail.Symbol.StartsWith("SEED-");
+        
+        if (detail.IsSeed)
         {
-            detail.IsSeed = true;
-            detail.SeedType = detail.Symbol.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
-        }
-        else
-        {
-            detail.IsSeed = false;
+            detail.SeedType = (int)SeedType.FT;
+
+            if (!string.IsNullOrEmpty(detail.Alias) && detail.Alias.StartsWith("SEED-"))
+            {
+                detail.SeedType = detail.Alias.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+            }
         }
     }
     
