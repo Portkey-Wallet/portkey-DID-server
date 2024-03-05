@@ -231,6 +231,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             
             SetSeedStatusAndTypeForActivityDto(activityDto);
 
+            OptimizeSeedAliasDisplay(activityDto);
+
             return activityDto;
         }
         catch (Exception e)
@@ -249,11 +251,23 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (activityDto.NftInfo.IsSeed)
             {
-                // If Symbol contains "-", set SeedType to NFT, otherwise set it to FT
-                activityDto.NftInfo.SeedType = activityDto.Symbol.Remove(0, 5).Contains("-")
-                    ? (int)SeedType.NFT
-                    : (int)SeedType.FT;
+                activityDto.NftInfo.SeedType = (int)SeedType.FT;
+                // Alias is actually TokenName
+                if (!string.IsNullOrEmpty(activityDto.NftInfo.Alias) && activityDto.NftInfo.Alias.StartsWith("SEED-"))
+                {
+                    activityDto.NftInfo.SeedType = activityDto.NftInfo.Alias.Remove(0, 5).Contains("-")
+                        ? (int)SeedType.NFT
+                        : (int)SeedType.FT;
+                }
             }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplay(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null && activityDto.NftInfo.IsSeed && activityDto.NftInfo.Alias.EndsWith("-0"))
+        {
+            activityDto.NftInfo.Alias = activityDto.NftInfo.Alias.TrimEnd("-0".ToCharArray());
         }
     }
 
