@@ -21,9 +21,9 @@ public class NftItem
     public string ImageLargeUrl { get; set; }
     public string Decimals { get; set; }
 
-    public string InscriptionName;
+    public string InscriptionName { get; set; }
 
-    public int LimitPerMint;
+    public int LimitPerMint {get; set;}
 
     public string Expires { get; set; }
     
