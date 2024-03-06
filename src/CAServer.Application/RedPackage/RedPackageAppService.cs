@@ -74,7 +74,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         if (result == null)
         {
             var tokenInfo =  await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
-            if (tokenInfo != null)
+            if (tokenInfo != null && chainId == tokenInfo.ChainId && symbol == tokenInfo.Symbol)
             {
                 return CreateRedPackageTokenInfo(tokenInfo.Decimals);
             }
