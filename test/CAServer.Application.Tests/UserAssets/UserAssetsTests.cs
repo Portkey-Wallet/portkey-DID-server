@@ -75,6 +75,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>(),
             userTokenBalanceCache: GetRequiredService<IDistributedCache<string>>(),
             getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(), 
+            nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(), 
             searchAppService: searchAppServiceMock.Object);
         return userAssetsAppService;
     }
