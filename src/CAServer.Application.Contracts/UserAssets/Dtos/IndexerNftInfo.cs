@@ -32,4 +32,17 @@ public class NftInfo
     public long TotalSupply { get; set; }
     public long Supply { get; set; }
     public string TokenContractAddress { get; set; }
+    
+    // todo_raymond: add more fields
+    /* 
+    public string Traits { get; set; }
+    
+    public string Generation { get; set; }
+    
+    public string InscriptionName;
+
+    public int LimitPerMint;
+
+    public string Expires { get; set; }
+    */
 }

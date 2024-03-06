@@ -12,6 +12,7 @@ public interface IUserAssetsAppService
     Task<GetNftCollectionsDto> GetNFTCollectionsAsync(GetNftCollectionsRequestDto requestDto);
 
     Task<GetNftItemsDto> GetNFTItemsAsync(GetNftItemsRequestDto requestDto);
+    Task<NftItem> GetNFTItemAsync(GetNftItemRequestDto requestDto);
     Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(GetRecentTransactionUsersRequestDto requestDto);
     Task<SearchUserAssetsDto> SearchUserAssetsAsync(SearchUserAssetsRequestDto requestDto);
     Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(SearchUserPackageAssetsRequestDto requestDto);

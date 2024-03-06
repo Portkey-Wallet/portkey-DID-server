@@ -157,6 +157,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
         Configure<GetBalanceFromChainOption>(configuration.GetSection("GetBalanceFromChain"));
+        Configure<NftItemDisplayOption>(configuration.GetSection("NftItemDisplay"));
         Configure<GrowthOptions>(configuration.GetSection("Growth"));
         Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         AddMessagePushService(context, configuration);
