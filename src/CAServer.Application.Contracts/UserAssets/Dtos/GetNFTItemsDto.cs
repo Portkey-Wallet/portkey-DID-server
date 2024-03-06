@@ -21,15 +21,13 @@ public class NftItem
     public string ImageLargeUrl { get; set; }
     public string Decimals { get; set; }
 
-    public string Traits { get; set; }
-    
-    public string Generation { get; set; }
-    
     public string InscriptionName;
 
     public int LimitPerMint;
 
     public string Expires { get; set; }
+    
+    public string SeedOwnedSymbol { get; set; }
     public string TokenName { get; set; }
     
     public bool IsSeed { get; set; }
