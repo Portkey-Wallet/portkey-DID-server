@@ -218,7 +218,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f =>
                     f.TransferInfo == null
                         ? f.FromAddress
-                        : f.TransferInfo.FromCAAddress ?? f.TransferInfo.FromAddress))
+                        : f.TransferInfo.FromCAAddress.IsNullOrWhiteSpace()
+                            ? f.TransferInfo.FromAddress
+                            : f.TransferInfo.FromCAAddress))
             .ForMember(t => t.ToAddress, m => m.MapFrom(f => f.TransferInfo == null ? "" : f.TransferInfo.ToAddress))
             .ForMember(t => t.Amount,
                 m => m.MapFrom(f => f.TransferInfo == null ? "" : f.TransferInfo.Amount.ToString()))
@@ -579,32 +581,32 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo))
             .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TxHash))
             .ReverseMap();
-        
+
         CreateMap<TelegramAuthReceiveRequest, TelegramAuthDto>()
             .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
             .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
-        
+
         CreateMap<UserExtraInfoResultDto, Verifier.Dtos.UserExtraInfo>()
             .ForMember(t => t.IsPrivateEmail, m => m.MapFrom(f => f.IsPrivate));
-        
+
         CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>()
             .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
             .ReverseMap();
-        
+
         CreateMap<TreasuryOrderRequest, TreasuryOrderDto>()
             .ForMember(des => des.ToAddress, opt => opt.MapFrom(src => src.Address))
             .ForMember(des => des.CryptoPriceInUsdt, opt => opt.MapFrom(src => src.CryptoPrice))
             .ForMember(des => des.SettlementAmount, opt => opt.MapFrom(src => src.UsdtAmount))
             .ReverseMap();
-        
+
         CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderDto>()
             .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
             .ForMember(des => des.CryptoPriceInUsdt, opt => opt.MapFrom(src => src.CryptoPrice))
             .ForMember(des => des.SettlementAmount, opt => opt.MapFrom(src => src.UsdtAmount))
             .ReverseMap();
-        
+
         CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
         CreateMap<PendingTreasuryOrderIndex, PendingTreasuryOrderDto>().ReverseMap();
 
@@ -616,7 +618,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
         CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
 
-        CreateMap<GuideInfo, UserGuideInfo>().ForMember(t => t.GuideType,m => m.MapFrom(f =>(GuideType)f.GuideType));
+        CreateMap<GuideInfo, UserGuideInfo>().ForMember(t => t.GuideType, m => m.MapFrom(f => (GuideType)f.GuideType));
         CreateMap<UserGuideInfo, UserGuideInfoGrainDto>();
         CreateMap<UserGuideInfoGrainDto, UserGuideInfo>();
 
