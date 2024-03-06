@@ -400,14 +400,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     ? NftItemDisplayOption.DefaultRecommendedRefreshSeconds 
                     : _nftItemDisplayOption.RecommendedRefreshSeconds;
                 
-                // todo_raymond: add more fields
-                /*
-                nftItem.Traits = nftInfo.NftInfo.Traits;
-                nftItem.Generation = nftInfo.NftInfo.Generation;
-                nftItem.Expires = nftInfo.NftInfo.Expires;
+                
                 nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
                 nftItem.LimitPerMint = nftInfo.NftInfo.LimitPerMint;
-                */
+                nftItem.Expires = nftInfo.NftInfo.Expires;
+                nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
                 
                 dto.Data.Add(nftItem);
             }
@@ -476,14 +473,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 ? NftItemDisplayOption.DefaultRecommendedRefreshSeconds 
                 : _nftItemDisplayOption.RecommendedRefreshSeconds;    
             
-            // todo_raymond: add more fields
-            /*
-            nftItem.Traits = nftInfo.NftInfo.Traits;
-            nftItem.Generation = nftInfo.NftInfo.Generation;
-            nftItem.Expires = nftInfo.NftInfo.Expires;
+            
             nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
             nftItem.LimitPerMint = nftInfo.NftInfo.LimitPerMint;
-            */
+            nftItem.Expires = nftInfo.NftInfo.Expires;
+            nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
             
             if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(nftItem.Symbol))
             {
