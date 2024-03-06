@@ -773,6 +773,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
 
             SetSeedStatusAndTypeForUserAssets(dto.Data);
+
+            OptimizeSeedAliasDisplayForUserAssets(dto.Data);
             
             return dto;
         }
@@ -801,6 +803,22 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     // If TokenName contains "-", set SeedType to NFT, otherwise set it to FT
                     userAsset.NftInfo.SeedType = tokenNameWithoutSeed.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
                 }
+            }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplayForUserAssets(List<UserAsset> assets)
+    {
+        foreach (var asset in assets)
+        {
+            if (asset.NftInfo == null)
+            {
+                continue;
+            }
+
+            if (asset.NftInfo.IsSeed && asset.NftInfo.Alias.EndsWith("-0"))
+            {
+                asset.NftInfo.Alias = asset.NftInfo.Alias.TrimEnd("-0".ToCharArray());
             }
         }
     }
@@ -929,6 +947,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         SetSeedStatusAndTypeForUserPackageAssets(dto.Data);
         
+        OptimizeSeedAliasDisplayForUserPackageAssets(dto.Data);
+        
         return dto;
     }
     
@@ -950,6 +970,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     // If TokenName contains "-", set SeedType to NFT, otherwise set it to FT
                     userPackageAsset.SeedType = tokenNameWithoutSeed.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
                 }
+            }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplayForUserPackageAssets(List<UserPackageAsset> assets)
+    {
+        foreach (var asset in assets)
+        {
+            if (asset.IsSeed && asset.Alias.EndsWith("-0"))
+            {
+                asset.Alias = asset.Alias.TrimEnd("-0".ToCharArray());
             }
         }
     }
