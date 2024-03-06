@@ -22,17 +22,21 @@ public class NftItem
     public string Decimals { get; set; }
 
     public string Traits { get; set; }
-    public string GenerationInfo { get; set; }
+    
+    public string Generation { get; set; }
     
     public string InscriptionName;
 
     public int LimitPerMint;
-    
+
+    public string Expires { get; set; }
     public string TokenName { get; set; }
     
     public bool IsSeed { get; set; }
     
     public int SeedType { get; set; }
+    
+    public int RecommendedRefreshSeconds { get; set; }
 }
 
 public enum SeedType
@@ -40,4 +44,3 @@ public enum SeedType
     FT = 1,
     NFT = 2
 }
-

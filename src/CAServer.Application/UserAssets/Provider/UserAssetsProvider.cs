@@ -89,6 +89,14 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
                     caHolderNFTBalanceInfo(dto: {collectionSymbol:$collectionSymbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress}},totalRecordCount}
                 }",
+            // todo_raymond: add more fields
+            /*
+            newQuery = @"
+			    query($collectionSymbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderNFTBalanceInfo(dto: {collectionSymbol:$collectionSymbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress,inscriptionName,limitPerMint,traits,generation,expires}},totalRecordCount}
+                }",
+            */
             Variables = new
             {
                 caAddressInfos = caAddressInfos, collectionSymbol = symbol, skipCount = inputSkipCount,
@@ -126,6 +134,14 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
                     caHolderNFTBalanceInfo(dto: {symbol:$symbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
                         data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress}},totalRecordCount}
                 }",
+            // todo_raymond: add more fields
+            /*
+            newQuery = @"
+			    query($symbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderNFTBalanceInfo(dto: {symbol:$symbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress,inscriptionName,limitPerMint,traits,generation,expires}},totalRecordCount}
+                }",
+            */
             Variables = new
             {
                 caAddressInfos, symbol, skipCount = inputSkipCount,

@@ -38,6 +38,12 @@ public class UserAssetsController
     {
         return await _userAssetsAppService.GetNFTItemsAsync(requestDto);
     }
+    
+    [HttpPost("nftItem")]
+    public async Task<NftItem> GetNFTItemAsync(GetNftItemRequestDto requestDto)
+    {
+        return await _userAssetsAppService.GetNFTItemAsync(requestDto);
+    }
 
     [HttpPost("recentTransactionUsers")]
     public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(
