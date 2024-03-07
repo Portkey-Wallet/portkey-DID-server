@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Commons;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Signature.Options;
 using CAServer.Signature.Provider;
+using CAServer.Tokens.TokenPrice;
 using CoinGecko.Clients;
 using CoinGecko.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -48,10 +50,12 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         {
             httpClient.BaseAddress = new Uri(_coinGeckoOptions.CurrentValue.BaseUrl);
         }
+
         if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
         {
             httpClient.DefaultRequestHeaders.Add("x-cg-pro-api-key", apiKey);
         }
+
         return httpClient;
     }
 
@@ -85,6 +89,59 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         catch (Exception ex)
         {
             _logger.LogError(ex, "Can not get current price :{Symbol}", symbol);
+            throw;
+        }
+    }
+
+    public async Task<Dictionary<string, decimal>> GetPriceAsync(params string[] symbols)
+    {
+        var prices = new Dictionary<string, decimal>();
+        var symbolCoinIdDictionary = new Dictionary<string, string>();
+        foreach (var symbol in symbols)
+        {
+            if (symbol.IsNullOrWhiteSpace())
+            {
+                continue;
+            }
+
+            var coinId = GetCoinIdAsync(symbol);
+            if (coinId == null)
+            {
+                _logger.LogWarning("Can not get the token {Symbol}", symbol);
+                continue;
+            }
+
+            symbolCoinIdDictionary.Add(symbol, coinId);
+        }
+
+        if (symbolCoinIdDictionary.Count == 0)
+        {
+            return prices;
+        }
+
+        try
+        {
+            var coinData =
+                await RequestAsync(async () =>
+                    await _coinGeckoClient.SimpleClient.GetSimplePrice(symbolCoinIdDictionary.Values.ToArray(),
+                        new[] { UsdSymbol }));
+            _logger.LogDebug("Get coinGecko data: {Price}", JsonConvert.SerializeObject(coinData));
+
+            foreach (var symbolCoinIdPair in symbolCoinIdDictionary)
+            {
+                if (!coinData.TryGetValue(symbolCoinIdPair.Value, out var value))
+                {
+                    continue;
+                }
+
+                prices.Add(symbolCoinIdPair.Key, value[UsdSymbol].Value);
+            }
+
+            return prices;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Can not get current price :{Symbol}", JsonConvert.SerializeObject(symbols));
             throw;
         }
     }

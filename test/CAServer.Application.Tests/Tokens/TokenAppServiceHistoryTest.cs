@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grain.Tests;
-using CAServer.Grains;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
-using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Security;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +13,7 @@ using Xunit;
 
 namespace CAServer.Tokens;
 
+//TODO UT
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
 {
@@ -39,9 +37,6 @@ public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockContractAddressOptions());
         services.AddSingleton(GetMockTokenPriceProvider());
-        services.AddSingleton(GetMockTokenPriceExpirationTimeOptions());
-        services.AddSingleton(GetMockTokenPriceSnapshotClusterClient());
-        services.AddSingleton(GetMockTokenPriceSnapshotGrain());
         services.AddSingleton(GetMockIGraphQLHelper());
     }
     

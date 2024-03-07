@@ -32,6 +32,7 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         Cluster = GetRequiredService<ClusterFixture>().Cluster;
     }
 
+    //TODO UT
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
@@ -40,9 +41,6 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockContractAddressOptions());
         services.AddSingleton(GetMockTokenPriceProvider());
-        services.AddSingleton(GetMockTokenPriceExpirationTimeOptions());
-        services.AddSingleton(GetMockClusterClient());
-        services.AddSingleton(GetMockTokenPriceGrain());
         var graphQlHelper = Substitute.For<IGraphQLHelper>();
         var graphQlClient = Substitute.For<IGraphQLClient>();
         services.AddSingleton(graphQlClient);

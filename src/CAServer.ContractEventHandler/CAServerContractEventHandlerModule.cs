@@ -155,13 +155,10 @@ public class CAServerContractEventHandlerModule : AbpModule
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
                 })
-                .Configure<ClientMessagingOptions>(opt =>
+                .Configure<ClientMessagingOptions>(options =>
                 {
-                    var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
-                    if (responseTimeout > 0)
-                    {
-                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
-                    }
+                    options.ResponseTimeout = Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                        MessagingOptions.DEFAULT_RESPONSE_TIMEOUT);
                 })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
@@ -193,7 +190,7 @@ public class CAServerContractEventHandlerModule : AbpModule
     {
         var mongoType = configuration["Hangfire:MongoType"];
         var connectionString = configuration["Hangfire:ConnectionString"];
-        if(connectionString.IsNullOrEmpty()) return;
+        if (connectionString.IsNullOrEmpty()) return;
 
         if (mongoType.IsNullOrEmpty() ||
             mongoType.Equals(MongoType.MongoDb.ToString(), StringComparison.OrdinalIgnoreCase))
@@ -229,7 +226,7 @@ public class CAServerContractEventHandlerModule : AbpModule
                 config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
             });
         }
-        
+
         context.Services.AddHangfireServer(opt =>
         {
             opt.SchedulePollingInterval = TimeSpan.FromMilliseconds(3000);

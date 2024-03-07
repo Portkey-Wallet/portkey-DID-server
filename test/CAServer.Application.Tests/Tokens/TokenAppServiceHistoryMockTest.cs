@@ -7,9 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Grains.Grain;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.TokenPrice;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Options;
@@ -24,43 +24,6 @@ namespace CAServer.Tokens;
 
 public partial class TokenAppServiceHistoryTest
 {
-    private ITokenPriceGrain GetMockTokenPriceGrain()
-    {
-        var mockITokenPriceGrainClient = new Mock<ITokenPriceGrain>();
-        mockITokenPriceGrainClient.Setup(o => o.GetCurrentPriceAsync(It.IsAny<string>()))
-            .ReturnsAsync(
-                new GrainResultDto<TokenPriceGrainDto>()
-                {
-                    Success = true,
-                    Data = new TokenPriceGrainDto()
-                    {
-                        Symbol = Symbol,
-                        PriceInUsd = 1000,
-                    }
-                }
-            );
-
-        return mockITokenPriceGrainClient.Object;
-    }
-
-    private ITokenPriceSnapshotGrain GetMockTokenPriceSnapshotGrain()
-    {
-        var mockITokenPriceGrainClient = new Mock<ITokenPriceSnapshotGrain>();
-        mockITokenPriceGrainClient.Setup(o => o.GetHistoryPriceAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(
-                new GrainResultDto<TokenPriceGrainDto>()
-                {
-                    Success = true,
-                    Data = new TokenPriceGrainDto()
-                    {
-                        Symbol = Symbol,
-                        PriceInUsd = 1000,
-                    }
-                }
-            );
-        return mockITokenPriceGrainClient.Object;
-    }
-
     private ITokenPriceProvider GetMockTokenPriceProvider()
     {
         var mockTokenPriceProvider = new Mock<ITokenPriceProvider>();
@@ -68,14 +31,6 @@ public partial class TokenAppServiceHistoryTest
             .ReturnsAsync((string dto) => dto == Symbol ? 1000 : 100);
 
         return mockTokenPriceProvider.Object;
-    }
-
-    private IOptions<TokenPriceExpirationTimeOptions> GetMockTokenPriceExpirationTimeOptions()
-    {
-        return new OptionsWrapper<TokenPriceExpirationTimeOptions>(new TokenPriceExpirationTimeOptions()
-        {
-            Time = 100
-        });
     }
 
     private static IOptions<ContractAddressOptions> GetMockContractAddressOptions()
@@ -104,22 +59,6 @@ public partial class TokenAppServiceHistoryTest
 
         var factory = mockFactory.Object;
         return factory;
-    }
-
-    private IClusterClient GetMockClusterClient()
-    {
-        var mockClusterClient = new Mock<IClusterClient>();
-        mockClusterClient.Setup(o => o.GetGrain<IGrainWithStringKey>(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns((string primaryKey, string namePrefix) => { return GetMockTokenPriceGrain(); });
-        return mockClusterClient.Object;
-    }
-
-    private IClusterClient GetMockTokenPriceSnapshotClusterClient()
-    {
-        var mockClusterClient = new Mock<IClusterClient>();
-        mockClusterClient.Setup(o => o.GetGrain<IGrainWithStringKey>(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns((string primaryKey, string namePrefix) => { return GetMockTokenPriceSnapshotGrain(); });
-        return mockClusterClient.Object;
     }
 
     private IGraphQLHelper GetMockIGraphQLHelper()
