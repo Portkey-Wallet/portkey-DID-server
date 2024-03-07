@@ -249,6 +249,7 @@ public class ContractAppService : IContractAppService
 
             _logger.LogInformation("Register state pushed: " + "\n{result}",
                 JsonConvert.SerializeObject(registerResult, Formatting.Indented));
+            await _distributedEventBus.PublishAsync(registerResult);
 
             return;
         }
@@ -303,7 +304,9 @@ public class ContractAppService : IContractAppService
 
         var resultSocialRecovery = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
 
-        if (resultSocialRecovery.Status != TransactionState.Mined)
+        var managerInfoExisted = resultSocialRecovery.Status == TransactionState.Failed &&
+                              resultSocialRecovery.Error.Contains("ManagerInfo exists");
+        if (resultSocialRecovery.Status != TransactionState.Mined && !managerInfoExisted)
         {
             recoveryResult.RecoveryMessage = "Transaction status: " + resultSocialRecovery.Status + ". Error: " +
                                              resultSocialRecovery.Error;
@@ -317,7 +320,7 @@ public class ContractAppService : IContractAppService
             return;
         }
 
-        if (!resultSocialRecovery.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
+        if (!managerInfoExisted && !resultSocialRecovery.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
         {
             recoveryResult.RecoveryMessage = "Transaction status: FAILED" + ". Error: Verification failed";
             recoveryResult.RecoverySuccess = false;
@@ -340,7 +343,7 @@ public class ContractAppService : IContractAppService
 
             _logger.LogInformation("Recovery state pushed: " + "\n{result}",
                 JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
-
+            await _distributedEventBus.PublishAsync(recoveryResult);
             return;
         }
 

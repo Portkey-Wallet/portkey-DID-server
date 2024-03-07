@@ -33,6 +33,11 @@ public class RedPackageDetailDto
     public RedPackageStatus Status { get; set; }
     public List<GrabItemDto> Items { get; set; }
     public bool IfRefund{ get; set; }
+    
+    public int AssetType { get; set; }
+    public string Alias { get; set; }
+    public string TokenId { get; set; }
+    public string ImageUrl { get; set; }
 }
 
 public class GrabItemDto
