@@ -9,8 +9,8 @@ using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Search;
 using CAServer.Tokens;
+using CAServer.Tokens.Cache;
 using CAServer.Tokens.Provider;
-using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -58,6 +58,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var userTokenAppServiceMock = new Mock<IUserTokenAppService>();
         var searchAppServiceMock = new Mock<ISearchAppService>();
         var tokenProvider = new Mock<ITokenProvider>();
+        var tokenCacheProvider = new Mock<ITokenCacheProvider>();
         var userAssetsAppService = new UserAssetsAppService(
             logger: loggerMock.Object,
             userAssetsProvider: userAssetsProviderMock.Object,
@@ -76,7 +77,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             userTokenBalanceCache: GetRequiredService<IDistributedCache<string>>(),
             getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(), 
             nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(), 
-            searchAppService: searchAppServiceMock.Object);
+            searchAppService: searchAppServiceMock.Object,
+            tokenCacheProvider: tokenCacheProvider.Object);
         return userAssetsAppService;
     }
 
