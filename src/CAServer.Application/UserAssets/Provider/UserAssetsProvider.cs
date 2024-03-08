@@ -87,7 +87,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             Query = @"
 			    query($collectionSymbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderNFTBalanceInfo(dto: {collectionSymbol:$collectionSymbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress,inscriptionName,limitPerMint,expires,seedOwnedSymbol}},totalRecordCount}
+                        data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress,inscriptionName,limitPerMint,expires,seedOwnedSymbol,generation,traits}},totalRecordCount}
                 }",
             Variables = new
             {
@@ -96,7 +96,27 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             }
         });
     }
-    
+
+    public async Task<IndexerNftInfos> GetNftInfoTraitsInfoAsync(string collectionSymbol, int inputSkipCount,
+        int inputMaxResultCount)
+    {
+        return await _graphQlHelper.QueryAsync<IndexerNftInfos>(new GraphQLRequest
+        {
+            Query = @"
+			    query($collectionSymbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
+                    caHolderNFTBalanceInfo(dto: {collectionSymbol:$collectionSymbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        data{nftInfo{symbol,supply,traits}},totalRecordCount}
+                }",
+
+            Variables = new
+            {
+                collectionSymbol = collectionSymbol, 
+                skipCount = inputSkipCount,
+                maxResultCount = inputMaxResultCount
+            }
+        });
+    }
+
     public async Task<IndexerNftItemInfos> GetNftItemInfosAsync(GetNftItemInfosDto getNftItemInfosDto,
         int inputSkipCount, int inputMaxResultCount)
     {
@@ -124,7 +144,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
             Query = @"
 			    query($symbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderNFTBalanceInfo(dto: {symbol:$symbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress,inscriptionName,limitPerMint,expires,seedOwnedSymbol}},totalRecordCount}
+                        data{chainId,balance,caAddress,nftInfo{symbol,imageUrl,collectionSymbol,collectionName,decimals,tokenName,totalSupply,supply,tokenContractAddress,inscriptionName,limitPerMint,expires,seedOwnedSymbol,generation,traits}},totalRecordCount}
                 }",
             Variables = new
             {

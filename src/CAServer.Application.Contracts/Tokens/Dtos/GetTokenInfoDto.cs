@@ -17,4 +17,6 @@ public class GetTokenInfoDto
     public long IssueChainId { get; set; }
     public bool IsDefault { get; set; }
     public bool IsDisplay { get; set; }
+
+    public string Expires { get; set; }
 }
