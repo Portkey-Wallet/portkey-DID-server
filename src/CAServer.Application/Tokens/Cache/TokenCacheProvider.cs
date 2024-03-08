@@ -55,7 +55,8 @@ public class TokenCacheProvider : ITokenCacheProvider, ISingletonDependency
                         TotalSupply = output.TotalSupply,
                         Issuer = output.Issuer.ToBase58(),
                         IsBurnable = output.IsBurnable,
-                        IssueChainId = output.IssueChainId
+                        IssueChainId = output.IssueChainId,
+                        Expires = output.ExternalInfo?.Value["__seed_exp_time"]
                     }
                     : new GetTokenInfoDto();
                 await _tokenInfoCache.SetAsync(cacheKey, tokenInfoCache, new DistributedCacheEntryOptions

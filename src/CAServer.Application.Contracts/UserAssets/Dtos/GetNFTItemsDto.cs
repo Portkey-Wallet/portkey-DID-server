@@ -21,6 +21,8 @@ public class NftItem
     public string ImageLargeUrl { get; set; }
     public string Decimals { get; set; }
 
+    public string CollectionSymbol { get; set; }
+    
     public string InscriptionName { get; set; }
 
     public int LimitPerMint {get; set;}
@@ -28,6 +30,13 @@ public class NftItem
     public string Expires { get; set; }
     
     public string SeedOwnedSymbol { get; set; }
+    
+    public string Generation { get; set; }
+
+    public string Traits { get; set; }
+    
+    public string TraitsPercentages { get; set; }
+    
     public string TokenName { get; set; }
     
     public bool IsSeed { get; set; }
@@ -41,4 +50,10 @@ public enum SeedType
 {
     FT = 1,
     NFT = 2
+}
+
+public class Trait
+{
+    public string TraitType { get; set; }
+    public string Value { get; set; }
 }

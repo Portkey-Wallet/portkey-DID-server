@@ -41,4 +41,7 @@ public class NftInfo
     
     public string SeedOwnedSymbol { get; set; }
     
+    public string Generation { get; set; }
+    
+    public string Traits { get; set; }
 }

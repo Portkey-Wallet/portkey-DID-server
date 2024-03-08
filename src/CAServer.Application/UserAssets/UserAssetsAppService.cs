@@ -12,6 +12,7 @@ using CAServer.Options;
 using CAServer.Search;
 using CAServer.Search.Dtos;
 using CAServer.Tokens;
+using CAServer.Tokens.Cache;
 using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
@@ -55,6 +56,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly GetBalanceFromChainOption _getBalanceFromChainOption;
     private readonly NftItemDisplayOption _nftItemDisplayOption;
     private readonly ISearchAppService _searchAppService;
+    private readonly ITokenCacheProvider _tokenCacheProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -66,7 +68,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IDistributedCache<List<Token>> userTokenCache, IDistributedCache<string> userTokenBalanceCache,
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption, 
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
-        ISearchAppService searchAppService)
+        ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -86,6 +88,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _getBalanceFromChainOption = getBalanceFromChainOption.Value;
         _nftItemDisplayOption = nftItemDisplayOption.Value;
         _searchAppService = searchAppService;
+        _tokenCacheProvider = tokenCacheProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -406,6 +409,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.Expires = nftInfo.NftInfo.Expires;
                 nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
                 
+                /* v1.9.0 404-nft        
+                nftItem.Generation = nftInfo.NftInfo.Generation;
+                nftItem.Traits = nftInfo.NftInfo.Traits;
+                */
+                
+                
                 dto.Data.Add(nftItem);
             }
 
@@ -425,6 +434,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             SetSeedStatusAndTypeForNftItems(dto.Data);
 
             OptimizeSeedAliasDisplayForNftItems(dto.Data);
+            
+            await TryGetExpiresFromContractIfEmptyForNftItemsAsync(dto.Data);
             
             return dto;
         }
@@ -478,6 +489,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             nftItem.LimitPerMint = nftInfo.NftInfo.LimitPerMint;
             nftItem.Expires = nftInfo.NftInfo.Expires;
             nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
+
+            /* v1.9.0 404-nft        
+            nftItem.Generation = nftInfo.NftInfo.Generation;
+            nftItem.Traits = nftInfo.NftInfo.Traits;
+            */
+            nftItem.CollectionSymbol = nftInfo.NftInfo.CollectionSymbol;
             
             if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(nftItem.Symbol))
             {
@@ -489,6 +506,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             SetSeedStatusAndTypeForNftItem(nftItem);
 
             OptimizeSeedAliasDisplayForNftItem(nftItem);
+
+            await TryGetExpiresFromContractIfEmptyForNftItemAsync(nftItem);
+
+            await CalculateAndSetTraitsPercentage(nftItem);
             
             return nftItem;
         }
@@ -515,8 +536,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             nftItem.IsSeed = true;
             nftItem.SeedType = (int) SeedType.FT;
 
+            if (!string.IsNullOrEmpty(nftItem.SeedOwnedSymbol))
+            {
+                nftItem.SeedType = nftItem.SeedOwnedSymbol.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+            } 
+
+            // Compatible with historical data
             // If the TokenName starts with "SEED-", we remove "SEED-" and check if it contains "-"
-            if (!string.IsNullOrEmpty(nftItem.TokenName) && nftItem.TokenName.StartsWith("SEED-"))
+            else if (!string.IsNullOrEmpty(nftItem.TokenName) && nftItem.TokenName.StartsWith("SEED-"))
             {
                 var tokenNameWithoutSeed = nftItem.TokenName.Remove(0, 5);
 
@@ -541,6 +568,90 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             nftItem.Alias = nftItem.Alias.TrimEnd("-0".ToCharArray());
         }
+    }
+    
+    private async Task TryGetExpiresFromContractIfEmptyForNftItemsAsync(List<NftItem> nftItems)
+    {
+        foreach (var item in nftItems)
+        {
+            await TryGetExpiresFromContractIfEmptyForNftItemAsync(item);
+        }
+    }
+    
+    private async Task TryGetExpiresFromContractIfEmptyForNftItemAsync(NftItem nftItem)
+    {
+        if (nftItem.IsSeed && string.IsNullOrEmpty(nftItem.Expires))
+        {
+            var tokenInfo = await  _tokenCacheProvider.GetTokenInfoAsync(nftItem.ChainId, nftItem.Symbol);
+            nftItem.Expires = tokenInfo.Expires;
+        }
+    }
+
+
+    private async Task CalculateAndSetTraitsPercentage(NftItem nftItem)
+    {
+        if (!string.IsNullOrEmpty(nftItem.Traits))
+        {
+            List<Trait> traitsList = JsonHelper.DeserializeJson<List<Trait>>(nftItem.Traits);
+            if (traitsList == null || !traitsList.Any())
+            {
+                return;
+            }
+            
+            List<Trait> allItemsTraitsList = await GetAllTraitsInCollectionAsync(nftItem.CollectionSymbol);
+
+            var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
+
+            var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            Dictionary<string, string> traitsPercentagesDic = CalculateTraitsPercentages(traitsList, traitTypeCounts, traitTypeValueCounts);
+
+            nftItem.TraitsPercentages = JsonConvert.SerializeObject(traitsPercentagesDic);
+        }
+    }
+    
+    private async Task<List<Trait>> GetAllTraitsInCollectionAsync(string collectionSymbol)
+    {
+        var indexerNftInfos =
+            await _userAssetsProvider.GetNftInfoTraitsInfoAsync(collectionSymbol, 0, 1000);
+
+        List<string> allItemsTraitsListInCollection = indexerNftInfos.CaHolderNFTBalanceInfo.Data != null && indexerNftInfos.CaHolderNFTBalanceInfo.Data.Any()
+            ? indexerNftInfos.CaHolderNFTBalanceInfo.Data
+                .Where(nftInfo => nftInfo.NftInfo != null && nftInfo.NftInfo.Supply > 0)
+                .GroupBy(nftInfo => nftInfo.NftInfo.Symbol)
+                .Select(group => group.First().NftInfo.Traits)
+                .ToList()
+            : new List<string>();
+
+        List<Trait> allItemsTraitsList = allItemsTraitsListInCollection
+            .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
+            .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
+            .SelectMany(curTraitsList => curTraitsList)
+            .ToList();
+
+        return allItemsTraitsList;
+    }
+    
+    private Dictionary<string, string> CalculateTraitsPercentages(List<Trait> traitsList, Dictionary<string, int> traitTypeCounts, Dictionary<string, int> traitTypeValueCounts)
+    {
+        Dictionary<string, string> traitsPercentagesDic = new Dictionary<string, string>();
+
+        foreach (var trait in traitsList)
+        {
+            string traitType = trait.TraitType;
+            string traitTypeValue = $"{trait.TraitType}-{trait.Value}";
+
+            if (traitTypeCounts.ContainsKey(traitType) && traitTypeValueCounts.ContainsKey(traitTypeValue))
+            {
+                int numerator = traitTypeCounts[traitType];
+                int denominator = traitTypeValueCounts[traitTypeValue];
+                string percentageString = PercentageHelper.CalculatePercentage(numerator, denominator);
+                traitsPercentagesDic[traitTypeValue] = percentageString;
+            }
+        }
+
+        return traitsPercentagesDic;
     }
 
 
@@ -961,7 +1072,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 userPackageAsset.IsSeed = true;
                 userPackageAsset.SeedType = (int) SeedType.FT;
-                
+
                 // If the TokenName is not null and starts with "SEED-", we remove "SEED-" and check if it contains "-"
                 if (!string.IsNullOrEmpty(userPackageAsset.TokenName) && userPackageAsset.TokenName.StartsWith("SEED-"))
                 {
