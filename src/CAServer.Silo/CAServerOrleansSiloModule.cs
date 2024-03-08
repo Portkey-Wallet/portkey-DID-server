@@ -11,9 +11,8 @@ namespace CAServer.Silo;
 [DependsOn(typeof(AbpAutofacModule),
     typeof(AbpAspNetCoreSerilogModule),
     //typeof(CAServerApplicationModule),
-    typeof(CAServerGrainsModule),
-    //typeof(CABackGroundModule)，
-    typeof(CAServerCoinGeckoApiModule)
+    typeof(CAServerGrainsModule)
+    //typeof(CABackGroundModule)
 )]
 public class CAServerOrleansSiloModule : AbpModule
 {

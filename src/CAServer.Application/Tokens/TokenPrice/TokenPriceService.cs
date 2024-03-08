@@ -4,8 +4,10 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Runtime;
@@ -27,7 +29,11 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
         IDistributedCache<string> distributedCache, IOptionsMonitor<TokenPriceWorkerOption> tokenPriceWorkerOption)
     {
         _logger = logger;
-        _tokenPriceProviders = tokenPriceProviders;
+        
+        if (tokenPriceProviders != null)
+        {
+            _tokenPriceProviders = tokenPriceProviders.OrderBy(provider => provider.GetPriority());
+        }
         _distributedCache = distributedCache;
         _tokenPriceWorkerOption = tokenPriceWorkerOption;
         _lock = new SemaphoreSlim(1);
@@ -108,8 +114,10 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
                 {
                     var key = GetSymbolPriceKey(price.Key);
                     var value = price.Value.ToString(CultureInfo.InvariantCulture);
-                    //TODO Test expire
-                    await _distributedCache.SetAsync(key, value);
+                    await _distributedCache.SetAsync(key, value, new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+                    });
                     _logger.Debug("refresh current price success:{0}-{1}", key, value);
                 }
 
@@ -145,7 +153,11 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
                         }
 
                         price = historyPrice;
-                        await _distributedCache.SetAsync(key, price.ToString(CultureInfo.CurrentCulture));
+                        await _distributedCache.SetAsync(key, price.ToString(CultureInfo.CurrentCulture),
+                            new DistributedCacheEntryOptions
+                            {
+                                AbsoluteExpiration = CommonConstant.DefaultAbsoluteExpiration
+                            });
                         _logger.LogInformation("refresh history price success...{key}", key);
                         break;
                     }
@@ -168,12 +180,12 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
     private string GetSymbolPriceKey(string symbol)
     {
         return
-            $"{_tokenPriceWorkerOption.CurrentValue.Prefix}:{_tokenPriceWorkerOption.CurrentValue.PricePrefix}:{symbol?.ToLower()}";
+            $"{_tokenPriceWorkerOption.CurrentValue.Prefix}:{_tokenPriceWorkerOption.CurrentValue.PricePrefix}:{symbol?.ToUpper()}";
     }
 
     private string GetSymbolPriceKey(string symbol, string dateTime)
     {
         return
-            $"{_tokenPriceWorkerOption.CurrentValue.Prefix}:{_tokenPriceWorkerOption.CurrentValue.PricePrefix}:{symbol?.ToLower()}:{dateTime}";
+            $"{_tokenPriceWorkerOption.CurrentValue.Prefix}:{_tokenPriceWorkerOption.CurrentValue.PricePrefix}:{symbol?.ToUpper()}:{dateTime}";
     }
 }

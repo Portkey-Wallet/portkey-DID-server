@@ -9,4 +9,5 @@ public interface ITokenPriceProvider
     Task<Dictionary<string, decimal>> GetPriceAsync(params string[] symbols);
 
     Task<decimal> GetHistoryPriceAsync(string symbol, string dateTime);
+    int GetPriority();
 }

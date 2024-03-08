@@ -38,7 +38,7 @@ public class TokenPriceBackgroundWorker : AsyncPeriodicBackgroundWorkerBase
         _tokenPriceService = tokenPriceService;
         _tokenPriceWorkerOption = tokenPriceWorkerOption.CurrentValue;
 
-        timer.Period = _tokenPriceWorkerOption.Period;
+        timer.Period = _tokenPriceWorkerOption.Period * 1000;
         timer.RunOnStart = true;
 
         _hostName = HostHelper.GetLocalHostName() ?? Guid.NewGuid().ToString();
@@ -48,27 +48,37 @@ public class TokenPriceBackgroundWorker : AsyncPeriodicBackgroundWorkerBase
 
     public override async Task StopAsync(CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("stopping token price background worker start...");
         await base.StopAsync(cancellationToken);
 
-        var workName = await _distributedCache.GetAsync(_workerNameKey);
-        if (!workName.IsNullOrWhiteSpace() && workName != this._hostName)
-        {
-            return;
-        }
-
-        _logger.LogInformation("TokenPriceWorker:remove current worker... {0}", workName);
-        await _distributedCache.RemoveAsync(_workerNameKey);
-        _logger.LogInformation("TokenPriceWorker:remove current worker finished...");
-    }
-
-    protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
-    {
         try
         {
             var workName = await _distributedCache.GetAsync(_workerNameKey);
             if (!workName.IsNullOrWhiteSpace() && workName != this._hostName)
             {
-                _logger.LogInformation("TokenPriceWorker:current worker: {0}", workName);
+                return;
+            }
+
+            _logger.LogInformation("TokenPriceWorker:remove current worker... {0}", workName);
+            await _distributedCache.RemoveAsync(_workerNameKey);
+            _logger.LogInformation("TokenPriceWorker:remove current worker finished...");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "TokenPriceWorker: stop Workder error.");
+        }
+        _logger.LogInformation("stoping token price background worker finished...");
+    }
+
+    protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
+    {
+        _logger.LogInformation("token price background worker start... {0}", _hostName);
+        try
+        {
+            var workName = await _distributedCache.GetAsync(_workerNameKey);
+            if (!workName.IsNullOrWhiteSpace() && workName != this._hostName)
+            {
+                _logger.LogInformation("TokenPriceWorker: running worker: {0}", workName);
                 return;
             }
 
@@ -97,5 +107,6 @@ public class TokenPriceBackgroundWorker : AsyncPeriodicBackgroundWorkerBase
         {
             _logger.LogError(e, "TokenPriceWorker: task error.");
         }
+        _logger.LogInformation("token price background worker finished...");
     }
 }

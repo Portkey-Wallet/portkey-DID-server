@@ -6,6 +6,6 @@ namespace CAServer.CoinGeckoApi
     {
         public string BaseUrl { get; set; }
         public Dictionary<string, string> CoinIdMapping { get; set; }
+        public int Priority { get; set; } = 0;
     }
 }
-

@@ -88,62 +88,29 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Can not get current price :{Symbol}", symbol);
+            _logger.LogError(ex, "Can not get current price from 'CoinGecko' :{Symbol}", symbol);
             throw;
         }
     }
-
+    
     public async Task<Dictionary<string, decimal>> GetPriceAsync(params string[] symbols)
     {
+        if (symbols.IsNullOrEmpty())
+        {
+            return null;
+        }
+
         var prices = new Dictionary<string, decimal>();
-        var symbolCoinIdDictionary = new Dictionary<string, string>();
         foreach (var symbol in symbols)
         {
-            if (symbol.IsNullOrWhiteSpace())
+            var price = await GetPriceAsync(symbol);
+            if (price != 0)
             {
-                continue;
+                prices.Add(symbol, price);
             }
-
-            var coinId = GetCoinIdAsync(symbol);
-            if (coinId == null)
-            {
-                _logger.LogWarning("Can not get the token {Symbol}", symbol);
-                continue;
-            }
-
-            symbolCoinIdDictionary.Add(symbol, coinId);
         }
 
-        if (symbolCoinIdDictionary.Count == 0)
-        {
-            return prices;
-        }
-
-        try
-        {
-            var coinData =
-                await RequestAsync(async () =>
-                    await _coinGeckoClient.SimpleClient.GetSimplePrice(symbolCoinIdDictionary.Values.ToArray(),
-                        new[] { UsdSymbol }));
-            _logger.LogDebug("Get coinGecko data: {Price}", JsonConvert.SerializeObject(coinData));
-
-            foreach (var symbolCoinIdPair in symbolCoinIdDictionary)
-            {
-                if (!coinData.TryGetValue(symbolCoinIdPair.Value, out var value))
-                {
-                    continue;
-                }
-
-                prices.Add(symbolCoinIdPair.Key, value[UsdSymbol].Value);
-            }
-
-            return prices;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Can not get current price :{Symbol}", JsonConvert.SerializeObject(symbols));
-            throw;
-        }
+        return prices;
     }
 
     public async Task<decimal> GetHistoryPriceAsync(string symbol, string dateTime)
@@ -179,6 +146,11 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             _logger.LogError(ex, "Can not get :{Symbol} price", symbol);
             throw;
         }
+    }
+
+    public int GetPriority()
+    {
+        return _coinGeckoOptions.CurrentValue.Priority;
     }
 
     private string GetCoinIdAsync(string symbol)

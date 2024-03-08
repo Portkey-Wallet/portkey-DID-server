@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AElf.Indexing.Elasticsearch.Options;
+using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Options;
+using CAServer.Tokens.TokenPrice.Provider.FeiXiaoHao;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -42,6 +44,7 @@ namespace CAServer;
     typeof(CAServerEntityEventHandlerCoreModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpCachingStackExchangeRedisModule),
+    typeof(CAServerCoinGeckoApiModule),
     typeof(AbpEventBusRabbitMqModule))]
 public class CAServerEntityEventHandlerModule : AbpModule
 {
@@ -55,6 +58,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
+        Configure<FeiXiaoHaoOptions>(configuration.GetSection("FeiXiaoHao"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);

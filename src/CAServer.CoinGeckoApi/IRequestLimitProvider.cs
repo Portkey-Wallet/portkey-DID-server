@@ -4,8 +4,8 @@ using Microsoft.Extensions.Caching.Distributed;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.CoinGeckoApi{
-
+namespace CAServer.CoinGeckoApi
+{
     public interface IRequestLimitProvider
     {
         Task RecordRequestAsync();
@@ -37,7 +37,13 @@ namespace CAServer.CoinGeckoApi{
                 throw new RequestExceedingLimitException("The request exceeded the limit.");
             }
 
-            await _requestTimeCache.SetAsync(CoinGeckoApiConsts.RequestTimeCacheKey, requestTime);
+            await _requestTimeCache.SetAsync(CoinGeckoApiConsts.RequestTimeCacheKey, requestTime,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpiration = null,
+                    AbsoluteExpirationRelativeToNow = null,
+                    SlidingExpiration = null
+                });
         }
     }
 
