@@ -51,7 +51,8 @@ public class NftItemCacheProvider : INftItemCacheProvider, ISingletonDependency
                         TokenName = output.TokenName,
                         Decimals = output.Decimals.ToString(),
                         TotalSupply = output.TotalSupply,
-                        Expires = output.ExternalInfo?.Value["__seed_exp_time"]
+                        Expires = output.ExternalInfo?.Value["__seed_exp_time"],
+                        SeedOwnedSymbol = output.ExternalInfo?.Value["__seed_owned_symbol"]
                     }
                     : new NftItem();
                 await _nftItemCache.SetAsync(cacheKey, nftItemCache, new DistributedCacheEntryOptions
