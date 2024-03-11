@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.HubsEventHandler;
@@ -369,6 +370,8 @@ public class CAServerHttpApiHostModule : AbpModule
 
         // to start pre heat
         _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
+
+        ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

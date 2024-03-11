@@ -1,7 +1,9 @@
 using CAServer.CoinGeckoApi;
+using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Grains.Grain.ApplicationHandler;
 using Microsoft.Extensions.DependencyInjection;
+using Volo.Abp;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.Modularity;
@@ -23,5 +25,10 @@ public class CAServerOrleansSiloModule : AbpModule
         //ConfigureEsIndexCreation();
         Configure<GrainOptions>(configuration.GetSection("Contract"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+    }
+    
+    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    {
+        ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 }

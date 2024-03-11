@@ -15,17 +15,6 @@ public static class OrleansHostExtensions
 {
     public static IHostBuilder UseOrleansSnapshot(this IHostBuilder hostBuilder)
     {
-#if DEBUG
-        var configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
-
-        if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-        var configSection = configuration.GetSection("Orleans");
-        if (configSection == null)
-            throw new ArgumentNullException(nameof(configSection), "The OrleansServer node is missing");
-#endif
-
         return hostBuilder.UseOrleans((context, siloBuilder) =>
         {
             //Configure OrleansSnapshot

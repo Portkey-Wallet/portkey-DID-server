@@ -313,7 +313,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         var buckets = new List<BucketItem>();
         var remainAmount = totalAmount;
         int decimalPlaces = BucketRandomSpecialOperation(totalAmount, count, decimalIn);
-        long realMinAmount = (long)Math.Pow(10, decimalIn - decimalPlaces);
+        long realMinAmount = decimalIn == 0 ? 1 : (long)Math.Pow(10, decimalIn - decimalPlaces);
 
         int luckyKingIndex = 0;
         long luckyKingAmount = realMinAmount;

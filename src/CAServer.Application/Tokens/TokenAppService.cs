@@ -7,6 +7,7 @@ using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Options;
+using CAServer.Tokens.Cache;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
 using CAServer.Tokens.TokenPrice;
@@ -29,11 +30,14 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     private readonly ITokenProvider _tokenProvider;
     private readonly IDistributedCache<TokenExchange> _latestExchange;
     private readonly Dictionary<string, IExchangeProvider> _exchangeProviders;
+    private readonly ITokenCacheProvider _tokenCacheProvider;
     private readonly ITokenPriceService _tokenPriceService;
 
     public TokenAppService(IOptions<ContractAddressOptions> contractAddressesOptions,
         ITokenProvider tokenProvider, IEnumerable<IExchangeProvider> exchangeProviders,
         IDistributedCache<TokenExchange> latestExchange,
+        IDistributedCache<TokenExchange> historyExchange,
+        ITokenCacheProvider tokenCacheProvider,
         ITokenPriceService tokenPriceService)
     {
         _tokenProvider = tokenProvider;
@@ -41,6 +45,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         _tokenPriceService = tokenPriceService;
         _contractAddressOptions = contractAddressesOptions.Value;
         _exchangeProviders = exchangeProviders.ToDictionary(p => p.Name().ToString(), p => p);
+        _tokenCacheProvider = tokenCacheProvider;
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -139,7 +144,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var tokenInfo = dto?.TokenInfo?.FirstOrDefault();
         if (tokenInfo == null)
         {
-            return new GetTokenInfoDto();
+            return await _tokenCacheProvider.GetTokenInfoAsync(chainId, symbol);
         }
 
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);

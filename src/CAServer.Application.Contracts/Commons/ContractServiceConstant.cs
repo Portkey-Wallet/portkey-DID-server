@@ -7,6 +7,7 @@ public static class AElfContractMethodName
     public const string GetHolderInfo = "GetHolderInfo";
     public const string GetVerifierServers = "GetVerifierServers";
     public const string GetBalance = "GetBalance";
+    public const string GetTokenInfo = "GetTokenInfo";
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
     public const string AddManagerInfo = "AddManagerInfo";
@@ -30,6 +31,7 @@ public static class CommonConstant
     public const string ResourceTokenKey = "ResourceToken";
     public const int CacheExpirationDays = 365;
     public const string CacheCorrectUserTokenBalancePre = "CorrectUserTokenBalance:{0}:{1}:{2}";
+    public const string CacheTokenInfoPre = "CorrectTokenInfo:{0}:{1}";
     public const long CacheTokenBalanceExpirationSeconds = 60;
 
     public const string FiatListKey = "FiatList";

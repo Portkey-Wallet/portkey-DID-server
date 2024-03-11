@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using CAServer.Commons;
 using CAServer.Contract;
 using Localization.Resources.AbpUi;
 using Medallion.Threading;
@@ -231,5 +232,7 @@ public class CAServerAuthServerModule : AbpModule
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
+
+        ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 }
