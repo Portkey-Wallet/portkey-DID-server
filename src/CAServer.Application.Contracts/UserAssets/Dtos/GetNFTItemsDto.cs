@@ -25,7 +25,7 @@ public class NftItem
     
     public string InscriptionName { get; set; }
 
-    public int LimitPerMint {get; set;}
+    public string LimitPerMint {get; set;}
 
     public string Expires { get; set; }
     
