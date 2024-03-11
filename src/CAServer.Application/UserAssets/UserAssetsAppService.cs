@@ -30,6 +30,7 @@ using Volo.Abp.Users;
 using ChainOptions = CAServer.Options.ChainOptions;
 using Token = CAServer.UserAssets.Dtos.Token;
 using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
+using TokenType = CAServer.Tokens.TokenType;
 
 namespace CAServer.UserAssets;
 
@@ -56,7 +57,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly GetBalanceFromChainOption _getBalanceFromChainOption;
     private readonly NftItemDisplayOption _nftItemDisplayOption;
     private readonly ISearchAppService _searchAppService;
-    private readonly INftItemCacheProvider _nftItemCacheProvider;
+    private readonly ITokenCacheProvider _tokenCacheProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -68,7 +69,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IDistributedCache<List<Token>> userTokenCache, IDistributedCache<string> userTokenBalanceCache,
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption, 
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
-        ISearchAppService searchAppService, INftItemCacheProvider nftItemCacheProvider)
+        ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -88,7 +89,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _getBalanceFromChainOption = getBalanceFromChainOption.Value;
         _nftItemDisplayOption = nftItemDisplayOption.Value;
         _searchAppService = searchAppService;
-        _nftItemCacheProvider = nftItemCacheProvider;
+        _tokenCacheProvider = tokenCacheProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -579,7 +580,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         if (nftItem.IsSeed && (string.IsNullOrEmpty(nftItem.Expires) || string.IsNullOrEmpty(nftItem.SeedOwnedSymbol)))
         {
-            var nftItemCache = await _nftItemCacheProvider.GetNftItemAsync(nftItem.ChainId, nftItem.Symbol);
+            var nftItemCache = await _tokenCacheProvider.GetTokenInfoAsync(nftItem.ChainId, nftItem.Symbol, TokenType.NFTItem);
             nftItem.Expires = nftItemCache.Expires;
             nftItem.SeedOwnedSymbol = nftItemCache.SeedOwnedSymbol;
         }
