@@ -1,7 +1,10 @@
+using System;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 
@@ -15,10 +18,12 @@ namespace CAServer.Controllers;
 public class UserAssetsController
 {
     private readonly IUserAssetsAppService _userAssetsAppService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public UserAssetsController(IUserAssetsAppService userAssetsAppService)
+    public UserAssetsController(IUserAssetsAppService userAssetsAppService, IHttpContextAccessor httpContextAccessor)
     {
         _userAssetsAppService = userAssetsAppService;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     [HttpPost("token")]
@@ -61,8 +66,17 @@ public class UserAssetsController
     [HttpPost("searchUserPackageAssets")]
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(SearchUserPackageAssetsRequestDto requestDto)
     {
-        return await _userAssetsAppService.SearchUserPackageAssetsAsync(requestDto);
+        
+        var headers = _httpContextAccessor?.HttpContext?.Request.Headers;
+        string version = headers != null && headers.ContainsKey("version") ? headers["version"] : string.Empty;
+
+
+        var userPackageAssets = await _userAssetsAppService.SearchUserPackageAssetsAsync(requestDto);
+
+        return VersionContentHelper.FilterUserPackageAssetsByVersion(version, userPackageAssets);
     }
+    
+
 
     [AllowAnonymous]
     [HttpGet("symbolImages")]
