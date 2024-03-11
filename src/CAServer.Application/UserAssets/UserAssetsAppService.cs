@@ -405,7 +405,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 
                 
                 nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
-                nftItem.Lim = nftInfo.NftInfo.Lim;
+                nftItem.LimitPerMint = nftInfo.NftInfo.Lim;
                 nftItem.Expires = nftInfo.NftInfo.Expires;
                 nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
                 
@@ -484,7 +484,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             
             
             nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
-            nftItem.Lim = nftInfo.NftInfo.Lim;
+            nftItem.LimitPerMint = nftInfo.NftInfo.Lim;
             nftItem.Expires = nftInfo.NftInfo.Expires;
             nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
 
