@@ -17,6 +17,4 @@ public class NftCollection
     public string Symbol { get; set; }
     
     public bool IsSeed { get; set; }
-    
-    public string Expires { get; set; }
 }
