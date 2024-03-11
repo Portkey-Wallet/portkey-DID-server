@@ -33,6 +33,7 @@ public static class CommonConstant
     public const string CacheCorrectUserTokenBalancePre = "CorrectUserTokenBalance:{0}:{1}:{2}";
     public const string CacheTokenInfoPre = "CorrectTokenInfo:{0}:{1}";
     public const long CacheTokenBalanceExpirationSeconds = 60;
+    public const string CacheNftItemPre = "CorrectNftItem:{0}:{1}";
 
     public const string FiatListKey = "FiatList";
     public const string NftFiatListKey = "NftFiatList";
