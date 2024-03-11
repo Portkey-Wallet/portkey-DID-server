@@ -433,7 +433,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             OptimizeSeedAliasDisplayForNftItems(dto.Data);
             
-            await TryGetExpiresFromContractIfEmptyForNftItemsAsync(dto.Data);
+            await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(dto.Data);
             
             return dto;
         }
@@ -504,7 +504,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             OptimizeSeedAliasDisplayForNftItem(nftItem);
 
-            await TryGetExpiresFromContractIfEmptyForNftItemAsync(nftItem);
+            await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(nftItem);
 
             await CalculateAndSetTraitsPercentage(nftItem);
             
@@ -567,20 +567,21 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
     
-    private async Task TryGetExpiresFromContractIfEmptyForNftItemsAsync(List<NftItem> nftItems)
+    private async Task TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(List<NftItem> nftItems)
     {
         foreach (var item in nftItems)
         {
-            await TryGetExpiresFromContractIfEmptyForNftItemAsync(item);
+            await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(item);
         }
     }
     
-    private async Task TryGetExpiresFromContractIfEmptyForNftItemAsync(NftItem nftItem)
+    private async Task TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(NftItem nftItem)
     {
-        if (nftItem.IsSeed && string.IsNullOrEmpty(nftItem.Expires))
+        if (nftItem.IsSeed && (string.IsNullOrEmpty(nftItem.Expires) || string.IsNullOrEmpty(nftItem.SeedOwnedSymbol)))
         {
             var nftItemCache = await _nftItemCacheProvider.GetNftItemAsync(nftItem.ChainId, nftItem.Symbol);
             nftItem.Expires = nftItemCache.Expires;
+            nftItem.SeedOwnedSymbol = nftItemCache.SeedOwnedSymbol;
         }
     }
 
