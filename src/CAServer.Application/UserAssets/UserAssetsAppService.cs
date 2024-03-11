@@ -405,14 +405,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 
                 
                 nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
-                nftItem.LimitPerMint = nftInfo.NftInfo.LimitPerMint;
+                nftItem.Lim = nftInfo.NftInfo.Lim;
                 nftItem.Expires = nftInfo.NftInfo.Expires;
                 nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
                 
-                /* v1.9.0 404-nft        
                 nftItem.Generation = nftInfo.NftInfo.Generation;
                 nftItem.Traits = nftInfo.NftInfo.Traits;
-                */
                 
                 
                 dto.Data.Add(nftItem);
@@ -486,14 +484,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             
             
             nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
-            nftItem.LimitPerMint = nftInfo.NftInfo.LimitPerMint;
+            nftItem.Lim = nftInfo.NftInfo.Lim;
             nftItem.Expires = nftInfo.NftInfo.Expires;
             nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
 
-            /* v1.9.0 404-nft        
             nftItem.Generation = nftInfo.NftInfo.Generation;
             nftItem.Traits = nftInfo.NftInfo.Traits;
-            */
+            
             nftItem.CollectionSymbol = nftInfo.NftInfo.CollectionSymbol;
             
             if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(nftItem.Symbol))
