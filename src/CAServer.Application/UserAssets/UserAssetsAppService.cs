@@ -943,9 +943,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         
         var userPackageNftAssetsWithPositiveBalance = userPackageAssets.Data
             .Where(asset => asset.NftInfo?.Balance != null 
-                            && long.Parse(asset.NftInfo.Balance) > 0 
-                            && !string.IsNullOrEmpty(asset.NftInfo?.ImageUrl) 
-                            && asset.NftInfo.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            && long.Parse(asset.NftInfo.Balance) > 0)
             .ToList();
 
         var matchedItems =
