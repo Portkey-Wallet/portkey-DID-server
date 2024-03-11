@@ -9,7 +9,7 @@ public static class VersionContentHelper
     public static SearchUserPackageAssetsDto FilterUserPackageAssetsByVersion(string version, SearchUserPackageAssetsDto userPackageAssets)
     {
         var inputVersion = GetInputVersion(version);
-        return inputVersion == null || inputVersion < new Version("1.9.0") ? userPackageAssets : FilterUserPackageAssets(userPackageAssets);
+        return inputVersion == null || inputVersion >= new Version("1.9.0") ? userPackageAssets : FilterUserPackageAssets(userPackageAssets);
     }
 
     private static Version GetInputVersion(string version)
