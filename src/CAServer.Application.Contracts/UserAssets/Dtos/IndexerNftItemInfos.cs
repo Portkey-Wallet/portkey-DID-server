@@ -21,5 +21,6 @@ public class NftItemInfo
     public string ImageUrl { get; set; }
     public string CollectionSymbol { get; set; }
     public string CollectionName { get; set; }
-    
+    public string Traits { get; set; }
+
 }

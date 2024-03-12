@@ -97,20 +97,19 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
         });
     }
 
-    public async Task<IndexerNftInfos> GetNftInfoTraitsInfoAsync(string collectionSymbol, int inputSkipCount,
+    public async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto, int inputSkipCount,
         int inputMaxResultCount)
     {
-        return await _graphQlHelper.QueryAsync<IndexerNftInfos>(new GraphQLRequest
+        return await _graphQlHelper.QueryAsync<IndexerNftItemInfos>(new GraphQLRequest
         {
             Query = @"
-			    query($collectionSymbol:String,$caAddressInfos:[CAAddressInfo],$skipCount:Int!,$maxResultCount:Int!) {
-                    caHolderNFTBalanceInfo(dto: {collectionSymbol:$collectionSymbol,caAddressInfos:$caAddressInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{nftInfo{symbol,supply,traits}},totalRecordCount}
+			    query($getNftItemInfos:[GetNftItemInfo],$skipCount:Int!,$maxResultCount:Int!) {
+                    nftItemInfos(dto: {getNftItemInfos:$getNftItemInfos,skipCount:$skipCount,maxResultCount:$maxResultCount}){
+                        symbol,supply,traits}
                 }",
-
             Variables = new
             {
-                collectionSymbol = collectionSymbol, 
+                GetNftItemInfos = getNftItemInfosDto.GetNftItemInfos,
                 skipCount = inputSkipCount,
                 maxResultCount = inputMaxResultCount
             }
