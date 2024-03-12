@@ -605,7 +605,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TraitsPercentages = new List<Trait>();
             }
             
-            _logger.LogInformation("nftItem:" +  JsonConvert.SerializeObject(nftItem));
             List<Trait> allItemsTraitsList = await GetAllTraitsInCollectionAsync(nftItem.CollectionSymbol);
 
             var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
@@ -626,25 +625,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             CollectionSymbol = collectionSymbol
         });
         var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto , 0, 2000);
-
-        _logger.LogInformation("nftItemInfos:" +  JsonConvert.SerializeObject(nftItemInfos));
-
+        
         List<string> allItemsTraitsListInCollection = nftItemInfos.NftItemInfos?
             .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
             .GroupBy(nftItem => nftItem.Symbol)
             .Select(group => group.First().Traits)
             .ToList() ?? new List<string>();
         
-        _logger.LogInformation("allItemsTraitsListInCollection:" + JsonConvert.SerializeObject(allItemsTraitsListInCollection));
-
         List<Trait> allItemsTraitsList = allItemsTraitsListInCollection
             .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
             .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
             .SelectMany(curTraitsList => curTraitsList)
             .ToList();
         
-        _logger.LogInformation("allItemsTraitsList:" + JsonConvert.SerializeObject(allItemsTraitsList));
-
         return allItemsTraitsList;
     }
 
@@ -667,8 +660,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
         }
         
-        _logger.LogInformation("traitsList:" + JsonConvert.SerializeObject(traitsList));
-
         nftItem.TraitsPercentages = traitsList;
     }
 
