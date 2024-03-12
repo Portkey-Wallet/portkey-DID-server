@@ -619,18 +619,31 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     
     private async Task<List<Trait>> GetAllTraitsInCollectionAsync(string collectionSymbol)
     {
-        var indexerNftInfos =
-            await _userAssetsProvider.GetNftInfoTraitsInfoAsync(collectionSymbol, 0, 10000);
+        // var indexerNftInfos =
+        //     await _userAssetsProvider.GetNftInfoTraitsInfoAsync(collectionSymbol, 0, 10000);
 
-        _logger.LogInformation("indexerNftInfos:" +  JsonConvert.SerializeObject(indexerNftInfos));
+        var getNftItemInfosDto = new GetNftItemInfosDto();
+        getNftItemInfosDto.GetNftItemInfos = new List<GetNftItemInfo>();
+        getNftItemInfosDto.GetNftItemInfos.Add(new GetNftItemInfo()
+        {
+            CollectionSymbol = collectionSymbol
+        });
+        var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto , 0, 2000);
+
+        _logger.LogInformation("nftItemInfos:" +  JsonConvert.SerializeObject(nftItemInfos));
         
-        List<string> allItemsTraitsListInCollection = indexerNftInfos.CaHolderNFTBalanceInfo.Data != null && indexerNftInfos.CaHolderNFTBalanceInfo.Data.Any()
-            ? indexerNftInfos.CaHolderNFTBalanceInfo.Data
-                .Where(nftInfo => nftInfo.NftInfo != null && nftInfo.NftInfo.Supply > 0 && !string.IsNullOrEmpty(nftInfo.NftInfo.Traits))
-                .GroupBy(nftInfo => nftInfo.NftInfo.Symbol)
-                .Select(group => group.First().NftInfo.Traits)
-                .ToList()
-            : new List<string>();
+        // List<string> allItemsTraitsListInCollection = indexerNftInfos.CaHolderNFTBalanceInfo.Data != null && indexerNftInfos.CaHolderNFTBalanceInfo.Data.Any()
+        //     ? indexerNftInfos.CaHolderNFTBalanceInfo.Data
+        //         .Where(nftInfo => nftInfo.NftInfo != null && nftInfo.NftInfo.Supply > 0 && !string.IsNullOrEmpty(nftInfo.NftInfo.Traits))
+        //         .GroupBy(nftInfo => nftInfo.NftInfo.Symbol)
+        //         .Select(group => group.First().NftInfo.Traits)
+        //         .ToList()
+        //     : new List<string>();
+
+        List<string> allItemsTraitsListInCollection = nftItemInfos.NftItemInfos?
+            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
+            .Select(nftItem => nftItem.Traits)
+            .ToList() ?? new List<string>();
         
         _logger.LogInformation("allItemsTraitsListInCollection:" + JsonConvert.SerializeObject(allItemsTraitsListInCollection));
 
