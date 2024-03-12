@@ -404,7 +404,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     ? NftItemDisplayOption.DefaultRecommendedRefreshSeconds 
                     : _nftItemDisplayOption.RecommendedRefreshSeconds;
                 
-                
+                nftItem.CollectionSymbol = nftInfo.NftInfo.CollectionSymbol;
                 nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
                 nftItem.LimitPerMint = nftInfo.NftInfo.Lim;
                 nftItem.Expires = nftInfo.NftInfo.Expires;
@@ -483,7 +483,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 ? NftItemDisplayOption.DefaultRecommendedRefreshSeconds 
                 : _nftItemDisplayOption.RecommendedRefreshSeconds;    
             
-            
+            nftItem.CollectionSymbol = nftInfo.NftInfo.CollectionSymbol;
             nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
             nftItem.LimitPerMint = nftInfo.NftInfo.Lim;
             nftItem.Expires = nftInfo.NftInfo.Expires;
