@@ -435,6 +435,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             OptimizeSeedAliasDisplayForNftItems(dto.Data);
             
             await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(dto.Data);
+
+            await CalculateAndSetTraitsPercentageAsync(dto.Data);
             
             return dto;
         }
@@ -507,7 +509,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(nftItem);
 
-            await CalculateAndSetTraitsPercentage(nftItem);
+            await CalculateAndSetTraitsPercentageAsync(nftItem);
             
             return nftItem;
         }
@@ -585,9 +587,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             nftItem.SeedOwnedSymbol = nftItemCache.SeedOwnedSymbol;
         }
     }
+    
+    private async Task CalculateAndSetTraitsPercentageAsync(List<NftItem> nftItems)
+    {
+        foreach (var item in nftItems)
+        {
+            await CalculateAndSetTraitsPercentageAsync(item);
+        }
+    }
 
 
-    private async Task CalculateAndSetTraitsPercentage(NftItem nftItem)
+    private async Task CalculateAndSetTraitsPercentageAsync(NftItem nftItem)
     {
         if (!string.IsNullOrEmpty(nftItem.Traits))
         {
@@ -597,6 +607,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 return;
             }
             
+            _logger.LogInformation("nftItem:" +  JsonConvert.SerializeObject(nftItem));
             List<Trait> allItemsTraitsList = await GetAllTraitsInCollectionAsync(nftItem.CollectionSymbol);
 
             var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
@@ -604,9 +615,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            Dictionary<string, string> traitsPercentagesDic = CalculateTraitsPercentages(traitsList, traitTypeCounts, traitTypeValueCounts);
-
-            nftItem.TraitsPercentages = JsonConvert.SerializeObject(traitsPercentagesDic);
+            CalculateTraitsPercentages(nftItem, traitsList, traitTypeCounts, traitTypeValueCounts);
         }
     }
     
@@ -615,6 +624,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var indexerNftInfos =
             await _userAssetsProvider.GetNftInfoTraitsInfoAsync(collectionSymbol, 0, 1000);
 
+        _logger.LogInformation("indexerNftInfos:" +  JsonConvert.SerializeObject(indexerNftInfos));
+        
         List<string> allItemsTraitsListInCollection = indexerNftInfos.CaHolderNFTBalanceInfo.Data != null && indexerNftInfos.CaHolderNFTBalanceInfo.Data.Any()
             ? indexerNftInfos.CaHolderNFTBalanceInfo.Data
                 .Where(nftInfo => nftInfo.NftInfo != null && nftInfo.NftInfo.Supply > 0)
@@ -622,35 +633,42 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 .Select(group => group.First().NftInfo.Traits)
                 .ToList()
             : new List<string>();
+        
+        _logger.LogInformation("allItemsTraitsListInCollection:" + JsonConvert.SerializeObject(allItemsTraitsListInCollection));
 
         List<Trait> allItemsTraitsList = allItemsTraitsListInCollection
             .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
             .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
             .SelectMany(curTraitsList => curTraitsList)
             .ToList();
+        
+        _logger.LogInformation("allItemsTraitsList:" + JsonConvert.SerializeObject(allItemsTraitsList));
 
         return allItemsTraitsList;
     }
-    
-    private Dictionary<string, string> CalculateTraitsPercentages(List<Trait> traitsList, Dictionary<string, int> traitTypeCounts, Dictionary<string, int> traitTypeValueCounts)
-    {
-        Dictionary<string, string> traitsPercentagesDic = new Dictionary<string, string>();
 
+    private void CalculateTraitsPercentages(NftItem nftItem, List<Trait> traitsList, Dictionary<string, int> traitTypeCounts,
+        Dictionary<string, int> traitTypeValueCounts)
+    {
         foreach (var trait in traitsList)
         {
             string traitType = trait.TraitType;
             string traitTypeValue = $"{trait.TraitType}-{trait.Value}";
-
+            
             if (traitTypeCounts.ContainsKey(traitType) && traitTypeValueCounts.ContainsKey(traitTypeValue))
             {
-                int numerator = traitTypeCounts[traitType];
-                int denominator = traitTypeValueCounts[traitTypeValue];
-                string percentageString = PercentageHelper.CalculatePercentage(numerator, denominator);
-                traitsPercentagesDic[traitTypeValue] = percentageString;
+                int numerator = traitTypeValueCounts[traitTypeValue];
+                int denominator = traitTypeCounts[traitType];
+                string percentage = PercentageHelper.CalculatePercentage(numerator, denominator);
+                trait.Percent = percentage;
+            }else {
+                trait.Percent = "-";
             }
         }
-
-        return traitsPercentagesDic;
+        
+        _logger.LogInformation("traitsList:" + JsonConvert.SerializeObject(traitsList));
+        
+        nftItem.TraitsPercentages = JsonConvert.SerializeObject(traitsList);
     }
 
 
