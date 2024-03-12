@@ -117,6 +117,11 @@ public class FeiXiaoHaoTokenPriceProvider : ITokenPriceProvider, ISingletonDepen
         throw new NotSupportedException(" 'FeiXiaoHao' does not support historical price query");
     }
 
+    public bool IsAvailable()
+    {
+        return _feiXiaoHaoOptions.CurrentValue.IsAvailable;
+    }
+
     public int GetPriority()
     {
         return _feiXiaoHaoOptions.CurrentValue.Priority;

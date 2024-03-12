@@ -741,7 +741,8 @@ public class ContractAppService : IContractAppService
             {
                 Address = createHolderDto.ManagerInfo.Address?.ToBase58(),
                 ExtraData = createHolderDto.ManagerInfo.ExtraData
-            }
+            },
+            RegisterSuccess = true
         };
 
         if (transactionResultDto.Status != TransactionState.Mined)
@@ -763,7 +764,6 @@ public class ContractAppService : IContractAppService
                 registerResult.Id.ToString(), chainInfo.ChainId, registerResult.RegisterMessage);
         }
 
-        registerResult.RegisterSuccess = true;
         await _distributedEventBus.PublishAsync(registerResult);
 
         _logger.LogInformation("accelerated registration state: " + "\n{result}",
@@ -837,7 +837,8 @@ public class ContractAppService : IContractAppService
             {
                 Address = socialRecoveryDto.ManagerInfo.Address?.ToBase58(),
                 ExtraData = socialRecoveryDto.ManagerInfo.ExtraData
-            }
+            },
+            RecoverySuccess = true
         };
 
         if (transactionResultDto.Status != TransactionState.Mined)
@@ -858,8 +859,7 @@ public class ContractAppService : IContractAppService
             _logger.LogInformation("accelerated social recover state: id:{id}, chainId:{chainId}, message:{result}",
                 recoveryResult.Id.ToString(), chainInfo.ChainId, recoveryResult.RecoveryMessage);
         }
-
-        recoveryResult.RecoverySuccess = true;
+        
         await _distributedEventBus.PublishAsync(recoveryResult);
 
         _logger.LogInformation("accelerated social recover state: " + "\n{result}",

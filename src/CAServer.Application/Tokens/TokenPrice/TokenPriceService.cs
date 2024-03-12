@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -23,20 +24,21 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
     private readonly IEnumerable<ITokenPriceProvider> _tokenPriceProviders;
     private readonly IDistributedCache<string> _distributedCache;
     private readonly IOptionsMonitor<TokenPriceWorkerOption> _tokenPriceWorkerOption;
-    private readonly SemaphoreSlim _lock;
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks;
 
     public TokenPriceService(ILogger<TokenPriceService> logger, IEnumerable<ITokenPriceProvider> tokenPriceProviders,
         IDistributedCache<string> distributedCache, IOptionsMonitor<TokenPriceWorkerOption> tokenPriceWorkerOption)
     {
         _logger = logger;
-        
+
         if (tokenPriceProviders != null)
         {
             _tokenPriceProviders = tokenPriceProviders.OrderBy(provider => provider.GetPriority());
         }
+
         _distributedCache = distributedCache;
         _tokenPriceWorkerOption = tokenPriceWorkerOption;
-        _lock = new SemaphoreSlim(1);
+        _locks = new ConcurrentDictionary<string, SemaphoreSlim>();
     }
 
     public async Task<TokenPriceGrainDto> GetCurrentPriceAsync(string symbol)
@@ -45,6 +47,14 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
         {
             var key = GetSymbolPriceKey(symbol);
             var priceString = await _distributedCache.GetAsync(key);
+            if (priceString.IsNullOrEmpty())
+            {
+                return new TokenPriceGrainDto
+                {
+                    Symbol = symbol,
+                    PriceInUsd = 0
+                };
+            }
 
             decimal price;
             if (!decimal.TryParse(priceString, out price))
@@ -68,6 +78,15 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
 
     public async Task<TokenPriceGrainDto> GetHistoryPriceAsync(string symbol, string dateTime)
     {
+        if (!_tokenPriceWorkerOption.CurrentValue.Symbols.Contains(symbol.ToUpper()))
+        {
+            return new TokenPriceGrainDto
+            {
+                Symbol = symbol,
+                PriceInUsd = 0
+            };
+        }
+
         var key = GetSymbolPriceKey(symbol, dateTime);
         try
         {
@@ -102,6 +121,11 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
         var symbols = symbol != null ? new[] { symbol } : _tokenPriceWorkerOption.CurrentValue.Symbols.ToArray();
         foreach (var tokenPriceProvider in _tokenPriceProviders)
         {
+            if (!tokenPriceProvider.IsAvailable())
+            {
+                continue;
+            }
+
             try
             {
                 var prices = await tokenPriceProvider.GetPriceAsync(symbols);
@@ -135,7 +159,8 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
     private async Task<decimal> RefreshHistoryPriceAsync(string key, string symbol, string dateTime)
     {
         decimal price = 0;
-        await _lock.WaitAsync();
+        var semaphoreSlim = _locks.GetOrAdd(key, value => new SemaphoreSlim(1));
+        await semaphoreSlim.WaitAsync();
         try
         {
             var priceString = await _distributedCache.GetAsync(key);
@@ -144,6 +169,11 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
                 _logger.LogInformation("refresh history price start... {0}", key);
                 foreach (var tokenPriceProvider in _tokenPriceProviders)
                 {
+                    if (!tokenPriceProvider.IsAvailable())
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         var historyPrice = await tokenPriceProvider.GetHistoryPriceAsync(symbol, dateTime);
@@ -171,7 +201,9 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
         }
         finally
         {
-            _lock.Release();
+            semaphoreSlim.Release();
+            _locks.Remove(key, out var value);
+            _logger.LogDebug("refresh history price, _locks.Count={0}", _locks.Count.ToString());
         }
 
         return price;

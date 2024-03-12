@@ -148,6 +148,11 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         }
     }
 
+    public bool IsAvailable()
+    {
+        return _coinGeckoOptions.CurrentValue.IsAvailable;
+    }
+
     public int GetPriority()
     {
         return _coinGeckoOptions.CurrentValue.Priority;

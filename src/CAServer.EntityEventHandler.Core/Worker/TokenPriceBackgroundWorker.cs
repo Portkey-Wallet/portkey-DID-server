@@ -41,7 +41,7 @@ public class TokenPriceBackgroundWorker : AsyncPeriodicBackgroundWorkerBase
         timer.Period = _tokenPriceWorkerOption.Period * 1000;
         timer.RunOnStart = true;
 
-        _hostName = HostHelper.GetLocalHostName() ?? Guid.NewGuid().ToString();
+        _hostName = $"{HostHelper.GetLocalHostName()}_{Guid.NewGuid()}";
         _workerNameKey = $"{_tokenPriceWorkerOption.Prefix}:{_tokenPriceWorkerOption.WorkerNameKey}";
         _workerLockKey = $"{_tokenPriceWorkerOption.Prefix}:{_tokenPriceWorkerOption.WorkerLockKey}";
     }
