@@ -38,9 +38,7 @@ public class RedPackageDetailDto
     public string Alias { get; set; }
     public string TokenId { get; set; }
     public string ImageUrl { get; set; }
-    
     public bool IsSeed { get; set; }
-    
     public int SeedType { get; set; }
 }
 
