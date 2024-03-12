@@ -35,7 +35,7 @@ public class NftItem
 
     public string Traits { get; set; }
     
-    public string TraitsPercentages { get; set; }
+    public List<Trait> TraitsPercentages { get; set; }
     
     public string TokenName { get; set; }
     

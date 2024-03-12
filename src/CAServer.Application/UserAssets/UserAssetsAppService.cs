@@ -413,7 +413,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.Generation = nftInfo.NftInfo.Generation;
                 nftItem.Traits = nftInfo.NftInfo.Traits;
                 
-                
                 dto.Data.Add(nftItem);
             }
 
@@ -465,7 +464,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 return null;
             }
-            
             
             var nftItem = ObjectMapper.Map<IndexerNftInfo, NftItem>(nftInfo);
             
@@ -604,7 +602,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             List<Trait> traitsList = JsonHelper.DeserializeJson<List<Trait>>(nftItem.Traits);
             if (traitsList == null || !traitsList.Any())
             {
-                return;
+                nftItem.TraitsPercentages = new List<Trait>();
             }
             
             _logger.LogInformation("nftItem:" +  JsonConvert.SerializeObject(nftItem));
@@ -622,13 +620,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task<List<Trait>> GetAllTraitsInCollectionAsync(string collectionSymbol)
     {
         var indexerNftInfos =
-            await _userAssetsProvider.GetNftInfoTraitsInfoAsync(collectionSymbol, 0, 1000);
+            await _userAssetsProvider.GetNftInfoTraitsInfoAsync(collectionSymbol, 0, 10000);
 
         _logger.LogInformation("indexerNftInfos:" +  JsonConvert.SerializeObject(indexerNftInfos));
         
         List<string> allItemsTraitsListInCollection = indexerNftInfos.CaHolderNFTBalanceInfo.Data != null && indexerNftInfos.CaHolderNFTBalanceInfo.Data.Any()
             ? indexerNftInfos.CaHolderNFTBalanceInfo.Data
-                .Where(nftInfo => nftInfo.NftInfo != null && nftInfo.NftInfo.Supply > 0)
+                .Where(nftInfo => nftInfo.NftInfo != null && nftInfo.NftInfo.Supply > 0 && !string.IsNullOrEmpty(nftInfo.NftInfo.Traits))
                 .GroupBy(nftInfo => nftInfo.NftInfo.Symbol)
                 .Select(group => group.First().NftInfo.Traits)
                 .ToList()
@@ -661,14 +659,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 int denominator = traitTypeCounts[traitType];
                 string percentage = PercentageHelper.CalculatePercentage(numerator, denominator);
                 trait.Percent = percentage;
-            }else {
+            } else {
                 trait.Percent = "-";
             }
         }
         
         _logger.LogInformation("traitsList:" + JsonConvert.SerializeObject(traitsList));
-        
-        nftItem.TraitsPercentages = JsonConvert.SerializeObject(traitsList);
+
+        nftItem.TraitsPercentages = traitsList;
     }
 
 
