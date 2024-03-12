@@ -15,6 +15,5 @@ public class NftCollection
     public int ItemCount { get; set; }
     public string ChainId { get; set; }
     public string Symbol { get; set; }
-    
     public bool IsSeed { get; set; }
 }

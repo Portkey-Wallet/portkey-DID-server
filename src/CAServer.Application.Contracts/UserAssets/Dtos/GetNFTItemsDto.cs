@@ -20,29 +20,17 @@ public class NftItem
     public string TokenContractAddress { get; set; }
     public string ImageLargeUrl { get; set; }
     public string Decimals { get; set; }
-
     public string CollectionSymbol { get; set; }
-    
     public string InscriptionName { get; set; }
-
     public string LimitPerMint {get; set;}
-
     public string Expires { get; set; }
-    
     public string SeedOwnedSymbol { get; set; }
-    
     public string Generation { get; set; }
-
     public string Traits { get; set; }
-    
     public List<Trait> TraitsPercentages { get; set; }
-    
     public string TokenName { get; set; }
-    
     public bool IsSeed { get; set; }
-    
     public int SeedType { get; set; }
-    
     public int RecommendedRefreshSeconds { get; set; }
 }
 

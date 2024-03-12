@@ -21,8 +21,6 @@ public class NftDetail
     public string ImageUrl { get; set; }
     public string Alias { get; set; }
     public string NftId { set; get; }
-    
     public bool IsSeed { get; set; }
-    
     public int SeedType { get; set; }
 }

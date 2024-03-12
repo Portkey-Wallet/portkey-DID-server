@@ -32,16 +32,10 @@ public class NftInfo
     public long TotalSupply { get; set; }
     public long Supply { get; set; }
     public string TokenContractAddress { get; set; }
-    
-    public string InscriptionName;
-
+    public string InscriptionName { get; set; }
     public string Lim {get; set;}
-
     public string Expires { get; set; }
-    
     public string SeedOwnedSymbol { get; set; }
-    
     public string Generation { get; set; }
-    
     public string Traits { get; set; }
 }
