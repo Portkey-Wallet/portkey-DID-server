@@ -66,13 +66,9 @@ public class UserAssetsController
     [HttpPost("searchUserPackageAssets")]
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(SearchUserPackageAssetsRequestDto requestDto)
     {
-        
         var headers = _httpContextAccessor?.HttpContext?.Request.Headers;
-        string version = headers != null && headers.ContainsKey("version") ? headers["version"] : string.Empty;
-
-
+        var version = headers != null && headers.ContainsKey("version") ? (string)headers["version"] : string.Empty;
         var userPackageAssets = await _userAssetsAppService.SearchUserPackageAssetsAsync(requestDto);
-
         return VersionContentHelper.FilterUserPackageAssetsByVersion(version, userPackageAssets);
     }
     

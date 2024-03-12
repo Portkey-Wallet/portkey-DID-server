@@ -247,13 +247,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         if (activityDto.NftInfo != null)
         {
             // Set IsSeed to true if Symbol starts with "SEED-", otherwise set it to false
-            activityDto.NftInfo.IsSeed = activityDto.Symbol.StartsWith("SEED-");
+            activityDto.NftInfo.IsSeed = activityDto.Symbol.StartsWith(TokensConstants.SeedNamePrefix);
 
             if (activityDto.NftInfo.IsSeed)
             {
                 activityDto.NftInfo.SeedType = (int)SeedType.FT;
                 // Alias is actually TokenName
-                if (!string.IsNullOrEmpty(activityDto.NftInfo.Alias) && activityDto.NftInfo.Alias.StartsWith("SEED-"))
+                if (!string.IsNullOrEmpty(activityDto.NftInfo.Alias) && activityDto.NftInfo.Alias.StartsWith(TokensConstants.SeedNamePrefix))
                 {
                     activityDto.NftInfo.SeedType = activityDto.NftInfo.Alias.Remove(0, 5).Contains("-")
                         ? (int)SeedType.NFT
@@ -265,9 +265,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     
     private void OptimizeSeedAliasDisplay(GetActivityDto activityDto)
     {
-        if (activityDto.NftInfo != null && activityDto.NftInfo.IsSeed && activityDto.NftInfo.Alias.EndsWith("-0"))
+        if (activityDto.NftInfo != null && activityDto.NftInfo.IsSeed && activityDto.NftInfo.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
         {
-            activityDto.NftInfo.Alias = activityDto.NftInfo.Alias.TrimEnd("-0".ToCharArray());
+            activityDto.NftInfo.Alias = activityDto.NftInfo.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
         }
     }
 
