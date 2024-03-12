@@ -6,6 +6,7 @@ using CAServer.Hub;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp.AspNetCore.SignalR;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
@@ -50,7 +51,7 @@ public class DataReportingHub : AbpHub
         {
             return;
         }
-        
+
         if (string.IsNullOrEmpty(clientId))
         {
             _logger.LogWarning("connect, clientId is empty, userId:{userId}", CurrentUser.GetId());
@@ -68,13 +69,13 @@ public class DataReportingHub : AbpHub
         {
             return;
         }
-        
+
         var deviceDto = _objectMapper.Map<UserDeviceReportingRequestDto, UserDeviceReportingDto>(input);
         deviceDto.UserId = CurrentUser.GetId();
 
         await _dataReportingAppService.ReportDeviceInfoAsync(deviceDto);
-        _logger.LogInformation("report deviceInfo, userId:{userId}, deviceId:{deviceId}", deviceDto.UserId,
-            input.DeviceId);
+        _logger.LogInformation("report deviceInfo, userId:{userId}, deviceId:{deviceId}, data:{data}", deviceDto.UserId,
+            input.DeviceId, JsonConvert.SerializeObject(input));
     }
 
     public async Task ReportAppStatus(AppStatusReportingRequestDto input)
@@ -83,12 +84,13 @@ public class DataReportingHub : AbpHub
         {
             return;
         }
-        
+
         var deviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
         if (!CheckDeviceId(deviceId))
         {
             return;
         }
+
         var appStatusDto = _objectMapper.Map<AppStatusReportingRequestDto, AppStatusReportingDto>(input);
         appStatusDto.UserId = CurrentUser.GetId();
         appStatusDto.DeviceId = deviceId;
@@ -118,7 +120,7 @@ public class DataReportingHub : AbpHub
         {
             return;
         }
-        
+
         var deviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
         if (!CheckDeviceId(deviceId))
         {
@@ -134,11 +136,12 @@ public class DataReportingHub : AbpHub
     {
         var deviceId = _connectionProvider.GetConnectionByConnectionId(Context.ConnectionId)?.ClientId;
         _hubService.UnRegisterClient(Context.ConnectionId);
-        
+
         if (!CheckIsOpen())
         {
             return;
         }
+
         await _dataReportingAppService.OnDisconnectedAsync(deviceId, CurrentUser.GetId());
         _logger.LogInformation("disconnected, clientId:{clientId}", deviceId ?? "");
     }
