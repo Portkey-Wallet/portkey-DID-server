@@ -109,7 +109,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
                 }",
             Variables = new
             {
-                GetNftItemInfos = getNftItemInfosDto.GetNftItemInfos,
+                getNftItemInfos = getNftItemInfosDto.GetNftItemInfos,
                 skipCount = inputSkipCount,
                 maxResultCount = inputMaxResultCount
             }
@@ -128,7 +128,7 @@ public class UserAssetsProvider : IUserAssetsProvider, ISingletonDependency
                 }",
             Variables = new
             {
-                GetNftItemInfos = getNftItemInfosDto.GetNftItemInfos,
+                getNftItemInfos = getNftItemInfosDto.GetNftItemInfos,
                 skipCount = inputSkipCount,
                 maxResultCount = inputMaxResultCount
             }
