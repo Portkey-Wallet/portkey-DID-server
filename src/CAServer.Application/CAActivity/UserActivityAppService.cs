@@ -109,8 +109,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             };
 
             await GetActivitiesAsync(request, transactions);
-            return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
+            var indexerTransaction2Dto = await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
                 request.Height, needMap: true);
+
+            SetSeedStatusAndTypeForActivityDtoList(indexerTransaction2Dto.Data);
+
+            OptimizeSeedAliasDisplay(indexerTransaction2Dto.Data);
+            
+            return indexerTransaction2Dto;
+
         }
         catch (Exception e)
         {
@@ -241,7 +248,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return new GetActivityDto();
         }
     }
-    
+
+    private void SetSeedStatusAndTypeForActivityDtoList(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                SetSeedStatusAndTypeForActivityDto(activityDto);
+            }
+        }
+    }
+
     private void SetSeedStatusAndTypeForActivityDto(GetActivityDto activityDto)
     {
         if (activityDto.NftInfo != null)
@@ -259,6 +277,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                         ? (int)SeedType.NFT
                         : (int)SeedType.FT;
                 }
+            }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplay(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                OptimizeSeedAliasDisplay(activityDto);
             }
         }
     }
