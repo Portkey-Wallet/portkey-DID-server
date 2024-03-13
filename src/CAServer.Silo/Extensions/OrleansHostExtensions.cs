@@ -65,6 +65,19 @@ public static class OrleansHostExtensions
                     options.CounterUpdateIntervalMs =
                         orleansConfigSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
+                .Configure<GrainCollectionOptions>(opt =>
+                {
+                    var collectionAge = orleansConfigSection.GetValue<int>("CollectionAge");
+                    if (collectionAge > 0)
+                    {
+                        opt.CollectionAge = TimeSpan.FromSeconds(collectionAge);
+                    }
+                })
+                .Configure<PerformanceTuningOptions>(opt =>
+                {
+                    opt.MinDotNetThreadPoolSize = 200;
+                    opt.MinIOThreadPoolSize = 200;
+                })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
         });
