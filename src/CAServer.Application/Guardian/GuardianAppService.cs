@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
@@ -16,6 +17,7 @@ using CAServer.Options;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Nest;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -71,6 +73,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
     {
         var hash = await GetHashFromIdentifierAsync(guardianIdentifierDto.GuardianIdentifier);
+        
         if (string.IsNullOrWhiteSpace(hash))
         {
             throw new UserFriendlyException($"{guardianIdentifierDto.GuardianIdentifier} not exist.",
@@ -81,24 +84,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             guardianIdentifierDto.GuardianIdentifier);
         var guardianResult =
             ObjectMapper.Map<GetHolderInfoOutput, GuardianResultDto>(holderInfo);
-        var guardianDtos = guardianResult.GuardianList.Guardians;
-        foreach (var dto in guardianDtos)
-        {
-            var verifyMap = _verifierIdMappingOptions.VerifierIdMap;
-            if (!verifyMap.TryGetValue(dto.VerifierId, out var verifierId))
-            {
-                continue;
-            }
-
-            var result = await GetVerifierServerAsync(dto.VerifierId, guardianIdentifierDto.ChainId);
-            if (result)
-            {
-                dto.VerifierId = verifierId;
-            }
-        }
-
 
         var identifierHashList = holderInfo.GuardianList.Guardians.Select(t => t.IdentifierHash.ToHex()).ToList();
+        
         var hashDic = await GetIdentifiersAsync(identifierHashList);
         var identifiers = hashDic?.Values?.ToList();
 
@@ -253,21 +241,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
     }
 
-    private async Task<string> GetHashFromIdentifierAsync(string guardianIdentifier)
-    {
-        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
-
-        mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(guardianIdentifier)));
-        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
-
-        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
-            f.Bool(b => b.Must(mustQuery));
-
-        var guardianGrainDto = await _guardianRepository.GetAsync(Filter);
-        if (guardianGrainDto == null || guardianGrainDto.IsDeleted) return null;
-
-        return guardianGrainDto?.IdentifierHash;
-    }
+ 
 
     private async Task<GetHolderInfoOutput> GetHolderInfosAsync(string guardianIdentifierHash, string chainId,
         string caHash, string guardianIdentifier)
@@ -300,7 +274,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
         mustQuery.Add(q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList)));
-        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
 
         QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
             f.Bool(b => b.Must(mustQuery));
@@ -311,6 +284,49 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         return result?.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
     }
+    
+    private async Task<GuardianIndex> GetGuardianIndexAsync(string guardianIdentifier,List<string> identifierHashList)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+
+        if (!string.IsNullOrWhiteSpace(guardianIdentifier))
+        {
+            mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(guardianIdentifier)));
+        }
+
+        if (CollectionUtilities.IsNullOrEmpty(identifierHashList))
+        {
+            mustQuery.Add(q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList)));
+        }
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        return await _guardianRepository.GetAsync(Filter);
+        
+        
+    }
+    
+    private async Task<string> GetHashFromIdentifierAsync(string guardianIdentifier)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>() { };
+
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.Identifier).Value(guardianIdentifier)));
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardianGrainDto = await _guardianRepository.GetAsync(Filter);
+        if (guardianGrainDto == null || guardianGrainDto.IsDeleted) return null;
+
+        return guardianGrainDto?.IdentifierHash;
+    }
+    
+    
+    
+    
+    
+    
 
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
     {
