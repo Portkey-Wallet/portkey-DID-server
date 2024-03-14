@@ -217,8 +217,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 {
                     if (_getBalanceFromChainOption.Symbols.Contains(token.Symbol))
                     {
+                        var caAddressInfo = requestDto.CaAddressInfos.FirstOrDefault(t => t.ChainId == token.ChainId);
+                        if (caAddressInfo == null)
+                        {
+                            continue;
+                        }
                         var correctBalance = await CorrectTokenBalanceAsync(token.Symbol,
-                            requestDto.CaAddressInfos.First(t => t.ChainId == token.ChainId).CaAddress, token.ChainId);
+                            caAddressInfo.CaAddress, token.ChainId);
                         token.Balance = correctBalance >= 0 ? correctBalance.ToString() : token.Balance;
                     }
                 }
