@@ -587,7 +587,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     private void TryUpdateLimitPerMintForInscription(NftItem nftItem)
     {
-        if (!string.IsNullOrEmpty(nftItem.LimitPerMint) && nftItem.LimitPerMint == "0")
+        if (!string.IsNullOrEmpty(nftItem.LimitPerMint) && nftItem.LimitPerMint.Equals("0"))
         {
             nftItem.LimitPerMint = TokensConstants.LimitPerMintReplacement;
         }
