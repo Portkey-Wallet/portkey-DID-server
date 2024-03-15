@@ -439,6 +439,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             OptimizeSeedAliasDisplayForNftItems(dto.Data);
             
             TryUpdateLimitPerMintForInscription(dto.Data);
+
+            TryUpdateImageUrlForNftItems(dto.Data);
             
             await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(dto.Data);
             
@@ -471,7 +473,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             {
                 return null;
             }
-            
+
             var nftItem = ObjectMapper.Map<IndexerNftInfo, NftItem>(nftInfo);
             
             nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
@@ -513,6 +515,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             OptimizeSeedAliasDisplayForNftItem(nftItem);
 
             TryUpdateLimitPerMintForInscription(nftItem);
+            
+            TryUpdateImageUrlForNftItem(nftItem);
 
             await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(nftItem);
 
@@ -592,8 +596,27 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             nftItem.LimitPerMint = TokensConstants.LimitPerMintReplacement;
         }
     }
+    
+    private void TryUpdateImageUrlForNftItems(List<NftItem> nftItems)
+    {
+        foreach (var nftItem in nftItems)
+        {
+            TryUpdateImageUrlForNftItem(nftItem);
+        }
+    }
 
-
+    private void TryUpdateImageUrlForNftItem(NftItem nftItem)
+    {
+        if (!string.IsNullOrEmpty(nftItem.ImageUrl) && nftItem.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+        {
+            nftItem.ImageUrl = TokensConstants.ReplacedIpfsPrefix + nftItem.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
+        }
+        
+        if (!string.IsNullOrEmpty(nftItem.ImageLargeUrl) && nftItem.ImageLargeUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+        {
+            nftItem.ImageLargeUrl = TokensConstants.ReplacedIpfsPrefix + nftItem.ImageLargeUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
+        }
+    }
 
     private async Task TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(List<NftItem> nftItems)
     {
@@ -922,6 +945,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             SetSeedStatusAndTypeForUserAssets(dto.Data);
 
             OptimizeSeedAliasDisplayForUserAssets(dto.Data);
+
+            TryUpdateImageUrlForUserAssets(dto.Data);
             
             return dto;
         }
@@ -966,6 +991,22 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (asset.NftInfo.IsSeed && asset.NftInfo.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
             {
                 asset.NftInfo.Alias = asset.NftInfo.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+            }
+        }
+    }
+    
+    private void TryUpdateImageUrlForUserAssets(List<UserAsset> assets)
+    {
+        foreach (var asset in assets)
+        {
+            if (asset.NftInfo == null)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(asset.NftInfo.ImageUrl) && asset.NftInfo.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+            {
+                asset.NftInfo.ImageUrl = TokensConstants.ReplacedIpfsPrefix + asset.NftInfo.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
             }
         }
     }
@@ -1097,6 +1138,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         
         OptimizeSeedAliasDisplayForUserPackageAssets(dto.Data);
         
+        TryUpdateImageUrlForUserPackageAssets(dto.Data);
+        
         return dto;
     }
     
@@ -1129,6 +1172,18 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (asset.IsSeed && asset.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
             {
                 asset.Alias = asset.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+            }
+        }
+    }
+    
+    private void TryUpdateImageUrlForUserPackageAssets(List<UserPackageAsset> assets)
+    {
+        foreach (var asset in assets)
+        {
+
+            if (!string.IsNullOrEmpty(asset.ImageUrl) && asset.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+            {
+                asset.ImageUrl = TokensConstants.ReplacedIpfsPrefix + asset.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
             }
         }
     }
