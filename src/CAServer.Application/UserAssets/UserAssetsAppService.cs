@@ -438,10 +438,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             OptimizeSeedAliasDisplayForNftItems(dto.Data);
             
-            await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(dto.Data);
-
-            await CalculateAndSetTraitsPercentageAsync(dto.Data);
+            TryUpdateLimitPerMintForInscription(dto.Data);
             
+            await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(dto.Data);
+            
+            await CalculateAndSetTraitsPercentageAsync(dto.Data);
+
             return dto;
         }
         catch (Exception e)
@@ -510,6 +512,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             OptimizeSeedAliasDisplayForNftItem(nftItem);
 
+            TryUpdateLimitPerMintForInscription(nftItem);
+
             await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(nftItem);
 
             await CalculateAndSetTraitsPercentageAsync(nftItem);
@@ -573,6 +577,24 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
     
+    private void TryUpdateLimitPerMintForInscription(List<NftItem> nftItems)
+    {
+        foreach (var nftItem in nftItems)
+        {
+            TryUpdateLimitPerMintForInscription(nftItem);
+        }
+    }
+
+    private void TryUpdateLimitPerMintForInscription(NftItem nftItem)
+    {
+        if (!string.IsNullOrEmpty(nftItem.LimitPerMint) && nftItem.LimitPerMint.Equals("0"))
+        {
+            nftItem.LimitPerMint = TokensConstants.LimitPerMintReplacement;
+        }
+    }
+
+
+
     private async Task TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(List<NftItem> nftItems)
     {
         foreach (var item in nftItems)
