@@ -941,7 +941,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             OptimizeSeedAliasDisplayForUserAssets(dto.Data);
 
-            TryUpdateImageUrlForNftItem(dto.Data);
+            TryUpdateImageUrlForUserAssets(dto.Data);
             
             return dto;
         }
@@ -990,7 +990,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
     
-    private void TryUpdateImageUrlForNftItem(List<UserAsset> assets)
+    private void TryUpdateImageUrlForUserAssets(List<UserAsset> assets)
     {
         foreach (var asset in assets)
         {
@@ -1133,6 +1133,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         
         OptimizeSeedAliasDisplayForUserPackageAssets(dto.Data);
         
+        TryUpdateImageUrlForUserPackageAssets(dto.Data);
+        
         return dto;
     }
     
@@ -1169,7 +1171,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
     
-    private void TryUpdateImageUrlForNftItem(List<UserPackageAsset> assets)
+    private void TryUpdateImageUrlForUserPackageAssets(List<UserPackageAsset> assets)
     {
         foreach (var asset in assets)
         {
