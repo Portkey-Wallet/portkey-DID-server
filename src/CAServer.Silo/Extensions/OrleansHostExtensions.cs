@@ -8,6 +8,7 @@ using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Statistics;
+using Orleans.TelemetryConsumers.Nightingale;
 
 namespace CAServer.Silo.Extensions;
 
@@ -66,6 +67,7 @@ public static class OrleansHostExtensions
                         orleansConfigSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
                 })
                 .UseLinuxEnvironmentStatistics()
+                .AddNightingaleTelemetryConsumer()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
         });
     }
