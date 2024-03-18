@@ -1,23 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Common;
-using CAServer.Grains.Grain;
 using CAServer.Options;
-using CAServer.Tokens.Dtos;
 using CAServer.Tokens.TokenPrice;
-using CAServer.Verifier;
-using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Core.Clusters;
 using Moq;
-using NSubstitute;
-using Orleans;
-using Volo.Abp.Application.Dtos;
 using Volo.Abp.Caching;
 
 namespace CAServer.Tokens;
@@ -29,6 +20,10 @@ public partial class TokenAppServiceHistoryTest
         var mockTokenPriceProvider = new Mock<ITokenPriceProvider>();
         mockTokenPriceProvider.Setup(o => o.GetPriceAsync(It.IsAny<string>()))
             .ReturnsAsync((string dto) => dto == Symbol ? 1000 : 100);
+        mockTokenPriceProvider.Setup(o => o.GetHistoryPriceAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(9.88m);
+        mockTokenPriceProvider.Setup(o => o.GetPriority()).Returns(-1);
+        mockTokenPriceProvider.Setup(o => o.IsAvailable()).Returns(true);
 
         return mockTokenPriceProvider.Object;
     }

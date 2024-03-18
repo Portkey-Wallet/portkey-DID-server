@@ -13,7 +13,6 @@ using Xunit;
 
 namespace CAServer.Tokens;
 
-//TODO UT
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
 {
@@ -38,6 +37,11 @@ public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockContractAddressOptions());
         services.AddSingleton(GetMockTokenPriceProvider());
         services.AddSingleton(GetMockIGraphQLHelper());
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
     }
     
     [Fact]
@@ -57,7 +61,16 @@ public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
         };
         result = await _tokenAppService.GetTokenHistoryPriceDataAsync(new List<GetTokenHistoryPriceInput>() { input });
         result.Items.Count.ShouldBe(1);
-        result.Items.First().Symbol.ShouldBe(Symbol);
+        result.Items.First().Symbol.ShouldBe(Symbol.ToLower());
+        
+        input = new GetTokenHistoryPriceInput()
+        {
+            DateTime = DateTime.Now.AddDays(-1),
+            Symbol = TokenAppServiceTest.UsdtSymbol
+        };
+        result = await _tokenAppService.GetTokenHistoryPriceDataAsync(new List<GetTokenHistoryPriceInput>() { input });
+        result.Items.Count.ShouldBe(1);
+        result.Items.First().Symbol.ShouldBe(TokenAppServiceTest.UsdtSymbol.ToLower());
     }
     
 }
