@@ -212,14 +212,6 @@ public class CAServerHttpApiHostModule : AbpModule
                         TimeSpan.FromSeconds(ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
                             MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
                 })
-                // .Configure<ClientMessagingOptions>(opt =>
-                // {
-                //     var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
-                //     if (responseTimeout > 0)
-                //     {
-                //         opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
-                //     }
-                // })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
