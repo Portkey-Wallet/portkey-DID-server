@@ -242,6 +242,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 token.Price = priceDict[token.Symbol];
                 token.BalanceInUsd = balanceInUsd.ToString();
             }
+            
+            dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
 
             return dto;
         }
@@ -250,6 +252,15 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "GetTokenAsync Error. {dto}", requestDto);
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
         }
+    }
+    
+    private string CalculateTotalBalanceInUsd(List<Token> tokens)
+    {
+        decimal totalBalanceInUsd = tokens
+            .Where(token => !string.IsNullOrEmpty(token.BalanceInUsd))
+            .Sum(token => decimal.Parse(token.BalanceInUsd, System.Globalization.CultureInfo.InvariantCulture));
+
+        return totalBalanceInUsd.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private async Task CheckNeedAddTokenAsync(Guid userId, IndexerTokenInfos tokenInfos,
