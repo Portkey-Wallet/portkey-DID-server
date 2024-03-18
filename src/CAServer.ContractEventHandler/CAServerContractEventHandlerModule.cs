@@ -160,8 +160,9 @@ public class CAServerContractEventHandlerModule : AbpModule
                 })
                 .Configure<ClientMessagingOptions>(options =>
                 {
-                    options.ResponseTimeout = Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
-                        MessagingOptions.DEFAULT_RESPONSE_TIMEOUT);
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
                 })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
