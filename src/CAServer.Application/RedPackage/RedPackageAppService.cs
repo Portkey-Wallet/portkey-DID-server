@@ -74,14 +74,14 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         if (result == null)
         {
             var tokenInfo =  await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
-            if (tokenInfo != null)
+            if (tokenInfo != null && chainId == tokenInfo.ChainId && symbol == tokenInfo.Symbol)
             {
                 return CreateRedPackageTokenInfo(tokenInfo.Decimals);
             }
 
             var getNftItemInfosDto = CreateGetNftItemInfosDto(symbol, chainId);
             var nftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
-
+            _logger.LogInformation("GetNftItemInfosAsync nftItemInfos: " + JsonConvert.SerializeObject(nftItemInfos));
             if (nftItemInfos?.NftItemInfos?.Count > 0)
             {
                 var firstNftItemInfo = nftItemInfos.NftItemInfos.FirstOrDefault();
@@ -148,7 +148,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             }
             
             var result = await GetRedPackageOptionAsync(input.Symbol, input.ChainId);
-
+            _logger.LogInformation("GetRedPackageOptionAsync result: " + JsonConvert.SerializeObject(result));
+            
             var checkResult =
                 await CheckSendRedPackageInputAsync(input, long.Parse(result.MinAmount), _redPackageOptions.MaxCount);
             if (!checkResult.Item1)
@@ -177,6 +178,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
                 CurrentUser.Id.Value,_redPackageOptions.ExpireTimeMs);
             _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {input}", input);
+            _logger.LogInformation("CreateRedPackage createResult:" + JsonConvert.SerializeObject(createResult));
             if (!createResult.Success)
             {
                 throw new UserFriendlyException(createResult.Message);
@@ -283,6 +285,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(id);
         var detail =  (await grain.GetRedPackage(skipCount, maxResultCount,CurrentUser.Id.Value)).Data;
+        _logger.LogInformation("GetRedPackage detail: " + JsonConvert.SerializeObject(detail));
         try
         {
             var allResult = (await grain.GetRedPackage(detail.Id)).Data;
@@ -328,7 +331,26 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             detail.IsRedPackageFullyClaimed = true;
         }
+        
+        SetSeedStatusAndTypeForDetail(detail);
+        
         return detail; 
+    }
+    
+    private void SetSeedStatusAndTypeForDetail(RedPackageDetailDto detail)
+    {
+
+        detail.IsSeed = detail.AssetType == (int)AssetType.NFT && detail.Symbol.StartsWith(TokensConstants.SeedNamePrefix);
+        
+        if (detail.IsSeed)
+        {
+            detail.SeedType = (int)SeedType.FT;
+
+            if (!string.IsNullOrEmpty(detail.Alias) && detail.Alias.StartsWith(TokensConstants.SeedNamePrefix))
+            {
+                detail.SeedType = detail.Alias.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+            }
+        }
     }
     
     private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)

@@ -144,7 +144,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var tokenInfo = dto?.TokenInfo?.FirstOrDefault();
         if (tokenInfo == null)
         {
-            return await _tokenCacheProvider.GetTokenInfoAsync(chainId, symbol);
+            return await _tokenCacheProvider.GetTokenInfoAsync(chainId, symbol, TokenType.Token);
         }
 
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);

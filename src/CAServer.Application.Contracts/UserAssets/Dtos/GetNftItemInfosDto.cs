@@ -10,6 +10,7 @@ public class GetNftItemInfosDto : PagedResultRequestDto
 
 public class GetNftItemInfo
 {
+    public string CollectionSymbol { get; set; }
     public string Symbol { get; set; }
     public string ChainId { get; set; }
 }

@@ -60,7 +60,7 @@ public partial class TokenAppServiceTest
     {
         var mockTokenCacheProvider = new Mock<ITokenCacheProvider>();
         mockTokenCacheProvider.Setup(o =>
-            o.GetTokenInfoAsync(It.IsAny<string>(), It.IsAny<string>()))
+            o.GetTokenInfoAsync(It.IsAny<string>(), It.IsAny<string>(), TokenType.Token))
             .ReturnsAsync((string chainId, string symbol) =>
             {
                 if (symbol == "AXX")
