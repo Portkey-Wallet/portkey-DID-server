@@ -333,6 +333,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
         
         SetSeedStatusAndTypeForDetail(detail);
+
+        TryUpdateImageUrlForDetail(detail);
         
         return detail; 
     }
@@ -350,6 +352,15 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             {
                 detail.SeedType = detail.Alias.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
             }
+        }
+    }
+
+    private void TryUpdateImageUrlForDetail(RedPackageDetailDto detail)
+    {
+        if (!string.IsNullOrEmpty(detail.ImageUrl) && detail.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+        {
+            detail.ImageUrl = TokensConstants.ReplacedIpfsPrefix +
+                              detail.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
         }
     }
     

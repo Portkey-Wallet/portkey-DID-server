@@ -115,6 +115,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             SetSeedStatusAndTypeForActivityDtoList(indexerTransaction2Dto.Data);
 
             OptimizeSeedAliasDisplay(indexerTransaction2Dto.Data);
+
+            TryUpdateImageUrlForActivityDtoList(indexerTransaction2Dto.Data);
             
             return indexerTransaction2Dto;
 
@@ -240,6 +242,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             OptimizeSeedAliasDisplay(activityDto);
 
+            TryUpdateImageUrlForActivityDto(activityDto);
+
             return activityDto;
         }
         catch (Exception e)
@@ -297,6 +301,29 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         if (activityDto.NftInfo != null && activityDto.NftInfo.IsSeed && activityDto.NftInfo.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
         {
             activityDto.NftInfo.Alias = activityDto.NftInfo.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+        }
+    }
+    
+    private void TryUpdateImageUrlForActivityDtoList(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                TryUpdateImageUrlForActivityDto(activityDto);
+            }
+        }
+    }
+    
+    private void TryUpdateImageUrlForActivityDto(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null)
+        {
+            if (!string.IsNullOrEmpty(activityDto.NftInfo.ImageUrl) && activityDto.NftInfo.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+            {
+                activityDto.NftInfo.ImageUrl = TokensConstants.ReplacedIpfsPrefix +
+                                               activityDto.NftInfo.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
+            }
         }
     }
 
