@@ -319,11 +319,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         if (activityDto.NftInfo != null)
         {
-            if (!string.IsNullOrEmpty(activityDto.NftInfo.ImageUrl) && activityDto.NftInfo.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
-            {
-                activityDto.NftInfo.ImageUrl = TokensConstants.ReplacedIpfsPrefix +
-                                               activityDto.NftInfo.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
-            }
+            activityDto.NftInfo.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(activityDto.NftInfo.ImageUrl);
         }
     }
 

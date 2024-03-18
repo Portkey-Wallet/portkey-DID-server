@@ -383,10 +383,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         foreach (var collection in collections)
         {
-            if (!string.IsNullOrEmpty(collection.ImageUrl) && collection.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
-            {
-                collection.ImageUrl = TokensConstants.ReplacedIpfsPrefix + collection.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
-            }
+            collection.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(collection.ImageUrl);
         }
     }
 
@@ -631,15 +628,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     private void TryUpdateImageUrlForNftItem(NftItem nftItem)
     {
-        if (!string.IsNullOrEmpty(nftItem.ImageUrl) && nftItem.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
-        {
-            nftItem.ImageUrl = TokensConstants.ReplacedIpfsPrefix + nftItem.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
-        }
-        
-        if (!string.IsNullOrEmpty(nftItem.ImageLargeUrl) && nftItem.ImageLargeUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
-        {
-            nftItem.ImageLargeUrl = TokensConstants.ReplacedIpfsPrefix + nftItem.ImageLargeUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
-        }
+        nftItem.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(nftItem.ImageUrl);
+        nftItem.ImageLargeUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(nftItem.ImageLargeUrl);
     }
 
     private async Task TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(List<NftItem> nftItems)
@@ -1028,10 +1018,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 continue;
             }
 
-            if (!string.IsNullOrEmpty(asset.NftInfo.ImageUrl) && asset.NftInfo.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
-            {
-                asset.NftInfo.ImageUrl = TokensConstants.ReplacedIpfsPrefix + asset.NftInfo.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
-            }
+            asset.NftInfo.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(asset.NftInfo.ImageUrl);
         }
     }
 
@@ -1204,11 +1191,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         foreach (var asset in assets)
         {
-
-            if (!string.IsNullOrEmpty(asset.ImageUrl) && asset.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
-            {
-                asset.ImageUrl = TokensConstants.ReplacedIpfsPrefix + asset.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
-            }
+            asset.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(asset.ImageUrl);
         }
     }
 
