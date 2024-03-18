@@ -341,6 +341,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
             
             SetSeedStatusAndTrimCollectionNameForCollections(dto.Data);
+            
+            TryUpdateImageUrlForCollections(dto.Data);
 
             return dto;
         }
@@ -350,7 +352,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return new GetNftCollectionsDto { Data = new List<NftCollection>(), TotalRecordCount = 0 };
         }
     }
-    
+
     private void SetSeedStatusAndTrimCollectionNameForCollections(List<NftCollection> collections)
     {
         foreach (var collection in collections)
@@ -363,6 +365,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             
             // If Symbol starts with "SEED-", set IsSeed to true, otherwise set it to false
             collection.IsSeed = collection.Symbol.StartsWith(TokensConstants.SeedNamePrefix);
+        }
+    }
+    
+    private void TryUpdateImageUrlForCollections(List<NftCollection> collections)
+    {
+        foreach (var collection in collections)
+        {
+            if (!string.IsNullOrEmpty(collection.ImageUrl) && collection.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+            {
+                collection.ImageUrl = TokensConstants.ReplacedIpfsPrefix + collection.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
+            }
         }
     }
 
