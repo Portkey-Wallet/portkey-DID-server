@@ -75,8 +75,10 @@ public static class OrleansHostExtensions
                 })
                 .Configure<PerformanceTuningOptions>(opt =>
                 {
-                    opt.MinDotNetThreadPoolSize = 200;
-                    opt.MinIOThreadPoolSize = 200;
+                    var minDotNetThreadPoolSize = orleansConfigSection.GetValue<int>("MinDotNetThreadPoolSize");
+                    var minIOThreadPoolSize = orleansConfigSection.GetValue<int>("MinIOThreadPoolSize");
+                    opt.MinDotNetThreadPoolSize = minDotNetThreadPoolSize > 0 ? minDotNetThreadPoolSize : 200;
+                    opt.MinIOThreadPoolSize = minIOThreadPoolSize > 0 ? minIOThreadPoolSize : 200;
                 })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
