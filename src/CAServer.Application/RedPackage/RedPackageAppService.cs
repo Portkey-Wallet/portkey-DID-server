@@ -357,11 +357,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     private void TryUpdateImageUrlForDetail(RedPackageDetailDto detail)
     {
-        if (!string.IsNullOrEmpty(detail.ImageUrl) && detail.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
-        {
-            detail.ImageUrl = TokensConstants.ReplacedIpfsPrefix +
-                              detail.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
-        }
+        detail.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(detail.ImageUrl);
     }
     
     private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)
