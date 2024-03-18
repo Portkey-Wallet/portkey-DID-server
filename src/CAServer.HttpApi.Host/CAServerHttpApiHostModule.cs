@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Hub;
@@ -44,6 +45,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
+using ConfigurationHelper = CAServer.Commons.ConfigurationHelper;
 
 namespace CAServer;
 
@@ -59,6 +61,7 @@ namespace CAServer;
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
     typeof(AbpSwashbuckleModule),
+    typeof(CAServerCoinGeckoApiModule),
     typeof(AbpAspNetCoreSignalRModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
@@ -202,14 +205,20 @@ public class CAServerHttpApiHostModule : AbpModule
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
                 })
-                .Configure<ClientMessagingOptions>(opt =>
+                .Configure<ClientMessagingOptions>(options =>
                 {
-                    var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
-                    if (responseTimeout > 0)
-                    {
-                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
-                    }
+                    //the default timeout before a request is assumed to have failed.
+                    options.ResponseTimeout = ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                        MessagingOptions.DEFAULT_RESPONSE_TIMEOUT);
                 })
+                // .Configure<ClientMessagingOptions>(opt =>
+                // {
+                //     var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
+                //     if (responseTimeout > 0)
+                //     {
+                //         opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
+                //     }
+                // })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
@@ -299,17 +308,15 @@ public class CAServerHttpApiHostModule : AbpModule
             x.AddConsumer<OrderWsBroadcastConsumer>();
             x.UsingRabbitMq((ctx, cfg) =>
             {
-                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port,
                     "/", h =>
                     {
                         h.Username(rabbitMqConfig.Connections.Default.UserName);
                         h.Password(rabbitMqConfig.Connections.Default.Password);
                     });
-                
-                cfg.ReceiveEndpoint("BroadcastClient_" + clientId, e =>
-                {
-                    e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
-                });
+
+                cfg.ReceiveEndpoint("BroadcastClient_" + clientId,
+                    e => { e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx); });
             });
         });
     }
@@ -318,7 +325,7 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
-    
+
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -331,11 +338,11 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseAbpRequestLocalization();
         app.UseCorrelationId();
-        
+
         app.UseMiddleware<DeviceInfoMiddleware>();
         app.UseMiddleware<ConditionalIpWhitelistMiddleware>();
         app.UseStaticFiles();
-        
+
         app.UseRouting();
         app.UseCors();
         app.UseAuthentication();
@@ -350,7 +357,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
-        
+
         if (env.IsDevelopment())
         {
             app.UseSwagger();
@@ -364,7 +371,7 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();      
+        app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();

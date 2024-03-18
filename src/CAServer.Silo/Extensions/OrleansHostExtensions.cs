@@ -53,6 +53,11 @@ public static class OrleansHostExtensions
                     options.ClusterId = orleansConfigSection.GetValue<string>("ClusterId");
                     options.ServiceId = orleansConfigSection.GetValue<string>("ServiceId");
                 })
+                .Configure<SiloMessagingOptions>(options =>
+                {
+                    options.ResponseTimeout = Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                        MessagingOptions.DEFAULT_RESPONSE_TIMEOUT);
+                })
                 // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
                 .UseDashboard(options =>
