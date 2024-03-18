@@ -304,7 +304,7 @@ public class ContractAppService : IContractAppService
 
         var resultSocialRecovery = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
 
-        var managerInfoExisted = resultSocialRecovery.Status == TransactionState.Failed &&
+        var managerInfoExisted = resultSocialRecovery.Status == TransactionState.NodeValidationFailed &&
                               resultSocialRecovery.Error.Contains("ManagerInfo exists");
         if (resultSocialRecovery.Status != TransactionState.Mined && !managerInfoExisted)
         {
