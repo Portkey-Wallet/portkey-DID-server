@@ -208,8 +208,9 @@ public class CAServerHttpApiHostModule : AbpModule
                 .Configure<ClientMessagingOptions>(options =>
                 {
                     //the default timeout before a request is assumed to have failed.
-                    options.ResponseTimeout = ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
-                        MessagingOptions.DEFAULT_RESPONSE_TIMEOUT);
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
                 })
                 // .Configure<ClientMessagingOptions>(opt =>
                 // {

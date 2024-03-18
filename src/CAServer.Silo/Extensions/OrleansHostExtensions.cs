@@ -55,8 +55,9 @@ public static class OrleansHostExtensions
                 })
                 .Configure<SiloMessagingOptions>(options =>
                 {
-                    options.ResponseTimeout = Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
-                        MessagingOptions.DEFAULT_RESPONSE_TIMEOUT);
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
                 })
                 // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
