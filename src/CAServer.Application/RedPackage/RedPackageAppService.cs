@@ -333,6 +333,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
         
         SetSeedStatusAndTypeForDetail(detail);
+
+        TryUpdateImageUrlForDetail(detail);
         
         return detail; 
     }
@@ -351,6 +353,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 detail.SeedType = detail.Alias.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
             }
         }
+    }
+
+    private void TryUpdateImageUrlForDetail(RedPackageDetailDto detail)
+    {
+        detail.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(detail.ImageUrl);
     }
     
     private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)

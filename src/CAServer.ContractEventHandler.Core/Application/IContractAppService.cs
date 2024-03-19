@@ -535,9 +535,16 @@ public class ContractAppService : IContractAppService
         string optionChainId)
     {
         var chainInfo = _chainOptions.ChainInfos[chainId];
+        var unsetLoginGuardians = new RepeatedField<string>();
+        foreach (var guardian in result.GuardianList.Guardians)
+        {
+            if (!guardian.IsLoginGuardian)
+            {
+                unsetLoginGuardians.Add(guardian.IdentifierHash.ToHex());
+            }
+        }
         var transactionDto =
-            await _contractProvider.ValidateTransactionAsync(chainId, result, null);
-
+            await _contractProvider.ValidateTransactionAsync(chainId, result, unsetLoginGuardians);
         var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
         SyncHolderInfoInput syncHolderInfoInput;
 
@@ -1163,22 +1170,23 @@ public class ContractAppService : IContractAppService
                     "Event type: {type} validate starting on chain: {id} of account: {hash} at Height: {height}",
                     record.ChangeType, chainId, record.CaHash, record.BlockHeight);
 
-                var unsetLoginGuardians = new RepeatedField<string>();
-                if (record.NotLoginGuardian != null)
-                {
-                    unsetLoginGuardians.Add(record.NotLoginGuardian);
-                }
-
                 var currentBlockHeight = await _contractProvider.GetBlockHeightAsync(chainId);
-
                 if (currentBlockHeight <= record.BlockHeight)
                 {
                     _logger.LogWarning(LoggerMsg.NodeBlockHeightWarning);
                     break;
                 }
-
+               
                 var outputGetHolderInfo =
                     await _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, record.CaHash);
+                var unsetLoginGuardians = new RepeatedField<string>();
+                foreach (var guardian in outputGetHolderInfo.GuardianList.Guardians)
+                {
+                    if (!guardian.IsLoginGuardian)
+                    {
+                        unsetLoginGuardians.Add(guardian.IdentifierHash.ToHex());
+                    }
+                }
                 var transactionDto =
                     await _contractProvider.ValidateTransactionAsync(chainId, outputGetHolderInfo,
                         unsetLoginGuardians);
