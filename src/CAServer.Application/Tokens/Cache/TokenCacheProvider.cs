@@ -12,7 +12,7 @@ namespace CAServer.Tokens.Cache;
 
 public interface ITokenCacheProvider
 {
-    Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol);
+    Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol, TokenType inputTokenType);
 }
 
 public class TokenCacheProvider : ITokenCacheProvider, ISingletonDependency
@@ -28,10 +28,10 @@ public class TokenCacheProvider : ITokenCacheProvider, ISingletonDependency
         _logger = logger;
     }
 
-    public async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
+    public async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol, TokenType inputTokenType)
     {
         var tokenType = TokenHelper.GetTokenType(symbol);
-        if (tokenType != TokenType.Token)
+        if (tokenType != inputTokenType)
         {
             return new GetTokenInfoDto();
         }
@@ -55,7 +55,9 @@ public class TokenCacheProvider : ITokenCacheProvider, ISingletonDependency
                         TotalSupply = output.TotalSupply,
                         Issuer = output.Issuer.ToBase58(),
                         IsBurnable = output.IsBurnable,
-                        IssueChainId = output.IssueChainId
+                        IssueChainId = output.IssueChainId,
+                        Expires = output.ExternalInfo?.Value["__seed_exp_time"],
+                        SeedOwnedSymbol = output.ExternalInfo?.Value["__seed_owned_symbol"]
                     }
                     : new GetTokenInfoDto();
                 await _tokenInfoCache.SetAsync(cacheKey, tokenInfoCache, new DistributedCacheEntryOptions

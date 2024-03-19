@@ -2,6 +2,7 @@ using CAServer.Grains.State.RedPackage;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
 using Orleans.Providers.Streams.Generator;
+using Serilog.Core;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -54,7 +55,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         State.Items = new List<GrabItem>();
         State.IfRefund = false;
         State.SenderId = senderId;
-
+        
         await WriteStateAsync();
 
         result.Success = true;

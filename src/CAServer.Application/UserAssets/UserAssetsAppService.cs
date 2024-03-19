@@ -12,6 +12,7 @@ using CAServer.Options;
 using CAServer.Search;
 using CAServer.Search.Dtos;
 using CAServer.Tokens;
+using CAServer.Tokens.Cache;
 using CAServer.Tokens.Provider;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
@@ -29,6 +30,7 @@ using Volo.Abp.Users;
 using ChainOptions = CAServer.Options.ChainOptions;
 using Token = CAServer.UserAssets.Dtos.Token;
 using TokenInfo = CAServer.UserAssets.Provider.TokenInfo;
+using TokenType = CAServer.Tokens.TokenType;
 
 namespace CAServer.UserAssets;
 
@@ -53,7 +55,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly IDistributedCache<List<Token>> _userTokenCache;
     private readonly IDistributedCache<string> _userTokenBalanceCache;
     private readonly GetBalanceFromChainOption _getBalanceFromChainOption;
+    private readonly NftItemDisplayOption _nftItemDisplayOption;
     private readonly ISearchAppService _searchAppService;
+    private readonly ITokenCacheProvider _tokenCacheProvider;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -63,7 +67,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<SeedImageOptions> seedImageOptions, IUserTokenAppService userTokenAppService,
         ITokenProvider tokenProvider, IAssetsLibraryProvider assetsLibraryProvider,
         IDistributedCache<List<Token>> userTokenCache, IDistributedCache<string> userTokenBalanceCache,
-        IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption, ISearchAppService searchAppService)
+        IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption, 
+        IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
+        ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -81,7 +87,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _userTokenCache = userTokenCache;
         _userTokenBalanceCache = userTokenBalanceCache;
         _getBalanceFromChainOption = getBalanceFromChainOption.Value;
+        _nftItemDisplayOption = nftItemDisplayOption.Value;
         _searchAppService = searchAppService;
+        _tokenCacheProvider = tokenCacheProvider;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -209,8 +217,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 {
                     if (_getBalanceFromChainOption.Symbols.Contains(token.Symbol))
                     {
+                        var caAddressInfo = requestDto.CaAddressInfos.FirstOrDefault(t => t.ChainId == token.ChainId);
+                        if (caAddressInfo == null)
+                        {
+                            continue;
+                        }
                         var correctBalance = await CorrectTokenBalanceAsync(token.Symbol,
-                            requestDto.CaAddressInfos.First(t => t.ChainId == token.ChainId).CaAddress, token.ChainId);
+                            caAddressInfo.CaAddress, token.ChainId);
                         token.Balance = correctBalance >= 0 ? correctBalance.ToString() : token.Balance;
                     }
                 }
@@ -326,6 +339,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     dto.Data.Add(nftCollection);
                 }
             }
+            
+            SetSeedStatusAndTrimCollectionNameForCollections(dto.Data);
 
             return dto;
         }
@@ -333,6 +348,21 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             _logger.LogError(e, "GetNFTCollectionsAsync Error. {dto}", requestDto);
             return new GetNftCollectionsDto { Data = new List<NftCollection>(), TotalRecordCount = 0 };
+        }
+    }
+    
+    private void SetSeedStatusAndTrimCollectionNameForCollections(List<NftCollection> collections)
+    {
+        foreach (var collection in collections)
+        {
+            // If Symbol is null or empty, skip this iteration
+            if (string.IsNullOrEmpty(collection.Symbol))
+            {
+                continue;
+            }
+            
+            // If Symbol starts with "SEED-", set IsSeed to true, otherwise set it to false
+            collection.IsSeed = collection.Symbol.StartsWith(TokensConstants.SeedNamePrefix);
         }
     }
 
@@ -374,7 +404,20 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
                     (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
                     ImageResizeType.Forest);
-
+                nftItem.TokenName = nftInfo.NftInfo.TokenName;
+                nftItem.RecommendedRefreshSeconds = _nftItemDisplayOption.RecommendedRefreshSeconds <= 0 
+                    ? NftItemDisplayOption.DefaultRecommendedRefreshSeconds 
+                    : _nftItemDisplayOption.RecommendedRefreshSeconds;
+                
+                nftItem.CollectionSymbol = nftInfo.NftInfo.CollectionSymbol;
+                nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
+                nftItem.LimitPerMint = nftInfo.NftInfo.Lim;
+                nftItem.Expires = nftInfo.NftInfo.Expires;
+                nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
+                
+                nftItem.Generation = nftInfo.NftInfo.Generation;
+                nftItem.Traits = nftInfo.NftInfo.Traits;
+                
                 dto.Data.Add(nftItem);
             }
 
@@ -390,6 +433,18 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     }
                 }
             }
+            
+            SetSeedStatusAndTypeForNftItems(dto.Data);
+
+            OptimizeSeedAliasDisplayForNftItems(dto.Data);
+            
+            TryUpdateLimitPerMintForInscription(dto.Data);
+
+            TryUpdateImageUrlForNftItems(dto.Data);
+            
+            await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(dto.Data);
+            
+            await CalculateAndSetTraitsPercentageAsync(dto.Data);
 
             return dto;
         }
@@ -399,6 +454,265 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return new GetNftItemsDto { Data = new List<NftItem>(), TotalRecordCount = 0 };
         }
     }
+
+    public async Task<NftItem> GetNFTItemAsync(GetNftItemRequestDto requestDto)
+    {
+        try
+        {
+            var res = await _userAssetsProvider.GetUserNftInfoBySymbolAsync(requestDto.CaAddressInfos,
+                requestDto.Symbol, 0, 1000);
+
+            if (res?.CaHolderNFTBalanceInfo?.Data == null || res.CaHolderNFTBalanceInfo.Data.Count == 0)
+            {
+                return null;
+            }
+
+            var nftInfo = res.CaHolderNFTBalanceInfo.Data
+                .FirstOrDefault(n => n.NftInfo != null && !n.NftInfo.Symbol.IsNullOrEmpty());
+            if (nftInfo == null)
+            {
+                return null;
+            }
+
+            var nftItem = ObjectMapper.Map<IndexerNftInfo, NftItem>(nftInfo);
+            
+            nftItem.TokenId = nftInfo.NftInfo.Symbol.Split("-").Last();
+            nftItem.TotalSupply = nftInfo.NftInfo.TotalSupply;
+            nftItem.CirculatingSupply = nftInfo.NftInfo.Supply;
+            nftItem.Decimals = nftInfo.NftInfo.Decimals.ToString();
+            nftItem.ImageUrl =
+                await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl, requestDto.Width,
+                    requestDto.Height,
+                    ImageResizeType.Forest);
+            nftItem.ImageLargeUrl = await _imageProcessProvider.GetResizeImageAsync(nftInfo.NftInfo.ImageUrl,
+                (int)ImageResizeWidthType.IMAGE_WIDTH_TYPE_ONE, (int)ImageResizeHeightType.IMAGE_HEIGHT_TYPE_AUTO,
+                ImageResizeType.Forest);
+            nftItem.TokenName = nftInfo.NftInfo.TokenName;
+            nftItem.RecommendedRefreshSeconds = _nftItemDisplayOption.RecommendedRefreshSeconds <= 0 
+                ? NftItemDisplayOption.DefaultRecommendedRefreshSeconds 
+                : _nftItemDisplayOption.RecommendedRefreshSeconds;    
+            
+            nftItem.CollectionSymbol = nftInfo.NftInfo.CollectionSymbol;
+            nftItem.InscriptionName = nftInfo.NftInfo.InscriptionName;
+            nftItem.LimitPerMint = nftInfo.NftInfo.Lim;
+            nftItem.Expires = nftInfo.NftInfo.Expires;
+            nftItem.SeedOwnedSymbol = nftInfo.NftInfo.SeedOwnedSymbol;
+
+            nftItem.Generation = nftInfo.NftInfo.Generation;
+            nftItem.Traits = nftInfo.NftInfo.Traits;
+            
+            nftItem.CollectionSymbol = nftInfo.NftInfo.CollectionSymbol;
+            
+            if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(nftItem.Symbol))
+            {
+                var correctBalance = await CorrectTokenBalanceAsync(nftItem.Symbol,
+                    requestDto.CaAddressInfos.First(t => t.ChainId == nftItem.ChainId).CaAddress, nftItem.ChainId);
+                nftItem.Balance = correctBalance >= 0 ? correctBalance.ToString() : nftItem.Balance;
+            }
+            
+            SetSeedStatusAndTypeForNftItem(nftItem);
+
+            OptimizeSeedAliasDisplayForNftItem(nftItem);
+
+            TryUpdateLimitPerMintForInscription(nftItem);
+            
+            TryUpdateImageUrlForNftItem(nftItem);
+
+            await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(nftItem);
+
+            await CalculateAndSetTraitsPercentageAsync(nftItem);
+            
+            return nftItem;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetNFTItemAsync Error. {dto}", requestDto);
+            return null;
+        }
+    }
+
+    private void SetSeedStatusAndTypeForNftItems(List<NftItem> nftItems)
+    {
+        foreach (var nftItem in nftItems)
+        {
+            SetSeedStatusAndTypeForNftItem(nftItem);
+        }
+    }
+    
+    private void SetSeedStatusAndTypeForNftItem(NftItem nftItem)
+    {
+        // If the Symbol starts with "SEED", we set IsSeed to true.
+        if (nftItem.Symbol.StartsWith(TokensConstants.SeedNamePrefix))
+        {
+            nftItem.IsSeed = true;
+            nftItem.SeedType = (int) SeedType.FT;
+
+            if (!string.IsNullOrEmpty(nftItem.SeedOwnedSymbol))
+            {
+                nftItem.SeedType = nftItem.SeedOwnedSymbol.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+            } 
+
+            // Compatible with historical data
+            // If the TokenName starts with "SEED-", we remove "SEED-" and check if it contains "-"
+            else if (!string.IsNullOrEmpty(nftItem.TokenName) && nftItem.TokenName.StartsWith(TokensConstants.SeedNamePrefix))
+            {
+                var tokenNameWithoutSeed = nftItem.TokenName.Remove(0, 5);
+
+                // If TokenName contains "-", set SeedType to NFT, otherwise set it to FT
+                nftItem.SeedType = tokenNameWithoutSeed.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+            }
+        }
+    }
+
+    
+    private void OptimizeSeedAliasDisplayForNftItems(List<NftItem> nftItems)
+    {
+        foreach (var item in nftItems)
+        {
+            OptimizeSeedAliasDisplayForNftItem(item);
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplayForNftItem(NftItem nftItem)
+    {
+        if (nftItem.IsSeed && nftItem.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
+        {
+            nftItem.Alias = nftItem.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+        }
+    }
+    
+    private void TryUpdateLimitPerMintForInscription(List<NftItem> nftItems)
+    {
+        foreach (var nftItem in nftItems)
+        {
+            TryUpdateLimitPerMintForInscription(nftItem);
+        }
+    }
+
+    private void TryUpdateLimitPerMintForInscription(NftItem nftItem)
+    {
+        if (!string.IsNullOrEmpty(nftItem.LimitPerMint) && nftItem.LimitPerMint.Equals("0"))
+        {
+            nftItem.LimitPerMint = TokensConstants.LimitPerMintReplacement;
+        }
+    }
+    
+    private void TryUpdateImageUrlForNftItems(List<NftItem> nftItems)
+    {
+        foreach (var nftItem in nftItems)
+        {
+            TryUpdateImageUrlForNftItem(nftItem);
+        }
+    }
+
+    private void TryUpdateImageUrlForNftItem(NftItem nftItem)
+    {
+        if (!string.IsNullOrEmpty(nftItem.ImageUrl) && nftItem.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+        {
+            nftItem.ImageUrl = TokensConstants.ReplacedIpfsPrefix + nftItem.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
+        }
+        
+        if (!string.IsNullOrEmpty(nftItem.ImageLargeUrl) && nftItem.ImageLargeUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+        {
+            nftItem.ImageLargeUrl = TokensConstants.ReplacedIpfsPrefix + nftItem.ImageLargeUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
+        }
+    }
+
+    private async Task TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(List<NftItem> nftItems)
+    {
+        foreach (var item in nftItems)
+        {
+            await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(item);
+        }
+    }
+    
+    private async Task TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(NftItem nftItem)
+    {
+        if (nftItem.IsSeed && (string.IsNullOrEmpty(nftItem.Expires) || string.IsNullOrEmpty(nftItem.SeedOwnedSymbol)))
+        {
+            var nftItemCache = await _tokenCacheProvider.GetTokenInfoAsync(nftItem.ChainId, nftItem.Symbol, TokenType.NFTItem);
+            nftItem.Expires = nftItemCache.Expires;
+            nftItem.SeedOwnedSymbol = nftItemCache.SeedOwnedSymbol;
+        }
+    }
+    
+    private async Task CalculateAndSetTraitsPercentageAsync(List<NftItem> nftItems)
+    {
+        foreach (var item in nftItems)
+        {
+            await CalculateAndSetTraitsPercentageAsync(item);
+        }
+    }
+
+
+    private async Task CalculateAndSetTraitsPercentageAsync(NftItem nftItem)
+    {
+        if (!string.IsNullOrEmpty(nftItem.Traits))
+        {
+            List<Trait> traitsList = JsonHelper.DeserializeJson<List<Trait>>(nftItem.Traits);
+            if (traitsList == null || !traitsList.Any())
+            {
+                nftItem.TraitsPercentages = new List<Trait>();
+            }
+            
+            List<Trait> allItemsTraitsList = await GetAllTraitsInCollectionAsync(nftItem.CollectionSymbol);
+
+            var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
+
+            var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            CalculateTraitsPercentages(nftItem, traitsList, traitTypeCounts, traitTypeValueCounts);
+        }
+    }
+    
+    private async Task<List<Trait>> GetAllTraitsInCollectionAsync(string collectionSymbol)
+    {
+        var getNftItemInfosDto = new GetNftItemInfosDto();
+        getNftItemInfosDto.GetNftItemInfos = new List<GetNftItemInfo>();
+        getNftItemInfosDto.GetNftItemInfos.Add(new GetNftItemInfo()
+        {
+            CollectionSymbol = collectionSymbol
+        });
+        var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto , 0, 2000);
+        
+        List<string> allItemsTraitsListInCollection = nftItemInfos.NftItemInfos?
+            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
+            .GroupBy(nftItem => nftItem.Symbol)
+            .Select(group => group.First().Traits)
+            .ToList() ?? new List<string>();
+        
+        List<Trait> allItemsTraitsList = allItemsTraitsListInCollection
+            .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
+            .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
+            .SelectMany(curTraitsList => curTraitsList)
+            .ToList();
+        
+        return allItemsTraitsList;
+    }
+
+    private void CalculateTraitsPercentages(NftItem nftItem, List<Trait> traitsList, Dictionary<string, int> traitTypeCounts,
+        Dictionary<string, int> traitTypeValueCounts)
+    {
+        foreach (var trait in traitsList)
+        {
+            string traitType = trait.TraitType;
+            string traitTypeValue = $"{trait.TraitType}-{trait.Value}";
+            
+            if (traitTypeCounts.ContainsKey(traitType) && traitTypeValueCounts.ContainsKey(traitTypeValue))
+            {
+                int numerator = traitTypeValueCounts[traitTypeValue];
+                int denominator = traitTypeCounts[traitType];
+                string percentage = PercentageHelper.CalculatePercentage(numerator, denominator);
+                trait.Percent = percentage;
+            } else {
+                trait.Percent = "-";
+            }
+        }
+        
+        nftItem.TraitsPercentages = traitsList;
+    }
+
 
     //Data with the same name needs to be deduplicated
     public async Task<GetRecentTransactionUsersDto> GetRecentTransactionUsersAsync(
@@ -618,6 +932,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                     item.NftInfo.ImageUrl =
                         await _imageProcessProvider.GetResizeImageAsync(searchItem.NftInfo.ImageUrl, requestDto.Width,
                             requestDto.Height, ImageResizeType.Forest);
+                    item.NftInfo.TokenName = searchItem.NftInfo.TokenName;
                 }
 
                 dto.Data.Add(item);
@@ -627,12 +942,72 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
                 .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
 
+            SetSeedStatusAndTypeForUserAssets(dto.Data);
+
+            OptimizeSeedAliasDisplayForUserAssets(dto.Data);
+
+            TryUpdateImageUrlForUserAssets(dto.Data);
+            
             return dto;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "SearchUserAssetsAsync Error. {dto}", requestDto);
             return new SearchUserAssetsDto { Data = new List<UserAsset>(), TotalRecordCount = 0 };
+        }
+    }
+    
+    private void SetSeedStatusAndTypeForUserAssets(List<UserAsset> userAssets)
+    {
+        foreach (var userAsset in userAssets)
+        {
+            // If Symbol starts with "SEED", set IsSeed to true
+            if (userAsset.Symbol.StartsWith(TokensConstants.SeedNamePrefix) && userAsset.NftInfo != null)
+            {
+                userAsset.NftInfo.IsSeed = true;
+                userAsset.NftInfo.SeedType = (int) SeedType.FT;
+                
+                // If the TokenName is not null and starts with "SEED-", we remove "SEED-" and check if it contains "-"
+                if (!string.IsNullOrEmpty(userAsset.NftInfo.TokenName) && userAsset.NftInfo.TokenName.StartsWith(TokensConstants.SeedNamePrefix))
+                {
+                    var tokenNameWithoutSeed = userAsset.NftInfo.TokenName.Remove(0, 5);
+
+                    // If TokenName contains "-", set SeedType to NFT, otherwise set it to FT
+                    userAsset.NftInfo.SeedType = tokenNameWithoutSeed.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+                }
+            }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplayForUserAssets(List<UserAsset> assets)
+    {
+        foreach (var asset in assets)
+        {
+            if (asset.NftInfo == null)
+            {
+                continue;
+            }
+
+            if (asset.NftInfo.IsSeed && asset.NftInfo.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
+            {
+                asset.NftInfo.Alias = asset.NftInfo.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+            }
+        }
+    }
+    
+    private void TryUpdateImageUrlForUserAssets(List<UserAsset> assets)
+    {
+        foreach (var asset in assets)
+        {
+            if (asset.NftInfo == null)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrEmpty(asset.NftInfo.ImageUrl) && asset.NftInfo.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+            {
+                asset.NftInfo.ImageUrl = TokensConstants.ReplacedIpfsPrefix + asset.NftInfo.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
+            }
         }
     }
 
@@ -648,9 +1023,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         
         var userPackageNftAssetsWithPositiveBalance = userPackageAssets.Data
             .Where(asset => asset.NftInfo?.Balance != null 
-                            && long.Parse(asset.NftInfo.Balance) > 0 
-                            && !string.IsNullOrEmpty(asset.NftInfo?.ImageUrl) 
-                            && asset.NftInfo.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            && long.Parse(asset.NftInfo.Balance) > 0)
             .ToList();
 
         var matchedItems =
@@ -734,6 +1107,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 TokenId = asset.NftInfo?.TokenId,
                 Balance = asset.NftInfo?.Balance,
                 TokenContractAddress = asset.NftInfo?.TokenContractAddress,
+                TokenName = asset.NftInfo?.TokenName,
                 AssetType = (int)AssetType.NFT
             };
 
@@ -760,7 +1134,58 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         dto.Data.AddRange(userPackageNftAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
 
+        SetSeedStatusAndTypeForUserPackageAssets(dto.Data);
+        
+        OptimizeSeedAliasDisplayForUserPackageAssets(dto.Data);
+        
+        TryUpdateImageUrlForUserPackageAssets(dto.Data);
+        
         return dto;
+    }
+    
+    private void SetSeedStatusAndTypeForUserPackageAssets(List<UserPackageAsset> userPackageAssets)
+    {
+        foreach (var userPackageAsset in userPackageAssets)
+        {
+            // If AssetType is NFT and Symbol starts with "SEED", set IsSeed to true
+            if (userPackageAsset.AssetType == (int)AssetType.NFT && userPackageAsset.Symbol.StartsWith(TokensConstants.SeedNamePrefix))
+            {
+                userPackageAsset.IsSeed = true;
+                userPackageAsset.SeedType = (int) SeedType.FT;
+
+                // If the TokenName is not null and starts with "SEED-", we remove "SEED-" and check if it contains "-"
+                if (!string.IsNullOrEmpty(userPackageAsset.TokenName) && userPackageAsset.TokenName.StartsWith(TokensConstants.SeedNamePrefix))
+                {
+                    var tokenNameWithoutSeed = userPackageAsset.TokenName.Remove(0, 5);
+
+                    // If TokenName contains "-", set SeedType to NFT, otherwise set it to FT
+                    userPackageAsset.SeedType = tokenNameWithoutSeed.Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+                }
+            }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplayForUserPackageAssets(List<UserPackageAsset> assets)
+    {
+        foreach (var asset in assets)
+        {
+            if (asset.IsSeed && asset.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
+            {
+                asset.Alias = asset.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+            }
+        }
+    }
+    
+    private void TryUpdateImageUrlForUserPackageAssets(List<UserPackageAsset> assets)
+    {
+        foreach (var asset in assets)
+        {
+
+            if (!string.IsNullOrEmpty(asset.ImageUrl) && asset.ImageUrl.StartsWith(TokensConstants.OriginalIpfsPrefix))
+            {
+                asset.ImageUrl = TokensConstants.ReplacedIpfsPrefix + asset.ImageUrl.Substring(TokensConstants.OriginalIpfsPrefix.Length);
+            }
+        }
     }
 
     private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsIndexAsync(
