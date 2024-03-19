@@ -147,7 +147,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
              var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             
             var times = 0;
-            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.CryptoBoxRetryTimes)
+            while ((transactionResult.Status == TransactionState.Pending || transactionResult.Status == TransactionState.NotExisted) && times < _grainOptions.CryptoBoxRetryTimes)
             {
                 times++;
                 await Task.Delay(_grainOptions.CryptoBoxRetryDelay);
@@ -410,7 +410,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             _logger.LogInformation("SendTransferRedPacketToChainAsync transactionResult: {transactionResult}", JsonConvert.SerializeObject(transactionResult));
 
             var times = 0;
-            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+            while ((transactionResult.Status == TransactionState.Pending || transactionResult.Status == TransactionState.NotExisted) && times < _grainOptions.RetryTimes)
             {
                 times++;
                 await Task.Delay(_grainOptions.RetryDelay);
