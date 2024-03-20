@@ -144,7 +144,13 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var indexerToken =
             await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
 
-        return GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
+        var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
+
+        // Check and adjust SkipCount and MaxResultCount
+        var skipCount = input.SkipCount < TokensConstants.SkipCountDefault ? TokensConstants.SkipCountDefault : input.SkipCount;
+        var maxResultCount = input.MaxResultCount <= TokensConstants.MaxResultCountInvalid ? TokensConstants.MaxResultCountDefault : input.MaxResultCount;
+
+        return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
     }
 
     public async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
