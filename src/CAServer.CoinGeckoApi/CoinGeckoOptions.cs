@@ -8,5 +8,7 @@ namespace CAServer.CoinGeckoApi
         public Dictionary<string, string> CoinIdMapping { get; set; }
         public int Priority { get; set; } = 0;
         public bool IsAvailable { get; set; } = true;
+        public int Timeout { get; set; } = 10000;
+        public string DemoApiKey { get; set; }
     }
 }

@@ -46,6 +46,11 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.CoinGecko));
         var httpClient = httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        if (_coinGeckoOptions.CurrentValue.Timeout > 0)
+        {
+            httpClient.Timeout = TimeSpan.FromMilliseconds(_coinGeckoOptions.CurrentValue.Timeout);
+        }
+
         if (_coinGeckoOptions.CurrentValue.BaseUrl.NotNullOrEmpty())
         {
             httpClient.BaseAddress = new Uri(_coinGeckoOptions.CurrentValue.BaseUrl);
@@ -54,6 +59,11 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
         {
             httpClient.DefaultRequestHeaders.Add("x-cg-pro-api-key", apiKey);
+        }
+        else if (!_coinGeckoOptions.CurrentValue.DemoApiKey.IsNullOrWhiteSpace())
+        {
+            // test environment uses the demo api-key
+            httpClient.DefaultRequestHeaders.Add("x-cg-demo-api-key", _coinGeckoOptions.CurrentValue.DemoApiKey);
         }
 
         return httpClient;
@@ -92,7 +102,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             throw;
         }
     }
-    
+
     public async Task<Dictionary<string, decimal>> GetPriceAsync(params string[] symbols)
     {
         if (symbols.IsNullOrEmpty())
