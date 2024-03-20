@@ -25,6 +25,7 @@ public class CAServerOrleansSiloModule : AbpModule
         //ConfigureEsIndexCreation();
         Configure<GrainOptions>(configuration.GetSection("Contract"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        context.Services.AddHttpClient();
     }
     
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
