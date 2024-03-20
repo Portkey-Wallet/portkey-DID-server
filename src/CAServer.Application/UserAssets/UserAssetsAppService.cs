@@ -58,6 +58,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly NftItemDisplayOption _nftItemDisplayOption;
     private readonly ISearchAppService _searchAppService;
     private readonly ITokenCacheProvider _tokenCacheProvider;
+    private readonly IpfsOptions _ipfsOptions;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -69,7 +70,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IDistributedCache<List<Token>> userTokenCache, IDistributedCache<string> userTokenBalanceCache,
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption, 
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
-        ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider)
+        ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
+        IOptionsSnapshot<IpfsOptions> ipfsOption)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -90,6 +92,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _nftItemDisplayOption = nftItemDisplayOption.Value;
         _searchAppService = searchAppService;
         _tokenCacheProvider = tokenCacheProvider;
+        _ipfsOptions = ipfsOption.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -372,7 +375,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         foreach (var collection in collections)
         {
-            collection.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(collection.ImageUrl);
+            collection.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(collection.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
         }
     }
 
@@ -617,8 +620,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     private void TryUpdateImageUrlForNftItem(NftItem nftItem)
     {
-        nftItem.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(nftItem.ImageUrl);
-        nftItem.ImageLargeUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(nftItem.ImageLargeUrl);
+        nftItem.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(nftItem.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
+        nftItem.ImageLargeUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(nftItem.ImageLargeUrl, _ipfsOptions?.ReplacedIpfsPrefix);
     }
 
     private async Task TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(List<NftItem> nftItems)
@@ -1007,7 +1010,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 continue;
             }
 
-            asset.NftInfo.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(asset.NftInfo.ImageUrl);
+            asset.NftInfo.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(asset.NftInfo.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
         }
     }
 
@@ -1180,7 +1183,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         foreach (var asset in assets)
         {
-            asset.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(asset.ImageUrl);
+            asset.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(asset.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
         }
     }
 
