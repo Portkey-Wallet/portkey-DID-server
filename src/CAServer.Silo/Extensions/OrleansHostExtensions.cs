@@ -1,4 +1,6 @@
 using System.Net;
+using CAServer.Nightingale.Orleans.Filters;
+using CAServer.Nightingale.Orleans.TelemetryConsumers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,7 +10,6 @@ using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Providers.MongoDB.Configuration;
 using Orleans.Statistics;
-using Orleans.TelemetryConsumers.Nightingale;
 
 namespace CAServer.Silo.Extensions;
 
@@ -74,6 +75,7 @@ public static class OrleansHostExtensions
                 })
                 .UseLinuxEnvironmentStatistics()
                 .AddNightingaleTelemetryConsumer()
+                .AddNightingaleMethodFilter()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
         });
     }

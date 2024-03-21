@@ -1,13 +1,14 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
 
-namespace Orleans.TelemetryConsumers.Nightingale
+namespace CAServer.Nightingale.Orleans.TelemetryConsumers
 {
-    public static class TelemetryConsumerConfigurationExtensions
+    public static class N9ETelemetryConsumerConfigurationExtensions
     {
         /// <summary>
-        /// Adds a metrics telemetric consumer provider of type <see cref="TelemetryConsumer"/>.
+        /// Adds a metrics telemetric consumer provider of type <see cref="N9ETelemetryConsumer"/>.
         /// </summary>
         /// <param name="hostBuilder"></param>
         public static ISiloHostBuilder AddNightingaleTelemetryConsumer(this ISiloHostBuilder hostBuilder)
@@ -16,7 +17,7 @@ namespace Orleans.TelemetryConsumers.Nightingale
         }
 
         /// <summary>
-        /// Adds a metrics telemetric consumer provider of type <see cref="TelemetryConsumer"/>.
+        /// Adds a metrics telemetric consumer provider of type <see cref="N9ETelemetryConsumer"/>.
         /// </summary>
         /// <param name="hostBuilder"></param>
         public static ISiloBuilder AddNightingaleTelemetryConsumer(this ISiloBuilder hostBuilder)
@@ -25,7 +26,7 @@ namespace Orleans.TelemetryConsumers.Nightingale
         }
 
         /// <summary>
-        /// Adds a metrics telemetric consumer provider of type <see cref="TelemetryConsumer"/>.
+        /// Adds a metrics telemetric consumer provider of type <see cref="N9ETelemetryConsumer"/>.
         /// </summary>
         /// <param name="clientBuilder"></param>
         public static IClientBuilder AddNightingaleTelemetryConsumer(this IClientBuilder clientBuilder)
@@ -36,12 +37,12 @@ namespace Orleans.TelemetryConsumers.Nightingale
         private static void ConfigureServices(Microsoft.Extensions.Hosting.HostBuilderContext context,
             IServiceCollection services)
         {
-            services.Configure<TelemetryOptions>(options => options.AddConsumer<TelemetryConsumer>());
+            services.Configure<TelemetryOptions>(options => options.AddConsumer<N9ETelemetryConsumer>());
         }
 
         private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
         {
-            services.Configure<TelemetryOptions>(options => options.AddConsumer<TelemetryConsumer>());
+            services.Configure<TelemetryOptions>(options => options.AddConsumer<N9ETelemetryConsumer>());
         }
     }
 }

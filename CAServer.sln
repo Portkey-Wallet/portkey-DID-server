@@ -71,7 +71,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Monitor", "src\CAS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.ContractEventHandler.Core.Tests", "test\CAServer.ContractEventHandler.Core.Tests\CAServer.ContractEventHandler.Core.Tests.csproj", "{7AF6AC0F-D8CE-405B-B537-CF9E74B0F591}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.TelemetryConsumers.Nightingale", "src\CAServer.TelemetryConsumers.Nightingale\CAServer.TelemetryConsumers.Nightingale.csproj", "{F65B38A5-9835-4146-A82F-E7B73D61A28A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Nightingale", "src\CAServer.Nightingale\CAServer.Nightingale.csproj", "{F65B38A5-9835-4146-A82F-E7B73D61A28A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

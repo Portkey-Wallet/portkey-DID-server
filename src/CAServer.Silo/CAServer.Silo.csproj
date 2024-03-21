@@ -27,7 +27,7 @@
         <!--        <ProjectReference Include="..\CAServer.BackGround\CAServer.BackGround.csproj" />-->
         <ProjectReference Include="..\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
         <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
-        <ProjectReference Include="..\CAServer.TelemetryConsumers.Nightingale\CAServer.TelemetryConsumers.Nightingale.csproj" />
+        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
     </ItemGroup>
 
     <ItemGroup>

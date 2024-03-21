@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Hubs;
+using CAServer.Nightingale;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,7 @@ public class Program
             var hostBuilder = builder.Host.AddAppSettingsSecretsJson()
                 .InitAppConfiguration(false)
                 .UseApolloForConfigureHostBuilder()
+                .UseNightingaleMonitoring()
                 .UseAutofac()
                 .UseSerilog();
 

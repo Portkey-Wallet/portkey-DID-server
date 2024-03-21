@@ -8,6 +8,7 @@ using CAServer.HubsEventHandler;
 using CAServer.Middleware;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
+using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Redis;
 using CAServer.ThirdPart.Adaptor;
@@ -215,6 +216,7 @@ public class CAServerHttpApiHostModule : AbpModule
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .AddNightingaleMethodFilter()
                 .Build();
         });
     }
