@@ -72,6 +72,11 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
         }
     }
 
+    public Task<string> GetLocalIpAsync()
+    {
+        return Task.FromResult(IpHelper.GetLocalIp());
+    }
+
     private string GetIp()
     {
         if (_httpContextAccessor?.HttpContext?.Request.Headers?.ContainsKey("X-Forwarded-For") == false)
