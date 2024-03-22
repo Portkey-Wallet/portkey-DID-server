@@ -273,7 +273,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
         var result = guardians.Item2.Where(t => t.IsDeleted == false);
 
-        return result?.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
+        return result.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
     }
 
 
