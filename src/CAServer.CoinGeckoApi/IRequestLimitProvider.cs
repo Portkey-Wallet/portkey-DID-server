@@ -19,10 +19,10 @@ namespace CAServer.CoinGeckoApi
         public RequestLimitProvider(IOptionsMonitor<CoinGeckoOptions> coinGeckoOptions)
         {
             _coinGeckoOptions = coinGeckoOptions;
-            _rateLimiter = initializeRateLimiter();
+            _rateLimiter = InitializeRateLimiter();
         }
 
-        private RateLimiter initializeRateLimiter()
+        private RateLimiter InitializeRateLimiter()
         {
             return new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
             {
