@@ -59,6 +59,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var searchAppServiceMock = new Mock<ISearchAppService>();
         var tokenProvider = new Mock<ITokenProvider>();
         var tokenCacheProvider = new Mock<ITokenCacheProvider>();
+        var ipfsOption = new Mock<IOptionsSnapshot<IpfsOptions>>();
         var userAssetsAppService = new UserAssetsAppService(
             logger: loggerMock.Object,
             userAssetsProvider: userAssetsProviderMock.Object,
@@ -78,7 +79,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(), 
             nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(), 
             searchAppService: searchAppServiceMock.Object,
-            tokenCacheProvider: tokenCacheProvider.Object);
+            tokenCacheProvider: tokenCacheProvider.Object,
+            ipfsOption: ipfsOption.Object);
         return userAssetsAppService;
     }
 
