@@ -23,4 +23,10 @@ public class IpInfoController : CAServerController
     {
         return await _ipInfoAppService.GetIpInfoAsync();
     }
+    
+    [HttpGet("localIp")]
+    public async Task<string> GetLocalIpAsync()
+    {
+        return await _ipInfoAppService.GetLocalIpAsync();
+    }
 }
