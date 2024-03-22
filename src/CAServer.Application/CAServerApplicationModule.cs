@@ -77,6 +77,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
         Configure<FacebookOptions>(configuration.GetSection("Facebook"));
         Configure<AccelerateManagerOptions>(configuration.GetSection("AccelerateManager"));
+        Configure<IpfsOptions>(configuration.GetSection("Ipfs"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));

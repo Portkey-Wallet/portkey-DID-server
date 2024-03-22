@@ -83,4 +83,10 @@ public class ContactController : CAServerController
     {
         return await _contactAppService.GetContactListAsync(input);
     }
+    
+    [HttpGet("getContactsByUserId")]
+    public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
+    {
+        return await _contactAppService.GetContactsByUserIdAsync(userId);
+    }
 }
