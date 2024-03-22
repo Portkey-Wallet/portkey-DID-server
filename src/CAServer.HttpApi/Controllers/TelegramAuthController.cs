@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CAServer.Switch;
 using CAServer.Telegram;
 using CAServer.Telegram.Dtos;
 using CAServer.Telegram.Options;
@@ -47,5 +46,16 @@ public class TelegramAuthController : CAServerController
         }
 
         return Redirect($"{redirectUrl}?token={token}&type=telegram");
+    }
+
+    [HttpGet("token")]
+    public async Task<TelegramAuthTokenResponseDto> TokenAsync(string redirect, TelegramAuthReceiveRequest request)
+    {
+        var token = await _telegramAuthService.ValidateTelegramHashAndGenerateTokenAsync(request);
+
+        return new TelegramAuthTokenResponseDto
+        {
+            Token = token
+        };
     }
 }
