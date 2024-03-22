@@ -11,5 +11,7 @@ public class TokenPriceWorkerOption
     public string WorkerNameKey { get; set; } = "Worker";
     public string WorkerLockKey { get; set; } = "Lock";
     public string PricePrefix { get; set; } = "Price";
-    public IEnumerable<string> Symbols { get; set; } = new[] { "ELF", "USDT" };
+
+    public IEnumerable<string> Symbols { get; set; } =
+        new[] { "ELF", "USDT", "ETH", "USDC", "DAI", "BNB", "WBNB", "WETH" };
 }
