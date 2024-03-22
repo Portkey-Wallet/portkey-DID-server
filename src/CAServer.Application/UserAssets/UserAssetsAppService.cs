@@ -117,7 +117,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             var caAddressInfos = requestDto.CaAddressInfos;
             var indexerTokenInfos = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
-                0, requestDto.SkipCount + requestDto.MaxResultCount);
+                0, Int32.MaxValue);
 
             indexerTokenInfos.CaHolderTokenBalanceInfo.Data =
                 indexerTokenInfos.CaHolderTokenBalanceInfo.Data.Where(t => t.TokenInfo != null).ToList();
@@ -209,8 +209,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             tokenList = tokenList.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
             var defaultList = tokenList.Where(t => t.Symbol == CommonConstant.DefaultSymbol).ToList();
 
-            var resultList = defaultList.Union(tokenList).Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount)
-                .ToList();
+            var resultList = defaultList.Union(tokenList).ToList();
             var symbols = resultList.Select(t => t.Symbol).ToList();
             dto.Data.AddRange(resultList);
 
@@ -247,6 +246,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
             
             dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);
+            dto.Data = dto.Data.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList();
 
             return dto;
         }
