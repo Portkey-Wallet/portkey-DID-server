@@ -29,7 +29,7 @@ public class CAHub : AbpHub
         }
 
         await _hubService.RegisterClient(clientId, Context.ConnectionId);
-        await _routeTableProvider.SetRouteTableInfoAsync(clientId, Context.ConnectionId);
+       // await _routeTableProvider.SetRouteTableInfoAsync(clientId, Context.ConnectionId);
         _logger.LogInformation("clientId={clientId} connect", clientId);
         await _hubService.SendAllUnreadRes(clientId);
     }
@@ -67,7 +67,7 @@ public class CAHub : AbpHub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var clientId = _hubService.UnRegisterClient(Context.ConnectionId);
-        await _routeTableProvider.RemoveRouteTableInfoAsync(clientId);
+        //await _routeTableProvider.RemoveRouteTableInfoAsync(clientId);
         _logger.LogInformation("clientId={clientId} disconnected!!!", clientId);
         await base.OnDisconnectedAsync(exception);
     }
