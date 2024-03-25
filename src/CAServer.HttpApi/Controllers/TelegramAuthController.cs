@@ -49,7 +49,7 @@ public class TelegramAuthController : CAServerController
     }
 
     [HttpGet("token")]
-    public async Task<TelegramAuthTokenResponseDto> TokenAsync(string redirect, TelegramAuthReceiveRequest request)
+    public async Task<TelegramAuthTokenResponseDto> TokenAsync(TelegramAuthReceiveRequest request)
     {
         var token = await _telegramAuthService.ValidateTelegramHashAndGenerateTokenAsync(request);
 
