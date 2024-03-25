@@ -13,7 +13,7 @@ namespace CAServer.Nightingale.Orleans.TelemetryConsumers
         /// <param name="hostBuilder"></param>
         public static ISiloHostBuilder AddNightingaleTelemetryConsumer(this ISiloHostBuilder hostBuilder)
         {
-            return hostBuilder.ConfigureServices((context, services) => ConfigureServices(context, services));
+            return hostBuilder.ConfigureServices(ConfigureServices);
         }
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace CAServer.Nightingale.Orleans.TelemetryConsumers
         /// <param name="hostBuilder"></param>
         public static ISiloBuilder AddNightingaleTelemetryConsumer(this ISiloBuilder hostBuilder)
         {
-            return hostBuilder.ConfigureServices((context, services) => ConfigureServices(context, services));
+            return hostBuilder.ConfigureServices(ConfigureServices);
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace CAServer.Nightingale.Orleans.TelemetryConsumers
         /// <param name="clientBuilder"></param>
         public static IClientBuilder AddNightingaleTelemetryConsumer(this IClientBuilder clientBuilder)
         {
-            return clientBuilder.ConfigureServices((context, services) => ConfigureServices(context, services));
+            return clientBuilder.ConfigureServices(ConfigureServices);
         }
 
         private static void ConfigureServices(Microsoft.Extensions.Hosting.HostBuilderContext context,

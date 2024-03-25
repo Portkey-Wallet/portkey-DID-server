@@ -8,6 +8,7 @@ using CAServer.HubsEventHandler;
 using CAServer.Middleware;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
+using CAServer.Nightingale.Http;
 using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Redis;
@@ -336,6 +337,7 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseMiddleware<DeviceInfoMiddleware>();
         app.UseMiddleware<ConditionalIpWhitelistMiddleware>();
+        app.UseMiddleware<PerformanceMonitorMiddleware>();
         app.UseStaticFiles();
 
         app.UseRouting();

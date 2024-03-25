@@ -12,7 +12,7 @@ public static class GrainMethodFilterExtensions
     /// <param name="hostBuilder"></param>
     public static ISiloBuilder AddNightingaleMethodFilter(this ISiloBuilder hostBuilder)
     {
-        return hostBuilder.ConfigureServices((context, services) => ConfigureServices(context, services));
+        return hostBuilder.ConfigureServices(ConfigureServices);
     }
     
     /// <summary>
@@ -21,7 +21,7 @@ public static class GrainMethodFilterExtensions
     /// <param name="clientBuilder"></param>
     public static IClientBuilder AddNightingaleMethodFilter(this IClientBuilder clientBuilder)
     {
-        return clientBuilder.ConfigureServices((context, collection) => ConfigureServices(context, collection));
+        return clientBuilder.ConfigureServices(ConfigureServices);
     }
     
     private static void ConfigureServices(Microsoft.Extensions.Hosting.HostBuilderContext context,

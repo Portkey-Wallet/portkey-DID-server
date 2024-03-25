@@ -1,3 +1,7 @@
+using System.Text;
+using CAServer.Nightingale.Common;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Orleans.Runtime;
 using Serilog;
@@ -9,6 +13,7 @@ public class N9EClientForLogging : IN9EClient
     private readonly ILogger _logger;
     private readonly IOptionsMonitor<N9EClientForLoggingOptions> _n9EClientForLoggingOptions;
     private readonly string _hostName;
+    private readonly IConfiguration? _configuration;
 
     public N9EClientForLogging(IServiceProvider serviceProvider,
         IOptionsMonitor<N9EClientForLoggingOptions> n9EClientForLoggingOptions)
@@ -16,6 +21,7 @@ public class N9EClientForLogging : IN9EClient
         _n9EClientForLoggingOptions = n9EClientForLoggingOptions;
         _logger = N9EClientLogHelper.CreateLogger(n9EClientForLoggingOptions);
         _hostName = HostHelper.GetLocalHostName();
+        _configuration = serviceProvider.GetService<IConfiguration>();
     }
 
     public void TrackMetric(string name, double value, IDictionary<string, string>? properties = null)
@@ -150,22 +156,22 @@ public class N9EClientForLogging : IN9EClient
 
     private string FormatMetric(string? name, int value, IDictionary<string, string>? properties)
     {
-        return $"{FormatMetricName(name)}{{{FormatMetricLabel(properties)}}} {value}";
+        return $"{FormatMetricName(name)}{FormatMetricLabel(properties)} {value}";
     }
 
     private string FormatMetric(string? name, long value, IDictionary<string, string>? properties)
     {
-        return $"{FormatMetricName(name)}{{{FormatMetricLabel(properties)}}} {value}";
+        return $"{FormatMetricName(name)}{FormatMetricLabel(properties)} {value}";
     }
 
     private string FormatMetric(string? name, double value, IDictionary<string, string>? properties)
     {
-        return $"{FormatMetricName(name)}{{{FormatMetricLabel(properties)}}} {value}";
+        return $"{FormatMetricName(name)}{FormatMetricLabel(properties)} {value}";
     }
 
     private string FormatMetric(string? name, TimeSpan value, IDictionary<string, string>? properties)
     {
-        return $"{FormatMetricName(name)}{{{FormatMetricLabel(properties)}}} {value}";
+        return $"{FormatMetricName(name)}{FormatMetricLabel(properties)} {value}";
     }
 
     private string FormatMetricName(string? name)
@@ -189,12 +195,18 @@ public class N9EClientForLogging : IN9EClient
         properties = properties != null && properties.Count > 0
             ? new Dictionary<string, string>(properties)
             : new Dictionary<string, string>();
+        properties.Add(N9EClientConstant.LabelService, ServiceNameHelper.GetServiceName(_configuration));
         properties.Add(N9EClientConstant.LabelHostName, _hostName);
-        properties.Add(N9EClientConstant.LabelTimestamp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
-        var labelStr = string.Empty;
-        properties.Aggregate(labelStr,
-            (current, property) => current + $"{property.Key}=\"{property.Value}\"");
-        return labelStr;
+        properties.Add(N9EClientConstant.LabelTimestamp, DateTimeOffset.UtcNow.ToString(N9EClientConstant.DataTimeFormat));
+        var builder = new StringBuilder("{");
+        foreach (var property in properties)
+        {
+            builder.Append(property.Key).Append("=").Append("\"").Append(property.Value).Append("\",");
+        }
+        builder.Length -= 1;
+        builder.Append("}");
+        
+        return builder.ToString();
     }
 
     private void TrackMetric(string metric)

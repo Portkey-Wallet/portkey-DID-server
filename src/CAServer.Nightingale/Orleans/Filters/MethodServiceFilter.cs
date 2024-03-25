@@ -91,7 +91,7 @@ public class MethodServiceFilter : IIncomingGrainCallFilter
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "error recording results for grain");
+            _logger?.LogError(e, "error recording results for grain");
         }
     }
 }

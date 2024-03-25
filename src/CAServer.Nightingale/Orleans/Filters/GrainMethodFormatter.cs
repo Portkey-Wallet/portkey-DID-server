@@ -19,7 +19,8 @@ public static class GrainMethodFormatter
             grainMethod = callContext.InterfaceMethod;
         }
 
+        var typeFullName = grainMethod?.DeclaringType?.FullName;
         var methodName = grainMethod?.Name ?? N9EClientConstant.Unknown;
-        return methodName;
+        return $"{typeFullName}.{methodName}";
     }
 }

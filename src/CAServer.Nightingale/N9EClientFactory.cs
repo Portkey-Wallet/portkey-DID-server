@@ -31,13 +31,12 @@ public class N9EClientFactory
         N9EClients = n9EClients;
     }
 
-    public async Task TrackTransaction(string serviceName, string interfaceName, string methodName, long duration,
-        bool isSuccess = true, IDictionary<string, string>? properties = null)
+    public async Task TrackTransaction(string chart, string type, double duration, bool isSuccess = true,
+        IDictionary<string, string>? properties = null)
     {
         properties = properties != null ? new Dictionary<string, string>(properties) : new Dictionary<string, string>();
-        properties.Add(N9EClientConstant.LabelService, serviceName ?? N9EClientConstant.Unknown);
-        properties.Add(N9EClientConstant.LabelInterface, interfaceName ?? N9EClientConstant.Unknown);
-        properties.Add(N9EClientConstant.LabelMethod, methodName ?? N9EClientConstant.Unknown);
+        properties.Add(N9EClientConstant.LabelChart, chart ?? N9EClientConstant.Unknown);
+        properties.Add(N9EClientConstant.LabelType, type ?? N9EClientConstant.Unknown);
 
         await TrackAsync(client =>
         {
@@ -45,11 +44,9 @@ public class N9EClientFactory
         });
     }
 
-    public async Task TrackEvent(string serviceName, string chart, string type, int count,
-        IDictionary<string, string>? properties = null)
+    public async Task TrackEvent(string chart, string type, int count, IDictionary<string, string>? properties = null)
     {
         properties = properties != null ? new Dictionary<string, string>(properties) : new Dictionary<string, string>();
-        properties.Add(N9EClientConstant.LabelService, serviceName ?? N9EClientConstant.Unknown);
         properties.Add(N9EClientConstant.LabelChart, chart ?? N9EClientConstant.Unknown);
         properties.Add(N9EClientConstant.LabelType, type ?? N9EClientConstant.Unknown);
 

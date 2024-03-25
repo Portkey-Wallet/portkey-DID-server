@@ -1,7 +1,7 @@
 using System.Net;
 using Serilog;
 
-namespace CAServer.Nightingale;
+namespace CAServer.Nightingale.Common;
 
 public static class HostHelper
 {

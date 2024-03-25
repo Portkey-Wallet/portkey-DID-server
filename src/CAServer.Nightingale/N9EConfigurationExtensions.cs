@@ -13,7 +13,7 @@ public static class N9EConfigurationExtensions
     /// <param name="hostBuilder"></param>
     public static IHostBuilder UseNightingaleMonitoring(this IHostBuilder hostBuilder)
     {
-        return hostBuilder.ConfigureServices((context, services) => ConfigureServices(context, services));
+        return hostBuilder.ConfigureServices(ConfigureServices);
     }
     
     private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
