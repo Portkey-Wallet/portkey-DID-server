@@ -10,7 +10,7 @@ public interface ITokenPriceService
     /// </summary>
     /// <param name="symbol"></param>
     /// <returns></returns>
-    Task<TokenPriceGrainDto> GetCurrentPriceAsync(string symbol);
+    Task<TokenPriceDataDto> GetCurrentPriceAsync(string symbol);
 
     /// <summary>
     /// Retrieve token historical prices from Redis cache
@@ -18,7 +18,7 @@ public interface ITokenPriceService
     /// <param name="symbol"></param>
     /// <param name="dateTime"></param>
     /// <returns></returns>
-    Task<TokenPriceGrainDto> GetHistoryPriceAsync(string symbol, string dateTime);
+    Task<TokenPriceDataDto> GetHistoryPriceAsync(string symbol, string dateTime);
 
     /// <summary>
     /// Refresh the token price in the Redis cache.
