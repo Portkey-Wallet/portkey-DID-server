@@ -10,14 +10,13 @@ namespace CAServer.Hubs;
 public class CAHub : AbpHub
 {
     private readonly IHubService _hubService;
-    private readonly IRouteTableProvider _routeTableProvider;
     private readonly ILogger<CAHub> _logger;
 
-    public CAHub(ILogger<CAHub> logger, IHubService hubService, IRouteTableProvider routeTableProvider)
+    public CAHub(ILogger<CAHub> logger, IHubService hubService)
     {
         _logger = logger;
         _hubService = hubService;
-        _routeTableProvider = routeTableProvider;
+        //_routeTableProvider = routeTableProvider;
     }
 
 
