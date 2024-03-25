@@ -301,15 +301,17 @@ public class CAServerHttpApiHostModule : AbpModule
             x.AddConsumer<OrderWsBroadcastConsumer>();
             x.UsingRabbitMq((ctx, cfg) =>
             {
-                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port,
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
                     "/", h =>
                     {
                         h.Username(rabbitMqConfig.Connections.Default.UserName);
                         h.Password(rabbitMqConfig.Connections.Default.Password);
                     });
-
-                cfg.ReceiveEndpoint("BroadcastClient_" + clientId,
-                    e => { e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx); });
+                
+                cfg.ReceiveEndpoint("BroadcastClient_" + clientId, e =>
+                {
+                    e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
+                });
             });
         });
     }
@@ -318,7 +320,7 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
-
+    
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -331,11 +333,11 @@ public class CAServerHttpApiHostModule : AbpModule
 
         app.UseAbpRequestLocalization();
         app.UseCorrelationId();
-
+        
         app.UseMiddleware<DeviceInfoMiddleware>();
         app.UseMiddleware<ConditionalIpWhitelistMiddleware>();
         app.UseStaticFiles();
-
+        
         app.UseRouting();
         app.UseCors();
         app.UseAuthentication();
@@ -350,7 +352,7 @@ public class CAServerHttpApiHostModule : AbpModule
         {
             app.UseMiddleware<RealIpMiddleware>();
         }
-
+        
         if (env.IsDevelopment())
         {
             app.UseSwagger();
@@ -364,7 +366,7 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();
+        app.UseAuditing();      
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
