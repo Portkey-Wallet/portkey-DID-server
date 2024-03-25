@@ -43,13 +43,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private const int MaxResultCount = 10;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ActivityTypeOptions _activityTypeOptions;
+    private readonly IpfsOptions _ipfsOptions;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
         IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
-        IOptions<ActivityTypeOptions> activityTypeOptions)
+        IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -62,6 +63,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _chainOptions = chainOptions.Value;
         _activityOptions = activityOptions.Value;
         _activityTypeOptions = activityTypeOptions.Value;
+        _ipfsOptions = ipfsOptions.Value;
     }
 
 
@@ -115,6 +117,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             SetSeedStatusAndTypeForActivityDtoList(indexerTransaction2Dto.Data);
 
             OptimizeSeedAliasDisplay(indexerTransaction2Dto.Data);
+
+            TryUpdateImageUrlForActivityDtoList(indexerTransaction2Dto.Data);
             
             return indexerTransaction2Dto;
 
@@ -240,6 +244,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             OptimizeSeedAliasDisplay(activityDto);
 
+            TryUpdateImageUrlForActivityDto(activityDto);
+
             return activityDto;
         }
         catch (Exception e)
@@ -297,6 +303,25 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         if (activityDto.NftInfo != null && activityDto.NftInfo.IsSeed && activityDto.NftInfo.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
         {
             activityDto.NftInfo.Alias = activityDto.NftInfo.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+        }
+    }
+    
+    private void TryUpdateImageUrlForActivityDtoList(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                TryUpdateImageUrlForActivityDto(activityDto);
+            }
+        }
+    }
+    
+    private void TryUpdateImageUrlForActivityDto(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null)
+        {
+            activityDto.NftInfo.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(activityDto.NftInfo.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
         }
     }
 
