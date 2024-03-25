@@ -14,15 +14,13 @@ public class TabAppService : CAServerAppService, ITabAppService
 {
     private readonly IHubProvider _caHubProvider;
     private readonly IConnectionProvider _connectionProvider;
-    private readonly IRouteTableProvider _routeTableProvider;
     private readonly IHttpClientService _httpClientService;
 
     public TabAppService(IHubProvider caHubProvider, IConnectionProvider connectionProvider,
-        IRouteTableProvider routeTableProvider, IHttpClientService httpClientService)
+        IHttpClientService httpClientService)
     {
         _caHubProvider = caHubProvider;
         _connectionProvider = connectionProvider;
-        _routeTableProvider = routeTableProvider;
         _httpClientService = httpClientService;
     }
 
@@ -31,12 +29,12 @@ public class TabAppService : CAServerAppService, ITabAppService
         var connectionInfo = _connectionProvider.GetConnectionByClientId(input.ClientId);
         if (connectionInfo == null)
         {
-            var routeInfo = await _routeTableProvider.GetRouteTableInfoAsync(input.ClientId);
-            var url = $"http://{routeInfo.ConnectionIp}:{routeInfo.Port}/app/api/tab/complete";
-            
-            await _httpClientService.PostAsync<object>(url, input);
-            Logger.LogInformation("send to service, url:{url}, clientId:{clientId}, methodName:{methodName}",
-                url, input.ClientId, input.MethodName);
+            // var routeInfo = await _routeTableProvider.GetRouteTableInfoAsync(input.ClientId);
+            // var url = $"http://{routeInfo.ConnectionIp}:{routeInfo.Port}/app/api/tab/complete";
+            //
+            // await _httpClientService.PostAsync<object>(url, input);
+            // Logger.LogInformation("send to service, url:{url}, clientId:{clientId}, methodName:{methodName}",
+            //     url, input.ClientId, input.MethodName);
             return;
         }
 
