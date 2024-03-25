@@ -141,7 +141,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             {
                 throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
             }
-
             throw new UserFriendlyException(guardianGrainDto.Message, GuardianMessageCode.NotExist);
         }
 
@@ -168,19 +167,18 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             }
             catch (Exception e)
             {
-                if (e.Message.Contains("Not found ca_hash"))
+                if (!e.Message.Contains("Not found ca_hash"))
                 {
                     _logger.LogError(e, "GetRegisterHolderInfoAsync: guardian hash call contract GetHolderInfo fail.");
                     throw new UserFriendlyException(e.Message);
                 }
             }
         }
-
+        
         if (_stopRegisterOptions.Open)
         {
             throw new UserFriendlyException(_stopRegisterOptions.Message, GuardianMessageCode.StopRegister);
         }
-
         throw new UserFriendlyException("This address is not registered.", GuardianMessageCode.NotExist);
     }
 
