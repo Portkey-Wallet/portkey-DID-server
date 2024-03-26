@@ -259,7 +259,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     
     private string CalculateTotalBalanceInUsd(List<Token> tokens)
     {
-        decimal totalBalanceInUsd = tokens
+        var totalBalanceInUsd = tokens
             .Where(token => !string.IsNullOrEmpty(token.BalanceInUsd))
             .Sum(token => decimal.Parse(token.BalanceInUsd, System.Globalization.CultureInfo.InvariantCulture));
 
