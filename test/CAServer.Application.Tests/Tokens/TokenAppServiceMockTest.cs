@@ -1,78 +1,36 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CAServer.CoinGeckoApi;
 using CAServer.Common;
 using CAServer.Entities.Es;
-using CAServer.Grains.Grain;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
+using CAServer.Signature.Options;
+using CAServer.Signature.Provider;
 using CAServer.Tokens.Cache;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
+using CAServer.Tokens.TokenPrice;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Moq;
-using Orleans;
+using Volo.Abp.Caching;
 
 namespace CAServer.Tokens;
 
 public partial class TokenAppServiceTest
 {
-    private ITokenPriceGrain GetMockTokenPriceGrain()
-    {
-        var mockITokenPriceGrainClient = new Mock<ITokenPriceGrain>();
-        mockITokenPriceGrainClient.Setup(o => o.GetCurrentPriceAsync(It.IsAny<string>()))
-            .ReturnsAsync(
-                new GrainResultDto<TokenPriceGrainDto>()
-                {
-                    Success = true,
-                    Data = new TokenPriceGrainDto()
-                    {
-                        Symbol = Symbol,
-                        PriceInUsd = 1000,
-                    }
-                }
-            );
-
-        return mockITokenPriceGrainClient.Object;
-    }
-
-    private ITokenPriceSnapshotGrain GetMockTokenPriceSnapshotGrain()
-    {
-        var mockITokenPriceGrainClient = new Mock<ITokenPriceSnapshotGrain>();
-        mockITokenPriceGrainClient.Setup(o => o.GetHistoryPriceAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(
-                new GrainResultDto<TokenPriceGrainDto>()
-                {
-                    Success = true,
-                    Data = new TokenPriceGrainDto()
-                    {
-                        Symbol = Symbol,
-                        PriceInUsd = 1000,
-                    }
-                }
-            );
-        return mockITokenPriceGrainClient.Object;
-    }
-
-    private ITokenPriceProvider GetMockTokenPriceProvider()
+    public static ITokenPriceProvider GetMockTokenPriceProvider()
     {
         var mockTokenPriceProvider = new Mock<ITokenPriceProvider>();
         mockTokenPriceProvider.Setup(o => o.GetPriceAsync(It.IsAny<string>()))
             .ReturnsAsync((string dto) => dto == Symbol ? 1000 : 100);
 
         return mockTokenPriceProvider.Object;
-    }
-
-    private IOptions<TokenPriceExpirationTimeOptions> GetMockTokenPriceExpirationTimeOptions()
-    {
-        return new OptionsWrapper<TokenPriceExpirationTimeOptions>(new TokenPriceExpirationTimeOptions()
-        {
-            Time = 100
-        });
     }
 
     private static IOptions<ContractAddressOptions> GetMockContractAddressOptions()
@@ -91,7 +49,71 @@ public partial class TokenAppServiceTest
         return new OptionsWrapper<ContractAddressOptions>(contractAddressOptions);
     }
 
-    private IHttpClientFactory GetMockHttpClientFactory()
+    public static IOptionsMonitor<CoinGeckoOptions> GetMockCoinGeckoOptions()
+    {
+        var mock = new Mock<IOptionsMonitor<CoinGeckoOptions>>();
+        mock.Setup(o => o.CurrentValue).Returns(() => new CoinGeckoOptions
+        {
+            BaseUrl = "",
+            CoinIdMapping = new Dictionary<string, string> { { "ALEF", "aelf" } },
+            Priority = 0,
+            IsAvailable = true
+        });
+        return mock.Object;
+    }
+
+    public static IOptionsMonitor<SignatureServerOptions> GetMockSignatureServerOptions()
+    {
+        var mockOptionsSnapshot = new Mock<IOptionsMonitor<SignatureServerOptions>>();
+        mockOptionsSnapshot.Setup(o => o.CurrentValue).Returns(
+            new SignatureServerOptions
+            {
+                BaseUrl = "http://127.0.0.1:5577",
+                AppId = "caserver",
+                AppSecret = "12345678"
+            });
+        return mockOptionsSnapshot.Object;
+    }
+
+    public static IRequestLimitProvider GetMockRequestLimitProvider()
+    {
+        var mock = new Mock<IRequestLimitProvider>();
+        mock.Setup(o => o.RecordRequestAsync()).Returns(() => { return Task.CompletedTask; });
+        return mock.Object;
+    }
+
+    public static ISecretProvider GetMockSecretProvider()
+    {
+        var mock = new Mock<ISecretProvider>();
+        mock.Setup(o => o.GetSecretWithCacheAsync(It.IsAny<string>())).ReturnsAsync("aaaa");
+        return mock.Object;
+    }
+
+    public static IDistributedCache<string> GetMockDistributedCache()
+    {
+        var mock = new Mock<IDistributedCache<string>>();
+        mock.Setup(o => o.GetAsync(It.IsAny<string>(), null, false, default(CancellationToken))).ReturnsAsync(
+            (string key, bool? hideErrors, bool considerUow, CancellationToken token) =>
+            {
+                if (key.Contains(Symbol))
+                {
+                    return AelfPrice.ToString(CultureInfo.InvariantCulture);
+                }
+                else if (key.EndsWith(UsdtSymbol))
+                {
+                    return UsdtPrice.ToString(CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    return "aa";
+                }
+            });
+        mock.Setup(o => o.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DistributedCacheEntryOptions>(),
+            It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        return mock.Object;
+    }
+
+    public static IHttpClientFactory GetMockHttpClientFactory()
     {
         var clientHandlerStub = new DelegatingHandlerStub();
         var client = new HttpClient(clientHandlerStub);
@@ -103,28 +125,12 @@ public partial class TokenAppServiceTest
         return factory;
     }
 
-    private IClusterClient GetMockClusterClient()
-    {
-        var mockClusterClient = new Mock<IClusterClient>();
-        mockClusterClient.Setup(o => o.GetGrain<IGrainWithStringKey>(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns((string primaryKey, string namePrefix) => { return GetMockTokenPriceGrain(); });
-        return mockClusterClient.Object;
-    }
-
-    private IClusterClient GetMockTokenPriceSnapshotClusterClient()
-    {
-        var mockClusterClient = new Mock<IClusterClient>();
-        mockClusterClient.Setup(o => o.GetGrain<IGrainWithStringKey>(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns((string primaryKey, string namePrefix) => { return GetMockTokenPriceSnapshotGrain(); });
-        return mockClusterClient.Object;
-    }
-
     private ITokenCacheProvider GetMockITokenCacheProvider()
     {
         var mockTokenCacheProvider = new Mock<ITokenCacheProvider>();
         mockTokenCacheProvider.Setup(o =>
-            o.GetTokenInfoAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync((string chainId, string symbol) =>
+            o.GetTokenInfoAsync(It.IsAny<string>(), It.IsAny<string>(), TokenType.Token))
+            .ReturnsAsync((string chainId, string symbol, TokenType tokenType) =>
             {
                 if (symbol == "AXX")
                 {

@@ -79,6 +79,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
         Configure<FacebookOptions>(configuration.GetSection("Facebook"));
         Configure<AccelerateManagerOptions>(configuration.GetSection("AccelerateManager"));
+        Configure<IpfsOptions>(configuration.GetSection("Ipfs"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
@@ -157,6 +158,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
         Configure<GetBalanceFromChainOption>(configuration.GetSection("GetBalanceFromChain"));
+        Configure<NftItemDisplayOption>(configuration.GetSection("NftItemDisplay"));
         Configure<GrowthOptions>(configuration.GetSection("Growth"));
         Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         AddMessagePushService(context, configuration);

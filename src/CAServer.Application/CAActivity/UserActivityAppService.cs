@@ -13,6 +13,7 @@ using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using CAServer.UserAssets;
+using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
@@ -42,13 +43,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private const int MaxResultCount = 10;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ActivityTypeOptions _activityTypeOptions;
+    private readonly IpfsOptions _ipfsOptions;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
         IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
-        IOptions<ActivityTypeOptions> activityTypeOptions)
+        IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -61,6 +63,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _chainOptions = chainOptions.Value;
         _activityOptions = activityOptions.Value;
         _activityTypeOptions = activityTypeOptions.Value;
+        _ipfsOptions = ipfsOptions.Value;
     }
 
 
@@ -108,8 +111,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             };
 
             await GetActivitiesAsync(request, transactions);
-            return await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
+            var indexerTransaction2Dto = await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId, request.Width,
                 request.Height, needMap: true);
+
+            SetSeedStatusAndTypeForActivityDtoList(indexerTransaction2Dto.Data);
+
+            OptimizeSeedAliasDisplay(indexerTransaction2Dto.Data);
+
+            TryUpdateImageUrlForActivityDtoList(indexerTransaction2Dto.Data);
+            
+            return indexerTransaction2Dto;
+
         }
         catch (Exception e)
         {
@@ -227,6 +239,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 await GetActivityName(caAddresses, activityDto,
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
+            
+            SetSeedStatusAndTypeForActivityDto(activityDto);
+
+            OptimizeSeedAliasDisplay(activityDto);
+
+            TryUpdateImageUrlForActivityDto(activityDto);
 
             return activityDto;
         }
@@ -234,6 +252,76 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             _logger.LogError(e, "GetActivityAsync Error {request}", request);
             return new GetActivityDto();
+        }
+    }
+
+    private void SetSeedStatusAndTypeForActivityDtoList(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                SetSeedStatusAndTypeForActivityDto(activityDto);
+            }
+        }
+    }
+
+    private void SetSeedStatusAndTypeForActivityDto(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null)
+        {
+            // Set IsSeed to true if Symbol starts with "SEED-", otherwise set it to false
+            activityDto.NftInfo.IsSeed = activityDto.Symbol.StartsWith(TokensConstants.SeedNamePrefix);
+
+            if (activityDto.NftInfo.IsSeed)
+            {
+                activityDto.NftInfo.SeedType = (int)SeedType.FT;
+                // Alias is actually TokenName
+                if (!string.IsNullOrEmpty(activityDto.NftInfo.Alias) && activityDto.NftInfo.Alias.StartsWith(TokensConstants.SeedNamePrefix))
+                {
+                    activityDto.NftInfo.SeedType = activityDto.NftInfo.Alias.Remove(0, 5).Contains("-")
+                        ? (int)SeedType.NFT
+                        : (int)SeedType.FT;
+                }
+            }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplay(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                OptimizeSeedAliasDisplay(activityDto);
+            }
+        }
+    }
+    
+    private void OptimizeSeedAliasDisplay(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null && activityDto.NftInfo.IsSeed && activityDto.NftInfo.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
+        {
+            activityDto.NftInfo.Alias = activityDto.NftInfo.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+        }
+    }
+    
+    private void TryUpdateImageUrlForActivityDtoList(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                TryUpdateImageUrlForActivityDto(activityDto);
+            }
+        }
+    }
+    
+    private void TryUpdateImageUrlForActivityDto(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null)
+        {
+            activityDto.NftInfo.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(activityDto.NftInfo.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
         }
     }
 

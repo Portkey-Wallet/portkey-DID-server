@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Hub;
@@ -44,6 +45,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
+using ConfigurationHelper = CAServer.Commons.ConfigurationHelper;
 
 namespace CAServer;
 
@@ -59,6 +61,7 @@ namespace CAServer;
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
     typeof(AbpSwashbuckleModule),
+    typeof(CAServerCoinGeckoApiModule),
     typeof(AbpAspNetCoreSignalRModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
@@ -202,13 +205,12 @@ public class CAServerHttpApiHostModule : AbpModule
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
                 })
-                .Configure<ClientMessagingOptions>(opt =>
+                .Configure<ClientMessagingOptions>(options =>
                 {
-                    var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
-                    if (responseTimeout > 0)
-                    {
-                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
-                    }
+                    //the default timeout before a request is assumed to have failed.
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
                 })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
