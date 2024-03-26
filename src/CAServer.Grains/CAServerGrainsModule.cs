@@ -1,5 +1,4 @@
 using CAServer.Grains.Grain.Account;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
 using CAServer.Signature;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +20,5 @@ public class CAServerGrainsModule : AbpModule
         var connStr = configuration["GraphQL:Configuration"];
 
         context.Services.Configure<CAAccountOption>(configuration.GetSection("CAAccountSetting"));
-        context.Services.Configure<TokenPriceExpirationTimeOptions>(
-            configuration.GetSection("TokenPriceExpirationTime"));
     }
 }
