@@ -14,22 +14,21 @@ public class TabHandler : IDistributedEventHandler<TabCompleteEto>, ITransientDe
     private readonly IHubProvider _caHubProvider;
     private readonly ILogger<TabHandler> _logger;
     private readonly IDistributedCache<RouteTableInfo> _distributedCache;
-    private readonly IRouteTableProvider _routeTableProvider;
     private readonly HubCacheOptions _hubCacheOptions;
 
     public TabHandler(IHubProvider caHubProvider, ILogger<TabHandler> logger,
-        IDistributedCache<RouteTableInfo> distributedCache, HubCacheOptions hubCacheOptions, IRouteTableProvider routeTableProvider)
+        IDistributedCache<RouteTableInfo> distributedCache, HubCacheOptions hubCacheOptions)
     {
         _caHubProvider = caHubProvider;
         _logger = logger;
         _distributedCache = distributedCache;
         _hubCacheOptions = hubCacheOptions;
-        _routeTableProvider = routeTableProvider;
+        // _routeTableProvider = routeTableProvider;
     }
 
     public async Task HandleEventAsync(TabCompleteEto eventData)
     {
-        await _routeTableProvider.GetRouteTableInfoAsync("");
+      //  await _routeTableProvider.GetRouteTableInfoAsync("");
         await _caHubProvider.ResponseAsync(
             new Hubs.HubResponse<string> { Body = eventData.Data, RequestId = eventData.ClientId },
             eventData.ClientId, eventData.MethodName);

@@ -10,14 +10,13 @@ namespace CAServer.Hubs;
 public class CAHub : AbpHub
 {
     private readonly IHubService _hubService;
-    private readonly IRouteTableProvider _routeTableProvider;
     private readonly ILogger<CAHub> _logger;
 
-    public CAHub(ILogger<CAHub> logger, IHubService hubService, IRouteTableProvider routeTableProvider)
+    public CAHub(ILogger<CAHub> logger, IHubService hubService)
     {
         _logger = logger;
         _hubService = hubService;
-        _routeTableProvider = routeTableProvider;
+        //_routeTableProvider = routeTableProvider;
     }
 
 
@@ -29,7 +28,7 @@ public class CAHub : AbpHub
         }
 
         await _hubService.RegisterClient(clientId, Context.ConnectionId);
-        await _routeTableProvider.SetRouteTableInfoAsync(clientId, Context.ConnectionId);
+       // await _routeTableProvider.SetRouteTableInfoAsync(clientId, Context.ConnectionId);
         _logger.LogInformation("clientId={clientId} connect", clientId);
         await _hubService.SendAllUnreadRes(clientId);
     }
@@ -67,7 +66,7 @@ public class CAHub : AbpHub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var clientId = _hubService.UnRegisterClient(Context.ConnectionId);
-        await _routeTableProvider.RemoveRouteTableInfoAsync(clientId);
+        //await _routeTableProvider.RemoveRouteTableInfoAsync(clientId);
         _logger.LogInformation("clientId={clientId} disconnected!!!", clientId);
         await base.OnDisconnectedAsync(exception);
     }
