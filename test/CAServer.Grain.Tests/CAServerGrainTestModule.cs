@@ -28,7 +28,7 @@ public class CAServerGrainTestModule : AbpModule
     {
         context.Services.AddSingleton<IClusterClient>(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddHttpClient();
-        context.Services.Configure<CoinGeckoOptions>(o => { o.CoinIdMapping["ELF"] = "aelf"; });
+        //context.Services.Configure<CoinGeckoOptions>(o => { o.CoinIdMapping["ELF"] = "aelf"; });
         context.Services.Configure<CAAccountOption>(o =>
         {
             o.CAAccountRequestInfoMaxLength = 100;
