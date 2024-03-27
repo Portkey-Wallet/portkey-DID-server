@@ -37,6 +37,7 @@ public class N9EClientFactory
         properties = properties != null ? new Dictionary<string, string>(properties) : new Dictionary<string, string>();
         properties.Add(N9EClientConstant.LabelChart, chart ?? N9EClientConstant.Unknown);
         properties.Add(N9EClientConstant.LabelType, type ?? N9EClientConstant.Unknown);
+        properties.Add(N9EClientConstant.LabelSuccess, isSuccess.ToString());
 
         await TrackAsync(client =>
         {

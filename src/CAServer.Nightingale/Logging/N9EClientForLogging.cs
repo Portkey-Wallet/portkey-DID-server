@@ -171,7 +171,7 @@ public class N9EClientForLogging : IN9EClient
 
     private string FormatMetric(string? name, TimeSpan value, IDictionary<string, string>? properties)
     {
-        return $"{FormatMetricName(name)}{FormatMetricLabel(properties)} {value}";
+        return $"{FormatMetricName(name)}{FormatMetricLabel(properties)} {value.Milliseconds}";
     }
 
     private string FormatMetricName(string? name)
