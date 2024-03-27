@@ -1018,8 +1018,11 @@ public class ContractAppService : IContractAppService
                         record.RetryTimes++;
                         record.ValidateHeight = long.MaxValue;
                         record.ValidateTransactionInfoDto = new TransactionInfo();
+                        if (!result.Error.Contains("Already synced"))
+                        {
+                            failedRecords.Add(record);
 
-                        failedRecords.Add(record);
+                        }
                     }
                     else
                     {
