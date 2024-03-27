@@ -9,6 +9,7 @@ using CAServer.Commons;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
+using CAServer.Options;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
 using CAServer.Tokens;
@@ -42,6 +43,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly ILogger<RedPackageAppService> _logger;
     private readonly ITokenAppService _tokenAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
+    private readonly IpfsOptions _ipfsOptions;
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -50,7 +52,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IOptionsSnapshot<RedPackageOptions> redPackageOptions,
         IContactProvider contactProvider,
         IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger,
-        ITokenAppService tokenAppService, IUserAssetsProvider userAssetsProvider)
+        ITokenAppService tokenAppService, IUserAssetsProvider userAssetsProvider,
+        IOptionsSnapshot<IpfsOptions> ipfsOptions)
     {
         _redPackageOptions = redPackageOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -63,6 +66,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _logger = logger;
         _tokenAppService = tokenAppService;
         _userAssetsProvider = userAssetsProvider;
+        _ipfsOptions = ipfsOptions.Value;
     }
 
     public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol,string chainId)
@@ -333,6 +337,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
         
         SetSeedStatusAndTypeForDetail(detail);
+
+        TryUpdateImageUrlForDetail(detail);
         
         return detail; 
     }
@@ -351,6 +357,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 detail.SeedType = detail.Alias.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
             }
         }
+    }
+
+    private void TryUpdateImageUrlForDetail(RedPackageDetailDto detail)
+    {
+        detail.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(detail.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
     }
     
     private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)
