@@ -691,6 +691,12 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return new List<ContactResultDto>();
     }
 
+    public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
+    {
+        var contacts= await _contactProvider.GetContactsAsync(userId);
+        return ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contacts);
+    }
+
     private async Task CheckContactAsync(ContactDto contact)
     {
         if (contact.ImInfo != null && contact.CaHolderInfo == null)

@@ -4,6 +4,7 @@ using CAServer.CAActivity;
 using CAServer.Grains.Grain.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
+using CAServer.Tokens;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
@@ -26,6 +27,13 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
     {
         base.AfterAddApplication(services);
         services.AddSingleton(UserActivityAppServiceTests.GetMockActivityProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockHttpClientFactory());
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
     }
 
     [Fact]

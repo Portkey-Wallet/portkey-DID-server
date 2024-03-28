@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grain.Tests;
-using CAServer.Grains;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
-using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Security;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,10 +36,12 @@ public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockContractAddressOptions());
         services.AddSingleton(GetMockTokenPriceProvider());
-        services.AddSingleton(GetMockTokenPriceExpirationTimeOptions());
-        services.AddSingleton(GetMockTokenPriceSnapshotClusterClient());
-        services.AddSingleton(GetMockTokenPriceSnapshotGrain());
         services.AddSingleton(GetMockIGraphQLHelper());
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
     }
     
     [Fact]
@@ -62,7 +61,16 @@ public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
         };
         result = await _tokenAppService.GetTokenHistoryPriceDataAsync(new List<GetTokenHistoryPriceInput>() { input });
         result.Items.Count.ShouldBe(1);
-        result.Items.First().Symbol.ShouldBe(Symbol);
+        result.Items.First().Symbol.ShouldBe(Symbol.ToLower());
+        
+        input = new GetTokenHistoryPriceInput()
+        {
+            DateTime = DateTime.Now.AddDays(-1),
+            Symbol = TokenAppServiceTest.UsdtSymbol
+        };
+        result = await _tokenAppService.GetTokenHistoryPriceDataAsync(new List<GetTokenHistoryPriceInput>() { input });
+        result.Items.Count.ShouldBe(1);
+        result.Items.First().Symbol.ShouldBe(TokenAppServiceTest.UsdtSymbol.ToLower());
     }
     
 }

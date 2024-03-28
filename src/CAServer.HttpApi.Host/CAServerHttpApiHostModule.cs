@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Hub;
@@ -44,6 +45,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
+using ConfigurationHelper = CAServer.Commons.ConfigurationHelper;
 
 namespace CAServer;
 
@@ -59,6 +61,7 @@ namespace CAServer;
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
     typeof(AbpSwashbuckleModule),
+    typeof(CAServerCoinGeckoApiModule),
     typeof(AbpAspNetCoreSignalRModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
@@ -78,6 +81,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
         Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
         Configure<AuthServerOptions>(configuration.GetSection("AuthServer"));
+        Configure<HubConfigOptions>(configuration.GetSection("HubConfig"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -93,6 +97,8 @@ public class CAServerHttpApiHostModule : AbpModule
         context.Services.AddHttpContextAccessor();
         ConfigureTokenCleanupService();
         ConfigureMassTransit(context, configuration);
+        context.Services.AddSignalR().AddStackExchangeRedis(configuration["Redis:Configuration"],
+            options => { options.Configuration.ChannelPrefix = "CAServer"; });
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -201,6 +207,13 @@ public class CAServerHttpApiHostModule : AbpModule
                 {
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
+                })
+                .Configure<ClientMessagingOptions>(options =>
+                {
+                    //the default timeout before a request is assumed to have failed.
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
                 })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())

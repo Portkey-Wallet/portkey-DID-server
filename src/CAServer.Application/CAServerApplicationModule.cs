@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
-using CAServer.amazon;
 using CAServer.Amazon;
 using CAServer.AppleAuth;
 using CAServer.Cache;
@@ -71,7 +70,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
-        // Configure<RampOptions>(configuration.GetSection("RampOptions"));
 
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
@@ -154,8 +152,6 @@ public class CAServerApplicationModule : AbpModule
         
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
-        Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
-        Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
         Configure<GetBalanceFromChainOption>(configuration.GetSection("GetBalanceFromChain"));
         Configure<NftItemDisplayOption>(configuration.GetSection("NftItemDisplay"));

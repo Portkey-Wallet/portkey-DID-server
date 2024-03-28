@@ -53,6 +53,12 @@ public static class OrleansHostExtensions
                     options.ClusterId = orleansConfigSection.GetValue<string>("ClusterId");
                     options.ServiceId = orleansConfigSection.GetValue<string>("ServiceId");
                 })
+                .Configure<SiloMessagingOptions>(options =>
+                {
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
+                })
                 // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
                 .UseDashboard(options =>
@@ -64,6 +70,21 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs =
                         orleansConfigSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
+                })
+                .Configure<GrainCollectionOptions>(opt =>
+                {
+                    var collectionAge = orleansConfigSection.GetValue<int>("CollectionAge");
+                    if (collectionAge > 0)
+                    {
+                        opt.CollectionAge = TimeSpan.FromSeconds(collectionAge);
+                    }
+                })
+                .Configure<PerformanceTuningOptions>(opt =>
+                {
+                    var minDotNetThreadPoolSize = orleansConfigSection.GetValue<int>("MinDotNetThreadPoolSize");
+                    var minIOThreadPoolSize = orleansConfigSection.GetValue<int>("MinIOThreadPoolSize");
+                    opt.MinDotNetThreadPoolSize = minDotNetThreadPoolSize > 0 ? minDotNetThreadPoolSize : 200;
+                    opt.MinIOThreadPoolSize = minIOThreadPoolSize > 0 ? minIOThreadPoolSize : 200;
                 })
                 .UseLinuxEnvironmentStatistics()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });

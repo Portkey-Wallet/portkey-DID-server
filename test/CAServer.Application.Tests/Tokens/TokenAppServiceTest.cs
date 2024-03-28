@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Orleans.TestingHost;
 using Shouldly;
+using Volo.Abp;
 using Volo.Abp.Users;
 using Xunit;
 
@@ -22,8 +22,13 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
 {
     private readonly ITokenAppService _tokenAppService;
     public const string Symbol = "AELF";
+    public const string UsdtSymbol = "USDT";
+    public const string CpuSymbol = "CPU";
+    public const decimal AelfPrice = 0.638m;
+    public const decimal UsdtPrice = 0.999m;
     protected readonly TestCluster Cluster;
     protected ICurrentUser _currentUser;
+    private readonly ServiceCollection _services = new ServiceCollection(); 
 
     public TokenAppServiceTest()
     {
@@ -40,15 +45,17 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(_currentUser);
         services.AddSingleton(GetMockContractAddressOptions());
         services.AddSingleton(GetMockTokenPriceProvider());
-        services.AddSingleton(GetMockTokenPriceExpirationTimeOptions());
-        services.AddSingleton(GetMockClusterClient());
-        services.AddSingleton(GetMockTokenPriceGrain());
         var graphQlHelper = Substitute.For<IGraphQLHelper>();
         var graphQlClient = Substitute.For<IGraphQLClient>();
         services.AddSingleton(graphQlClient);
         services.AddSingleton(graphQlHelper);
         services.AddSingleton(GetMockITokenProvider());
         services.AddSingleton(GetMockITokenCacheProvider());
+        services.AddSingleton(GetMockCoinGeckoOptions());
+        services.AddSingleton(GetMockSignatureServerOptions());
+        services.AddSingleton(GetMockRequestLimitProvider());
+        services.AddSingleton(GetMockSecretProvider());
+        services.AddSingleton(GetMockDistributedCache());
     }
 
     [Fact]
@@ -61,7 +68,14 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         symbols.Add(Symbol);
         var result = await _tokenAppService.GetTokenPriceListAsync(symbols);
         result.Items.Count.ShouldBe(1);
+        result.Items.First().PriceInUsd = AelfPrice;
         result.Items.First().Symbol.ShouldBe(Symbol);
+        
+        symbols.Add(CpuSymbol);
+        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        {
+            await _tokenAppService.GetTokenPriceListAsync(symbols);
+        });
     }
 
     [Fact]

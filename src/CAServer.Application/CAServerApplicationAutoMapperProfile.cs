@@ -50,6 +50,8 @@ using CAServer.ThirdPart;
 using CAServer.RedDot.Dtos;
 using CAServer.RedDot.Etos;
 using CAServer.Search.Dtos;
+using CAServer.Tab.Dtos;
+using CAServer.Tab.Etos;
 using CAServer.Telegram.Dtos;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.Order;
@@ -627,5 +629,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<FacebookUserInfoDto, Verifier.Dtos.UserExtraInfo>().ReverseMap();
 
         CreateMap<TwitterUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
+        CreateMap<TabCompleteDto, TabCompleteEto>();
     }
 }

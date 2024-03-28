@@ -10,6 +10,7 @@ using CAServer.Options;
 using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using CAServer.ThirdPart.Transak;
+using CAServer.Tokens;
 using CAServer.Tokens.Provider;
 using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +45,9 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
                 }
             });
         MockHttpByPath(TransakApi.UpdateWebhook.Method, TransakApi.UpdateWebhook.Path, "success");
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
     }
 
 

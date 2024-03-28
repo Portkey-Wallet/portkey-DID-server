@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
-using Microsoft.AspNetCore.Http;
+using CAServer.Tokens;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -40,6 +40,11 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         services.AddSingleton(MockCryptoBoxGrain());
         services.AddSingleton(MockRedPackageIndex());
         services.AddSingleton(MockGraphQlOptions());
+        
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
     }
     
     protected new IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
