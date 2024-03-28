@@ -19,4 +19,5 @@ public interface IContactAppService
     Task<ContactResultDto> GetContactAsync(Guid contactUserId);
     Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input);
     Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input);
+    Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId);
 }
