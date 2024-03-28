@@ -77,6 +77,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
         Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
         Configure<AuthServerOptions>(configuration.GetSection("AuthServer"));
+        Configure<HubConfigOptions>(configuration.GetSection("HubConfig"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -92,6 +93,8 @@ public class CAServerHttpApiHostModule : AbpModule
         context.Services.AddHttpContextAccessor();
         ConfigureTokenCleanupService();
         ConfigureMassTransit(context, configuration);
+        context.Services.AddSignalR().AddStackExchangeRedis(configuration["Redis:Configuration"],
+            options => { options.Configuration.ChannelPrefix = "CAServer"; });
     }
 
     private void ConfigureCache(IConfiguration configuration)
