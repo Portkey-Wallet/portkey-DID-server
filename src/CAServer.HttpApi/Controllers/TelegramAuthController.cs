@@ -52,6 +52,16 @@ public class TelegramAuthController : CAServerController
     [HttpGet("token")]
     public async Task<TelegramAuthTokenResponseDto> TokenAsync()
     {
+        // request = new TelegramAuthReceiveRequest
+        // {
+        //     Id = "5990848037",
+        //     UserName = null,
+        //     Auth_Date = "1712528610",
+        //     First_Name = "Aurora",
+        //     Last_Name = null,
+        //     Hash = "a968a40b2f412a317ed13b0814e682ce03498e781e9719e1b674be88ebc1cb0f",
+        //     Photo_Url = null
+        // };
         var query = Request.Query;
         var requestParameters = query.ToDictionary(keyValuePair => keyValuePair.Key,
             keyValuePair => keyValuePair.Value.ToString());
