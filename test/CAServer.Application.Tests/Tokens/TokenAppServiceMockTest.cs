@@ -57,7 +57,8 @@ public partial class TokenAppServiceTest
             BaseUrl = "",
             CoinIdMapping = new Dictionary<string, string> { { "ALEF", "aelf" } },
             Priority = 0,
-            IsAvailable = true
+            IsAvailable = true,
+            Timeout = -1
         });
         return mock.Object;
     }
