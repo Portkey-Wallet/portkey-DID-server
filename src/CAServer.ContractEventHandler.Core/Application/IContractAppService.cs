@@ -882,14 +882,12 @@ public class ContractAppService : IContractAppService
     private async Task QueryEventsAndSyncAsync(string chainId)
     {
         await QueryEventsAsync(chainId);
-
         var tasks = new List<Task>(2)
         {
             ValidateQueryEventsAsync(chainId),
             SyncQueryEventsAsync(chainId)
         };
         await tasks.WhenAll();
-
     }
 
     private async Task SyncQueryEventsAsync(string chainId)
@@ -898,10 +896,7 @@ public class ContractAppService : IContractAppService
 
         try
         {
-            var failedRecords = new List<SyncRecord>();
-
             var records = await _recordsBucketContainer.GetValidatedRecordsAsync(chainId);
-
             if (records.IsNullOrEmpty())
             {
                 _logger.LogInformation("Found no record to sync on chain: {id}", chainId);
@@ -912,6 +907,8 @@ public class ContractAppService : IContractAppService
 
             _logger.LogInformation("Found {count} records to sync on chain: {id}", records.Count, chainId);
 
+            var tasks = new List<Task>();
+            List<SyncRecord> targetRecords;
             if (chainId == ContractAppServiceConstant.MainChainId)
             {
                 foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
@@ -921,128 +918,42 @@ public class ContractAppService : IContractAppService
                     
                     var record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
 
-                    while (record != null)
-                    {
-                        if (!await CheckSyncHolderVersionAsync(info.ChainId, record.CaHash, record.ValidateHeight))
-                        {
-                            records.Remove(record);
-                            record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
-                            continue;
-                        }
-
-                        _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
-
-                        var syncHolderInfoInput =
-                            await _contractProvider.GetSyncHolderInfoInputAsync(chainId,
-                                record.ValidateTransactionInfoDto);
-                        var result = await _contractProvider.SyncTransactionAsync(info.ChainId, syncHolderInfoInput);
-
-                        records.Remove(record);
-
-                        if (result.Status != TransactionState.Mined)
-                        {
-                            _logger.LogError(
-                                "{type} SyncToSide failed on chain: {id} of account: {hash}, error: {error}, data:{data}",
-                                record.ChangeType, chainId, record.CaHash, result.Error,
-                                JsonConvert.SerializeObject(syncHolderInfoInput));
-
-                            record.RetryTimes++;
-                            record.ValidateHeight = long.MaxValue;
-                            record.ValidateTransactionInfoDto = new TransactionInfo();
-
-                            failedRecords.Add(record);
-                        }
-                        else
-                        {
-                            await _monitorLogProvider.FinishAsync(record, info.ChainId, result.BlockNumber);
-                            await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight, info.ChainId,
-                                result.BlockNumber,
-                                record.ChangeType);
-                            _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
-                                record.ChangeType, chainId, record.CaHash);
-                            await UpdateSyncHolderVersionAsync(info.ChainId, record.CaHash, record.ValidateHeight);
-                        }
-
-                        record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
-                    }
+                    targetRecords = records.Where(r => r.ValidateHeight < indexHeight).ToList();
+                    // tasks.AddRange(targetRecords.Select(record => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+                    //     .ProcessSyncRecord(chainId, info.ChainId, record, _indexOptions)));
+                    
+                    tasks.AddRange(targetRecords
+                        .Select((record, index) => new {record, index})
+                        .GroupBy(x => x.index / 100)
+                        .Select(group => group.Select(x => x.record))
+                        .Select(group => new MainChainHolderInfoSyncWorker(_contractProvider, _logger, _monitorLogProvider, _distributedCache)
+                            .ProcessSyncRecordList(chainId, info.ChainId, group.ToList(), _indexOptions))
+                        .ToList());
                 }
             }
             else
             {
                 var indexHeight = await _contractProvider.GetIndexHeightFromMainChainAsync(
                     ContractAppServiceConstant.MainChainId, await _contractProvider.GetChainIdAsync(chainId));
-
                 await _monitorLogProvider.AddHeightIndexMonitorLogAsync(chainId, indexHeight);
-                var record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
 
-                while (record != null)
-                {
-                    if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash,
-                            record.ValidateHeight))
-                    {
-                        records.Remove(record);
-                        record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
-                        continue;
-                    }
-
-                    _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
-
-                    var retryTimes = 0;
-                    var mainHeight =
-                        await _contractProvider.GetBlockHeightAsync(ContractAppServiceConstant.MainChainId);
-                    var indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
-
-                    while (indexMainChainBlock <= mainHeight && retryTimes < _indexOptions.IndexTimes)
-                    {
-                        await Task.Delay(_indexOptions.IndexDelay);
-                        indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
-                        retryTimes++;
-                    }
-
-                    var syncHolderInfoInput =
-                        await _contractProvider.GetSyncHolderInfoInputAsync(chainId, record.ValidateTransactionInfoDto);
-                    var result =
-                        await _contractProvider.SyncTransactionAsync(ContractAppServiceConstant.MainChainId,
-                            syncHolderInfoInput);
-
-                    records.Remove(record);
-
-                    if (result.Status != TransactionState.Mined)
-                    {
-                        _logger.LogError(
-                            "{type} SyncToMain failed on chain: {id} of account: {hash}, error: {error}, data{data}",
-                            record.ChangeType, chainId, record.CaHash, result.Error,
-                            JsonConvert.SerializeObject(syncHolderInfoInput));
-
-                        record.RetryTimes++;
-                        record.ValidateHeight = long.MaxValue;
-                        record.ValidateTransactionInfoDto = new TransactionInfo();
-                        if (!result.Error.Contains("Already synced"))
-                        {
-                            failedRecords.Add(record);
-
-                        }
-                    }
-                    else
-                    {
-                        await _monitorLogProvider.FinishAsync(record, ContractAppServiceConstant.MainChainId,
-                            result.BlockNumber);
-                        await _monitorLogProvider.AddMonitorLogAsync(chainId, record.BlockHeight,
-                            ContractAppServiceConstant.MainChainId,
-                            result.BlockNumber,
-                            record.ChangeType);
-                        await UpdateSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash,
-                            record.ValidateHeight);
-                        _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
-                            record.ChangeType, chainId, record.CaHash);
-                    }
-
-                    record = records.FirstOrDefault(r => r.ValidateHeight < indexHeight);
-                }
+                targetRecords = records.Where(r => r.ValidateHeight < indexHeight).ToList();
+                // tasks.AddRange(targetRecords.Select(record => new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _indicatorLogger)
+                //     .ProcessSyncRecord(chainId, ContractAppServiceConstant.MainChainId, record, _indexOptions)));
+                tasks.AddRange(targetRecords
+                    .Select((record, index) => new {record, index})
+                    .GroupBy(x => x.index / 100)
+                    .Select(group => group.Select(x => x.record))
+                    .Select(group => new SideChainHolderInfoSyncWorker(_contractProvider, _logger, _monitorLogProvider, _distributedCache)
+                        .ProcessSyncRecordList(chainId, ContractAppServiceConstant.MainChainId, group.ToList(), _indexOptions))
+                    .ToList());
             }
 
+            await tasks.WhenAll();
+            var failedRecords = records.Where(r => r.RecordStatus == RecordStatus.NOT_MINED).ToList();
             await _recordsBucketContainer.AddToBeValidatedRecordsAsync(chainId, failedRecords);
-            await _recordsBucketContainer.SetValidatedRecordsAsync(chainId, records);
+            var leftRecords = records.Where(r => r.RecordStatus == RecordStatus.NONE).ToList();
+            await _recordsBucketContainer.SetValidatedRecordsAsync(chainId, leftRecords);
 
             _logger.LogInformation(
                 "SyncQueryEvents on chain: {id} Ends, synced {num} events and failed {failedNum} events", chainId,
@@ -1255,6 +1166,9 @@ public class ContractAppService : IContractAppService
 
         return list;
     }
+    
+    
+
 
     private List<SyncRecord> OptimizeSyncRecords(List<SyncRecord> records)
     {
