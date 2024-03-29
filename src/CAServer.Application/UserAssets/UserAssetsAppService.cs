@@ -1265,6 +1265,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var caAddressInfos = new List<CAAddressInfo>();
         foreach (var chainInfo in _chainOptions.ChainInfos)
         {
+            
+            if (!string.IsNullOrEmpty(requestDto.ChainId) && !requestDto.ChainId.Equals(chainInfo.Value.ChainId))
+            {
+                continue;
+            }
+            
             try
             {
                 var output =
@@ -1294,7 +1300,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
         return new TokenInfoDto
         {
-            Balance = totalBalance.ToString()
+            Balance = totalBalance.ToString(),
+            Decimals = resCaHolderTokenBalanceInfo.First().TokenInfo.Decimals.ToString()
         };
     }
 
