@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Commons;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Signature.Options;
 using CAServer.Signature.Provider;
+using CAServer.Tokens.TokenPrice;
 using CoinGecko.Clients;
 using CoinGecko.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -44,14 +46,26 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.CoinGecko));
         var httpClient = httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        if (_coinGeckoOptions.CurrentValue.Timeout > 0)
+        {
+            httpClient.Timeout = TimeSpan.FromMilliseconds(_coinGeckoOptions.CurrentValue.Timeout);
+        }
+
         if (_coinGeckoOptions.CurrentValue.BaseUrl.NotNullOrEmpty())
         {
             httpClient.BaseAddress = new Uri(_coinGeckoOptions.CurrentValue.BaseUrl);
         }
+
         if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
         {
             httpClient.DefaultRequestHeaders.Add("x-cg-pro-api-key", apiKey);
         }
+        else if (!_coinGeckoOptions.CurrentValue.DemoApiKey.IsNullOrWhiteSpace())
+        {
+            // test environment uses the demo api-key
+            httpClient.DefaultRequestHeaders.Add("x-cg-demo-api-key", _coinGeckoOptions.CurrentValue.DemoApiKey);
+        }
+
         return httpClient;
     }
 
@@ -84,9 +98,29 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Can not get current price :{Symbol}", symbol);
+            _logger.LogError(ex, "Can not get current price from 'CoinGecko' :{Symbol}", symbol);
             throw;
         }
+    }
+
+    public async Task<Dictionary<string, decimal>> GetPriceAsync(params string[] symbols)
+    {
+        if (symbols.IsNullOrEmpty())
+        {
+            return null;
+        }
+
+        var prices = new Dictionary<string, decimal>();
+        foreach (var symbol in symbols)
+        {
+            var price = await GetPriceAsync(symbol);
+            if (price != 0)
+            {
+                prices.Add(symbol, price);
+            }
+        }
+
+        return prices;
     }
 
     public async Task<decimal> GetHistoryPriceAsync(string symbol, string dateTime)
@@ -122,6 +156,16 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             _logger.LogError(ex, "Can not get :{Symbol} price", symbol);
             throw;
         }
+    }
+
+    public bool IsAvailable()
+    {
+        return _coinGeckoOptions.CurrentValue.IsAvailable;
+    }
+
+    public int GetPriority()
+    {
+        return _coinGeckoOptions.CurrentValue.Priority;
     }
 
     private string GetCoinIdAsync(string symbol)
