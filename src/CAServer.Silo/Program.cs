@@ -1,4 +1,5 @@
 ﻿using CAServer.Commons;
+using CAServer.Nightingale;
 using CAServer.Silo.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -34,6 +35,7 @@ public class Program
             .InitAppConfiguration(true)
             .UseApolloForHostBuilder()
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
+            .UseNightingaleMonitoring()
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();
