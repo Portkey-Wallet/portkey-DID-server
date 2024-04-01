@@ -7,6 +7,7 @@ using CAServer.Telegram.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
@@ -55,9 +56,9 @@ public class TelegramAuthController : CAServerController
         var query = Request.Query;
         var requestParameters = query.ToDictionary(keyValuePair => keyValuePair.Key,
             keyValuePair => keyValuePair.Value.ToString());
-
+        _logger.LogDebug("request.query={0}", JsonConvert.SerializeObject(requestParameters));
         var token = await _telegramAuthService.ValidateTelegramHashAndGenerateTokenAsync(requestParameters);
-
+        _logger.LogDebug("result: {0}", token);
         return new TelegramAuthTokenResponseDto
         {
             Token = token
