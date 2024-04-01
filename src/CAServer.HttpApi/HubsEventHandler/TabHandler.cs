@@ -35,7 +35,7 @@ public class TabHandler : IDistributedEventHandler<TabCompleteEto>, ITransientDe
             }
 
             var data = new HubResponse<string> { Body = eventData.Data, RequestId = eventData.ClientId };
-            await _hubContext.Clients.Client(connectId).SendAsync("caAccountRecover", data);
+            await _hubContext.Clients.Client(connectId).SendAsync(eventData.MethodName, data);
             _logger.LogInformation("communication success, clientId:{clientId}, methodName:{methodName}",
                 eventData.ClientId, eventData.MethodName);
         }

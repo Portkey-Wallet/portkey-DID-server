@@ -1,4 +1,6 @@
 using System.Net;
+using CAServer.Nightingale.Orleans.Filters;
+using CAServer.Nightingale.Orleans.TelemetryConsumers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -87,6 +89,8 @@ public static class OrleansHostExtensions
                     opt.MinIOThreadPoolSize = minIOThreadPoolSize > 0 ? minIOThreadPoolSize : 200;
                 })
                 .UseLinuxEnvironmentStatistics()
+                .AddNightingaleTelemetryConsumer()
+                .AddNightingaleMethodFilter()
                 .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
         });
     }

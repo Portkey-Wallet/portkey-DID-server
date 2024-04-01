@@ -71,6 +71,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Monitor", "src\CAS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.ContractEventHandler.Core.Tests", "test\CAServer.ContractEventHandler.Core.Tests\CAServer.ContractEventHandler.Core.Tests.csproj", "{7AF6AC0F-D8CE-405B-B537-CF9E74B0F591}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CAServer.Nightingale", "src\CAServer.Nightingale\CAServer.Nightingale.csproj", "{F65B38A5-9835-4146-A82F-E7B73D61A28A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -205,6 +207,10 @@ Global
 		{7AF6AC0F-D8CE-405B-B537-CF9E74B0F591}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7AF6AC0F-D8CE-405B-B537-CF9E74B0F591}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7AF6AC0F-D8CE-405B-B537-CF9E74B0F591}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F65B38A5-9835-4146-A82F-E7B73D61A28A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F65B38A5-9835-4146-A82F-E7B73D61A28A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F65B38A5-9835-4146-A82F-E7B73D61A28A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F65B38A5-9835-4146-A82F-E7B73D61A28A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -242,6 +248,7 @@ Global
 		{EC87414A-45DA-4FEB-9A25-874C5A852B91} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{8BF4A5D9-90EC-47C6-B778-419099BF453D} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 		{7AF6AC0F-D8CE-405B-B537-CF9E74B0F591} = {04DBDB01-70F4-4E06-B468-8F87850B22BE}
+		{F65B38A5-9835-4146-A82F-E7B73D61A28A} = {CA9AC87F-097E-4F15-8393-4BC07735A5B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {28315BFD-90E7-4E14-A2EA-F3D23AF4126F}
