@@ -36,9 +36,11 @@ public class CommunicationHub : AbpHub
             Context.ConnectionId);
     }
 
-    public async Task<TabCompleteInfo> GetTabDataAsync(string clientId, string methodName)
+    public async Task<TabCompleteInfo> GetTabDataAsync(TabDataRequestDto input)
     {
-        return await _distributedCache.GetAsync(GetKey($"{clientId}:{methodName}"));
+        _logger.LogInformation("GetTabData clientId:{clientId},methodName:{methodName}", input.ClientId,
+            input.MethodName);
+        return await _distributedCache.GetAsync(GetKey($"{input.ClientId}:{input.MethodName}"));
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
