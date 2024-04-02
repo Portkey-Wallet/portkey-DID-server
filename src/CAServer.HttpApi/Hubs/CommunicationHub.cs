@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Tab.Dtos;
@@ -14,7 +15,6 @@ public class CommunicationHub : AbpHub
     private readonly ILogger<CommunicationHub> _logger;
     private readonly IHubWithCacheService _hubService;
     private readonly IDistributedCache<TabCompleteInfo> _distributedCache;
-    private const string _cachePrefix = "CaServer:TabCommunication";
 
     public CommunicationHub(ILogger<CommunicationHub> logger, IHubWithCacheService hubService,
         IDistributedCache<TabCompleteInfo> distributedCache)
@@ -40,7 +40,7 @@ public class CommunicationHub : AbpHub
     {
         _logger.LogInformation("GetTabData clientId:{clientId},methodName:{methodName}", input.ClientId,
             input.MethodName);
-        return await _distributedCache.GetAsync(GetKey($"{input.ClientId}:{input.MethodName}"));
+        return await _distributedCache.GetAsync(HubCacheHelper.GetTabKey($"{input.ClientId}:{input.MethodName}"));
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
@@ -48,16 +48,5 @@ public class CommunicationHub : AbpHub
         await _hubService.UnRegisterClientAsync(Context.ConnectionId);
         _logger.LogInformation("connectionId={connectionId} disconnected!!!", Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
-    }
-
-    private string GetKey(string key)
-    {
-        if (key.Contains(CommonConstant.Hyphen) || key.Contains(CommonConstant.Underline))
-        {
-            key = key.Replace(CommonConstant.Hyphen, CommonConstant.Colon)
-                .Replace(CommonConstant.Underline, CommonConstant.Colon);
-        }
-
-        return $"{_cachePrefix}:{key}";
     }
 }

@@ -1,66 +1,49 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.Cache;
 using CAServer.Commons;
 using CAServer.Options;
-using Microsoft.Extensions.Caching.Distributed;
+using CAServer.Tab.Dtos;
 using Microsoft.Extensions.Options;
-using Volo.Abp;
-using Volo.Abp.Auditing;
-using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.Hubs;
 
-[RemoteService(false)]
-[DisableAuditing]
 public class HubWithCacheService : IHubWithCacheService, ISingletonDependency
 {
-    private readonly IDistributedCache<string> _distributedCache;
+    private readonly ICacheProvider _cacheProvider;
     private readonly HubConfigOptions _options;
-    private const string _cachePrefix = "CaServer:Hub";
 
-    public HubWithCacheService(IDistributedCache<string> distributedCache, IOptionsSnapshot<HubConfigOptions> options)
+    public HubWithCacheService(IOptionsSnapshot<HubConfigOptions> options, ICacheProvider cacheProvider)
     {
-        _distributedCache = distributedCache;
+        _cacheProvider = cacheProvider;
         _options = options.Value;
     }
 
     public async Task RegisterClientAsync(string clientId, string connectionId)
     {
-        var key = GetKey(connectionId);
-        await _distributedCache.SetAsync(GetKey(clientId), connectionId, new DistributedCacheEntryOptions
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(_options.ExpireDays)
-        });
-
-        await _distributedCache.SetAsync(key, clientId, new DistributedCacheEntryOptions
-        {
-            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(_options.ExpireDays)
-        });
+        await _cacheProvider.Set(HubCacheHelper.GetHubCacheKey(clientId), connectionId,
+            TimeSpan.FromDays(_options.ExpireDays));
+        await _cacheProvider.Set(HubCacheHelper.GetHubCacheKey(connectionId), clientId,
+            TimeSpan.FromDays(_options.ExpireDays));
     }
 
     public async Task UnRegisterClientAsync(string connectionId)
     {
-        var clientId = await _distributedCache.GetAsync(GetKey(connectionId));
+        string clientId = await _cacheProvider.Get(HubCacheHelper.GetHubCacheKey(connectionId));
         if (clientId.IsNullOrEmpty()) return;
 
-        await _distributedCache.RemoveAsync(GetKey(connectionId));
-        await _distributedCache.RemoveAsync(GetKey(clientId));
+        await _cacheProvider.Delete(HubCacheHelper.GetHubCacheKey(clientId));
+        await _cacheProvider.Delete(HubCacheHelper.GetHubCacheKey(connectionId));
     }
 
     public async Task<string> GetConnectionIdAsync(string clientId)
     {
-        return await _distributedCache.GetAsync(GetKey(clientId));
+        return await _cacheProvider.Get(HubCacheHelper.GetHubCacheKey(clientId));
     }
 
-    private string GetKey(string key)
+    public async Task<TabCompleteInfo> GetTabCompleteInfoAsync(string key)
     {
-        if (key.Contains(CommonConstant.Hyphen) || key.Contains(CommonConstant.Underline))
-        {
-            key = key.Replace(CommonConstant.Hyphen, CommonConstant.Colon)
-                .Replace(CommonConstant.Underline, CommonConstant.Colon);
-        }
-
-        return $"{_cachePrefix}:{key}";
+        return await _cacheProvider.Get<TabCompleteInfo>(HubCacheHelper.GetHubCacheKey(key));
     }
 }
