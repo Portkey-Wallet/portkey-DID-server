@@ -20,7 +20,6 @@ public class TabAppService : CAServerAppService, ITabAppService
     private readonly IDistributedEventBus _distributedEvent;
     private readonly IDistributedCache<TabCompleteInfo> _distributedCache;
     private readonly HubConfigOptions _options;
-    private const string _cachePrefix = "CaServer:TabCommunication";
 
     public TabAppService(IDistributedEventBus distributedEvent, IDistributedCache<TabCompleteInfo> distributedCache,
         IOptionsSnapshot<HubConfigOptions> options)
@@ -45,7 +44,8 @@ public class TabAppService : CAServerAppService, ITabAppService
 
     private async Task SaveAsync(TabCompleteDto input)
     {
-        await _distributedCache.SetAsync(GetKey($"{input.ClientId}:{input.MethodName}"), new TabCompleteInfo()
+        await _distributedCache.SetAsync(HubCacheHelper.GetTabKey($"{input.ClientId}:{input.MethodName}"),
+            new TabCompleteInfo()
             {
                 ClientId = input.ClientId,
                 MethodName = input.MethodName,
@@ -55,16 +55,8 @@ public class TabAppService : CAServerAppService, ITabAppService
             {
                 AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(_options.ExpireDays)
             });
-    }
 
-    private string GetKey(string key)
-    {
-        if (key.Contains(CommonConstant.Hyphen) || key.Contains(CommonConstant.Underline))
-        {
-            key = key.Replace(CommonConstant.Hyphen, CommonConstant.Colon)
-                .Replace(CommonConstant.Underline, CommonConstant.Colon);
-        }
-
-        return $"{_cachePrefix}:{key}";
+        Logger.LogInformation("tab communication info save success, clientId:{clientId}, methodName:{methodName}",
+            input.ClientId, input.MethodName);
     }
 }
