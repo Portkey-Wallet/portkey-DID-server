@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Tab.Dtos;
@@ -14,6 +15,7 @@ public class CommunicationHub : AbpHub
     private readonly ILogger<CommunicationHub> _logger;
     private readonly IHubWithCacheService _hubService;
     private readonly IDistributedCache<TabCompleteInfo> _distributedCache;
+
     public CommunicationHub(ILogger<CommunicationHub> logger, IHubWithCacheService hubService,
         IDistributedCache<TabCompleteInfo> distributedCache)
     {
