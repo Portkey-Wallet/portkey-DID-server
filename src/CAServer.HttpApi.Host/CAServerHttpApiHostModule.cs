@@ -34,6 +34,7 @@ using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.AspNetCore.SignalR;
+using Volo.Abp.Auditing;
 using Volo.Abp.Autofac;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
@@ -95,6 +96,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureMassTransit(context, configuration);
         context.Services.AddSignalR().AddStackExchangeRedis(configuration["Redis:Configuration"],
             options => { options.Configuration.ChannelPrefix = "CAServer"; });
+        ConfigAuditing();
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -312,6 +314,15 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
+
+    //Disables the auditing system
+    private void ConfigAuditing()
+    {
+        Configure<AbpAuditingOptions>(options =>
+        {
+            options.IsEnabled = false;
+        });
+    }
     
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
@@ -358,7 +369,7 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();      
+        // app.UseAuditing();      
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
