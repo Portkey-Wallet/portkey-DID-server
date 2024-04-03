@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -443,7 +442,7 @@ public class ContractAppService : IContractAppService
                     "UpdateOriginChainIdAsync already success,chainId {chainId},userId {uid}", originChainId,
                     userLoginEto.UserId);
                 return;
-            }
+            }   
 
             holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
 
