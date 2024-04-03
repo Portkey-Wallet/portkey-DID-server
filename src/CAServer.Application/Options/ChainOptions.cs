@@ -14,5 +14,8 @@ public class ChainInfo
     public decimal TransactionFee { get; set; } = 0.0041M;
     public string ContractAddress { get; set; }
     public string TokenContractAddress { get; set; }
+    public string CrossChainContractAddress { get; set; }
     public string RedPackageContractAddress { get; set; }
+    public string PublicKey { get; set; }
+    public bool IsMainChain { get; set; }
 }
