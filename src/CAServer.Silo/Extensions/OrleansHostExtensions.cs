@@ -63,6 +63,16 @@ public static class OrleansHostExtensions
                 })
                 // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
+                .UseDashboard(options =>
+                {
+                    options.Username = orleansConfigSection.GetValue<string>("DashboardUserName");
+                    options.Password = orleansConfigSection.GetValue<string>("DashboardPassword");
+                    options.Host = "*";
+                    options.Port = orleansConfigSection.GetValue<int>("DashboardPort");
+                    options.HostSelf = true;
+                    options.CounterUpdateIntervalMs =
+                        orleansConfigSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
+                })
                 .UseLinuxEnvironmentStatistics()
                 .AddNightingaleTelemetryConsumer()
                 .AddNightingaleMethodFilter()
