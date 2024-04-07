@@ -9,3 +9,8 @@ public class AddressInfo
     public string OriginChainId { get; set; }
     public List<string> Identifiers { get; set; }
 }
+
+public class AddressInfoExtension : AddressInfo
+{
+    public string ChainId { get; set; }
+}

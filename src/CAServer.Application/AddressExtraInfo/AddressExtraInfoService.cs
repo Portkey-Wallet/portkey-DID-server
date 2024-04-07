@@ -90,7 +90,7 @@ public class AddressExtraInfoService : CAServerAppService, IAddressExtraInfoServ
 
     private void ReadNotMintAddressesInfo()
     {
-        var sr = new StreamReader(@"AddressCheck/mainnest.txt");
+        var sr = new StreamReader(@"AddressCheck/erlun.txt");
 
         string nextLine;
         while ((nextLine = sr.ReadLine()) != null)
@@ -107,7 +107,7 @@ public class AddressExtraInfoService : CAServerAppService, IAddressExtraInfoServ
 
     private void WriteMintAddress()
     {
-        var fileInfo = new FileInfo(@"AddressCheck/mainnet_with_account.txt");
+        var fileInfo = new FileInfo(@"AddressCheck/erlun_tdvv.txt");
         var sw = fileInfo.CreateText();
         foreach (var address in AddressInfos)
         {
