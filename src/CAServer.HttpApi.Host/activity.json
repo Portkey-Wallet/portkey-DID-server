@@ -138,6 +138,21 @@
     "NoShowTypes": [
       "CrossChainReceiveToken"
     ],
+    "SystemTypes": [
+      "CreateCAHolder",
+      "SocialRecovery",
+      "AddManagerInfo",
+      "RemoveManagerInfo",
+      "AddGuardian",
+      "RemoveGuardian",
+      "UpdateGuardian",
+      "SetGuardianForLogin",
+      "UnsetGuardianForLogin",
+      "RemoveOtherManagerInfo",
+      "UpdateManagerInfos",
+      "SetTransferLimit",
+      "ManagerApprove"
+    ],
     "Zero": "0"
   }
 }

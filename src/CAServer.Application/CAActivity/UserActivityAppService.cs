@@ -46,6 +46,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly ActivityTypeOptions _activityTypeOptions;
     private readonly IpfsOptions _ipfsOptions;
     private readonly ITokenPriceService _tokenPriceService;
+    private readonly IAssetsLibraryProvider _assetsLibraryProvider;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -53,6 +54,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
         IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions, ITokenPriceService tokenPriceService)
+        IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
+        IAssetsLibraryProvider assetsLibraryProvider)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -62,6 +65,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
         _userAssetsProvider = userAssetsProvider;
+        _assetsLibraryProvider = assetsLibraryProvider;
         _chainOptions = chainOptions.Value;
         _activityOptions = activityOptions.Value;
         _activityTypeOptions = activityTypeOptions.Value;
@@ -573,12 +577,21 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                         ImageResizeType.Forest),
                     Alias = ht.NftInfo.TokenName
                 };
+                dto.ListIcon = dto.NftInfo.ImageUrl;
+            }
+            else
+            {
+                dto.ListIcon = GetIcon(dto.TransactionType, dto.Symbol);
             }
 
-            dto.ListIcon = GetIconByType(dto.TransactionType);
             if (!_activityTypeOptions.ShowPriceTypes.Contains(dto.TransactionType))
             {
                 dto.IsDelegated = true;
+            }
+
+            if (_activityTypeOptions.SystemTypes.Contains(dto.TransactionType))
+            {
+                dto.IsSystem = true;
             }
 
             if (needMap)
@@ -616,7 +629,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
-        if (activityDto.TransactionType == ActivityConstants.TransferName && _activityOptions.ETransferConfigs != null)
+        if (activityDto.TransactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName)
+        {
+            activityDto.TransactionName = activityDto.IsReceived ? ActivityConstants.ReceivedName : ActivityConstants.SentName;
+        }
+
+        if (activityDto.TransactionType == ActivityConstants.TransferName &&
+            _activityOptions.ETransferConfigs != null)
         {
             var eTransferConfig =
                 _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
@@ -647,21 +666,24 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         };
     }
 
-    private string GetIconByType(string transactionType)
+    private string GetIcon(string transactionType, string symbol = "")
     {
-        string icon = string.Empty;
+        var icon = string.Empty;
         if (_activityTypeOptions.ContractTypes.Contains(transactionType))
         {
             icon = _activitiesIcon.Contract;
         }
-        else if (_activityTypeOptions.TransferTypes.Contains(transactionType))
+        else if (_activityTypeOptions.TransferTypes.Contains(transactionType) ||
+                 _activityTypeOptions.RedPacketTypes.Contains(transactionType))
         {
-            icon = _activitiesIcon.Transfer;
+            icon = symbol.IsNullOrEmpty()
+                ? _activitiesIcon.Transfer
+                : _assetsLibraryProvider.buildSymbolImageUrl(symbol);
         }
-        else if (_activityTypeOptions.RedPacketTypes.Contains(transactionType))
-        {
-            icon = _activitiesIcon.RedPacket;
-        }
+        // else if (_activityTypeOptions.RedPacketTypes.Contains(transactionType))
+        // {
+        //     icon = _activitiesIcon.RedPacket;
+        // }
 
         return icon;
     }
