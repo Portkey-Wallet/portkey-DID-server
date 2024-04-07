@@ -1,4 +1,5 @@
 using CAServer.Cache;
+using Newtonsoft.Json;
 using StackExchange.Redis;
 using Volo.Abp.DependencyInjection;
 
@@ -33,13 +34,38 @@ public class RedisCacheProvider : ICacheProvider, ISingletonDependency
 
     public async Task Set(string key, string value, TimeSpan? expire)
     {
-        await _database.StringSetAsync(key, value);
-        _database.KeyExpire(key, expire);
+        await _database.StringSetAsync(key, value, expiry: expire);
+        //_database.KeyExpire(key, expire);
+    }
+
+    /// <summary>
+    /// T can not be null
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <param name="expire"></param>
+    /// <typeparam name="T"></typeparam>
+    public async Task Set<T>(string key, T? value, TimeSpan? expire) where T : class
+    {
+        if (value == null)
+        {
+            throw new ArgumentNullException(nameof(value), "redis cache set error, value can not be null.");
+        }
+
+        await _database.StringSetAsync(key, JsonConvert.SerializeObject(value), expiry: expire);
     }
 
     public async Task<RedisValue> Get(string key)
     {
         return await _database.StringGetAsync(key);
+    }
+
+    public async Task<T?> Get<T>(string key) where T : class
+    {
+        var value = await _database.StringGetAsync(key);
+        if (value.IsNullOrEmpty) return default;
+
+        return JsonConvert.DeserializeObject<T>(value);
     }
 
     public async Task Delete(string key)
