@@ -23,6 +23,7 @@ using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 using Orleans;
@@ -1182,6 +1183,13 @@ public class ContractAppService : IContractAppService
 
                 var outputGetHolderInfo =
                     await _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, record.CaHash);
+                if (outputGetHolderInfo == null || outputGetHolderInfo.CaHash.IsNullOrEmpty())
+                {
+                    record.RetryTimes++;
+                    failedRecords.Add(record);
+                    continue;
+                }
+
                 var unsetLoginGuardians = new RepeatedField<string>();
                 foreach (var guardian in outputGetHolderInfo.GuardianList.Guardians)
                 {
