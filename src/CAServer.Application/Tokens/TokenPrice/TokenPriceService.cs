@@ -41,7 +41,7 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
         _locks = new ConcurrentDictionary<string, SemaphoreSlim>();
     }
 
-    public async Task<TokenPriceGrainDto> GetCurrentPriceAsync(string symbol)
+    public async Task<TokenPriceDataDto> GetCurrentPriceAsync(string symbol)
     {
         try
         {
@@ -49,7 +49,7 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
             var priceString = await _distributedCache.GetAsync(key);
             if (priceString.IsNullOrEmpty())
             {
-                return new TokenPriceGrainDto
+                return new TokenPriceDataDto
                 {
                     Symbol = symbol,
                     PriceInUsd = 0
@@ -63,7 +63,7 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
                 throw new UserFriendlyException("An error occurred while retrieving the token price.");
             }
 
-            return new TokenPriceGrainDto
+            return new TokenPriceDataDto
             {
                 Symbol = symbol,
                 PriceInUsd = price
@@ -76,11 +76,11 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
         }
     }
 
-    public async Task<TokenPriceGrainDto> GetHistoryPriceAsync(string symbol, string dateTime)
+    public async Task<TokenPriceDataDto> GetHistoryPriceAsync(string symbol, string dateTime)
     {
         if (!_tokenPriceWorkerOption.CurrentValue.Symbols.Contains(symbol.ToUpper()))
         {
-            return new TokenPriceGrainDto
+            return new TokenPriceDataDto
             {
                 Symbol = symbol,
                 PriceInUsd = 0
@@ -97,7 +97,7 @@ public class TokenPriceService : ITokenPriceService, ISingletonDependency
                 price = await RefreshHistoryPriceAsync(key, symbol, dateTime);
             }
 
-            return new TokenPriceGrainDto
+            return new TokenPriceDataDto
             {
                 Symbol = symbol,
                 PriceInUsd = price

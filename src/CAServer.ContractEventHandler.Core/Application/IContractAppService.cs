@@ -23,6 +23,7 @@ using Google.Protobuf.Collections;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 using Orleans;
@@ -304,7 +305,7 @@ public class ContractAppService : IContractAppService
 
         var resultSocialRecovery = await _contractProvider.SocialRecoveryAsync(socialRecoveryDto);
 
-        var managerInfoExisted = resultSocialRecovery.Status == TransactionState.Failed &&
+        var managerInfoExisted = resultSocialRecovery.Status == TransactionState.NodeValidationFailed &&
                               resultSocialRecovery.Error.Contains("ManagerInfo exists");
         if (resultSocialRecovery.Status != TransactionState.Mined && !managerInfoExisted)
         {
@@ -320,7 +321,8 @@ public class ContractAppService : IContractAppService
             return;
         }
 
-        if (!managerInfoExisted && !resultSocialRecovery.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
+        if (!managerInfoExisted &&
+            !resultSocialRecovery.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
         {
             recoveryResult.RecoveryMessage = "Transaction status: FAILED" + ". Error: Verification failed";
             recoveryResult.RecoverySuccess = false;
@@ -543,6 +545,7 @@ public class ContractAppService : IContractAppService
                 unsetLoginGuardians.Add(guardian.IdentifierHash.ToHex());
             }
         }
+
         var transactionDto =
             await _contractProvider.ValidateTransactionAsync(chainId, result, unsetLoginGuardians);
         var validateHeight = transactionDto.TransactionResultDto.BlockNumber;
@@ -761,8 +764,7 @@ public class ContractAppService : IContractAppService
             _logger.LogInformation("accelerated registration state: " + "\n{result}",
                 JsonConvert.SerializeObject(registerResult, Formatting.Indented));
         }
-
-        if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.NonCreateChainCAHolderCreated))
+        else if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.NonCreateChainCAHolderCreated))
         {
             registerResult.RegisterMessage = "Transaction status: FAILED" + ". Error: Verification failed";
             registerResult.RegisterSuccess = false;
@@ -857,8 +859,7 @@ public class ContractAppService : IContractAppService
             _logger.LogInformation("accelerated social recover state: " + "\n{result}",
                 JsonConvert.SerializeObject(recoveryResult, Formatting.Indented));
         }
-
-        if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
+        else if (!transactionResultDto.Logs.Select(l => l.Name).Contains(LogEvent.ManagerInfoSocialRecovered))
         {
             recoveryResult.RecoveryMessage = "Transaction status: FAILED" + ". Error: Verification failed";
             recoveryResult.RecoverySuccess = false;
@@ -866,7 +867,7 @@ public class ContractAppService : IContractAppService
             _logger.LogInformation("accelerated social recover state: id:{id}, chainId:{chainId}, message:{result}",
                 recoveryResult.Id.ToString(), chainInfo.ChainId, recoveryResult.RecoveryMessage);
         }
-        
+
         await _distributedEventBus.PublishAsync(recoveryResult);
 
         _logger.LogInformation("accelerated social recover state: " + "\n{result}",
@@ -1018,8 +1019,11 @@ public class ContractAppService : IContractAppService
                         record.RetryTimes++;
                         record.ValidateHeight = long.MaxValue;
                         record.ValidateTransactionInfoDto = new TransactionInfo();
+                        if (!result.Error.Contains("Already synced"))
+                        {
+                            failedRecords.Add(record);
 
-                        failedRecords.Add(record);
+                        }
                     }
                     else
                     {
@@ -1176,9 +1180,16 @@ public class ContractAppService : IContractAppService
                     _logger.LogWarning(LoggerMsg.NodeBlockHeightWarning);
                     break;
                 }
-               
+
                 var outputGetHolderInfo =
                     await _contractProvider.GetHolderInfoFromChainAsync(chainId, Hash.Empty, record.CaHash);
+                if (outputGetHolderInfo == null || outputGetHolderInfo.CaHash.IsNullOrEmpty())
+                {
+                    record.RetryTimes++;
+                    failedRecords.Add(record);
+                    continue;
+                }
+
                 var unsetLoginGuardians = new RepeatedField<string>();
                 foreach (var guardian in outputGetHolderInfo.GuardianList.Guardians)
                 {
@@ -1187,6 +1198,7 @@ public class ContractAppService : IContractAppService
                         unsetLoginGuardians.Add(guardian.IdentifierHash.ToHex());
                     }
                 }
+
                 var transactionDto =
                     await _contractProvider.ValidateTransactionAsync(chainId, outputGetHolderInfo,
                         unsetLoginGuardians);

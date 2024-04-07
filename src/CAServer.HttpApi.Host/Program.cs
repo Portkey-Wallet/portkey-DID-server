@@ -34,7 +34,6 @@ public class Program
                 .UseAutofac()
                 .UseSerilog();
 
-            builder.Services.AddSignalR();
             await builder.AddApplicationAsync<CAServerHttpApiHostModule>();
             var app = builder.Build();
             app.MapHub<CAHub>("ca");

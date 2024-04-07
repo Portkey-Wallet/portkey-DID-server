@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace CAServer.Tokens.TokenPrice.Provider;
+namespace CAServer.Tokens.TokenPrice.Provider.FeiXiaoHao;
 
 public class FeiXiaoHaoResponseDto
 {
