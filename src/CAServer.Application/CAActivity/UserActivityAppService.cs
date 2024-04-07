@@ -612,10 +612,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
         GuardiansDto guardian = null)
     {
+        var transactionType = activityDto.TransactionType;
         var typeName =
-            _activityTypeOptions.TypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
-        if (activityDto.TransactionType == ActivityConstants.AddGuardianName ||
-            activityDto.TransactionType == ActivityConstants.AddManagerInfo)
+            _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
+        activityDto.TransactionName = typeName;
+        
+        if (transactionType == ActivityConstants.AddGuardianName ||
+            transactionType == ActivityConstants.AddManagerInfo)
         {
             guardian ??= await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
@@ -623,21 +626,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 activityDto.TransactionName = GetTransactionDisplayName(activityDto.TransactionType, typeName);
             }
-            else
-            {
-                activityDto.TransactionName = typeName;
-            }
 
             return;
         }
 
-        if (activityDto.TransactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName)
+        if (transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName)
         {
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceivedName : ActivityConstants.SentName;
         }
 
-        if (activityDto.TransactionType == ActivityConstants.TransferName &&
+        if (transactionType == ActivityConstants.TransferName &&
             _activityOptions.ETransferConfigs != null)
         {
             var eTransferConfig =
@@ -649,14 +648,20 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             }
         }
 
-        activityDto.TransactionName = activityDto.NftInfo != null &&
-                                      !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
-                                      _activityTypeOptions.ShowNftTypes.Contains(activityDto.TransactionType)
-            ? typeName + " NFT"
-            : typeName;
+        if (activityDto.NftInfo != null && !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId))
+        {
+            var nftTransactionName =
+                transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName
+                    ? activityDto.TransactionName
+                    : typeName;
+
+            activityDto.TransactionName = _activityTypeOptions.ShowNftTypes.Contains(activityDto.TransactionType)
+                ? nftTransactionName + " NFT"
+                : nftTransactionName;
+        }
+
         activityDto.TransactionType =
-            _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType,
-                activityDto.TransactionType);
+            _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(transactionType, transactionType);
     }
 
     private string GetTransactionDisplayName(string transactionType, string defaultName)
