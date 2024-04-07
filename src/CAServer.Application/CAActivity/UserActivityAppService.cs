@@ -625,10 +625,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
-        if (transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName)
+        if (transactionType is ActivityConstants.TransferName)
         {
             activityDto.TransactionName =
-                activityDto.IsReceived ? ActivityConstants.ReceivedName : ActivityConstants.SentName;
+                activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
         }
 
         if (transactionType == ActivityConstants.TransferName &&
@@ -646,7 +646,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         if (activityDto.NftInfo != null && !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId))
         {
             var nftTransactionName =
-                transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName
+                transactionType is ActivityConstants.TransferName
                     ? activityDto.TransactionName
                     : typeName;
 
