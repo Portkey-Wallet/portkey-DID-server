@@ -14,6 +14,7 @@ using CAServer.Search.Dtos;
 using CAServer.Tokens;
 using CAServer.Tokens.Cache;
 using CAServer.Tokens.Provider;
+using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
@@ -59,6 +60,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ISearchAppService _searchAppService;
     private readonly ITokenCacheProvider _tokenCacheProvider;
     private readonly IpfsOptions _ipfsOptions;
+    private readonly ITokenPriceService _tokenPriceService;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -71,7 +73,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption, 
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
-        IOptionsSnapshot<IpfsOptions> ipfsOption)
+        IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -93,6 +95,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _searchAppService = searchAppService;
         _tokenCacheProvider = tokenCacheProvider;
         _ipfsOptions = ipfsOption.Value;
+        _tokenPriceService = tokenPriceService;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -1297,12 +1300,49 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             0, MaxResultCount);
         var resCaHolderTokenBalanceInfo = res.CaHolderTokenBalanceInfo.Data;
         var totalBalance = resCaHolderTokenBalanceInfo.Sum(tokenInfo => tokenInfo.Balance);
-
+        
+        var totalBalanceInUsd = await CalculateTotalBalanceInUsdAsync(resCaHolderTokenBalanceInfo);
+        
         return new TokenInfoDto
         {
             Balance = totalBalance.ToString(),
-            Decimals = resCaHolderTokenBalanceInfo.First().TokenInfo.Decimals.ToString()
+            Decimals = resCaHolderTokenBalanceInfo.First().TokenInfo.Decimals.ToString(),
+            BalanceInUsd = totalBalanceInUsd.ToString()
         };
+    }
+    
+    private async Task<decimal> CalculateTotalBalanceInUsdAsync(List<IndexerTokenInfo> tokenInfos)
+    {
+        var totalBalanceInUsd = 0m;
+        foreach (var tokenInfo in tokenInfos)
+        {
+            if (tokenInfo == null)
+            {
+                continue;
+            }
+
+            var currentTokenPrice = await GetCurrentTokenPriceAsync(tokenInfo.TokenInfo.Symbol);
+            totalBalanceInUsd += GetCurrentPriceInUsd(tokenInfo.Balance, tokenInfo.TokenInfo.Decimals, currentTokenPrice);
+        }
+
+        return totalBalanceInUsd;
+    }
+    
+    private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
+    {
+        var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
+        return priceResult?.PriceInUsd ?? 0;
+    }
+    
+    private decimal GetCurrentPriceInUsd(long tokenBalance, int tokenDecimals, decimal currentBalanceInUsd)
+    {
+        if (decimal.TryParse(tokenBalance.ToString(), out var amount))
+        {
+            var baseValue = (decimal)Math.Pow(10, tokenDecimals);
+            return amount / baseValue * currentBalanceInUsd;
+        }
+        
+        throw new ArgumentException("Invalid input values");
     }
 
     private async Task<Dictionary<string, decimal>> GetSymbolPrice(List<string> symbols)
