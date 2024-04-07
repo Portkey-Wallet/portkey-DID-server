@@ -696,25 +696,21 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     
     private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
     {
-        try
-        {
-            var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
-            return priceResult == null ? 0 : priceResult.PriceInUsd;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Get current token symbol price failed.");
-            return 0;
-        }
+        var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
+        return priceResult?.PriceInUsd ?? 0;
     }
 
     private decimal GetCurrentTxPrice(GetActivityDto dto)
     {
-        decimal amount = decimal.Parse(dto.Amount);
-        decimal decimals = decimal.Parse(dto.Decimals);
-        decimal currentPriceInUsd = decimal.Parse(dto.CurrentPriceInUsd);
-        decimal baseValue = (decimal)Math.Pow(10, (double)decimals);
-        return amount / baseValue * currentPriceInUsd;
+        if (decimal.TryParse(dto.Amount, out var amount) &&
+            decimal.TryParse(dto.Decimals, out var decimals) &&
+            decimal.TryParse(dto.CurrentPriceInUsd, out var currentPriceInUsd))
+        {
+            var baseValue = (decimal)Math.Pow(10, (double)decimals);
+            return amount / baseValue * currentPriceInUsd;
+        }
+        
+        throw new ArgumentException("Invalid input values");
     }
 
     private async Task<List<decimal>> GetFeePriceListAsync(IEnumerable<string> symbolList, DateTime time)
