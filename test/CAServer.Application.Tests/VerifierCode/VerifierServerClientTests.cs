@@ -12,8 +12,8 @@ namespace CAServer.VerifierCode;
 public partial class VerifierServerClientTests : CAServerApplicationTestBase
 {
     private readonly IVerifierServerClient _verifierServerClient;
-    private const string DefaultType = "Phone";
-    private const string FadePhoneNum = "+861234567890";
+    private const string DefaultType = "Email";
+    private const string FadeEmail = "1@google.com";
     private const string DefaultChainId = "AELF";
     private const string DefaultVerifierId = "50986afa3095f55bd590d6ab26218cc2ed2ef8b1f6e7cdab5b3cbb2cd8a540f5";
     private const string SideChainId = "TDVV";
@@ -41,7 +41,7 @@ public partial class VerifierServerClientTests : CAServerApplicationTestBase
         var request = new VerifierCodeRequestDto
         {
             Type = DefaultType,
-            GuardianIdentifier = FadePhoneNum,
+            GuardianIdentifier = FadeEmail,
             VerifierSessionId = Guid.NewGuid(),
             VerifierId = DefaultVerifierId,
             ChainId = SideChainId
@@ -53,7 +53,7 @@ public partial class VerifierServerClientTests : CAServerApplicationTestBase
         var dto = new VerifierCodeRequestDto
         {
             Type = DefaultType,
-            GuardianIdentifier = FadePhoneNum,
+            GuardianIdentifier = FadeEmail,
             VerifierSessionId = Guid.NewGuid(),
             VerifierId = DefaultVerifierId,
             ChainId = DefaultChainId
@@ -73,7 +73,7 @@ public partial class VerifierServerClientTests : CAServerApplicationTestBase
     {
         var request = new VierifierCodeRequestInput
         {
-            GuardianIdentifier = FadePhoneNum,
+            GuardianIdentifier = FadeEmail,
             VerifierSessionId = Guid.NewGuid().ToString(),
             VerificationCode = DefaultCode,
             GuardianIdentifierHash = "",
@@ -89,7 +89,7 @@ public partial class VerifierServerClientTests : CAServerApplicationTestBase
         {
             VerifierId = DefaultVerifierId,
             ChainId = DefaultChainId,
-            GuardianIdentifier = FadePhoneNum,
+            GuardianIdentifier = FadeEmail,
             VerifierSessionId = Guid.NewGuid().ToString(),
             VerificationCode = DefaultCode,
             GuardianIdentifierHash = "",

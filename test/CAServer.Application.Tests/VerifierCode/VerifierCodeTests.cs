@@ -15,10 +15,8 @@ namespace CAServer.VerifierCode;
 public partial class VerifierCodeTests : CAServerApplicationTestBase
 {
     private readonly IVerifierAppService _verifierAppService;
-    private const string PhoneType = "Phone";
     private const string EmailType = "Email";
     private const string InvalidType = "Invalid";
-    private const string FakePhoneNum = "+861234567890";
     private const string FakeEmail = "1@google.com";
     private const string FakeInvalidateEmail = "1googlecom";
     private const string DefaultChainId = "AELF";
@@ -100,8 +98,8 @@ public partial class VerifierCodeTests : CAServerApplicationTestBase
         var input = new SendVerificationRequestInput
         {
             ChainId = DefaultChainId,
-            Type = PhoneType,
-            GuardianIdentifier = FakePhoneNum,
+            Type = EmailType,
+            GuardianIdentifier = FakeEmail,
             VerifierId = DefaultVerifierId,
         };
         try
