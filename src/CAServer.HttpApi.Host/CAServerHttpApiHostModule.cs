@@ -369,22 +369,22 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();      
+        app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
 
-      //  StartOrleans(context.ServiceProvider);
+        StartOrleans(context.ServiceProvider);
 
         // to start pre heat
-      //  _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
+        _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
 
-       // ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
+        ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
     {
-        //StopOrleans(context.ServiceProvider);
+        StopOrleans(context.ServiceProvider);
     }
 
     private static void StartOrleans(IServiceProvider serviceProvider)
