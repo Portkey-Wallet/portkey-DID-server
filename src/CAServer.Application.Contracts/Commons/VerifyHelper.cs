@@ -19,13 +19,7 @@ public static class VerifyHelper
         var emailReg = new Regex(emailRegex);
         return emailReg.IsMatch(address.Trim());
     }
-
-    public static bool VerifyPhone(string phoneNumber)
-    {
-        var phoneRegex = @"^1[0-9]{10}$";
-        var emailReg = new Regex(phoneRegex);
-        return emailReg.IsMatch(phoneNumber.Trim());
-    }
+    
 
     public static bool VerifySignature(Transaction transaction, string inputPublicKey)
     {

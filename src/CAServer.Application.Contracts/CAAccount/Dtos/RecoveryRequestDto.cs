@@ -44,13 +44,5 @@ public class RecoveryGuardian : IValidatableObject
                 new[] { "identifier" }
             );
         }
-
-        // if (Type == GuardianIdentifierType.Phone && !VerifyHelper.VerifyPhone(Identifier))
-        // {
-        //     yield return new ValidationResult(
-        //         "Invalid phone number input.",
-        //         new[] { "identifier" }
-        //     );
-        // }
     }
 }

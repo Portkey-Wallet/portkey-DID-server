@@ -117,7 +117,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
         Configure<AdaptableVariableOptions>(configuration.GetSection("AdaptableVariableSetting"));
         context.Services.AddSingleton<IAccountValidator, EmailValidator>();
-        context.Services.AddSingleton<IAccountValidator, PhoneValidator>();
         //Configure<IndexPrefixOptions>(configuration.GetSection("IndexPrefixSetting"));
         Configure<IpServiceSettingOptions>(configuration.GetSection("IpServiceSetting"));
         Configure<AppleAuthOptions>(configuration.GetSection("AppleAuth"));
@@ -127,7 +126,6 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleCacheOptions>(configuration.GetSection("AppleCache"));
         Configure<SwitchOptions>(configuration.GetSection("Switch"));
         Configure<SendVerifierCodeRequestLimitOptions>(configuration.GetSection("SendVerifierCodeRequestLimit"));
-        Configure<PhoneInfoOptions>(configuration.GetSection("PhoneInfoOptions"));
         Configure<ClaimTokenWhiteListAddressesOptions>(configuration.GetSection("ClaimTokenWhiteListAddresses"));
         Configure<ClaimTokenInfoOptions>(configuration.GetSection("ClaimTokenInfo"));
         Configure<CmsConfigOptions>(configuration.GetSection("CmsConfig"));
