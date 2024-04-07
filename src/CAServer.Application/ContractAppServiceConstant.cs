@@ -12,6 +12,8 @@ public static class QueryLoginGuardianType
 {
     public const string LoginGuardianRemoved = "LoginGuardianRemoved";
     public const string LoginGuardianUnbound = "LoginGuardianUnbound";
+    public const string LoginGuardianAdded = "LoginGuardianAdded";
+    
 }
 
 public static class QueryType

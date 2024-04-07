@@ -913,6 +913,7 @@ public class ContractAppService : IContractAppService
             {
                 foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
                 {
+                    
                     var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(info.ChainId);
                     await _monitorLogProvider.AddHeightIndexMonitorLogAsync(chainId, indexHeight);
 
@@ -1309,6 +1310,11 @@ public class ContractAppService : IContractAppService
                     continue;
                 }
 
+                if (record.ChangeType == QueryLoginGuardianType.LoginGuardianAdded)
+                {
+                    continue;
+                }
+
                 _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
                 var syncHolderInfoInput =
                     await _contractProvider.GetSyncHolderInfoInputAsync(chainId,
@@ -1348,6 +1354,11 @@ public class ContractAppService : IContractAppService
             {
                 if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash,
                         record.ValidateHeight))
+                {
+                    continue;
+                }
+                
+                if (record.ChangeType == QueryLoginGuardianType.LoginGuardianAdded)
                 {
                     continue;
                 }
