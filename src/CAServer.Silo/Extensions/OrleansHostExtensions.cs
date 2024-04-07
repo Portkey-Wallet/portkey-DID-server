@@ -63,7 +63,13 @@ public static class OrleansHostExtensions
                 })
                 // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
-                .UseDashboard(options =>
+                .UseLinuxEnvironmentStatistics()
+                .AddNightingaleTelemetryConsumer()
+                .AddNightingaleMethodFilter()
+                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
+            if (orleansConfigSection.GetValue<bool>("UseDashboard", false))
+            {
+                siloBuilder.UseDashboard(options =>
                 {
                     options.Username = orleansConfigSection.GetValue<string>("DashboardUserName");
                     options.Password = orleansConfigSection.GetValue<string>("DashboardPassword");
@@ -72,11 +78,8 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs =
                         orleansConfigSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
-                })
-                .UseLinuxEnvironmentStatistics()
-                .AddNightingaleTelemetryConsumer()
-                .AddNightingaleMethodFilter()
-                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
+                });
+            }
         });
     }
 }
