@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AElf;
+using AElf.Types;
 using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
@@ -19,6 +20,7 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Growth;
@@ -82,6 +84,8 @@ using ImInfo = CAServer.Contacts.ImInfo;
 using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
+using Google.Protobuf.Collections;
+using static Google.Protobuf.WellKnownTypes.TimeExtensions;
 
 namespace CAServer;
 
@@ -250,6 +254,98 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f =>
                     f.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(f.CreateChainId) : string.Empty));
         // .ForPath(t => t.GuardianList, m => m.MapFrom(f => f.GuardianList.Guardians));
+
+        //used by the ContractService class
+        CreateMap<CreateHolderDto, CreateCAHolderInput>()
+            .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => new DelegateInfo()
+            {
+                ChainId = e.ProjectDelegateInfo.ChainId,
+                ProjectHash = Hash.LoadFromHex(e.ProjectDelegateInfo.ProjectHash),
+                IdentifierHash = Hash.LoadFromHex(e.ProjectDelegateInfo.IdentifierHash),
+                ExpirationTime = e.ProjectDelegateInfo.ExpirationTime,
+                Delegations =
+                {
+                    e.ProjectDelegateInfo.Delegations
+                },
+                Timestamp = DateTimeOffset.FromUnixTimeSeconds(e.ProjectDelegateInfo.TimeStamp).ToTimestamp(),
+                IsUnlimitedDelegate = e.ProjectDelegateInfo.IsUnlimitedDelegate,
+                Signature = e.ProjectDelegateInfo.Signature
+            }))
+            .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
+            {
+                Type = e.GuardianInfo.Type,
+                IdentifierHash = e.GuardianInfo.IdentifierHash,
+                VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id,
+                    Signature = e.GuardianInfo.VerificationInfo.Signature,
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = e.ManagerInfo.Address,
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(t => t.ReferralCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
+            .ForMember(t => t.ProjectCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+
+        CreateMap<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>()
+            .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
+            {
+                Type = e.GuardianInfo.Type,
+                IdentifierHash = e.GuardianInfo.IdentifierHash,
+                VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id,
+                    Signature = e.GuardianInfo.VerificationInfo.Signature,
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = e.ManagerInfo.Address,
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
+
+        CreateMap<SocialRecoveryDto, SocialRecoveryInput>()
+            .ForMember(d => d.GuardiansApproved,
+                opt => opt.MapFrom(e => e.GuardianApproved.Select(g => new Portkey.Contracts.CA.GuardianInfo
+                {
+                    Type = g.Type,
+                    IdentifierHash = g.IdentifierHash,
+                    VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                    {
+                        Id = g.VerificationInfo.Id,
+                        Signature = g.VerificationInfo.Signature,
+                        VerificationDoc = g.VerificationInfo.VerificationDoc
+                    }
+                }).ToList()))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = e.ManagerInfo.Address,
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(d => d.LoginGuardianIdentifierHash,
+                opt => opt.MapFrom(g => g.LoginGuardianIdentifierHash))
+            .ForMember(t => t.ReferralCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
+            .ForMember(t => t.ProjectCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+
+        CreateMap<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>()
+            .ForMember(d => d.LoginGuardians,
+                opt => opt.MapFrom(e => new RepeatedField<Hash>
+                    { e.GuardianList.Guardians.Where(g => g.IsLoginGuardian).Select(g => g.IdentifierHash).ToList() }))
+            .ForMember(d => d.ManagerInfos, opt => opt.MapFrom(g => g.ManagerInfos))
+            .ForMember(d => d.CaHash,
+                opt => opt.MapFrom(g => g.CaHash))
+            .ForMember(d => d.CreateChainId,
+                opt => opt.MapFrom(g => g.CreateChainId));
+        //end
 
         CreateMap<RegisterRequestDto, RegisterDto>().BeforeMap((src, dest) =>
             {
