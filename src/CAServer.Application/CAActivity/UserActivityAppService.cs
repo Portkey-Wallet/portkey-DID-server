@@ -501,7 +501,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 dto.PriceInUsd = price.ToString();
 
                 dto.CurrentPriceInUsd = (await GetCurrentTokenPriceAsync(dto.Symbol)).ToString();
-                dto.CurrentTxPriceInUsd = GetCurrentTxPrice(dto).ToString();
+                dto.CurrentTxPriceInUsd = GetCurrentTxPrice(dto);
 
                 if (!dto.Decimals.IsNullOrWhiteSpace() && dto.Decimals != ActivityConstants.Zero &&
                     !dict.ContainsKey(dto.Symbol))
@@ -730,14 +730,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return priceResult?.PriceInUsd ?? 0;
     }
 
-    private decimal GetCurrentTxPrice(GetActivityDto dto)
+    private string GetCurrentTxPrice(GetActivityDto dto)
     {
         if (decimal.TryParse(dto.Amount, out var amount) &&
             decimal.TryParse(dto.Decimals, out var decimals) &&
             decimal.TryParse(dto.CurrentPriceInUsd, out var currentPriceInUsd))
         {
             var baseValue = (decimal)Math.Pow(10, (double)decimals);
-            return amount / baseValue * currentPriceInUsd;
+            var currentTxPriceInUsd = amount / baseValue * currentPriceInUsd;
+            return currentTxPriceInUsd == 0 ? null : currentTxPriceInUsd.ToString();
         }
         
         throw new ArgumentException("Invalid input values");
