@@ -84,6 +84,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
         Configure<AuthServerOptions>(configuration.GetSection("AuthServer"));
         Configure<HubConfigOptions>(configuration.GetSection("HubConfig"));
+        Configure<PerformanceMonitorMiddlewareOptions>(configuration.GetSection("PerformanceMonitorMiddleware"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -220,7 +221,7 @@ public class CAServerHttpApiHostModule : AbpModule
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .AddNightingaleMethodFilter()
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }

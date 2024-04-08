@@ -14,3 +14,8 @@ public class MethodServiceFilterOptions : MethodFilterOptions
 public class MethodCallFilterOptions : MethodFilterOptions
 {
 }
+
+public static class MethodFilterContext
+{
+    public static IServiceProvider ServiceProvider { get; set; }
+}
