@@ -35,9 +35,9 @@
       "UpdateManagerInfos": "UpdateManagerInfos",
       "SetTransferLimit":"Set Transfer Limit",
       "TransferToken": "Withdraw",
-      "CreateCryptoBox": "Crypto Box Sent",
-      "TransferCryptoBoxes": "Crypto Box Claimed",
-      "RefundCryptoBox": "Crypto Box Returned"
+      "CreateCryptoBox": "Send Crypto Box",
+      "TransferCryptoBoxes": "Claim Crypto Box",
+      "RefundCryptoBox": "Return Crypto Box"
     },
     "TransactionTypeMap": {
       "TransferToken": "Transfer",
