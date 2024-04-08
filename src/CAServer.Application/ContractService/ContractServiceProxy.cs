@@ -7,6 +7,7 @@ using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Options;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Portkey.Contracts.CA;
@@ -16,13 +17,15 @@ namespace CAServer.ContractService;
 
 public class ContractServiceProxy : ISingletonDependency
 {
+    private readonly ILogger<ContractServiceProxy> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IContractService _contractService;
     private readonly IOptionsMonitor<ContractServiceOptions> _contractServiceOptions;
 
-    public ContractServiceProxy(IClusterClient clusterClient, IContractService contractService,
-        IOptionsMonitor<ContractServiceOptions> contractServiceOptions)
+    public ContractServiceProxy(ILogger<ContractServiceProxy> logger, IClusterClient clusterClient,
+        IContractService contractService, IOptionsMonitor<ContractServiceOptions> contractServiceOptions)
     {
+        _logger = logger;
         _clusterClient = clusterClient;
         _contractService = contractService;
         _contractServiceOptions = contractServiceOptions;
