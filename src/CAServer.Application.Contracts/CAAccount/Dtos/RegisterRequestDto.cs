@@ -42,14 +42,6 @@ public class RegisterRequestDto : IValidatableObject
                 new[] { "LoginGuardianIdentifier" }
             );
         }
-
-        // if (Type == GuardianIdentifierType.Phone && !VerifyHelper.VerifyPhone(LoginGuardianIdentifier))
-        // {
-        //     yield return new ValidationResult(
-        //         "Invalid phone number input.",
-        //         new[] { "LoginGuardianIdentifier" }
-        //     );
-        // }
     }
 }
 

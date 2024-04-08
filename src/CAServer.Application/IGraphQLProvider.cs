@@ -116,7 +116,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             Query = @"
 			    query($chainId:String,$startBlockHeight:Long!,$endBlockHeight:Long!) {
                     loginGuardianChangeRecordInfo(dto: {chainId:$chainId,startBlockHeight:$startBlockHeight,endBlockHeight:$endBlockHeight}){
-                        id, caHash, caAddress, changeType, manager, loginGuardian{identifierHash}, blockHeight, blockHash}
+                        id, caHash, caAddress, changeType, manager, loginGuardian{identifierHash}, blockHeight, blockHash,isCreateHolder}
                     }",
             Variables = new
             {
@@ -131,23 +131,19 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             return new List<QueryEventDto>();
         }
 
-        var result = new List<QueryEventDto>();
-        foreach (var record in graphQLResponse.Data.LoginGuardianChangeRecordInfo)
-        {
-            result.Add(new QueryEventDto
+        return graphQLResponse.Data.LoginGuardianChangeRecordInfo.Select(record => new QueryEventDto
             {
                 CaHash = record.CaHash,
                 ChangeType = record.ChangeType,
                 Manager = record.Manager,
                 BlockHeight = record.BlockHeight,
                 BlockHash = record.BlockHash,
+                IsCreateHolder = record.IsCreateHolder,
                 NotLoginGuardian = record.ChangeType == QueryLoginGuardianType.LoginGuardianUnbound
                     ? record.LoginGuardian.IdentifierHash
                     : null
-            });
-        }
-
-        return result;
+            })
+            .ToList();
     }
 
     public async Task<List<QueryEventDto>> GetManagerTransactionInfosAsync(string chainId,
