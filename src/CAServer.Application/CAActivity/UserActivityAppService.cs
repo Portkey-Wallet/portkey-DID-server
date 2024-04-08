@@ -676,8 +676,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             icon = _activitiesIcon.Contract;
         }
+
+        if (_activityTypeOptions.SystemTypes.Contains(transactionType))
+        {
+            icon = _activitiesIcon.System;
+        }
         else if (_activityTypeOptions.TransferTypes.Contains(transactionType) ||
-                 _activityTypeOptions.RedPacketTypes.Contains(transactionType))
+              _activityTypeOptions.RedPacketTypes.Contains(transactionType))
         {
             icon = symbol.IsNullOrEmpty()
                 ? _activitiesIcon.Transfer
