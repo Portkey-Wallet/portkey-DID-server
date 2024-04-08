@@ -442,7 +442,7 @@ public class ContractAppService : IContractAppService
                     "UpdateOriginChainIdAsync already success,chainId {chainId},userId {uid}", originChainId,
                     userLoginEto.UserId);
                 return;
-            }   
+            }
 
             holderInfoOutput.CreateChainId = ChainHelper.ConvertBase58ToChainId(originChainId);
 
@@ -913,7 +913,6 @@ public class ContractAppService : IContractAppService
             {
                 foreach (var info in _chainOptions.ChainInfos.Values.Where(info => !info.IsMainChain))
                 {
-                    
                     var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(info.ChainId);
                     await _monitorLogProvider.AddHeightIndexMonitorLogAsync(chainId, indexHeight);
 
@@ -938,7 +937,7 @@ public class ContractAppService : IContractAppService
                     .Select((record, index) => new { record, index })
                     .GroupBy(x => x.index / 20)
                     .Select(group => group.Select(x => x.record))
-                    .Select(group => SyncRecordSideChainAsync(group.ToList(),chainId))
+                    .Select(group => SyncRecordSideChainAsync(group.ToList(), chainId))
                     .ToList());
             }
 
@@ -1036,10 +1035,20 @@ public class ContractAppService : IContractAppService
                 queryEvents = queryEvents.Where(e => e.ChangeType != QueryLoginGuardianType.LoginGuardianRemoved)
                     .ToList();
 
+                var removeList = queryEvents.Where(eventDto =>
+                        eventDto.ChangeType == QueryLoginGuardianType.LoginGuardianAdded && eventDto.IsCreateHolder)
+                    .ToList();
+
+                foreach (var removeEventDto in removeList)
+                {
+                    queryEvents.Remove(removeEventDto);
+                }
+
                 var list = OptimizeQueryEvents(queryEvents);
 
                 list = RemoveDuplicateQueryEvents(await _recordsBucketContainer.GetValidatedRecordsAsync(chainId),
                     list);
+
 
                 await _monitorLogProvider.InitDataSyncMonitorAsync(list, chainId);
 
@@ -1053,6 +1062,7 @@ public class ContractAppService : IContractAppService
             _logger.LogError(e, "QueryEventsAsync on chain: {id} Error", chainId);
         }
     }
+
 
     private async Task ValidateQueryEventsAsync(string chainId)
     {
@@ -1348,7 +1358,7 @@ public class ContractAppService : IContractAppService
 
     private async Task SyncRecordSideChainAsync(List<SyncRecord> syncRecords, string chainId)
     {
-        if (syncRecords.Count>0)
+        if (syncRecords.Count > 0)
         {
             foreach (var record in syncRecords)
             {
@@ -1357,12 +1367,12 @@ public class ContractAppService : IContractAppService
                 {
                     continue;
                 }
-                
+
                 if (record.ChangeType == QueryLoginGuardianType.LoginGuardianAdded)
                 {
                     continue;
                 }
-                
+
                 _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
                 var retryTimes = 0;
                 var mainHeight =
@@ -1375,7 +1385,7 @@ public class ContractAppService : IContractAppService
                     indexMainChainBlock = await _contractProvider.GetIndexHeightFromSideChainAsync(chainId);
                     retryTimes++;
                 }
-                
+
                 var syncHolderInfoInput =
                     await _contractProvider.GetSyncHolderInfoInputAsync(chainId, record.ValidateTransactionInfoDto);
                 var result =
@@ -1406,10 +1416,7 @@ public class ContractAppService : IContractAppService
                     _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
                         record.ChangeType, chainId, record.CaHash);
                 }
-                
             }
-            
         }
-
     }
 }
