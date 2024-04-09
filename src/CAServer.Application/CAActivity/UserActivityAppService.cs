@@ -153,14 +153,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             result.CaHolderTransaction.Data.AddRange(needAddTransactions);
             result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
-            if (transactionsInfo.totalCount <= maxResultCount ||
-                result.CaHolderTransaction.Data.Count >= maxResultCount)
-            {
-                return;
-            }
-
-            request.SkipCount = skipCount + maxResultCount;
-            await GetActivitiesAsync(request, result);
+            // if (transactionsInfo.totalCount <= maxResultCount ||
+            //     result.CaHolderTransaction.Data.Count >= maxResultCount)
+            // {
+            //     return;
+            // }
+            //
+            // request.SkipCount = skipCount + maxResultCount;
+            // await GetActivitiesAsync(request, result);
         }
         catch (Exception e)
         {
