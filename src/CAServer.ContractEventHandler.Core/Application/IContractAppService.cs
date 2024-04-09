@@ -1335,6 +1335,11 @@ public class ContractAppService : IContractAppService
                     record.ValidateHeight = long.MaxValue;
                     record.ValidateTransactionInfoDto = new TransactionInfo();
                     record.ResultStatus = ResultStatus.NotMinded;
+                    if (!result.Error.Contains("Already synced"))
+                    {
+                        record.ResultStatus = ResultStatus.Synced;
+
+                    }
                 }
                 else
                 {
@@ -1393,6 +1398,11 @@ public class ContractAppService : IContractAppService
                     record.ValidateHeight = long.MaxValue;
                     record.ValidateTransactionInfoDto = new TransactionInfo();
                     record.ResultStatus = ResultStatus.NotMinded;
+                    if (!result.Error.Contains("Already synced"))
+                    {
+                        record.ResultStatus = ResultStatus.Synced;
+
+                    }
                 }
                 else
                 {
