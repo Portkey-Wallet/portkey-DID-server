@@ -100,6 +100,13 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(GetContractProvider());
         services.AddSingleton(GetMockSeedImageOptions());
         services.AddSingleton(GetMockTokenProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockHttpClientFactory());
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
     }
 
     private void Login(Guid userId)
