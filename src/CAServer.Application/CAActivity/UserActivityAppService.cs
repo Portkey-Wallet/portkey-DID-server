@@ -206,6 +206,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             t.MethodName == AElfContractMethodName.CreateCAHolderOnNonCreateChain ||
             (t.MethodName == AElfContractMethodName.SocialRecovery && originChainId != t.ChainId));
 
+        transactions?.CaHolderTransaction?.Data?
+            .RemoveAll(t => _activityTypeOptions.NoShowTypes.Contains(t.MethodName));
+
         return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
     }
 
@@ -485,12 +488,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
             var dto = ObjectMapper.Map<IndexerTransaction, GetActivityDto>(ht);
-            if (_activityTypeOptions.NoShowTypes.Contains(dto.TransactionType))
-            {
-                result.TotalRecordCount -= 1;
-                continue;
-            }
-
             var transactionTime = MsToDateTime(ht.Timestamp * 1000);
 
             if (dto.Symbol != null)
@@ -611,7 +608,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var typeName =
             _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
         activityDto.TransactionName = typeName;
-        
+
         if (transactionType == ActivityConstants.AddGuardianName ||
             transactionType == ActivityConstants.AddManagerInfo)
         {
@@ -682,7 +679,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             icon = _activitiesIcon.System;
         }
         else if (_activityTypeOptions.TransferTypes.Contains(transactionType) ||
-              _activityTypeOptions.RedPacketTypes.Contains(transactionType))
+                 _activityTypeOptions.RedPacketTypes.Contains(transactionType))
         {
             icon = symbol.IsNullOrEmpty()
                 ? _activitiesIcon.Transfer
