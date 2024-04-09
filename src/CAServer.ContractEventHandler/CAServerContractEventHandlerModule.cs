@@ -168,7 +168,7 @@ public class CAServerContractEventHandlerModule : AbpModule
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .AddNightingaleMethodFilter()
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }

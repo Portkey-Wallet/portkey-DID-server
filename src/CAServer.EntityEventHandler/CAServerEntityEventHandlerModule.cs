@@ -89,7 +89,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 //.AddSimpleMessageStreamProvider(AElfIndexerApplicationConsts.MessageStreamName)
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
-                .AddNightingaleMethodFilter()
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }

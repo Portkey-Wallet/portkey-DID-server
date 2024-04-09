@@ -10,18 +10,17 @@ public class MethodCallFilter : IOutgoingGrainCallFilter
 {
     private readonly ILogger? _logger;
     private readonly N9EClientFactory? _n9EClientFactory;
-    private readonly IOptionsMonitor<MethodCallFilterOptions> _methodCallFilterOption;
+    private readonly IOptionsMonitor<MethodCallFilterOptions>? _methodCallFilterOption;
 
     private readonly GrainMethodFormatter.GrainMethodFormatterDelegate _methodFormatter =
         GrainMethodFormatter.MethodFormatter;
 
-    public MethodCallFilter(IServiceProvider serviceProvider,
-        IOptionsMonitor<MethodCallFilterOptions> methodCallFilterOption)
+    public MethodCallFilter(IServiceProvider serviceProvider)
     {
-        _logger = serviceProvider.GetService<ILogger<MethodCallFilter>>();
-        _n9EClientFactory = serviceProvider.GetService<N9EClientFactory>();
-        _methodCallFilterOption = methodCallFilterOption;
-        var formatterDelegate = serviceProvider.GetService<GrainMethodFormatter.GrainMethodFormatterDelegate>();
+        _logger = MethodFilterContext.ServiceProvider.GetService<ILogger<MethodCallFilter>>();
+        _n9EClientFactory = MethodFilterContext.ServiceProvider.GetService<N9EClientFactory>();
+        _methodCallFilterOption = MethodFilterContext.ServiceProvider.GetService<IOptionsMonitor<MethodCallFilterOptions>>();
+        var formatterDelegate =  MethodFilterContext.ServiceProvider.GetService<GrainMethodFormatter.GrainMethodFormatterDelegate>();
         if (formatterDelegate != null)
         {
             _methodFormatter = formatterDelegate;
