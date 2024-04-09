@@ -141,6 +141,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var transactionsInfo = await GetTransactionsAsync(request);
+            if (transactionsInfo.data.IsNullOrEmpty())
+            {
+                return;
+            }
             result.CaHolderTransaction.Data = transactionsInfo.data;
             result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
         }
@@ -672,11 +676,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 ? _activitiesIcon.Transfer
                 : _assetsLibraryProvider.buildSymbolImageUrl(symbol);
         }
-        // else if (_activityTypeOptions.RedPacketTypes.Contains(transactionType))
-        // {
-        //     icon = _activitiesIcon.RedPacket;
-        // }
-
+        
         return icon;
     }
 
