@@ -8,6 +8,7 @@ using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
+using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Tokens.TokenPrice.Provider.FeiXiaoHao;
 using GraphQL.Client.Abstractions;
@@ -88,6 +89,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 //.AddSimpleMessageStreamProvider(AElfIndexerApplicationConsts.MessageStreamName)
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }
