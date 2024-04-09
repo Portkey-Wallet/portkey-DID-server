@@ -42,6 +42,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         services.AddSingleton(MockGraphQlOptions());
         
         services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceWorkerOption());
         services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
         services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
