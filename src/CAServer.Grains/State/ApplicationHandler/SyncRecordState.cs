@@ -34,6 +34,7 @@ public class TransactionInfo
 public enum ResultStatus
 {
     None = 0,
-    NotMinded = 1
+    NotMinded = 1,
+    Synced = 2
     
 }

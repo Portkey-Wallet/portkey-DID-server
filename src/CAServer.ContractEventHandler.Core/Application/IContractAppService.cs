@@ -882,12 +882,11 @@ public class ContractAppService : IContractAppService
     private async Task QueryEventsAndSyncAsync(string chainId)
     {
         await QueryEventsAsync(chainId);
-        var tasks = new List<Task>(2)
-        {
-            ValidateQueryEventsAsync(chainId),
-            SyncQueryEventsAsync(chainId)
-        };
-        await tasks.WhenAll();
+
+        await ValidateQueryEventsAsync(chainId);
+        
+        await SyncQueryEventsAsync(chainId);
+        
     }
 
     private async Task SyncQueryEventsAsync(string chainId)
@@ -1317,14 +1316,9 @@ public class ContractAppService : IContractAppService
             {
                 if (!await CheckSyncHolderVersionAsync(chainId, record.CaHash, record.ValidateHeight))
                 {
+                    record.ResultStatus = ResultStatus.Synced;
                     continue;
                 }
-
-                if (record.ChangeType == QueryLoginGuardianType.LoginGuardianAdded)
-                {
-                    continue;
-                }
-
                 _monitorLogProvider.AddNode(record, DataSyncType.BeginSync);
                 var syncHolderInfoInput =
                     await _contractProvider.GetSyncHolderInfoInputAsync(chainId,
@@ -1351,6 +1345,7 @@ public class ContractAppService : IContractAppService
                     _logger.LogInformation("{type} SyncToSide succeed on chain: {id} of account: {hash}",
                         record.ChangeType, chainId, record.CaHash);
                     await UpdateSyncHolderVersionAsync(chainId, record.CaHash, record.ValidateHeight);
+                    record.ResultStatus = ResultStatus.Synced;
                 }
             }
         }
@@ -1365,11 +1360,7 @@ public class ContractAppService : IContractAppService
                 if (!await CheckSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash,
                         record.ValidateHeight))
                 {
-                    continue;
-                }
-
-                if (record.ChangeType == QueryLoginGuardianType.LoginGuardianAdded)
-                {
+                    record.ResultStatus = ResultStatus.Synced;
                     continue;
                 }
 
@@ -1413,6 +1404,7 @@ public class ContractAppService : IContractAppService
                         record.ChangeType);
                     await UpdateSyncHolderVersionAsync(ContractAppServiceConstant.MainChainId, record.CaHash,
                         record.ValidateHeight);
+                    record.ResultStatus = ResultStatus.Synced;
                     _logger.LogInformation("{type} SyncToMain succeed on chain: {id} of account: {hash}",
                         record.ChangeType, chainId, record.CaHash);
                 }
