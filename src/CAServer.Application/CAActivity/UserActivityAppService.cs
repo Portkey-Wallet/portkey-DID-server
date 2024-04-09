@@ -140,27 +140,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
-            var skipCount = request.SkipCount;
-            var maxResultCount = request.MaxResultCount;
             var transactionsInfo = await GetTransactionsAsync(request);
-            if (transactionsInfo.data.IsNullOrEmpty())
-            {
-                return;
-            }
-
-            var needAddCount = request.MaxResultCount - result.CaHolderTransaction.Data.Count;
-            var needAddTransactions = transactionsInfo.data.Take(needAddCount).ToList();
-
-            result.CaHolderTransaction.Data.AddRange(needAddTransactions);
+            result.CaHolderTransaction.Data = transactionsInfo.data;
             result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
-            // if (transactionsInfo.totalCount <= maxResultCount ||
-            //     result.CaHolderTransaction.Data.Count >= maxResultCount)
-            // {
-            //     return;
-            // }
-            //
-            // request.SkipCount = skipCount + maxResultCount;
-            // await GetActivitiesAsync(request, result);
         }
         catch (Exception e)
         {
@@ -627,7 +609,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return;
         }
 
-        if (transactionType is ActivityConstants.TransferName)
+        if (transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName)
         {
             activityDto.TransactionName =
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
@@ -648,7 +630,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         if (activityDto.NftInfo != null && !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId))
         {
             var nftTransactionName =
-                transactionType is ActivityConstants.TransferName
+                transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName
                     ? activityDto.TransactionName
                     : typeName;
 
