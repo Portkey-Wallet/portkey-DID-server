@@ -1,9 +1,6 @@
-using Volo.Abp.EventBus;
+namespace CAServer.Tab.Dtos;
 
-namespace CAServer.Tab.Etos;
-
-[EventName("TabCompleteEto")]
-public class TabCompleteEto
+public class TabCompleteInfo
 {
     public string ClientId { get; set; }
     public string MethodName { get; set; }
