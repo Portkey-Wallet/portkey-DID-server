@@ -139,6 +139,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var transactionsInfo = await GetTransactionsAsync(request);
+            if (transactionsInfo.data.IsNullOrEmpty())
+            {
+                return;
+            }
             result.CaHolderTransaction.Data = transactionsInfo.data;
             result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
         }
