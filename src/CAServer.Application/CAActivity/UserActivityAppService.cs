@@ -671,11 +671,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 ? _activitiesIcon.Transfer
                 : _assetsLibraryProvider.buildSymbolImageUrl(symbol);
         }
-        // else if (_activityTypeOptions.RedPacketTypes.Contains(transactionType))
-        // {
-        //     icon = _activitiesIcon.RedPacket;
-        // }
-
+        
         return icon;
     }
 
