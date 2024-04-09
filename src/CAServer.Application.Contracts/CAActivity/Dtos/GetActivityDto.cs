@@ -14,6 +14,8 @@ public class GetActivityDto : ActivityBase
 {
     public NftDetail NftInfo { get; set; }
     public string ListIcon { set; get; }
+    public string CurrentPriceInUsd { get; set; }
+    public string CurrentTxPriceInUsd { get; set; }
 }
 
 public class NftDetail

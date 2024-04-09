@@ -52,6 +52,7 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockITokenProvider());
         services.AddSingleton(GetMockITokenCacheProvider());
         services.AddSingleton(GetMockCoinGeckoOptions());
+        services.AddSingleton(GetMockTokenPriceWorkerOption());
         services.AddSingleton(GetMockSignatureServerOptions());
         services.AddSingleton(GetMockRequestLimitProvider());
         services.AddSingleton(GetMockSecretProvider());
