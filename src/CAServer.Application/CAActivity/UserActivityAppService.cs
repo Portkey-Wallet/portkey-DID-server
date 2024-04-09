@@ -12,6 +12,7 @@ using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
@@ -44,13 +45,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ActivityTypeOptions _activityTypeOptions;
     private readonly IpfsOptions _ipfsOptions;
+    private readonly ITokenPriceService _tokenPriceService;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
         IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
-        IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions)
+        IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions, ITokenPriceService tokenPriceService)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -64,6 +66,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _activityOptions = activityOptions.Value;
         _activityTypeOptions = activityTypeOptions.Value;
         _ipfsOptions = ipfsOptions.Value;
+        _tokenPriceService = tokenPriceService;
     }
 
 
@@ -490,6 +493,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 var price = await GetTokenPriceAsync(dto.Symbol, transactionTime);
                 dto.PriceInUsd = price.ToString();
+                
+                dto.CurrentPriceInUsd = (await GetCurrentTokenPriceAsync(dto.Symbol)).ToString();
+                dto.CurrentTxPriceInUsd = GetCurrentTxPrice(dto);
 
                 if (!dto.Decimals.IsNullOrWhiteSpace() && dto.Decimals != ActivityConstants.Zero &&
                     !dict.ContainsKey(dto.Symbol))
@@ -686,6 +692,26 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         return price.Items.First().PriceInUsd;
+    }
+    
+    private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
+    {
+        var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
+        return priceResult?.PriceInUsd ?? 0;
+    }
+
+    private string GetCurrentTxPrice(GetActivityDto dto)
+    {
+        if (decimal.TryParse(dto.Amount, out var amount) &&
+            decimal.TryParse(dto.Decimals, out var decimals) &&
+            decimal.TryParse(dto.CurrentPriceInUsd, out var currentPriceInUsd))
+        {
+            var baseValue = (decimal)Math.Pow(10, (double)decimals);
+            var currentTxPriceInUsd = amount / baseValue * currentPriceInUsd;
+            return currentTxPriceInUsd == 0 ? null : currentTxPriceInUsd.ToString();
+        }
+        
+        throw new ArgumentException("Invalid input values");
     }
 
     private async Task<List<decimal>> GetFeePriceListAsync(IEnumerable<string> symbolList, DateTime time)
