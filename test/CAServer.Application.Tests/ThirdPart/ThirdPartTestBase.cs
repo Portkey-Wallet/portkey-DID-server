@@ -46,6 +46,7 @@ public class ThirdPartTestBase : CAServerApplicationTestBase
             });
         MockHttpByPath(TransakApi.UpdateWebhook.Method, TransakApi.UpdateWebhook.Path, "success");
         services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceWorkerOption());
         services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
         services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
     }
