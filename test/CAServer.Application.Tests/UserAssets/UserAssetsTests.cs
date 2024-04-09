@@ -11,6 +11,7 @@ using CAServer.Search;
 using CAServer.Tokens;
 using CAServer.Tokens.Cache;
 using CAServer.Tokens.Provider;
+using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -60,6 +61,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var tokenProvider = new Mock<ITokenProvider>();
         var tokenCacheProvider = new Mock<ITokenCacheProvider>();
         var ipfsOption = new Mock<IOptionsSnapshot<IpfsOptions>>();
+        var tokenPriceServiceMock = new Mock<ITokenPriceService>();
         var userAssetsAppService = new UserAssetsAppService(
             logger: loggerMock.Object,
             userAssetsProvider: userAssetsProviderMock.Object,
@@ -80,7 +82,8 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(), 
             searchAppService: searchAppServiceMock.Object,
             tokenCacheProvider: tokenCacheProvider.Object,
-            ipfsOption: ipfsOption.Object);
+            ipfsOption: ipfsOption.Object,
+            tokenPriceService: tokenPriceServiceMock.Object);
         return userAssetsAppService;
     }
 
