@@ -10,6 +10,7 @@ using CAServer.Grains;
 using CAServer.Grains.Grain.UserExtraInfo;
 using CAServer.Signature.Provider;
 using CAServer.TwitterAuth.Dtos;
+using CAServer.TwitterAuth.Etos;
 using CAServer.TwitterAuth.Provider;
 using CAServer.Verifier.Etos;
 using Microsoft.AspNetCore.Http;
@@ -36,7 +37,8 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
 
     public TwitterAuthAppService(IHttpClientService httpClientService, IOptionsSnapshot<TwitterAuthOptions> options,
         IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
-        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider, ITwitterAuthProvider twitterAuthProvider)
+        IHttpContextAccessor httpContextAccessor, ISecretProvider secretProvider,
+        ITwitterAuthProvider twitterAuthProvider)
     {
         _httpClientService = httpClientService;
         _clusterClient = clusterClient;
@@ -130,6 +132,13 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
             throw new UserFriendlyException("Failed to get user info");
         }
 
+        // statistic
+        await _distributedEventBus.PublishAsync(new TwitterStatisticEto
+        {
+            Id = userInfo.Data.Id,
+            UpdateTime = TimeHelper.GetTimeStampInSeconds()
+        });
+        
         Logger.LogInformation("get twitter user info success, data:{userInfo}", JsonConvert.SerializeObject(userInfo));
         var userExtraInfo = new Verifier.Dtos.UserExtraInfo
         {
@@ -164,11 +173,12 @@ public class TwitterAuthAppService : CAServerAppService, ITwitterAuthAppService
         string errorCode = AuthErrorMap.DefaultCode;
         if (exception is UserFriendlyException friendlyException)
         {
-            errorCode = friendlyException.Code == HttpStatusCode.TooManyRequests.ToString() ? AuthErrorMap.TwitterCancelCode : friendlyException.Code;
+            errorCode = friendlyException.Code == HttpStatusCode.TooManyRequests.ToString()
+                ? AuthErrorMap.TwitterCancelCode
+                : friendlyException.Code;
         }
 
         var message = AuthErrorMap.GetMessage(errorCode);
         return (errorCode, message);
     }
-    
 }
