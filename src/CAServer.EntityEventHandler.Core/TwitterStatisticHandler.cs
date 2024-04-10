@@ -38,8 +38,10 @@ public class TwitterStatisticHandler : IDistributedEventHandler<TwitterStatistic
                 {
                     item.CallCount = 1;
                 }
-
-                item.CallCount += 1;
+                else
+                {
+                    item.CallCount += 1;
+                }
                 item.UpdateTime = eventData.UpdateTime;
                 await _twitterStatisticRepository.UpdateAsync(item);
 
