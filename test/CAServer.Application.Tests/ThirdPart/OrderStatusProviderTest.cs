@@ -29,6 +29,7 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
         services.AddSingleton(UserActivityAppServiceTests.GetMockActivityProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockHttpClientFactory());
         services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceWorkerOption());
         services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
         services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());

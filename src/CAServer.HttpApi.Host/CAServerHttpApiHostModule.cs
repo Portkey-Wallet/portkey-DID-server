@@ -85,7 +85,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
         Configure<AuthServerOptions>(configuration.GetSection("AuthServer"));
         Configure<HubConfigOptions>(configuration.GetSection("HubConfig"));
-        Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
+        Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"
         Configure<PerformanceMonitorMiddlewareOptions>(configuration.GetSection("PerformanceMonitorMiddleware"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
@@ -386,7 +386,7 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        // app.UseAuditing();      
+        app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();

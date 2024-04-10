@@ -205,6 +205,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var caAddressInfos = new List<CAAddressInfo>();
+            var addressInfo = request.CaAddressInfos?.FirstOrDefault();
+            var chainId = string.Empty;
+            if (addressInfo != null)
+            {
+                chainId = addressInfo.ChainId;
+            }
+            
             var caAddresses = request.CaAddresses;
             if (caAddresses.IsNullOrEmpty())
             {
@@ -220,7 +227,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
             var activitiesDto =
-                await IndexerTransaction2Dto(caAddresses, indexerTransactions, null, 0, 0, true);
+                await IndexerTransaction2Dto(caAddresses, indexerTransactions, chainId, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
@@ -482,7 +489,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 var price = await GetTokenPriceAsync(dto.Symbol, transactionTime);
                 dto.PriceInUsd = price.ToString();
-
+                
                 dto.CurrentPriceInUsd = (await GetCurrentTokenPriceAsync(dto.Symbol)).ToString();
                 dto.CurrentTxPriceInUsd = GetCurrentTxPrice(dto);
 
@@ -707,7 +714,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         return price.Items.First().PriceInUsd;
     }
-
+    
     private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
     {
         var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
