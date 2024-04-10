@@ -85,7 +85,7 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
         Configure<AuthServerOptions>(configuration.GetSection("AuthServer"));
         Configure<HubConfigOptions>(configuration.GetSection("HubConfig"));
-        Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"
+        Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
         Configure<PerformanceMonitorMiddlewareOptions>(configuration.GetSection("PerformanceMonitorMiddleware"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
