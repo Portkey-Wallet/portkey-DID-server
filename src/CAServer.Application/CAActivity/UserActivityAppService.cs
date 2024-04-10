@@ -20,7 +20,6 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -206,6 +205,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var caAddressInfos = new List<CAAddressInfo>();
+            var addressInfo = request.CaAddressInfos?.FirstOrDefault();
+            var chainId = string.Empty;
+            if (addressInfo != null)
+            {
+                chainId = addressInfo.ChainId;
+            }
+            
             var caAddresses = request.CaAddresses;
             if (caAddresses.IsNullOrEmpty())
             {
@@ -221,7 +227,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
             var activitiesDto =
-                await IndexerTransaction2Dto(caAddresses, indexerTransactions, null, 0, 0, true);
+                await IndexerTransaction2Dto(caAddresses, indexerTransactions, chainId, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
