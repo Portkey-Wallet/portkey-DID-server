@@ -23,6 +23,7 @@ public class ActivityBase
     public List<TransactionFee> TransactionFees { get; set; }
     public string PriceInUsd { get; set; }
     public bool IsDelegated { get; set; }
+    public bool IsSystem { get; set; }
 }
 
 public class TransactionFee

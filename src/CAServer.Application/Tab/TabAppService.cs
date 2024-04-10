@@ -34,12 +34,15 @@ public class TabAppService : CAServerAppService, ITabAppService
         if (input.NeedPersist)
         {
             await SaveAsync(input);
-            return;
+            Logger.LogInformation(
+                "tab communication info save success, clientId:{clientId}, methodName:{methodName}, targetClientId:{targetClientId}",
+                input.ClientId, input.MethodName, input.TargetClientId ?? string.Empty);
         }
 
         await _distributedEvent.PublishAsync(ObjectMapper.Map<TabCompleteDto, TabCompleteEto>(input));
-        Logger.LogInformation("tab communication published, clientId:{clientId}, methodName:{methodName}",
-            input.ClientId, input.MethodName);
+        Logger.LogInformation(
+            "tab communication published, clientId:{clientId}, methodName:{methodName}, targetClientId:{targetClientId}",
+            input.ClientId, input.MethodName, input.TargetClientId ?? string.Empty);
     }
 
     private async Task SaveAsync(TabCompleteDto input)
@@ -49,14 +52,12 @@ public class TabAppService : CAServerAppService, ITabAppService
             {
                 ClientId = input.ClientId,
                 MethodName = input.MethodName,
-                Data = input.Data
+                Data = input.Data,
+                TargetClientId = input.TargetClientId
             },
             new DistributedCacheEntryOptions
             {
                 AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(_options.ExpireDays)
             });
-
-        Logger.LogInformation("tab communication info save success, clientId:{clientId}, methodName:{methodName}",
-            input.ClientId, input.MethodName);
     }
 }
