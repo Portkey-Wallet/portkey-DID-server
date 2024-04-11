@@ -88,9 +88,9 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     private async Task<List<CrossChainTransferDto>> GetToReceiveTransactionsAsync(string chainId)
     {
         var grain = _clusterClient.GetGrain<ICrossChainTransferGrain>(chainId);
-        
+
         var transfers = (await grain.GetUnFinishedTransfersAsync()).Data;
-        
+
         transfers = transfers.Where(o => o.RetryTimes < MaxRetryTimes).ToList();
 
         if (transfers.Count < MaxTransferQueryCount)
@@ -254,11 +254,11 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     {
         if (transfer.FromChainId == CAServerConsts.AElfMainChainId)
         {
-            // var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.ToChainId);
-            // if (indexHeight < transfer.TransferTransactionHeight)
-            // {
-            //     return;
-            // }
+            var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.ToChainId);
+            if (indexHeight < transfer.TransferTransactionHeight)
+            {
+                return;
+            }
 
             var txId = await SendReceiveTransactionAsync(transfer);
             transfer.Status = CrossChainStatus.Receiving;
@@ -271,15 +271,15 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
 
             if (transfer.MainChainIndexHeight != 0)
             {
-                var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.FromChainId);
-                if (indexHeight < transfer.MainChainIndexHeight)
-                {
-                    return;
-                }
+                // var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.FromChainId);
+                // if (indexHeight < transfer.MainChainIndexHeight)
+                // {
+                //     return;
+                // }
 
                 if (transfer.ToChainId != CAServerConsts.AElfMainChainId)
                 {
-                    indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.ToChainId);
+                    var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.ToChainId);
                     if (indexHeight < transfer.MainChainIndexHeight)
                     {
                         return;
