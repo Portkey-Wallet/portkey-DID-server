@@ -683,6 +683,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 ? _activitiesIcon.Transfer
                 : _assetsLibraryProvider.buildSymbolImageUrl(symbol);
         }
+
+        // compatible with front-end changes
+        if (icon.IsNullOrEmpty())
+        {
+            icon = _activitiesIcon.Contract;
+        }
         
         return icon;
     }

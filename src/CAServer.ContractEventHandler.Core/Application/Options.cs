@@ -14,7 +14,7 @@ public class ChainInfo
     public string ContractAddress { get; set; }
     public string TokenContractAddress { get; set; }
     public string CrossChainContractAddress { get; set; }
-    
+
     public string RedPackageContractAddress { get; set; }
     public string PublicKey { get; set; }
     public bool IsMainChain { get; set; }
@@ -44,4 +44,5 @@ public class ContractSyncOptions
 {
     public int Sync { get; set; }
     public int AutoReceive { get; set; }
+    public int WorkerNodeExpirationTime { get; set; } = 300;
 }

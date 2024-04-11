@@ -14,6 +14,7 @@ using CAServer.Security.Etos;
 using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Etos;
+using CAServer.TwitterAuth.Etos;
 using CAServer.Verifier.Etos;
 using ContactAddress = CAServer.Entities.Es.ContactAddress;
 
@@ -78,5 +79,6 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<RedDot.Dtos.RedDotInfo, Entities.Es.RedDotInfo>().ReverseMap();
         CreateMap<RedDotEto, RedDotIndex>();
         CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
+        CreateMap<TwitterStatisticEto, TwitterStatisticIndex>();
     }
 }

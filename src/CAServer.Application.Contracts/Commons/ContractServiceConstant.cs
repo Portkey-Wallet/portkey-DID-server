@@ -96,5 +96,6 @@ public static class CommonConstant
     public const string TwitterTokenUrl = "https://api.twitter.com/2/oauth2/token";
     public const string TwitterUserInfoUrl = "https://api.twitter.com/2/users/me";
     public const string JwtTokenPrefix = "Bearer";
+    public const int TwitterLimitCount = 200;
 
 }
