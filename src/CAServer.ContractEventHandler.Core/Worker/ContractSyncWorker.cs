@@ -38,16 +38,16 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
         _logger = logger;
         Timer.Period = 1000 * _contractSyncOptions.Sync;
         
-        hostApplicationLifetime.ApplicationStopped.Register(() =>
+        hostApplicationLifetime.ApplicationStopped.Register(async () =>
         {
-            _logger.LogWarning("[Stopped]remove worker node " + WorkerName);
-            _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
+            _logger.LogWarning("[Stopped]remove work node " + WorkerName);
+            await _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
         });
 
-        hostApplicationLifetime.ApplicationStopping.Register(() =>
+        hostApplicationLifetime.ApplicationStopping.Register(async () =>
         {
-            _logger.LogWarning("[Stopping]remove worker node " + WorkerName);
-            _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
+            _logger.LogWarning("[Stopping]remove work node " + WorkerName);
+            await _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
         });
     }
 
