@@ -56,7 +56,7 @@ public class PerformanceMonitorMiddleware
             stopwatch.Stop();
             var elapsedMs = stopwatch.Elapsed.TotalMilliseconds;
             var path = context.Request.Path;
-            await _n9EClientFactory.TrackTransaction(chart: N9EClientConstant.Api, type: path, duration: elapsedMs,
+            await _n9EClientFactory.TrackTransactionSync(chart: N9EClientConstant.Api, type: path, duration: elapsedMs,
                 isSuccess: !isException);
         }
         catch (Exception e)

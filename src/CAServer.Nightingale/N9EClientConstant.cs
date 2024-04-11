@@ -24,6 +24,7 @@ public static class N9EClientConstant
 
     public const string Unknown = "Unknown";
     public const string Api = "Api";
+    public const string Biz = "Biz";
 
     public const string DataTimeFormat = "yyyy-MM-dd HH:mm:ss";
 }
