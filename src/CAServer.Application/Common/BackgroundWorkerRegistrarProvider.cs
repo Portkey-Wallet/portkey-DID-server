@@ -41,7 +41,7 @@ public class BackgroundWorkerRegistrarProvider : IBackgroundWorkerRegistrarProvi
         _logger = logger;
         _distributedCache = distributedCache;
         _distributedLock = distributedLock;
-        _hostName = $"{HostHelper.GetLocalHostName()}_{Guid.NewGuid()}";
+        _hostName = HostHelper.GetLocalHostName();
     }
 
     public async Task<bool> RegisterUniqueWorkerNodeAsync(string worker, int period, int workerNodeExpirationTime,
