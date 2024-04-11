@@ -254,11 +254,11 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
     {
         if (transfer.FromChainId == CAServerConsts.AElfMainChainId)
         {
-            var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.ToChainId);
-            if (indexHeight < transfer.TransferTransactionHeight)
-            {
-                return;
-            }
+            // var indexHeight = await _contractProvider.GetIndexHeightFromSideChainAsync(transfer.ToChainId);
+            // if (indexHeight < transfer.TransferTransactionHeight)
+            // {
+            //     return;
+            // }
 
             var txId = await SendReceiveTransactionAsync(transfer);
             transfer.Status = CrossChainStatus.Receiving;
