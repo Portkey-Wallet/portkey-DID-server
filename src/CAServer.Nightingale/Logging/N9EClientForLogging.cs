@@ -211,11 +211,18 @@ public class N9EClientForLogging : IN9EClient
 
     private void TrackMetric(string metric)
     {
-        if (_n9EClientForLoggingOptions.CurrentValue.DisableLogging)
+        try
         {
-            return;
-        }
+            if (_n9EClientForLoggingOptions.CurrentValue.DisableLogging)
+            {
+                return;
+            }
 
-        _logger.Warning(metric);
+            _logger.Warning(metric);
+        }
+        catch (Exception e)
+        {
+            // No need to handle monitoring log printing exceptions.
+        }
     }
 }
