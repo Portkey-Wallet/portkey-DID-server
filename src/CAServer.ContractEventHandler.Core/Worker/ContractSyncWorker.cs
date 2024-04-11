@@ -6,6 +6,7 @@ using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Nightingale;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Threading;
@@ -14,6 +15,7 @@ namespace CAServer.ContractEventHandler.Core.Worker;
 
 public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
 {
+    private readonly ILogger<ContractSyncWorker> _logger;
     private readonly IContractAppService _contractAppService;
     private readonly ContractSyncOptions _contractSyncOptions;
     private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
@@ -25,7 +27,7 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
     public ContractSyncWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
         IContractAppService contractAppService, IOptions<ContractSyncOptions> workerOptions,
         IBackgroundWorkerRegistrarProvider registrarProvider, IHostApplicationLifetime hostApplicationLifetime,
-        N9EClientFactory n9EClientFactory) : base(
+        N9EClientFactory n9EClientFactory, ILogger<ContractSyncWorker> logger) : base(
         timer,
         serviceScopeFactory)
     {
@@ -33,10 +35,18 @@ public class ContractSyncWorker : AsyncPeriodicBackgroundWorkerBase
         _contractAppService = contractAppService;
         _registrarProvider = registrarProvider;
         _n9EClientFactory = n9EClientFactory;
+        _logger = logger;
         Timer.Period = 1000 * _contractSyncOptions.Sync;
-
+        
         hostApplicationLifetime.ApplicationStopped.Register(() =>
         {
+            _logger.LogWarning("[Stopped]remove worker node " + WorkerName);
+            _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
+        });
+
+        hostApplicationLifetime.ApplicationStopping.Register(() =>
+        {
+            _logger.LogWarning("[Stopping]remove worker node " + WorkerName);
             _registrarProvider.TryRemoveWorkerNodeAsync(WorkerName);
         });
     }
