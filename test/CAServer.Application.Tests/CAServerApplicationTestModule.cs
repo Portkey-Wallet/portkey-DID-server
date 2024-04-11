@@ -20,9 +20,11 @@ using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.DependencyInjection;
+using Volo.Abp.Auditing;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
+using Volo.Abp.MongoDB;
 using Volo.Abp.OpenIddict.Tokens;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
@@ -39,6 +41,10 @@ public class CAServerApplicationTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<AbpAuditingOptions>(options =>
+        {
+            options.IsEnabled = false;
+        });
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();

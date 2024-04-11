@@ -9,8 +9,11 @@ using CAServer.Search;
 using CAServer.Tokens;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Volo.Abp.Auditing;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.DistributedLocking;
+using Volo.Abp.Json;
+using Volo.Abp.Json.SystemTextJson;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 
@@ -25,6 +28,10 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<AbpAuditingOptions>(options =>
+        {
+            options.IsEnabled = false;
+        });
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
         Configure<AbpAutoMapperOptions>(options =>
         {
@@ -69,5 +76,9 @@ public class CAServerEntityEventHandlerTestModule : AbpModule
         accounts.Add("23GxsoW9TRpLqX1Z5tjrmcRMMSn5bhtLAf4HtPj8JX9BerqTqp");
         accounts.Add("2CpKfnoWTk69u6VySHMeuJvrX2hGrMw9pTyxcD4VM6Q28dJrhk");
         Configure<PayRedPackageAccount>(o => { o.RedPackagePayAccounts = accounts; });
+        context.Services.AddTransient(
+            typeof(IJsonSerializer),
+            typeof(AbpSystemTextJsonSerializer)
+        );
     }
 }
