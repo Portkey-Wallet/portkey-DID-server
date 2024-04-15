@@ -210,6 +210,11 @@ public class ContactAppService : CAServerAppService, IContactAppService
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
         }
 
+        if (contactResultDto.ImInfo != null && !contactResultDto.ImInfo.RelationId.IsNullOrEmpty())
+        {
+            contactResultDto.ImInfo.RelationId = string.Empty;
+        }
+
         return contactResultDto;
     }
 
