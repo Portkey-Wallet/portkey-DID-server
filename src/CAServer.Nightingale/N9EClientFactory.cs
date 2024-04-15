@@ -31,7 +31,7 @@ public class N9EClientFactory
         N9EClients = n9EClients;
     }
 
-    public async Task TrackTransaction(string chart, string type, double duration, bool isSuccess = true,
+    public async Task TrackTransactionSync(string chart, string type, double duration, bool isSuccess = true,
         IDictionary<string, string>? properties = null)
     {
         properties = properties != null ? new Dictionary<string, string>(properties) : new Dictionary<string, string>();
@@ -45,7 +45,7 @@ public class N9EClientFactory
         });
     }
 
-    public async Task TrackEvent(string chart, string type, int count, IDictionary<string, string>? properties = null)
+    public async Task TrackEventAsync(string chart, string type, int count, IDictionary<string, string>? properties = null)
     {
         properties = properties != null ? new Dictionary<string, string>(properties) : new Dictionary<string, string>();
         properties.Add(N9EClientConstant.LabelChart, chart ?? N9EClientConstant.Unknown);

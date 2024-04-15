@@ -16,9 +16,11 @@ public interface IBackgroundWorkerRegistrarProvider
     /// </summary>
     /// <param name="worker"></param>
     /// <param name="period">background work period, seconds</param>
+    /// <param name="workerNodeExpirationTime">seconds</param>
     /// <param name="nodeName"></param>
     /// <returns></returns>
-    public Task<bool> RegisterUniqueWorkerNodeAsync(string worker, int period, string nodeName = null);
+    public Task<bool> RegisterUniqueWorkerNodeAsync(string worker, int period, int workerNodeExpirationTime,
+        string nodeName = null);
 
     public Task TryRemoveWorkerNodeAsync(string worker, string nodeName = null);
 }
@@ -39,10 +41,11 @@ public class BackgroundWorkerRegistrarProvider : IBackgroundWorkerRegistrarProvi
         _logger = logger;
         _distributedCache = distributedCache;
         _distributedLock = distributedLock;
-        _hostName = $"{HostHelper.GetLocalHostName()}_{Guid.NewGuid()}";
+        _hostName = HostHelper.GetLocalHostName();
     }
 
-    public async Task<bool> RegisterUniqueWorkerNodeAsync(string worker, int period, string nodeName = null)
+    public async Task<bool> RegisterUniqueWorkerNodeAsync(string worker, int period, int workerNodeExpirationTime,
+        string nodeName = null)
     {
         nodeName ??= _hostName;
         _logger.LogDebug("register unique worker node start... {0}, {1}", worker, _hostName);
@@ -70,7 +73,8 @@ public class BackgroundWorkerRegistrarProvider : IBackgroundWorkerRegistrarProvi
 
                 await _distributedCache.SetAsync(distributedCacheKey, nodeName, new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(period + period / 2),
+                    AbsoluteExpirationRelativeToNow =
+                        TimeSpan.FromSeconds(period + period / 2 + workerNodeExpirationTime),
                     //SlidingExpiration = TimeSpan.FromSeconds(period + period / 2)
                 });
                 _logger.LogDebug("register unique worker node result: {0}", bool.TrueString);
