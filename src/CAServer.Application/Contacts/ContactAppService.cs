@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
 using AElf.Types;
 using CAServer.Common;
 using CAServer.Commons;
@@ -123,6 +124,23 @@ public class ContactAppService : CAServerAppService, IContactAppService
         }
 
         var contact = contactResult.Data;
+        if (contact.Addresses?.Count > 1)
+        {
+            contact.Addresses.ForEach(t =>
+            {
+                var validResult = ValidAddress(t.Address);
+                if (!validResult)
+                {
+                    throw new UserFriendlyException("invalid address.");
+                }
+            });
+
+            var dto = ObjectMapper.Map<ContactGrainDto, ContactDto>(contact);
+            dto.Addresses = input.Addresses;
+            dto.Name = input.Name;
+            return await UpdateContactAsync(id, userId, dto);
+        }
+
         if (contact.Addresses != null && contact.Addresses.Count > 1 && input.Addresses != null &&
             input.Addresses.Count == 1)
         {
@@ -145,17 +163,41 @@ public class ContactAppService : CAServerAppService, IContactAppService
         var contactDto = await GetContactDtoAsync(input, id);
         await CheckContactAsync(contactDto);
 
+        return await UpdateContactAsync(id, userId, contactDto);
+    }
+
+    private bool ValidAddress(string address)
+    {
+        try
+        {
+            var isValid = AddressHelper.VerifyFormattedAddress(address);
+            if (!isValid)
+            {
+                Logger.LogInformation("invalid address: {address}", address);
+            }
+
+            return isValid;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, "valid address error", address);
+            return false;
+        }
+    }
+
+    private async Task<ContactResultDto> UpdateContactAsync(Guid contactId, Guid userId, ContactDto contactDto)
+    {
+        var contactGrain = _clusterClient.GetGrain<IContactGrain>(contactId);
         var result =
             await contactGrain.UpdateContactAsync(userId,
                 ObjectMapper.Map<ContactDto, ContactGrainDto>(contactDto));
+
         if (!result.Success)
         {
             throw new UserFriendlyException(result.Message);
         }
 
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
-        // return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
-
         var contactResultDto = ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
         var imageMap = _variablesOptions.ImageMap;
 
@@ -166,11 +208,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
                 : contactAddressDto.ChainName;
 
             contactAddressDto.Image = imageMap.GetOrDefault(contactAddressDto.ChainName);
-        }
-
-        if (contact.Name != input.Name)
-        {
-            await ImRemarkAsync(contactResultDto?.ImInfo?.RelationId, userId, input.Name);
         }
 
         return contactResultDto;

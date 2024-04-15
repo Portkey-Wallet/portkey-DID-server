@@ -20,20 +20,5 @@ public class CreateUpdateContactDto : IValidatableObject
         {
             yield return new ValidationResult("Invalid input.");
         }
-
-        if (!RelationId.IsNullOrWhiteSpace())
-        {
-            if (Addresses is { Count: > 0 })
-            {
-                yield return new ValidationResult("Invalid input.");
-            }
-        }
-        else
-        {
-            if (Addresses?.Count != 1)
-            {
-                yield return new ValidationResult("Invalid input.");
-            }
-        }
     }
 }
