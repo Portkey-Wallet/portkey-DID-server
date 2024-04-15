@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using CAServer.Commons;
+using CAServer.Nightingale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -44,6 +45,7 @@ namespace CAServer.EntityEventHandler
                 {
                     services.AddApplication<CAServerEntityEventHandlerModule>();
                 })
+                .UseNightingaleMonitoring()
                 .UseAutofac()
                 .UseSerilog();
     }

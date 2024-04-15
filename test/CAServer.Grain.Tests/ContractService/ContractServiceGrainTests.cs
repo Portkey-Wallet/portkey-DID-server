@@ -1,21 +1,17 @@
 using AElf;
-using AElf.Client.Dto;
-using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.RedPackage;
-using CAServer.Grains.State.ApplicationHandler;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
-using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.CryptoBox;
 using Shouldly;
 using Xunit;
+using CAServer.Grains.State.ApplicationHandler;
 
 namespace CAServer.Grain.Tests.ContractService;
 
