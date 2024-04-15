@@ -15,6 +15,10 @@ public class ChangeRecordDto
     public string Manager { get; set; }
     public long BlockHeight { get; set; }
     public string BlockHash { get; set; }
+    
+    public bool IsCreateHolder { get; set; } = false;
+
+
 }
 
 public class LoginGuardianChangeRecordDto : ChangeRecordDto

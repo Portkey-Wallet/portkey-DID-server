@@ -20,6 +20,8 @@ public class SyncRecord
     public int RetryTimes { get; set; }
     public TransactionInfo ValidateTransactionInfoDto { get; set; }
     public DataSyncMonitor DataSyncMonitor { get; set; }
+
+    public ResultStatus ResultStatus { get; set; } = ResultStatus.None;
 }
 
 public class TransactionInfo
@@ -27,4 +29,12 @@ public class TransactionInfo
     public long BlockNumber { get; set; }
     public string TransactionId { get; set; }
     public byte[] Transaction { get; set; }
+}
+
+public enum ResultStatus
+{
+    None = 0,
+    NotMinded = 1,
+    Synced = 2
+    
 }
