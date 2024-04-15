@@ -12,17 +12,26 @@ using Portkey.Contracts.CryptoBox;
 using Shouldly;
 using Xunit;
 using CAServer.Grains.State.ApplicationHandler;
+using Xunit.Abstractions;
 
 namespace CAServer.Grain.Tests.ContractService;
 
+[Collection(ClusterCollection.Name)]
 public class ContractServiceGrainTests : CAServerGrainTestBase
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public ContractServiceGrainTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+    }
+
     [Fact]
     public async Task CreateHolderInfoAsyncTests()
     {
         var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
-        await grain.CreateHolderInfoAsync(new CreateHolderDto
+        var result = await grain.CreateHolderInfoAsync(new CreateHolderDto
         {
             ChainId = "AELF",
             GuardianInfo = new GuardianInfo
@@ -42,6 +51,7 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
                 ExtraData = "extra"
             }
         });
+        // _testOutputHelper.WriteLine(result.Status);
     }
 
     [Fact]
