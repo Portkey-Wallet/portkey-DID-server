@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Dtos.ThirdPart;
+using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit;
@@ -28,7 +30,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         services.AddSingleton(mockOptions);
         services.AddSingleton(MockRampOptions());
         services.AddSingleton(MockSecretProvider());
-    
+
         // mock http
         services.AddSingleton(MockHttpFactory(_testOutputHelper,
             
@@ -66,7 +68,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
                     }))
         ));
     }
-    
+
     [Fact]
     public async Task GetAlchemyOrderQuoteAsyncTest()
     {
@@ -83,7 +85,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         var result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
         result.Success.ShouldBe(true);
     }
-    
+
     [Fact]
     public async Task GetAlchemyOrderQuoteAsync_Buy_Test()
     {
@@ -105,7 +107,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         // from cache
         result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
         result.Success.ShouldBe(true);
-    
+
         input.Side = "SELL";
         result = await _alchemyServiceAppService.GetAlchemyOrderQuoteAsync(input);
         result.Success.ShouldBe(true);
@@ -132,7 +134,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         var result = await _alchemyServiceAppService.GetAlchemyNftFreeLoginTokenAsync(input);
         result.Success.ShouldBe(true);
     }
-    
+
     [Fact]
     public async Task GetAlchemyFiatListAsyncTest()
     {
@@ -143,7 +145,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         var result = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(input);
         result.Success.ShouldBe(true);
     }
-    
+
     [Fact]
     public async Task GetAlchemyFiatListAsync_Sell_Test()
     {
@@ -154,14 +156,14 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         var result = await _alchemyServiceAppService.GetAlchemyFiatListWithCacheAsync(input);
         result.Success.ShouldBe(true);
     }
-    
+
     [Fact]
     public async Task GetAlchemyCryptoListAsyncTest()
     {
         var result = await _alchemyServiceAppService.GetAlchemyCryptoListAsync(new GetAlchemyCryptoListDto());
         result.Success.ShouldBe(true);
     }
-    
+
     [Fact]
     public async Task GetAlchemySignatureAsyncTest()
     {
@@ -170,7 +172,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
             Address = "Test"
         });
     }
-    
+
     [Fact]
     public async Task GetAlchemyApiSignatureAsyncTest()
     {
@@ -191,7 +193,7 @@ public partial class AlchemyServiceAppServiceTest : ThirdPartTestBase
         });
         result.Data.ShouldBe("rd60vvnWPiE8LgsIY9lKbYbYBuQ=");
     }
-    
+
     [Fact]
     public async Task QueryNftFiatList()
     {

@@ -51,7 +51,6 @@ public class ContractServiceGrainTests : CAServerGrainTestBase
                 ExtraData = "extra"
             }
         });
-        // _testOutputHelper.WriteLine(result.Status);
     }
 
     [Fact]

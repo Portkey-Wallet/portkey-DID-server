@@ -1,5 +1,4 @@
 ﻿using AElf.Indexing.Elasticsearch.Options;
-using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Tests.Token;
@@ -8,10 +7,8 @@ using CAServer.Orleans.TestBase;
 using CAServer.Search;
 using CAServer.Tokens;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using Volo.Abp.Auditing;
 using Volo.Abp.AutoMapper;
-using Volo.Abp.DistributedLocking;
 using Volo.Abp.Json;
 using Volo.Abp.Json.SystemTextJson;
 using Volo.Abp.Modularity;

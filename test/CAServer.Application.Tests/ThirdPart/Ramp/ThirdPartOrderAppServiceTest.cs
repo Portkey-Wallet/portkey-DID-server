@@ -63,7 +63,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         var code = GoogleTfaHelper.GenerateGoogleAuthCode("authKey", "testUser", "testTitle");
         code.ShouldNotBeNull();
     }
-    
+
     [Fact]
     public async Task VerifyGoogleCode()
     {
@@ -81,7 +81,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         var forwardCallDto = ManagerForwardCallDto<TransferInput>.Decode(transaction);
         _testOutputHelper.WriteLine(JsonConvert.SerializeObject(forwardCallDto));
         forwardCallDto.ForwardTransactionArgs.ShouldNotBeNull();
-    
+
         rawTransaction =
             "0a220a20e53eff822ad4b33e8ed0356a55e5b8ea83a88afdb15bdedcf52646d8c13209c812220a202791e992a57f28e75a11f13af2c0aec8b0eb35d2f048d42eba8901c92e0378dc18b9e0890922041e26c0ba2a085472616e73666572322e0a220a2061033c0453282232747683ffa571455f5511b5274f2125e2ee226b7fb2ebc9c11203454c461880c2d72f";
         transaction = Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(rawTransaction));
@@ -91,7 +91,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         _testOutputHelper.WriteLine(exception.Result.Message);
         exception.Result.Message.ShouldContain("Convert rawTransaction FAILED");
     }
-    
+
     [Fact]
     public async Task GetRampInfo()
     {
@@ -99,7 +99,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         result.Success.ShouldBeTrue();
         result.Data.ThirdPart.Count.ShouldBe(2);
     }
-    
+
     [Fact]
     public async Task GetThirdPartOrderListAsyncTest()
     {
@@ -114,7 +114,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         data.MerchantName.ShouldBe(ThirdPartNameType.Alchemy.ToString());
         data.TransDirect.ShouldBe(TransferDirectionType.TokenBuy.ToString());
     }
-    
+
     [Fact]
     public async Task<OrderCreatedDto> CreateThirdPartOrderAsyncTest()
     {
@@ -123,14 +123,14 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
             MerchantName = ThirdPartNameType.Alchemy.ToString(),
             TransDirect = TransferDirectionType.TokenBuy.ToString()
         };
-    
+
         var result = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(input);
         result.Success.ShouldBe(true);
         result.Id.ShouldNotBeEmpty();
-    
+
         return result;
     }
-    
+
     [Fact]
     public async Task CreateThirdPartOrderAsyncTest_invalidParam()
     {
@@ -138,7 +138,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
             _thirdPartOrderAppService.CreateThirdPartOrderAsync(new CreateUserOrderDto()));
         result.ShouldNotBeNull();
         result.Message.ShouldContain("arguments are not valid");
-    
+
         result = await Assert.ThrowsAsync<AbpValidationException>(() =>
             _thirdPartOrderAppService.CreateThirdPartOrderAsync(new CreateUserOrderDto
             {
@@ -148,7 +148,7 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         result.ShouldNotBeNull();
         result.Message.ShouldContain("arguments are not valid");
     }
-    
+
     [Fact]
     public void TestGetOrderTransDirectForQuery()
     {

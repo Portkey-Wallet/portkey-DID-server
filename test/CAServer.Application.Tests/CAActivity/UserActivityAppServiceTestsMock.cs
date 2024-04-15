@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using AElf.Types;
-using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
@@ -16,7 +15,6 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
-using TokenInfo = CAServer.Options.TokenInfo;
 
 namespace CAServer.CAActivity;
 
