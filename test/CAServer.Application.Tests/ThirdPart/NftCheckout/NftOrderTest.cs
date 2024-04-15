@@ -96,336 +96,336 @@ public partial class NftOrderTest : ThirdPartTestBase
         });
     }
 
-    // [Fact]
-    // public async Task CreateTest()
-    // {
-    //     var orderId = "00000000-0000-0000-0000-000000000001";
-    //     var caHash = HashHelper.ComputeFrom(orderId).ToHex();
-    //
-    //     var input = new CreateNftOrderRequestDto
-    //     {
-    //         NftSymbol = "LUCK",
-    //         NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
-    //         MerchantName = MerchantName,
-    //         MerchantOrderId = orderId,
-    //         WebhookUrl = "http://127.0.0.1:9200/myWebhook",
-    //         UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
-    //         PaymentSymbol = "ELF",
-    //         PaymentAmount = "100000000",
-    //         MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
-    //         CaHash = caHash
-    //     };
-    //     input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
-    //
-    //     var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
-    //     res.ShouldNotBeNull();
-    //     res.Success.ShouldBe(true);
-    //
-    //
-    //     var result = await _thirdPartOrderAppService.GetThirdPartOrdersAsync(new GetUserOrdersDto()
-    //     {
-    //         SkipCount = 0,
-    //         MaxResultCount = 10
-    //     });
-    //     result.Items.Count.ShouldBe(1);
-    //     result.Items[0].NftOrderSection.ShouldNotBeNull();
-    //     _testOutputHelper.WriteLine(JsonConvert.SerializeObject(result, JsonSettings));
-    // }
-    //
-    // [Fact]
-    // public async Task CreateTest_InvalidParam()
-    // {
-    //     var orderId = "00000000-0000-0000-0000-000000000001";
-    //     var caHash = HashHelper.ComputeFrom(orderId).ToHex();
-    //
-    //     var input = new CreateNftOrderRequestDto
-    //     {
-    //         NftSymbol = "LUCK",
-    //         NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
-    //         MerchantName = MerchantName,
-    //         MerchantOrderId = orderId,
-    //         MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
-    //         UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
-    //         WebhookUrl = "http://127.0.0.1:9200/myWebhook",
-    //         PaymentSymbol = "ELF",
-    //         PaymentAmount = "100000000",
-    //         CaHash = caHash
-    //     };
-    //     input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
-    //
-    //     var errorPk = AnotherMerchant.PrivateKey.ToHex();
-    //     input.Signature = MerchantSignatureHelper.GetSignature(errorPk, input);
-    //     var res2 = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
-    //     res2.ShouldNotBeNull();
-    //     res2.Message.ShouldContain("Invalid merchant signature");
-    //
-    //     input.Signature = "ERROR SIGN";
-    //     var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
-    //     res.ShouldNotBeNull();
-    //     res.Message.ShouldContain("Verify merchant signature failed");
-    // }
-    //
-    // [Fact]
-    // public async Task QueryMerchantOrderNo()
-    // {
-    //     await CreateTest();
-    //     var input = new OrderQueryRequestDto
-    //     {
-    //         MerchantName = MerchantName,
-    //         MerchantOrderId = "00000000-0000-0000-0000-000000000001"
-    //     };
-    //     input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
-    //     var list = await _thirdPartOrderAppService.QueryMerchantNftOrderAsync(input);
-    //     list.Success.ShouldBe(true);
-    //     list.Data.ShouldNotBeNull();
-    // }
-    //
-    //
-    // [Fact]
-    // public async Task AlchemyOrderUpdateTest()
-    // {
-    //     await CreateTest();
-    //
-    //     #region Mock Alchemy callback PAY_SUCCESS
-    //
-    //     var orderId = "994864610797428736";
-    //     var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
-    //
-    //     var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
-    //     {
-    //         ["orderNo"] = orderId,
-    //         ["merchantOrderNo"] = merchantOrderId,
-    //         ["amount"] = "100",
-    //         ["fiat"] = "USD",
-    //         ["payTime"] = "2022-07-08 15:18:43",
-    //         ["payType"] = "CREDIT_CARD",
-    //         ["type"] = "MARKET",
-    //         ["name"] = "LUCK",
-    //         ["quantity"] = "1",
-    //         ["uniqueId"] = "LUCK",
-    //         ["appId"] = "test",
-    //         ["message"] = "",
-    //         ["status"] = "PAY_SUCCESS",
-    //         ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
-    //     };
-    //     var result = await _nftCheckoutService
-    //         .GetProcessor(ThirdPartNameType.Alchemy.ToString())
-    //         .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
-    //     result.ShouldNotBeNull();
-    //     result.Success.ShouldBe(true);
-    //
-    //     var order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
-    //     order.ShouldNotBeNull();
-    //     order.Status.ShouldBe(OrderStatusType.Transferring.ToString());
-    //
-    //     #endregion
-    //
-    //     #region update to Mined transactionId (just for test)
-    //
-    //     order.TransactionId = MinedTxId;
-    //     var updMindTxId = await _orderStatusProvider.UpdateRampOrderAsync(order);
-    //
-    //     #endregion
-    //
-    //     #region run worker to fix transaction status
-    //
-    //     await _nftOrderSettlementTransferWorker.HandleAsync();
-    //     order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
-    //     order.ShouldNotBeNull();
-    //     order.Status.ShouldBe(OrderStatusType.Finish.ToString());
-    //
-    //     var nftOrder = await _orderStatusProvider.GetNftOrderAsync(Guid.Parse(merchantOrderId));
-    //     nftOrder.ShouldNotBeNull();
-    //     nftOrder.WebhookStatus.ShouldBe("SUCCESS");
-    //     nftOrder.ThirdPartNotifyStatus.ShouldBe("SUCCESS");
-    //
-    //     #endregion
-    // }
-    //
-    // [Fact]
-    // public async Task ExportTest()
-    // {
-    //     await AlchemyOrderUpdateTest();
-    //
-    //     var orderList = await _thirdPartOrderAppService.ExportOrderListAsync(new GetThirdPartOrderConditionDto(0, 100)
-    //     {
-    //         LastModifyTimeGt = "2023-11-01",
-    //         LastModifyTimeLt = DateTime.UtcNow.AddDays(1).ToUtc8String(TimeHelper.DatePattern),
-    //         TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() },
-    //         StatusIn = new List<string> { OrderStatusType.Finish.ToString() }
-    //     }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
-    //
-    //     orderList.ShouldNotBeNull();
-    //     orderList.Count.ShouldBe(1);
-    // }
-    //
-    // [Fact]
-    // public async Task AlchemyOrderUpdateTest_InvalidStatus()
-    // {
-    //     await CreateTest();
-    //
-    //     #region alchemy callback PAY_SUCCESS
-    //
-    //     {
-    //         var orderId = "994864610797428736";
-    //         var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
-    //
-    //         var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
-    //         {
-    //             ["orderNo"] = orderId,
-    //             ["merchantOrderNo"] = merchantOrderId,
-    //             ["amount"] = "100",
-    //             ["fiat"] = "USD",
-    //             ["payTime"] = "2022-07-08 15:18:43",
-    //             ["payType"] = "CREDIT_CARD",
-    //             ["type"] = "MARKET",
-    //             ["name"] = "LUCK",
-    //             ["quantity"] = "1",
-    //             ["uniqueId"] = "LUCK",
-    //             ["appId"] = "test",
-    //             ["message"] = "",
-    //             ["status"] = "PAY_SUCCESS",
-    //             ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
-    //         };
-    //         var result = await _nftCheckoutService
-    //             .GetProcessor(ThirdPartNameType.Alchemy.ToString())
-    //             .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
-    //         result.ShouldNotBeNull();
-    //         result.Success.ShouldBe(true);
-    //     }
-    //
-    //     #endregion
-    //
-    //     #region Alchemy callback NEW order status back
-    //
-    //     {
-    //         var orderId = "994864610797428736";
-    //         var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
-    //
-    //         var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
-    //         {
-    //             ["orderNo"] = orderId,
-    //             ["merchantOrderNo"] = merchantOrderId,
-    //             ["amount"] = "100",
-    //             ["fiat"] = "USD",
-    //             ["payTime"] = "2022-07-08 15:18:43",
-    //             ["payType"] = "CREDIT_CARD",
-    //             ["type"] = "MARKET",
-    //             ["name"] = "LUCK",
-    //             ["quantity"] = "1",
-    //             ["uniqueId"] = "LUCK",
-    //             ["appId"] = "test",
-    //             ["message"] = "",
-    //             ["status"] = "NEW",
-    //             ["signature"] = "W26721QQmJauXuCqfHWiC7oFg44="
-    //         };
-    //         var result = await _nftCheckoutService
-    //             .GetProcessor(ThirdPartNameType.Alchemy.ToString())
-    //             .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
-    //         result.Success.ShouldBe(false);
-    //     }
-    //
-    //     #endregion
-    // }
-    //
-    // [Fact]
-    // public async Task MerchantWebhookFail()
-    // {
-    //     #region create with fail webhook url
-    //
-    //     var orderId = "00000000-0000-0000-0000-000000000001";
-    //     var caHash = HashHelper.ComputeFrom(orderId).ToHex();
-    //
-    //     var input = new CreateNftOrderRequestDto
-    //     {
-    //         NftSymbol = "LUCK",
-    //         NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
-    //         MerchantName = MerchantName,
-    //         MerchantOrderId = orderId,
-    //         MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
-    //         UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
-    //         WebhookUrl = "http://127.0.0.1:9200/myWebhookFail",
-    //         PaymentSymbol = "ELF",
-    //         PaymentAmount = "100000000",
-    //         CaHash = caHash
-    //     };
-    //     input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
-    //
-    //     var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
-    //     res.ShouldNotBeNull();
-    //     res.Success.ShouldBe(true);
-    //
-    //     #endregion
-    //
-    //     #region callback to merchant webhook url
-    //
-    //     var achOrderId = "994864610797428736";
-    //     var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
-    //
-    //     var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
-    //     {
-    //         ["orderNo"] = achOrderId,
-    //         ["merchantOrderNo"] = merchantOrderId,
-    //         ["amount"] = "100",
-    //         ["fiat"] = "USD",
-    //         ["payTime"] = "2022-07-08 15:18:43",
-    //         ["payType"] = "CREDIT_CARD",
-    //         ["type"] = "MARKET",
-    //         ["name"] = "LUCK",
-    //         ["quantity"] = "1",
-    //         ["uniqueId"] = "LUCK",
-    //         ["appId"] = "test",
-    //         ["message"] = "",
-    //         ["status"] = "PAY_SUCCESS",
-    //         ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
-    //     };
-    //     var result = await _nftCheckoutService
-    //         .GetProcessor(ThirdPartNameType.Alchemy.ToString())
-    //         .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
-    //     result.ShouldNotBeNull();
-    //     result.Success.ShouldBe(true);
-    //
-    //     #endregion
-    //
-    //     await _nftOrderMerchantCallbackWorker.HandleAsync();
-    // }
-    //
-    //
-    // [Fact]
-    // public async Task AlchemyOrderRefreshTest()
-    // {
-    //     await CreateTest();
-    //
-    //     #region call back NEW status only
-    //
-    //     var orderId = "994864610797428736";
-    //     var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
-    //
-    //     var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
-    //     {
-    //         ["orderNo"] = orderId,
-    //         ["merchantOrderNo"] = merchantOrderId,
-    //         ["amount"] = "100",
-    //         ["fiat"] = "USD",
-    //         ["payTime"] = "2022-07-08 15:18:43",
-    //         ["payType"] = "CREDIT_CARD",
-    //         ["type"] = "MARKET",
-    //         ["name"] = "LUCK",
-    //         ["quantity"] = "1",
-    //         ["uniqueId"] = "LUCK",
-    //         ["appId"] = "test",
-    //         ["message"] = "",
-    //         ["status"] = "NEW",
-    //         ["signature"] = "W26721QQmJauXuCqfHWiC7oFg44="
-    //     };
-    //     var result = await _nftCheckoutService
-    //         .GetProcessor(ThirdPartNameType.Alchemy.ToString())
-    //         .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
-    //     result.ShouldNotBeNull();
-    //     result.Success.ShouldBe(true);
-    //
-    //     #endregion
-    //
-    //     await _nftOrderThirdPartOrderStatusWorker.HandleAsync();
-    // }
+    [Fact]
+    public async Task CreateTest()
+    {
+        var orderId = "00000000-0000-0000-0000-000000000001";
+        var caHash = HashHelper.ComputeFrom(orderId).ToHex();
+    
+        var input = new CreateNftOrderRequestDto
+        {
+            NftSymbol = "LUCK",
+            NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
+            MerchantName = MerchantName,
+            MerchantOrderId = orderId,
+            WebhookUrl = "http://127.0.0.1:9200/myWebhook",
+            UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
+            PaymentSymbol = "ELF",
+            PaymentAmount = "100000000",
+            MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
+            CaHash = caHash
+        };
+        input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
+    
+        var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
+        res.ShouldNotBeNull();
+        res.Success.ShouldBe(true);
+    
+    
+        var result = await _thirdPartOrderAppService.GetThirdPartOrdersAsync(new GetUserOrdersDto()
+        {
+            SkipCount = 0,
+            MaxResultCount = 10
+        });
+        result.Items.Count.ShouldBe(1);
+        result.Items[0].NftOrderSection.ShouldNotBeNull();
+        _testOutputHelper.WriteLine(JsonConvert.SerializeObject(result, JsonSettings));
+    }
+    
+    [Fact]
+    public async Task CreateTest_InvalidParam()
+    {
+        var orderId = "00000000-0000-0000-0000-000000000001";
+        var caHash = HashHelper.ComputeFrom(orderId).ToHex();
+    
+        var input = new CreateNftOrderRequestDto
+        {
+            NftSymbol = "LUCK",
+            NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
+            MerchantName = MerchantName,
+            MerchantOrderId = orderId,
+            MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
+            UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
+            WebhookUrl = "http://127.0.0.1:9200/myWebhook",
+            PaymentSymbol = "ELF",
+            PaymentAmount = "100000000",
+            CaHash = caHash
+        };
+        input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
+    
+        var errorPk = AnotherMerchant.PrivateKey.ToHex();
+        input.Signature = MerchantSignatureHelper.GetSignature(errorPk, input);
+        var res2 = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
+        res2.ShouldNotBeNull();
+        res2.Message.ShouldContain("Invalid merchant signature");
+    
+        input.Signature = "ERROR SIGN";
+        var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
+        res.ShouldNotBeNull();
+        res.Message.ShouldContain("Verify merchant signature failed");
+    }
+    
+    [Fact]
+    public async Task QueryMerchantOrderNo()
+    {
+        await CreateTest();
+        var input = new OrderQueryRequestDto
+        {
+            MerchantName = MerchantName,
+            MerchantOrderId = "00000000-0000-0000-0000-000000000001"
+        };
+        input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
+        var list = await _thirdPartOrderAppService.QueryMerchantNftOrderAsync(input);
+        list.Success.ShouldBe(true);
+        list.Data.ShouldNotBeNull();
+    }
+    
+    
+    [Fact]
+    public async Task AlchemyOrderUpdateTest()
+    {
+        await CreateTest();
+    
+        #region Mock Alchemy callback PAY_SUCCESS
+    
+        var orderId = "994864610797428736";
+        var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
+    
+        var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
+        {
+            ["orderNo"] = orderId,
+            ["merchantOrderNo"] = merchantOrderId,
+            ["amount"] = "100",
+            ["fiat"] = "USD",
+            ["payTime"] = "2022-07-08 15:18:43",
+            ["payType"] = "CREDIT_CARD",
+            ["type"] = "MARKET",
+            ["name"] = "LUCK",
+            ["quantity"] = "1",
+            ["uniqueId"] = "LUCK",
+            ["appId"] = "test",
+            ["message"] = "",
+            ["status"] = "PAY_SUCCESS",
+            ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
+        };
+        var result = await _nftCheckoutService
+            .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+            .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
+        result.ShouldNotBeNull();
+        result.Success.ShouldBe(true);
+    
+        var order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
+        order.ShouldNotBeNull();
+        order.Status.ShouldBe(OrderStatusType.Transferring.ToString());
+    
+        #endregion
+    
+        #region update to Mined transactionId (just for test)
+    
+        order.TransactionId = MinedTxId;
+        var updMindTxId = await _orderStatusProvider.UpdateRampOrderAsync(order);
+    
+        #endregion
+    
+        #region run worker to fix transaction status
+    
+        await _nftOrderSettlementTransferWorker.HandleAsync();
+        order = await _orderStatusProvider.GetRampOrderAsync(Guid.Parse(merchantOrderId));
+        order.ShouldNotBeNull();
+        order.Status.ShouldBe(OrderStatusType.Finish.ToString());
+    
+        var nftOrder = await _orderStatusProvider.GetNftOrderAsync(Guid.Parse(merchantOrderId));
+        nftOrder.ShouldNotBeNull();
+        nftOrder.WebhookStatus.ShouldBe("SUCCESS");
+        nftOrder.ThirdPartNotifyStatus.ShouldBe("SUCCESS");
+    
+        #endregion
+    }
+    
+    [Fact]
+    public async Task ExportTest()
+    {
+        await AlchemyOrderUpdateTest();
+    
+        var orderList = await _thirdPartOrderAppService.ExportOrderListAsync(new GetThirdPartOrderConditionDto(0, 100)
+        {
+            LastModifyTimeGt = "2023-11-01",
+            LastModifyTimeLt = DateTime.UtcNow.AddDays(1).ToUtc8String(TimeHelper.DatePattern),
+            TransDirectIn = new List<string> { TransferDirectionType.NFTBuy.ToString() },
+            StatusIn = new List<string> { OrderStatusType.Finish.ToString() }
+        }, OrderSectionEnum.NftSection, OrderSectionEnum.SettlementSection, OrderSectionEnum.OrderStateSection);
+    
+        orderList.ShouldNotBeNull();
+        orderList.Count.ShouldBe(1);
+    }
+    
+    [Fact]
+    public async Task AlchemyOrderUpdateTest_InvalidStatus()
+    {
+        await CreateTest();
+    
+        #region alchemy callback PAY_SUCCESS
+    
+        {
+            var orderId = "994864610797428736";
+            var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
+    
+            var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
+            {
+                ["orderNo"] = orderId,
+                ["merchantOrderNo"] = merchantOrderId,
+                ["amount"] = "100",
+                ["fiat"] = "USD",
+                ["payTime"] = "2022-07-08 15:18:43",
+                ["payType"] = "CREDIT_CARD",
+                ["type"] = "MARKET",
+                ["name"] = "LUCK",
+                ["quantity"] = "1",
+                ["uniqueId"] = "LUCK",
+                ["appId"] = "test",
+                ["message"] = "",
+                ["status"] = "PAY_SUCCESS",
+                ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
+            };
+            var result = await _nftCheckoutService
+                .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+                .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
+            result.ShouldNotBeNull();
+            result.Success.ShouldBe(true);
+        }
+    
+        #endregion
+    
+        #region Alchemy callback NEW order status back
+    
+        {
+            var orderId = "994864610797428736";
+            var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
+    
+            var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
+            {
+                ["orderNo"] = orderId,
+                ["merchantOrderNo"] = merchantOrderId,
+                ["amount"] = "100",
+                ["fiat"] = "USD",
+                ["payTime"] = "2022-07-08 15:18:43",
+                ["payType"] = "CREDIT_CARD",
+                ["type"] = "MARKET",
+                ["name"] = "LUCK",
+                ["quantity"] = "1",
+                ["uniqueId"] = "LUCK",
+                ["appId"] = "test",
+                ["message"] = "",
+                ["status"] = "NEW",
+                ["signature"] = "W26721QQmJauXuCqfHWiC7oFg44="
+            };
+            var result = await _nftCheckoutService
+                .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+                .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
+            result.Success.ShouldBe(false);
+        }
+    
+        #endregion
+    }
+    
+    [Fact]
+    public async Task MerchantWebhookFail()
+    {
+        #region create with fail webhook url
+    
+        var orderId = "00000000-0000-0000-0000-000000000001";
+        var caHash = HashHelper.ComputeFrom(orderId).ToHex();
+    
+        var input = new CreateNftOrderRequestDto
+        {
+            NftSymbol = "LUCK",
+            NftPicture = "http://127.0.0.1:9200/img/home/logo.png",
+            MerchantName = MerchantName,
+            MerchantOrderId = orderId,
+            MerchantAddress = Address.FromPublicKey(MerchantAccount.PublicKey).ToBase58(),
+            UserAddress = "e8m4RyDLmt3ioCH7LzPvGPRags1Zv2255d3NpkD2fzA9SqmEQ",
+            WebhookUrl = "http://127.0.0.1:9200/myWebhookFail",
+            PaymentSymbol = "ELF",
+            PaymentAmount = "100000000",
+            CaHash = caHash
+        };
+        input.Signature = MerchantSignatureHelper.GetSignature(MerchantAccount.PrivateKey.ToHex(), input);
+    
+        var res = await _thirdPartOrderAppService.CreateNftOrderAsync(input);
+        res.ShouldNotBeNull();
+        res.Success.ShouldBe(true);
+    
+        #endregion
+    
+        #region callback to merchant webhook url
+    
+        var achOrderId = "994864610797428736";
+        var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
+    
+        var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
+        {
+            ["orderNo"] = achOrderId,
+            ["merchantOrderNo"] = merchantOrderId,
+            ["amount"] = "100",
+            ["fiat"] = "USD",
+            ["payTime"] = "2022-07-08 15:18:43",
+            ["payType"] = "CREDIT_CARD",
+            ["type"] = "MARKET",
+            ["name"] = "LUCK",
+            ["quantity"] = "1",
+            ["uniqueId"] = "LUCK",
+            ["appId"] = "test",
+            ["message"] = "",
+            ["status"] = "PAY_SUCCESS",
+            ["signature"] = "EGugkNn2gz5qZ6etlfXGr2zBqrc="
+        };
+        var result = await _nftCheckoutService
+            .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+            .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
+        result.ShouldNotBeNull();
+        result.Success.ShouldBe(true);
+    
+        #endregion
+    
+        await _nftOrderMerchantCallbackWorker.HandleAsync();
+    }
+    
+    
+    [Fact]
+    public async Task AlchemyOrderRefreshTest()
+    {
+        await CreateTest();
+    
+        #region call back NEW status only
+    
+        var orderId = "994864610797428736";
+        var merchantOrderId = "03da9b8e-ee3b-de07-a53d-2e3cea36b2c4";
+    
+        var alchemyOrderRequestDto = new AlchemyNftOrderRequestDto
+        {
+            ["orderNo"] = orderId,
+            ["merchantOrderNo"] = merchantOrderId,
+            ["amount"] = "100",
+            ["fiat"] = "USD",
+            ["payTime"] = "2022-07-08 15:18:43",
+            ["payType"] = "CREDIT_CARD",
+            ["type"] = "MARKET",
+            ["name"] = "LUCK",
+            ["quantity"] = "1",
+            ["uniqueId"] = "LUCK",
+            ["appId"] = "test",
+            ["message"] = "",
+            ["status"] = "NEW",
+            ["signature"] = "W26721QQmJauXuCqfHWiC7oFg44="
+        };
+        var result = await _nftCheckoutService
+            .GetProcessor(ThirdPartNameType.Alchemy.ToString())
+            .UpdateThirdPartNftOrderAsync(alchemyOrderRequestDto);
+        result.ShouldNotBeNull();
+        result.Success.ShouldBe(true);
+    
+        #endregion
+    
+        await _nftOrderThirdPartOrderStatusWorker.HandleAsync();
+    }
 }

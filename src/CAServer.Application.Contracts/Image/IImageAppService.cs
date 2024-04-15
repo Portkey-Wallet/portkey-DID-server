@@ -1,5 +1,7 @@
 using System.Threading.Tasks;
 using CAServer.Image.Dto;
+using Volo.Abp;
+using Volo.Abp.Auditing;
 
 namespace CAServer.Image;
 

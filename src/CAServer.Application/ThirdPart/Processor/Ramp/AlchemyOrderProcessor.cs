@@ -19,11 +19,13 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.ThirdPart.Processor.Ramp;
 
+[DisableAuditing]
 public class AlchemyOrderProcessor : AbstractRampOrderProcessor
 {
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;

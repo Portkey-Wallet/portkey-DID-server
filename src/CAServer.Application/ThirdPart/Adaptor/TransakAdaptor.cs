@@ -19,12 +19,14 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver.Linq;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.ThirdPart.Adaptor;
 
+[DisableAuditing]
 public class TransakAdaptor : IThirdPartAdaptor, ISingletonDependency
 {
     private const string CryptoCacheKey = "Ramp:transak:crypto";

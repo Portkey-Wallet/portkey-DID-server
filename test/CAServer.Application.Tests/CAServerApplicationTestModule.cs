@@ -144,6 +144,7 @@ public class CAServerApplicationTestModule : AbpModule
             o.TypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
             o.TransferTypes = new List<string>() { "TEST", "TransferTypes" };
             o.ContractTypes = new List<string>() { "TEST", "ContractTypes" };
+            o.SystemTypes = new List<string>() { "TEST", "ContractTypes" };
             o.ShowPriceTypes = new List<string>() { "TEST" };
             o.NoShowTypes = new List<string>() { "no show" };
             o.RedPacketTypes = new List<string>() { "no" };

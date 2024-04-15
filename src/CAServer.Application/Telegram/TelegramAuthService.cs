@@ -9,10 +9,12 @@ using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Telegram;
 
+[RemoteService(false), DisableAuditing]
 public class TelegramAuthService : CAServerAppService, ITelegramAuthService
 {
     private readonly ILogger<TelegramAuthService> _logger;

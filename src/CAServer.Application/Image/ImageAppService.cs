@@ -3,10 +3,13 @@ using System.Threading.Tasks;
 using CAServer.Image.Dto;
 using CAServer.UserAssets.Provider;
 using Orleans;
+using Volo.Abp;
+using Volo.Abp.Auditing;
 
 
 namespace CAServer.Image;
 
+[RemoteService(false), DisableAuditing]
 public class ImageAppService : CAServerAppService, IImageAppService
 {
     

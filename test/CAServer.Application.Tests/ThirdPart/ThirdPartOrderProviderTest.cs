@@ -18,17 +18,17 @@ public class ThirdPartOrderProviderTest : CAServerApplicationTestBase
     }
 
 
-    // [Fact]
-    // private async Task AddOrder()
-    // {
-    //     
-    // }
-    //
-    //
-    // [Fact]
-    // public async Task GetThirdPartOrdersByPageAsyncTest()
-    // {
-    //     var result = await _orderProvider.GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto(0, 10));
-    //     result.TotalCount.ShouldBe(0);
-    // }
+    [Fact]
+    private async Task AddOrder()
+    {
+        
+    }
+    
+    
+    [Fact]
+    public async Task GetThirdPartOrdersByPageAsyncTest()
+    {
+        var result = await _orderProvider.GetThirdPartOrdersByPageAsync(new GetThirdPartOrderConditionDto(0, 10));
+        result.TotalCount.ShouldBe(0);
+    }
 }

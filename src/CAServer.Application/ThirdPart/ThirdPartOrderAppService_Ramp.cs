@@ -18,6 +18,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.Threading;
 
 namespace CAServer.ThirdPart;

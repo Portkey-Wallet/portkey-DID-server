@@ -8,6 +8,7 @@ using CAServer.Entities.Es;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
@@ -42,8 +43,19 @@ public partial class UserActivityAppServiceTests
                             FromAddress = "From",
                             Id = "id",
                             MethodName = "methodName",
+                            TokenInfo = null,
                             Status = "status",
                             Timestamp = 1000,
+                            TransferInfo = new TransferInfo
+                            {
+                                FromAddress = null,
+                                ToAddress = null,
+                                Amount = 2,
+                                ToChainId = null,
+                                FromChainId = null,
+                                FromCAAddress = null,
+                                TransferTransactionId = null
+                            },
                             TransactionId = "id",
                             TransactionFees = new List<IndexerTransactionFee>
                             {
@@ -53,6 +65,7 @@ public partial class UserActivityAppServiceTests
                                     Amount = 100
                                 }
                             },
+                            IsManagerConsumer = false,
                             NftInfo = new NftInfo()
                             {
                                 Symbol = "ELF"
@@ -236,6 +249,17 @@ public partial class UserActivityAppServiceTests
             });
 
         return mockUserContactProvider.Object;
+    }
+
+    private ITokenPriceService GetTokenPriceService()
+    {
+        var mock = new Mock<ITokenPriceService>();
+        mock.Setup(m => m.GetCurrentPriceAsync(It.IsAny<string>())).ReturnsAsync(new TokenPriceDataDto
+        {
+            Symbol = "ELF",
+            PriceInUsd = 5.0m
+        });
+        return mock.Object;
     }
 
 
