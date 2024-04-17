@@ -13,5 +13,6 @@ public enum OperationType
     Approve = 8,
     ModifyTransferLimit = 9,
     GuardianApproveTransfer = 10,
-    UnSetLoginAccount = 11
+    UnSetLoginAccount = 11,
+    RevokeAccount = 12
 }
