@@ -20,4 +20,5 @@ public interface IContactAppService
     Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input);
     Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input);
     Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId);
+    Task<List<ContactResultDto>> InvitationPermission(Guid? userId, ContactLabelDto contactLabelDto);
 }

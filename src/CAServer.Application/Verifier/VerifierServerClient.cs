@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Text;
@@ -25,18 +26,20 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     private readonly ILogger<VerifierServerClient> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IAccelerateManagerProvider _accelerateManagerProvider;
+    private readonly IContractProvider _contractProvider;
 
 
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
-        IHttpClientFactory httpClientFactory, IAccelerateManagerProvider accelerateManagerProvider)
+        IHttpClientFactory httpClientFactory, IAccelerateManagerProvider accelerateManagerProvider, IContractProvider contractProvider)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
         _httpService = new HttpService(adaptableVariableOptions.Value.HttpConnectTimeOut, httpClientFactory, true);
         _httpClientFactory = httpClientFactory;
         _accelerateManagerProvider = accelerateManagerProvider;
+        _contractProvider = contractProvider;
     }
 
     private bool _disposed;
@@ -172,6 +175,31 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         var requestUri = "/api/app/account/verifyTwitterToken";
         return await GetResultAsync<VerifyTwitterTokenDto>(input, requestUri, identifierHash, salt);
+    }
+
+
+    public async Task<bool> VerifyRevokeCodeAsync(VerifyRevokeCodeInput input)
+    {
+        //var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+        var endPoint = "http://127.0.0.1:5002";
+        _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
+        if (null == endPoint)
+        {
+            _logger.LogInformation("No Available Service Tips.{verifierId}", input.VerifierId);
+            return false;
+        }
+
+        var url = endPoint + "/api/app/account/verifyRevokeCode";
+        var parameters = new Dictionary<string, string>
+        {
+            { "guardianIdentifier", input.GuardianIdentifier },
+            { "verifyCode", input.VerifyCode },
+            { "verifierSessionId", input.VerifierSessionId.ToString()},
+            { "type", input.Type},
+        };
+        var response = await _httpService.PostResponseAsync<VerifyRevokeCodeResponse>(url, parameters);
+        return response.Success;
+
     }
 
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,
