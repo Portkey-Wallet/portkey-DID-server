@@ -1,13 +1,14 @@
 using CAServer.Account;
+using CAServer.Common;
 using CAServer.ContractEventHandler;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Hubs;
-using CAServer.Orleans.TestBase;
 using CAServer.Search;
+using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using Orleans.TestingHost;
+using NSubstitute;
 using Shouldly;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.EventBus.Distributed;
@@ -34,6 +35,10 @@ public partial class AccountHandlerTests : CAServerEntityEventHandlerTestBase
         base.AfterAddApplication(services);
         services.AddSingleton(GetClusterClient());
         services.AddSingleton(GetMockAbpDistributedLock());
+        var graphQlHelper = Substitute.For<IGraphQLHelper>();
+        var graphQlClient = Substitute.For<IGraphQLClient>();
+        services.AddSingleton(graphQlClient);
+        services.AddSingleton(graphQlHelper);
     }
 
     [Fact]

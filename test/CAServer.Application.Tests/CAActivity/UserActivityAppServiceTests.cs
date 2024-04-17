@@ -7,9 +7,9 @@ using CAServer.amazon;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
+using CAServer.Tokens;
 using CAServer.UserAssets;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualBasic;
 using Moq;
 using NSubstitute;
 using Shouldly;
@@ -39,9 +39,17 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         services.AddSingleton(GetUserContactProvider());
         services.AddSingleton(GetActivitiesIcon());
         services.AddSingleton(GetMockActivityProvider());
+        services.AddSingleton(GetTokenPriceService());
         services.AddSingleton(GetContractProvider());
         services.AddSingleton(GetMockUserAssetsProvider());
         services.AddSingleton(MockAwsS3Client());
+        services.AddSingleton(TokenAppServiceTest.GetMockHttpClientFactory());
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
     }
 
     private void Login(Guid userId)
