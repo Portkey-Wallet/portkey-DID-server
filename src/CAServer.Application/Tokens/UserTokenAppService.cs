@@ -144,7 +144,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
         if (!requestDto.Keyword.IsNullOrEmpty())
         {
-            tokens = tokens.Where(t => t.Symbol.ToUpper().Contains(requestDto.Keyword.ToUpper())).ToList();
+            tokens = tokens.Where(t => t.Symbol.Trim().ToUpper().Contains(requestDto.Keyword.ToUpper())).ToList();
         }
 
         if (!requestDto.ChainIds.IsNullOrEmpty())
