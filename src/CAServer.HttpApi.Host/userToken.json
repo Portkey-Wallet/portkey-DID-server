@@ -54,7 +54,7 @@
           "ChainId": "AELF",
           "Symbol":"USDC",
           "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-          "Decimals": 8
+          "Decimals": 6
         }
       },
       {
@@ -65,7 +65,7 @@
           "ChainId": "AELF",
           "Symbol":"USDT",
           "Address": "JRmBduh4nXWi1aXgdUsj5gJrzeZb2LxmrAbf7W99faZSvoAaE",
-          "Decimals": 8
+          "Decimals": 6
         }
       },
       {
@@ -120,7 +120,7 @@
           "ChainId": "tDVV",
           "Symbol":"USDC",
           "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
-          "Decimals": 8
+          "Decimals": 6
         }
       },
       {
@@ -131,7 +131,7 @@
           "ChainId": "tDVV",
           "Symbol":"USDT",
           "Address": "7RzVGiuVWkvL4VfVHdZfQF2Tri3sgLe9U991bohHFfSRZXuGX",
-          "Decimals": 8
+          "Decimals": 6
         }
       }
     ],
