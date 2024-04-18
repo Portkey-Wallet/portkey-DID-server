@@ -1076,7 +1076,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
 
         ftTokens.RemoveAll(t => !t.IsDisplay && sourceSymbols.Contains(t.Token.Symbol));
-        AddDefaultAssertTokens(ftTokens);
+        AddDefaultAssertTokens(ftTokens, requestDto.Keyword);
         var userPackageAssets = await GetUserPackageAssetsAsync(requestDto);
 
         var userPackageFtAssetsWithPositiveBalance = userPackageAssets.Data
@@ -1098,9 +1098,16 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             unmatchedItems);
     }
 
-    private void AddDefaultAssertTokens(List<UserTokenIndexDto> tokens)
+    private void AddDefaultAssertTokens(List<UserTokenIndexDto> tokens, string keyword)
     {
-        foreach (var item in _tokenListOptions.UserToken)
+        var defaultTokens = _tokenListOptions.UserToken;
+        if (!keyword.IsNullOrEmpty())
+        {
+            defaultTokens = defaultTokens.Where(t => t.Token.Symbol.ToUpper().Contains(keyword.Trim().ToUpper()))
+                .ToList();
+        }
+
+        foreach (var item in defaultTokens)
         {
             var token = tokens.FirstOrDefault(t =>
                 t.Token.ChainId == item.Token.ChainId && t.Token.Symbol == item.Token.Symbol);
