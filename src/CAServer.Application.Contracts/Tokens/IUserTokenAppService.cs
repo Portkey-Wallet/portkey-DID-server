@@ -1,7 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Tokens.Dtos;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Tokens
 {
@@ -9,6 +9,6 @@ namespace CAServer.Tokens
     {
         Task<UserTokenDto> ChangeTokenDisplayAsync(bool isDisplay, string id);
         Task<UserTokenDto> AddUserTokenAsync(Guid userId,AddUserTokenInput input);
-        Task<List<GetUserTokenDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto);
+        Task<PagedResultDto<GetUserTokenDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto);
     }
 }
