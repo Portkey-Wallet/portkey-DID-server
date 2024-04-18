@@ -746,5 +746,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TabCompleteDto, TabCompleteEto>();
         CreateMap<CAServer.Options.Token, CAServer.Entities.Es.Token>();
         CreateMap<UserTokenItem, UserTokenIndex>();
+        CreateMap<CAServer.Options.Token, CAServer.Search.Dtos.Token>();
+        CreateMap<UserTokenItem, UserTokenIndexDto>();
     }
 }
