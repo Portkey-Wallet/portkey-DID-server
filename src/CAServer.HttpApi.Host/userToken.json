@@ -15,7 +15,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token": {
           "ChainId": "AELF",
@@ -26,7 +26,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token": {
           "ChainId": "AELF",
@@ -37,7 +37,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token": {
           "ChainId": "AELF",
@@ -48,7 +48,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token": {
           "ChainId": "AELF",
@@ -59,7 +59,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token": {
           "ChainId": "AELF",
@@ -81,7 +81,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token":  {
           "ChainId": "tDVV",
@@ -92,7 +92,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token":  {
           "ChainId": "tDVV",
@@ -103,7 +103,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token":  {
           "ChainId": "tDVV",
@@ -114,7 +114,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token":  {
           "ChainId": "tDVV",
@@ -125,7 +125,7 @@
       },
       {
         "IsDefault": false,
-        "IsDisplay" : false,
+        "IsDisplay" : true,
         "SortWeight": 0,
         "Token":  {
           "ChainId": "tDVV",
