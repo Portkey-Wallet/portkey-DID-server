@@ -136,9 +136,9 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
             tokens.Add(ObjectMapper.Map<UserTokenItem, GetUserTokenDto>(item));
         }
-        
+
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
-        tokens = tokens.OrderBy(t => t.Symbol != "ELF")
+        tokens = tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
             .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
             .ThenBy(t => sourceSymbols.Contains(t.Symbol))
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
