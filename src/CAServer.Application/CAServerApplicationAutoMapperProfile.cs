@@ -479,6 +479,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToString()))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
+            .ForPath(t => t.Address, m => m.MapFrom(f => f.Token.Address))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
             .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
 
@@ -487,6 +488,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
             .ForMember(t => t.Id, m => m.MapFrom(f => $"{f.Token.ChainId}-{f.Token.Symbol}"))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
+            .ForPath(t => t.Address, m => m.MapFrom(f => f.Token.Address))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
             .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
 
