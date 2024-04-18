@@ -199,7 +199,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     public async Task<CancelCheckResultDto> RevokeCheckAsync(Guid uid)
     {
-         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
+        var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
         var caHash = caHolderIndex.CaHash;
         var caAddressInfos = new List<CAAddressInfo>();
         foreach (var chainId in _chainOptions.ChainInfos.Select(key => _chainOptions.ChainInfos[key.Key])
@@ -354,7 +354,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public async Task<RevokeResultDto> RevokeAccountAsync(RevokeAccountInput input)
     {
         var validateResult = await RevokeValidateAsync(CurrentUser.GetId(), input.Type);
-        if (!validateResult.ValidatedDevice || !validateResult.ValidatedAssets || !validateResult.ValidatedGuardian)
+        if (validateResult.ValidatedDevice || validateResult.ValidatedAssets || validateResult.ValidatedGuardian)
         {
             Logger.LogInformation(
                 "{message}, validateDevice:{validateDevice},validatedAssets:{validatedAssets},validateGuardian{validateGuardian}",
@@ -369,7 +369,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             VerifierId = input.VerifierId,
             VerifierSessionId = input.VerifierSessionId,
             Type = input.Type,
-            GuardianIdentifier = input.Identifier,
+            GuardianIdentifier = input.GuardianIdentifier,
             VerifyCode = input.Token,
             ChainId = input.ChainId
         };
@@ -378,7 +378,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var verifyRevokeToken = await _verifierServerClient.VerifyRevokeCodeAsync(revokeCodeInput);
             if (verifyRevokeToken)
             {
-                await DeleteGuardianAsync(input.Identifier);
+                await DeleteGuardianAsync(input.GuardianIdentifier);
                 await _caHolderAppService.DeleteAsync();
             }
 
@@ -439,10 +439,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             }
         }
 
-        
-        
         var validateAssets = await ValidateAssertsAsync(caAddressInfos);
-        
 
         var validateDevice = false;
         var chainIdBase58 = ChainHelper.ConvertChainIdToBase58(originChainId);
@@ -452,7 +449,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             validateDevice = true;
         }
 
-
         var validateGuardian = false;
         if (holderInfo != null)
         {
@@ -461,19 +457,18 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             {
                 validateGuardian = true;
             }
-            
-            
 
-            var guardian = guardians.FirstOrDefault(t => (int)t.Type == (int)Enum.Parse(typeof(GuardianIdentifierType),type));
+            var guardian =
+                guardians.FirstOrDefault(t => (int)t.Type == (int)Enum.Parse(typeof(GuardianIdentifierType), type));
             if (guardian == null)
             {
                 throw new Exception(ResponseMessage.LoginGuardianNotExists);
             }
         }
 
-
         var currentGuardian =
-            holderInfo?.GuardianList.Guardians.FirstOrDefault(t => t.IsLoginGuardian && (int)t.Type == (int)Enum.Parse(typeof(GuardianIdentifierType),type));
+            holderInfo?.GuardianList.Guardians.FirstOrDefault(t =>
+                t.IsLoginGuardian && (int)t.Type == (int)Enum.Parse(typeof(GuardianIdentifierType), type));
         if (currentGuardian != null)
         {
             var caHolderDto =
