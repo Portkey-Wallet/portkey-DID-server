@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Options;
@@ -66,7 +67,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         {
             throw new UserFriendlyException(tokenResult.Message);
         }
-        
+
         await HandleTokenCacheAsync(userId, tokenResult.Data);
         await PublishAsync(tokenResult.Data, false);
         return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
@@ -111,6 +112,45 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             await InitialUserToken(userId, userTokenItem));
         await Task.WhenAll(list);
         return new UserTokenDto();
+    }
+
+    public async Task<List<GetTokenListDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
+    {
+        var userId = CurrentUser.GetId();
+        var userTokens =
+            await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
+
+        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
+        // hide source tokens.
+        userTokens.RemoveAll(t => sourceSymbols.Contains(t.Token.Symbol) && !t.IsDisplay);
+
+        var tokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetTokenListDto>>(userTokens);
+        foreach (var item in _tokenListOptions.UserToken)
+        {
+            var token = tokens.FirstOrDefault(t =>
+                t.ChainId == item.Token.ChainId && t.Symbol == item.Token.Symbol);
+            if (token != null)
+            {
+                continue;
+            }
+
+            tokens.Add(ObjectMapper.Map<UserTokenItem, GetTokenListDto>(item));
+        }
+
+        // sort
+        var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
+        tokens = tokens.OrderBy(t => t.Symbol != "ELF")
+            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t))
+            .ThenBy(t => t.ChainId)
+            .ThenBy(t => t.Symbol)
+            .ToList();
+        // chain id
+        if (!requestDto.ChainIds.IsNullOrEmpty())
+        {
+            tokens = tokens.Where(t => requestDto.ChainIds.Contains(t.ChainId)).ToList();
+        }
+
+        return tokens;
     }
 
     private (string chainId, string symbol) GetTokenInfoFromId(string tokenId)
