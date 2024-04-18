@@ -114,7 +114,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         return new UserTokenDto();
     }
 
-    public async Task<List<GetTokenListDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
+    public async Task<List<GetUserTokenDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
     {
         var userId = CurrentUser.GetId();
         var userTokens =
@@ -124,7 +124,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         // hide source tokens.
         userTokens.RemoveAll(t => sourceSymbols.Contains(t.Token.Symbol) && !t.IsDisplay);
 
-        var tokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetTokenListDto>>(userTokens);
+        var tokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetUserTokenDto>>(userTokens);
         foreach (var item in _tokenListOptions.UserToken)
         {
             var token = tokens.FirstOrDefault(t =>
@@ -134,17 +134,18 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
                 continue;
             }
 
-            tokens.Add(ObjectMapper.Map<UserTokenItem, GetTokenListDto>(item));
+            tokens.Add(ObjectMapper.Map<UserTokenItem, GetUserTokenDto>(item));
         }
-
-        // sort
+        
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
         tokens = tokens.OrderBy(t => t.Symbol != "ELF")
-            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t))
-            .ThenBy(t => t.ChainId)
+            .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
+            .ThenBy(t => sourceSymbols.Contains(t.Symbol))
+            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
             .ThenBy(t => t.Symbol)
+            .ThenBy(t => t.ChainId)
             .ToList();
-        // chain id
+
         if (!requestDto.ChainIds.IsNullOrEmpty())
         {
             tokens = tokens.Where(t => requestDto.ChainIds.Contains(t.ChainId)).ToList();
