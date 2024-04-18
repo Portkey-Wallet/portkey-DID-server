@@ -742,5 +742,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<TwitterUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<TabCompleteDto, TabCompleteEto>();
+        CreateMap<CAServer.Options.Token, CAServer.Entities.Es.Token>();
+        CreateMap<UserTokenItem, UserTokenIndex>();
     }
 }

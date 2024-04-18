@@ -147,10 +147,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 TotalRecordCount = 0
             };
 
-            //var symbo = userTokens.Select(t => t.Token.Symbol).ToList();
-            
+            AddDefaultTokens(userTokens);
             var userTokenSymbols = userTokens.Where(t => t.IsDefault || t.IsDisplay).ToList();
-            
+
             if (userTokenSymbols.IsNullOrEmpty())
             {
                 _logger.LogError("get no result from current user {id}", userId);
@@ -199,7 +198,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             var userTokensWithBalance =
                 ObjectMapper.Map<List<IndexerTokenInfo>, List<Token>>(indexerTokenInfos.CaHolderTokenBalanceInfo.Data);
-            
+
             foreach (var token in userTokensWithBalance)
             {
                 var tokenCache =
@@ -213,14 +212,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 tokenList.Add(token);
             }
 
-            tokenList = tokenList.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
-            var defaultList = tokenList.Where(t => t.Symbol == CommonConstant.DefaultSymbol).ToList();
+            //tokenList = tokenList.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
+            // var defaultList = tokenList.Where(t => t.Symbol == CommonConstant.DefaultSymbol).ToList();
+            //
+            // var resultList = defaultList.Union(tokenList).ToList();
+            // var symbols = resultList.Select(t => t.Symbol).ToList();
+            // dto.Data.AddRange(resultList);
 
-            var resultList = defaultList.Union(tokenList).ToList();
-            var symbols = resultList.Select(t => t.Symbol).ToList();
-            dto.Data.AddRange(resultList);
+            var symbols = tokenList.Select(t => t.Symbol).Distinct().ToList();
+            dto.Data.AddRange(tokenList);
+            dto.Data = SortTokens(dto.Data);
+            
             dto.TotalRecordCount = dto.Data.Count;
-
+            
             if (_getBalanceFromChainOption.IsOpen)
             {
                 foreach (var token in dto.Data)
@@ -266,18 +270,33 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
-    private void HandleTokens(List<Token> tokens)
+    private void AddDefaultTokens(List<UserTokenIndex> tokens)
     {
         foreach (var item in _tokenListOptions.UserToken)
         {
-            var token = tokens.FirstOrDefault(t => t.ChainId == item.Token.ChainId && t.Symbol == item.Token.Symbol);
+            var token = tokens.FirstOrDefault(t =>
+                t.Token.ChainId == item.Token.ChainId && t.Token.Symbol == item.Token.Symbol);
             if (token != null)
             {
                 continue;
             }
 
-            tokens.Add(ObjectMapper.Map<UserTokenItem, Token>(item));
+            tokens.Add(ObjectMapper.Map<UserTokenItem, UserTokenIndex>(item));
         }
+    }
+
+    private List<Token> SortTokens(List<Token> tokens)
+    {
+        var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
+        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
+
+        return tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
+            .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
+            .ThenBy(t => sourceSymbols.Contains(t.Symbol))
+            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
+            .ThenBy(t => t.Symbol)
+            .ThenBy(t => t.ChainId)
+            .ToList();
     }
 
     private string CalculateTotalBalanceInUsd(List<Token> tokens)
