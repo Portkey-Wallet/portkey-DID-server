@@ -10,6 +10,7 @@ using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
+using CAServer.UserAssets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -34,19 +35,22 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     private readonly IDistributedCache<List<string>> _distributedCache;
     private readonly IDistributedCache<List<Token>> _userTokenCache;
     private readonly ITokenProvider _tokenProvider;
+    private readonly IAssetsLibraryProvider _assetsLibraryProvider;
 
     public UserTokenAppService(
         IClusterClient clusterClient,
         IOptionsSnapshot<TokenListOptions> tokenListOptions,
         IDistributedEventBus distributedEventBus,
         IDistributedCache<List<string>> distributedCache,
-        ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache)
+        ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache,
+        IAssetsLibraryProvider assetsLibraryProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _distributedCache = distributedCache;
         _tokenProvider = tokenProvider;
         _userTokenCache = userTokenCache;
+        _assetsLibraryProvider = assetsLibraryProvider;
         _tokenListOptions = tokenListOptions.Value;
     }
 
@@ -141,11 +145,17 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         {
             tokens = tokens.Where(t => t.Symbol.Contains(requestDto.Keyword)).ToList();
         }
+
         if (!requestDto.ChainIds.IsNullOrEmpty())
         {
             tokens = tokens.Where(t => requestDto.ChainIds.Contains(t.ChainId)).ToList();
         }
-        
+
+        foreach (var token in tokens)
+        {
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+        }
+
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
         tokens = tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
             .ThenBy(t => !t.IsDisplay)
@@ -155,7 +165,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             .ThenBy(t => t.Symbol)
             .ThenBy(t => t.ChainId)
             .ToList();
-        
+
         return tokens;
     }
 
