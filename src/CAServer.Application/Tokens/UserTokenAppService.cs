@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
@@ -118,7 +119,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         return new UserTokenDto();
     }
 
-    public async Task<List<GetUserTokenDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
+    public async Task<PagedResultDto<GetUserTokenDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
     {
         var userId = CurrentUser.GetId();
         var userTokens =
@@ -166,7 +167,8 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             .ThenBy(t => t.ChainId)
             .ToList();
 
-        return tokens;
+        return new PagedResultDto<GetUserTokenDto>(tokens.Count,
+            tokens.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList());
     }
 
     private (string chainId, string symbol) GetTokenInfoFromId(string tokenId)
