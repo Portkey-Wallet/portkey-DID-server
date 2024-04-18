@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Tokens.Dtos;
 
@@ -8,5 +9,6 @@ namespace CAServer.Tokens
     {
         Task<UserTokenDto> ChangeTokenDisplayAsync(bool isDisplay, string id);
         Task<UserTokenDto> AddUserTokenAsync(Guid userId,AddUserTokenInput input);
+        Task<List<GetTokenListDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto);
     }
 }
