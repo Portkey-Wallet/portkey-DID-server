@@ -26,6 +26,7 @@ public class Program
             builder.Configuration.AddJsonFile("ramp.json");
             builder.Configuration.AddJsonFile("seedurl.json");
             builder.Configuration.AddJsonFile("activity.json");
+            builder.Configuration.AddJsonFile("userToken.json");
 
             var hostBuilder = builder.Host.AddAppSettingsSecretsJson()
                 .InitAppConfiguration(false)
