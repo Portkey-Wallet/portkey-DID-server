@@ -13,20 +13,20 @@ namespace CAServer.ThirdPart.Svg;
 public class SvgCommonTest : CAServerApplicationTestBase
 {
     private readonly IImageProcessProvider _imageProcessProvider;
-
-
+    
+    
     public SvgCommonTest(ITestOutputHelper testOutputHelper)
     {
         _imageProcessProvider = GetRequiredService<IImageProcessProvider>();
     }
-
+    
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
         services.AddSingleton(MockAwsS3Option());
         services.AddSingleton(MockAwsS3Client());
     }
-
+    
     protected IAwsS3Client MockAwsS3Client()
     {
         var mockImageClient = new Mock<IAwsS3Client>();
@@ -34,7 +34,7 @@ public class SvgCommonTest : CAServerApplicationTestBase
             .ReturnsAsync("http://s3.test.com/result.svg");
         return mockImageClient.Object;
     }
-
+    
     protected IOptionsMonitor<AwsS3Option> MockAwsS3Option()
     {
         var s3Option = new AwsS3Option
@@ -43,12 +43,12 @@ public class SvgCommonTest : CAServerApplicationTestBase
             BucketName = "BucketName",
             S3Key = "S3Key",
         };
-
+    
         var mockOption = new Mock<IOptionsMonitor<AwsS3Option>>();
         mockOption.Setup(p => p.CurrentValue).Returns(s3Option);
         return mockOption.Object;
     }
-
+    
     [Fact]
     public async void UpLoadImageTest()
     {

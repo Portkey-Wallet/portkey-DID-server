@@ -53,7 +53,7 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
             }
         });
     }
-
+    
     [Fact]
     public async Task UpdateOrderStatus_GetNull_Async()
     {
@@ -68,7 +68,7 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
             }
         });
     }
-
+    
     [Fact]
     public async Task UpdateOrderStatusAsync()
     {
@@ -78,7 +78,7 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
             MerchantName = ThirdPartNameType.Alchemy.ToString(),
             TransDirect = TransferDirectionType.TokenBuy.ToString()
         };
-
+    
         var orderCreatedDto = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(orderCreateInput);
         orderCreatedDto.Success.ShouldBe(true);
         
