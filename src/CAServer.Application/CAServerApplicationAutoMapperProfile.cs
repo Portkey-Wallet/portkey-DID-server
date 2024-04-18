@@ -477,11 +477,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<UserTokenIndex, GetUserTokenDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
             .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
-            .ForMember(t => t.Id, m => m.MapFrom(f => $"{f.Token.ChainId}-{f.Token.Symbol}"))
+            .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToString()))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
             .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
-        
+
         CreateMap<UserTokenItem, GetUserTokenDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
             .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
