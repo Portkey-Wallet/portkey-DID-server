@@ -137,6 +137,15 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             tokens.Add(ObjectMapper.Map<UserTokenItem, GetUserTokenDto>(item));
         }
 
+        if (!requestDto.Keyword.IsNullOrEmpty())
+        {
+            tokens = tokens.Where(t => t.Symbol.Contains(requestDto.Keyword)).ToList();
+        }
+        if (!requestDto.ChainIds.IsNullOrEmpty())
+        {
+            tokens = tokens.Where(t => requestDto.ChainIds.Contains(t.ChainId)).ToList();
+        }
+        
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
         tokens = tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
             .ThenBy(t => !t.IsDisplay)
@@ -146,12 +155,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             .ThenBy(t => t.Symbol)
             .ThenBy(t => t.ChainId)
             .ToList();
-
-        if (!requestDto.ChainIds.IsNullOrEmpty())
-        {
-            tokens = tokens.Where(t => requestDto.ChainIds.Contains(t.ChainId)).ToList();
-        }
-
+        
         return tokens;
     }
 

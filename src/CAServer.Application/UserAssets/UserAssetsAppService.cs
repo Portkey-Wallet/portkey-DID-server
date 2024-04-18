@@ -212,17 +212,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 tokenList.Add(token);
             }
 
-            //tokenList = tokenList.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
-            // var defaultList = tokenList.Where(t => t.Symbol == CommonConstant.DefaultSymbol).ToList();
-            //
-            // var resultList = defaultList.Union(tokenList).ToList();
-            // var symbols = resultList.Select(t => t.Symbol).ToList();
-            // dto.Data.AddRange(resultList);
-
             var symbols = tokenList.Select(t => t.Symbol).Distinct().ToList();
             dto.Data.AddRange(tokenList);
             dto.Data = SortTokens(dto.Data);
-            
             dto.TotalRecordCount = dto.Data.Count;
             
             if (_getBalanceFromChainOption.IsOpen)
@@ -1222,6 +1214,22 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         return dto;
     }
 
+    private List<UserPackageAsset> SortUserPackageAssets(List<UserPackageAsset> assets)
+    {
+        var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
+        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
+
+        //assets.RemoveAll()
+        return assets.OrderBy(t => t.Symbol != CommonConstant.ELF)
+            .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
+            .ThenBy(t => sourceSymbols.Contains(t.Symbol))
+            .ThenBy(t => t.AssetType == (int)AssetType.NFT)
+            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
+            .ThenBy(t => t.Symbol)
+            .ThenBy(t => t.ChainId)
+            .ToList();
+    }
+
     private void SetSeedStatusAndTypeForUserPackageAssets(List<UserPackageAsset> userPackageAssets)
     {
         foreach (var userPackageAsset in userPackageAssets)
@@ -1269,10 +1277,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsIndexAsync(
         SearchUserPackageAssetsRequestDto requestDto)
     {
+        var chainIds = requestDto.CaAddressInfos.Select(t => t.ChainId).ToList();
+        var chainIdsFilter = chainIds.Aggregate((current, next) =>
+            string.Join(" OR ", $"token.chainId:{current}", $"token.chainId:{next}"));
         var keyword = requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword.ToUpper();
         var input = new GetListInput
         {
-            Filter = $"token.symbol: *{keyword}* AND (token.chainId:AELF OR token.chainId:tDVV)",
+            Filter = $"token.symbol: *{keyword}* AND ({chainIdsFilter})",
             Sort = "sortWeight desc,isDisplay desc,token.symbol acs,token.chainId acs",
             MaxResultCount = requestDto.MaxResultCount,
             SkipCount = requestDto.SkipCount,
