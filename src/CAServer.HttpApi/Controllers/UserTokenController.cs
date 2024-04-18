@@ -33,7 +33,7 @@ public class UserTokenController : CAServerController
     }
 
     [HttpGet, Authorize]
-    public async Task<List<GetTokenListDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
+    public async Task<List<GetUserTokenDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
     {
         return await _userTokenAppService.GetTokensAsync(requestDto);
     }
