@@ -212,17 +212,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 tokenList.Add(token);
             }
 
-            //tokenList = tokenList.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
-            // var defaultList = tokenList.Where(t => t.Symbol == CommonConstant.DefaultSymbol).ToList();
-            //
-            // var resultList = defaultList.Union(tokenList).ToList();
-            // var symbols = resultList.Select(t => t.Symbol).ToList();
-            // dto.Data.AddRange(resultList);
-
             var symbols = tokenList.Select(t => t.Symbol).Distinct().ToList();
             dto.Data.AddRange(tokenList);
             dto.Data = SortTokens(dto.Data);
-            
             dto.TotalRecordCount = dto.Data.Count;
             
             if (_getBalanceFromChainOption.IsOpen)
