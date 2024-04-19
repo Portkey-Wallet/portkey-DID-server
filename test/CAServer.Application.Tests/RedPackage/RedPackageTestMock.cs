@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using AElf;
 using AElf.Cryptography;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain;
@@ -234,5 +235,11 @@ public partial class RedPackageTest
             return redPackageIndex;
         });
         return mock.Object;
+    }
+    
+    private IGraphQLHelper GetMockIGraphQLHelper()
+    {
+        var mockHelper = new Mock<IGraphQLHelper>();
+        return mockHelper.Object;
     }
 }

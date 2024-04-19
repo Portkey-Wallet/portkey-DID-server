@@ -1,12 +1,9 @@
 using System;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
-using CAServer.SecurityServer;
 using CAServer.Signature.Provider;
 using CAServer.ThirdPart.Alchemy;
 using CAServer.ThirdPart.Dtos;
@@ -19,11 +16,13 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.ThirdPart.Processor.Ramp;
 
+[DisableAuditing]
 public class AlchemyOrderProcessor : AbstractRampOrderProcessor
 {
     private readonly IOptionsMonitor<ThirdPartOptions> _thirdPartOptions;

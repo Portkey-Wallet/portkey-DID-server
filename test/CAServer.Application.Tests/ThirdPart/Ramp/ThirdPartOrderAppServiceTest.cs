@@ -159,9 +159,4 @@ public partial class ThirdPartOrderAppServiceTest : ThirdPartTestBase
         var defaultVal = AlchemyHelper.GetOrderTransDirectForQuery("test");
         defaultVal.ShouldBe(OrderTransDirect.SELL.ToString());
     }
-    
-    
-    
-    
-    
 }
