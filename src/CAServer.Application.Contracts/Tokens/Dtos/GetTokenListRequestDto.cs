@@ -9,6 +9,7 @@ public class GetTokenListRequestDto : IValidatableObject
     public List<string> ChainIds { get; set; }
     public int SkipCount { get; set; }
     public int MaxResultCount { get; set; } = 200;
+    public string Version { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
