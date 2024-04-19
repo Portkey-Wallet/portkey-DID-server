@@ -61,7 +61,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ITokenCacheProvider _tokenCacheProvider;
     private readonly IpfsOptions _ipfsOptions;
     private readonly ITokenPriceService _tokenPriceService;
-    private readonly TokenListOptions _tokenListOptions;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -74,8 +73,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
-        IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService,
-        IOptionsSnapshot<TokenListOptions> tokenListOptions)
+        IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -98,7 +96,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenCacheProvider = tokenCacheProvider;
         _ipfsOptions = ipfsOption.Value;
         _tokenPriceService = tokenPriceService;
-        _tokenListOptions = tokenListOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -136,16 +133,18 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var tokenCacheList = await _userTokenCache.GetAsync(tokenKey);
             await CheckNeedAddTokenAsync(userId, indexerTokenInfos, userTokens, tokenCacheList);
 
-            var chainIds = _chainOptions.ChainInfos.Keys.ToList();
+            var chainInfos =
+                await _userAssetsProvider.GetUserChainIdsAsync(requestDto.CaAddressInfos.Select(t => t.CaAddress)
+                    .ToList());
+            var chainIds = chainInfos.CaHolderManagerInfo.Select(c => c.ChainId).Distinct().ToList();
+
             var dto = new GetTokenDto
             {
                 Data = new List<Token>(),
                 TotalRecordCount = 0
             };
 
-            AddDefaultTokens(userTokens);
             var userTokenSymbols = userTokens.Where(t => t.IsDefault || t.IsDisplay).ToList();
-
             if (userTokenSymbols.IsNullOrEmpty())
             {
                 _logger.LogError("get no result from current user {id}", userId);
@@ -195,6 +194,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var userTokensWithBalance =
                 ObjectMapper.Map<List<IndexerTokenInfo>, List<Token>>(indexerTokenInfos.CaHolderTokenBalanceInfo.Data);
 
+
             foreach (var token in userTokensWithBalance)
             {
                 var tokenCache =
@@ -208,10 +208,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 tokenList.Add(token);
             }
 
-            var symbols = tokenList.Select(t => t.Symbol).Distinct().ToList();
-            dto.Data.AddRange(tokenList);
-            dto.Data = SortTokens(dto.Data);
-            dto.TotalRecordCount = dto.Data.Count;
+            dto.TotalRecordCount = tokenList.Count;
+            tokenList = tokenList.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
+            var defaultList = tokenList.Where(t => t.Symbol == CommonConstant.DefaultSymbol).ToList();
+
+            var resultList = defaultList.Union(tokenList).ToList();
+            var symbols = resultList.Select(t => t.Symbol).ToList();
+            dto.Data.AddRange(resultList);
 
             if (_getBalanceFromChainOption.IsOpen)
             {
@@ -256,35 +259,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             _logger.LogError(e, "GetTokenAsync Error. {dto}", requestDto);
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
         }
-    }
-
-    private void AddDefaultTokens(List<UserTokenIndex> tokens)
-    {
-        foreach (var item in _tokenListOptions.UserToken)
-        {
-            var token = tokens.FirstOrDefault(t =>
-                t.Token.ChainId == item.Token.ChainId && t.Token.Symbol == item.Token.Symbol);
-            if (token != null)
-            {
-                continue;
-            }
-
-            tokens.Add(ObjectMapper.Map<UserTokenItem, UserTokenIndex>(item));
-        }
-    }
-
-    private List<Token> SortTokens(List<Token> tokens)
-    {
-        var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
-        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
-
-        return tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
-            .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
-            .ThenBy(t => sourceSymbols.Contains(t.Symbol))
-            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
-            .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
-            .ToList();
     }
 
     private string CalculateTotalBalanceInUsd(List<Token> tokens)
@@ -1072,11 +1046,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         SearchUserPackageAssetsRequestDto requestDto)
     {
         var userPackageFtAssetsIndex = await GetUserPackageFtAssetsIndexAsync(requestDto);
-        var ftTokens = userPackageFtAssetsIndex.Items.ToList();
-        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
 
-        ftTokens.RemoveAll(t => !t.IsDisplay && sourceSymbols.Contains(t.Token.Symbol));
-        AddDefaultAssertTokens(ftTokens, requestDto.Keyword);
         var userPackageAssets = await GetUserPackageAssetsAsync(requestDto);
 
         var userPackageFtAssetsWithPositiveBalance = userPackageAssets.Data
@@ -1089,42 +1059,20 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             .ToList();
 
         var matchedItems =
-            MatchAndConvertToUserPackageAssets(ftTokens, userPackageFtAssetsWithPositiveBalance);
+            MatchAndConvertToUserPackageAssets(userPackageFtAssetsIndex, userPackageFtAssetsWithPositiveBalance);
 
         var unmatchedItems =
-            UnMatchAndConvertToUserPackageAssets(ftTokens, userPackageFtAssetsWithPositiveBalance);
+            UnMatchAndConvertToUserPackageAssets(userPackageFtAssetsIndex, userPackageFtAssetsWithPositiveBalance);
 
         return MergeAndBuildDto(matchedItems, ConvertToUserPackageAssets(userPackageNftAssetsWithPositiveBalance),
             unmatchedItems);
     }
 
-    private void AddDefaultAssertTokens(List<UserTokenIndexDto> tokens, string keyword)
-    {
-        var defaultTokens = _tokenListOptions.UserToken;
-        if (!keyword.IsNullOrEmpty())
-        {
-            defaultTokens = defaultTokens.Where(t => t.Token.Symbol.ToUpper().Contains(keyword.Trim().ToUpper()))
-                .ToList();
-        }
-
-        foreach (var item in defaultTokens)
-        {
-            var token = tokens.FirstOrDefault(t =>
-                t.Token.ChainId == item.Token.ChainId && t.Token.Symbol == item.Token.Symbol);
-            if (token != null)
-            {
-                continue;
-            }
-
-            tokens.Add(ObjectMapper.Map<UserTokenItem, UserTokenIndexDto>(item));
-        }
-    }
-
     private List<UserPackageAsset> MatchAndConvertToUserPackageAssets(
-        List<UserTokenIndexDto> ftTokens,
+        PagedResultDto<UserTokenIndexDto> userPackageFtAssetsIndex,
         List<UserAsset> userPackageFtAssetsWithPositiveBalance)
     {
-        var matchedItems = ftTokens
+        var matchedItems = userPackageFtAssetsIndex.Items
             .Where(item => userPackageFtAssetsWithPositiveBalance.Any(asset =>
                 asset.ChainId == item.Token.ChainId && asset.Symbol == item.Token.Symbol))
             .ToList();
@@ -1144,8 +1092,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 ImageUrl = item.Token.ImageUrl,
                 AssetType = (int)AssetType.FT,
                 TokenContractAddress = item.Token.Address,
-                Balance = correspondingAsset.TokenInfo.Balance,
-                IsDisplay = item.IsDisplay
+                Balance = correspondingAsset.TokenInfo.Balance
             };
 
             userPackageAssets.Add(userPackageAsset);
@@ -1155,10 +1102,10 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     }
 
     private List<UserPackageAsset> UnMatchAndConvertToUserPackageAssets(
-        List<UserTokenIndexDto> ftTokens,
+        PagedResultDto<UserTokenIndexDto> userPackageFtAssetsIndex,
         List<UserAsset> userPackageFtAssetsWithPositiveBalance)
     {
-        var matchedItems = ftTokens
+        var matchedItems = userPackageFtAssetsIndex.Items
             .Where(item => userPackageFtAssetsWithPositiveBalance.All(asset =>
                 !(asset.ChainId == item.Token.ChainId && asset.Symbol == item.Token.Symbol)))
             .ToList();
@@ -1175,8 +1122,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 ImageUrl = item.Token.ImageUrl,
                 AssetType = (int)AssetType.FT,
                 TokenContractAddress = item.Token.Address,
-                Balance = "0",
-                IsDisplay = item.IsDisplay
+                Balance = "0"
             };
 
             userPackageAssets.Add(userPackageAsset);
@@ -1202,8 +1148,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 Balance = asset.NftInfo?.Balance,
                 TokenContractAddress = asset.NftInfo?.TokenContractAddress,
                 TokenName = asset.NftInfo?.TokenName,
-                AssetType = (int)AssetType.NFT,
-                IsDisplay = true
+                AssetType = (int)AssetType.NFT
             };
 
             userPackageAssets.Add(userPackageAsset);
@@ -1229,7 +1174,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         dto.Data.AddRange(userPackageFtAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageNftAssetsWithPositiveBalance);
         dto.Data.AddRange(userPackageFtAssetsWithNoBalance);
-        dto.Data = SortUserPackageAssets(dto.Data);
 
         SetSeedStatusAndTypeForUserPackageAssets(dto.Data);
 
@@ -1238,22 +1182,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         TryUpdateImageUrlForUserPackageAssets(dto.Data);
 
         return dto;
-    }
-
-    private List<UserPackageAsset> SortUserPackageAssets(List<UserPackageAsset> assets)
-    {
-        var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
-        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
-
-        return assets.OrderBy(t => t.Symbol != CommonConstant.ELF)
-            .ThenBy(t => !t.IsDisplay)
-            .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
-            .ThenBy(t => sourceSymbols.Contains(t.Symbol))
-            .ThenBy(t => t.AssetType == (int)AssetType.NFT)
-            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
-            .ThenBy(t => t.Symbol)
-            .ThenBy(t => t.ChainId)
-            .ToList();
     }
 
     private void SetSeedStatusAndTypeForUserPackageAssets(List<UserPackageAsset> userPackageAssets)
@@ -1367,11 +1295,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var caAddressInfos = new List<CAAddressInfo>();
         foreach (var chainInfo in _chainOptions.ChainInfos)
         {
+            
             if (!string.IsNullOrEmpty(requestDto.ChainId) && !requestDto.ChainId.Equals(chainInfo.Value.ChainId))
             {
                 continue;
             }
-
+            
             try
             {
                 var output =
@@ -1398,9 +1327,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             0, MaxResultCount);
         var resCaHolderTokenBalanceInfo = res.CaHolderTokenBalanceInfo.Data;
         var totalBalance = resCaHolderTokenBalanceInfo.Sum(tokenInfo => tokenInfo.Balance);
-
+        
         var totalBalanceInUsd = await CalculateTotalBalanceInUsdAsync(resCaHolderTokenBalanceInfo);
-
+        
         return new TokenInfoDto
         {
             Balance = totalBalance.ToString(),
@@ -1408,7 +1337,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             BalanceInUsd = totalBalanceInUsd.ToString()
         };
     }
-
+    
     private async Task<decimal> CalculateTotalBalanceInUsdAsync(List<IndexerTokenInfo> tokenInfos)
     {
         var totalBalanceInUsd = 0m;
@@ -1420,19 +1349,18 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
 
             var currentTokenPrice = await GetCurrentTokenPriceAsync(tokenInfo.TokenInfo.Symbol);
-            totalBalanceInUsd +=
-                GetCurrentPriceInUsd(tokenInfo.Balance, tokenInfo.TokenInfo.Decimals, currentTokenPrice);
+            totalBalanceInUsd += GetCurrentPriceInUsd(tokenInfo.Balance, tokenInfo.TokenInfo.Decimals, currentTokenPrice);
         }
 
         return totalBalanceInUsd;
     }
-
+    
     private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
     {
         var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
         return priceResult?.PriceInUsd ?? 0;
     }
-
+    
     private decimal GetCurrentPriceInUsd(long tokenBalance, int tokenDecimals, decimal currentBalanceInUsd)
     {
         if (decimal.TryParse(tokenBalance.ToString(), out var amount))
@@ -1440,7 +1368,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var baseValue = (decimal)Math.Pow(10, tokenDecimals);
             return amount / baseValue * currentBalanceInUsd;
         }
-
+        
         throw new ArgumentException("Invalid input values");
     }
 
