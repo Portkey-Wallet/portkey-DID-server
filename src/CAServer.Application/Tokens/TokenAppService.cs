@@ -32,13 +32,15 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     private readonly Dictionary<string, IExchangeProvider> _exchangeProviders;
     private readonly ITokenCacheProvider _tokenCacheProvider;
     private readonly ITokenPriceService _tokenPriceService;
+    private readonly TokenListOptions _tokenListOptions;
 
     public TokenAppService(IOptions<ContractAddressOptions> contractAddressesOptions,
         ITokenProvider tokenProvider, IEnumerable<IExchangeProvider> exchangeProviders,
         IDistributedCache<TokenExchange> latestExchange,
         IDistributedCache<TokenExchange> historyExchange,
         ITokenCacheProvider tokenCacheProvider,
-        ITokenPriceService tokenPriceService)
+        ITokenPriceService tokenPriceService,
+        IOptionsSnapshot<TokenListOptions> tokenListOptions)
     {
         _tokenProvider = tokenProvider;
         _latestExchange = latestExchange;
@@ -46,6 +48,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         _contractAddressOptions = contractAddressesOptions.Value;
         _exchangeProviders = exchangeProviders.ToDictionary(p => p.Name().ToString(), p => p);
         _tokenCacheProvider = tokenCacheProvider;
+        _tokenListOptions = tokenListOptions.Value;
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -218,6 +221,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
     private List<GetTokenListDto> GetTokenInfoList(List<UserTokenIndex> userTokenInfos, List<IndexerToken> tokenInfos)
     {
+        AddDefaultTokens(userTokenInfos);
         var result = new List<GetTokenListDto>();
         var tokenList = ObjectMapper.Map<List<IndexerToken>, List<GetTokenListDto>>(tokenInfos);
         var userTokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetTokenListDto>>(userTokenInfos);
@@ -243,5 +247,20 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
         return result;
+    }
+
+    private void AddDefaultTokens(List<UserTokenIndex> tokens)
+    {
+        foreach (var item in _tokenListOptions.UserToken)
+        {
+            var token = tokens.FirstOrDefault(t =>
+                t.Token.ChainId == item.Token.ChainId && t.Token.Symbol == item.Token.Symbol);
+            if (token != null)
+            {
+                continue;
+            }
+
+            tokens.Add(ObjectMapper.Map<UserTokenItem, UserTokenIndex>(item));
+        }
     }
 }
