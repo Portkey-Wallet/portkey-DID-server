@@ -90,15 +90,4 @@ public class ContactController : CAServerController
         return await _contactAppService.GetContactsByUserIdAsync(userId);
     }
     
-    [HttpPost("invitationPermission")]
-    public async Task<List<ContactResultDto>> ContactsInvitationPermission(ContactLabelDto contactLabelDto)
-    {
-        var userId = CurrentUser.Id;
-        if (null == userId)
-        {
-            throw new UserFriendlyException("Invalidate User");
-        }
-
-        return await _contactAppService.InvitationPermission(userId,contactLabelDto);
-    }
 }

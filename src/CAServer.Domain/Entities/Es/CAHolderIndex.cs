@@ -12,4 +12,6 @@ public class CAHolderIndex : CAServerEsEntity<Guid>, IIndexBuild
     public string Avatar { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime CreateTime { get; set; }
+
+    public int InvitationPermission { get; set; } = 0;
 }
