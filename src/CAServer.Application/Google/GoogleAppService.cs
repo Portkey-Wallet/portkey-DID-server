@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Cache;
@@ -10,6 +11,7 @@ using CAServer.Options;
 using CAServer.Signature.Options;
 using CAServer.Signature.Provider;
 using CAServer.Verifier;
+using CAServer.Verifier.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -148,6 +150,31 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
             _logger.LogError("Google App Check Token Valid Error {error}", e.Message);
             return new ValidateTokenResponse();
         }
+    }
+
+    public async Task<bool> VerifyGoogleTokenAsync(string accessToken)
+    {
+        var requestUrl = $"https://www.googleapis.com/oauth2/v2/userinfo?access_token={accessToken}";
+
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUrl));
+
+        var result = await response.Content.ReadAsStringAsync();
+        if (response.StatusCode == HttpStatusCode.Unauthorized || !response.IsSuccessStatusCode)
+        {
+            _logger.LogError("{Message}", response.ToString());
+            return false;
+        }
+        
+        _logger.LogInformation("GetUserInfo from google: {userInfo}", result);
+        var googleUserInfo = JsonConvert.DeserializeObject<GoogleUserInfoDto>(result);
+        if (googleUserInfo != null)
+        {
+            return true;
+        }
+
+        _logger.LogError("Get userInfo from google fail.");
+        return false;
     }
 
     public async Task<SecurityToken> VerifyAppCheckTokenAsync(string token)

@@ -1,4 +1,5 @@
 using CAServer.CAAccount.Dtos;
+using CAServer.Contacts;
 using CAServer.Grains.State;
 using Orleans;
 using Volo.Abp.ObjectMapping;
@@ -119,6 +120,12 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         {
             State.Avatar = holderInfo.Avatar;
         }
+
+        if (!holderInfo.InvitationPermission.ToString().IsNullOrWhiteSpace())
+        {
+            State.InvitationPermission = (int)holderInfo.InvitationPermission;
+        }
+
         await WriteStateAsync();
 
         result.Success = true;
