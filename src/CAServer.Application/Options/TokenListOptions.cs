@@ -5,6 +5,7 @@ namespace CAServer.Options;
 public class TokenListOptions
 {
     public List<UserTokenItem> UserToken { get; set; }
+    public List<UserTokenItem> SourceToken { get; set; } = new();
 }
 
 public class UserTokenItem
