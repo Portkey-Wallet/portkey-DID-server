@@ -84,8 +84,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             searchAppService: searchAppServiceMock.Object,
             tokenCacheProvider: tokenCacheProvider.Object,
             ipfsOption: ipfsOption.Object,
-            tokenPriceService: tokenPriceServiceMock.Object,
-            tokenListOptions: tokenListOptionsMock.Object);
+            tokenPriceService: tokenPriceServiceMock.Object);
         return userAssetsAppService;
     }
 
