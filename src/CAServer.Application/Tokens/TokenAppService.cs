@@ -127,6 +127,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var chainId = input.ChainIds.Count == 1 ? input.ChainIds.First() : string.Empty;
 
         var userTokensDto = await _tokenProvider.GetUserTokenInfoListAsync(CurrentUser.GetId(), chainId, string.Empty);
+        AddDefaultTokens(userTokensDto, input.Symbol);
         userTokensDto = userTokensDto?.Where(t => t.Token.Symbol.Contains(input.Symbol.Trim().ToUpper())).ToList();
         var indexerToken =
             await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
@@ -134,8 +135,12 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
 
         // Check and adjust SkipCount and MaxResultCount
-        var skipCount = input.SkipCount < TokensConstants.SkipCountDefault ? TokensConstants.SkipCountDefault : input.SkipCount;
-        var maxResultCount = input.MaxResultCount <= TokensConstants.MaxResultCountInvalid ? TokensConstants.MaxResultCountDefault : input.MaxResultCount;
+        var skipCount = input.SkipCount < TokensConstants.SkipCountDefault
+            ? TokensConstants.SkipCountDefault
+            : input.SkipCount;
+        var maxResultCount = input.MaxResultCount <= TokensConstants.MaxResultCountInvalid
+            ? TokensConstants.MaxResultCountDefault
+            : input.MaxResultCount;
 
         return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
     }
@@ -221,7 +226,6 @@ public class TokenAppService : CAServerAppService, ITokenAppService
 
     private List<GetTokenListDto> GetTokenInfoList(List<UserTokenIndex> userTokenInfos, List<IndexerToken> tokenInfos)
     {
-        AddDefaultTokens(userTokenInfos);
         var result = new List<GetTokenListDto>();
         var tokenList = ObjectMapper.Map<List<IndexerToken>, List<GetTokenListDto>>(tokenInfos);
         var userTokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetTokenListDto>>(userTokenInfos);
@@ -249,9 +253,16 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         return result;
     }
 
-    private void AddDefaultTokens(List<UserTokenIndex> tokens)
+    private void AddDefaultTokens(List<UserTokenIndex> tokens, string keyword)
     {
-        foreach (var item in _tokenListOptions.UserToken)
+        var userTokens = _tokenListOptions.UserToken;
+        if (!keyword.IsNullOrEmpty())
+        {
+            userTokens =
+                userTokens.Where(t => t.Token.Symbol.ToUpper().Contains(keyword.Trim().ToUpper())).ToList();
+        }
+
+        foreach (var item in userTokens)
         {
             var token = tokens.FirstOrDefault(t =>
                 t.Token.ChainId == item.Token.ChainId && t.Token.Symbol == item.Token.Symbol);
