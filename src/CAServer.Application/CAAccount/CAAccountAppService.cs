@@ -441,21 +441,21 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var validateAssets = await ValidateAssertsAsync(caAddressInfos);
 
-        var validateDevice = false;
+        var validateDevice = true;
         var chainIdBase58 = ChainHelper.ConvertChainIdToBase58(originChainId);
         caHolderDic.TryGetValue(chainIdBase58, out var holderInfo);
         if (holderInfo != null && holderInfo.ManagerInfos.Count > 1)
         {
-            validateDevice = true;
+            validateDevice = false;
         }
 
-        var validateGuardian = false;
+        var validateGuardian = true;
         if (holderInfo != null)
         {
             var guardians = holderInfo.GuardianList.Guardians.Where(t => t.IsLoginGuardian).ToList();
             if (guardians.Count > 1)
             {
-                validateGuardian = true;
+                validateGuardian = false;
             }
 
             var guardian =
@@ -476,7 +476,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                     MaxResultCount);
             if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 1)
             {
-                validateGuardian = true;
+                validateGuardian = false;
             }
         }
 
@@ -508,7 +508,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
     private async Task<bool> ValidateAssertsAsync(List<CAAddressInfo> caAddressInfos)
     {
-        var validateAssets = false;
+        var validateAssets = true;
         var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, DefaultSymbol,
             0, MaxResultCount);
 
@@ -518,7 +518,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 .Where(o => o.Balance >= MinBanlance).ToList();
             if (tokenInfos.Count > 0)
             {
-                validateAssets = true;
+                validateAssets = false;
             }
         }
 
@@ -526,7 +526,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             null, 0, MaxResultCount);
         if (res.CaHolderNFTBalanceInfo.Data.Count > 0)
         {
-            validateAssets = true;
+            validateAssets = false;
         }
 
         return validateAssets;

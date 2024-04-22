@@ -697,11 +697,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contacts);
     }
 
-    public Task<List<ContactResultDto>> InvitationPermission(Guid? userId, ContactLabelDto contactLabelDto)
-    {
-        throw new NotImplementedException();
-    }
-
     private async Task CheckContactAsync(ContactDto contact)
     {
         if (contact.ImInfo != null && contact.CaHolderInfo == null)
