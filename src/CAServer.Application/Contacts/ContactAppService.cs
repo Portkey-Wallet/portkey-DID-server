@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Types;
-using CAServer.CAAccount.Dtos;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Contacts.Provider;
-using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
@@ -77,7 +75,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             throw new UserFriendlyException(ContactMessage.ExistedMessage);
         }
-
+        
         await CheckAddressAsync(userId, input.Addresses, input.RelationId);
         var contactDto = await GetContactDtoAsync(input);
         await CheckContactAsync(contactDto);
@@ -391,7 +389,7 @@ public class ContactAppService : CAServerAppService, IContactAppService
         {
             var chainIds = contact.Addresses.Select(t => t.ChainId);
             var needAddChainIds = _chainOptions.ChainInfos.Keys.Except(chainIds).ToList();
-
+            
             foreach (var chainId in needAddChainIds)
             {
                 contact.Addresses.Add(new ContactAddressDto()
@@ -695,24 +693,9 @@ public class ContactAppService : CAServerAppService, IContactAppService
 
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
-        var contacts = await _contactProvider.GetContactsAsync(userId);
-        var contractList = ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contacts);
-        if (contacts == null)
-        {
-            return contractList;
-        }
-
-        var uIdList = contacts.Select(t => new Guid(t.ImInfo.PortkeyId)).ToList();
-        var caHolders = await _contactProvider.GetCaHoldersAsync(uIdList);
-        var dictionary = caHolders.ToDictionary(t => t.UserId, t => t);
-        foreach (var dto in contractList)
-        {
-            dto.InvitationPermission = dictionary[dto.ImInfo.PortkeyId].InvitationPermission;
-        }
-
-        return contractList;
+        var contacts= await _contactProvider.GetContactsAsync(userId);
+        return ObjectMapper.Map<List<ContactIndex>, List<ContactResultDto>>(contacts);
     }
-
 
     private async Task CheckContactAsync(ContactDto contact)
     {
