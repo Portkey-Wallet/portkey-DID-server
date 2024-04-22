@@ -354,7 +354,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     public async Task<RevokeResultDto> RevokeAccountAsync(RevokeAccountInput input)
     {
         var validateResult = await RevokeValidateAsync(CurrentUser.GetId(), input.Type);
-        if (validateResult.ValidatedDevice || validateResult.ValidatedAssets || validateResult.ValidatedGuardian)
+        if (!validateResult.ValidatedDevice || !validateResult.ValidatedAssets || !validateResult.ValidatedGuardian)
         {
             Logger.LogInformation(
                 "{message}, validateDevice:{validateDevice},validatedAssets:{validatedAssets},validateGuardian{validateGuardian}",
