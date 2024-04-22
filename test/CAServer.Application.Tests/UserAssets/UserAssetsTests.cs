@@ -46,6 +46,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var userAssetsProviderMock = new Mock<IUserAssetsProvider>();
         var userContactProviderMock = new Mock<IUserContactProvider>();
         var tokenInfoOptionsMock = new Mock<IOptions<TokenInfoOptions>>();
+        var tokenListOptionsMock = new Mock<IOptionsSnapshot<TokenListOptions>>();
         tokenInfoOptionsMock.Setup(o => o.Value).Returns(new TokenInfoOptions());
         var imageProcessProviderMock = new Mock<IImageProcessProvider>();
         var chainOptionsMock = new Mock<IOptions<ChainOptions>>();
@@ -72,18 +73,19 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             chainOptions: chainOptionsMock.Object,
             contractProvider: contractProviderMock.Object,
             distributedEventBus: GetRequiredService<IDistributedEventBus>(),
-            seedImageOptions:  seedImageOptionsMock.Object,
+            seedImageOptions: seedImageOptionsMock.Object,
             userTokenAppService: userTokenAppServiceMock.Object,
             tokenProvider: tokenProvider.Object,
-            assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(), 
+            assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(),
             userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>(),
             userTokenBalanceCache: GetRequiredService<IDistributedCache<string>>(),
-            getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(), 
-            nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(), 
+            getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(),
+            nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(),
             searchAppService: searchAppServiceMock.Object,
             tokenCacheProvider: tokenCacheProvider.Object,
             ipfsOption: ipfsOption.Object,
-            tokenPriceService: tokenPriceServiceMock.Object);
+            tokenPriceService: tokenPriceServiceMock.Object,
+            tokenListOptions: tokenListOptionsMock.Object);
         return userAssetsAppService;
     }
 
@@ -274,9 +276,4 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var result = await _userAssetsAppService.GetTokenBalanceAsync(input);
         result.Balance.ShouldBe(null);
     }
-    
-   
-    
-    
-    
 }

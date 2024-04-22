@@ -61,7 +61,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ITokenCacheProvider _tokenCacheProvider;
     private readonly IpfsOptions _ipfsOptions;
     private readonly ITokenPriceService _tokenPriceService;
-    private readonly TokenListOptions _tokenListOptions;
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -74,8 +73,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
-        IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService,
-        IOptionsSnapshot<TokenListOptions> tokenListOptions)
+        IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -98,7 +96,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenCacheProvider = tokenCacheProvider;
         _ipfsOptions = ipfsOption.Value;
         _tokenPriceService = tokenPriceService;
-        _tokenListOptions = tokenListOptions.Value;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -147,10 +144,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 TotalRecordCount = 0
             };
 
-            //var symbo = userTokens.Select(t => t.Token.Symbol).ToList();
-            
             var userTokenSymbols = userTokens.Where(t => t.IsDefault || t.IsDisplay).ToList();
-            
             if (userTokenSymbols.IsNullOrEmpty())
             {
                 _logger.LogError("get no result from current user {id}", userId);
@@ -199,7 +193,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             var userTokensWithBalance =
                 ObjectMapper.Map<List<IndexerTokenInfo>, List<Token>>(indexerTokenInfos.CaHolderTokenBalanceInfo.Data);
-            
+
+
             foreach (var token in userTokensWithBalance)
             {
                 var tokenCache =
@@ -213,13 +208,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 tokenList.Add(token);
             }
 
+            dto.TotalRecordCount = tokenList.Count;
             tokenList = tokenList.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList();
             var defaultList = tokenList.Where(t => t.Symbol == CommonConstant.DefaultSymbol).ToList();
 
             var resultList = defaultList.Union(tokenList).ToList();
             var symbols = resultList.Select(t => t.Symbol).ToList();
             dto.Data.AddRange(resultList);
-            dto.TotalRecordCount = dto.Data.Count;
 
             if (_getBalanceFromChainOption.IsOpen)
             {
@@ -263,20 +258,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             _logger.LogError(e, "GetTokenAsync Error. {dto}", requestDto);
             return new GetTokenDto { Data = new List<Token>(), TotalRecordCount = 0 };
-        }
-    }
-
-    private void HandleTokens(List<Token> tokens)
-    {
-        foreach (var item in _tokenListOptions.UserToken)
-        {
-            var token = tokens.FirstOrDefault(t => t.ChainId == item.Token.ChainId && t.Symbol == item.Token.Symbol);
-            if (token != null)
-            {
-                continue;
-            }
-
-            tokens.Add(ObjectMapper.Map<UserTokenItem, Token>(item));
         }
     }
 
@@ -1250,10 +1231,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsIndexAsync(
         SearchUserPackageAssetsRequestDto requestDto)
     {
+        var chainIds = requestDto.CaAddressInfos.Select(t => t.ChainId).ToList();
+        var chainIdsFilter = chainIds.Aggregate((current, next) =>
+            string.Join(" OR ", $"token.chainId:{current}", $"token.chainId:{next}"));
         var keyword = requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword.ToUpper();
         var input = new GetListInput
         {
-            Filter = $"token.symbol: *{keyword}* AND (token.chainId:AELF OR token.chainId:tDVV)",
+            Filter = $"token.symbol: *{keyword}* AND ({chainIdsFilter})",
             Sort = "sortWeight desc,isDisplay desc,token.symbol acs,token.chainId acs",
             MaxResultCount = requestDto.MaxResultCount,
             SkipCount = requestDto.SkipCount,
@@ -1311,11 +1295,12 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var caAddressInfos = new List<CAAddressInfo>();
         foreach (var chainInfo in _chainOptions.ChainInfos)
         {
+            
             if (!string.IsNullOrEmpty(requestDto.ChainId) && !requestDto.ChainId.Equals(chainInfo.Value.ChainId))
             {
                 continue;
             }
-
+            
             try
             {
                 var output =
@@ -1342,9 +1327,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             0, MaxResultCount);
         var resCaHolderTokenBalanceInfo = res.CaHolderTokenBalanceInfo.Data;
         var totalBalance = resCaHolderTokenBalanceInfo.Sum(tokenInfo => tokenInfo.Balance);
-
+        
         var totalBalanceInUsd = await CalculateTotalBalanceInUsdAsync(resCaHolderTokenBalanceInfo);
-
+        
         return new TokenInfoDto
         {
             Balance = totalBalance.ToString(),
@@ -1352,7 +1337,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             BalanceInUsd = totalBalanceInUsd.ToString()
         };
     }
-
+    
     private async Task<decimal> CalculateTotalBalanceInUsdAsync(List<IndexerTokenInfo> tokenInfos)
     {
         var totalBalanceInUsd = 0m;
@@ -1364,19 +1349,18 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
 
             var currentTokenPrice = await GetCurrentTokenPriceAsync(tokenInfo.TokenInfo.Symbol);
-            totalBalanceInUsd +=
-                GetCurrentPriceInUsd(tokenInfo.Balance, tokenInfo.TokenInfo.Decimals, currentTokenPrice);
+            totalBalanceInUsd += GetCurrentPriceInUsd(tokenInfo.Balance, tokenInfo.TokenInfo.Decimals, currentTokenPrice);
         }
 
         return totalBalanceInUsd;
     }
-
+    
     private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
     {
         var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
         return priceResult?.PriceInUsd ?? 0;
     }
-
+    
     private decimal GetCurrentPriceInUsd(long tokenBalance, int tokenDecimals, decimal currentBalanceInUsd)
     {
         if (decimal.TryParse(tokenBalance.ToString(), out var amount))
@@ -1384,7 +1368,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var baseValue = (decimal)Math.Pow(10, tokenDecimals);
             return amount / baseValue * currentBalanceInUsd;
         }
-
+        
         throw new ArgumentException("Invalid input values");
     }
 
