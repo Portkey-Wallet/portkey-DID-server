@@ -152,31 +152,6 @@ public class GoogleAppService : IGoogleAppService, ISingletonDependency
         }
     }
 
-    public async Task<bool> VerifyGoogleTokenAsync(string accessToken)
-    {
-        var requestUrl = $"https://www.googleapis.com/oauth2/v2/userinfo?access_token={accessToken}";
-
-        var client = _httpClientFactory.CreateClient();
-        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, requestUrl));
-
-        var result = await response.Content.ReadAsStringAsync();
-        if (response.StatusCode == HttpStatusCode.Unauthorized || !response.IsSuccessStatusCode)
-        {
-            _logger.LogError("{Message}", response.ToString());
-            return false;
-        }
-        
-        _logger.LogInformation("GetUserInfo from google: {userInfo}", result);
-        var googleUserInfo = JsonConvert.DeserializeObject<GoogleUserInfoDto>(result);
-        if (googleUserInfo != null)
-        {
-            return true;
-        }
-
-        _logger.LogError("Get userInfo from google fail.");
-        return false;
-    }
-
     public async Task<SecurityToken> VerifyAppCheckTokenAsync(string token)
     {
         if (string.IsNullOrEmpty(token))

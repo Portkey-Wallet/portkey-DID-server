@@ -15,12 +15,11 @@ public class HolderInfoDto : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-       
         if (NickName.IsNullOrWhiteSpace() && Avatar.IsNullOrWhiteSpace())
         {
             yield return new ValidationResult(
                 "Invalid input.",
-                new[] { "NickName", "Avatar"}
+                new[] { "NickName", "Avatar" }
             );
         }
     }

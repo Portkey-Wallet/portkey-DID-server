@@ -4,7 +4,5 @@ namespace CAServer.CAAccount.Dtos;
 
 public class RevokeDto
 {
-    public string AppleToken { get; set; }
-    
-    
+    [Required] public string AppleToken { get; set; }
 }

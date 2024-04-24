@@ -180,8 +180,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
     public async Task<bool> VerifyRevokeCodeAsync(VerifyRevokeCodeInput input)
     {
-        //var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
-        var endPoint = "http://127.0.0.1:5002";
+        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)
         {
