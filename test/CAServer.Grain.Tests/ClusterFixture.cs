@@ -79,7 +79,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                 "AELF", new Grains.Grain.ApplicationHandler.ChainInfo
                                 {
                                     ChainId = "AELF",
-                                    BaseUrl = "http://192.168.66.61:8000",
+                                    BaseUrl = "url",
                                     ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     CrossChainContractAddress =
@@ -92,7 +92,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                 "tDVV", new Grains.Grain.ApplicationHandler.ChainInfo
                                 {
                                     ChainId = "tDVV",
-                                    BaseUrl = "http://192.168.67.18:8000",
+                                    BaseUrl = "url",
                                     ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     CrossChainContractAddress =

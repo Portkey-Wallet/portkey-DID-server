@@ -22,6 +22,7 @@ using CAServer.Guardian;
 using CAServer.Options;
 using CAServer.Telegram;
 using CAServer.TwitterAuth.Dtos;
+using CAServer.TwitterAuth.Etos;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
 using Microsoft.Extensions.Logging;
@@ -245,6 +246,9 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         try
         {
             var userId = await GetTwitterUserIdAsync(requestDto.AccessToken);
+            // statistic
+            await StatisticTwitterAsync(userId);
+            
             var hashInfo = await GetSaltAndHashAsync(userId);
             var response =
                 await _verifierServerClient.VerifyTwitterTokenAsync(requestDto, hashInfo.Item1, hashInfo.Item2);
@@ -253,6 +257,8 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
                 throw new UserFriendlyException($"Validate twitter failed :{response.Message}");
             }
 
+            // statistic
+            await StatisticTwitterAsync(userId);
             if (!hashInfo.Item3)
             {
                 await AddGuardianAsync(userId, hashInfo.Item2, hashInfo.Item1);
@@ -310,6 +316,15 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
         }
 
         return userInfo.Data.Id;
+    }
+
+    private async Task StatisticTwitterAsync(string userId)
+    {
+        await _distributedEventBus.PublishAsync(new TwitterStatisticEto
+        {
+            Id = userId,
+            UpdateTime = TimeHelper.GetTimeStampInSeconds()
+        });
     }
 
     public async Task<long> CountVerifyCodeInterfaceRequestAsync(string userIpAddress)

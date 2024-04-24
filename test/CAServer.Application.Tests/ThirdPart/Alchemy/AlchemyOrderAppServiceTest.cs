@@ -65,7 +65,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         };
         var resultFail = await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), inputFail);
         resultFail.Success.ShouldBe(false);
-
+    
         var signatureFail = new AlchemyOrderUpdateDto
         {
             MerchantOrderNo = "00000000-0000-0000-0000-000000000001", //MerchantOrderNo = Guid.NewGuid().ToString(),
@@ -78,7 +78,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         var signResultFail = await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), signatureFail);
         signResultFail.Success.ShouldBe(false);
     }
-
+    
     [Fact]
     public async Task UpdateAlchemyOrderAsync_Signature_Is_Null_Test()
     {
@@ -100,7 +100,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
             Assert.True(e is AbpValidationException);
         }
     }
-
+    
     [Fact]
     public async Task UpdateAlchemyOrderAsync_MerchantOrderNo_Is_Null_Test()
     {
@@ -122,7 +122,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
             Assert.True(e is AbpValidationException);
         }
     }
-
+    
     [Fact]
     public async Task UpdateAlchemyOrderAsync_Status_Not_Exist_Test()
     {
@@ -144,7 +144,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
             Assert.True(e is AbpValidationException);
         }
     }
-
+    
     [Fact]
     public async Task UpdateAlchemyTxHashAsyncTest()
     {
@@ -162,7 +162,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         {
             e.ShouldBe(null);
         }
-
+    
         var inputFail = new TransactionHashDto()
         {
             MerchantName = "Alchemy",
@@ -178,7 +178,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
             e.ShouldNotBe(null);
         }
     }
-
+    
     [Fact]
     public async Task UpdateAlchemySellAddressAsyncTest()
     {
@@ -196,11 +196,11 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
             OrderNo = "OrderNo",
             Signature = "a384b2b7150b1593bd1f9de5e07cd6cbe427edea"
         };
-
+    
         var signResultFail = await _thirdPartOrderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), input);
         signResultFail.Success.ShouldBe(true);
     }
-
+    
     [Fact]
     public async Task SignatureTest()
     {
@@ -216,7 +216,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
                 "af2b9305e9d85404f8c67630bc410e58d6d30dc2f0cf5a021f8bbfd4237663fb7dfa51f978179a001394b23f32f464e5be856b3298063d5bf11d0c6fd8f35ca400"
         });
     }
-
+    
     [Fact]
     public async Task Signature_Verify_Fail_Test()
     {
@@ -239,7 +239,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
             e.ShouldNotBe(null);
         }
     }
-
+    
     [Fact]
     public async Task Signature_Verify_Error_Test()
     {
@@ -262,7 +262,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
             e.ShouldNotBe(null);
         }
     }
-
+    
     [Fact]
     public async Task TestQueryAlchemyOrderInfoAsync()
     {

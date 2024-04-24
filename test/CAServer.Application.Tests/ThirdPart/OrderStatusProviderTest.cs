@@ -29,6 +29,7 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
         services.AddSingleton(UserActivityAppServiceTests.GetMockActivityProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockHttpClientFactory());
         services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceWorkerOption());
         services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
         services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
@@ -52,7 +53,7 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
             }
         });
     }
-
+    
     [Fact]
     public async Task UpdateOrderStatus_GetNull_Async()
     {
@@ -67,7 +68,7 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
             }
         });
     }
-
+    
     [Fact]
     public async Task UpdateOrderStatusAsync()
     {
@@ -77,7 +78,7 @@ public partial class OrderStatusProviderTest : CAServerApplicationTestBase
             MerchantName = ThirdPartNameType.Alchemy.ToString(),
             TransDirect = TransferDirectionType.TokenBuy.ToString()
         };
-
+    
         var orderCreatedDto = await _thirdPartOrderAppService.CreateThirdPartOrderAsync(orderCreateInput);
         orderCreatedDto.Success.ShouldBe(true);
         

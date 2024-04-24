@@ -63,6 +63,16 @@ public partial class TokenAppServiceTest
         return mock.Object;
     }
 
+    public static IOptionsMonitor<TokenPriceWorkerOption> GetMockTokenPriceWorkerOption()
+    {
+        var mock = new Mock<IOptionsMonitor<TokenPriceWorkerOption>>();
+        mock.Setup(o => o.CurrentValue).Returns(() => new TokenPriceWorkerOption
+        {
+            Symbols = new List<string>(){"ELF", "USDT"}
+        });
+        return mock.Object;
+    }
+
     public static IOptionsMonitor<SignatureServerOptions> GetMockSignatureServerOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsMonitor<SignatureServerOptions>>();

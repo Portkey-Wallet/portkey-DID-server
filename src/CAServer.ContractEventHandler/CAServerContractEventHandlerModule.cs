@@ -8,6 +8,7 @@ using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Monitor;
+using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Signature;
 using Hangfire;
@@ -167,6 +168,7 @@ public class CAServerContractEventHandlerModule : AbpModule
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }

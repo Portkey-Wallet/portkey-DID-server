@@ -10,12 +10,13 @@ using CAServer.ThirdPart.Dtos.Ramp;
 using CAServer.ThirdPart.Dtos.ThirdPart;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MongoDB.Driver.Linq;
 using Serilog;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 
 namespace CAServer.ThirdPart.Adaptor;
 
+[DisableAuditing]
 public class AlchemyAdaptor : CAServerAppService, IThirdPartAdaptor
 {
     private const decimal DefaultAmount = 200;

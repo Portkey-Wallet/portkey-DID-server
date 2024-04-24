@@ -40,8 +40,10 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         services.AddSingleton(MockCryptoBoxGrain());
         services.AddSingleton(MockRedPackageIndex());
         services.AddSingleton(MockGraphQlOptions());
+        services.AddSingleton(GetMockIGraphQLHelper());
         
         services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceWorkerOption());
         services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
         services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
@@ -93,7 +95,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         var input = NewSendRedPackageInputDto();
         input.ChainId = "AELF";
         input.Symbol = "XXX";
-        var ex = await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
             await _redPackageAppService.SendRedPackageAsync(input);
         });
@@ -149,7 +151,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         //chain id error
         input = NewSendRedPackageInputDto();
         input.ChainId = "AELF-1";
-        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
             await _redPackageAppService.SendRedPackageAsync(input);
         });
