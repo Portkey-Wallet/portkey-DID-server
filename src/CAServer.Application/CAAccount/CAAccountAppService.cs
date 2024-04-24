@@ -448,38 +448,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             validateDevice = false;
         }
-
-        var validateGuardian = true;
-        if (holderInfo != null)
-        {
-            var guardians = holderInfo.GuardianList.Guardians.Where(t => t.IsLoginGuardian).ToList();
-            if (guardians.Count > 1)
-            {
-                validateGuardian = false;
-            }
-
-            var guardian =
-                guardians.FirstOrDefault(t => (int)t.Type == (int)Enum.Parse(typeof(GuardianIdentifierType), type));
-            if (guardian == null)
-            {
-                throw new Exception(ResponseMessage.LoginGuardianNotExists);
-            }
-        }
-
-        var currentGuardian =
-            holderInfo?.GuardianList.Guardians.FirstOrDefault(t =>
-                t.IsLoginGuardian && (int)t.Type == (int)Enum.Parse(typeof(GuardianIdentifierType), type));
-        if (currentGuardian != null)
-        {
-            var caHolderDto =
-                await _accountProvider.GetGuardianAddedCAHolderAsync(currentGuardian.IdentifierHash.ToHex(), 0,
-                    MaxResultCount);
-            if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 1)
-            {
-                validateGuardian = false;
-            }
-        }
-
+        var validateGuardian = await ValidateGuardianAsync(holderInfo,type);
         return new CancelCheckResultDto
         {
             ValidatedDevice = validateDevice,
