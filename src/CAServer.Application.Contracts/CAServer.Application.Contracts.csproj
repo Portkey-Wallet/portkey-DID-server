@@ -62,11 +62,6 @@
     <ItemGroup>
       <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
-    
-
-    <ItemGroup>
-      <Orleans_CodeGenInputs Remove="VerifyToken\IVerifyTokenStrategy.cs" />
-    </ItemGroup>
 
 
 </Project>
