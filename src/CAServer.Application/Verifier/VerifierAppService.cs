@@ -296,12 +296,6 @@ public class VerifierAppService : CAServerAppService, IVerifierAppService
     }
 
 
-    public async Task<bool> VerifyRevokeCodeAsync(VerifyRevokeCodeInput input)
-    {
-        return await _verifierServerClient.VerifyRevokeCodeAsync(input);
-
-    }
-
     private async Task<string> GetTwitterUserIdAsync(string accessToken)
     {
         var header = new Dictionary<string, string>
