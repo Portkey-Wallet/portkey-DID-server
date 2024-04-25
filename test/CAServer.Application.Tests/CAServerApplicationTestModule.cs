@@ -20,6 +20,7 @@ using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.DependencyInjection;
+using Volo.Abp.Auditing;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
@@ -39,6 +40,10 @@ public class CAServerApplicationTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<AbpAuditingOptions>(options =>
+        {
+            options.IsEnabled = false;
+        });
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
@@ -138,6 +143,7 @@ public class CAServerApplicationTestModule : AbpModule
             o.TypeMap = new Dictionary<string, string>() { { "TEST", "TEST" } };
             o.TransferTypes = new List<string>() { "TEST", "TransferTypes" };
             o.ContractTypes = new List<string>() { "TEST", "ContractTypes" };
+            o.SystemTypes = new List<string>() { "TEST", "ContractTypes" };
             o.ShowPriceTypes = new List<string>() { "TEST" };
             o.NoShowTypes = new List<string>() { "no show" };
             o.RedPacketTypes = new List<string>() { "no" };
@@ -149,8 +155,14 @@ public class CAServerApplicationTestModule : AbpModule
         {
             option.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
             {
-                { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() },
-                { "AELF", new Grains.Grain.ApplicationHandler.ChainInfo() }
+                { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo()
+                {
+                    ChainId = "TEST"
+                } },
+                { "AELF", new Grains.Grain.ApplicationHandler.ChainInfo()
+                {
+                    ChainId = "AELF"
+                } }
             };
         });
 

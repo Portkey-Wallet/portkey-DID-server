@@ -20,6 +20,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
@@ -27,6 +28,7 @@ using Volo.Abp.Users;
 
 namespace CAServer.RedPackage;
 
+[RemoteService(isEnabled: false), DisableAuditing]
 public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 {
     private readonly RedPackageOptions _redPackageOptions;

@@ -45,6 +45,8 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockGuardianProvider());
         services.AddSingleton(GetMockCaAccountProvider());
         services.AddSingleton(GetMockAppleAuthProvider());
+        services.AddSingleton(GetMockContractProvider());
+        
     }
 
 
@@ -108,4 +110,39 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
 
         return provider.Object;
     }
+
+    [Fact]
+    public async Task Revoke_Validate_Test()
+    {
+        var userId = Guid.NewGuid();
+        var result = await _caAccountAppService.RevokeValidateAsync(userId,"Email");
+        result.ValidatedAssets.ShouldBeTrue();
+        result.ValidatedDevice.ShouldBeTrue();
+        result.ValidatedGuardian.ShouldBeTrue();
+    }
+    
+    [Fact]
+    public async Task Revoke_Account_Test()
+    {
+
+        var input = new RevokeAccountInput
+        {
+            Token = "MockToken",
+            ChainId = "AELF",
+            GuardianIdentifier = "MockGuardianIdentifier",
+            VerifierId = "",
+            Type = "Google",
+            VerifierSessionId = Guid.NewGuid()
+        };
+        var resultDto = await _caAccountAppService.RevokeAccountAsync(input);
+        resultDto.Success.ShouldBe(false);
+        
+
+
+
+
+    }
+    
+    
+
 }

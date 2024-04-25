@@ -86,7 +86,7 @@ public class CAAccountController : CAServerController
     {
         return await _caAccountService.RevokeAsync(input);
     }
-    
+
     [HttpGet("checkManagerCount")]
     public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
     {
@@ -98,6 +98,20 @@ public class CAAccountController : CAServerController
     {
         var url = await _growthAppService.GetRedirectUrlAsync(shortLinkCode);
         return Redirect(url);
+    }
+
+    [HttpPost("revoke/account"), Authorize, IgnoreAntiforgeryToken]
+    public async Task<RevokeResultDto> RevokeAccountAsync(RevokeAccountInput input)
+    {
+        return await _caAccountService.RevokeAccountAsync(input);
+    }
+    
+    [HttpGet("revoke/validate")]
+    [Authorize]
+    public async Task<CancelCheckResultDto> RevokeValidateAsync(string type)
+    {
+        var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
+        return await _caAccountService.RevokeValidateAsync(userId, type);
     }
     
 }

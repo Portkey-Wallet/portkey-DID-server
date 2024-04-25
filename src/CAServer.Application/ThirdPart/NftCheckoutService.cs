@@ -2,10 +2,12 @@ using System.Collections.Generic;
 using System.Linq;
 using CAServer.Common;
 using CAServer.ThirdPart.Processors;
+using Volo.Abp.Auditing;
 using Volo.Abp.DependencyInjection;
 
 namespace CAServer.ThirdPart;
 
+[DisableAuditing]
 public class NftCheckoutService : INftCheckoutService, ISingletonDependency
 {
     private readonly Dictionary<string, IThirdPartNftOrderProcessor> _processors;

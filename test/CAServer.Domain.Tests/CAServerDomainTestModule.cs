@@ -10,6 +10,7 @@ using Elasticsearch.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.Modularity;
 using Volo.Abp.Threading;
 
@@ -22,6 +23,10 @@ public class CAServerDomainTestModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
+        Configure<AbpAuditingOptions>(options =>
+        {
+            options.IsEnabled = false;
+        });
         Configure<IndexCreateOption>(x =>
         {
             x.AddModule(typeof(CAServerDomainModule));
