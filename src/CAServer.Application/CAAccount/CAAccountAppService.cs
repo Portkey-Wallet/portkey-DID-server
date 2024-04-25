@@ -512,22 +512,24 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
                 validateGuardian = false;
             }
 
-            var guardian = guardians.FirstOrDefault(t => Enum.GetName(t.Type) == type);
+            var value = (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type);
+            var guardian = guardians.FirstOrDefault(t=>(int)t.Type == value);
             if (guardian == null)
             {
                 throw new Exception(ResponseMessage.LoginGuardianNotExists);
             }
         }
 
+        
 
         var currentGuardian =
-            holderInfo?.GuardianList.Guardians.FirstOrDefault(t => t.IsLoginGuardian && Enum.GetName(t.Type) == type);
+            holderInfo?.GuardianList.Guardians.FirstOrDefault(t => t.IsLoginGuardian && (int)t.Type == (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
         if (currentGuardian != null)
         {
             var caHolderDto =
                 await _accountProvider.GetGuardianAddedCAHolderAsync(currentGuardian.IdentifierHash.ToHex(), 0,
                     MaxResultCount);
-            if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count < 2)
+            if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 1)
             {
                 validateGuardian = false;
             }
