@@ -70,7 +70,8 @@ public partial class RevokeAccountTests
     {
         var mockGuardianProvider = new Mock<IGuardianProvider>();
         mockGuardianProvider.Setup(m => m.GetGuardiansAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(
-            new GuardiansDto()
+           
+            new GuardiansDto    
             {
                 CaHolderInfo = new List<GuardianDto>()
                 {
@@ -78,6 +79,14 @@ public partial class RevokeAccountTests
                     {
                         OriginChainId = "AELF",
                         ChainId = "AELF",
+                        ManagerInfos = new List<ManagerInfoDBase>
+                        {
+                            new ManagerInfoDBase()
+                            {
+                                Address = "123",
+                                ExtraData = "234"
+                            }
+                        },
                         GuardianList = new GuardianBaseListDto
                         {
                             Guardians = new List<GuardianInfoBase>
@@ -157,7 +166,7 @@ public partial class RevokeAccountTests
             .ReturnsAsync(
                 new GetHolderInfoOutput
                 {
-                    CreateChainId = 123456,
+                    CreateChainId = 9992731,
                     CaHash = Hash.LoadFromHex("df6d6e308c15f8d3a4e78853425985bb3cac08a2230e1df859eb3567fc38c03e"),
                     GuardianList = new GuardianList()
                     {
@@ -181,6 +190,22 @@ public partial class RevokeAccountTests
 
         return mockContractProvider.Object;
     }
+    
+    private IOptionsSnapshot<ManagerCountLimitOptions> GetMockManagerCountLimitOptions()
+    {
+        var mockOptions = new Mock<IOptionsSnapshot<ManagerCountLimitOptions>>();
+
+        mockOptions.Setup(o => o.Value).Returns(
+            new ManagerCountLimitOptions()
+            {
+                Limit = 1
+            });
+           
+        return mockOptions.Object;
+    }
+
+    
+    
     
    
     

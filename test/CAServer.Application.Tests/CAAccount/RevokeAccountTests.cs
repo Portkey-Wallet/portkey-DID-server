@@ -46,6 +46,7 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockCaAccountProvider());
         services.AddSingleton(GetMockAppleAuthProvider());
         services.AddSingleton(GetMockContractProvider());
+        services.AddSingleton(GetMockManagerCountLimitOptions());
         
     }
 
@@ -131,15 +132,45 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
             ChainId = "AELF",
             GuardianIdentifier = "MockGuardianIdentifier",
             VerifierId = "",
-            Type = "Google",
+            Type = "Email",
             VerifierSessionId = Guid.NewGuid()
         };
         var resultDto = await _caAccountAppService.RevokeAccountAsync(input);
         resultDto.Success.ShouldBe(false);
+    }
+    
         
+    [Fact]
+    public async Task Revoke_Account_GuardianNotExsits_Test()
+    {
 
+        var input = new RevokeAccountInput
+        {
+            Token = "MockToken",
+            ChainId = "AELF",
+            GuardianIdentifier = "MockGuardianIdentifier",
+            VerifierId = "",
+            Type = "Google",
+            VerifierSessionId = Guid.NewGuid()
+        };
 
-
+        try
+        {
+            await _caAccountAppService.RevokeAccountAsync(input);
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldContain("Login guardian not exists");
+        }
+    }
+    
+    
+    [Fact]
+    public async Task CheckManagerCountAsync_Test()
+    {
+        var caHash = "MockCaHash";
+        var resultDto = await _caAccountAppService.CheckManagerCountAsync(caHash);
+        resultDto.ManagersTooMany.ShouldBeTrue();
 
     }
     
