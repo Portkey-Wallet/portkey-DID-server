@@ -376,9 +376,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         try
         {
             var verifyRevokeToken = await _verifierServerClient.VerifyRevokeCodeAsync(revokeCodeInput);
+            _logger.LogDebug("verifyToken result {result}:{type},{guardian}", verifyRevokeToken,input.Type, input.GuardianIdentifier);
             if (verifyRevokeToken)
             {
-                _logger.LogDebug("verifyToken success:{type},{guardian}", input.Type, input.GuardianIdentifier);
                 await DeleteGuardianAsync(input.GuardianIdentifier);
                 await _caHolderAppService.DeleteAsync();
             }
