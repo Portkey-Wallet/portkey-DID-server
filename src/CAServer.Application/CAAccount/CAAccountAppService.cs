@@ -378,6 +378,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var verifyRevokeToken = await _verifierServerClient.VerifyRevokeCodeAsync(revokeCodeInput);
             if (verifyRevokeToken)
             {
+                _logger.LogDebug("verifyToken success:{type},{guardian}", input.Type, input.GuardianIdentifier);
                 await DeleteGuardianAsync(input.GuardianIdentifier);
                 await _caHolderAppService.DeleteAsync();
             }
@@ -448,7 +449,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             validateDevice = false;
         }
-        var validateGuardian = await ValidateGuardianAsync(holderInfo,type);
+
+        var validateGuardian = await ValidateGuardianAsync(holderInfo, type);
         return new CancelCheckResultDto
         {
             ValidatedDevice = validateDevice,
@@ -513,17 +515,18 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             }
 
             var value = (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type);
-            var guardian = guardians.FirstOrDefault(t=>(int)t.Type == value);
+            var guardian = guardians.FirstOrDefault(t => (int)t.Type == value);
             if (guardian == null)
             {
                 throw new Exception(ResponseMessage.LoginGuardianNotExists);
             }
         }
 
-        
 
         var currentGuardian =
-            holderInfo?.GuardianList.Guardians.FirstOrDefault(t => t.IsLoginGuardian && (int)t.Type == (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
+            holderInfo?.GuardianList.Guardians.FirstOrDefault(t =>
+                t.IsLoginGuardian && (int)t.Type ==
+                (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
         if (currentGuardian != null)
         {
             var caHolderDto =
