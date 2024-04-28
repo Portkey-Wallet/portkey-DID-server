@@ -46,23 +46,23 @@ public partial class ThirdPartOrderAppServiceTest
         alchemyPrice.NetworkList.ShouldNotBeNull();
         alchemyPrice.NetworkList.ShouldNotBeEmpty();
     }
-
+    
     [Fact]
     public async Task TreasuryOrder_Alchemy()
     {
         MockRampLists();
         MockHttpByPath(AlchemyApi.CallBackTreasury, new AlchemyBaseResponseDto<Empty>());
-
+    
         var treasuryProcessorFactory = ServiceProvider.GetRequiredService<ITreasuryProcessorFactory>();
         var treasuryOrderProvider = ServiceProvider.GetRequiredService<ITreasuryOrderProvider>();
         var orderAppService = ServiceProvider.GetRequiredService<IThirdPartOrderAppService>();
         var pendingTreasuryOrderWorker = ServiceProvider.GetRequiredService<PendingTreasuryOrderWorker>();
         var treasuryTxConfirmWorker = ServiceProvider.GetRequiredService<TreasuryTxConfirmWorker>();
-
+    
         var rampOrder = await CreateThirdPartOrderAsyncTest();
-
+    
         #region Notify treasury order
-
+    
         var treasuryOrderRequest = new AlchemyTreasuryOrderRequestDto()
         {
             OrderNo = "1706370588684",
@@ -74,12 +74,12 @@ public partial class ThirdPartOrderAppServiceTest
             UsdtAmount = "34.56",
             Headers = TreasuryHeader()
         };
-
+    
         await treasuryProcessorFactory.Processor(ThirdPartNameType.Alchemy.ToString())
             .NotifyOrderAsync(treasuryOrderRequest);
-
+    
         #endregion
-
+    
         #region Pending treasury order should be Pending status
         {
             var pendingData = await treasuryOrderProvider.QueryPendingTreasuryOrderAsync(
@@ -92,9 +92,9 @@ public partial class ThirdPartOrderAppServiceTest
             pendingData.Items[0].Status.ShouldBe(OrderStatusType.Pending.ToString());
         }
         #endregion
-
+    
         #region Webhook ramp order
-
+    
         var webhookReq = new AlchemyOrderUpdateDto
         {
             OrderNo = "1706370588684",
@@ -110,14 +110,14 @@ public partial class ThirdPartOrderAppServiceTest
             CryptoQuantity = "40.000",
             Signature = "cd29b4371572abe3005fdfd43c93fafacebe946a"
         };
-
+    
         var updateRamp = await orderAppService.OrderUpdateAsync(ThirdPartNameType.Alchemy.ToString(), webhookReq);
         updateRamp.Success.ShouldBeTrue();
-
+    
         #endregion
-
+    
         await pendingTreasuryOrderWorker.HandleAsync();
-
+    
         #region Pending treasury order should be Pending status
         {
             var pendingData = await treasuryOrderProvider.QueryPendingTreasuryOrderAsync(
@@ -130,7 +130,7 @@ public partial class ThirdPartOrderAppServiceTest
             pendingData.Items[0].Status.ShouldBe(OrderStatusType.Finish.ToString());
         }
         #endregion
-
+    
         #region Order status is Transferring
         TreasuryOrderDto treasuryOrder;
         {
@@ -140,14 +140,14 @@ public partial class ThirdPartOrderAppServiceTest
             treasuryOrder = transferringOrder.Items[0];
         }
         #endregion
-
+    
         // mock transactionId as MinedTxId
         treasuryOrder.TransactionId = MinedTxId;
         await orderAppService.UpdateTreasuryOrderAsync(treasuryOrder);
-
+    
         // handle tx multi confirm
         await treasuryTxConfirmWorker.HandleAsync();
-
+    
         #region Order status is Finish
         {
             var transferringOrder = await treasuryOrderProvider.QueryOrderAsync(new TreasuryOrderCondition(0, 10));
@@ -155,6 +155,6 @@ public partial class ThirdPartOrderAppServiceTest
             transferringOrder.Items[0].Status.ShouldBe(OrderStatusType.Finish.ToString());
         }
         #endregion
-
+    
     }
 }

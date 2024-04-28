@@ -29,7 +29,7 @@ public partial class ThirdPartOrderAppServiceTest
             "countryName": "United States of America"
         }
         """);
-
+    
     private readonly AlchemyCryptoDto _alchemyElf = JsonConvert.DeserializeObject<AlchemyCryptoDto>(
         """
         {
@@ -46,7 +46,7 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """
     );
-
+    
     private readonly AlchemyCryptoDto _alchemyUSDT = JsonConvert.DeserializeObject<AlchemyCryptoDto>(
         """
         {
@@ -63,7 +63,7 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """
     );
-
+    
     private readonly TransakFiatItem _transakUsd = JsonConvert.DeserializeObject<TransakFiatItem>(
         """
         {
@@ -105,7 +105,7 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """
     );
-
+    
     private readonly TransakFiatItem _transakEur = JsonConvert.DeserializeObject<TransakFiatItem>(
         """
         {
@@ -146,7 +146,7 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """
     );
-
+    
     private readonly TransakCountry _transakCountryUs = JsonConvert.DeserializeObject<TransakCountry>(
         """
         {
@@ -158,7 +158,7 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """
     );
-
+    
     private readonly TransakCryptoItem _transakCryptoElf = JsonConvert.DeserializeObject<TransakCryptoItem>(
         """
         {
@@ -191,9 +191,9 @@ public partial class ThirdPartOrderAppServiceTest
           "maxAmountForPayIn": 10
         }
         """);
-
     
-
+    
+    
     private readonly TransakCryptoItem _transakCryptoUsdt = JsonConvert.DeserializeObject<TransakCryptoItem>(
         """
         {
@@ -226,7 +226,7 @@ public partial class ThirdPartOrderAppServiceTest
           "maxAmountForPayIn": 10
         }
         """);
-
+    
     
     private void MockRampLists() {
          
@@ -234,7 +234,7 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Data = new List<AlchemyFiatDto> { _alchemyUsd }
         });
-
+    
         MockHttpByPath(AlchemyApi.QueryCryptoList, new AlchemyBaseResponseDto<List<AlchemyCryptoDto>>
         {
             Data = new List<AlchemyCryptoDto> { _alchemyElf, _alchemyUSDT }
@@ -249,7 +249,7 @@ public partial class ThirdPartOrderAppServiceTest
         {
             Response = new List<TransakCountry> { _transakCountryUs }
         });
-
+    
         MockHttpByPath(TransakApi.GetCryptoCurrencies, new TransakBaseResponse<List<TransakCryptoItem>>
         {
             Response = new List<TransakCryptoItem> { _transakCryptoElf, _transakCryptoUsdt } 
@@ -289,7 +289,7 @@ public partial class ThirdPartOrderAppServiceTest
         sellFiatList.Data.FiatList.Count.ShouldBe(4);
         
     }
-
+    
     [Fact]
     public async Task RampCryptoTest()
     {
@@ -300,13 +300,10 @@ public partial class ThirdPartOrderAppServiceTest
             Type = OrderTransDirect.BUY.ToString(),
             Fiat = "USD"
         });
-
+    
         cryptoList.ShouldNotBeNull();
         cryptoList.Data.CryptoList.Count.ShouldBeGreaterThan(0);
-
+    
         
     }
-
-
-
 }

@@ -24,6 +24,7 @@ using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
+using Volo.Abp.Auditing;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
@@ -33,6 +34,7 @@ using Enum = System.Enum;
 
 namespace CAServer.ThirdPart;
 
+[DisableAuditing]
 public partial class ThirdPartOrderAppService : CAServerAppService, IThirdPartOrderAppService, ISingletonDependency
 {
     private readonly IObjectMapper _objectMapper;

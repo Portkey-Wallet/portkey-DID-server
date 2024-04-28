@@ -1231,10 +1231,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private async Task<PagedResultDto<UserTokenIndexDto>> GetUserPackageFtAssetsIndexAsync(
         SearchUserPackageAssetsRequestDto requestDto)
     {
+        var chainIds = requestDto.CaAddressInfos.Select(t => t.ChainId).ToList();
+        var chainIdsFilter = chainIds.Aggregate((current, next) =>
+            string.Join(" OR ", $"token.chainId:{current}", $"token.chainId:{next}"));
         var keyword = requestDto.Keyword.IsNullOrEmpty() ? "" : requestDto.Keyword.ToUpper();
         var input = new GetListInput
         {
-            Filter = $"token.symbol: *{keyword}* AND (token.chainId:AELF OR token.chainId:tDVV)",
+            Filter = $"token.symbol: *{keyword}* AND ({chainIdsFilter})",
             Sort = "sortWeight desc,isDisplay desc,token.symbol acs,token.chainId acs",
             MaxResultCount = requestDto.MaxResultCount,
             SkipCount = requestDto.SkipCount,

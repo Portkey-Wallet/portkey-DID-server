@@ -39,6 +39,7 @@ public class UserPackageAsset
     public bool IsSeed { get; set; }
     
     public int SeedType { get; set; }  
+    public bool IsDisplay { get; set; }
 }
 
 public enum AssetType

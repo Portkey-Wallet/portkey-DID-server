@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Telegram.Dtos;
@@ -9,10 +8,12 @@ using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.ObjectMapping;
 
 namespace CAServer.Telegram;
 
+[RemoteService(false), DisableAuditing]
 public class TelegramAuthService : CAServerAppService, ITelegramAuthService
 {
     private readonly ILogger<TelegramAuthService> _logger;
