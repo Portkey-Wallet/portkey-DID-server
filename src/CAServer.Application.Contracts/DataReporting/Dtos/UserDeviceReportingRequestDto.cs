@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CAServer.DataReporting.Dtos;
 
 public class UserDeviceReportingRequestDto
@@ -7,6 +9,7 @@ public class UserDeviceReportingRequestDto
     public long RefreshTime { get; set; }
     public NetworkType NetworkType { get; set; }
     public DeviceInfo DeviceInfo { get; set; }
+    public List<string> LoginUserIds { get; set; }
 }
 
 public class DeviceInfo

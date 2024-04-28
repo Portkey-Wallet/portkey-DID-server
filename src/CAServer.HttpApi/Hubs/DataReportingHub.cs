@@ -64,6 +64,9 @@ public class DataReportingHub : AbpHub
 
     public async Task ReportDeviceInfo(UserDeviceReportingRequestDto input)
     {
+        var inputJson = System.Text.Json.JsonSerializer.Serialize(input);
+        _logger.LogInformation($"ReportDeviceInfo input: {inputJson}");
+        
         if (!CheckIsOpen())
         {
             return;
@@ -79,6 +82,10 @@ public class DataReportingHub : AbpHub
 
     public async Task ReportAppStatus(AppStatusReportingRequestDto input)
     {
+        
+        var inputJson = System.Text.Json.JsonSerializer.Serialize(input);
+        _logger.LogInformation($"ReportAppStatus input: {inputJson}");
+        
         if (!CheckIsOpen())
         {
             return;
