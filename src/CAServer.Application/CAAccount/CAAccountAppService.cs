@@ -229,7 +229,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var tokenRes = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos, "",
             0, MaxResultCount);
 
-        if (tokenRes.CaHolderTokenBalanceInfo.Data.Count > 0)
+        if (tokenRes.CaHolderTokenBalanceInfo?.Data.Count > 0)
         {
             var tokenInfos = tokenRes.CaHolderTokenBalanceInfo.Data
                 .Where(o => o.TokenInfo.Symbol == DefaultSymbol && o.Balance >= MinBanlance).ToList();
@@ -241,7 +241,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var res = await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos,
             null, 0, MaxResultCount);
-        if (res.CaHolderNFTBalanceInfo.Data.Count > 0)
+        if (res.CaHolderNFTBalanceInfo?.Data.Count > 0)
         {
             validateAssets = false;
         }
@@ -251,7 +251,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var caHolderManagerInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
         if (caHolderManagerInfo != null && caHolderManagerInfo.CaHolderManagerInfo.Count > 0)
         {
-            var originChainId = caHolderManagerInfo.CaHolderManagerInfo.First().OriginChainId;
+            var originChainId = caHolderManagerInfo.CaHolderManagerInfo.FirstOrDefault()?.OriginChainId;
             foreach (var caHolderManager in caHolderManagerInfo.CaHolderManagerInfo
                          .Where(caHolderManager => caHolderManager.OriginChainId == originChainId)
                          .Where(caHolderManager => caHolderManager.ManagerInfos.Count > 1))
@@ -262,7 +262,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var validateGuardian = true;
         var appleLoginGuardians = await GetGuardianAsync(caHash);
-        if (appleLoginGuardians == null && appleLoginGuardians.Count != 1)
+        if (appleLoginGuardians is not { Count: 1 })
         {
             throw new Exception(ResponseMessage.AppleLoginGuardiansExceed);
         }
@@ -271,7 +271,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         var caHolderDto =
             await _accountProvider.GetGuardianAddedCAHolderAsync(guardian.IdentifierHash, 0, MaxResultCount);
-        if (caHolderDto.GuardianAddedCAHolderInfo.Data.Count > 1)
+        if (caHolderDto.GuardianAddedCAHolderInfo?.Data.Count > 1)
         {
             validateGuardian = false;
         }
