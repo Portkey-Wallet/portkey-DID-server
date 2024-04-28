@@ -19,6 +19,7 @@ public partial class TokenImageProviderTest: CAServerApplicationTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetImageProcessProvider());
         services.AddSingleton(GetMockTokenInfoOptions());
         

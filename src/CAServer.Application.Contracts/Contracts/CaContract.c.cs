@@ -48,6 +48,44 @@ namespace Portkey.Contracts.CA {
     }
   }
 
+  public partial class PreCrossChainSyncHolderInfoCreated : aelf::IEvent<PreCrossChainSyncHolderInfoCreated>
+  {
+    public global::System.Collections.Generic.IEnumerable<PreCrossChainSyncHolderInfoCreated> GetIndexed()
+    {
+      return new List<PreCrossChainSyncHolderInfoCreated>
+      {
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        Creator = Creator
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        CaHash = CaHash
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        CaAddress = CaAddress
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        Manager = Manager
+      },
+      new PreCrossChainSyncHolderInfoCreated
+      {
+        CreateChainId = CreateChainId
+      },
+      };
+    }
+
+    public PreCrossChainSyncHolderInfoCreated GetNonIndexed()
+    {
+      return new PreCrossChainSyncHolderInfoCreated
+      {
+        ExtraData = ExtraData,
+      };
+    }
+  }
+
   public partial class GuardianAdded : aelf::IEvent<GuardianAdded>
   {
     public global::System.Collections.Generic.IEnumerable<GuardianAdded> GetIndexed()
@@ -144,6 +182,7 @@ namespace Portkey.Contracts.CA {
       return new LoginGuardianAdded
       {
         CaAddress = CaAddress,
+        IsCreateHolder = IsCreateHolder,
       };
     }
   }
@@ -469,6 +508,10 @@ namespace Portkey.Contracts.CA {
       {
         GuardiansRemoved = GuardiansRemoved
       },
+      new CAHolderSynced
+      {
+        CreateChainId = CreateChainId
+      },
       };
     }
 
@@ -581,6 +624,28 @@ namespace Portkey.Contracts.CA {
     {
       return new AdminChanged
       {
+      };
+    }
+  }
+
+  public partial class Invited : aelf::IEvent<Invited>
+  {
+    public global::System.Collections.Generic.IEnumerable<Invited> GetIndexed()
+    {
+      return new List<Invited>
+      {
+      };
+    }
+
+    public Invited GetNonIndexed()
+    {
+      return new Invited
+      {
+        CaHash = CaHash,
+        ContractAddress = ContractAddress,
+        MethodName = MethodName,
+        ReferralCode = ReferralCode,
+        ProjectCode = ProjectCode,
       };
     }
   }

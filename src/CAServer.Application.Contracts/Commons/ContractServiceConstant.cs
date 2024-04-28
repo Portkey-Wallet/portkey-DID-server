@@ -7,22 +7,46 @@ public static class AElfContractMethodName
     public const string GetHolderInfo = "GetHolderInfo";
     public const string GetVerifierServers = "GetVerifierServers";
     public const string GetBalance = "GetBalance";
+    public const string GetTokenInfo = "GetTokenInfo";
     public const string ClaimToken = "ClaimToken";
     public const string Transfer = "Transfer";
+    public const string AddManagerInfo = "AddManagerInfo";
+    public const string AddGuardian = "AddGuardian";
+    public const string CreateCAHolderOnNonCreateChain = "ReportPreCrossChainSyncHolderInfo";
+    public const string SocialRecovery = "SocialRecovery";
 }
 
 public static class CommonConstant
 {
+    public const string EmptyString = "";
+    public const string Dot = ".";
+    public const string Hyphen = "-";
+    public const string Colon = ":";
+    public const string Underline = "_";
+    public const string Comma = ",";
+
+    public const string CurrencyFiat = "Fiat";
+    public const string CurrencyCrypto = "Crypto";
+
     public const string ResourceTokenKey = "ResourceToken";
     public const int CacheExpirationDays = 365;
+    public const string CacheCorrectUserTokenBalancePre = "CorrectUserTokenBalance:{0}:{1}:{2}";
+    public const string CacheTokenInfoPre = "CorrectTokenInfo:{0}:{1}";
+    public const long CacheTokenBalanceExpirationSeconds = 60;
 
     public const string FiatListKey = "FiatList";
+    public const string NftFiatListKey = "NftFiatList";
     public const int FiatListExpirationMinutes = 30;
+    public const int CryptoListExpirationMinutes = 30;
     public const int OrderQuoteExpirationMinutes = 30;
     public static DateTimeOffset DefaultAbsoluteExpiration = DateTime.Parse("2099-01-01 12:00:00");
     public const string OrderStatusInfoPrefix = "OrderStatusInfo";
+    public const string TreasuryOrderStatusInfoPrefix = "TreasuryOrderStatusInfo";
 
     public const string ChainName = "aelf";
+    public const string ELF = "ELF";
+    public const string USD = "USD";
+    public const string USDT = "USDT";
 
     public const string MainChainId = "AELF";
     public const string TDVVChainId = "tDVV";
@@ -41,12 +65,37 @@ public static class CommonConstant
     public const string AppleRevokeUrl = "https://appleid.apple.com/auth/revoke";
     public const string ImFollowUrl = "api/v1/contacts/follow";
     public const string ImUnFollowUrl = "api/v1/contacts/unfollow";
-    
+
     public const string UserExtraInfoIdPrefix = "UserExtraInfo-";
-    
+
     public const string ApplicationName = "Portkey";
     public const string ModuleName = "Api";
-    
+
     public const int WalletNameDefaultLength = 8;
     public const string AppVersionKeyPrefix = "AppVersion";
+    public const string DefaultSymbol = "ELF";
+    public const string TransferCard = "transfer-card";
+
+    public const string DefaultFiatUSD = "USD";
+    public const string DefaultCryptoELF = "ELF";
+    public const string DefaultFiatPrice = "200";
+    public const string DefaultCryptoPrice = "400";
+
+    public const string ProtocolName = "http";
+
+    public const string UserGrowthPrefix = "UserGrowth";
+    public const string RedDotPrefix = "RedDot";
+    public const int InitInviteCode = 10000;
+    public const string InviteCodeGrainId = "UserGrowth-InviteCode";
+    public const string UrlSegmentation = "?";
+    public const string UpgradeGrainIdPrefix = "UpgradeInfo";
+    public const string GetUserExtraInfoUri = "api/app/userExtraInfo";
+
+    public const string CrossChainTransferMethodName = "CrossChainTransfer";
+    
+    public const string TwitterTokenUrl = "https://api.twitter.com/2/oauth2/token";
+    public const string TwitterUserInfoUrl = "https://api.twitter.com/2/users/me";
+    public const string JwtTokenPrefix = "Bearer";
+    public const int TwitterLimitCount = 200;
+
 }

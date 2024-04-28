@@ -1,10 +1,13 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using CAServer.AccountValidator;
+using CAServer.Amazon;
 using CAServer.AppleAuth;
+using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.DataReporting;
+using CAServer.Facebook;
 using CAServer.Grains;
 using CAServer.IpInfo;
 using CAServer.Options;
@@ -12,6 +15,17 @@ using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.Settings;
 using CAServer.Signature;
+using CAServer.ThirdPart.Adaptor;
+using CAServer.ThirdPart.Alchemy;
+using CAServer.ThirdPart.Processor;
+using CAServer.ThirdPart.Processor.NFT;
+using CAServer.ThirdPart.Processor.Ramp;
+using CAServer.ThirdPart.Processors;
+using CAServer.ThirdPart.Transak;
+using CAServer.Tokens.Provider;
+using CAServer.Telegram.Options;
+using CAServer.ThirdPart.Processor.Treasury;
+using CAServer.TwitterAuth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,9 +69,21 @@ public class CAServerApplicationModule : AbpModule
         Configure<AppleTransferOptions>(configuration.GetSection("AppleTransfer"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
+        Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
+
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
         Configure<FireBaseAppCheckOptions>(configuration.GetSection("FireBaseAppCheck"));
+        Configure<StopRegisterOptions>(configuration.GetSection("StopRegister"));
+        Configure<FacebookOptions>(configuration.GetSection("Facebook"));
+        Configure<AccelerateManagerOptions>(configuration.GetSection("AccelerateManager"));
+        Configure<IpfsOptions>(configuration.GetSection("Ipfs"));
+        Configure<ContractServiceOptions>(configuration.GetSection("ContractService"));
+
+        context.Services.AddMemoryCache();
+        context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
+        
+        context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
         context.Services.AddSingleton<ISearchService, ChainsInfoSearchService>();
@@ -68,8 +94,25 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, UserExtraInfoSearchService>();
         context.Services.AddSingleton<ISearchService, NotifySearchService>();
         context.Services.AddSingleton<ISearchService, GuardianSearchService>();
+        context.Services.AddSingleton<ISearchService, GrowthSearchService>();
+        context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
+        context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
+        
+        context.Services.AddSingleton<AlchemyProvider>();
+        context.Services.AddSingleton<TransakProvider>();
+        
+        context.Services.AddSingleton<IThirdPartAdaptor, AlchemyAdaptor>();
+        context.Services.AddSingleton<IThirdPartAdaptor, TransakAdaptor>();
 
-
+        context.Services.AddSingleton<AbstractRampOrderProcessor, TransakOrderProcessor>();
+        context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
+        
+        context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
+        context.Services.AddSingleton<IThirdPartTreasuryProcessor, AlchemyTreasuryProcessor>();
+        
+        context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
+        context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
+        
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -93,18 +136,28 @@ public class CAServerApplicationModule : AbpModule
         Configure<EsIndexBlacklistOptions>(configuration.GetSection("EsIndexBlacklist"));
         Configure<AwsThumbnailOptions>(configuration.GetSection("AWSThumbnail"));
         Configure<ActivityOptions>(configuration.GetSection("ActivityOptions"));
+        Configure<ExchangeOptions>(configuration.GetSection("Exchange"));
         Configure<RedPackageOptions>(configuration.GetSection("RedPackage"));
+        Configure<TelegramAuthOptions>(configuration.GetSection("TelegramAuth"));
+        // Configure<JwtTokenOptions>(configuration.GetSection("JwtToken"));
+        Configure<ManagerCountLimitOptions>(configuration.GetSection("ManagerCountLimit"));
+        Configure<UserGuideInfoOptions>(configuration.GetSection("GuideInfo"));
+        Configure<TwitterAuthOptions>(configuration.GetSection("TwitterAuth"));
         context.Services.AddHttpClient();
         ConfigureRetryHttpClient(context.Services);
         context.Services.AddScoped<JwtSecurityTokenHandler>();
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+        
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
-        Configure<VerifierIdMappingOptions>(configuration.GetSection("VerifierIdMapping"));
-        Configure<VerifierAccountOptions>(configuration.GetSection("VerifierAccountDic"));
         Configure<MessagePushOptions>(configuration.GetSection("MessagePush"));
+        Configure<GetBalanceFromChainOption>(configuration.GetSection("GetBalanceFromChain"));
+        Configure<NftItemDisplayOption>(configuration.GetSection("NftItemDisplay"));
+        Configure<GrowthOptions>(configuration.GetSection("Growth"));
+        Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         AddMessagePushService(context, configuration);
     }
 

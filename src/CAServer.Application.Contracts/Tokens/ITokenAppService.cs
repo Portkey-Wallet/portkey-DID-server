@@ -10,9 +10,11 @@ public interface ITokenAppService
 {
     Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols);
     Task<ListResultDto<TokenPriceDataDto>> GetTokenHistoryPriceDataAsync(List<GetTokenHistoryPriceInput> inputs);
-
     Task<ContractAddressDto> GetContractAddressAsync();
-
     Task<List<GetTokenListDto>> GetTokenListAsync(GetTokenListRequestDto input);
     Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol);
+    Task<TokenExchange> GetAvgLatestExchangeAsync(string fromSymbol, string toSymbol);
+    Task<TokenExchange> GetLatestExchangeAsync(string providerName, string fromSymbol, string toSymbol);
+    Task<TokenExchange> GetHistoryExchangeAsync(string providerName, string fromSymbol, string toSymbol, DateTime timestamp);
+
 }

@@ -5,10 +5,10 @@ using CAServer.CoinGeckoApi;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
-using CAServer.Signature;
+using CAServer.Signature.Provider;
+using CAServer.Tokens.TokenPrice;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -79,7 +79,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                 "AELF", new Grains.Grain.ApplicationHandler.ChainInfo
                                 {
                                     ChainId = "AELF",
-                                    BaseUrl = "http://192.168.66.61:8000",
+                                    BaseUrl = "url",
                                     ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     CrossChainContractAddress =
@@ -92,7 +92,7 @@ public class ClusterFixture : IDisposable, ISingletonDependency
                                 "tDVV", new Grains.Grain.ApplicationHandler.ChainInfo
                                 {
                                     ChainId = "tDVV",
-                                    BaseUrl = "http://192.168.67.18:8000",
+                                    BaseUrl = "url",
                                     ContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     TokenContractAddress = Address.FromPublicKey("AAA".HexToByteArray()).ToBase58(),
                                     CrossChainContractAddress =

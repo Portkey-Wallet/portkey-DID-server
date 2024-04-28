@@ -7,10 +7,14 @@ using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
+using CAServer.Commons;
+using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets;
+using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
@@ -39,14 +43,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private const int MaxResultCount = 10;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ActivityTypeOptions _activityTypeOptions;
-
+    private readonly IpfsOptions _ipfsOptions;
+    private readonly IAssetsLibraryProvider _assetsLibraryProvider;
+    private readonly ITokenPriceService _tokenPriceService;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
         IOptions<ActivitiesIcon> activitiesIconOption, IImageProcessProvider imageProcessProvider,
         IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
-        IOptions<ActivityTypeOptions> activityTypeOptions)
+        IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
+        IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -56,9 +63,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _imageProcessProvider = imageProcessProvider;
         _contractProvider = contractProvider;
         _userAssetsProvider = userAssetsProvider;
+        _assetsLibraryProvider = assetsLibraryProvider;
         _chainOptions = chainOptions.Value;
         _activityOptions = activityOptions.Value;
         _activityTypeOptions = activityTypeOptions.Value;
+        _ipfsOptions = ipfsOptions.Value;
+        _tokenPriceService = tokenPriceService;
     }
 
 
@@ -99,17 +109,24 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
-            var caAddressInfos = request.CaAddressInfos;
-            if (caAddressInfos == null)
+            var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            var transactions = new IndexerTransactions
             {
-                caAddressInfos = request.CaAddresses.Select(address => new CAAddressInfo { CaAddress = address })
-                    .ToList();
-            }
+                CaHolderTransaction = new CaHolderTransaction()
+            };
 
-            var transactions = await _activityProvider.GetActivitiesAsync(caAddressInfos, request.ChainId,
-                request.Symbol, null, request.SkipCount, request.MaxResultCount);
-            return await IndexerTransaction2Dto(request.CaAddresses, transactions, request.ChainId, request.Width,
+            await GetActivitiesAsync(request, transactions);
+            var indexerTransaction2Dto = await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId,
+                request.Width,
                 request.Height, needMap: true);
+
+            SetSeedStatusAndTypeForActivityDtoList(indexerTransaction2Dto.Data);
+
+            OptimizeSeedAliasDisplay(indexerTransaction2Dto.Data);
+
+            TryUpdateImageUrlForActivityDtoList(indexerTransaction2Dto.Data);
+
+            return indexerTransaction2Dto;
         }
         catch (Exception e)
         {
@@ -118,14 +135,99 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
     }
 
+    private async Task GetActivitiesAsync(GetActivitiesRequestDto request,
+        IndexerTransactions result)
+    {
+        try
+        {
+            var transactionsInfo = await GetTransactionsAsync(request);
+            if (transactionsInfo.data.IsNullOrEmpty())
+            {
+                return;
+            }
+            result.CaHolderTransaction.Data = transactionsInfo.data;
+            result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GetActivitiesAsync Error. {dto}", JsonConvert.SerializeObject(request));
+            throw new UserFriendlyException("get activities error.");
+        }
+    }
+
+    private async Task<(List<IndexerTransaction> data, long totalCount)> GetTransactionsAsync(
+        GetActivitiesRequestDto request)
+    {
+        var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddressInfos, request.ChainId,
+            request.Symbol, null, request.SkipCount, request.MaxResultCount);
+
+        var crossChainTransactions = transactions.CaHolderTransaction.Data
+            .Where(t => t.MethodName == CommonConstant.CrossChainTransferMethodName).ToList();
+
+        if (!crossChainTransactions.IsNullOrEmpty())
+        {
+            var transactionIds = crossChainTransactions.Select(t => t.TransactionId).ToList();
+            var transactionsDto = await _activityProvider.GetAutoReceiveTransactionsAsync(transactionIds,
+                inputMaxResultCount: transactionIds.Count);
+
+            var completedIds = transactionsDto?.AutoReceiveTransaction?.Data?
+                .Select(t => t.TransferInfo.TransferTransactionId).ToList();
+
+            transactions.CaHolderTransaction.Data
+                .RemoveAll(t => t.MethodName == CommonConstant.CrossChainTransferMethodName &&
+                                !completedIds.Contains(t.TransactionId));
+        }
+
+        //filter transaction for accelerated registration and accelerated recovery
+        var exists = transactions.CaHolderTransaction?.Data?.Exists(t =>
+            t.MethodName == AElfContractMethodName.SocialRecovery);
+        string originChainId = null;
+        if (exists ?? false)
+        {
+            var caAddress = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddress, string.Empty);
+            var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
+            originChainId = holderInfo?.OriginChainId ?? "AELF";
+        }
+
+        transactions?.CaHolderTransaction?.Data?.RemoveAll(t =>
+            t.MethodName == AElfContractMethodName.CreateCAHolderOnNonCreateChain ||
+            (t.MethodName == AElfContractMethodName.SocialRecovery && originChainId != t.ChainId));
+
+        transactions?.CaHolderTransaction?.Data?
+            .RemoveAll(t => _activityTypeOptions.NoShowTypes.Contains(t.MethodName));
+
+        return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
+    }
+
     public async Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request)
     {
         try
         {
+            var caAddressInfos = new List<CAAddressInfo>();
+            var addressInfo = request.CaAddressInfos?.FirstOrDefault();
+            var chainId = string.Empty;
+            if (addressInfo != null)
+            {
+                chainId = addressInfo.ChainId;
+            }
+            
+            var caAddresses = request.CaAddresses;
+            if (caAddresses.IsNullOrEmpty())
+            {
+                caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
+            }
+
+            if (request.ActivityType != CommonConstant.TransferCard)
+            {
+                caAddressInfos = caAddresses.Select(address => new CAAddressInfo { CaAddress = address })
+                    .ToList();
+            }
+
             var indexerTransactions =
-                await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash);
+                await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
             var activitiesDto =
-                await IndexerTransaction2Dto(request.CaAddresses, indexerTransactions, null, 0, 0, true);
+                await IndexerTransaction2Dto(caAddresses, indexerTransactions, chainId, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
             {
                 return new GetActivityDto();
@@ -135,9 +237,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (!_activityTypeOptions.ContractTypes.Contains(activityDto.TransactionType))
             {
-                await GetActivityName(request.CaAddresses, activityDto,
+                await GetActivityName(caAddresses, activityDto,
                     indexerTransactions.CaHolderTransaction.Data[0]);
             }
+
+            SetSeedStatusAndTypeForActivityDto(activityDto);
+
+            OptimizeSeedAliasDisplay(activityDto);
+
+            TryUpdateImageUrlForActivityDto(activityDto);
 
             return activityDto;
         }
@@ -145,6 +253,80 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             _logger.LogError(e, "GetActivityAsync Error {request}", request);
             return new GetActivityDto();
+        }
+    }
+
+    private void SetSeedStatusAndTypeForActivityDtoList(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                SetSeedStatusAndTypeForActivityDto(activityDto);
+            }
+        }
+    }
+
+    private void SetSeedStatusAndTypeForActivityDto(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null)
+        {
+            // Set IsSeed to true if Symbol starts with "SEED-", otherwise set it to false
+            activityDto.NftInfo.IsSeed = activityDto.Symbol.StartsWith(TokensConstants.SeedNamePrefix);
+
+            if (activityDto.NftInfo.IsSeed)
+            {
+                activityDto.NftInfo.SeedType = (int)SeedType.FT;
+                // Alias is actually TokenName
+                if (!string.IsNullOrEmpty(activityDto.NftInfo.Alias) &&
+                    activityDto.NftInfo.Alias.StartsWith(TokensConstants.SeedNamePrefix))
+                {
+                    activityDto.NftInfo.SeedType = activityDto.NftInfo.Alias.Remove(0, 5).Contains("-")
+                        ? (int)SeedType.NFT
+                        : (int)SeedType.FT;
+                }
+            }
+        }
+    }
+
+    private void OptimizeSeedAliasDisplay(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                OptimizeSeedAliasDisplay(activityDto);
+            }
+        }
+    }
+
+    private void OptimizeSeedAliasDisplay(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null && activityDto.NftInfo.IsSeed &&
+            activityDto.NftInfo.Alias.EndsWith(TokensConstants.SeedAliasNameSuffix))
+        {
+            activityDto.NftInfo.Alias =
+                activityDto.NftInfo.Alias.TrimEnd(TokensConstants.SeedAliasNameSuffix.ToCharArray());
+        }
+    }
+
+    private void TryUpdateImageUrlForActivityDtoList(List<GetActivityDto> activityDtoList)
+    {
+        if (activityDtoList != null && activityDtoList.Count != 0)
+        {
+            foreach (var activityDto in activityDtoList)
+            {
+                TryUpdateImageUrlForActivityDto(activityDto);
+            }
+        }
+    }
+
+    private void TryUpdateImageUrlForActivityDto(GetActivityDto activityDto)
+    {
+        if (activityDto.NftInfo != null)
+        {
+            activityDto.NftInfo.ImageUrl =
+                IpfsImageUrlHelper.TryGetIpfsImageUrl(activityDto.NftInfo.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
         }
     }
 
@@ -205,7 +387,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return string.Empty;
     }
 
-
     private async Task GetActivityName(List<string> addresses, GetActivityDto dto, IndexerTransaction transaction)
     {
         // cross chain transfer to self(such as from main to side)
@@ -224,24 +405,41 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         var curUserIsFrom = addresses.Contains(dto.FromAddress);
-        var anotherAddress = "";
+        var curUserIsTo = transaction.TransferInfo != null && addresses.Contains(transaction.TransferInfo?.ToAddress);
+        var anotherAddresses = new List<string>();
+
         var chainId = string.Empty;
         if (curUserIsFrom)
         {
             dto.From = nickName;
-            anotherAddress = transaction.TransferInfo?.ToAddress;
+            anotherAddresses.Add(transaction.TransferInfo?.ToAddress);
             chainId = transaction.TransferInfo?.ToChainId;
         }
-        else
+
+        if (curUserIsTo)
         {
             dto.To = nickName;
-            anotherAddress = dto.FromAddress;
+            anotherAddresses.Add(dto.FromAddress);
             chainId = transaction.ChainId;
         }
 
+        if (!curUserIsFrom && !curUserIsTo)
+        {
+            anotherAddresses.Add(transaction.TransferInfo?.ToAddress);
+            anotherAddresses.Add(dto.FromAddress);
+        }
+
         var nameList =
-            await _userContactProvider.BatchGetUserNameAsync(new List<string> { anotherAddress }, CurrentUser.GetId(),
+            await _userContactProvider.BatchGetUserNameAsync(anotherAddresses, CurrentUser.GetId(),
                 chainId);
+        if (!curUserIsFrom && !curUserIsTo)
+        {
+            anotherAddresses.Add(transaction.TransferInfo?.ToAddress);
+            anotherAddresses.Add(dto.FromAddress);
+            dto.From = nameList.FirstOrDefault(t => t.Item1?.Address == dto.FromAddress)?.Item2;
+            dto.To = nameList.FirstOrDefault(t => t.Item1?.Address == transaction.TransferInfo?.ToAddress)?.Item2;
+            return;
+        }
 
         var contactName = nameList.FirstOrDefault()?.Item2;
         if (curUserIsFrom)
@@ -273,21 +471,27 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var getActivitiesDto = new List<GetActivityDto>();
         var dict = new Dictionary<string, string>();
 
+        GuardiansDto guardian = null;
+        var exists = indexerTransactions.CaHolderTransaction?.Data?.Exists(
+            t => t.MethodName == AElfContractMethodName.AddManagerInfo ||
+                 t.MethodName == AElfContractMethodName.AddGuardian);
+        if (exists ?? false && needMap)
+        {
+            guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
+        }
+
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
             var dto = ObjectMapper.Map<IndexerTransaction, GetActivityDto>(ht);
-            if (_activityTypeOptions.NoShowTypes.Contains(dto.TransactionType))
-            {
-                result.TotalRecordCount -= 1;
-                continue;
-            }
-
             var transactionTime = MsToDateTime(ht.Timestamp * 1000);
 
             if (dto.Symbol != null)
             {
                 var price = await GetTokenPriceAsync(dto.Symbol, transactionTime);
                 dto.PriceInUsd = price.ToString();
+                
+                dto.CurrentPriceInUsd = (await GetCurrentTokenPriceAsync(dto.Symbol)).ToString();
+                dto.CurrentTxPriceInUsd = GetCurrentTxPrice(dto);
 
                 if (!dto.Decimals.IsNullOrWhiteSpace() && dto.Decimals != ActivityConstants.Zero &&
                     !dict.ContainsKey(dto.Symbol))
@@ -365,17 +569,26 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                         ImageResizeType.Forest),
                     Alias = ht.NftInfo.TokenName
                 };
+                dto.ListIcon = dto.NftInfo.ImageUrl;
+            }
+            else
+            {
+                dto.ListIcon = GetIcon(dto.TransactionType, dto.Symbol);
             }
 
-            dto.ListIcon = GetIconByType(dto.TransactionType);
             if (!_activityTypeOptions.ShowPriceTypes.Contains(dto.TransactionType))
             {
                 dto.IsDelegated = true;
             }
 
+            if (_activityTypeOptions.SystemTypes.Contains(dto.TransactionType))
+            {
+                dto.IsSystem = true;
+            }
+
             if (needMap)
             {
-                await MapMethodNameAsync(caAddresses, dto);
+                await MapMethodNameAsync(caAddresses, dto, guardian);
             }
 
             getActivitiesDto.Add(dto);
@@ -386,60 +599,97 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return result;
     }
 
-    private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto)
+    private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
+        GuardiansDto guardian = null)
     {
+        var transactionType = activityDto.TransactionType;
         var typeName =
-            _activityTypeOptions.TypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
-        if (activityDto.TransactionType == ActivityConstants.AddGuardianName)
+            _activityTypeOptions.TypeMap.GetValueOrDefault(transactionType, transactionType);
+        activityDto.TransactionName = typeName;
+
+        if (transactionType == ActivityConstants.AddGuardianName ||
+            transactionType == ActivityConstants.AddManagerInfo)
         {
-            var guardian = await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
+            guardian ??= await _activityProvider.GetCaHolderInfoAsync(caAddresses, string.Empty);
             var holderInfo = guardian?.CaHolderInfo?.FirstOrDefault();
             if (holderInfo?.OriginChainId != null && holderInfo?.OriginChainId != activityDto.FromChainId)
             {
-                activityDto.TransactionName = ActivityConstants.NotRegisterChainAddGuardianName;
-            }
-            else
-            {
-                activityDto.TransactionName = typeName;
+                activityDto.TransactionName = GetTransactionDisplayName(activityDto.TransactionType, typeName);
             }
 
             return;
         }
 
-        if (activityDto.TransactionType == ActivityConstants.TransferName)
+        if (transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName)
         {
-            var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
+            activityDto.TransactionName =
+                activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
+        }
+
+        if (transactionType == ActivityConstants.TransferName &&
+            _activityOptions.ETransferConfigs != null)
+        {
+            var eTransferConfig =
+                _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
             if (eTransferConfig != null && eTransferConfig.Accounts.Contains(activityDto.FromAddress))
             {
                 activityDto.TransactionName = ActivityConstants.DepositName;
                 return;
             }
         }
-        
-        activityDto.TransactionName = activityDto.NftInfo != null &&
-                                      !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId) &&
-                                      _activityTypeOptions.ShowNftTypes.Contains(activityDto.TransactionType)
-            ? typeName + " NFT"
-            : typeName;
-        activityDto.TransactionType = _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(activityDto.TransactionType, activityDto.TransactionType);
+
+        if (activityDto.NftInfo != null && !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId))
+        {
+            var nftTransactionName =
+                transactionType is ActivityConstants.TransferName or ActivityConstants.CrossChainTransferName
+                    ? activityDto.TransactionName
+                    : typeName;
+
+            activityDto.TransactionName = _activityTypeOptions.ShowNftTypes.Contains(activityDto.TransactionType)
+                ? nftTransactionName + " NFT"
+                : nftTransactionName;
+        }
+
+        activityDto.TransactionType =
+            _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(transactionType, transactionType);
     }
 
-    private string GetIconByType(string transactionType)
+    private string GetTransactionDisplayName(string transactionType, string defaultName)
     {
-        string icon = string.Empty;
+        return transactionType switch
+        {
+            ActivityConstants.AddGuardianName => ActivityConstants.NotRegisterChainAddGuardianName,
+            ActivityConstants.AddManagerInfo => ActivityConstants.NotRegisterChainAddManagerName,
+            _ => defaultName
+        };
+    }
+
+    private string GetIcon(string transactionType, string symbol = "")
+    {
+        var icon = string.Empty;
         if (_activityTypeOptions.ContractTypes.Contains(transactionType))
         {
             icon = _activitiesIcon.Contract;
         }
-        else if (_activityTypeOptions.TransferTypes.Contains(transactionType))
+
+        if (_activityTypeOptions.SystemTypes.Contains(transactionType))
         {
-            icon = _activitiesIcon.Transfer;
+            icon = _activitiesIcon.System;
         }
-        else if (_activityTypeOptions.RedPacketTypes.Contains(transactionType))
+        else if (_activityTypeOptions.TransferTypes.Contains(transactionType) ||
+                 _activityTypeOptions.RedPacketTypes.Contains(transactionType))
         {
-            icon = _activitiesIcon.RedPacket;
+            icon = symbol.IsNullOrEmpty()
+                ? _activitiesIcon.Transfer
+                : _assetsLibraryProvider.buildSymbolImageUrl(symbol);
         }
 
+        // compatible with front-end changes
+        if (icon.IsNullOrEmpty())
+        {
+            icon = _activitiesIcon.Contract;
+        }
+        
         return icon;
     }
 
@@ -469,6 +719,26 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         return price.Items.First().PriceInUsd;
+    }
+    
+    private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
+    {
+        var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
+        return priceResult?.PriceInUsd ?? 0;
+    }
+
+    private string GetCurrentTxPrice(GetActivityDto dto)
+    {
+        if (decimal.TryParse(dto.Amount, out var amount) &&
+            decimal.TryParse(dto.Decimals, out var decimals) &&
+            decimal.TryParse(dto.CurrentPriceInUsd, out var currentPriceInUsd))
+        {
+            var baseValue = (decimal)Math.Pow(10, (double)decimals);
+            var currentTxPriceInUsd = amount / baseValue * currentPriceInUsd;
+            return currentTxPriceInUsd == 0 ? null : currentTxPriceInUsd.ToString();
+        }
+        
+        throw new ArgumentException("Invalid input values");
     }
 
     private async Task<List<decimal>> GetFeePriceListAsync(IEnumerable<string> symbolList, DateTime time)

@@ -10,4 +10,5 @@ public class TransactionDto
     [Required] public string RawTransaction { get; set; }
     [Required] public string Signature { get; set; }
     [Required] public string PublicKey { get; set; }
+    
 }

@@ -1,19 +1,22 @@
-﻿using CAServer.BackGround.Options;
-using CAServer.CAActivity.Provider;
+﻿using CAServer.CAActivity.Provider;
 using CAServer.Grains;
-using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.MongoDB;
+using CAServer.Options;
+using CAServer.Signature.Options;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Provider;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Hangfire;
-using Hangfire.Dashboard;
 using Hangfire.Mongo;
+using Hangfire.Mongo.CosmosDB;
 using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
+using MassTransit;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
+using MongoDB.Driver;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -34,6 +37,8 @@ using Volo.Abp.PermissionManagement;
 using Volo.Abp.SettingManagement;
 using Volo.Abp.TenantManagement;
 using Volo.Abp.Threading;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
+using TransactionOptions = CAServer.BackGround.Options.TransactionOptions;
 
 namespace CAServer.BackGround;
 
@@ -72,40 +77,77 @@ public class CABackGroundModule : AbpModule
         context.Services.AddSingleton<IHostedService, InitJobsService>();
         Configure<TransactionOptions>(configuration.GetSection("Transaction"));
         Configure<ChainOptions>(configuration.GetSection("Chains"));
+        Configure<SignatureServerOptions>(context.Services.GetConfiguration().GetSection("SignatureServer"));
         ConfigureTokenCleanupService();
         ConfigureDistributedLocking(context, configuration);
+        ConfigureMassTransit(context, configuration);
     }
 
+    private void ConfigureMassTransit(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddMassTransit(x =>
+        {
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
+            // x.AddConsumer<OrderWsBroadcastConsumer>();
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                    "/", h =>
+                    {
+                        h.Username(rabbitMqConfig.Connections.Default.UserName);
+                        h.Password(rabbitMqConfig.Connections.Default.Password);
+                    });
+                //
+                // cfg.ReceiveEndpoint("SubscribeQueue_" + rabbitMqConfig.ClientId, , e =>
+                // {
+                //     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
+                // });
+            });
+        });
+    }
+    
     private void ConfigureHangfire(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        context.Services.AddHangfire(x =>
+        var mongoType = configuration["Hangfire:MongoType"];
+        var connectionString = configuration["Hangfire:ConnectionString"];
+        if(connectionString.IsNullOrEmpty()) return;
+
+        if (mongoType.IsNullOrEmpty() ||
+            mongoType.Equals(MongoType.MongoDb.ToString(), StringComparison.OrdinalIgnoreCase))
         {
-            var connectionString = configuration["Hangfire:ConnectionString"];
-            x.UseMongoStorage(connectionString, new MongoStorageOptions
+            context.Services.AddHangfire(x =>
             {
-                MigrationOptions = new MongoMigrationOptions
+                x.UseMongoStorage(connectionString, new MongoStorageOptions
                 {
-                    MigrationStrategy = new MigrateMongoMigrationStrategy(),
-                    BackupStrategy = new CollectionMongoBackupStrategy()
-                },
-                // Prefix = "hangfire.mongo",
-                CheckConnection = true,
-                CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
+                    MigrationOptions = new MongoMigrationOptions
+                    {
+                        MigrationStrategy = new MigrateMongoMigrationStrategy(),
+                        BackupStrategy = new CollectionMongoBackupStrategy()
+                    },
+                    CheckConnection = true,
+                    CheckQueuedJobsStrategy = CheckQueuedJobsStrategy.TailNotificationsCollection
+                });
+            });
+        }
+        else if (mongoType.Equals(MongoType.DocumentDb.ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            context.Services.AddHangfire(config =>
+            {
+                var mongoUrlBuilder = new MongoUrlBuilder(connectionString);
+                var mongoClient = new MongoClient(mongoUrlBuilder.ToMongoUrl());
+                var opt = new CosmosStorageOptions
+                {
+                    MigrationOptions = new MongoMigrationOptions
+                    {
+                        BackupStrategy = new NoneMongoBackupStrategy(),
+                        MigrationStrategy = new DropMongoMigrationStrategy(),
+                    }
+                };
+                config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
             });
 
-            x.UseDashboardMetric(DashboardMetrics.ServerCount)
-                .UseDashboardMetric(DashboardMetrics.RecurringJobCount)
-                .UseDashboardMetric(DashboardMetrics.RetriesCount)
-                .UseDashboardMetric(DashboardMetrics.AwaitingCount)
-                .UseDashboardMetric(DashboardMetrics.EnqueuedAndQueueCount)
-                .UseDashboardMetric(DashboardMetrics.ScheduledCount)
-                .UseDashboardMetric(DashboardMetrics.ProcessingCount)
-                .UseDashboardMetric(DashboardMetrics.SucceededCount)
-                .UseDashboardMetric(DashboardMetrics.FailedCount)
-                .UseDashboardMetric(DashboardMetrics.EnqueuedCountOrNull)
-                .UseDashboardMetric(DashboardMetrics.FailedCountOrNull)
-                .UseDashboardMetric(DashboardMetrics.DeletedCount);
-        });
+            context.Services.AddHangfireServer(opt => { opt.Queues = new[] { "default", "notDefault" }; });
+        }
     }
 
     private void ConfigureGraphQl(ServiceConfigurationContext context,

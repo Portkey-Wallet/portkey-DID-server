@@ -20,6 +20,7 @@ public class UserActivetyProviderTests : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockIGraphQlHelper());
     }
     // IActivityProvider
@@ -34,7 +35,7 @@ public class UserActivetyProviderTests : CAServerApplicationTestBase
             activitiesList, "", "", activitiesListstr,
             1, 1);
 
-        await _uActivityProvider.GetActivityAsync("", "");
+        await _uActivityProvider.GetActivityAsync("", "", new List<CAAddressInfo>());
     }
 
 

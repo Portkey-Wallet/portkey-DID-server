@@ -16,6 +16,17 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
 
     public async Task<GrainResultDto<OrderGrainDto>> CreateUserOrderAsync(OrderGrainDto input)
     {
+        // verify order exits
+        if (!State.TransDirect.IsNullOrEmpty())
+        {
+            return new GrainResultDto<OrderGrainDto>()
+            {
+                Success = false,
+                Message = $"order {input.Id} exists"
+            };
+        }
+        
+        // update as new order
         State = _objectMapper.Map<OrderGrainDto, OrderState>(input);
         if (State.Id == Guid.Empty)
         {
@@ -41,6 +52,7 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
         {
             State.Id = this.GetPrimaryKey();
         }
+        State.LastModifyTime = TimeHelper.GetTimeStampInMilliseconds().ToString();
 
         await WriteStateAsync();
 
@@ -52,7 +64,7 @@ public class OrderGrain : Grain<OrderState>, IOrderGrain
     public Task<GrainResultDto<OrderGrainDto>> GetOrder()
     {
         var result = new GrainResultDto<OrderGrainDto>();
-
+        
         if (State.Id == Guid.Empty)
         {
             return Task.FromResult(result);

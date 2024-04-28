@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using CAServer.amazon;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Commons;
@@ -37,6 +39,7 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
     
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetMockUserAssetsProvider());
         services.AddSingleton(GetMockGuardianProvider());

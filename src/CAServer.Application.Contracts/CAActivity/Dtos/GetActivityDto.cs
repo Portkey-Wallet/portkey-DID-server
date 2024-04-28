@@ -14,6 +14,8 @@ public class GetActivityDto : ActivityBase
 {
     public NftDetail NftInfo { get; set; }
     public string ListIcon { set; get; }
+    public string CurrentPriceInUsd { get; set; }
+    public string CurrentTxPriceInUsd { get; set; }
 }
 
 public class NftDetail
@@ -21,4 +23,6 @@ public class NftDetail
     public string ImageUrl { get; set; }
     public string Alias { get; set; }
     public string NftId { set; get; }
+    public bool IsSeed { get; set; }
+    public int SeedType { get; set; }
 }

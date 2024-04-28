@@ -13,9 +13,14 @@ public class TransactionsDto
     public CaHolderTransaction TwoCaHolderTransaction { get; set; }
 }
 
+public class AutoReceiveTransactions
+{
+    public CaHolderTransaction AutoReceiveTransaction { get; set; }
+}
+
 public class CaHolderTransaction
 {
-    public List<IndexerTransaction> Data { get; set; }
+    public List<IndexerTransaction> Data { get; set; } = new();
     public long TotalRecordCount { get; set; }
 }
 
@@ -34,7 +39,7 @@ public class IndexerTransaction
     public TransferInfo TransferInfo { get; set; }
     public string FromAddress { get; set; }
     public List<IndexerTransactionFee> TransactionFees { get; set; }
-    public bool IsManagerConsumer { get; set; } = false;
+    public bool IsManagerConsumer { get; set; }
 }
 
 public class TransferInfo
@@ -45,6 +50,7 @@ public class TransferInfo
     public string ToChainId { get; set; }
     public string FromChainId { get; set; }
     public string FromCAAddress { get; set; }
+    public string TransferTransactionId { get; set; }
 }
 
 public class IndexerTransactionFee

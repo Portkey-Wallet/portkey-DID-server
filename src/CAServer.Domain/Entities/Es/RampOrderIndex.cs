@@ -15,6 +15,7 @@ public class RampOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string Address { get; set; }
     [Keyword] public string Crypto { get; set; }
     [Keyword] public string CryptoPrice { get; set; }
+    public int CryptoDecimals { get; set; }
     [Keyword] public string Network { get; set; }
     [Keyword] public string CryptoAmount { get; set; }
     [Keyword] public string Fiat { get; set; }
@@ -22,6 +23,9 @@ public class RampOrderIndex : CAServerEsEntity<Guid>, IIndexBuild
     [Keyword] public string LastModifyTime { get; set; }
     [Keyword] public bool IsDeleted { get; set; } = false;
     [Keyword] public string Status { get; set; }
+    [Keyword] public string ThirdPartCrypto { get; set; }
+    [Keyword] public string ThirdPartNetwork { get; set; }
+
 
     // buy order
     [Keyword] public string CryptoQuantity { get; set; }

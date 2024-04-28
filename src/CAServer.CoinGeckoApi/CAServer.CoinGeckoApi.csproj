@@ -12,7 +12,9 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CAServer.Application\CAServer.Application.csproj" />
         <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
+        <ProjectReference Include="..\CAServer.Application.Contracts\CAServer.Application.Contracts.csproj" />
     </ItemGroup>
     
 

@@ -3,6 +3,7 @@ namespace CAServer.Grains.Grain.ApplicationHandler;
 public static class MethodName
 {
     public const string CreateCAHolder = "CreateCAHolder";
+    public const string CreateCAHolderOnNonCreateChain = "ReportPreCrossChainSyncHolderInfo";
     public const string SocialRecovery = "SocialRecovery";
     public const string Validate = "ValidateCAHolderInfoWithManagerInfosExists";
     public const string UpdateMerkleTree = "GetBoundParentChainHeightAndMerklePathByHeight";
@@ -12,7 +13,7 @@ public static class MethodName
     public const string GetHolderInfo = "GetHolderInfo";
     public const string TransferCryptoBoxes = "TransferCryptoBoxes";
     public const string RefundCryptoBox = "RefundCryptoBox";
-
+    public const string AssignProjectDelegatee = "AssignProjectDelegatee";
 }
 
 public static class TransactionState

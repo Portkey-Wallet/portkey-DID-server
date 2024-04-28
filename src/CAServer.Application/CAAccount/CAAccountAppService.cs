@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
@@ -11,28 +10,25 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Device;
 using CAServer.Dtos;
-using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
-using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
-using CAServer.UserBehavior;
-using CAServer.UserBehavior.Etos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
-using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.Users;
+using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer.CAAccount;
 
@@ -40,7 +36,6 @@ namespace CAServer.CAAccount;
 [DisableAuditing]
 public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IClusterClient _clusterClient;
     private readonly ILogger<CAAccountAppService> _logger;
@@ -52,22 +47,23 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
     private readonly ICAAccountProvider _accountProvider;
     private readonly INickNameAppService _caHolderAppService;
     private readonly IAppleAuthProvider _appleAuthProvider;
+    private readonly ManagerCountLimitOptions _managerCountLimitOptions;
     private const int MaxResultCount = 10;
     public const string DefaultSymbol = "ELF";
     public const double MinBanlance = 0.05 * 100000000;
 
     public CAAccountAppService(IClusterClient clusterClient,
         IDistributedEventBus distributedEventBus,
-        ILogger<CAAccountAppService> logger, IDeviceAppService deviceAppService, IOptions<ChainOptions> chainOptions,
-        IGuardianAppService guardianAppService,
+        ILogger<CAAccountAppService> logger, 
+        IDeviceAppService deviceAppService, 
+        IOptions<ChainOptions> chainOptions,
         IGuardianProvider guardianProvider,
-        IContractProvider contractProvider, IUserAssetsAppService userAssetsAppService,
+        IContractProvider contractProvider, 
         IUserAssetsProvider userAssetsProvider,
         ICAAccountProvider accountProvider,
         INickNameAppService caHolderAppService,
-        IAppleAuthProvider appleAuthProvider,
-        IHttpContextAccessor httpContextAccessor
-    )
+        IAppleAuthProvider appleAuthProvider, 
+        IOptionsSnapshot<ManagerCountLimitOptions> managerCountLimitOptions)
     {
         _distributedEventBus = distributedEventBus;
         _clusterClient = clusterClient;
@@ -79,8 +75,8 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _caHolderAppService = caHolderAppService;
         _accountProvider = accountProvider;
         _appleAuthProvider = appleAuthProvider;
+        _managerCountLimitOptions = managerCountLimitOptions.Value;
         _chainOptions = chainOptions.Value;
-        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
@@ -338,6 +334,33 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new RevokeResultDto()
         {
             Success = revokeResult
+        };
+    }
+
+    public async Task<AuthorizeDelegateResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeRequestDto input)
+    {
+        Logger.LogInformation("Authorize Delegate : param is {input}",JsonConvert.SerializeObject(input));
+        var assignProjectDelegateeDto = ObjectMapper.Map<AssignProjectDelegateeRequestDto, AssignProjectDelegateeDto>(input);
+        var transactionResult = await _contractProvider.AuthorizeDelegateAsync(assignProjectDelegateeDto);
+        return new AuthorizeDelegateResultDto
+        {
+            Success = string.IsNullOrWhiteSpace(transactionResult.Error)
+        };
+    }
+
+    public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
+    {
+        var guardiansDto = await _guardianProvider.GetGuardiansAsync(null, caHash);
+        if (guardiansDto.CaHolderInfo.Count == 0)
+        {
+            throw new UserFriendlyException("CAHolder is not exist.");
+        }
+        var guardianDto = guardiansDto.CaHolderInfo.FirstOrDefault();
+        _logger.LogInformation("Current manager count: {count}，Limit count is {Limitcount}", guardianDto?.ManagerInfos.Count,_managerCountLimitOptions.Limit);
+        var checkManagerCount = guardianDto?.ManagerInfos.Count >= _managerCountLimitOptions.Limit;
+        return new CheckManagerCountResultDto
+        {
+            ManagersTooMany = checkManagerCount
         };
     }
 

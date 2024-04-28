@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="DistributedLock.Redis" Version="1.0.2" />
+        <PackageReference Include="MassTransit.Abstractions" Version="8.1.0" />
         <PackageReference Include="Hangfire" Version="1.8.6" />
         <PackageReference Include="Hangfire.Redis.StackExchange" Version="1.9.2" />
         <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
@@ -20,12 +21,19 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
         <ProjectReference Include="..\CAServer.EntityEventHandler.Core\CAServer.EntityEventHandler.Core.csproj" />
         <ProjectReference Include="..\CAServer.MongoDB\CAServer.MongoDB.csproj" />
+        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <None Remove="appsettings.json" />
+        <Content Include="appsettings.apollo.json">
+          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
         <Content Include="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>

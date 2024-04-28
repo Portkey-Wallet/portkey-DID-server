@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CAServer.AppleAuth.Provider;
 using CAServer.AppleVerify;
+using CAServer.Signature.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -33,9 +34,11 @@ public class AppleAuthProviderTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetJwtSecurityTokenHandlerMock());
         services.AddSingleton(GetMockHttpClientFactory());
         services.AddSingleton(GetMockAppleAuthOptions());
+        services.AddSingleton(MockSecretProvider());
         // services.AddSingleton(GetMockECDsaSecurityKey());
         // services.AddSingleton(GetECDsaSecurityKeyMock());
     }

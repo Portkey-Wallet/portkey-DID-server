@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Hubs;
 using CAServer.Options;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Dtos;
 using CAServer.ThirdPart.Provider;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,7 @@ public class HubServiceTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetHubProvider());
         // services.AddSingleton(GetConnectionProvider());
         services.AddSingleton(GetHubCacheProvider());
@@ -174,23 +176,25 @@ public class HubServiceTest : CAServerApplicationTestBase
     }
     
     
-    private IOptions<ThirdPartOptions> GetMockThirdPartOptions()
+    private IOptionsMonitor<ThirdPartOptions> GetMockThirdPartOptions()
     {
         var thirdPartOptions = new ThirdPartOptions()
         {
-            alchemy = new AlchemyOptions()
+            Alchemy = new AlchemyOptions()
             {
                 AppId = "12344fdsfdsfdsfsdfdsfsdfsdfdsfsdfa",
-                AppSecret = "abadddfafdfdsfdsffdsfdsfdsfdsfds",
                 BaseUrl = "http://localhost:9200/book/_search",
                 SkipCheckSign = true
             },
-            timer =  new ThirdPartTimerOptions()
+            Timer =  new ThirdPartTimerOptions()
             {
                 TimeoutMillis = 100,
                 DelaySeconds = 1,
             }
         };
-        return new OptionsWrapper<ThirdPartOptions>(thirdPartOptions);
+        
+        var mockOption = new Mock<IOptionsMonitor<ThirdPartOptions>>();
+        mockOption.Setup(o => o.CurrentValue).Returns(thirdPartOptions);
+        return mockOption.Object;
     }
 }

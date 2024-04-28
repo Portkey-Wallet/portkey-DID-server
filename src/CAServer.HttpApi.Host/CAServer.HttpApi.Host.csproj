@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Com.Ctrip.Framework.Apollo.Configuration" Version="2.10.2" />
     <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
     <PackageReference Include="Serilog.Sinks.Async" Version="1.5.0" />
     <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
@@ -29,6 +30,7 @@
     <ProjectReference Include="..\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
     <ProjectReference Include="..\CAServer.MongoDB\CAServer.MongoDB.csproj" />
     <ProjectReference Include="..\CAServer.HttpApi\CAServer.HttpApi.csproj" />
+    <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
     <ProjectReference Include="..\CAServer.Redis\CAServer.Redis.csproj" />
   </ItemGroup>
 
@@ -37,7 +39,10 @@
     <Content Remove="Logs\**" />
     <EmbeddedResource Remove="Logs\**" />
     <None Remove="Logs\**" />
-    <None Include="appsettings.Development.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>

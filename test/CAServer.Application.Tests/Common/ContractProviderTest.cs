@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Types;
+using Microsoft.Extensions.DependencyInjection;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Shouldly;
 using Volo.Abp;
@@ -17,6 +18,13 @@ public class ContractProviderTest : CAServerApplicationTestBase
     public ContractProviderTest()
     {
         _contractProvider = GetRequiredService<IContractProvider>();
+    }
+
+    protected override void AfterAddApplication(IServiceCollection services)
+    {
+        base.AfterAddApplication(services);
+        services.AddSingleton(MockHttpFactory());
+        DateTimeOffset offset = DateTime.UtcNow.AddDays(7);
     }
 
     [Fact]
@@ -80,7 +88,7 @@ public class ContractProviderTest : CAServerApplicationTestBase
     [Fact]
     public async Task ClaimTokenAsync_ChainId_NotFount_Test()
     {
-        await _contractProvider.ClaimTokenAsync("TEST1", "CPU", "AELF");
+        await _contractProvider.ClaimTokenAsync( "AELF", "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST1");
     }
 
     [Fact]
@@ -89,11 +97,11 @@ public class ContractProviderTest : CAServerApplicationTestBase
         try
         {
             var nullResult = await _contractProvider.SendTransferAsync("TEST", "1",
-                "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST1");
+                "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST1", "");
             nullResult.ShouldBeNull();
 
             var result = await _contractProvider.SendTransferAsync("TEST", "1",
-                "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST");
+                "2jxnT1HxRr9PrfMjrhEvKyKABDa82oxhQVyrbnw7VkosKoBqvE", "TEST", "");
         }
         catch (Exception e)
         {

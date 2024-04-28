@@ -3,10 +3,12 @@ using AElf.Client.Dto;
 using AElf.Client.Service;
 using AElf.Standards.ACS7;
 using AElf.Types;
+using CAServer.CAAccount;
 using CAServer.Commons;
 using CAServer.Grains.State.ApplicationHandler;
 using CAServer.Monitor;
 using CAServer.Signature;
+using CAServer.Signature.Provider;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
@@ -98,7 +100,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             _indicatorScope.End(getIndicator);
             
             var times = 0;
-            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+            while ((transactionResult.Status == TransactionState.Pending || transactionResult.Status == TransactionState.NotExisted) && times < _grainOptions.RetryTimes)
             {
                 times++;
                 await Task.Delay(_grainOptions.RetryDelay);
@@ -145,7 +147,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
              var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             
             var times = 0;
-            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.CryptoBoxRetryTimes)
+            while ((transactionResult.Status == TransactionState.Pending || transactionResult.Status == TransactionState.NotExisted) && times < _grainOptions.CryptoBoxRetryTimes)
             {
                 times++;
                 await Task.Delay(_grainOptions.CryptoBoxRetryDelay);
@@ -172,6 +174,17 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         
         DeactivateOnIdle();
         
+        return result.TransactionResultDto;
+    }
+
+    public async Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(string chainId,
+        CreateHolderDto createHolderDto)
+    {
+        var param = _objectMapper.Map<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>(createHolderDto);
+        param.CreateChainId = ChainHelper.ConvertBase58ToChainId(createHolderDto.ChainId);
+        param.CaHash = createHolderDto.CaHash;
+        var result = await SendTransactionToChainAsync(chainId, param, MethodName.CreateCAHolderOnNonCreateChain);
+        DeactivateOnIdle();
         return result.TransactionResultDto;
     }
 
@@ -397,7 +410,7 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
             _logger.LogInformation("SendTransferRedPacketToChainAsync transactionResult: {transactionResult}", JsonConvert.SerializeObject(transactionResult));
 
             var times = 0;
-            while (transactionResult.Status == TransactionState.Pending && times < _grainOptions.RetryTimes)
+            while ((transactionResult.Status == TransactionState.Pending || transactionResult.Status == TransactionState.NotExisted) && times < _grainOptions.RetryTimes)
             {
                 times++;
                 await Task.Delay(_grainOptions.RetryDelay);
@@ -418,4 +431,13 @@ public class ContractServiceGrain : Orleans.Grain, IContractServiceGrain
         }
     }
 
+      
+
+        public async Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto)
+        {
+            var param = _objectMapper.Map<AssignProjectDelegateeDto, AssignProjectDelegateeInput>(assignProjectDelegateeDto);
+            var result = await SendTransactionToChainAsync(assignProjectDelegateeDto.ChainId, param, MethodName.AssignProjectDelegatee);
+            DeactivateOnIdle();
+            return result.TransactionResultDto;
+        }
 }

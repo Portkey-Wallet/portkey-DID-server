@@ -1,20 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
-using CAServer.AppleAuth;
 using CAServer.CAAccount.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Grain.Tests;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
-using CAServer.Options;
-using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Moq;
 using Orleans.TestingHost;
 using Shouldly;
 using Volo.Abp.Validation;
@@ -43,10 +38,10 @@ public partial class GuardianTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(GetGuardianProviderMock());
         services.AddSingleton(GetMockAppleUserProvider());
         services.AddSingleton(GetChainOptions());
-        services.AddSingleton(GetMockVerifierIdMappingOptions());
         services.AddSingleton(GetContractProviderMock());
     }
 
@@ -163,7 +158,7 @@ public partial class GuardianTest : CAServerApplicationTestBase
         try
         {
             var info = new GuardianInfo { CaHolderInfo = new List<Provider.GuardianDto>() };
-            var guardianDto = new CAServer.Guardian.Provider.GuardianDto
+            var guardianDto = new Provider.GuardianDto
             {
                 OriginChainId = string.Empty,
                 GuardianList = new GuardianBaseListDto(),
@@ -207,15 +202,5 @@ public partial class GuardianTest : CAServerApplicationTestBase
             });
     }
     
-    private IOptionsSnapshot<VerifierIdMappingOptions> GetMockVerifierIdMappingOptions()
-    {
-        var mockOptionsSnapshot = new Mock<IOptionsSnapshot<VerifierIdMappingOptions>>();
 
-        mockOptionsSnapshot.Setup(o => o.Value).Returns(
-            new VerifierIdMappingOptions
-            {
-                VerifierIdMap = new Dictionary<string, string>(){{HashHelper.ComputeFrom("123").ToHex(),HashHelper.ComputeFrom("123").ToHex()}}
-            });
-        return mockOptionsSnapshot.Object;
-    }
 }

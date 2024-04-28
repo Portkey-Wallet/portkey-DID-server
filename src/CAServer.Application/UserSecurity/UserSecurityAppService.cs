@@ -199,7 +199,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         {
             _logger.LogError(e,
                 "An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {caHash}", input.CaHash);
-            throw new UserFriendlyException("An exception occurred during GetManagerApprovedListByCaHashAsync");
+            return new TokenBalanceTransferCheckAsyncResultDto
+                { IsTransferSafe = false, IsSynchronizing = false, IsOriginChainSafe = false };
         }
     }
 
@@ -215,8 +216,18 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
 
             foreach (var chainInfo in _chainOptions.ChainInfos)
             {
-                var info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
-                    chainInfo.Value.ChainId);
+                GetHolderInfoOutput info;
+                try
+                {
+                    info = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(input.CaHash), null,
+                        chainInfo.Value.ChainId);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e,
+                        "get holder info error in GetTokenBalanceTransferCheck, caHash: {caHash}", input.CaHash);
+                    continue;
+                }
 
                 if (chainInfo.Value.ChainId == ChainHelper.ConvertChainIdToBase58(info.CreateChainId) ||
                     input.CheckTransferSafeChainId.IsNullOrWhiteSpace() ||
@@ -287,7 +298,8 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         {
             _logger.LogError(e,
                 "An exception occurred during GetManagerApprovedListByCaHashAsync, caHash: {caHash}", input.CaHash);
-            throw new UserFriendlyException("An exception occurred during GetManagerApprovedListByCaHashAsync");
+            return new TokenBalanceTransferCheckAsyncResultDto
+                { IsTransferSafe = false, IsSynchronizing = false, IsOriginChainSafe = false };
         }
     }
 
@@ -332,7 +344,7 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         }
 
         var holderInfos = await _userSecurityProvider.GetCaHolderInfoAsync(caHash);
-        var holderInfo = holderInfos.CaHolderInfo.FirstOrDefault(t => !t.OriginChainId.IsNullOrEmpty());
+        var holderInfo = holderInfos?.CaHolderInfo?.FirstOrDefault(t => !t.OriginChainId.IsNullOrEmpty());
         return holderInfo?.OriginChainId;
     }
 
@@ -441,13 +453,21 @@ public class UserSecurityAppService : CAServerAppService, IUserSecurityAppServic
         var caAddrs = new List<CAAddressInfo>();
         foreach (var chainInfo in _chainOptions.ChainInfos)
         {
-            var output = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null,
-                chainInfo.Value.ChainId);
-            caAddrs.Add(new CAAddressInfo
+            try
             {
-                ChainId = chainInfo.Key,
-                CaAddress = output.CaAddress.ToBase58()
-            });
+                var output = await _contractProvider.GetHolderInfoAsync(Hash.LoadFromHex(caHash), null,
+                    chainInfo.Value.ChainId);
+                caAddrs.Add(new CAAddressInfo
+                {
+                    ChainId = chainInfo.Key,
+                    CaAddress = output.CaAddress.ToBase58()
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e,
+                    "get holder info error in GetUserAssetsAsync, caHash: {caHash}", caHash);
+            }
         }
 
         // Obtain the balance of all token assets by caHash

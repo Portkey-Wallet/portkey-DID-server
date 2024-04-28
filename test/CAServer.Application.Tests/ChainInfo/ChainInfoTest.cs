@@ -7,7 +7,7 @@ using AElf.Types;
 using CAServer.Chain;
 using CAServer.Common;
 using CAServer.Options;
-using CAServer.Signature;
+using CAServer.Signature.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -43,6 +43,7 @@ public class ChainInfoTest : CAServerApplicationTestBase
 
     protected override void AfterAddApplication(IServiceCollection services)
     {
+        base.AfterAddApplication(services);
         services.AddSingleton(MockChainOptions());
         services.AddSingleton(GetContractOption());
         services.AddSingleton(GetSignatureServerOptions());

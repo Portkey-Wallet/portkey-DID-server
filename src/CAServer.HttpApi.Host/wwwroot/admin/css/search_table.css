@@ -1,0 +1,59 @@
+.search-form {
+    margin-bottom: 20px;
+    /*line-height: 35px;*/
+}
+
+.search-form input, .search-form select, .search-form button {
+    padding: 2px;
+    margin-right: 10px;
+    font-size: 0.8rem;
+    line-height: initial;
+}
+.search-form button {
+    padding: 5px
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+    word-break: break-all;
+}
+
+th, td {
+    padding: 1px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+tr:hover{
+    background-color: #eee;
+}
+
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pagination button {
+    padding: 5px 10px;
+}
+
+.pagination button.active {
+    background-color: gray;
+    color: white;
+}
+
+.search-form {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 10px;
+}
+
+.input-group {
+    display: inline-block;
+    flex-direction: column;
+}

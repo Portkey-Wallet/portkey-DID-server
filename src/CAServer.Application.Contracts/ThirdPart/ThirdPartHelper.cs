@@ -1,26 +1,40 @@
 using System;
 using System.Collections.Generic;
-using CAServer.ThirdPart.Dtos;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using JetBrains.Annotations;
 
 namespace CAServer.ThirdPart;
 
 public static class ThirdPartHelper
 {
-    public static bool MerchantNameExist(string merchantName)
+    public static ThirdPartNameType MerchantNameExist(string merchantName)
     {
-        return Enum.TryParse(merchantName, out MerchantNameType _);
+        var match = Enum.TryParse(merchantName, out ThirdPartNameType val);
+        return match && Enum.IsDefined(typeof(ThirdPartNameType), val) ? val : ThirdPartNameType.Unknown;
+    }
+
+    public static OrderStatusType ParseOrderStatus(string statusStr)
+    {
+        var match = Enum.TryParse(statusStr, out OrderStatusType val);
+        return match && Enum.IsDefined(typeof(OrderStatusType), val)  ? val : OrderStatusType.Unknown;
     }
 
     public static bool TransferDirectionTypeExist(string transferDirectionType)
     {
-        return Enum.TryParse(transferDirectionType, out TransferDirectionType _);
+        var match = Enum.TryParse(transferDirectionType, out TransferDirectionType val);
+        return match && Enum.IsDefined(typeof(TransferDirectionType), val);
     }
 
     public static bool ValidateMerchantOrderNo(string merchantOrderNo)
     {
         return merchantOrderNo.IsNullOrEmpty() || Guid.TryParse(merchantOrderNo, out Guid _);
+    }
+    
+    public static Guid GenerateOrderId(string merchantName, string merchantOrderNo)
+    {
+        return new Guid(MD5.HashData(Encoding.Default.GetBytes(merchantName + merchantOrderNo)));
     }
 
     public static Guid GetOrderId(string merchantOrderNo)
@@ -28,15 +42,54 @@ public static class ThirdPartHelper
         Guid.TryParse(merchantOrderNo, out Guid orderNo);
         return orderNo;
     }
+ 
+    public static string ConvertObjectToSortedString([CanBeNull] object obj, params string[] ignoreParams)
+    {
+        if (obj == null) return string.Empty;
+        var dict = new SortedDictionary<string, object>();
+
+        if (obj is IDictionary<string, string> inputDict)
+        {
+            foreach (var kvp in inputDict)
+            {
+                if (ignoreParams.Contains(kvp.Key)) continue;
+                if (kvp.Value == null) continue; // ignore null value
+                dict[kvp.Key] = kvp.Value;
+            }
+        }
+        else
+        {
+            foreach (var property in obj.GetType().GetProperties())
+            {
+                var key = property.Name.Substring(0, 1).ToLower() + property.Name.Substring(1);
+                if (!property.CanRead || ignoreParams.Contains(key)) continue;
+
+                var value = property.GetValue(obj);
+                if (value == null) continue; // ignore null value
+
+                dict[key] = value;
+            }
+        }
+
+        return string.Join("&", dict.Select(kv => kv.Key + "=" + kv.Value));
+    }
 }
 
-public static class AlchemyHelper
+public static class /**/AlchemyHelper
 {
+    public const string SignatureField = "signature";
+    public const string IdField = "id";
+    public const string AppIdField = "appId";
+    public const string StatusField = "status";
+    
     private static Dictionary<string, OrderStatusType> _orderStatusDict = new()
     {
         { "FINISHED", OrderStatusType.Finish },
         { "PAY_FAIL", OrderStatusType.Failed },
         { "PAY_SUCCESS", OrderStatusType.Pending },
+        { "NEW", OrderStatusType.Created },
+        { "TIMEOUT", OrderStatusType.Expired },
+        
         { "1", OrderStatusType.Created },
         { "2", OrderStatusType.UserCompletesCoinDeposit },
         { "3", OrderStatusType.StartPayment },
@@ -45,20 +98,16 @@ public static class AlchemyHelper
         { "6", OrderStatusType.RefundSuccessfully },
         { "7", OrderStatusType.Expired },
     };
-
+    
     public static bool OrderStatusExist(string orderStatus)
     {
-        return GetOrderStatus(orderStatus) != OrderStatusType.Unknown.ToString();
+        return GetOrderStatus(orderStatus) != OrderStatusType.Unknown;
     }
 
-    public static string GetOrderStatus(string status)
+    public static OrderStatusType GetOrderStatus(string status)
     {
-        if (_orderStatusDict.TryGetValue(status, out OrderStatusType _))
-        {
-            return _orderStatusDict[status].ToString();
-        }
-
-        return "Unknown";
+        var exists = _orderStatusDict.TryGetValue(status, out var statusEnum);
+        return exists ? statusEnum : OrderStatusType.Unknown;
     }
 
     public static string AesEncrypt(string plainText, string secretKeyData)
@@ -90,6 +139,12 @@ public static class AlchemyHelper
         }
     }
 
+    public static string HmacSign(string source, string key)
+    {
+        using var hmac = new HMACSHA1(Encoding.UTF8.GetBytes(key));
+        return Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(source)));
+    }
+
     public static string GetOrderTransDirectForQuery(string orderDataTransDirect)
     {
         switch (orderDataTransDirect)
@@ -98,5 +153,19 @@ public static class AlchemyHelper
             case string s when s.ToLower().Contains("buy"): return OrderTransDirect.BUY.ToString();
             default: return OrderTransDirect.SELL.ToString();
         }
+    }
+    
+    // Generate Alchemy request sigh by "appId + appSecret + timestamp".
+    public static string GenerateAlchemyApiSign(string source)
+    {
+        var bytes = Encoding.UTF8.GetBytes(source);
+        var hashBytes = SHA1.Create().ComputeHash(bytes);
+
+        var sb = new StringBuilder();
+        foreach (var t in hashBytes)
+        {
+            sb.Append(t.ToString("X2"));
+        }
+        return sb.ToString().ToLower();
     }
 }

@@ -7,10 +7,14 @@ using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Growth.Etos;
 using CAServer.Notify.Etos;
+using CAServer.RedDot.Etos;
 using CAServer.Security.Etos;
+using CAServer.ThirdPart;
 using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Etos;
+using CAServer.TwitterAuth.Etos;
 using CAServer.Verifier.Etos;
 using ContactAddress = CAServer.Entities.Es.ContactAddress;
 
@@ -32,6 +36,12 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<RegisterGrainDto, AccountRegisterIndex>();
         CreateMap<AccountRegisterCreateEto, AccountRegisterIndex>();
         CreateMap<AccountRecoverCreateEto, AccountRecoverIndex>();
+        CreateMap<AccelerateCreateHolderEto, AccelerateRegisterIndex>()
+            .ForMember(t => t.Id, m => m.MapFrom(u => $"{u.Id.ToString()}_{u.ChainId}"))
+            .ForMember(t => t.SessionId, m => m.MapFrom(u => u.Id));
+        CreateMap<AccelerateSocialRecoveryEto, AccelerateRecoverIndex>()
+            .ForMember(t => t.Id, m => m.MapFrom(u => $"{u.Id.ToString()}_{u.ChainId}"))
+            .ForMember(t => t.SessionId, m => m.MapFrom(u => u.Id));
         CreateMap<SocialRecoveryEto, SocialRecoveryResultGrainDto>();
         CreateMap<RecoveryGrainDto, AccountRecoverIndex>();
         CreateMap<UserTokenEto, UserTokenIndex>()
@@ -64,5 +74,11 @@ public class CAServerEventHandlerAutoMapperProfile : Profile
         CreateMap<UserTransferLimitHistoryEto, UserTransferLimitHistoryIndex>();
         CreateMap<DeleteCAHolderEto, CAHolderIndex>();
         CreateMap<GuardianDeleteEto, GuardianIndex>();
+        CreateMap<OrderSettlementGrainDto, OrderSettlementIndex>().ReverseMap();
+        CreateMap<CreateGrowthEto, GrowthIndex>();
+        CreateMap<RedDot.Dtos.RedDotInfo, Entities.Es.RedDotInfo>().ReverseMap();
+        CreateMap<RedDotEto, RedDotIndex>();
+        CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
+        CreateMap<TwitterStatisticEto, TwitterStatisticIndex>();
     }
 }

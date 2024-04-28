@@ -12,12 +12,16 @@ public class OrderGrainDto
     public string Crypto { get; set; }
     public string CryptoPrice { get; set; }
     public string CryptoAmount { get; set; }
+    public int CryptoDecimals { get; set; }
     public string Fiat { get; set; }
     public string FiatAmount { get; set; }
     public string LastModifyTime { get; set; }
     public string Network { get; set; }
     public string Status { get; set; }
 
+    public string ThirdPartCrypto { get; set; }
+    public string ThirdPartNetwork { get; set; }
+    
     // buy order
     public string CryptoQuantity { get; set; }
     public string PaymentMethod { get; set; }
@@ -28,4 +32,6 @@ public class OrderGrainDto
     public string ReceiptTime { get; set; }
     
     public string TransactionId { get; set; }
+    
+    public string RawTransaction { get; set; }
 }

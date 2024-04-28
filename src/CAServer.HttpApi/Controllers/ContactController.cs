@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Contacts;
-using CAServer.ImUser.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -61,12 +60,6 @@ public class ContactController : CAServerController
         return await _contactAppService.GetListAsync(input);
     }
 
-    [HttpPost("merge")]
-    public async Task MergeAsync(ContactMergeDto input)
-    {
-        await _contactAppService.MergeAsync(input);
-    }
-
     [HttpGet("isImputation")]
     public async Task<ContactImputationDto> GetImputationAsync()
     {
@@ -89,5 +82,11 @@ public class ContactController : CAServerController
     public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
     {
         return await _contactAppService.GetContactListAsync(input);
+    }
+    
+    [HttpGet("getContactsByUserId")]
+    public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
+    {
+        return await _contactAppService.GetContactsByUserIdAsync(userId);
     }
 }

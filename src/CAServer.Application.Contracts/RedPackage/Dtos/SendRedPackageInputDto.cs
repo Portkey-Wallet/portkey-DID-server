@@ -15,4 +15,5 @@ public class SendRedPackageInputDto
     [Required] public string ChannelUuid { get; set; }
     [Required] public string RawTransaction { get; set; }
     [Required] public string Message { get; set; }
+    public int AssetType { get; set; }
 }

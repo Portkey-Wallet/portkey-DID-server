@@ -1,4 +1,5 @@
 using AElf.Client.Dto;
+using CAServer.CAAccount;
 using CAServer.Grains.State.ApplicationHandler;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
@@ -10,6 +11,7 @@ namespace CAServer.Grains.Grain.ApplicationHandler;
 public interface IContractServiceGrain : IGrainWithGuidKey
 {
     Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto);
+    Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(string chainId, CreateHolderDto createHolderDto);
     Task<TransactionResultDto> SocialRecoveryAsync(SocialRecoveryDto socialRecoveryDto);
 
     Task<TransactionInfoDto> ValidateTransactionAsync(string chainId, GetHolderInfoOutput output,
@@ -21,4 +23,6 @@ public interface IContractServiceGrain : IGrainWithGuidKey
 
     Task<TransactionInfoDto> SendTransferRedPacketToChainAsync(string chainId, IMessage param, string payRedPackageFrom,
         string redPackageContractAddress,string methodName);
+
+    Task<TransactionResultDto> AuthorizeDelegateAsync(AssignProjectDelegateeDto assignProjectDelegateeDto);
 }

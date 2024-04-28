@@ -11,12 +11,11 @@ public class CreateUserOrderDto : IValidatableObject
     // UserId Only available in test sessions since we don't' get authorized user. 
     public Guid UserId { get; set; }
     [Required] public string TransDirect { get; set; }
-    [Required] public string MerchantName { get; set; }
+    public string MerchantName { get; set; }
 
-    public IEnumerable<ValidationResult> Validate(
-        ValidationContext validationContext)
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (!ThirdPartHelper.MerchantNameExist(MerchantName))
+        if (MerchantName != null && ThirdPartHelper.MerchantNameExist(MerchantName) == ThirdPartNameType.Unknown)
         {
             yield return new ValidationResult(
                 $"Merchant name {MerchantName} is not exist."
@@ -35,4 +34,38 @@ public class CreateUserOrderDto : IValidatableObject
 public class GetUserOrdersDto : PagedResultRequestDto
 {
     public Guid UserId { get; set; }
+    public Guid OrderId { get; set; }
+}
+
+public class GetThirdPartOrderConditionDto : PagedResultRequestDto
+{
+
+    public GetThirdPartOrderConditionDto()
+    {
+        
+    }
+    
+    public GetThirdPartOrderConditionDto(int skipCount, int maxResultCount)
+    {
+        base.SkipCount = skipCount;
+        base.MaxResultCount = maxResultCount;
+    }
+
+    public Guid UserId { get; set; }
+    
+    // string type of millisecond long value
+    public string LastModifyTimeLt { get; set; }
+    public string LastModifyTimeGt { get; set; }
+    public List<Guid> OrderIdIn { get; set; }
+    
+    public string ThirdPartName { get; set; }
+    public List<string> ThirdPartOrderNoIn { get; set; }
+    
+    /// <see cref="TransferDirectionType"/>
+    public List<string> TransDirectIn { get; set; }
+    
+    /// <see cref="OrderStatusType"/>
+    public List<string> StatusIn { get; set; }
+    
+    public string TransactionId { get; set; }
 }

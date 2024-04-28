@@ -1,4 +1,6 @@
 using CAServer.Account;
+using CAServer.Dtos;
+using CAServer.CAAccount.Dtos;
 
 namespace CAServer.Grains.State;
 
@@ -15,4 +17,6 @@ public class RegisterInfo : CAAccountBase
     public DateTime? RegisteredTime { get; set; }
     public bool? RegisterSuccess { get; set; }
     public string RegisterMessage { get; set; }
+    public ProjectDelegateInfo ProjectDelegateInfo { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 }

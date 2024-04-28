@@ -1,20 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch.Options;
+using CAServer.CoinGeckoApi;
 using CAServer.Commons;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
+using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
-using CAServer.RedPackage;
+using CAServer.Tokens.TokenPrice.Provider.FeiXiaoHao;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
-using Hangfire;
-using Hangfire.Redis.StackExchange;
+using MassTransit;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
 using Microsoft.Extensions.Caching.Distributed;
@@ -45,6 +45,7 @@ namespace CAServer;
     typeof(CAServerEntityEventHandlerCoreModule),
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpCachingStackExchangeRedisModule),
+    typeof(CAServerCoinGeckoApiModule),
     typeof(AbpEventBusRabbitMqModule))]
 public class CAServerEntityEventHandlerModule : AbpModule
 {
@@ -57,10 +58,12 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<CAServer.Options.ChainOptions>(configuration.GetSection("Chains"));
         Configure<CAServer.Grains.Grain.ApplicationHandler.ChainOptions>(configuration.GetSection("Chains"));
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
+        Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
+        Configure<FeiXiaoHaoOptions>(configuration.GetSection("FeiXiaoHao"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
-        
+        ConfigureMassTransit(context, configuration);
         context.Services.AddSingleton<IClusterClient>(o =>
         {
             return new ClientBuilder()
@@ -76,10 +79,17 @@ public class CAServerEntityEventHandlerModule : AbpModule
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
                 })
+                .Configure<ClientMessagingOptions>(options =>
+                {
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
+                })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 //.AddSimpleMessageStreamProvider(AElfIndexerApplicationConsts.MessageStreamName)
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }
@@ -121,6 +131,29 @@ public class CAServerEntityEventHandlerModule : AbpModule
             };
         });
     }
+    
+    private void ConfigureMassTransit(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        context.Services.AddMassTransit(x =>
+        {
+            var rabbitMqConfig = configuration.GetSection("RabbitMQ").Get<RabbitMqOptions>();
+            // x.AddConsumer<OrderWsBroadcastConsumer>();
+            x.UsingRabbitMq((ctx, cfg) =>
+            {
+                cfg.Host(rabbitMqConfig.Connections.Default.HostName, (ushort)rabbitMqConfig.Connections.Default.Port, 
+                    "/", h =>
+                    {
+                        h.Username(rabbitMqConfig.Connections.Default.UserName);
+                        h.Password(rabbitMqConfig.Connections.Default.Password);
+                    });
+                //
+                // cfg.ReceiveEndpoint("SubscribeQueue_" + rabbitMqConfig.ClientId, e =>
+                // {
+                //     e.ConfigureConsumer<OrderWsBroadcastConsumer>(ctx);
+                // });
+            });
+        });
+    }
 
     public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
     {
@@ -136,6 +169,9 @@ public class CAServerEntityEventHandlerModule : AbpModule
     {
         var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<LoginGuardianChangeRecordReceiveWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TokenPriceBackgroundWorker>());
+        
+        ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

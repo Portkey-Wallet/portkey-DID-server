@@ -14,10 +14,10 @@ public interface IContactAppService
     Task<ContractExistDto> GetExistAsync(string name);
     Task<ContactResultDto> GetAsync(Guid id);
     Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input);
-    Task MergeAsync(ContactMergeDto input);
     Task<ContactImputationDto> GetImputationAsync();
     Task ReadImputationAsync(ReadImputationDto input);
     Task<ContactResultDto> GetContactAsync(Guid contactUserId);
     Task<List<GetNamesResultDto>> GetNameAsync(List<Guid> input);
     Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input);
+    Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId);
 }

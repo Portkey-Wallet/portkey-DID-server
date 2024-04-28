@@ -1,40 +1,22 @@
-﻿using CAServer.Silo;
+﻿using CAServer.Commons;
+using CAServer.Nightingale;
 using CAServer.Silo.Extensions;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 
-namespace CAServer;
-
+namespace CAServer.Silo;
 public class Program
 {
     public async static Task<int> Main(string[] args)
     {
-        var configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
-        Log.Logger = new LoggerConfiguration()
-#if DEBUG
-            .MinimumLevel.Debug()
-#else
-            .MinimumLevel.Information()
-#endif
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-            .Enrich.FromLogContext()
-            .ReadFrom.Configuration(configuration)
-#if DEBUG
-            .WriteTo.Async(c => c.Console())
-#endif
-            .CreateLogger();
-
+        Log.Logger = LogHelper.CreateLogger(LogEventLevel.Debug);
+        
         try
         {
             Log.Information("Starting CAServer.Silo.");
-
             await CreateHostBuilder(args).RunConsoleAsync();
-
             return 0;
         }
         catch (Exception ex)
@@ -50,7 +32,10 @@ public class Program
 
     internal static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
+            .InitAppConfiguration(true)
+            .UseApolloForHostBuilder()
             .ConfigureServices((hostcontext, services) => { services.AddApplication<CAServerOrleansSiloModule>(); })
+            .UseNightingaleMonitoring()
             .UseOrleansSnapshot()
             .UseAutofac()
             .UseSerilog();

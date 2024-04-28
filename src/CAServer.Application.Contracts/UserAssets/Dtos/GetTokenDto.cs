@@ -5,6 +5,7 @@ namespace CAServer.UserAssets.Dtos;
 public class GetTokenDto
 {
     public List<Token> Data { get; set; }
+    public string TotalBalanceInUsd { get; set; }
     public long TotalRecordCount { get; set; }
 }
 

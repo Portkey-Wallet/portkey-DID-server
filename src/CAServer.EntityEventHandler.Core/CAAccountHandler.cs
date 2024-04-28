@@ -10,6 +10,7 @@ using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Device;
+using CAServer.Growth;
 using CAServer.Hubs;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
@@ -26,15 +27,20 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     IDistributedEventHandler<AccountRecoverCreateEto>,
     IDistributedEventHandler<CreateHolderEto>,
     IDistributedEventHandler<SocialRecoveryEto>,
+    IDistributedEventHandler<AccelerateCreateHolderEto>,
+    IDistributedEventHandler<AccelerateSocialRecoveryEto>,
     ITransientDependency
 {
     private readonly INESTRepository<AccountRegisterIndex, Guid> _registerRepository;
     private readonly INESTRepository<AccountRecoverIndex, Guid> _recoverRepository;
+    private readonly INESTRepository<AccelerateRegisterIndex, string> _accelerateRegisterRepository;
+    private readonly INESTRepository<AccelerateRecoverIndex, string> _accelerateRecoverRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly ILogger<CaAccountHandler> _logger;
     private readonly IClusterClient _clusterClient;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IIndicatorLogger _indicatorLogger;
+    private readonly IGrowthAppService _growthAppService;
 
     public CaAccountHandler(INESTRepository<AccountRegisterIndex, Guid> registerRepository,
         INESTRepository<AccountRecoverIndex, Guid> recoverRepository,
@@ -42,7 +48,9 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         ILogger<CaAccountHandler> logger,
         IDistributedEventBus distributedEventBus,
         IClusterClient clusterClient,
-        IIndicatorLogger indicatorLogger)
+        IIndicatorLogger indicatorLogger, IGrowthAppService growthAppService,
+        INESTRepository<AccelerateRegisterIndex, string> accelerateRegisterRepository,
+        INESTRepository<AccelerateRecoverIndex, string> accelerateRecoverRepository)
     {
         _registerRepository = registerRepository;
         _recoverRepository = recoverRepository;
@@ -51,6 +59,9 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _indicatorLogger = indicatorLogger;
+        _growthAppService = growthAppService;
+        _accelerateRegisterRepository = accelerateRegisterRepository;
+        _accelerateRecoverRepository = accelerateRecoverRepository;
     }
 
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
@@ -105,7 +116,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
 
             if (!result.Success)
             {
-                _logger.LogError("{Message}", result.Message);
+                _logger.LogError("update register grain fail, message:{message}", result.Message);
                 throw new Exception(result.Message);
             }
 
@@ -120,13 +131,15 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             var duration = DateTime.UtcNow - register.CreateTime;
             _indicatorLogger.LogInformation(MonitorTag.Register, MonitorTag.Register.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
-            
-            _logger.LogDebug("register update success: id: {id}, status: {status}", register.Id.ToString(),
+
+            _logger.LogInformation("register update success: id: {id}, status: {status}", register.Id.ToString(),
                 register.RegisterStatus);
+
+            await AddGrowthInfoAsync(eventData.CaHash, eventData.ReferralInfo);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", JsonConvert.SerializeObject(eventData));
+            _logger.LogError(ex, "update register info error, data: {data}", JsonConvert.SerializeObject(eventData));
         }
     }
 
@@ -166,11 +179,11 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             await _recoverRepository.UpdateAsync(recover);
 
             await PublicRecoverMessageAsync(updateResult.Data, eventData.Context);
-            
+
             var duration = DateTime.UtcNow - recover.CreateTime;
             _indicatorLogger.LogInformation(MonitorTag.SocialRecover, MonitorTag.SocialRecover.ToString(),
                 (int)(duration?.TotalMilliseconds ?? 0));
-            
+
             _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
         }
@@ -207,5 +220,31 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         var prevDeviceGrain = _clusterClient.GetGrain<IDeviceGrain>(GrainIdHelper.GenerateGrainId("Device", grainId));
         var salt = await prevDeviceGrain.GetOrGenerateSaltAsync();
         await newDeviceGrain.SetSaltAsync(salt);
+    }
+
+    private async Task AddGrowthInfoAsync(string caHash, ReferralInfo referralInfo)
+    {
+        if (referralInfo == null || referralInfo.ReferralCode.IsNullOrEmpty())
+        {
+            _logger.LogInformation("no need to add growth info, caHash:{caHash}", caHash);
+            return;
+        }
+
+        await _growthAppService.CreateGrowthInfoAsync(caHash, referralInfo);
+        _logger.LogInformation(
+            "create growth info success, caHash:{caHash}, referralCode:{referralCode}, projectCode:{projectCode}",
+            caHash, referralInfo.ReferralCode, referralInfo.ProjectCode ?? string.Empty);
+    }
+
+    public async Task HandleEventAsync(AccelerateCreateHolderEto eventData)
+    {
+        var accelerateRegisterIndex = _objectMapper.Map<AccelerateCreateHolderEto, AccelerateRegisterIndex>(eventData);
+        await _accelerateRegisterRepository.AddAsync(accelerateRegisterIndex);
+    }
+
+    public async Task HandleEventAsync(AccelerateSocialRecoveryEto eventData)
+    {
+        var accelerateRecoverIndex = _objectMapper.Map<AccelerateSocialRecoveryEto, AccelerateRecoverIndex>(eventData);
+        await _accelerateRecoverRepository.AddAsync(accelerateRecoverIndex);
     }
 }
