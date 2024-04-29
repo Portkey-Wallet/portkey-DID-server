@@ -11,8 +11,5 @@ public class VerifierServerBase
     public string GuardianIdentifier{ get; set; }
     
     [Required]
-    public string VerifierId { get; set; }    
-    
-
-    
+    public string VerifierId { get; set; }
 }

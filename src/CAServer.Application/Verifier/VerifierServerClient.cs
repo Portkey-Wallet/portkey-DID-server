@@ -71,12 +71,15 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
+        var operateDetails =
+            _accelerateManagerProvider.GenerateOperationDetails(dto.OperationType, dto.OperationDetails);
         var url = endPoint + "/api/app/account/sendVerificationRequest";
         var parameters = new Dictionary<string, string>
         {
             { "type", dto.Type },
             { "guardianIdentifier", dto.GuardianIdentifier },
             { "verifierSessionId", dto.VerifierSessionId.ToString() },
+            { "operateDetails", operateDetails }
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
     }
