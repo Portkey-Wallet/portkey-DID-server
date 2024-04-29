@@ -155,8 +155,14 @@ public class CAServerApplicationTestModule : AbpModule
         {
             option.ChainInfos = new Dictionary<string, Grains.Grain.ApplicationHandler.ChainInfo>
             {
-                { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo() },
-                { "AELF", new Grains.Grain.ApplicationHandler.ChainInfo() }
+                { "TEST", new Grains.Grain.ApplicationHandler.ChainInfo()
+                {
+                    ChainId = "TEST"
+                } },
+                { "AELF", new Grains.Grain.ApplicationHandler.ChainInfo()
+                {
+                    ChainId = "AELF"
+                } }
             };
         });
 
