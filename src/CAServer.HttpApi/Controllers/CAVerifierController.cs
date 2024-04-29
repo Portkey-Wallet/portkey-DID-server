@@ -50,7 +50,6 @@ public class CAVerifierController : CAServerController
 
     [HttpPost("sendVerificationRequest")]
     public async Task<VerifierServerResponse> SendVerificationRequest([FromHeader] string recaptchatoken,
-        [FromHeader] string version,
         [FromHeader] string acToken,
         VerifierServerInput verifierServerInput)
     {
@@ -272,6 +271,7 @@ public class CAVerifierController : CAServerController
     {
         return await _verifierAppService.GetVerifierServerAsync(input.ChainId);
     }
+    
 
 
     private string UserIpAddress(HttpContext context)

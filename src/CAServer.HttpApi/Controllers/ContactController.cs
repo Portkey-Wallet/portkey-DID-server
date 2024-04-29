@@ -89,4 +89,5 @@ public class ContactController : CAServerController
     {
         return await _contactAppService.GetContactsByUserIdAsync(userId);
     }
+    
 }
