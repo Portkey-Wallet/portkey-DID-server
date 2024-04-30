@@ -24,6 +24,7 @@ using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -529,7 +530,11 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var caHolderDto =
                 await _accountProvider.GetGuardianAddedCAHolderAsync(currentGuardian.IdentifierHash.ToHex(), 0,
                     MaxResultCount);
-            if (caHolderDto?.GuardianAddedCAHolderInfo.Data.Count > 1)
+            
+            var tasks = caHolderDto.GuardianAddedCAHolderInfo.Data.Select(
+                t => _userAssetsProvider.GetCaHolderIndexByCahashAsync(t.CaHash));
+            await tasks.WhenAll();
+            if (tasks.Count(t => t.Result.CaHash.IsNullOrWhiteSpace() && !t.Result.IsDeleted) > 1)
             {
                 validateGuardian = false;
             }
@@ -537,7 +542,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         return validateGuardian;
     }
-
 
     private async Task<List<GuardianInfoBase>> GetGuardianAsync(string caHash)
     {
