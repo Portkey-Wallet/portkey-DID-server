@@ -132,7 +132,7 @@ public partial class RevokeAccountTests
                 GuardianAddedCAHolderInfo = new GuardianAddedHolderInfo
                 {
                     TotalRecordCount = 0,
-                    Data = new List<Guardian.GuardianDto>
+                    Data = new List<GuardianResultDto>
                     {
                         new()
                     }
