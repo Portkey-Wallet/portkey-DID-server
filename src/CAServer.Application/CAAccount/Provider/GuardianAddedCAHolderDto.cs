@@ -10,6 +10,6 @@ public class GuardianAddedCAHolderDto
 
 public class GuardianAddedHolderInfo
 {
-    public List<GuardianDto> Data { get; set; }
+    public List<GuardianResultDto> Data { get; set; }
     public long TotalRecordCount { get; set; }
 }

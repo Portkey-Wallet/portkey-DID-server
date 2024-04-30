@@ -246,7 +246,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 var balanceInUsd = CalculationHelper.GetBalanceInUsd(priceDict[token.Symbol], long.Parse(token.Balance),
                     token.Decimals);
                 token.Price = priceDict[token.Symbol];
-                token.BalanceInUsd = token.Price == 0 ? string.Empty : balanceInUsd.ToString();
+                token.BalanceInUsd = balanceInUsd.ToString();
             }
 
             dto.TotalBalanceInUsd = CalculateTotalBalanceInUsd(dto.Data);

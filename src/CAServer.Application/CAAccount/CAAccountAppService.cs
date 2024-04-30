@@ -24,6 +24,7 @@ using CAServer.Verifier;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -249,7 +250,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var validateDevice = true;
         var caAddresses = caAddressInfos.Select(t => t.CaAddress).ToList();
         var caHolderManagerInfo = await _userAssetsProvider.GetCaHolderManagerInfoAsync(caAddresses);
-        if (caHolderManagerInfo != null && caHolderManagerInfo.CaHolderManagerInfo.Count > 0)
+        if (caHolderManagerInfo != null && caHolderManagerInfo.CaHolderManagerInfo?.Count > 0)
         {
             var originChainId = caHolderManagerInfo.CaHolderManagerInfo.FirstOrDefault()?.OriginChainId;
             foreach (var caHolderManager in caHolderManagerInfo.CaHolderManagerInfo
@@ -376,7 +377,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         try
         {
             var verifyRevokeToken = await _verifierServerClient.VerifyRevokeCodeAsync(revokeCodeInput);
-            _logger.LogDebug("verifyToken result {result}:{type},{guardian}", verifyRevokeToken,input.Type, input.GuardianIdentifier);
             if (verifyRevokeToken)
             {
                 await DeleteGuardianAsync(input.GuardianIdentifier);
@@ -449,8 +449,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         {
             validateDevice = false;
         }
-
-        var validateGuardian = await ValidateGuardianAsync(holderInfo, type);
+        var validateGuardian = await ValidateGuardianAsync(holderInfo,type);
         return new CancelCheckResultDto
         {
             ValidatedDevice = validateDevice,
@@ -515,24 +514,27 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             }
 
             var value = (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type);
-            var guardian = guardians.FirstOrDefault(t => (int)t.Type == value);
+            var guardian = guardians.FirstOrDefault(t=>(int)t.Type == value);
             if (guardian == null)
             {
                 throw new Exception(ResponseMessage.LoginGuardianNotExists);
             }
         }
 
+        
 
         var currentGuardian =
-            holderInfo?.GuardianList.Guardians.FirstOrDefault(t =>
-                t.IsLoginGuardian && (int)t.Type ==
-                (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
+            holderInfo?.GuardianList.Guardians.FirstOrDefault(t => t.IsLoginGuardian && (int)t.Type == (int)(GuardianIdentifierType)Enum.Parse(typeof(GuardianIdentifierType), type));
         if (currentGuardian != null)
         {
             var caHolderDto =
                 await _accountProvider.GetGuardianAddedCAHolderAsync(currentGuardian.IdentifierHash.ToHex(), 0,
                     MaxResultCount);
-            if (caHolderDto?.GuardianAddedCAHolderInfo.Data.Count > 1)
+            
+            var tasks = caHolderDto.GuardianAddedCAHolderInfo.Data.Select(
+                t => _userAssetsProvider.GetCaHolderIndexByCahashAsync(t.CaHash));
+            await tasks.WhenAll();
+            if (tasks.Count(t => t.Result.CaHash.IsNullOrWhiteSpace() && !t.Result.IsDeleted) > 1)
             {
                 validateGuardian = false;
             }
@@ -540,7 +542,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
 
         return validateGuardian;
     }
-
 
     private async Task<List<GuardianInfoBase>> GetGuardianAsync(string caHash)
     {
