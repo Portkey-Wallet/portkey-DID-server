@@ -38,6 +38,13 @@ public partial class RevokeAccountTests
                 }
             });
         
+        mockUserAssetsProvider.Setup(m =>
+                m.GetCaHolderIndexByCahashAsync(It.IsAny<string>()))
+            .ReturnsAsync(new CAHolderIndex()
+            {
+                CaHash = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+            });
+        
         
         mockUserAssetsProvider.Setup(m =>
                 m.GetUserNftInfoAsync(It.IsAny<List<CAAddressInfo>>(), It.IsAny<string>(), It.IsAny<int>(),
@@ -126,7 +133,7 @@ public partial class RevokeAccountTests
         });
         
         mockCaAccountProvider
-            .Setup(m => m.GetGuardianAddedCAHolderAsync("MockIdentifierHash", It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetGuardianAddedCAHolderAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new GuardianAddedCAHolderDto
             {
                 GuardianAddedCAHolderInfo = new GuardianAddedHolderInfo
