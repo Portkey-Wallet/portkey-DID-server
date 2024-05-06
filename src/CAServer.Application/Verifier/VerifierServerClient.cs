@@ -71,7 +71,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             };
         }
 
-        var operateDetails =
+        var operationDetails =
             _accelerateManagerProvider.GenerateOperationDetails(dto.OperationType, dto.OperationDetails);
         var url = endPoint + "/api/app/account/sendVerificationRequest";
         var parameters = new Dictionary<string, string>
@@ -79,7 +79,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             { "type", dto.Type },
             { "guardianIdentifier", dto.GuardianIdentifier },
             { "verifierSessionId", dto.VerifierSessionId.ToString() },
-            { "operateDetails", operateDetails }
+            { "operationDetails", operationDetails },
+            { "showOperationDetails", dto.OperationDetails }
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
     }
