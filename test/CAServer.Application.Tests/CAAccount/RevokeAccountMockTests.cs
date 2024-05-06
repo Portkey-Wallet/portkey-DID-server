@@ -139,10 +139,7 @@ public partial class RevokeAccountTests
                 GuardianAddedCAHolderInfo = new GuardianAddedHolderInfo
                 {
                     TotalRecordCount = 0,
-                    Data = new List<GuardianResultDto>
-                    {
-                        new()
-                    }
+                    Data = new List<GuardianResultDto>()
                 }
             });
 
@@ -174,7 +171,7 @@ public partial class RevokeAccountTests
                 new GetHolderInfoOutput
                 {
                     CreateChainId = 9992731,
-                    CaHash = Hash.LoadFromHex("df6d6e308c15f8d3a4e78853425985bb3cac08a2230e1df859eb3567fc38c03e"),
+                    CaHash = Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"),
                     GuardianList = new GuardianList()
                     {
                         Guardians =
