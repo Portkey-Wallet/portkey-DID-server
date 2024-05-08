@@ -67,18 +67,17 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     public async Task<ResponseResultDto<VerifierServerResponse>> SendVerificationRequestAsync(
         VerifierCodeRequestDto dto)
     {
-        var endPoint = "";
-        //var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
-        // _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
-        // if (null == endPoint)
-        // {
-        //     _logger.LogInformation("No Available Service Tips.{verifierId}", dto.VerifierId);
-        //     return new ResponseResultDto<VerifierServerResponse>
-        //     {
-        //         Success = false,
-        //         Message = "No Available Service Tips."
-        //     };
-        // }
+        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(dto.VerifierId, dto.ChainId);
+        _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
+        if (null == endPoint)
+        {
+            _logger.LogInformation("No Available Service Tips.{verifierId}", dto.VerifierId);
+            return new ResponseResultDto<VerifierServerResponse>
+            {
+                Success = false,
+                Message = "No Available Service Tips."
+            };
+        }
 
         var operationDetails =
             _accelerateManagerProvider.GenerateOperationDetails(dto.OperationType, dto.OperationDetails);
