@@ -530,7 +530,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var caHolderDto =
                 await _accountProvider.GetGuardianAddedCAHolderAsync(currentGuardian.IdentifierHash.ToHex(), 0,
                     MaxResultCount);
-            
             var tasks = caHolderDto.GuardianAddedCAHolderInfo.Data.Select(
                 t => _userAssetsProvider.GetCaHolderIndexByCahashAsync(t.CaHash));
             await tasks.WhenAll();
