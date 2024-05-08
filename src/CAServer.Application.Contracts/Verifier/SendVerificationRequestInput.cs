@@ -9,6 +9,8 @@ public class SendVerificationRequestInput : VerifierServerBase
     public string ChainId { get; set; }
     
     public PlatformType PlatformType { get; set; }
-
-
+    
+    public OperationType OperationType { get; set; }
+    
+    public string OperationDetails { get; set; }
 }
