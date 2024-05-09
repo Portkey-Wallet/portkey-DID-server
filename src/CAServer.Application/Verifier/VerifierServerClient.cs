@@ -90,7 +90,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             Chain = GetChainDetailDesc(dto.ChainId),
             GuardianType = dto.Type,
             GuardianAccount = dto.GuardianIdentifier,
-            Time = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture),
+            Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
             IP = await GetIpDetailDesc()
         };
 
