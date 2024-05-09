@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Globalization;
 using System.Net.Http;
 using System.Net.Mime;
@@ -163,22 +164,19 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await GetResultAsync<VerifyAppleTokenDto>(input, requestUri, identifierHash, salt);
     }
 
-    public async Task<ResponseResultDto<VerifyTokenDto<TelegramUserExtraInfo>>> VerifyTelegramTokenAsync(
-        VerifyTokenRequestDto input, string identifierHash, string salt)
+    public async Task<ResponseResultDto<VerifyTokenDto<TelegramUserExtraInfo>>> VerifyTelegramTokenAsync(VerifyTokenRequestDto input, string identifierHash, string salt)
     {
         var requestUri = "/api/app/account/verifyTelegramToken";
         return await GetResultAsync<VerifyTokenDto<TelegramUserExtraInfo>>(input, requestUri, identifierHash, salt);
     }
 
-    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyFacebookTokenAsync(
-        VerifyTokenRequestDto requestDto, string identifierHash, string salt)
+    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto, string identifierHash, string salt)
     {
         var requestUri = "/api/app/account/verifyFacebookToken";
         return await GetResultAsync<VerificationCodeResponse>(requestDto, requestUri, identifierHash, salt);
     }
 
-    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(
-        VerifyTokenRequestDto input)
+    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(VerifyTokenRequestDto input)
     {
         var endPoint =
             await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
@@ -207,6 +205,30 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     {
         var requestUri = "/api/app/account/verifyTwitterToken";
         return await GetResultAsync<VerifyTwitterTokenDto>(input, requestUri, identifierHash, salt);
+    }
+
+
+    public async Task<bool> VerifyRevokeCodeAsync(VerifyRevokeCodeInput input)
+    {
+        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+        _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
+        if (null == endPoint)
+        {
+            _logger.LogInformation("No Available Service Tips.{verifierId}", input.VerifierId);
+            return false;
+        }
+
+        var url = endPoint + "/api/app/account/verifyRevokeCode";
+        var parameters = new Dictionary<string, string>
+        {
+            { "guardianIdentifier", input.GuardianIdentifier },
+            { "verifyCode", input.VerifyCode },
+            { "verifierSessionId", input.VerifierSessionId.ToString()},
+            { "type", input.Type},
+        };
+        var response = await _httpService.PostResponseAsync<VerifyRevokeCodeResponse>(url, parameters);
+        return response.Success;
+
     }
 
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,

@@ -27,8 +27,8 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
     private readonly AppleCacheOptions _appleCacheOptions;
     private readonly TestCluster _cluster;
     private ICurrentUser _currentUser;
-    
-    
+
+
     public RevokeAccountTests()
     {
         _caAccountAppService = GetRequiredService<ICAAccountAppService>();
@@ -36,7 +36,7 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
         _currentUser = new CurrentUser(new FakeCurrentPrincipalAccessor());
     }
-    
+
     protected override void AfterAddApplication(IServiceCollection services)
     {
         base.AfterAddApplication(services);
@@ -45,6 +45,8 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
         services.AddSingleton(GetMockGuardianProvider());
         services.AddSingleton(GetMockCaAccountProvider());
         services.AddSingleton(GetMockAppleAuthProvider());
+        services.AddSingleton(GetMockContractProvider());
+        services.AddSingleton(GetMockManagerCountLimitOptions());
     }
 
 
@@ -54,9 +56,9 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
         try
         {
             await MockGuardianData();
-            
+
             await MockCAHolderData();
-            
+
             await _caAccountAppService.RevokeAsync(new RevokeDto
             {
                 AppleToken = "aaaa"
@@ -73,7 +75,7 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
         var contactGrain = _cluster.Client.GetGrain<IGuardianGrain>("Guardian-MockIdentifier");
         await contactGrain.AddGuardianAsync("aaa", "sss", "xxx", "aaas");
     }
-    
+
     private async Task MockCAHolderData()
     {
         var contactGrain = _cluster.Client.GetGrain<ICAHolderGrain>(_currentUser.GetId());
@@ -92,7 +94,7 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
             });
         return mockOptionsSnapshot.Object;
     }
-    
+
     private IAppleUserProvider GetMockAppleUserProvider()
     {
         var provider = new Mock<IAppleUserProvider>();
@@ -107,5 +109,64 @@ public partial class RevokeAccountTests : CAServerApplicationTestBase
         provider.Setup(t => t.SetUserExtraInfoAsync(It.IsAny<AppleUserExtraInfo>())).Returns(Task.CompletedTask);
 
         return provider.Object;
+    }
+
+    [Fact]
+    public async Task Revoke_Validate_Test()
+    {
+        var userId = Guid.NewGuid();
+        var result = await _caAccountAppService.RevokeValidateAsync(userId, "Email");
+        result.ValidatedAssets.ShouldBeTrue();
+        result.ValidatedDevice.ShouldBeTrue();
+        result.ValidatedGuardian.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Revoke_Account_Test()
+    {
+        var input = new RevokeAccountInput
+        {
+            Token = "MockToken",
+            ChainId = "AELF",
+            GuardianIdentifier = "MockGuardianIdentifier",
+            VerifierId = "",
+            Type = "Email",
+            VerifierSessionId = Guid.NewGuid()
+        };
+        var resultDto = await _caAccountAppService.RevokeAccountAsync(input);
+        resultDto.Success.ShouldBe(false);
+    }
+
+
+    [Fact]
+    public async Task Revoke_Account_GuardianNotExsits_Test()
+    {
+        var input = new RevokeAccountInput
+        {
+            Token = "MockToken",
+            ChainId = "AELF",
+            GuardianIdentifier = "MockGuardianIdentifier",
+            VerifierId = "",
+            Type = "Google",
+            VerifierSessionId = Guid.NewGuid()
+        };
+
+        try
+        {
+            await _caAccountAppService.RevokeAccountAsync(input);
+        }
+        catch (Exception e)
+        {
+            e.Message.ShouldContain("Login guardian not exists");
+        }
+    }
+
+
+    [Fact]
+    public async Task CheckManagerCountAsync_Test()
+    {
+        var caHash = "MockCaHash";
+        var resultDto = await _caAccountAppService.CheckManagerCountAsync(caHash);
+        resultDto.ManagersTooMany.ShouldBeTrue();
     }
 }
