@@ -296,19 +296,15 @@ public partial class RecoveryServiceTests
                 GuardianAddedCAHolderInfo = new GuardianAddedHolderInfo
                 {
                     TotalRecordCount = 1,
-                    Data = new List<Guardian.GuardianDto>
+                    Data = new List<GuardianResultDto>
                     {
-                        new Guardian.GuardianDto
+                        new GuardianResultDto
                         {
-                            LastName = "MockLastName",
-                            ThirdPartyEmail = "MockThirdPartyEmail",
-                            FirstName = "MockFirstName",
+                            CaHash = "000"
                         },
-                        new Guardian.GuardianDto
+                        new GuardianResultDto
                         {
-                            LastName = "MockLastName",
-                            ThirdPartyEmail = "MockThirdPartyEmail",
-                            FirstName = "MockFirstName",
+                            CaHash = "111"
                         }
                     }
                 }

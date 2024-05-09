@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Tokens.Dtos;
+using CAServer.UserAssets;
 using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Tokens;
@@ -17,4 +18,5 @@ public interface ITokenAppService
     Task<TokenExchange> GetLatestExchangeAsync(string providerName, string fromSymbol, string toSymbol);
     Task<TokenExchange> GetHistoryExchangeAsync(string providerName, string fromSymbol, string toSymbol, DateTime timestamp);
 
+    Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input);
 }
