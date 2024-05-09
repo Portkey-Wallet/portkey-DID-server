@@ -36,7 +36,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
     public VerifierServerClient(IOptionsSnapshot<AdaptableVariableOptions> adaptableVariableOptions,
         IGetVerifierServerProvider getVerifierServerProvider,
         ILogger<VerifierServerClient> logger,
-        IHttpClientFactory httpClientFactory, IAccelerateManagerProvider accelerateManagerProvider, IOptions<ChainOptions> chainOptions,  IIpInfoAppService ipInfoAppService)
+        IHttpClientFactory httpClientFactory, IAccelerateManagerProvider accelerateManagerProvider,
+        IOptions<ChainOptions> chainOptions, IIpInfoAppService ipInfoAppService)
     {
         _getVerifierServerProvider = getVerifierServerProvider;
         _logger = logger;
@@ -88,12 +89,13 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             Amount = GetDetailDesc(dto.OperationDetails, "amount"),
             Chain = GetChainDetailDesc(dto.ChainId),
             GuardianType = dto.Type,
-            IdentifierHash = dto.GuardianIdentifier,
+            GuardianAccount = dto.GuardianIdentifier,
             Time = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture),
             IP = await GetIpDetailDesc()
         };
 
         var showOperationDetailsJson = JsonConvert.SerializeObject(showOperationDetails);
+
         var url = endPoint + "/api/app/account/sendVerificationRequest";
         var parameters = new Dictionary<string, string>
         {
@@ -106,7 +108,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
     }
 
-    
+
 
 
     public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input)
@@ -302,19 +304,21 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 {
                     continue;
                 }
+
                 var response = property.Value.ToString();
                 return response;
             }
         }
         catch (Exception e)
         {
-            _logger.LogDebug("DeserializeObject Json failed : {json},{message}", dtoOperationDetails, e.Message);
+            _logger.LogDebug("DeserializeObject Json failed : {json}, Error Message is : {message}",
+                dtoOperationDetails, e.Message);
             return "";
         }
 
         return "";
     }
-    
+
     private string GetChainDetailDesc(string chain)
     {
         var chainDetails = _chainOptions.ChainInfos.TryGetValue(chain, out var chainInfo);
@@ -323,15 +327,15 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             var isMainChain = chainInfo.IsMainChain;
             return isMainChain ? "MainChain " + chainInfo.ChainId : "SideChain " + chainInfo.ChainId;
         }
-        _logger.LogError("GetChainInfo Error:{chainId}",chain);
+
+        _logger.LogError("GetChainInfo Error:{chainId}", chain);
         return "";
     }
-    
+
     private async Task<string> GetIpDetailDesc()
     {
         var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
         return ipInfo.Country;
     }
-    
     
 }
