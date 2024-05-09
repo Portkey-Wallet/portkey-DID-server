@@ -11,6 +11,7 @@ using CAServer.Tokens.Cache;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
 using CAServer.Tokens.TokenPrice;
+using CAServer.UserAssets;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -243,5 +244,33 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
         return result;
+    }
+
+    public async Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input)
+    {
+        var result = new GetTokenAllowancesDto()
+        {
+            Data = new List<TokenAllowance>
+            {
+                new (){
+                    ChainId = "AELF",
+                    ContractAddress = "2UM9eusxdRyCztbmMZadGXzwgwKfFdk8pF4ckw58D769ehaPSR",
+                    Name = "CryptoBox",
+                    Url = "https://portkey.finance/",
+                    Icon = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Crypto+Box.png",
+                    Allowance = 1000
+                },
+                new (){
+                    ChainId = "tDVV",
+                    ContractAddress = "jvhrvLGJ29ZzoLSQyUmKGL51NNvYjaHDqcuCpF481139mdxd2",
+                    Name = "CryptoBox",
+                    Url = "https://portkey.finance/",
+                    Icon = "https://portkey-did.s3.ap-northeast-1.amazonaws.com/img/Crypto+Box.png",
+                    Allowance = 1000
+                }
+            },
+            TotalRecordCount = 2
+        };
+        return await Task.FromResult(result);
     }
 }
