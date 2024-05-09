@@ -79,6 +79,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AccelerateManagerOptions>(configuration.GetSection("AccelerateManager"));
         Configure<IpfsOptions>(configuration.GetSection("Ipfs"));
         Configure<ContractServiceOptions>(configuration.GetSection("ContractService"));
+        Configure<TokenSpenderOptions>(configuration.GetSection("TokenSpender"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
