@@ -96,7 +96,7 @@ public class CrossChainTransferAppService : ICrossChainTransferAppService, ITran
         if (transfers.Count < MaxTransferQueryCount)
         {
             var latestProcessedHeight = (await grain.GetLastedProcessedHeightAsync()).Data;
-            if (latestProcessedHeight == 0)
+            if (latestProcessedHeight < _crossChainOptions.AutoReceiveStartHeight[chainId] - 1)
             {
                 latestProcessedHeight = _crossChainOptions.AutoReceiveStartHeight[chainId] - 1;
             }
