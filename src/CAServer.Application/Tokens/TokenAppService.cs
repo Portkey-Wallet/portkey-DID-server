@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using CAServer.Tokens.Cache;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
 using CAServer.Tokens.TokenPrice;
+using CAServer.UserAssets;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -32,13 +34,15 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     private readonly Dictionary<string, IExchangeProvider> _exchangeProviders;
     private readonly ITokenCacheProvider _tokenCacheProvider;
     private readonly ITokenPriceService _tokenPriceService;
+    private readonly IOptionsMonitor<TokenSpenderOptions> _tokenSpenderOptions;
 
     public TokenAppService(IOptions<ContractAddressOptions> contractAddressesOptions,
         ITokenProvider tokenProvider, IEnumerable<IExchangeProvider> exchangeProviders,
         IDistributedCache<TokenExchange> latestExchange,
         IDistributedCache<TokenExchange> historyExchange,
         ITokenCacheProvider tokenCacheProvider,
-        ITokenPriceService tokenPriceService)
+        ITokenPriceService tokenPriceService,
+        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions)
     {
         _tokenProvider = tokenProvider;
         _latestExchange = latestExchange;
@@ -46,6 +50,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         _contractAddressOptions = contractAddressesOptions.Value;
         _exchangeProviders = exchangeProviders.ToDictionary(p => p.Name().ToString(), p => p);
         _tokenCacheProvider = tokenCacheProvider;
+        _tokenSpenderOptions = tokenSpenderOptions;
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -243,5 +248,34 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
         return result;
+    }
+
+    public async Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input)
+    {
+        var tokenApproved = await _tokenProvider.GetTokenApprovedAsync("", 
+            input.CaAddressInfos.Select(t => t.CaAddress).ToList(), input.SkipCount, input.MaxResultCount);
+        var tokenAllowanceList = tokenApproved.CaHolderTokenApproved.Data.Select(t => new TokenAllowance
+        {
+            ContractAddress = t.Spender,
+            Allowance = t.BatchApprovedAmount,
+            ChainId = t.ChainId
+        }).ToList();
+        foreach (var tokenAllowance in tokenAllowanceList)
+        {
+            var tokenSpender = _tokenSpenderOptions.CurrentValue.TokenSpenderList.FirstOrDefault(t
+                => t.ChainId == tokenAllowance.ChainId && t.ContractAddress == tokenAllowance.ContractAddress);
+            if (tokenSpender != null)
+            {
+                ObjectMapper.Map(tokenSpender, tokenAllowance);
+            }
+        }
+        tokenAllowanceList.Sort((t1, t2) => 
+            (t1.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t1.Name).CompareTo(t2.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t2.Name));
+
+        return new GetTokenAllowancesDto
+        {
+            Data = tokenAllowanceList,
+            TotalRecordCount = tokenApproved.CaHolderTokenApproved.TotalRecordCount
+        };
     }
 }
