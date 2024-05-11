@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.UserAssets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -50,5 +51,11 @@ public class TokenController : CAServerController
     public async Task<GetTokenInfoDto> GetTokenInfoAsync([Required] string chainId, [Required] string symbol)
     {
         return await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
+    }
+    
+    [HttpPost("allowances")]
+    public async Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input)
+    {
+        return await _tokenAppService.GetTokenAllowancesAsync(input);
     }
 }
