@@ -14,5 +14,7 @@ public class VerifierCodeRequestDto
     public OperationType OperationType { get; set; }
     
     public string OperationDetails { get; set; }
+    
+    public string TargetChainId { get; set; }
 
 }

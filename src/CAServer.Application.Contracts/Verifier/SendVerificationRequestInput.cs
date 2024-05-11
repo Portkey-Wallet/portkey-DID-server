@@ -13,4 +13,6 @@ public class SendVerificationRequestInput : VerifierServerBase
     public OperationType OperationType { get; set; }
     
     public string OperationDetails { get; set; }
+    
+    public string TargetChainId { get; set; }
 }

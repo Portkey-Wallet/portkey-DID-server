@@ -80,7 +80,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
                 Message = "No Available Service Tips."
             };
         }
-
+        
         var operationDetails =
             _accelerateManagerProvider.GenerateOperationDetails(dto.OperationType, dto.OperationDetails);
         var showOperationDetails = new ShowOperationDetailsDto
@@ -88,7 +88,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             OperationType = GetOperationDecs(dto.OperationType),
             Token = GetDetailDesc(dto.OperationDetails, "symbol"),
             Amount = GetDetailDesc(dto.OperationDetails, "amount"),
-            Chain = GetChainDetailDesc(dto.ChainId),
+            Chain = GetChainDetailDesc(dto.TargetChainId ?? dto.ChainId),
             GuardianType = dto.Type,
             GuardianAccount = dto.GuardianIdentifier,
             Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
