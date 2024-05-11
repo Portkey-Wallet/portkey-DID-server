@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -268,8 +269,10 @@ public class TokenAppService : CAServerAppService, ITokenAppService
                 ObjectMapper.Map(tokenSpender, tokenAllowance);
             }
         }
+        tokenAllowanceList.Sort((t1, t2) => 
+            (t1.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t1.Name).CompareTo(t2.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t2.Name));
 
-        return new GetTokenAllowancesDto()
+        return new GetTokenAllowancesDto
         {
             Data = tokenAllowanceList,
             TotalRecordCount = tokenApproved.CaHolderTokenApproved.TotalRecordCount
