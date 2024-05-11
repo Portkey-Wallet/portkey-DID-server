@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Common;
@@ -57,6 +58,24 @@ public class TelegramAuthService : CAServerAppService, ITelegramAuthService
 
         var resultDto = await _httpClientService.PostAsync<ResponseResultDto<string>>(url, parameters);
 
+        if (resultDto == null || !resultDto.Success || resultDto.Data.IsNullOrWhiteSpace())
+        {
+            _logger.LogInformation("verification of the telegram information has failed, {0}", resultDto?.Message);
+            throw new UserFriendlyException("Invalid Telegram Login Information");
+        }
+
+        return resultDto.Data;
+    }
+
+    public async Task<string> ValidateTelegramHashAndGenerateTokenAsync(IDictionary<string, string> requestParameter)
+    {
+        if (requestParameter.IsNullOrEmpty())
+        {
+            _logger.LogInformation("`requestParameter` is null");
+            throw new UserFriendlyException("Invalid Telegram Login Information");
+        }
+        var url = $"{_telegramAuthOptions.BaseUrl}/api/app/auth/bot/token";
+        var resultDto = await _httpClientService.PostAsync<ResponseResultDto<string>>(url, requestParameter);
         if (resultDto == null || !resultDto.Success || resultDto.Data.IsNullOrWhiteSpace())
         {
             _logger.LogInformation("verification of the telegram information has failed, {0}", resultDto?.Message);

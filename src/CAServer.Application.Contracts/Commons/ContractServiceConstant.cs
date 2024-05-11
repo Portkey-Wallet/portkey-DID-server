@@ -24,6 +24,7 @@ public static class CommonConstant
     public const string Colon = ":";
     public const string Underline = "_";
     public const string Comma = ",";
+    public const string UpperZ = "z";
 
     public const string CurrencyFiat = "Fiat";
     public const string CurrencyCrypto = "Crypto";
