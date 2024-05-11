@@ -14,6 +14,8 @@ public class VerifierServerInput : VerifierServerBase, IValidatableObject
     
     public string OperationDetails { get; set; }
 
+    public string TargetChainId { get; set; }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (Type == "Email" && !VerifyHelper.VerifyEmail(GuardianIdentifier))

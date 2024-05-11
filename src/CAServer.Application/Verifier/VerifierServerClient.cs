@@ -88,7 +88,7 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             OperationType = GetOperationDecs(dto.OperationType),
             Token = GetDetailDesc(dto.OperationDetails, "symbol"),
             Amount = GetDetailDesc(dto.OperationDetails, "amount"),
-            Chain = GetChainDetailDesc(dto.ChainId),
+            Chain = GetChainDetailDesc(dto.TargetChainId ?? dto.ChainId),
             GuardianType = dto.Type,
             GuardianAccount = dto.GuardianIdentifier,
             Time = DateTime.Now.ToString("yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture),
@@ -108,8 +108,6 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         };
         return await _httpService.PostResponseAsync<ResponseResultDto<VerifierServerResponse>>(url, parameters);
     }
-
-
 
 
     public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyCodeAsync(VierifierCodeRequestInput input)
@@ -164,19 +162,22 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         return await GetResultAsync<VerifyAppleTokenDto>(input, requestUri, identifierHash, salt);
     }
 
-    public async Task<ResponseResultDto<VerifyTokenDto<TelegramUserExtraInfo>>> VerifyTelegramTokenAsync(VerifyTokenRequestDto input, string identifierHash, string salt)
+    public async Task<ResponseResultDto<VerifyTokenDto<TelegramUserExtraInfo>>> VerifyTelegramTokenAsync(
+        VerifyTokenRequestDto input, string identifierHash, string salt)
     {
         var requestUri = "/api/app/account/verifyTelegramToken";
         return await GetResultAsync<VerifyTokenDto<TelegramUserExtraInfo>>(input, requestUri, identifierHash, salt);
     }
 
-    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyFacebookTokenAsync(VerifyTokenRequestDto requestDto, string identifierHash, string salt)
+    public async Task<ResponseResultDto<VerificationCodeResponse>> VerifyFacebookTokenAsync(
+        VerifyTokenRequestDto requestDto, string identifierHash, string salt)
     {
         var requestUri = "/api/app/account/verifyFacebookToken";
         return await GetResultAsync<VerificationCodeResponse>(requestDto, requestUri, identifierHash, salt);
     }
 
-    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(VerifyTokenRequestDto input)
+    public async Task<ResponseResultDto<VerifyFacebookUserInfoDto>> VerifyFacebookAccessTokenAsync(
+        VerifyTokenRequestDto input)
     {
         var endPoint =
             await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
@@ -210,7 +211,8 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
 
     public async Task<bool> VerifyRevokeCodeAsync(VerifyRevokeCodeInput input)
     {
-        var endPoint = await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
+        var endPoint =
+            await _getVerifierServerProvider.GetVerifierServerEndPointsAsync(input.VerifierId, input.ChainId);
         _logger.LogInformation("EndPiont is {endPiont} :", endPoint);
         if (null == endPoint)
         {
@@ -223,12 +225,11 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         {
             { "guardianIdentifier", input.GuardianIdentifier },
             { "verifyCode", input.VerifyCode },
-            { "verifierSessionId", input.VerifierSessionId.ToString()},
-            { "type", input.Type},
+            { "verifierSessionId", input.VerifierSessionId.ToString() },
+            { "type", input.Type },
         };
         var response = await _httpService.PostResponseAsync<VerifyRevokeCodeResponse>(url, parameters);
         return response.Success;
-
     }
 
     private async Task<ResponseResultDto<T>> GetResultAsync<T>(VerifyTokenRequestDto input,
@@ -359,5 +360,4 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
         var ipInfo = await _ipInfoAppService.GetIpInfoAsync();
         return ipInfo.Country;
     }
-    
 }
