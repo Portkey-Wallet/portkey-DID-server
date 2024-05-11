@@ -300,12 +300,12 @@ public class VerifierServerClient : IDisposable, IVerifierServerClient, ISinglet
             OperationType.AddGuardian => "Add Guardian",
             OperationType.RemoveGuardian => "Remove Guardian",
             OperationType.UpdateGuardian => "Update Guardian",
-            OperationType.RemoveOtherManagerInfo => "Remove device",
-            OperationType.SetLoginGuardian => "Set login account",
+            OperationType.RemoveOtherManagerInfo => "Remove Device",
+            OperationType.SetLoginGuardian => "Set Login Account",
             OperationType.Approve => "Approve",
             OperationType.ModifyTransferLimit => "Set Transfer Limit",
             OperationType.GuardianApproveTransfer => "Guardian Approve Transfer",
-            OperationType.UnSetLoginAccount => "Unset login account",
+            OperationType.UnSetLoginAccount => "Unset Login Account",
             _ => ""
         };
     }

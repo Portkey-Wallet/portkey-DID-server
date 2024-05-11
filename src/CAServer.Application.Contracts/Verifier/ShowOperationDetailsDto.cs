@@ -4,10 +4,10 @@ namespace CAServer.Verifier;
 
 public class ShowOperationDetailsDto
 {
-    [JsonProperty(Order = 6)]
+    [JsonProperty(Order = 6,PropertyName = "Guardian Account")]
     public string GuardianAccount { get; set; }
 
-    [JsonProperty(Order = 5)]
+    [JsonProperty(Order = 5,PropertyName = "Guardian Type")]
     public string GuardianType { get; set; }
 
     [JsonProperty(Order = 7)]
@@ -25,7 +25,7 @@ public class ShowOperationDetailsDto
     [JsonProperty(Order = 8)]
     public string IP { get; set; }
 
-    [JsonProperty(Order = 1)]
+    [JsonProperty(Order = 1,PropertyName = "Operation Type")]
     public string OperationType { get; set; }
     
 }
