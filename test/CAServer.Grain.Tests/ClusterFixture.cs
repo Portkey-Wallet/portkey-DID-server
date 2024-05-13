@@ -61,8 +61,8 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         public void Configure(ISiloHostBuilder hostBuilder)
         {
             var millSeconds = DateTime.UtcNow.Millisecond;
-            hostBuilder.ConfigureEndpoints(IPAddress.Any,
-                10000 + millSeconds, 20000 + millSeconds, true);
+            hostBuilder.ConfigureEndpoints(
+                10000 + millSeconds, 20000 + millSeconds);
             hostBuilder.ConfigureServices(services =>
                 {
                     var mockTokenProvider = new Mock<ITokenPriceProvider>();

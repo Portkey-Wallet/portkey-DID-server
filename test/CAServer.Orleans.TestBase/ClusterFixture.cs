@@ -1,3 +1,4 @@
+using System.Net;
 using AutoMapper;
 using CAServer.Grains;
 using Microsoft.Extensions.Caching.Distributed;
@@ -35,6 +36,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     {
         public void Configure(ISiloHostBuilder hostBuilder)
         {
+            var millSeconds = DateTime.UtcNow.Millisecond;
+            hostBuilder.ConfigureEndpoints(
+                10000 + millSeconds, 20000 + millSeconds);
             hostBuilder.ConfigureServices(services =>
                 {
                     // services.AddSingleton<ITokenPriceProvider, TokenPriceProvider>();
