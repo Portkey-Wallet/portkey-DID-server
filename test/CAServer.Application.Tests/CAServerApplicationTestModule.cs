@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CAServer.AppleAuth.Provider;
 using CAServer.BackGround;
 using CAServer.BackGround.EventHandler;
 using CAServer.BackGround.EventHandler.Treasury;
@@ -6,6 +7,7 @@ using CAServer.BackGround.Provider;
 using CAServer.BackGround.Provider.Treasury;
 using CAServer.Bookmark;
 using CAServer.Common;
+using CAServer.Contacts;
 using CAServer.ContractEventHandler.Core;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.ThirdPart;
@@ -13,9 +15,14 @@ using CAServer.Grain.Tests;
 using CAServer.Hub;
 using CAServer.IpInfo;
 using CAServer.Options;
+using CAServer.PrivacyPermission;
 using CAServer.RedPackage;
 using CAServer.Search;
 using CAServer.ThirdPart;
+using CAServer.ThirdPart.Processor.NFT;
+using CAServer.ThirdPart.Processors;
+using CAServer.ThirdPart.Provider;
+using CAServer.UserAssets.Provider;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
@@ -26,6 +33,7 @@ using Volo.Abp.EventBus;
 using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
+using TokenInfo = CAServer.Options.TokenInfo;
 
 namespace CAServer;
 
@@ -47,6 +55,11 @@ public class CAServerApplicationTestModule : AbpModule
         // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<IConnectionProvider, ConnectionProvider>();
+        context.Services.AddSingleton<IOrderStatusProvider, OrderStatusProvider>();
+        context.Services.AddSingleton<IPrivacyPermissionAppService, PrivacyPermissionAppService>();
+        context.Services.AddSingleton<IContactAppService, ContactAppService>();
+        context.Services.AddSingleton<IImageProcessProvider, ImageProcessProvider>();
+        context.Services.AddSingleton<IAppleAuthProvider, AppleAuthProvider>();
         context.Services.AddSingleton<BookmarkAppService>();
         context.Services.AddSingleton<BookmarkHandler>();
 
