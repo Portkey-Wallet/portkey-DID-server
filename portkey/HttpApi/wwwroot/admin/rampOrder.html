@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramp Order Page</title>
+    <link rel="icon" href="img/icon.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/search_table.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+<div id="toast" class="toast" style="display: none;"></div>
+<header>
+    <nav>
+        <ul id="menu">
+            <li><a href="./index.html">Home</a></li>
+        </ul>
+    </nav>
+    <div id="user-info">
+        <span></span>
+        <button id="logout-button" class="primary">Sign out</button>
+    </div>
+</header>
+
+<main>
+    <h3>Ramp order</h3><br/>
+    <div class="search-form">
+
+        <div class="input-group">
+            <label for="search-UserId">UserId</label>
+            <input type="text" id="search-UserId" placeholder="">
+        </div>
+        <div class="input-group">
+            <label for="search-OrderIdIn">OrderId</label>
+            <input type="text" id="search-OrderIdIn" placeholder="">
+        </div>
+        <div class="input-group">
+            <label for="search-TransactionId">TransactionId</label>
+            <input type="text" id="search-TransactionId" placeholder="">
+        </div>
+        <div class="input-group">
+            <label for="search-ThirdPartOrderNoIn">ThirdPartOrderId</label>
+            <input type="text" id="search-ThirdPartOrderNoIn" placeholder="" autocomplete="false">
+        </div>
+        <div class="input-group">
+            <label for="search-LastModifyTimeGtEq">LastModifyTimeLt</label>
+            <input type="text" id="search-LastModifyTimeGtEq" class="flatpickr" placeholder="">
+            <label for="search-LastModifyTimeLt">-</label>
+            <input type="text" id="search-LastModifyTimeLt" class="flatpickr" placeholder="">
+        </div>
+        <div class="input-group">
+            <label for="search-ThirdPartName">ThirdPartName</label>
+            <select id="search-ThirdPartName">
+                <option value="">All</option>
+                <option value="Alchemy">AlchemyPay</option>
+                <option value="Transak">Transak</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-TransDirectIn">TransDirect</label>
+            <select id="search-TransDirectIn">
+                <option value="">All</option>
+                <option value="TokenBuy">TokenBuy</option>
+                <option value="TokenSell">TokenSell</option>
+                <option value="NFTBuy">NFTBuy</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="search-StatusIn">Status</label>
+            <select id="search-StatusIn">
+                <option value="">All</option>
+                <option value="Initialized">Initialized</option>
+                <option value="Created">Created</option>
+                <option value="Expired">Expired</option>
+                <option value="Finish">Finish</option>
+                <option value="Invalid">Invalid</option>
+                <option value="Failed">Failed</option>
+                <option value="Pending">Pending</option>
+                <option value="Refunded">Refunded</option>
+                <option value="StartTransfer">StartTransfer</option>
+                <option value="Transferring">Transferring</option>
+                <option value="Transferred">Transferred</option>
+                <option value="TransferFailed">TransferFailed</option>
+                <option value="UserCompletesCoinDeposit">UserCompletesCoinDeposit</option>
+                <option value="StartPayment">StartPayment</option>
+                <option value="SuccessfulPayment">SuccessfulPayment</option>
+                <option value="PaymentFailed">PaymentFailed</option>
+                <option value="RefundSuccessfully">RefundSuccessfully</option>
+            </select>
+        </div>
+        <button id="search-button">Search</button>
+    </div>
+
+    <table id="orders-table">
+        <thead>
+        <tr>
+            <th>OrderID</th>
+            <th>UserId</th>
+            <th>TransDirect</th>
+            <th>MerchantName</th>
+            <th>ThirdPartOrderNo</th>
+            <th>Address</th>
+            <th>Crypto</th>
+            <th>Fiat</th>
+            <th>Status</th>
+            <th>TransactionId</th>
+            <th>TxTime</th>
+            <th>LastModifyTime</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Order rows will be added here -->
+        </tbody>
+    </table>
+
+    <div class="pagination" id="pagination-container"></div>
+    
+</main>
+
+<script src="libs/jquery/jquery.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dateFormat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+
+    let currentPage = 1;
+    let pageSize = 20;
+    let items = {};
+    $(document).ready(function() {
+        App.loadUser();
+        App.checkPermission("OrderManager,OrderViewer");
+        $("#user-info span").html(App.User().userName)
+        $("input.flatpickr").attr('autocomplete', 'off').flatpickr({
+            enableTime: true,
+            allowInput: true,
+            time_24hr: true,
+            defaultHour: 0,
+            dateFormat: "Y-m-d H:i",
+            onChange: function(selectedDates, dateStr, instance) {
+                let utcTimestamp = selectedDates[0].getTime() - (selectedDates[0].getTimezoneOffset() * 60000);
+                $(instance.input).data('utcTimestamp', utcTimestamp);
+            },
+            onOpen: (selectedDates, dateStr, instance) => $(instance.input).data('utcTimestamp', null)
+        });
+        fetchOrders();
+        $("#logout-button").on("click", App.logout);
+    });
+
+    function fetchOrders(page = 1) {
+        let requestData = {
+            LastModifyTimeLt: $("#search-LastModifyTimeLt").data("utcTimestamp"),
+            LastModifyTimeGt: $("#search-LastModifyTimeGtEq").data("utcTimestamp"),
+            ThirdPartName: $("#search-ThirdPartName").val(),
+            ThirdPartOrderNoIn: $("#search-ThirdPartOrderNoIn").val(),
+            TransDirectIn: $("#search-TransDirectIn").val(),
+            StatusIn: $("#search-StatusIn").val(),
+            TransactionId: $("#search-TransactionId").val(),
+            skipCount: (page - 1) * pageSize,
+            maxResultCount: pageSize
+        };
+        if ($("#search-UserId").val()) {
+            requestData.UserId = $("#search-UserId").val();
+        }
+        if ($("#search-OrderIdIn").val()) {
+            requestData.OrderIdIn = $("#search-OrderIdIn").val();
+        }
+        $.ajax({
+            url: App.Uri.rampOrders,
+            method: 'GET',
+            contentType: "application/json",
+            data: requestData,
+            success: function(response) {
+                if (!response || !response.success){
+                    return App.showToast(response.message)
+                }
+                updateTable(response.data.items);
+                currentPage = page;
+                let totalPage = Math.ceil(response.data.totalCount / pageSize); 
+                generatePagination(totalPage, currentPage);
+            }
+        });
+    }
+
+    function updateTable(orders) {
+        var $tbody = $("#orders-table tbody");
+        $tbody.empty();
+        orders.forEach(function(order) {
+            items[order.id] = order;
+            let statusFlowBtn = order.orderStatusSection 
+                ? `<button onclick="showStatusFlow('${order.id}')" class="primary">Status Flow</button>` 
+                : "";
+            $tbody.append(`<tr>
+                <td>${shortenText(order.id)}</td>
+                <td>${shortenText(order.userId)}</td>
+                <td>${order.transDirect}</td>
+                <td>${order.merchantName ?? ""}</td>
+                <td>${order.thirdPartOrderNo ?? ""}</td>
+                <td>${shortenText(order.address ?? "")}</td>
+                <td>${order.cryptoAmount ?? order.cryptoQuantity ?? ""} ${order.crypto ?? ""}</td>
+                <td>${order.fiatAmount  ?? ""} ${order.fiat ?? "" }</td>
+                <td>${order.status}</td>
+                <td>${shortenText(order.transactionId ?? "")}</td>
+                <td>${order.txTime ?? ""}</td>
+                <td>${DateFormat.formatUtc(new Date(parseInt(order.lastModifyTime, 10)))}</td>
+                <td style="text-align: left">&nbsp;
+                    <button onclick="showDetail('${order.id}')">Detail</button>
+                    ${statusFlowBtn}
+                </td>
+            </tr>`);
+        });
+    }
+
+    function generatePagination(totalPages, currentPage) {
+        let $paginationContainer = $("#pagination-container");
+        $paginationContainer.empty();
+
+        let startPage = Math.max(1, currentPage - 10);
+        let endPage = Math.min(totalPages, currentPage + 10);
+        if(currentPage > 1) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage - 1})">Prev</button>&nbsp;`);
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${i})" ${i === currentPage ? 'class="active" disabled' : ''}>${i}</button>&nbsp;`);
+        }
+        if(currentPage < totalPages) {
+            $paginationContainer.append(`<button onclick="fetchOrders(${currentPage + 1})">Next</button>&nbsp;`);
+        }
+    }
+    
+    
+    function showDetail(orderId) {
+        window.open("rampOrderDetail.html?orderId=" + orderId, "_blank")
+    }
+    
+    function showStatusFlow(orderId) {
+        for(let s of items[orderId].orderStatusSection.orderStatusList) {
+            if (!s.lastModifyTime) continue;
+            s["lastModifyTimeStr"] = DateFormat.formatUtc(new Date(s.lastModifyTime))
+        }
+        let content = JSON.stringify(items[orderId].orderStatusSection, null, 4);
+        localStorage.setItem("tmp_" + orderId, content);
+        window.open("jsonViewer.html?title=" + orderId, "_blank");
+    }
+    
+    function shortenText(text, startLength = 6, endLength = 6) {
+        if (text.length <= startLength + endLength) return text;
+        let shorten = text.substring(0, startLength) + "..." + text.substring(text.length - endLength);
+        return `<span onclick="App.showToast('${text}')" ondblclick="App.copyText('${text}')" style="cursor:pointer">${shorten}</span>`;
+    }
+
+    $("#search-button").click(function() {
+        fetchOrders(1);
+    });
+
+    $("#prev-page").click(function() {
+        if (currentPage > 1) fetchOrders(currentPage - 1);
+    });
+    $("#next-page").click(function() {
+        fetchOrders(currentPage + 1);
+    });
+    
+</script>
+</body>
+</html>

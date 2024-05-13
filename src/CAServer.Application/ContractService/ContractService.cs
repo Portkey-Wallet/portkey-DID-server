@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.Metrics;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -33,10 +34,11 @@ public class ContractService : IContractService, ISingletonDependency
     private readonly ILogger<ContractService> _logger;
     private readonly ISignatureProvider _signatureProvider;
     private readonly IIndicatorScope _indicatorScope;
+    private readonly Histogram<long> _executedTxsRt;
 
     public ContractService(IOptions<ChainOptions> chainOptions, IOptions<ContractServiceOptions> contractGrainOptions,
         IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractService> logger,
-        IIndicatorScope indicatorScope)
+        IIndicatorScope indicatorScope, Instrumentation instrumentation)
     {
         _objectMapper = objectMapper;
         _logger = logger;
@@ -44,6 +46,7 @@ public class ContractService : IContractService, ISingletonDependency
         _contractServiceOptions = contractGrainOptions.Value;
         _chainOptions = chainOptions.Value;
         _signatureProvider = signatureProvider;
+        _executedTxsRt = instrumentation.ExecutedTxRt;
     }
 
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
@@ -103,6 +106,8 @@ public class ContractService : IContractService, ISingletonDependency
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             _indicatorScope.End(getIndicator);
 
+            //start waiting for the timing of transaction packaging
+            var startTimeForTransaction = DateTime.UtcNow.Ticks;
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -117,7 +122,10 @@ public class ContractService : IContractService, ISingletonDependency
 
                 _indicatorScope.End(retryGetIndicator);
             }
-
+            //end waiting for the timing of transaction packaging and export the time cost to show in p8s
+            var endTimeForTransaction = DateTime.UtcNow.Ticks;
+            var durationForTransaction = (endTimeForTransaction - startTimeForTransaction) / TimeSpan.TicksPerSecond;
+            _executedTxsRt.Record(durationForTransaction);
             return new TransactionInfoDto
             {
                 Transaction = transaction,

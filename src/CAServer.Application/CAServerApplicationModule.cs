@@ -112,6 +112,7 @@ public class CAServerApplicationModule : AbpModule
         
         context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
         context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
+        context.Services.AddSingleton<Instrumentation>(); //add monitoring assembly
         
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
