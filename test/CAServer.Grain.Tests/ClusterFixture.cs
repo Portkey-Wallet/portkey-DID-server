@@ -1,3 +1,4 @@
+using System.Net;
 using AElf;
 using AElf.Types;
 using AutoMapper;
@@ -57,6 +58,8 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     {
         public void Configure(ISiloHostBuilder hostBuilder)
         {
+            hostBuilder.ConfigureEndpoints(
+                20001, 30001);
             hostBuilder.ConfigureServices(services =>
                 {
                     var mockTokenProvider = new Mock<ITokenPriceProvider>();
