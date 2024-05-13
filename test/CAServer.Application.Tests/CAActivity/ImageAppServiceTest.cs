@@ -40,7 +40,7 @@ public class ImageAppServiceTest : CAServerApplicationTestBase
         result.ThumbnailUrl.ShouldBe("test");
     }
 
-    private IImageProcessProvider GetImageProcessProviderMock()
+    public static IImageProcessProvider GetImageProcessProviderMock()
     {
         var provider = new Mock<IImageProcessProvider>();
 

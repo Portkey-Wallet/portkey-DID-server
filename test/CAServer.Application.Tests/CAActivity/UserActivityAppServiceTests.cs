@@ -50,6 +50,7 @@ public partial class UserActivityAppServiceTests : CAServerApplicationTestBase
         services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
         services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
+        services.AddSingleton(ImageAppServiceTest.GetImageProcessProviderMock());
     }
 
     private void Login(Guid userId)

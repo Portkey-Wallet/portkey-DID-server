@@ -58,7 +58,7 @@ public partial class PrivacyPermissionTest : CAServerApplicationTestBase
         services.AddSingleton(GetIContractProvider());
         services.AddSingleton(GetIContactAppService());
         services.AddSingleton(GetIPrivacyPermissionGrain());
-        //services.AddSingleton(GetIClusterClient());
+        // services.AddSingleton(GetIClusterClient());
     }
     
     private void Login(Guid userId)
@@ -320,6 +320,8 @@ public partial class PrivacyPermissionTest : CAServerApplicationTestBase
         var privacyPermissionGrainMock = new Mock<IPrivacyPermissionGrain>();
         privacyPermissionGrainMock.Setup(x => x.GetPrivacyPermissionAsync())
             .ReturnsAsync(new PrivacyPermissionDto());
+        privacyPermissionGrainMock.Setup(x => x.GetPermissionAsync(It.IsAny<List<PermissionSetting>>(), It.IsAny<PrivacyType>())).
+            ReturnsAsync(new List<PermissionSetting>());
         return privacyPermissionGrainMock.Object;
     }
     
