@@ -55,7 +55,7 @@ public class CAServerApplicationTestModule : AbpModule
         {
             options.IsEnabled = false;
         });
-        context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
+        // context.Services.AddSingleton(sp => sp.GetService<ClusterFixture>().Cluster.Client);
         context.Services.AddSingleton<ISearchAppService, SearchAppService>();
         context.Services.AddSingleton<ConnectionProvider>();
         context.Services.AddSingleton<OrderStatusProvider>();
