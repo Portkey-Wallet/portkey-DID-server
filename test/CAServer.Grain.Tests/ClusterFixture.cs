@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using Nest;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Orleans;
 using Orleans.Hosting;
@@ -33,6 +34,7 @@ using Volo.Abp.ObjectMapping;
 using Volo.Abp.Reflection;
 using Volo.Abp.Threading;
 using Volo.Abp.Uow;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace CAServer.Grain.Tests;
 
@@ -58,8 +60,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     {
         public void Configure(ISiloHostBuilder hostBuilder)
         {
+            var time = DateTime.UtcNow.Minute * 100 + DateTime.UtcNow.Second;
             hostBuilder.ConfigureEndpoints(IPAddress.Any,
-                20001, 30001, true);
+                10000 + time, 20000 + time, true);
             hostBuilder.ConfigureServices(services =>
                 {
                     var mockTokenProvider = new Mock<ITokenPriceProvider>();
