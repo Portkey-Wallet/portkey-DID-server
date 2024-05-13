@@ -28,6 +28,7 @@ public sealed partial class AlchemyOrderAppServiceTest : ThirdPartTestBase
         services.AddSingleton(GetMockThirdPartOptions());
         services.AddSingleton(MockSecretProvider());
         services.AddSingleton(MockRampOptions());
+        services.AddSingleton(MockIOrderGrain());
     }
 
     private async Task<CommonResponseDto<string>> InitRampOrder(Guid id)

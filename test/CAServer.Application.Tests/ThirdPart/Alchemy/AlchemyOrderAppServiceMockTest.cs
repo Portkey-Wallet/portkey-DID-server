@@ -1,5 +1,7 @@
 using System.Threading.Tasks;
 using AElf;
+using CAServer.Grains.Grain;
+using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Options;
 using CAServer.Signature.Provider;
 using Microsoft.Extensions.Options;
@@ -49,5 +51,25 @@ public sealed partial class AlchemyOrderAppServiceTest
             .Returns<string, string>((appid, source) => Task.FromResult(AlchemyHelper.HmacSign(source, secret)));
         return mock.Object;
     }
-    
+
+    private static IOrderGrain MockIOrderGrain()
+    {
+        var mock = new Mock<IOrderGrain>();
+        mock.Setup(x => x.CreateUserOrderAsync(It.IsAny<OrderGrainDto>()))
+            .ReturnsAsync((OrderGrainDto input) => 
+                new GrainResultDto<OrderGrainDto>
+                {
+                    Success = true,
+                    Data = input
+                });
+        mock.Setup(x => x.GetOrder())
+            .ReturnsAsync(
+                new GrainResultDto<OrderGrainDto>
+                {
+                    Success = true,
+                    Data = new OrderGrainDto()
+                });
+        return mock.Object;
+    }
+
 }
