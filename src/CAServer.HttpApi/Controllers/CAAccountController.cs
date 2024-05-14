@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +26,7 @@ public class CAAccountController : CAServerController
     private readonly ITransactionFeeAppService _transactionFeeAppService;
     private readonly ICurrentUser _currentUser;
     private readonly IGrowthAppService _growthAppService;
+    private readonly Meter _meter;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
@@ -34,6 +37,7 @@ public class CAAccountController : CAServerController
         _transactionFeeAppService = transactionFeeAppService;
         _currentUser = currentUser;
         _growthAppService = growthAppService;
+        _meter = new Meter("CAServer", "1.0.0");
     }
 
     [HttpPost("register/request")]
@@ -62,7 +66,17 @@ public class CAAccountController : CAServerController
     [Monitor]
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
-        return await _guardianAppService.GetRegisterInfoAsync(requestDto);
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        Histogram<long> executionTimeHistogram = _meter.CreateHistogram<long>(
+            name: "CAAccountController" + "_" + "GetRegisterInfoAsync" + "_rt",
+            description: "Histogram for method execution time",
+            unit: "ms"
+        );
+        stopwatch.Start();
+        RegisterInfoResultDto registerInfoResultDto = await _guardianAppService.GetRegisterInfoAsync(requestDto);
+        stopwatch.Stop();
+        executionTimeHistogram.Record(stopwatch.ElapsedMilliseconds);
+        return registerInfoResultDto;
     }
 
     [HttpGet("transactionFee")]
