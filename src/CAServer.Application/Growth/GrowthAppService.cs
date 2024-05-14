@@ -9,6 +9,7 @@ using CAServer.Grains.Grain.Growth;
 using CAServer.Growth.Dtos;
 using CAServer.Growth.Etos;
 using CAServer.Growth.Provider;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.RedDot;
 using Microsoft.Extensions.Options;
@@ -137,6 +138,7 @@ public class GrowthAppService : CAServerAppService, IGrowthAppService
             false);
     }
 
+    [Monitor]
     public async Task<string> GetRedirectUrlAsync(string shortLinkCode)
     {
         var growthInfo = await _growthProvider.GetGrowthInfoByLinkCodeAsync(shortLinkCode);

@@ -8,6 +8,7 @@ using CAServer.Commons;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains.Grain.RedPackage;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
@@ -108,6 +109,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         };
     }
 
+    [Monitor]
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
         var result = await GetRedPackageOptionAsync(redPackageInput.Symbol, redPackageInput.ChainId);
@@ -135,7 +137,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         };
     }
 
-
+    [Monitor]
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
         Stopwatch watcher = Stopwatch.StartNew();
@@ -222,6 +224,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
+    [Monitor]
     public async Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId)
     {
         GetCreationResultOutputDto res = null;
@@ -269,6 +272,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
+    [Monitor]
     public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount, int maxResultCount)
     {
         if (CurrentUser.Id == null || id == Guid.Empty)
@@ -375,6 +379,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         return getNftItemInfosDto;
     }
 
+    [Monitor]
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
     {
 
@@ -420,6 +425,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         };
     }
 
+    [Monitor]
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
     {
         Stopwatch watcher = Stopwatch.StartNew();
