@@ -44,8 +44,9 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     {
         var builder = new TestClusterBuilder();
         var randomPort = DateTime.UtcNow.Second * 1000 + DateTime.UtcNow.Millisecond;
-        builder.Options.BaseGatewayPort = 1000 + randomPort;
-        builder.Options.BaseSiloPort = 2000 + randomPort;
+        builder.Options.BaseGatewayPort = 2000 + randomPort;
+        builder.Options.BaseSiloPort = 1000 + randomPort;
+        builder.Options.InitialSilosCount = 1;
 
         builder.AddSiloBuilderConfigurator<TestSiloConfigurations>();
         builder.AddClientBuilderConfigurator<TestClientBuilderConfigurator>();
