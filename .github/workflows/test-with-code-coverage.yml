@@ -49,6 +49,8 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
     permissions:
       pull-requests: write
       contents: write
@@ -81,7 +83,7 @@ jobs:
         run: |
           for name in `ls ./test/*.Tests/*.csproj | awk '{print $NF}'`;
           do
-              dotnet test ${name} --no-restore --no-build --logger trx --settings CodeCoverage.runsettings --results-directory coverage --collect:"XPlat Code Coverage" --parallel none
+              dotnet test ${name} --no-restore --no-build --logger trx --settings CodeCoverage.runsettings --results-directory coverage --collect:"XPlat Code Coverage"
           done
 
       - name: Upload coverage reports to Codecov
