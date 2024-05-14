@@ -18,10 +18,33 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     public ClusterFixture()
     {
         var builder = new TestClusterBuilder();
+        var randomPort = DateTime.UtcNow.Second * 1000 + DateTime.UtcNow.Millisecond;
+        builder.Options.BaseGatewayPort = 2000 + randomPort;
+        builder.Options.BaseSiloPort = 1000 + randomPort;
+        builder.Options.InitialSilosCount = 1;
+
         builder.AddSiloBuilderConfigurator<TestSiloConfigurations>();
         // builder.AddClientBuilderConfigurator<TestClientBuilderConfigurator>();
         Cluster = builder.Build();
-        Cluster.Deploy();
+        var retryCount = 30;
+        while (true)
+        {
+            try
+            {
+                Cluster.Deploy();
+                break;
+            } 
+            catch (Exception ex)
+            {
+                builder.Options.BaseGatewayPort++;
+                builder.Options.BaseSiloPort++;
+                Cluster = builder.Build();
+                if (retryCount-- <= 0)
+                {
+                    throw;
+                }
+            }
+        }
     }
 
     public void Dispose()
