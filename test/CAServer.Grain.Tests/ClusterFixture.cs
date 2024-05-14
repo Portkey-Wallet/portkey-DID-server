@@ -51,7 +51,26 @@ public class ClusterFixture : IDisposable, ISingletonDependency
         builder.AddSiloBuilderConfigurator<TestSiloConfigurations>();
         builder.AddClientBuilderConfigurator<TestClientBuilderConfigurator>();
         Cluster = builder.Build();
-        Cluster.Deploy();
+        var retryCount = 30;
+        while (true)
+        {
+            try
+            {
+                Cluster.Deploy();
+                break;
+            } 
+            catch (Exception ex)
+            {
+                builder.Options.BaseGatewayPort++;
+                builder.Options.BaseSiloPort++;
+                Cluster = builder.Build();
+                if (retryCount-- <= 0)
+                {
+                    throw;
+                }
+            }
+        }
+        
     }
 
     public void Dispose()
