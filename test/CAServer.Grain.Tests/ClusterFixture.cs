@@ -43,6 +43,10 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     public ClusterFixture()
     {
         var builder = new TestClusterBuilder();
+        var randomPort = DateTime.UtcNow.Second * 1000 + DateTime.UtcNow.Millisecond;
+        builder.Options.BaseGatewayPort = 1000 + randomPort;
+        builder.Options.BaseSiloPort = 2000 + randomPort;
+
         builder.AddSiloBuilderConfigurator<TestSiloConfigurations>();
         builder.AddClientBuilderConfigurator<TestClientBuilderConfigurator>();
         Cluster = builder.Build();
@@ -60,9 +64,6 @@ public class ClusterFixture : IDisposable, ISingletonDependency
     {
         public void Configure(ISiloHostBuilder hostBuilder)
         {
-            var millSeconds = DateTime.UtcNow.Millisecond;
-            hostBuilder.ConfigureEndpoints(
-                10000 + millSeconds, 20000 + millSeconds);
             hostBuilder.ConfigureServices(services =>
                 {
                     var mockTokenProvider = new Mock<ITokenPriceProvider>();
