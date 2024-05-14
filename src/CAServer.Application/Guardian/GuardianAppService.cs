@@ -10,6 +10,7 @@ using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -55,6 +56,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _stopRegisterOptions = stopRegisterOptions.Value;
     }
 
+    [Monitor]
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
     {
         var hash = "";

@@ -26,7 +26,6 @@ public class RedPackageController : CAServerController
 
     [HttpPost("generate")]
     [Authorize]
-    [Monitor]
     public async Task<GenerateRedPackageOutputDto> GenerateRedPackageAsync(GenerateRedPackageInputDto redPackageInput)
     {
         return await _redPackageAppService.GenerateRedPackageAsync(redPackageInput);
@@ -34,7 +33,6 @@ public class RedPackageController : CAServerController
 
     [HttpPost("send")]
     [Authorize]
-    [Monitor]
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto redPackageInput)
     {
         return await _redPackageAppService.SendRedPackageAsync(redPackageInput);
@@ -42,7 +40,6 @@ public class RedPackageController : CAServerController
 
     [HttpGet("getCreationResult")]
     [Authorize]
-    [Monitor]
     public async Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId)
     {
         return await _redPackageAppService.GetCreationResultAsync(sessionId);
@@ -50,7 +47,6 @@ public class RedPackageController : CAServerController
 
     [HttpGet("detail")]
     [Authorize]
-    [Monitor]
     public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, int skipCount = 0, int maxResultCount = 0)
     {
         return await _redPackageAppService.GetRedPackageDetailAsync(id, skipCount, maxResultCount);
@@ -58,7 +54,6 @@ public class RedPackageController : CAServerController
     
     [HttpGet("config")]
     [AllowAnonymous]
-    [Monitor]
     public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync([CanBeNull] string chainId,
         [CanBeNull] string token)
     {
@@ -67,7 +62,6 @@ public class RedPackageController : CAServerController
     
     [HttpPost("grab")]
     [Authorize]
-    [Monitor]
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
     {
         return await _redPackageAppService.GrabRedPackageAsync(input);

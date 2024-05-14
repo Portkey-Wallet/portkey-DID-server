@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CAServer.CAAccount.Dtos;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -19,6 +20,7 @@ public class TransactionFeeAppService : CAServerAppService, ITransactionFeeAppSe
         _transactionFeeOptions = transactionFeeOptions.Value;
     }
 
+    [Monitor]
     public List<TransactionFeeResultDto> CalculateFee(TransactionFeeDto input)
     {
         var feeInfos = _transactionFeeOptions.GetTransactionFees().Where(t => input.ChainIds.Contains(t.ChainId)).ToList();
