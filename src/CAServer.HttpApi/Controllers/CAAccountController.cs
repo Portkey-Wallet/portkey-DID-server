@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.Growth;
 using CAServer.Guardian;
+using CAServer.Monitor.Interceptor;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp;
 using Volo.Abp.Users;
@@ -36,18 +37,21 @@ public class CAAccountController : CAServerController
     }
 
     [HttpPost("register/request")]
+    [Monitor]
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
         return await _caAccountService.RegisterRequestAsync(input);
     }
 
     [HttpPost("recovery/request")]
+    [Monitor]
     public async Task<AccountResultDto> RecoverRequestAsync(RecoveryRequestDto input)
     {
         return await _caAccountService.RecoverRequestAsync(input);
     }
 
     [HttpGet("guardianIdentifiers")]
+    [Monitor]
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(
         [FromQuery] GuardianIdentifierDto guardianIdentifierDto)
     {
@@ -55,12 +59,14 @@ public class CAAccountController : CAServerController
     }
 
     [HttpGet("registerInfo")]
+    [Monitor]
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
         return await _guardianAppService.GetRegisterInfoAsync(requestDto);
     }
 
     [HttpGet("transactionFee")]
+    [Monitor]
     public List<TransactionFeeResultDto> CalculateFee(TransactionFeeDto input)
     {
         return _transactionFeeAppService.CalculateFee(input);
@@ -68,6 +74,7 @@ public class CAAccountController : CAServerController
 
     [HttpGet("revoke/entrance")]
     [Authorize]
+    [Monitor]
     public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
     {
         return await _caAccountService.RevokeEntranceAsync();
@@ -75,6 +82,7 @@ public class CAAccountController : CAServerController
 
     [HttpGet("revoke/check")]
     [Authorize]
+    [Monitor]
     public async Task<CancelCheckResultDto> CancelCheckAsync()
     {
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
@@ -82,18 +90,21 @@ public class CAAccountController : CAServerController
     }
 
     [HttpPost("revoke/request"), Authorize, IgnoreAntiforgeryToken]
+    [Monitor]
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
         return await _caAccountService.RevokeAsync(input);
     }
 
     [HttpGet("checkManagerCount")]
+    [Monitor]
     public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
     {
         return await _caAccountService.CheckManagerCountAsync(caHash);
     }
 
     [HttpGet("{shortLinkCode}")]
+    [Monitor]
     public async Task<IActionResult> GetRedirectUrlAsync(string shortLinkCode)
     {
         var url = await _growthAppService.GetRedirectUrlAsync(shortLinkCode);
@@ -101,6 +112,7 @@ public class CAAccountController : CAServerController
     }
 
     [HttpPost("revoke/account"), Authorize, IgnoreAntiforgeryToken]
+    [Monitor]
     public async Task<RevokeResultDto> RevokeAccountAsync(RevokeAccountInput input)
     {
         return await _caAccountService.RevokeAccountAsync(input);
@@ -108,6 +120,7 @@ public class CAAccountController : CAServerController
     
     [HttpGet("revoke/validate")]
     [Authorize]
+    [Monitor]
     public async Task<CancelCheckResultDto> RevokeValidateAsync(string type)
     {
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
