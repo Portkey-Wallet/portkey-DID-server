@@ -723,21 +723,27 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var itemInfos = new IndexerNftItemInfos();
         var skipCount = 0;
         const int resultCount = 2000;
-        while (true)
+        var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
+        var list = nftItemInfos?.NftItemInfos;
+        if (list != null)
         {
-            var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
-            if (nftItemInfos?.NftItemInfos?.Count == 0)
-            {
-                break;
-            }
-            skipCount += resultCount;
-
-            var list = nftItemInfos?.NftItemInfos;
-            if (list != null)
-            {
-                itemInfos.NftItemInfos.AddRange(list);
-            }
+            itemInfos.NftItemInfos.AddRange(list);
         }
+        // while (true)
+        // {
+        //     var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
+        //     if (nftItemInfos?.NftItemInfos?.Count == 0)
+        //     {
+        //         break;
+        //     }
+        //     skipCount += resultCount;
+        //
+        //     var list = nftItemInfos?.NftItemInfos;
+        //     if (list != null)
+        //     {
+        //         itemInfos.NftItemInfos.AddRange(list);
+        //     }
+        // }
         return itemInfos;
     }
 
