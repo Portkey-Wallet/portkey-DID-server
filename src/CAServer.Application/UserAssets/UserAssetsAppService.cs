@@ -726,6 +726,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
         _logger.LogDebug("NftItemInfos count is {count},",nftItemInfos.NftItemInfos.Count);
         var list = nftItemInfos.NftItemInfos;
+        _logger.LogDebug("NftItemInfos count is {count},",list.Count);
         if (list != null)
         {
             itemInfos.NftItemInfos.AddRange(list);
