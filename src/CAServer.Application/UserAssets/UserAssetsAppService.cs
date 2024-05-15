@@ -474,7 +474,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(dto.Data);
 
-            // await CalculateAndSetTraitsPercentageAsync(dto.Data);
+            CalculateAndSetTraitsPercentageAsync(dto.Data);
 
             return dto;
         }
@@ -662,11 +662,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
-    private async Task CalculateAndSetTraitsPercentageAsync(List<NftItem> nftItems)
+    private void CalculateAndSetTraitsPercentageAsync(List<NftItem> nftItems)
     {
-        foreach (var item in nftItems)
+        foreach (var item in nftItems.Where(item => !string.IsNullOrEmpty(item.Traits)))
         {
-            await CalculateAndSetTraitsPercentageAsync(item);
+            item.TraitsPercentages =  new List<Trait>();
         }
     }
 
