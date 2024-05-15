@@ -6,40 +6,50 @@ using Volo.Abp.DynamicProxy;
 
 namespace CAServer.Monitor.Interceptor;
 
-[Dependency(ServiceLifetime.Transient)]
+[Dependency(ServiceLifetime.Singleton)]
 public class MonitorInterceptor : AbpInterceptor
 {
     private readonly Meter _meter;
+    private readonly Dictionary<string, Histogram<long>> _histogramMapCache;
 
     public MonitorInterceptor()
     {
         _meter = new Meter("CAServer", "1.0.0");
+        _histogramMapCache = new Dictionary<string, Histogram<long>>();
     }
     
     public override  async Task InterceptAsync(IAbpMethodInvocation invocation)
     {
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        var methodName = invocation.Method.Name;
-        var className = invocation.TargetObject.GetType().Name;
-
-        Histogram<long> executionTimeHistogram = _meter.CreateHistogram<long>(
-            name: className + "_" + methodName + "_rt",
-            description: "Histogram for method execution time",
-            unit: "ms"
-        );
-        
+        var histogram = GetHistogram(invocation);
+        var stopwatch = Stopwatch.StartNew();
         stopwatch.Start();
 
         await invocation.ProceedAsync();
 
         stopwatch.Stop();
+        histogram.Record(stopwatch.ElapsedMilliseconds);
+    }
+    
+    private Histogram<long> GetHistogram(IAbpMethodInvocation invocation)
+    {
+        var methodName = invocation.Method.Name;
+        var className = invocation.TargetObject.GetType().Name;
 
-        executionTimeHistogram.Record(stopwatch.ElapsedMilliseconds);
+        var rtKey = className + "_" + methodName + "_rt";
 
-        Counter<long> couter = _meter.CreateCounter<long>(
-            name: className + "_" + methodName + "_count",
-            description: "Counter for method execution times"
-        );
-        couter.Add(1);
+        if (_histogramMapCache.TryGetValue(rtKey, out var rtKeyCache))
+        {
+            return rtKeyCache;
+        }
+        else
+        {
+            var executionTimeHistogram = _meter.CreateHistogram<long>(
+                name: rtKey,
+                description: "Histogram for method execution time",
+                unit: "ms"
+            );
+            _histogramMapCache.Add(rtKey, executionTimeHistogram);
+            return executionTimeHistogram;
+        }
     }
 }
