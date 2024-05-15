@@ -726,13 +726,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         while (true)
         {
             var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
-            if (nftItemInfos.NftItemInfos.Count == 0)
+            if (nftItemInfos?.NftItemInfos?.Count == 0)
             {
                 break;
             }
             skipCount += resultCount;
-            var list = nftItemInfos.NftItemInfos;
-            itemInfos.NftItemInfos.AddRange(list);
+
+            var list = nftItemInfos?.NftItemInfos;
+            if (list != null)
+            {
+                itemInfos.NftItemInfos.AddRange(list);
+            }
         }
         return itemInfos;
     }
