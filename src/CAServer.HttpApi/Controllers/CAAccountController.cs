@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using CAServer.CAAccount;
 using CAServer.Dtos;
@@ -61,17 +60,7 @@ public class CAAccountController : CAServerController
     [HttpGet("registerInfo")]
     public async Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto)
     {
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        Histogram<long> executionTimeHistogram = _meter.CreateHistogram<long>(
-            name: "CAAccountController" + "_" + "GetRegisterInfoAsync" + "_rt",
-            description: "Histogram for method execution time",
-            unit: "ms"
-        );
-        stopwatch.Start();
-        RegisterInfoResultDto registerInfoResultDto = await _guardianAppService.GetRegisterInfoAsync(requestDto);
-        stopwatch.Stop();
-        executionTimeHistogram.Record(stopwatch.ElapsedMilliseconds);
-        return registerInfoResultDto;
+        return await _guardianAppService.GetRegisterInfoAsync(requestDto);
     }
 
     [HttpGet("transactionFee")]
