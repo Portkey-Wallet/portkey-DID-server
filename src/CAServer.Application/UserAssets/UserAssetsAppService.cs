@@ -721,33 +721,36 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     private async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto)
     {
-        var itemInfos = new IndexerNftItemInfos();
+        var itemInfos = new IndexerNftItemInfos
+        {
+            NftItemInfos = new List<NftItemInfo>()
+        };
         var skipCount = 0;
         const int resultCount = 2000;
-        var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
-        _logger.LogDebug("NftItemInfos count is {count},",nftItemInfos.NftItemInfos.Count);
-        var list = nftItemInfos.NftItemInfos;
-        _logger.LogDebug("NftItemInfos count is {count},",list.Count);
-        if (list != null)
-        {
-            _logger.LogDebug("this totalCount is {count}",list.Count);
-            itemInfos.NftItemInfos.AddRange(list);
-        }
-        // while (true)
+        // var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
+        // _logger.LogDebug("NftItemInfos count is {count},",nftItemInfos.NftItemInfos.Count);
+        // var list = nftItemInfos.NftItemInfos;
+        // _logger.LogDebug("NftItemInfos count is {count},",list.Count);
+        // if (list != null)
         // {
-        //     var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
-        //     if (nftItemInfos?.NftItemInfos?.Count == 0)
-        //     {
-        //         break;
-        //     }
-        //     skipCount += resultCount;
-        //
-        //     var list = nftItemInfos?.NftItemInfos;
-        //     if (list != null)
-        //     {
-        //         itemInfos.NftItemInfos.AddRange(list);
-        //     }
+        //     _logger.LogDebug("this totalCount is {count}",list.Count);
+        //     itemInfos.NftItemInfos.AddRange(list);
         // }
+        while (true)
+        {
+            var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
+            if (nftItemInfos?.NftItemInfos?.Count == 0)
+            {
+                break;
+            }
+            skipCount += resultCount;
+        
+            var list = nftItemInfos?.NftItemInfos;
+            if (list != null)
+            {
+                itemInfos.NftItemInfos.AddRange(list);
+            }
+        }
         _logger.LogDebug("this count is {count}",itemInfos.NftItemInfos.Count);
         return itemInfos;
     }
