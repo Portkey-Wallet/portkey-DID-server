@@ -700,10 +700,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             CollectionSymbol = collectionSymbol
         });
-        //var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, 0, 2000);
-        
         var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
-        _logger.LogDebug("itemInfos count is {count}",itemInfos.NftItemInfos.Count);
         List<string> allItemsTraitsListInCollection = itemInfos.NftItemInfos?
             .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
             .GroupBy(nftItem => nftItem.Symbol)
@@ -727,15 +724,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         };
         var skipCount = 0;
         const int resultCount = 2000;
-        // var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
-        // _logger.LogDebug("NftItemInfos count is {count},",nftItemInfos.NftItemInfos.Count);
-        // var list = nftItemInfos.NftItemInfos;
-        // _logger.LogDebug("NftItemInfos count is {count},",list.Count);
-        // if (list != null)
-        // {
-        //     _logger.LogDebug("this totalCount is {count}",list.Count);
-        //     itemInfos.NftItemInfos.AddRange(list);
-        // }
         while (true)
         {
             var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
@@ -751,7 +739,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 itemInfos.NftItemInfos.AddRange(list);
             }
         }
-        _logger.LogDebug("this count is {count}",itemInfos.NftItemInfos.Count);
         return itemInfos;
     }
 
