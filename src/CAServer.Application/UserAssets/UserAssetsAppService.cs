@@ -474,7 +474,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
             await TryGetSeedAttributeValueFromContractIfEmptyForSeedAsync(dto.Data);
 
-            // await CalculateAndSetTraitsPercentageAsync(dto.Data);
+            CalculateAndSetTraitsPercentageAsync(dto.Data);
 
             return dto;
         }
@@ -662,11 +662,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
-    private async Task CalculateAndSetTraitsPercentageAsync(List<NftItem> nftItems)
+    private void CalculateAndSetTraitsPercentageAsync(List<NftItem> nftItems)
     {
-        foreach (var item in nftItems)
+        foreach (var item in nftItems.Where(item => !string.IsNullOrEmpty(item.Traits)))
         {
-            await CalculateAndSetTraitsPercentageAsync(item);
+            item.TraitsPercentages =  new List<Trait>();
         }
     }
 
@@ -700,8 +700,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             CollectionSymbol = collectionSymbol
         });
-        //var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, 0, 2000);
-        
         var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
         List<string> allItemsTraitsListInCollection = itemInfos.NftItemInfos?
             .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
@@ -720,19 +718,26 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
 
     private async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto)
     {
-        var itemInfos = new IndexerNftItemInfos();
+        var itemInfos = new IndexerNftItemInfos
+        {
+            NftItemInfos = new List<NftItemInfo>()
+        };
         var skipCount = 0;
         const int resultCount = 2000;
         while (true)
         {
             var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
-            if (nftItemInfos.NftItemInfos.Count == 0)
+            if (nftItemInfos?.NftItemInfos?.Count == 0)
             {
                 break;
             }
             skipCount += resultCount;
-            var list = nftItemInfos.NftItemInfos;
-            itemInfos.NftItemInfos.AddRange(list);
+        
+            var list = nftItemInfos?.NftItemInfos;
+            if (list != null)
+            {
+                itemInfos.NftItemInfos.AddRange(list);
+            }
         }
         return itemInfos;
     }
