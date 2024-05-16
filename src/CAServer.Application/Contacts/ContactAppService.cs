@@ -11,7 +11,6 @@ using CAServer.Etos;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.ImUser.Dto;
-using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -68,7 +67,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _chainOptions = chainOptions.Value;
     }
 
-    [Monitor]
     public async Task<ContactResultDto> CreateAsync(CreateUpdateContactDto input)
     {
         var userId = CurrentUser.GetId();
@@ -112,7 +110,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return contactResultDto;
     }
 
-    [Monitor]
     public async Task<ContactResultDto> UpdateAsync(Guid id, CreateUpdateContactDto input)
     {
         var userId = CurrentUser.GetId();
@@ -177,7 +174,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return contactResultDto;
     }
 
-    [Monitor]
     public async Task DeleteAsync(Guid id)
     {
         var userId = CurrentUser.GetId();
@@ -195,7 +191,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         _ = UnFollowAsync(result.Data?.Addresses?.FirstOrDefault()?.Address, userId);
     }
 
-    [Monitor]
     public async Task<ContractExistDto> GetExistAsync(string name)
     {
         var userId = CurrentUser.GetId();
@@ -209,7 +204,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         };
     }
 
-    [Monitor]
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(id);
@@ -223,7 +217,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return ObjectMapper.Map<ContactGrainDto, ContactResultDto>(result.Data);
     }
 
-    [Monitor]
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         var (totalCount, contactList) = await _contactProvider.GetListAsync(CurrentUser.GetId(), input);
@@ -250,7 +243,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         };
     }
 
-    [Monitor]
     public async Task<ContactImputationDto> GetImputationAsync()
     {
         var isImputation = await _contactProvider.GetImputationAsync(CurrentUser.GetId());
@@ -260,7 +252,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         };
     }
 
-    [Monitor]
     public async Task ReadImputationAsync(ReadImputationDto input)
     {
         var contactGrain = _clusterClient.GetGrain<IContactGrain>(input.ContactId);
@@ -274,7 +265,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         await _distributedEventBus.PublishAsync(ObjectMapper.Map<ContactGrainDto, ContactUpdateEto>(result.Data));
     }
 
-    [Monitor]
     public async Task<ContactResultDto> GetContactAsync(Guid contactUserId)
     {
         var contact = await _contactProvider.GetContactAsync(CurrentUser.GetId(), contactUserId);
@@ -688,7 +678,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return result;
     }
 
-    [Monitor]
     public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
     {
         var contacts =
@@ -702,7 +691,6 @@ public class ContactAppService : CAServerAppService, IContactAppService
         return new List<ContactResultDto>();
     }
 
-    [Monitor]
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
         var contacts= await _contactProvider.GetContactsAsync(userId);
