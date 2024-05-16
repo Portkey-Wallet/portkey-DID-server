@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Contacts;
+using CAServer.Monitor.Interceptor;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -25,18 +26,21 @@ public class ContactController : CAServerController
     }
 
     [HttpPost]
+    [Monitor]
     public async Task<ContactResultDto> CreateAsync(CreateUpdateContactDto input)
     {
         return await _contactAppService.CreateAsync(input);
     }
-
+    
     [HttpPut("{id}")]
+    [Monitor]
     public async Task<ContactResultDto> UpdateAsync(Guid id, CreateUpdateContactDto input)
     {
         return await _contactAppService.UpdateAsync(id, input);
     }
 
     [HttpDelete("{id}")]
+    [Monitor]
     public async Task DeleteAsync(Guid id)
     {
         await _contactAppService.DeleteAsync(id);
@@ -49,12 +53,14 @@ public class ContactController : CAServerController
     }
 
     [HttpGet("{id}")]
+    [Monitor]
     public async Task<ContactResultDto> GetAsync(Guid id)
     {
         return await _contactAppService.GetAsync(id);
     }
 
     [HttpGet("list")]
+    [Monitor]
     public async Task<PagedResultDto<ContactListDto>> GetListAsync(ContactGetListDto input)
     {
         return await _contactAppService.GetListAsync(input);
@@ -67,24 +73,28 @@ public class ContactController : CAServerController
     }
 
     [HttpPost("read")]
+    [Monitor]
     public async Task ReadImputationAsync(ReadImputationDto input)
     {
         await _contactAppService.ReadImputationAsync(input);
     }
 
     [HttpGet("getContact")]
+    [Monitor]
     public async Task<ContactResultDto> GetContactAsync(Guid contactUserId)
     {
         return await _contactAppService.GetContactAsync(contactUserId);
     }
     
     [HttpPost("getContactList")]
+    [Monitor]
     public async Task<List<ContactResultDto>> GetContactListAsync(ContactListRequestDto input)
     {
         return await _contactAppService.GetContactListAsync(input);
     }
     
     [HttpGet("getContactsByUserId")]
+    [Monitor]
     public async Task<List<ContactResultDto>> GetContactsByUserIdAsync(Guid userId)
     {
         return await _contactAppService.GetContactsByUserIdAsync(userId);
