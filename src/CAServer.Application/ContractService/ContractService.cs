@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Client.Dto;
@@ -33,6 +36,8 @@ public class ContractService : IContractService, ISingletonDependency
     private readonly ILogger<ContractService> _logger;
     private readonly ISignatureProvider _signatureProvider;
     private readonly IIndicatorScope _indicatorScope;
+    private readonly Meter _meter;
+    private readonly Dictionary<string, Histogram<long>> _histogramMapCache;
 
     public ContractService(IOptions<ChainOptions> chainOptions, IOptions<ContractServiceOptions> contractGrainOptions,
         IObjectMapper objectMapper, ISignatureProvider signatureProvider, ILogger<ContractService> logger,
@@ -44,6 +49,8 @@ public class ContractService : IContractService, ISingletonDependency
         _contractServiceOptions = contractGrainOptions.Value;
         _chainOptions = chainOptions.Value;
         _signatureProvider = signatureProvider;
+        _meter = new Meter("CAServer", "1.0.0");
+        _histogramMapCache = new Dictionary<string, Histogram<long>>();
     }
 
     private async Task<TransactionInfoDto> SendTransactionToChainAsync(string chainId, IMessage param,
@@ -103,6 +110,10 @@ public class ContractService : IContractService, ISingletonDependency
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             _indicatorScope.End(getIndicator);
 
+            //monitor: start waiting for the timing of transaction packaging
+            var stopwatch = Stopwatch.StartNew();
+            var histogram = GetHistogram(methodName);
+            stopwatch.Start();
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -117,7 +128,10 @@ public class ContractService : IContractService, ISingletonDependency
 
                 _indicatorScope.End(retryGetIndicator);
             }
-
+            //monitor: end waiting for the timing of transaction packaging and export the time cost to show in p8s
+            stopwatch.Stop();
+            histogram.Record(stopwatch.Elapsed.Seconds);
+            
             return new TransactionInfoDto
             {
                 Transaction = transaction,
@@ -152,6 +166,10 @@ public class ContractService : IContractService, ISingletonDependency
 
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
 
+            //monitor: start waiting for the timing of transaction packaging
+            var stopwatch = Stopwatch.StartNew();
+            var histogram = GetHistogram("IMTransferOrCreateRedPacket");
+            stopwatch.Start();
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -161,7 +179,10 @@ public class ContractService : IContractService, ISingletonDependency
                 await Task.Delay(_contractServiceOptions.CryptoBoxRetryDelay);
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             }
-
+            //monitor: end waiting for the timing of transaction packaging and export the time cost to show in p8s
+            stopwatch.Stop();
+            histogram.Record(stopwatch.Elapsed.Seconds);
+            
             return new TransactionInfoDto
             {
                 TransactionResultDto = transactionResult
@@ -404,6 +425,10 @@ public class ContractService : IContractService, ISingletonDependency
             _logger.LogInformation("SendTransferRedPacketToChainAsync transactionResult: {transactionResult}",
                 JsonConvert.SerializeObject(transactionResult));
 
+            //monitor: start waiting for the timing of transaction packaging
+            var stopwatch = Stopwatch.StartNew();
+            var histogram = GetHistogram(methodName);
+            stopwatch.Start();
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -414,6 +439,9 @@ public class ContractService : IContractService, ISingletonDependency
 
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             }
+            //monitor: end waiting for the timing of transaction packaging and export the time cost to show in p8s
+            stopwatch.Stop();
+            histogram.Record(stopwatch.Elapsed.Seconds);
 
             return new TransactionInfoDto
             {
@@ -436,5 +464,30 @@ public class ContractService : IContractService, ISingletonDependency
         var result = await SendTransactionToChainAsync(assignProjectDelegateeDto.ChainId, param,
             MethodName.AssignProjectDelegatee);
         return result.TransactionResultDto;
+    }
+    
+    private Histogram<long> GetHistogram(string methodName)
+    {
+        if (String.IsNullOrWhiteSpace(methodName))
+        {
+            methodName = "defaultMethodName";
+        }
+
+        var rtKey = methodName + "_waitingTransactionPackage_rt";
+
+        if (_histogramMapCache.TryGetValue(rtKey, out var rtKeyCache))
+        {
+            return rtKeyCache;
+        }
+        else
+        {
+            var executionTimeHistogram = _meter.CreateHistogram<long>(
+                name: rtKey,
+                description: "Histogram for method execution time",
+                unit: "s"
+            );
+            _histogramMapCache.Add(rtKey, executionTimeHistogram);
+            return executionTimeHistogram;
+        }
     }
 }
