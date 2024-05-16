@@ -341,13 +341,13 @@ public class CAServerHttpApiHostModule : AbpModule
             .WithTracing(tracing =>
             {
                 tracing.AddSource("CAServer")
-                    .SetSampler(new AlwaysOnSampler())
-                    .AddAspNetCoreInstrumentation();
+                    .SetSampler(new AlwaysOnSampler());
+                // .AddAspNetCoreInstrumentation();
             })
             .WithMetrics(metrics =>
             {
                 metrics.AddMeter("CAServer")
-                    .AddAspNetCoreInstrumentation()
+                    // .AddAspNetCoreInstrumentation()
                     .AddPrometheusExporter();
             });
     }
