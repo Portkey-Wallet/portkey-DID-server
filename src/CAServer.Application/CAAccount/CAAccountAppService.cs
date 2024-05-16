@@ -17,7 +17,6 @@ using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
-using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
@@ -85,8 +84,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _managerCountLimitOptions = managerCountLimitOptions.Value;
         _chainOptions = chainOptions.Value;
     }
-
-    [Monitor]
+    
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
@@ -129,7 +127,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return guardianGrainDto.Data;
     }
 
-    [Monitor]
     public async Task<AccountResultDto> RecoverRequestAsync(RecoveryRequestDto input)
     {
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
@@ -179,7 +176,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return new AccountResultDto(recoveryDto.Id.ToString());
     }
 
-    [Monitor]
     public async Task<RevokeEntranceResultDto> RevokeEntranceAsync()
     {
         var resultDto = new RevokeEntranceResultDto();
@@ -202,7 +198,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         return resultDto;
     }
 
-    [Monitor]
     public async Task<CancelCheckResultDto> RevokeCheckAsync(Guid uid)
     {
         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(uid);
@@ -290,7 +285,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         };
     }
 
-    [Monitor]
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
         Logger.LogInformation("user revoke, apple token: {token}", input.AppleToken);
@@ -357,7 +351,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         };
     }
 
-    [Monitor]
     public async Task<RevokeResultDto> RevokeAccountAsync(RevokeAccountInput input)
     {
         var validateResult = await RevokeValidateAsync(CurrentUser.GetId(), input.Type);
@@ -404,7 +397,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         }
     }
 
-    [Monitor]
     public async Task<CancelCheckResultDto> RevokeValidateAsync(Guid userId, string type)
     {
         var caHolderIndex = await _userAssetsProvider.GetCaHolderIndexAsync(userId);
@@ -465,7 +457,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         };
     }
 
-    [Monitor]
     public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
     {
         var guardiansDto = await _guardianProvider.GetGuardiansAsync(null, caHash);
