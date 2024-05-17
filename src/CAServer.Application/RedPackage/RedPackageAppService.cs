@@ -135,7 +135,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         };
     }
 
-
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
         Stopwatch watcher = Stopwatch.StartNew();
@@ -221,7 +220,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             _logger.LogInformation("#monitor# send:{redpackageId},{cost},{startTime}:", input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
         }
     }
-
+    
     public async Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId)
     {
         GetCreationResultOutputDto res = null;

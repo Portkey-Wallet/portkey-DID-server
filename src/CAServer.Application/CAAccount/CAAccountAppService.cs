@@ -84,7 +84,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _managerCountLimitOptions = managerCountLimitOptions.Value;
         _chainOptions = chainOptions.Value;
     }
-
+    
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
@@ -284,7 +284,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             ValidatedGuardian = validateGuardian
         };
     }
-
 
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.Contacts;
+using CAServer.Monitor.Interceptor;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
@@ -29,7 +30,7 @@ public class ContactController : CAServerController
     {
         return await _contactAppService.CreateAsync(input);
     }
-
+    
     [HttpPut("{id}")]
     public async Task<ContactResultDto> UpdateAsync(Guid id, CreateUpdateContactDto input)
     {
