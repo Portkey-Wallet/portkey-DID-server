@@ -6,6 +6,7 @@ using CAServer.Grain.Tests;
 using CAServer.Security;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
+using CAServer.UserAssets;
 using GraphQL.Client.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -57,6 +58,7 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockRequestLimitProvider());
         services.AddSingleton(GetMockSecretProvider());
         services.AddSingleton(GetMockDistributedCache());
+        services.AddSingleton(GetMockTokenSpenderOptions());
     }
 
     [Fact]
@@ -133,5 +135,39 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
             IssueChainId = 1264323
         };
         var tokenInfo = await _tokenAppService.GetTokenInfoAsync("AELF", "VOTE");
+    }
+
+    [Fact]
+    public async Task GetTokenAllowanceAsync_Test()
+    {
+        var tokenAllowanceResult = await _tokenAppService.GetTokenAllowancesAsync(new GetAssetsBase()
+        {
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new()
+                {
+                    CaAddress = "XXX",
+                    ChainId = "AELF"
+                }
+            }
+        });
+        tokenAllowanceResult.Data.Count.ShouldBe(1);
+        tokenAllowanceResult.TotalRecordCount.ShouldBe(1);
+        tokenAllowanceResult.Data[0].Allowance.ShouldBe(1);
+        tokenAllowanceResult.Data[0].ContractAddress.ShouldBe("XXXXX");
+        tokenAllowanceResult.Data[0].Name.ShouldBe("Dapp1");
+        
+        var tokenAllowanceResult1 = await _tokenAppService.GetTokenAllowancesAsync(new GetAssetsBase()
+        {
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new()
+                {
+                    CaAddress = " ",
+                    ChainId = "AELF"
+                }
+            }
+        });
+        tokenAllowanceResult1.Data.Count.ShouldBe(0);
     }
 }

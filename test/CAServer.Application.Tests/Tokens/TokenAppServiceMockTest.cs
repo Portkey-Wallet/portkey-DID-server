@@ -62,6 +62,26 @@ public partial class TokenAppServiceTest
         });
         return mock.Object;
     }
+    
+    public static IOptionsMonitor<TokenSpenderOptions> GetMockTokenSpenderOptions()
+    {
+        var mock = new Mock<IOptionsMonitor<TokenSpenderOptions>>();
+        mock.Setup(o => o.CurrentValue).Returns(() => new TokenSpenderOptions
+        {
+            TokenSpenderList = new List<TokenSpender>()
+            {
+                new ()
+                {
+                        ChainId = "AELF",
+                        ContractAddress = "XXXXX",
+                        Name = "Dapp1",
+                        Url = "https://sss.com",
+                        Icon = "https://111.png",
+                }
+            }
+        });
+        return mock.Object;
+    }
 
     public static IOptionsMonitor<TokenPriceWorkerOption> GetMockTokenPriceWorkerOption()
     {
@@ -268,6 +288,37 @@ public partial class TokenAppServiceTest
                         Symbol = "CPU",
                         ChainId = "AELF",
                         Decimals = 8
+                    }
+                };
+            });
+
+        mockTokenPriceProvider.Setup(o =>
+                o.GetTokenApprovedAsync(It.IsAny<string>(), It.IsAny<List<string>>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync((string chainId, List<string> caAddresses, int skipCount, int maxResultCount) =>
+            {
+                if (caAddresses.Count == 0 || caAddresses[0].IsNullOrWhiteSpace())
+                {
+                    return new IndexerTokenApproved
+                    {
+                        CaHolderTokenApproved = new CAHolderTokenApproved()
+                    };
+                }
+                
+
+                return new IndexerTokenApproved()
+                {
+                    CaHolderTokenApproved = new CAHolderTokenApproved()
+                    {
+                        Data = new List<CAHolderTokenApprovedDto>()
+                        {
+                            new ()
+                            {
+                                ChainId = "AELF",
+                                Spender = "XXXXX",
+                                BatchApprovedAmount = 1
+                            }
+                        },
+                        TotalRecordCount = 1
                     }
                 };
             });
