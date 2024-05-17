@@ -134,14 +134,12 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        var app = context.GetApplicationBuilder();
-        
+        context.GetApplicationBuilder().UseOpenTelemetryPrometheusScrapingEndpoint();
         //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
-        app.UseOpenTelemetryPrometheusScrapingEndpoint();
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
