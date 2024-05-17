@@ -9,6 +9,7 @@ using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Guardian.Provider;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
@@ -105,6 +106,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
     }
 
+    [Monitor]
     public async Task<GetActivitiesDto> GetActivitiesAsync(GetActivitiesRequestDto request)
     {
         try

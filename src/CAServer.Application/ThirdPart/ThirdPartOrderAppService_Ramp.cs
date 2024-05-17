@@ -9,6 +9,7 @@ using AElf.Cryptography;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Grains;
+using CAServer.Monitor.Interceptor;
 using CAServer.Options;
 using CAServer.ThirdPart.Adaptor;
 using CAServer.ThirdPart.Dtos;
@@ -28,6 +29,7 @@ public partial class ThirdPartOrderAppService
     ///     Ramp coverage
     /// </summary>
     /// <returns></returns>
+    [Monitor]
     public async Task<CommonResponseDto<RampCoverageDto>> GetRampCoverageAsync()
     {
         var coverageDto = new RampCoverageDto();
