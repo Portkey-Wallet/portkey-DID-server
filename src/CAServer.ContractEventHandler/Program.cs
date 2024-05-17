@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Resources;
 using Serilog;
 using Serilog.Events;
 
@@ -45,16 +44,6 @@ namespace CAServer.ContractEventHandler
                     services.AddApplication<CAServerContractEventHandlerModule>();
                 })
                 .UseNightingaleMonitoring()
-                .ConfigureLogging(builder =>
-                {
-                    builder.ClearProviders();
-                    builder.AddOpenTelemetry(options =>
-                    {
-                        var resourceBuilder = ResourceBuilder.CreateDefault();
-                        resourceBuilder.AddService("aelf-otel");
-                        options.SetResourceBuilder(resourceBuilder);
-                    });
-                })
                 .UseAutofac()
                 .UseSerilog();
     }

@@ -27,8 +27,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -134,7 +132,6 @@ public class CAServerContractEventHandlerModule : AbpModule
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
-        // context.GetApplicationBuilder().UseOpenTelemetryPrometheusScrapingEndpoint();
         //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
@@ -245,20 +242,4 @@ public class CAServerContractEventHandlerModule : AbpModule
             opt.Queues = new[] { "default", "notDefault" };
         });
     }
-    
-    //enhance performance monitoring capability 
-    // private void ConfigureOpenTelemetry(ServiceConfigurationContext context)
-    // {
-    //     context.Services.AddOpenTelemetry()
-    //         .WithTracing(tracing =>
-    //         {
-    //             tracing.AddSource("CAServer")
-    //                 .SetSampler(new AlwaysOnSampler());
-    //         })
-    //         .WithMetrics(metrics =>
-    //         {
-    //             metrics.AddMeter("CAServer")
-    //                 .AddPrometheusExporter();
-    //         });
-    // }
 }
