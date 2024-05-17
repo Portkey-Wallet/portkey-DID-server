@@ -818,7 +818,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
         var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
 
-        return tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
+        return tokens.OrderBy(t => decimal.Parse(t.Balance) == 0)
+            .ThenBy(t => t.Symbol != CommonConstant.ELF)
             .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
             .ThenBy(t => sourceSymbols.Contains(t.Symbol))
             .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
