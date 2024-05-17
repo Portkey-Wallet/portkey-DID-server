@@ -46,6 +46,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IpfsOptions _ipfsOptions;
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
     private readonly ITokenPriceService _tokenPriceService;
+    private readonly TokenSpenderOptions _tokenSpenderOptions;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -53,7 +54,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IContractProvider contractProvider, IOptions<ChainOptions> chainOptions,
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
         IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
-        IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService)
+        IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
+        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -69,6 +71,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _activityTypeOptions = activityTypeOptions.Value;
         _ipfsOptions = ipfsOptions.Value;
         _tokenPriceService = tokenPriceService;
+        _tokenSpenderOptions = tokenSpenderOptions.CurrentValue;
     }
 
 
@@ -200,6 +203,65 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
     }
 
+    private async Task SetOperationsAsync(IndexerTransaction indexerTransactionDto, GetActivityDto activityDto,
+        List<string> caAddresses, string chainId, int width, int height)
+    {
+        if (!indexerTransactionDto.ToContractAddress.IsNullOrEmpty())
+        {
+            var tokenSpender = _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t
+                => t.ContractAddress == indexerTransactionDto.ToContractAddress);
+            if (tokenSpender != null)
+            {
+                activityDto.DappName = tokenSpender.Name;
+                activityDto.DappIcon = tokenSpender.Icon;
+            }
+        }
+
+        if (indexerTransactionDto.TokenTransferInfos is not { Count: > 1 })
+        {
+            return;
+        }
+
+        foreach (var item in indexerTransactionDto.TokenTransferInfos)
+        {
+            var operationInfo = new OperationItemInfo();
+            operationInfo.Amount = item.TransferInfo.Amount.ToString();
+
+            operationInfo.IsReceived = caAddresses.Contains(item.TransferInfo.ToAddress);
+            if (operationInfo.IsReceived && caAddresses.Contains(item.TransferInfo.FromAddress))
+            {
+                operationInfo.IsReceived = false;
+                if (!chainId.IsNullOrEmpty())
+                {
+                    operationInfo.IsReceived = chainId == item.TransferInfo.ToChainId;
+                }
+            }
+
+            if (item.TokenInfo != null)
+            {
+                operationInfo.Decimals = item.TokenInfo.Decimals.ToString();
+                operationInfo.Symbol = item.TokenInfo.Symbol;
+                operationInfo.Icon = _assetsLibraryProvider.buildSymbolImageUrl(item.TokenInfo.Symbol);
+            }
+
+            if (item.NftInfo != null && !item.NftInfo.Symbol.IsNullOrWhiteSpace())
+            {
+                operationInfo.NftInfo = new NftDetail
+                {
+                    NftId = item.NftInfo.Symbol.Split("-").Last(),
+
+                    ImageUrl = await _imageProcessProvider.GetResizeImageAsync(item.NftInfo.ImageUrl, width, height,
+                        ImageResizeType.Forest),
+                    Alias = item.NftInfo.TokenName
+                };
+                operationInfo.Decimals = item.NftInfo.Decimals.ToString();
+                operationInfo.Symbol = item.NftInfo.Symbol;
+            }
+
+            activityDto.Operations.Add(operationInfo);
+        }
+    }
+
     public async Task<GetActivityDto> GetActivityAsync(GetActivityRequestDto request)
     {
         try
@@ -211,7 +273,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 chainId = addressInfo.ChainId;
             }
-            
+
             var caAddresses = request.CaAddresses;
             if (caAddresses.IsNullOrEmpty())
             {
@@ -591,6 +653,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 await MapMethodNameAsync(caAddresses, dto, guardian);
             }
 
+            await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
             getActivitiesDto.Add(dto);
         }
 
@@ -689,7 +752,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             icon = _activitiesIcon.Contract;
         }
-        
+
         return icon;
     }
 
@@ -720,7 +783,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         return price.Items.First().PriceInUsd;
     }
-    
+
     private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
     {
         var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
