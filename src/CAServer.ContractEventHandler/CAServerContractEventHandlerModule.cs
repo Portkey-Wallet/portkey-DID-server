@@ -94,7 +94,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
         ConfigureHangfire(context, configuration);
-        ConfigureOpenTelemetry(context);
+        // ConfigureOpenTelemetry(context);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -247,18 +247,18 @@ public class CAServerContractEventHandlerModule : AbpModule
     }
     
     //enhance performance monitoring capability 
-    private void ConfigureOpenTelemetry(ServiceConfigurationContext context)
-    {
-        context.Services.AddOpenTelemetry()
-            .WithTracing(tracing =>
-            {
-                tracing.AddSource("CAServer")
-                    .SetSampler(new AlwaysOnSampler());
-            })
-            .WithMetrics(metrics =>
-            {
-                metrics.AddMeter("CAServer")
-                    .AddPrometheusExporter();
-            });
-    }
+    // private void ConfigureOpenTelemetry(ServiceConfigurationContext context)
+    // {
+    //     context.Services.AddOpenTelemetry()
+    //         .WithTracing(tracing =>
+    //         {
+    //             tracing.AddSource("CAServer")
+    //                 .SetSampler(new AlwaysOnSampler());
+    //         })
+    //         .WithMetrics(metrics =>
+    //         {
+    //             metrics.AddMeter("CAServer")
+    //                 .AddPrometheusExporter();
+    //         });
+    // }
 }
