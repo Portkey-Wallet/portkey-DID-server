@@ -7,6 +7,7 @@ using CAServer.Hub;
 using CAServer.HubsEventHandler;
 using CAServer.Middleware;
 using CAServer.MongoDB;
+using CAServer.Monitor.Interceptor;
 using CAServer.MultiTenancy;
 using CAServer.Nightingale.Http;
 using CAServer.Nightingale.Orleans.Filters;
@@ -337,6 +338,13 @@ public class CAServerHttpApiHostModule : AbpModule
     //enhance performance monitoring capability 
     private void ConfigureOpenTelemetry(ServiceConfigurationContext context)
     {
+        context.Services.OnRegistred(options =>
+        {
+            if (options.ImplementationType.IsDefined(typeof(MonitorAttribute), true))
+            {
+                options.Interceptors.TryAdd<MonitorInterceptor>();
+            }
+        });
         context.Services.AddOpenTelemetry()
             .WithTracing(tracing =>
             {
