@@ -83,7 +83,7 @@ public class CAServerApplicationModule : AbpModule
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
-        
+
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<ISearchService, UserTokenSearchService>();
         context.Services.AddSingleton<ISearchService, ContactSearchService>();
@@ -98,22 +98,22 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddSingleton<ISearchService, GrowthSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRegisterSearchService>();
         context.Services.AddSingleton<ISearchService, AccelerateRecoverySearchService>();
-        
+
         context.Services.AddSingleton<AlchemyProvider>();
         context.Services.AddSingleton<TransakProvider>();
-        
+
         context.Services.AddSingleton<IThirdPartAdaptor, AlchemyAdaptor>();
         context.Services.AddSingleton<IThirdPartAdaptor, TransakAdaptor>();
 
         context.Services.AddSingleton<AbstractRampOrderProcessor, TransakOrderProcessor>();
         context.Services.AddSingleton<AbstractRampOrderProcessor, AlchemyOrderProcessor>();
-        
+
         context.Services.AddSingleton<IThirdPartNftOrderProcessor, AlchemyNftOrderProcessor>();
         context.Services.AddSingleton<IThirdPartTreasuryProcessor, AlchemyTreasuryProcessor>();
-        
+
         context.Services.AddSingleton<IExchangeProvider, BinanceProvider>();
         context.Services.AddSingleton<IExchangeProvider, OkxProvider>();
-        
+
         Configure<ChainOptions>(configuration.GetSection("Chains"));
         Configure<DeviceOptions>(configuration.GetSection("EncryptionInfo"));
         Configure<ActivitiesIcon>(configuration.GetSection("ActivitiesIcon"));
@@ -150,7 +150,6 @@ public class CAServerApplicationModule : AbpModule
         context.Services.AddScoped<IIpInfoClient, IpInfoClient>();
         context.Services.AddScoped<IHttpClientService, HttpClientService>();
         context.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-
         
         Configure<VariablesOptions>(configuration.GetSection("Variables"));
         context.Services.AddScoped<IImRequestProvider, ImRequestProvider>();
@@ -159,6 +158,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<NftItemDisplayOption>(configuration.GetSection("NftItemDisplay"));
         Configure<GrowthOptions>(configuration.GetSection("Growth"));
         Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
+        Configure<ETransferOptions>(configuration.GetSection("ETransfer"));
         AddMessagePushService(context, configuration);
     }
 
