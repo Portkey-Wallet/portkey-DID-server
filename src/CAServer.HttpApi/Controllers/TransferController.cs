@@ -11,7 +11,7 @@ namespace CAServer.Controllers;
 [Area("app")]
 [ControllerName("Transfer")]
 [Route("api/app/transfer")]
-//[Authorize]
+[Authorize]
 public class TransferController : CAServerController
 {
     private readonly ITransferAppService _transferAppService;
