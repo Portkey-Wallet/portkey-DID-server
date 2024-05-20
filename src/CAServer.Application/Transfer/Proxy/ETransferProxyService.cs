@@ -135,7 +135,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             request);
     }
 
-    public async Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
+    public async Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
     {
         var response = new GetNetworkTokensDto();
         var tokenList = new List<NetworkTokenInfo>();
@@ -172,7 +172,11 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             }
             
             response.TokenList = tokenList;
-            return response;
+            return new ResponseWrapDto<GetNetworkTokensDto>()
+            {
+                Code = "20000",
+                Data = response
+            };
         }
 
         var getNetworkListDto = new List<NetworkDto>();
@@ -207,6 +211,10 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         }
 
         response.TokenList = tokenList;
-        return response;
+        return new ResponseWrapDto<GetNetworkTokensDto>()
+        {
+            Code = "20000",
+            Data = response
+        };
     }
 }

@@ -59,7 +59,7 @@ public class TransferController : CAServerController
     }
 
     [HttpGet("network/tokens")]
-    public async Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
+    public async Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
     {
         return await _transferAppService.GetNetworkTokensAsync(request);
     }

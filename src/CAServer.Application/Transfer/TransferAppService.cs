@@ -46,7 +46,7 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         return await _eTransferProxyService.GetDepositInfoAsync(request);
     }
 
-    public async Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
+    public async Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
     {
         return await _eTransferProxyService.GetNetworkTokensAsync(request);
     }
