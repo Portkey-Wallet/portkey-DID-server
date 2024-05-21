@@ -64,15 +64,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         string nickname = eventData.UserId.ToString("N").Substring(0, 8);
         try
         {
-            GuardianInfoBase loginGuardianInfoBase = null;
-            for (int i = 10; i >= 0; i--)
-            {
-                loginGuardianInfoBase = await GetLoginAccountInfo(eventData.CaHash);
-                if (loginGuardianInfoBase == null || loginGuardianInfoBase.GuardianIdentifier.IsNullOrEmpty())
-                {
-                    Thread.Sleep(1000);
-                }
-            }
+            GuardianInfoBase loginGuardianInfoBase = await GetLoginAccountInfo(eventData.CaHash);
             _logger.LogInformation("received create user event {0}", JsonConvert.SerializeObject(loginGuardianInfoBase));
             nickname = await GenerateNewAccountFormat(nickname, loginGuardianInfoBase);
         }
@@ -115,7 +107,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _logger.LogInformation("holderInfo = {0}", JsonConvert.SerializeObject(holderInfo));
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
                                                                        && g.GuardianList.Guardians.Count > 0);
-        return guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
+        _logger.LogInformation("guardianInfo = {0}", JsonConvert.SerializeObject(guardianInfo));
+        return guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.GuardianIdentifier.IsNullOrEmpty());
     }
 
     private async Task<string> GenerateNewAccountFormat(string nickname, GuardianInfoBase guardianInfoBase)
@@ -134,6 +127,11 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
         string guardianIdentifier = guardianInfoBase.GuardianIdentifier;
         string guardianType = guardianInfoBase.Type;
+        if (guardianIdentifier == null)
+        {
+            _logger.LogInformation("nickname={0} guardianIdentifier is null", nickname);
+            return nickname;
+        }
         //email  according to GuardianType
         if ((int)GuardianType.GUARDIAN_TYPE_OF_EMAIL == int.Parse(guardianType))
         {
@@ -146,11 +144,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
         else //third party
         {
-            if (guardianIdentifier == null)
-            {
-                _logger.LogInformation("nickname={0} guardianIdentifier is null", nickname);
-                return nickname;
-            }
             List<UserExtraInfoIndex> userExtraInfoIndices = await GetUserExtraInfoAsync(new List<string>() { guardianIdentifier });
             UserExtraInfoIndex userExtraInfoIndex = userExtraInfoIndices.FirstOrDefault();
             if (userExtraInfoIndex == null)
