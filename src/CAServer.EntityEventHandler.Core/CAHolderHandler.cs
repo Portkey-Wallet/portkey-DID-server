@@ -1,13 +1,19 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.Account;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Guardian;
+using CAServer.Guardian.Provider;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using Microsoft.Extensions.Logging;
+using Nest;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.DependencyInjection;
@@ -28,6 +34,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly IUserTokenAppService _userTokenAppService;
     private readonly IContactProvider _contactProvider;
     private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
+    private readonly IGuardianProvider _guardianProvider;
+    private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
@@ -35,7 +43,9 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         IClusterClient clusterClient,
         IUserTokenAppService userTokenAppService,
         IContactProvider contactProvider,
-        INESTRepository<ContactIndex, Guid> contactRepository)
+        INESTRepository<ContactIndex, Guid> contactRepository,
+        IGuardianProvider guardianProvider,
+        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -44,15 +54,31 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _userTokenAppService = userTokenAppService;
         _contactProvider = contactProvider;
         _contactRepository = contactRepository;
+        _guardianProvider = guardianProvider;
+        _userExtraInfoRepository = userExtraInfoRepository;
     }
 
     public async Task HandleEventAsync(CreateUserEto eventData)
     {
+        string nickname = eventData.UserId.ToString("N").Substring(0, 8);
         try
         {
-            eventData.Nickname = eventData.UserId.ToString("N").Substring(0, 8);
+            var loginGuardianInfoBase = await GetLoginAccountInfo(eventData.CaHash);
+            _logger.LogInformation("received create user event {0}", JsonConvert.SerializeObject(loginGuardianInfoBase));
+            nickname = await GenerateNewAccountFormat(nickname, loginGuardianInfoBase);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "GenerateNewAccountFormat error, userId={0}, caHash={1}", eventData.UserId, eventData.CaHash);
+        }
+        try
+        {
+            eventData.Nickname = nickname;
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
-            var result = await grain.AddHolderAsync(_objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData));
+            var caHolderGrainDto = _objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData);
+            caHolderGrainDto.PopedUp = true;
+            caHolderGrainDto.ModifiedNickname = true;
+            var result = await grain.AddHolderAsync(caHolderGrainDto);
 
             if (!result.Success)
             {
@@ -71,6 +97,136 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             _logger.LogError(ex, "{Message}: {Data}", "Create CA holder fail", JsonConvert.SerializeObject(eventData));
         }
+    }
+    
+    private async Task<GuardianInfoBase> GetLoginAccountInfo(string caHash)
+    {
+        //if the guardian type is third party, the guardianIdentifier of GuardianInfoBase
+        var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
+        var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
+                                                                       && g.GuardianList.Guardians.Count > 0);
+        return guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
+    }
+
+    private async Task<string> GenerateNewAccountFormat(string nickname, GuardianInfoBase guardianInfoBase)
+    {
+        if (guardianInfoBase == null)
+        {
+            _logger.LogInformation("nickname={0} guardianInfoBase is null", nickname);
+            return nickname;
+        }
+
+        if (!guardianInfoBase.IsLoginGuardian)
+        {
+            _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
+            return nickname;
+        }
+
+        string guardianIdentifier = guardianInfoBase.GuardianIdentifier;
+        string guardianType = guardianInfoBase.Type;
+        //email  according to GuardianType
+        if (GuardianType.GUARDIAN_TYPE_OF_EMAIL.Equals(guardianType))
+        {
+            if (!guardianIdentifier.Contains("@"))
+            {
+                _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
+                return nickname;
+            }
+            return GetEmailFormat(guardianIdentifier);
+        }
+        else //third party
+        {
+            List<UserExtraInfoIndex> userExtraInfoIndices = await GetUserExtraInfoAsync(new List<string>() { guardianIdentifier });
+            UserExtraInfoIndex userExtraInfoIndex = userExtraInfoIndices.FirstOrDefault();
+            if (userExtraInfoIndex == null)
+            {
+                _logger.LogInformation("nickname={0} userExtraInfoIndex of third party is null", nickname);
+                return nickname;
+            }
+            if (!userExtraInfoIndex.Email.Contains("@"))
+            {
+                _logger.LogInformation("nickname={0} userExtraInfoIndex is not login guardian", nickname);
+                return nickname;
+            }
+            return GetEmailFormat(userExtraInfoIndex.Email);
+        }
+    }
+    
+    private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
+    {
+        try
+        {
+            if (identifiers == null || identifiers.Count == 0)
+            {
+                return new List<UserExtraInfoIndex>();
+            }
+
+            var mustQuery = new List<Func<QueryContainerDescriptor<UserExtraInfoIndex>, QueryContainer>>
+            {
+                q => q.Terms(i => i.Field(f => f.Id).Terms(identifiers))
+            };
+
+            QueryContainer Filter(QueryContainerDescriptor<UserExtraInfoIndex> f) =>
+                f.Bool(b => b.Must(mustQuery));
+
+            var userExtraInfos = await _userExtraInfoRepository.GetListAsync(Filter);
+
+            return userExtraInfos.Item2;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "in GetUserExtraInfoAsync");
+        }
+
+        return new List<UserExtraInfoIndex>();
+    }
+
+    private string GetEmailFormat(string guardianIdentifier)
+    {
+        int index = guardianIdentifier.LastIndexOf("@");
+        string frontPart = guardianIdentifier.Substring(0, index);
+        string backPart = guardianIdentifier.Substring(index);
+        int frontLength = frontPart.Length;
+        if (frontLength > 4)
+        {
+            return frontPart.Substring(0, 4) + GenerateAsterisk(frontLength - 4) + backPart;
+        }
+        else
+        {
+            return frontPart.Substring(0, 1) + GenerateAsterisk(frontLength - 1) + backPart;
+        }
+    }
+
+    private string GetPhoneFormat(string guardianIdentifier)
+    {
+        int length = guardianIdentifier.Length;
+        if (length > 7)
+        {
+            return guardianIdentifier.Substring(0, 3) + GenerateAsterisk(length - 7) +
+                   guardianIdentifier.Substring(length - 4);
+        }
+        else if (length > 3)
+        {
+            return guardianIdentifier.Substring(0, 3) + GenerateAsterisk(length - 3);
+        }
+        {
+            return guardianIdentifier.Substring(0, 1) + GenerateAsterisk(length - 1);
+        }
+    }
+
+    private string GenerateAsterisk(int num)
+    {
+        if (num < 0)
+        {
+            return string.Empty;
+        }
+        string result = string.Empty;
+        for (int i = num - 1; i >= 0; i--)
+        {
+            result += "*";
+        }
+
+        return result;
     }
 
     public async Task HandleEventAsync(UpdateCAHolderEto eventData)
