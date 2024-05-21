@@ -21,6 +21,7 @@ public class TransferController : CAServerController
         _transferAppService = transferAppService;
     }
 
+    [AllowAnonymous]
     [HttpPost("connect/token")]
     public async Task<AuthTokenDto> GetConnectTokenAsync([FromForm] AuthTokenRequestDto request)
     {
