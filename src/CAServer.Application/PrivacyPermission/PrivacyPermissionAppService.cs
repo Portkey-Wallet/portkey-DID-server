@@ -20,6 +20,7 @@ using CAServer.UserExtraInfo;
 using CAServer.UserExtraInfo.Dtos;
 using Microsoft.Extensions.Logging;
 using Nest;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -90,8 +91,10 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
 
         try
         {
+            _logger.LogInformation("DeletePrivacyPermissionAsync is running chainId={0}, caHash={1},  identifierHash={2}", chainId , caHash, identifierHash);
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(holder.UserId);
             var caHolderGrainDto = grain.GetCaHolder();
+            _logger.LogInformation("caHolderGrainDto from grain ={0}", JsonConvert.SerializeObject(caHolderGrainDto));
             if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
             {
                 _logger.LogError("query caHolderGrainDto from ICAHolderGrain is null, caHash={0}", caHash);
@@ -109,15 +112,20 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
                 return;
             }
             var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
+            _logger.LogInformation("holderInfo ={0}", JsonConvert.SerializeObject(holderInfo));
             var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
                                                                            && g.GuardianList.Guardians.Count > 0);
+            _logger.LogInformation("guardianInfo ={0}", JsonConvert.SerializeObject(guardianInfo));
             if (guardianInfo == null)
             {
                 return;
             }
             GuardianInfoBase guardianInfoBase = await GetLoginAccountInfo(caHash, identifierHash);
+            _logger.LogInformation("guardianInfoBase ={0}", JsonConvert.SerializeObject(guardianInfoBase));
             string nickname = caHolderFromGrain.UserId.ToString("N").Substring(0, 8);
+            _logger.LogInformation("nickname ={0}", nickname);
             string changedNickname = await GenerateNewAccountFormat(nickname, guardianInfoBase);
+            _logger.LogInformation("changedNickname ={0}", changedNickname);
             GrainResultDto<CAHolderGrainDto> result = null;
             if (nickname.Equals(changedNickname))
             {
