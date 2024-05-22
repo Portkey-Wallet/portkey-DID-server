@@ -148,6 +148,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 return;
             }
+
             result.CaHolderTransaction.Data = transactionsInfo.data;
             result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
         }
@@ -551,7 +552,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             {
                 var price = await GetTokenPriceAsync(dto.Symbol, transactionTime);
                 dto.PriceInUsd = price.ToString();
-                
+
                 dto.CurrentPriceInUsd = (await GetCurrentTokenPriceAsync(dto.Symbol)).ToString();
                 dto.CurrentTxPriceInUsd = GetCurrentTxPrice(dto);
 
@@ -734,19 +735,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             icon = _activitiesIcon.Contract;
         }
-
-        if (_activityTypeOptions.SystemTypes.Contains(transactionType))
+        else if (_activityTypeOptions.SystemTypes.Contains(transactionType))
         {
             icon = _activitiesIcon.System;
         }
-        else if (_activityTypeOptions.TransferTypes.Contains(transactionType) ||
-                 _activityTypeOptions.RedPacketTypes.Contains(transactionType))
+        // else if (_activityTypeOptions.TransferTypes.Contains(transactionType) ||
+        //          _activityTypeOptions.RedPacketTypes.Contains(transactionType))
+        else
         {
             icon = symbol.IsNullOrEmpty()
                 ? _activitiesIcon.Transfer
                 : _assetsLibraryProvider.buildSymbolImageUrl(symbol);
         }
-
+        
         // compatible with front-end changes
         if (icon.IsNullOrEmpty())
         {
@@ -800,7 +801,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             var currentTxPriceInUsd = amount / baseValue * currentPriceInUsd;
             return currentTxPriceInUsd == 0 ? null : currentTxPriceInUsd.ToString();
         }
-        
+
         throw new ArgumentException("Invalid input values");
     }
 
