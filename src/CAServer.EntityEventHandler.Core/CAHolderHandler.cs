@@ -1,15 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
-using CAServer.Account;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.Contacts;
-using CAServer.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
@@ -19,7 +16,9 @@ using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
-using Volo.Abp.ObjectMapping;
+using GuardianInfoBase = CAServer.Guardian.GuardianInfoBase;
+using GuardianType = CAServer.Account.GuardianType;
+using IObjectMapper = Volo.Abp.ObjectMapping.IObjectMapper;
 
 namespace CAServer.EntityEventHandler.Core;
 
@@ -37,6 +36,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly INESTRepository<ContactIndex, Guid> _contactRepository;
     private readonly IGuardianProvider _guardianProvider;
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
+    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
@@ -46,7 +46,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         IContactProvider contactProvider,
         INESTRepository<ContactIndex, Guid> contactRepository,
         IGuardianProvider guardianProvider,
-        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository)
+        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
+        INESTRepository<GuardianIndex, string> guardianRepository)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -57,6 +58,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _contactRepository = contactRepository;
         _guardianProvider = guardianProvider;
         _userExtraInfoRepository = userExtraInfoRepository;
+        _guardianRepository = guardianRepository;
     }
 
     public async Task HandleEventAsync(CreateUserEto eventData)
@@ -107,8 +109,39 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _logger.LogInformation("holderInfo = {0}", JsonConvert.SerializeObject(holderInfo));
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
                                                                        && g.GuardianList.Guardians.Count > 0);
+        if (guardianInfo == null)
+        {
+            return null;
+        }
         _logger.LogInformation("guardianInfo = {0}", JsonConvert.SerializeObject(guardianInfo));
-        return guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.GuardianIdentifier.IsNullOrEmpty());
+        GuardianInfoBase guardianInfoBase = guardianInfo?.GuardianList.Guardians.FirstOrDefault(g =>
+            g.IsLoginGuardian && !g.GuardianIdentifier.IsNullOrEmpty());
+        if (guardianInfoBase == null)
+        {
+            return null;
+        }
+        var list = new List<string>();
+        list.Add(guardianInfoBase.IdentifierHash);
+        var hashDic = await GetIdentifiersAsync(list);
+        guardianInfoBase.GuardianIdentifier = hashDic[guardianInfoBase.IdentifierHash];
+        return guardianInfoBase;
+    }
+    
+    private async Task<Dictionary<string, string>> GetIdentifiersAsync(List<string> identifierHashList)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>
+        {
+            q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList))
+        };
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardians = await _guardianRepository.GetListAsync(Filter);
+
+        var result = guardians.Item2.Where(t => t.IsDeleted == false);
+
+        return result.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
     }
 
     private async Task<string> GenerateNewAccountFormat(string nickname, GuardianInfoBase guardianInfoBase)
