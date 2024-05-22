@@ -63,12 +63,14 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
     public async Task HandleEventAsync(CreateUserEto eventData)
     {
+        string changedNickname = null;
         string nickname = eventData.UserId.ToString("N").Substring(0, 8);
+        GuardianInfoBase loginGuardianInfoBase = null;
         try
-        {
-            GuardianInfoBase loginGuardianInfoBase = await GetLoginAccountInfo(eventData.CaHash);
+        { 
+            loginGuardianInfoBase = await GetLoginAccountInfo(eventData.CaHash);
             _logger.LogInformation("received create user event {0}", JsonConvert.SerializeObject(loginGuardianInfoBase));
-            nickname = await GenerateNewAccountFormat(nickname, loginGuardianInfoBase);
+            changedNickname = await GenerateNewAccountFormat(nickname, loginGuardianInfoBase);
         }
         catch (Exception e)
         {
@@ -76,11 +78,24 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
         try
         {
-            eventData.Nickname = nickname;
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
             var caHolderGrainDto = _objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData);
-            caHolderGrainDto.PopedUp = true;
-            caHolderGrainDto.ModifiedNickname = true;
+            if (nickname.Equals(changedNickname))
+            {
+                eventData.Nickname = nickname;
+                caHolderGrainDto.PopedUp = false;
+                caHolderGrainDto.ModifiedNickname = false;
+            }
+            else
+            {
+                eventData.Nickname = changedNickname;
+                caHolderGrainDto.PopedUp = true;
+                caHolderGrainDto.ModifiedNickname = true;
+            }
+            if (loginGuardianInfoBase != null)
+            {
+                caHolderGrainDto.IdentifierHash = loginGuardianInfoBase.IdentifierHash;
+            }
             var result = await grain.AddHolderAsync(caHolderGrainDto);
 
             if (!result.Success)
@@ -122,7 +137,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         var list = new List<string>();
         list.Add(guardianInfoBase.IdentifierHash);
         var hashDic = await GetIdentifiersAsync(list);
-        _logger.LogInformation("hashDic = {0}", JsonConvert.SerializeObject(guardianInfo));
+        _logger.LogInformation("hashDic = {0}", JsonConvert.SerializeObject(hashDic));
         guardianInfoBase.GuardianIdentifier = hashDic[guardianInfoBase.IdentifierHash];
         _logger.LogInformation("guardianInfoBase = {0}", JsonConvert.SerializeObject(guardianInfoBase));
         return guardianInfoBase;
@@ -236,23 +251,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         else
         {
             return frontPart.Substring(0, 1) + GenerateAsterisk(frontLength - 1) + backPart;
-        }
-    }
-
-    private string GetPhoneFormat(string guardianIdentifier)
-    {
-        int length = guardianIdentifier.Length;
-        if (length > 7)
-        {
-            return guardianIdentifier.Substring(0, 3) + GenerateAsterisk(length - 7) +
-                   guardianIdentifier.Substring(length - 4);
-        }
-        else if (length > 3)
-        {
-            return guardianIdentifier.Substring(0, 3) + GenerateAsterisk(length - 3);
-        }
-        {
-            return guardianIdentifier.Substring(0, 1) + GenerateAsterisk(length - 1);
         }
     }
 

@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using AElf.Types;
+using AElf.Indexing.Elasticsearch;
+using CAServer.Account;
 using CAServer.Common;
 using CAServer.Contacts;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
+using CAServer.Grains.Grain;
+using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.PrivacyPermission;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
@@ -16,6 +19,7 @@ using CAServer.UserAssets.Provider;
 using CAServer.UserExtraInfo;
 using CAServer.UserExtraInfo.Dtos;
 using Microsoft.Extensions.Logging;
+using Nest;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -36,11 +40,14 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
     private readonly IClusterClient _clusterClient;
     private readonly IContactAppService _contactAppService;
     private readonly ILogger<PrivacyPermissionAppService> _logger;
+    private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
+    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     
     public PrivacyPermissionAppService(IUserAssetsProvider userAssetsProvider, IGuardianProvider guardianProvider,
         IGuardianAppService guardianAppService, IUserExtraInfoAppService userExtraInfoAppService,
         IContactProvider contactProvider, IContractProvider contractProvider, IClusterClient clusterClient,
-        IContactAppService contactAppService, ILogger<PrivacyPermissionAppService> logger)
+        IContactAppService contactAppService, ILogger<PrivacyPermissionAppService> logger,
+        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, INESTRepository<GuardianIndex, string> guardianRepository)
     {
         _userAssetsProvider = userAssetsProvider;
         _guardianProvider = guardianProvider;
@@ -51,6 +58,8 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         _clusterClient = clusterClient;
         _contactAppService = contactAppService;
         _logger = logger;
+        _userExtraInfoRepository = userExtraInfoRepository;
+        _guardianRepository = guardianRepository;
     }
 
     public async Task DeletePrivacyPermissionAsync(string chainId ,string caHash, string identifierHash)
@@ -78,6 +87,203 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         _logger.LogInformation(
             "DeletePrivacyPermissionAsync count:{count},cahash:{caHash},identifier:{identifier},type:{type}", count,
             caHash, guardianListDto.First().Identifier, type);
+
+        try
+        {
+            var grain = _clusterClient.GetGrain<ICAHolderGrain>(holder.UserId);
+            var caHolderGrainDto = grain.GetCaHolder();
+            if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
+            {
+                _logger.LogError("query caHolderGrainDto from ICAHolderGrain is null, caHash={0}", caHash);
+                return;
+            }
+            var caHolderFromGrain = caHolderGrainDto.Result.Data;
+            //condition: not use login account strategy, pass
+            if (caHolderFromGrain.IdentifierHash.IsNullOrEmpty() || !caHolderFromGrain.ModifiedNickname)
+            {
+                return;
+            }
+            //condition: the identifierHash is not the deleted one, pass
+            if (!caHolderFromGrain.IdentifierHash.Equals(identifierHash))
+            {
+                return;
+            }
+            var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
+            var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
+                                                                           && g.GuardianList.Guardians.Count > 0);
+            if (guardianInfo == null)
+            {
+                return;
+            }
+            GuardianInfoBase guardianInfoBase = await GetLoginAccountInfo(caHash, identifierHash);
+            string nickname = caHolderFromGrain.UserId.ToString("N").Substring(0, 8);
+            string changedNickname = await GenerateNewAccountFormat(nickname, guardianInfoBase);
+            GrainResultDto<CAHolderGrainDto> result = null;
+            if (nickname.Equals(changedNickname))
+            {
+                result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
+            }
+            else
+            {
+                result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, guardianInfoBase.IdentifierHash);
+            }
+            if (result != null && !result.Success)
+            {
+                _logger.LogError("update user nick name failed, nickname={0}, changedNickname={1}", nickname, changedNickname);
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "exception occured when modify the nickname, chainId={0}, caHash={1}, identifierHash={2}",chainId, caHash, identifierHash);
+        }
+    }
+    
+    private async Task<string> GenerateNewAccountFormat(string nickname, GuardianInfoBase guardianInfoBase)
+    {
+        if (guardianInfoBase == null)
+        {
+            _logger.LogInformation("nickname={0} guardianInfoBase is null", nickname);
+            return nickname;
+        }
+
+        if (!guardianInfoBase.IsLoginGuardian)
+        {
+            _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
+            return nickname;
+        }
+
+        string guardianIdentifier = guardianInfoBase.GuardianIdentifier;
+        string guardianType = guardianInfoBase.Type;
+        if (guardianIdentifier == null)
+        {
+            _logger.LogInformation("nickname={0} guardianIdentifier is null", nickname);
+            return nickname;
+        }
+        //email  according to GuardianType
+        if ((int)GuardianType.GUARDIAN_TYPE_OF_EMAIL == int.Parse(guardianType))
+        {
+            if (!guardianIdentifier.Contains("@"))
+            {
+                _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
+                return nickname;
+            }
+            return GetEmailFormat(guardianIdentifier);
+        }
+        else //third party
+        {
+            List<UserExtraInfoIndex> userExtraInfoIndices = await GetUserExtraInfoAsync(new List<string>() { guardianIdentifier });
+            UserExtraInfoIndex userExtraInfoIndex = userExtraInfoIndices.FirstOrDefault();
+            if (userExtraInfoIndex == null)
+            {
+                _logger.LogInformation("nickname={0} userExtraInfoIndex of third party is null", nickname);
+                return nickname;
+            }
+            if (!userExtraInfoIndex.Email.Contains("@"))
+            {
+                _logger.LogInformation("nickname={0} userExtraInfoIndex is not login guardian", nickname);
+                return nickname;
+            }
+            return GetEmailFormat(userExtraInfoIndex.Email);
+        }
+    }
+    
+    private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
+    {
+        try
+        {
+            if (identifiers == null || identifiers.Count == 0)
+            {
+                return new List<UserExtraInfoIndex>();
+            }
+
+            var mustQuery = new List<Func<QueryContainerDescriptor<UserExtraInfoIndex>, QueryContainer>>
+            {
+                q => q.Terms(i => i.Field(f => f.Id).Terms(identifiers))
+            };
+
+            QueryContainer Filter(QueryContainerDescriptor<UserExtraInfoIndex> f) =>
+                f.Bool(b => b.Must(mustQuery));
+
+            var userExtraInfos = await _userExtraInfoRepository.GetListAsync(Filter);
+
+            return userExtraInfos.Item2;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "in GetUserExtraInfoAsync");
+        }
+
+        return new List<UserExtraInfoIndex>();
+    }
+
+    private string GetEmailFormat(string guardianIdentifier)
+    {
+        int index = guardianIdentifier.LastIndexOf("@");
+        string frontPart = guardianIdentifier.Substring(0, index);
+        string backPart = guardianIdentifier.Substring(index);
+        int frontLength = frontPart.Length;
+        if (frontLength > 4)
+        {
+            return frontPart.Substring(0, 4) + GenerateAsterisk(frontLength - 4) + backPart;
+        }
+        else
+        {
+            return frontPart.Substring(0, 1) + GenerateAsterisk(frontLength - 1) + backPart;
+        }
+    }
+
+    private string GenerateAsterisk(int num)
+    {
+        if (num < 0)
+        {
+            return string.Empty;
+        }
+        string result = string.Empty;
+        for (int i = num - 1; i >= 0; i--)
+        {
+            result += "*";
+        }
+
+        return result;
+    }
+    
+    private async Task<GuardianInfoBase> GetLoginAccountInfo(string caHash, string identifierHash)
+    {
+        //if the guardian type is third party, the guardianIdentifier of GuardianInfoBase
+        var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
+        var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
+                                                                       && g.GuardianList.Guardians.Count > 0);
+        if (guardianInfo == null)
+        {
+            return null;
+        }
+        GuardianInfoBase guardianInfoBase = guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => !g.IdentifierHash.Equals(identifierHash));
+        if (guardianInfoBase == null)
+        {
+            return null;
+        }
+        var list = new List<string>();
+        list.Add(guardianInfoBase.IdentifierHash);
+        var hashDic = await GetIdentifiersAsync(list);
+        guardianInfoBase.GuardianIdentifier = hashDic[guardianInfoBase.IdentifierHash];
+        return guardianInfoBase;
+    }
+    
+    private async Task<Dictionary<string, string>> GetIdentifiersAsync(List<string> identifierHashList)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<GuardianIndex>, QueryContainer>>
+        {
+            q => q.Terms(i => i.Field(f => f.IdentifierHash).Terms(identifierHashList))
+        };
+
+        QueryContainer Filter(QueryContainerDescriptor<GuardianIndex> f) =>
+            f.Bool(b => b.Must(mustQuery));
+
+        var guardians = await _guardianRepository.GetListAsync(Filter);
+
+        var result = guardians.Item2.Where(t => t.IsDeleted == false);
+
+        return result.ToDictionary(t => t.IdentifierHash, t => t.Identifier);
     }
     
     public async Task<PrivacyPermissionDto> GetPrivacyPermissionAsync(Guid id)

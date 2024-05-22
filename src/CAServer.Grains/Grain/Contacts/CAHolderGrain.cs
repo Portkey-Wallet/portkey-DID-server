@@ -40,6 +40,7 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         State.CreateTime = caHolderDto.CreateTime;
         State.CaHash = caHolderDto.CaHash;
         State.Nickname = caHolderDto.Nickname;
+        State.IdentifierHash = caHolderDto.IdentifierHash;
 
         await WriteStateAsync();
 
@@ -58,6 +59,26 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         }
 
         State.Nickname = nickname;
+        State.ModifiedNickname = true;
+        await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
+        return result;
+    }
+
+    public async Task<GrainResultDto<CAHolderGrainDto>> UpdateNicknameAndMarkBitAsync(string nickname, bool modifiedNickname, string identifierHash)
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return result;
+        }
+
+        State.Nickname = nickname;
+        State.ModifiedNickname = modifiedNickname;
+        State.IdentifierHash = identifierHash;
         await WriteStateAsync();
 
         result.Success = true;

@@ -16,7 +16,6 @@ public class CAHolderDto
     
     public bool ModifiedNickname { get; set; }
     
-    //todo used to identify which login account rule the current nickname used
-    //the 
-    // public string IdentifierHash { get; set; }
+    //used to identify which login account rule the current nickname used
+    public string IdentifierHash { get; set; }
 }
