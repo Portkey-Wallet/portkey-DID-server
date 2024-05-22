@@ -189,18 +189,18 @@ public class HttpProvider : IHttpProvider
         var content = await response.Content.ReadAsStringAsync();
         var time = stopwatch.ElapsedMilliseconds;
         // log
-        if (withInfoLog)
-            _logger.LogInformation(
-                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, body={Body}, resp={Content}",
-                fullUrl, response.StatusCode, time, builder.Query, body, content);
-        else if (withDebugLog)
-            _logger.LogDebug(
-                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, body={Body}, resp={Content}",
-                fullUrl, response.StatusCode, time, builder.Query, body, content);
-        else
-            _logger.LogDebug(
-                "Request To {FullUrl}, statusCode={StatusCode}, time={Time}",
-                fullUrl, response.StatusCode, time);
+        // if (withInfoLog)
+        //     _logger.LogInformation(
+        //         "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, body={Body}, resp={Content}",
+        //         fullUrl, response.StatusCode, time, builder.Query, body, content);
+        // else if (withDebugLog)
+        //     _logger.LogDebug(
+        //         "Request To {FullUrl}, statusCode={StatusCode}, time={Time}, query={Query}, body={Body}, resp={Content}",
+        //         fullUrl, response.StatusCode, time, builder.Query, body, content);
+        // else
+        //     _logger.LogDebug(
+        //         "Request To {FullUrl}, statusCode={StatusCode}, time={Time}",
+        //         fullUrl, response.StatusCode, time);
         
         _indicatorScope.End(MonitorHelper.GetRequestUrl(response), interIndicator);
         return response;
