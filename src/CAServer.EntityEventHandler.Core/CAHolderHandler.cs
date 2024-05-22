@@ -82,13 +82,13 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             var caHolderGrainDto = _objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData);
             if (nickname.Equals(changedNickname))
             {
-                eventData.Nickname = nickname;
+                caHolderGrainDto.Nickname = nickname;
                 caHolderGrainDto.PopedUp = false;
                 caHolderGrainDto.ModifiedNickname = false;
             }
             else
             {
-                eventData.Nickname = changedNickname;
+                caHolderGrainDto.Nickname = changedNickname;
                 caHolderGrainDto.PopedUp = true;
                 caHolderGrainDto.ModifiedNickname = true;
             }
