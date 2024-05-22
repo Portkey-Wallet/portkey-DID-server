@@ -13,4 +13,5 @@ public class NetworkTokenInfo
     public string Symbol { get; set; }
     public string ContractAddress { get; set; }
     public string Icon { get; set; }
+    public List<NetworkDto> NetworkList { get; set; }
 }

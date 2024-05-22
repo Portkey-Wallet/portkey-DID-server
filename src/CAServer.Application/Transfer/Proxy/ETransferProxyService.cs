@@ -166,11 +166,11 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                     {
                         Name = item.Name,
                         Icon = item.Icon,
-                        Symbol = item.Symbol,
+                        Symbol = item.Symbol
                     });
                 }
             }
-            
+
             response.TokenList = tokenList;
             return response;
         }
@@ -201,7 +201,8 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                     Name = tokenDto.Name,
                     ContractAddress = tokenDto.ContractAddress,
                     Symbol = tokenDto.Symbol,
-                    Icon = tokenDto.Icon
+                    Icon = tokenDto.Icon,
+                    NetworkList = getNetworkListDto
                 });
             }
         }
