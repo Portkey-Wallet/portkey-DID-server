@@ -298,7 +298,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             var activityDto = activitiesDto.Data[0];
 
-            if (!_activityTypeOptions.ContractTypes.Contains(activityDto.TransactionType))
+            if (IsTransferType(activityDto))
             {
                 await GetActivityName(caAddresses, activityDto,
                     indexerTransactions.CaHolderTransaction.Data[0]);
@@ -636,7 +636,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             }
             else
             {
-                dto.ListIcon = GetIcon(dto.TransactionType, dto.Symbol);
+                dto.ListIcon = GetIcon(dto);
             }
 
             if (!_activityTypeOptions.ShowPriceTypes.Contains(dto.TransactionType))
@@ -728,26 +728,18 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         };
     }
 
-    private string GetIcon(string transactionType, string symbol = "")
+    private string GetIcon(GetActivityDto activityDto)
     {
         var icon = string.Empty;
-        if (_activityTypeOptions.ContractTypes.Contains(transactionType))
-        {
-            icon = _activitiesIcon.Contract;
-        }
-        else if (_activityTypeOptions.SystemTypes.Contains(transactionType))
+        if (_activityTypeOptions.SystemTypes.Contains(activityDto.TransactionType))
         {
             icon = _activitiesIcon.System;
         }
-        // else if (_activityTypeOptions.TransferTypes.Contains(transactionType) ||
-        //          _activityTypeOptions.RedPacketTypes.Contains(transactionType))
-        else
+        else if (IsTransferType(activityDto))
         {
-            icon = symbol.IsNullOrEmpty()
-                ? _activitiesIcon.Transfer
-                : _assetsLibraryProvider.buildSymbolImageUrl(symbol);
+            icon = _assetsLibraryProvider.buildSymbolImageUrl(activityDto.Symbol);
         }
-        
+
         // compatible with front-end changes
         if (icon.IsNullOrEmpty())
         {
@@ -755,6 +747,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
 
         return icon;
+    }
+
+    private bool IsTransferType(GetActivityDto activityDto)
+    {
+        return !activityDto.Symbol.IsNullOrEmpty() || activityDto.NftInfo != null &&
+            !activityDto.Operations.IsNullOrEmpty();
     }
 
     private DateTime MsToDateTime(long ms)
