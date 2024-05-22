@@ -231,7 +231,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     public void SetMergeTokenBalance(IndexerTransaction indexerTransactionDto,
         string address)
     {
-        if (!_activityTypeOptions.MergeTokenBalance.Contains(indexerTransactionDto.MethodName))
+        if (!_activityTypeOptions.MergeTokenBalanceTypes.Contains(indexerTransactionDto.MethodName))
         {
             return;
         }
