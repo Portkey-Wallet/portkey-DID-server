@@ -209,9 +209,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         if (IsETransfer(activityDto.TransactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
             var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault();
-            toContractAddress = !toContractAddress.IsNullOrEmpty()
-                ? toContractAddress
-                : eTransferConfig?.ContractAddress;
+            toContractAddress = eTransferConfig?.ContractAddress;
         }
 
         if (toContractAddress.IsNullOrEmpty())
@@ -228,6 +226,71 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         activityDto.DappName = tokenSpender.Name;
         activityDto.DappIcon = tokenSpender.Icon;
+    }
+
+    public void SetMergeTokenBalance(IndexerTransaction indexerTransactionDto,
+        string address)
+    {
+        if (!_activityTypeOptions.MergeTokenBalance.Contains(indexerTransactionDto.MethodName))
+        {
+            return;
+        }
+
+        var fromAddress = string.Empty;
+        var toAddress = string.Empty;
+        var transferInfos = indexerTransactionDto.TokenTransferInfos.Select(t => t.TransferInfo).ToList();
+        var fromCaAddresses = transferInfos.Select(t => t.FromCAAddress).Distinct().ToList();
+        var toAddresses = transferInfos.Select(t => t.ToAddress).ToList();
+        if (fromCaAddresses.Count() == 1 && fromCaAddresses.First() == address)
+        {
+            fromAddress = address;
+        }
+        else if (toAddresses.Count() == 1 && toAddresses.First() == address)
+        {
+            toAddress = address;
+        }
+        else
+        {
+            return;
+        }
+
+        var tokenInfos = indexerTransactionDto.TokenTransferInfos.Where(t => t.TokenInfo != null)
+            .Select(t => t.TokenInfo).ToList();
+        var nftInfos = indexerTransactionDto.TokenTransferInfos.Where(t => t.NftInfo != null).Select(t => t.NftInfo)
+            .ToList();
+        var symbols = tokenInfos.Select(t => t.Symbol).Distinct().ToList();
+        if (!nftInfos.IsNullOrEmpty() && nftInfos.Count > 0 && !symbols.IsNullOrEmpty() && symbols.Count > 0)
+        {
+            return;
+        }
+
+        if ((symbols.IsNullOrEmpty() || symbols.Count() > 1) && (nftInfos.IsNullOrEmpty() || nftInfos.Count > 1))
+        {
+            return;
+        }
+
+        if (nftInfos.Count == 1)
+        {
+            indexerTransactionDto.NftInfo = nftInfos.First();
+        }
+        else
+        {
+            indexerTransactionDto.TokenInfo = tokenInfos.First();
+        }
+
+        indexerTransactionDto.FromAddress = fromAddress;
+        var amount = indexerTransactionDto.TokenTransferInfos.Select(t => t.TransferInfo).ToList().Sum(f => f.Amount);
+        indexerTransactionDto.TransferInfo = new TransferInfo()
+        {
+            FromAddress = fromAddress,
+            FromCAAddress = fromAddress,
+            ToAddress = toAddress,
+            //FromChainId = 
+            Amount = amount
+        };
+
+
+        indexerTransactionDto.TokenTransferInfos.Clear();
     }
 
     private async Task SetOperationsAsync(IndexerTransaction indexerTransactionDto, GetActivityDto activityDto,
@@ -560,6 +623,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
+            SetMergeTokenBalance(ht, caAddresses.First());
             var dto = ObjectMapper.Map<IndexerTransaction, GetActivityDto>(ht);
             var transactionTime = MsToDateTime(ht.Timestamp * 1000);
 
