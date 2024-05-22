@@ -204,20 +204,35 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
     }
 
+    private void SetDAppInfo(string toContractAddress, GetActivityDto activityDto)
+    {
+        if (IsETransfer(activityDto.TransactionType, activityDto.FromChainId, activityDto.FromAddress))
+        {
+            var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault();
+            toContractAddress = !toContractAddress.IsNullOrEmpty()
+                ? toContractAddress
+                : eTransferConfig?.ContractAddress;
+        }
+
+        if (toContractAddress.IsNullOrEmpty())
+        {
+            return;
+        }
+
+        var tokenSpender =
+            _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t => t.ContractAddress == toContractAddress);
+        if (tokenSpender == null)
+        {
+            return;
+        }
+
+        activityDto.DappName = tokenSpender.Name;
+        activityDto.DappIcon = tokenSpender.Icon;
+    }
+
     private async Task SetOperationsAsync(IndexerTransaction indexerTransactionDto, GetActivityDto activityDto,
         List<string> caAddresses, string chainId, int width, int height)
     {
-        if (!indexerTransactionDto.ToContractAddress.IsNullOrEmpty())
-        {
-            var tokenSpender = _tokenSpenderOptions.TokenSpenderList.FirstOrDefault(t
-                => t.ContractAddress == indexerTransactionDto.ToContractAddress);
-            if (tokenSpender != null)
-            {
-                activityDto.DappName = tokenSpender.Name;
-                activityDto.DappIcon = tokenSpender.Icon;
-            }
-        }
-
         if (indexerTransactionDto.TokenTransferInfos is not { Count: > 1 })
         {
             return;
@@ -654,6 +669,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 await MapMethodNameAsync(caAddresses, dto, guardian);
             }
 
+            SetDAppInfo(ht.ToContractAddress, dto);
             await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
             getActivitiesDto.Add(dto);
         }
@@ -690,16 +706,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 activityDto.IsReceived ? ActivityConstants.ReceiveName : ActivityConstants.SendName;
         }
 
-        if (transactionType == ActivityConstants.TransferName &&
-            _activityOptions.ETransferConfigs != null)
+        if (IsETransfer(transactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
-            var eTransferConfig =
-                _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == activityDto.FromChainId);
-            if (eTransferConfig != null && eTransferConfig.Accounts.Contains(activityDto.FromAddress))
-            {
-                activityDto.TransactionName = ActivityConstants.DepositName;
-                return;
-            }
+            activityDto.TransactionName = ActivityConstants.DepositName;
+            return;
         }
 
         if (activityDto.NftInfo != null && !string.IsNullOrWhiteSpace(activityDto.NftInfo.NftId))
@@ -716,6 +726,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         activityDto.TransactionType =
             _activityTypeOptions.TransactionTypeMap.GetValueOrDefault(transactionType, transactionType);
+    }
+
+    private bool IsETransfer(string transactionType, string fromChainId, string fromAddress)
+    {
+        if (transactionType == ActivityConstants.TransferName &&
+            _activityOptions.ETransferConfigs != null)
+        {
+            var eTransferConfig =
+                _activityOptions.ETransferConfigs.FirstOrDefault(e => e.ChainId == fromChainId);
+            return eTransferConfig != null && eTransferConfig.Accounts.Contains(fromAddress);
+        }
+
+        return false;
     }
 
     private string GetTransactionDisplayName(string transactionType, string defaultName)
