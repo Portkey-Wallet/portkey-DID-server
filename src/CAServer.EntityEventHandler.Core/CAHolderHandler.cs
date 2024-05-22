@@ -114,8 +114,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             return null;
         }
         _logger.LogInformation("guardianInfo = {0}", JsonConvert.SerializeObject(guardianInfo));
-        GuardianInfoBase guardianInfoBase = guardianInfo?.GuardianList.Guardians.FirstOrDefault(g =>
-            g.IsLoginGuardian && !g.GuardianIdentifier.IsNullOrEmpty());
+        GuardianInfoBase guardianInfoBase = guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardianInfoBase == null)
         {
             return null;
@@ -123,7 +122,9 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         var list = new List<string>();
         list.Add(guardianInfoBase.IdentifierHash);
         var hashDic = await GetIdentifiersAsync(list);
+        _logger.LogInformation("hashDic = {0}", JsonConvert.SerializeObject(guardianInfo));
         guardianInfoBase.GuardianIdentifier = hashDic[guardianInfoBase.IdentifierHash];
+        _logger.LogInformation("guardianInfoBase = {0}", JsonConvert.SerializeObject(guardianInfoBase));
         return guardianInfoBase;
     }
     
