@@ -7,9 +7,11 @@ using CAServer.Common;
 using CAServer.Contacts.Provider;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
+using CAServer.Search;
 using CAServer.Tokens;
+using CAServer.Tokens.Cache;
 using CAServer.Tokens.Provider;
-using CAServer.UserAssets.Dtos;
+using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -44,6 +46,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var userAssetsProviderMock = new Mock<IUserAssetsProvider>();
         var userContactProviderMock = new Mock<IUserContactProvider>();
         var tokenInfoOptionsMock = new Mock<IOptions<TokenInfoOptions>>();
+        var tokenListOptionsMock = new Mock<IOptionsSnapshot<TokenListOptions>>();
         tokenInfoOptionsMock.Setup(o => o.Value).Returns(new TokenInfoOptions());
         var imageProcessProviderMock = new Mock<IImageProcessProvider>();
         var chainOptionsMock = new Mock<IOptions<ChainOptions>>();
@@ -55,7 +58,11 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var seedImageOptionsMock = new Mock<IOptionsSnapshot<SeedImageOptions>>();
         seedImageOptionsMock.Setup(o => o.Value).Returns(new SeedImageOptions());
         var userTokenAppServiceMock = new Mock<IUserTokenAppService>();
+        var searchAppServiceMock = new Mock<ISearchAppService>();
         var tokenProvider = new Mock<ITokenProvider>();
+        var tokenCacheProvider = new Mock<ITokenCacheProvider>();
+        var ipfsOption = new Mock<IOptionsSnapshot<IpfsOptions>>();
+        var tokenPriceServiceMock = new Mock<ITokenPriceService>();
         var userAssetsAppService = new UserAssetsAppService(
             logger: loggerMock.Object,
             userAssetsProvider: userAssetsProviderMock.Object,
@@ -66,13 +73,18 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             chainOptions: chainOptionsMock.Object,
             contractProvider: contractProviderMock.Object,
             distributedEventBus: GetRequiredService<IDistributedEventBus>(),
-            seedImageOptions:  seedImageOptionsMock.Object,
+            seedImageOptions: seedImageOptionsMock.Object,
             userTokenAppService: userTokenAppServiceMock.Object,
             tokenProvider: tokenProvider.Object,
-            assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(), 
+            assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(),
             userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>(),
             userTokenBalanceCache: GetRequiredService<IDistributedCache<string>>(),
-            getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>());
+            getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(),
+            nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(),
+            searchAppService: searchAppServiceMock.Object,
+            tokenCacheProvider: tokenCacheProvider.Object,
+            ipfsOption: ipfsOption.Object,
+            tokenPriceService: tokenPriceServiceMock.Object);
         return userAssetsAppService;
     }
 
@@ -89,6 +101,13 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(GetContractProvider());
         services.AddSingleton(GetMockSeedImageOptions());
         services.AddSingleton(GetMockTokenProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockHttpClientFactory());
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
     }
 
     private void Login(Guid userId)
@@ -256,9 +275,4 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var result = await _userAssetsAppService.GetTokenBalanceAsync(input);
         result.Balance.ShouldBe(null);
     }
-    
-   
-    
-    
-    
 }

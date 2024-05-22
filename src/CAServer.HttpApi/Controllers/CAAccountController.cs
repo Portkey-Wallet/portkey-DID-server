@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +24,7 @@ public class CAAccountController : CAServerController
     private readonly ITransactionFeeAppService _transactionFeeAppService;
     private readonly ICurrentUser _currentUser;
     private readonly IGrowthAppService _growthAppService;
+    private readonly Meter _meter;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
@@ -33,6 +35,7 @@ public class CAAccountController : CAServerController
         _transactionFeeAppService = transactionFeeAppService;
         _currentUser = currentUser;
         _growthAppService = growthAppService;
+        _meter = new Meter("CAServer", "1.0.0");
     }
 
     [HttpPost("register/request")]
@@ -86,7 +89,7 @@ public class CAAccountController : CAServerController
     {
         return await _caAccountService.RevokeAsync(input);
     }
-    
+
     [HttpGet("checkManagerCount")]
     public async Task<CheckManagerCountResultDto> CheckManagerCountAsync(string caHash)
     {
@@ -98,6 +101,20 @@ public class CAAccountController : CAServerController
     {
         var url = await _growthAppService.GetRedirectUrlAsync(shortLinkCode);
         return Redirect(url);
+    }
+
+    [HttpPost("revoke/account"), Authorize, IgnoreAntiforgeryToken]
+    public async Task<RevokeResultDto> RevokeAccountAsync(RevokeAccountInput input)
+    {
+        return await _caAccountService.RevokeAccountAsync(input);
+    }
+    
+    [HttpGet("revoke/validate")]
+    [Authorize]
+    public async Task<CancelCheckResultDto> RevokeValidateAsync(string type)
+    {
+        var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
+        return await _caAccountService.RevokeValidateAsync(userId, type);
     }
     
 }

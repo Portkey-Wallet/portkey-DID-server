@@ -16,11 +16,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 
 namespace CAServer.ThirdPart.Processor;
 
+[DisableAuditing]
 public abstract class AbstractRampOrderProcessor : CAServerAppService
 {
     private readonly IThirdPartOrderProvider _thirdPartOrderProvider;

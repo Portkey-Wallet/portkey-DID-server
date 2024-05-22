@@ -1,4 +1,6 @@
 using System.Net;
+using CAServer.Nightingale.Orleans.Filters;
+using CAServer.Nightingale.Orleans.TelemetryConsumers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -15,17 +17,6 @@ public static class OrleansHostExtensions
 {
     public static IHostBuilder UseOrleansSnapshot(this IHostBuilder hostBuilder)
     {
-#if DEBUG
-        var configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
-
-        if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-        var configSection = configuration.GetSection("Orleans");
-        if (configSection == null)
-            throw new ArgumentNullException(nameof(configSection), "The OrleansServer node is missing");
-#endif
-
         return hostBuilder.UseOrleans((context, siloBuilder) =>
         {
             //Configure OrleansSnapshot
@@ -64,9 +55,36 @@ public static class OrleansHostExtensions
                     options.ClusterId = orleansConfigSection.GetValue<string>("ClusterId");
                     options.ServiceId = orleansConfigSection.GetValue<string>("ServiceId");
                 })
+                .Configure<SiloMessagingOptions>(options =>
+                {
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
+                })
                 // .AddMemoryGrainStorage("PubSubStore")
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
-                .UseDashboard(options =>
+                .Configure<GrainCollectionOptions>(opt =>
+                {
+                    var collectionAge = orleansConfigSection.GetValue<int>("CollectionAge");
+                    if (collectionAge > 0)
+                    {
+                        opt.CollectionAge = TimeSpan.FromSeconds(collectionAge);
+                    }
+                })
+                .Configure<PerformanceTuningOptions>(opt =>
+                {
+                    var minDotNetThreadPoolSize = orleansConfigSection.GetValue<int>("MinDotNetThreadPoolSize");
+                    var minIOThreadPoolSize = orleansConfigSection.GetValue<int>("MinIOThreadPoolSize");
+                    opt.MinDotNetThreadPoolSize = minDotNetThreadPoolSize > 0 ? minDotNetThreadPoolSize : 200;
+                    opt.MinIOThreadPoolSize = minIOThreadPoolSize > 0 ? minIOThreadPoolSize : 200;
+                })
+                .UseLinuxEnvironmentStatistics()
+                .AddNightingaleTelemetryConsumer()
+                .AddNightingaleMethodFilter()
+                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
+            if (orleansConfigSection.GetValue<bool>("UseDashboard", false))
+            {
+                siloBuilder.UseDashboard(options =>
                 {
                     options.Username = orleansConfigSection.GetValue<string>("DashboardUserName");
                     options.Password = orleansConfigSection.GetValue<string>("DashboardPassword");
@@ -75,9 +93,8 @@ public static class OrleansHostExtensions
                     options.HostSelf = true;
                     options.CounterUpdateIntervalMs =
                         orleansConfigSection.GetValue<int>("DashboardCounterUpdateIntervalMs");
-                })
-                .UseLinuxEnvironmentStatistics()
-                .ConfigureLogging(logging => { logging.SetMinimumLevel(LogLevel.Debug).AddConsole(); });
+                });
+            }
         });
     }
 }

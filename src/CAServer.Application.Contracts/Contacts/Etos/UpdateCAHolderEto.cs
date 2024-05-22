@@ -14,4 +14,5 @@ public class UpdateCAHolderEto
     public string Avatar { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime CreateTime { get; set; }
+    
 }

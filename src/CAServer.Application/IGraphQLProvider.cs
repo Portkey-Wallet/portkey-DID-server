@@ -67,7 +67,7 @@ public class GraphQLProvider : IGraphQLProvider, ISingletonDependency
             Variables = new
             {
                 chainId,
-                filterType = BlockFilterType.LOG_EVENT
+                filterType = BlockFilterType.TRANSACTION
             }
         });
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,14 +7,15 @@ using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
 using CAServer.Grains;
-using CAServer.Grains.Grain.Tokens.TokenPrice;
 using CAServer.Options;
+using CAServer.Tokens.Cache;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
+using CAServer.Tokens.TokenPrice;
+using CAServer.UserAssets;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -26,24 +28,29 @@ namespace CAServer.Tokens;
 [DisableAuditing]
 public class TokenAppService : CAServerAppService, ITokenAppService
 {
-    private readonly IClusterClient _clusterClient;
     private readonly ContractAddressOptions _contractAddressOptions;
     private readonly ITokenProvider _tokenProvider;
     private readonly IDistributedCache<TokenExchange> _latestExchange;
-    private readonly IDistributedCache<TokenExchange> _historyExchange;
     private readonly Dictionary<string, IExchangeProvider> _exchangeProviders;
+    private readonly ITokenCacheProvider _tokenCacheProvider;
+    private readonly ITokenPriceService _tokenPriceService;
+    private readonly IOptionsMonitor<TokenSpenderOptions> _tokenSpenderOptions;
 
-    public TokenAppService(IClusterClient clusterClient, IOptions<ContractAddressOptions> contractAddressesOptions,
+    public TokenAppService(IOptions<ContractAddressOptions> contractAddressesOptions,
         ITokenProvider tokenProvider, IEnumerable<IExchangeProvider> exchangeProviders,
         IDistributedCache<TokenExchange> latestExchange,
-        IDistributedCache<TokenExchange> historyExchange)
+        IDistributedCache<TokenExchange> historyExchange,
+        ITokenCacheProvider tokenCacheProvider,
+        ITokenPriceService tokenPriceService,
+        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions)
     {
-        _clusterClient = clusterClient;
         _tokenProvider = tokenProvider;
         _latestExchange = latestExchange;
-        _historyExchange = historyExchange;
+        _tokenPriceService = tokenPriceService;
         _contractAddressOptions = contractAddressesOptions.Value;
         _exchangeProviders = exchangeProviders.ToDictionary(p => p.Name().ToString(), p => p);
+        _tokenCacheProvider = tokenCacheProvider;
+        _tokenSpenderOptions = tokenSpenderOptions;
     }
 
     public async Task<ListResultDto<TokenPriceDataDto>> GetTokenPriceListAsync(List<string> symbols)
@@ -59,15 +66,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
             var symbolList = symbols.Distinct(StringComparer.InvariantCultureIgnoreCase).ToList();
             foreach (var symbol in symbolList)
             {
-                var grainId = GrainIdHelper.GenerateGrainId(symbol);
-                var grain = _clusterClient.GetGrain<ITokenPriceGrain>(grainId);
-                var priceResult = await grain.GetCurrentPriceAsync(symbol);
-                if (!priceResult.Success)
-                {
-                    throw new UserFriendlyException(priceResult.Message);
-                }
-
-                result.Add(priceResult.Data);
+                var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
+                result.Add(priceResult);
             }
         }
         catch (Exception ex)
@@ -97,15 +97,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
                     continue;
                 }
 
-                var grainId = GrainIdHelper.GenerateGrainId(token.Symbol.ToLower(), time);
-                var grain = _clusterClient.GetGrain<ITokenPriceSnapshotGrain>(grainId);
-                var priceResult = await grain.GetHistoryPriceAsync(token.Symbol.ToLower(), time);
-                if (!priceResult.Success)
-                {
-                    throw new UserFriendlyException(priceResult.Message);
-                }
-
-                result.Add(priceResult.Data);
+                var priceResult = await _tokenPriceService.GetHistoryPriceAsync(token.Symbol.ToLower(), time);
+                result.Add(priceResult);
             }
         }
         catch (Exception ex)
@@ -140,7 +133,13 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var indexerToken =
             await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
 
-        return GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
+        var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
+
+        // Check and adjust SkipCount and MaxResultCount
+        var skipCount = input.SkipCount < TokensConstants.SkipCountDefault ? TokensConstants.SkipCountDefault : input.SkipCount;
+        var maxResultCount = input.MaxResultCount <= TokensConstants.MaxResultCountInvalid ? TokensConstants.MaxResultCountDefault : input.MaxResultCount;
+
+        return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
     }
 
     public async Task<GetTokenInfoDto> GetTokenInfoAsync(string chainId, string symbol)
@@ -156,7 +155,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var tokenInfo = dto?.TokenInfo?.FirstOrDefault();
         if (tokenInfo == null)
         {
-            return new GetTokenInfoDto();
+            return await _tokenCacheProvider.GetTokenInfoAsync(chainId, symbol, TokenType.Token);
         }
 
         return ObjectMapper.Map<IndexerToken, GetTokenInfoDto>(tokenInfo);
@@ -168,7 +167,8 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         if (fromSymbol != toSymbol)
         {
             var names = _exchangeProviders.Values.Select(p => p.Name()).ToList();
-            var getExchangeTasks = names.Select(name => GetLatestExchangeAsync(name.ToString(), fromSymbol, toSymbol)).ToList();
+            var getExchangeTasks = names.Select(name => GetLatestExchangeAsync(name.ToString(), fromSymbol, toSymbol))
+                .ToList();
             var exchangeList = await Task.WhenAll(getExchangeTasks);
             AssertHelper.NotEmpty(exchangeList, "Query exchange of {}_{} failed", fromSymbol, toSymbol);
             avgExchange = exchangeList.Select(ex => ex.Exchange).Average();
@@ -177,6 +177,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         {
             avgExchange = 1;
         }
+
         return new TokenExchange
         {
             FromSymbol = fromSymbol,
@@ -192,7 +193,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         var providerExists =
             _exchangeProviders.TryGetValue(exchangeProviderName, out var exchangeProvider);
         AssertHelper.IsTrue(providerExists, "Provider of {Name} not exists", exchangeProviderName.ToString());
-        
+
         return await _latestExchange.GetOrAddAsync(
             GrainIdHelper.GenerateGrainId(exchangeProviderName, fromSymbol, toSymbol),
             async () => await exchangeProvider.LatestAsync(fromSymbol, toSymbol),
@@ -247,5 +248,34 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         result.AddRange(userTokens.OrderBy(t => t.Symbol).ThenBy(t => t.ChainId).ToList());
 
         return result;
+    }
+
+    public async Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input)
+    {
+        var tokenApproved = await _tokenProvider.GetTokenApprovedAsync("", 
+            input.CaAddressInfos.Select(t => t.CaAddress).ToList(), input.SkipCount, input.MaxResultCount);
+        var tokenAllowanceList = tokenApproved.CaHolderTokenApproved.Data.Select(t => new TokenAllowance
+        {
+            ContractAddress = t.Spender,
+            Allowance = t.BatchApprovedAmount,
+            ChainId = t.ChainId
+        }).ToList();
+        foreach (var tokenAllowance in tokenAllowanceList)
+        {
+            var tokenSpender = _tokenSpenderOptions.CurrentValue.TokenSpenderList.FirstOrDefault(t
+                => t.ChainId == tokenAllowance.ChainId && t.ContractAddress == tokenAllowance.ContractAddress);
+            if (tokenSpender != null)
+            {
+                ObjectMapper.Map(tokenSpender, tokenAllowance);
+            }
+        }
+        tokenAllowanceList.Sort((t1, t2) => 
+            (t1.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t1.Name).CompareTo(t2.Name.IsNullOrWhiteSpace() ? CommonConstant.UpperZ : t2.Name));
+
+        return new GetTokenAllowancesDto
+        {
+            Data = tokenAllowanceList,
+            TotalRecordCount = tokenApproved.CaHolderTokenApproved.TotalRecordCount
+        };
     }
 }

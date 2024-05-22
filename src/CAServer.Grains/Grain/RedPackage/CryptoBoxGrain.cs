@@ -2,6 +2,7 @@ using CAServer.Grains.State.RedPackage;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
 using Orleans.Providers.Streams.Generator;
+using Serilog.Core;
 using Volo.Abp;
 using Volo.Abp.ObjectMapping;
 
@@ -54,7 +55,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         State.Items = new List<GrabItem>();
         State.IfRefund = false;
         State.SenderId = senderId;
-
+        
         await WriteStateAsync();
 
         result.Success = true;
@@ -313,7 +314,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
         var buckets = new List<BucketItem>();
         var remainAmount = totalAmount;
         int decimalPlaces = BucketRandomSpecialOperation(totalAmount, count, decimalIn);
-        long realMinAmount = (long)Math.Pow(10, decimalIn - decimalPlaces);
+        long realMinAmount = decimalIn == 0 ? 1 : (long)Math.Pow(10, decimalIn - decimalPlaces);
 
         int luckyKingIndex = 0;
         long luckyKingAmount = realMinAmount;

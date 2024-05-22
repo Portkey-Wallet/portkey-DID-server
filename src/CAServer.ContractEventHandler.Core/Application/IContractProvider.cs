@@ -8,13 +8,12 @@ using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain;
 using CAServer.Commons;
+using CAServer.ContractService;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Grains.State.ApplicationHandler;
-using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
 using CAServer.Monitor;
-using CAServer.Signature;
 using CAServer.Signature.Provider;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
@@ -44,7 +43,6 @@ public interface IContractProvider : ISingletonDependency
     Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string txId);
     Task<long> GetIndexHeightFromSideChainAsync(string sideChainId);
     Task<long> GetIndexHeightFromMainChainAsync(string chainId, int sideChainId);
-    Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync(string chainId);
     Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto);
 
     Task<TransactionResultDto> CreateHolderInfoOnNonCreateChainAsync(ChainInfo chainInfo,
@@ -86,13 +84,13 @@ public class ContractProvider : IContractProvider
     private readonly IIndicatorScope _indicatorScope;
     private readonly IDistributedCache<BlockDto> _distributedCache;
     private readonly BlockInfoOptions _blockInfoOptions;
-    private readonly IRedPackageAppService _redPackageAppService;
+    private readonly ContractServiceProxy _contractServiceProxy;
 
 
     public ContractProvider(ILogger<ContractProvider> logger, IOptionsSnapshot<ChainOptions> chainOptions,
         IOptionsSnapshot<IndexOptions> indexOptions, IClusterClient clusterClient, ISignatureProvider signatureProvider,
         IGraphQLProvider graphQlProvider, IIndicatorScope indicatorScope, IDistributedCache<BlockDto> distributedCache,
-        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, IRedPackageAppService redPackageAppService)
+        IOptionsSnapshot<BlockInfoOptions> blockInfoOptions, ContractServiceProxy contractServiceProxy)
     {
         _logger = logger;
         _chainOptions = chainOptions.Value;
@@ -102,7 +100,7 @@ public class ContractProvider : IContractProvider
         _graphQlProvider = graphQlProvider;
         _indicatorScope = indicatorScope;
         _distributedCache = distributedCache;
-        _redPackageAppService = redPackageAppService;
+        _contractServiceProxy = contractServiceProxy;
         _blockInfoOptions = blockInfoOptions.Value;
     }
 
@@ -157,8 +155,7 @@ public class ContractProvider : IContractProvider
     {
         try
         {
-            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var result = await grain.ForwardTransactionAsync(chainId, rawTransaction);
+            var result = await _contractServiceProxy.ForwardTransactionAsync(chainId, rawTransaction);
 
             _logger.LogInformation(
                 "ForwardTransactionAsync to chain: {id} result:" +
@@ -289,26 +286,11 @@ public class ContractProvider : IContractProvider
         return ContractAppServiceConstant.LongError;
     }
 
-    public async Task<bool> GetCheckOperationDetailsInSignatureEnabledAsync(string chainId)
-    {
-        var result = await CallTransactionAsync<GetCheckOperationDetailsInSignatureEnabledOutput>(chainId,
-            MethodName.GetCheckOperationDetailsInSignatureEnabled, new Empty(), false);
-        if (result != null)
-        {
-            return result.CheckOperationDetailsEnabled;
-        }
-
-        _logger.LogError(MethodName.GetCheckOperationDetailsInSignatureEnabled + ": Empty result");
-        return false;
-    }
-
     public async Task<TransactionResultDto> CreateHolderInfoAsync(CreateHolderDto createHolderDto)
     {
         try
         {
-            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var result =
-                await grain.CreateHolderInfoAsync(createHolderDto);
+            var result = await _contractServiceProxy.CreateHolderInfoAsync(createHolderDto);
 
             _logger.LogInformation(
                 "CreateHolderInfo to chain: {id} result:" +
@@ -362,9 +344,7 @@ public class ContractProvider : IContractProvider
             createHolderDto.CaHash = outputGetHolderInfo.CaHash;
             createHolderDto.ChainId = createChainId;
 
-            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var result =
-                await grain.CreateHolderInfoOnNonCreateChainAsync(chainInfo.ChainId, createHolderDto);
+            var result = await _contractServiceProxy.CreateHolderInfoOnNonCreateChainAsync(chainInfo.ChainId, createHolderDto);
 
             _logger.LogInformation(
                 "accelerated registration on chain: {id} result:" +
@@ -389,8 +369,7 @@ public class ContractProvider : IContractProvider
     {
         try
         {
-            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var result = await grain.SocialRecoveryAsync(socialRecoveryDto);
+            var result = await _contractServiceProxy.SocialRecoveryAsync(socialRecoveryDto);
 
             _logger.LogInformation(
                 "SocialRecovery to chain: {id} result:" +
@@ -418,9 +397,8 @@ public class ContractProvider : IContractProvider
         try
         {
             await CheckCreateChainIdAsync(result);
-            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var transactionDto =
-                await grain.ValidateTransactionAsync(chainId, result, unsetLoginGuardians);
+            
+            var transactionDto = await _contractServiceProxy.ValidateTransactionAsync(chainId, result, unsetLoginGuardians);
 
             _logger.LogInformation(
                 "ValidateTransaction to chain: {id} result:" +
@@ -449,8 +427,7 @@ public class ContractProvider : IContractProvider
                 return new SyncHolderInfoInput();
             }
 
-            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var syncHolderInfoInput = await grain.GetSyncHolderInfoInputAsync(chainId, transactionInfo);
+            var syncHolderInfoInput = await _contractServiceProxy.GetSyncHolderInfoInputAsync(chainId, transactionInfo);
 
             _logger.LogInformation("GetSyncHolderInfoInput on chain {id} succeed", chainId);
 
@@ -533,8 +510,7 @@ public class ContractProvider : IContractProvider
     {
         try
         {
-            var grain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-            var result = await grain.SyncTransactionAsync(chainId, input);
+            var result = await _contractServiceProxy.SyncTransactionAsync(chainId, input);
 
             _logger.LogInformation(
                 "SyncTransaction to chain: {id} result:" +
@@ -612,8 +588,8 @@ public class ContractProvider : IContractProvider
                     $"{redPackageId}-{long.Parse(redPackageDetail.TotalAmount) - grab}")
         };
         _logger.LogInformation("SendTransferRedPacketRefundAsync input {input}",JsonConvert.SerializeObject(sendInput));
-        var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
-        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
+        
+        return await _contractServiceProxy.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             chainInfo.RedPackageContractAddress, MethodName.RefundCryptoBox);
     }
 
@@ -657,7 +633,7 @@ public class ContractProvider : IContractProvider
             JsonConvert.SerializeObject(sendInput, Formatting.Indented));
         var contractServiceGrain = _clusterClient.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
-        return await contractServiceGrain.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
+        return await _contractServiceProxy.SendTransferRedPacketToChainAsync(chainId, sendInput, payRedPackageFrom,
             chainInfo.RedPackageContractAddress, MethodName.TransferCryptoBoxes);
     }
 }

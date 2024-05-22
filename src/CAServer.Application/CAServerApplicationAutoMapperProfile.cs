@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AElf;
+using AElf.Types;
 using AutoMapper;
 using CAServer.Bookmark.Dtos;
 using CAServer.Bookmark.Etos;
@@ -19,6 +20,7 @@ using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
+using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Growth;
@@ -61,6 +63,7 @@ using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
+using CAServer.Transfer.Dtos;
 using CAServer.Upgrade.Dtos;
 using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
@@ -82,6 +85,8 @@ using ImInfo = CAServer.Contacts.ImInfo;
 using RedDotInfo = CAServer.Entities.Es.RedDotInfo;
 using Token = CAServer.UserAssets.Dtos.Token;
 using VerificationInfo = CAServer.Account.VerificationInfo;
+using Google.Protobuf.Collections;
+using static Google.Protobuf.WellKnownTypes.TimeExtensions;
 
 namespace CAServer;
 
@@ -218,7 +223,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f =>
                     f.TransferInfo == null
                         ? f.FromAddress
-                        : f.TransferInfo.FromCAAddress ?? f.TransferInfo.FromAddress))
+                        : f.TransferInfo.FromCAAddress.IsNullOrWhiteSpace()
+                            ? f.TransferInfo.FromAddress
+                            : f.TransferInfo.FromCAAddress))
             .ForMember(t => t.ToAddress, m => m.MapFrom(f => f.TransferInfo == null ? "" : f.TransferInfo.ToAddress))
             .ForMember(t => t.Amount,
                 m => m.MapFrom(f => f.TransferInfo == null ? "" : f.TransferInfo.Amount.ToString()))
@@ -248,6 +255,98 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 m => m.MapFrom(f =>
                     f.CreateChainId > 0 ? ChainHelper.ConvertChainIdToBase58(f.CreateChainId) : string.Empty));
         // .ForPath(t => t.GuardianList, m => m.MapFrom(f => f.GuardianList.Guardians));
+
+        //used by the ContractService class
+        CreateMap<CreateHolderDto, CreateCAHolderInput>()
+            .ForMember(d => d.DelegateInfo, opt => opt.MapFrom(e => new DelegateInfo()
+            {
+                ChainId = e.ProjectDelegateInfo.ChainId,
+                ProjectHash = Hash.LoadFromHex(e.ProjectDelegateInfo.ProjectHash),
+                IdentifierHash = Hash.LoadFromHex(e.ProjectDelegateInfo.IdentifierHash),
+                ExpirationTime = e.ProjectDelegateInfo.ExpirationTime,
+                Delegations =
+                {
+                    e.ProjectDelegateInfo.Delegations
+                },
+                Timestamp = DateTimeOffset.FromUnixTimeSeconds(e.ProjectDelegateInfo.TimeStamp).ToTimestamp(),
+                IsUnlimitedDelegate = e.ProjectDelegateInfo.IsUnlimitedDelegate,
+                Signature = e.ProjectDelegateInfo.Signature
+            }))
+            .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
+            {
+                Type = e.GuardianInfo.Type,
+                IdentifierHash = e.GuardianInfo.IdentifierHash,
+                VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id,
+                    Signature = e.GuardianInfo.VerificationInfo.Signature,
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = e.ManagerInfo.Address,
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(t => t.ReferralCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
+            .ForMember(t => t.ProjectCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+
+        CreateMap<CreateHolderDto, ReportPreCrossChainSyncHolderInfoInput>()
+            .ForMember(d => d.GuardianApproved, opt => opt.MapFrom(e => new Portkey.Contracts.CA.GuardianInfo
+            {
+                Type = e.GuardianInfo.Type,
+                IdentifierHash = e.GuardianInfo.IdentifierHash,
+                VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                {
+                    Id = e.GuardianInfo.VerificationInfo.Id,
+                    Signature = e.GuardianInfo.VerificationInfo.Signature,
+                    VerificationDoc = e.GuardianInfo.VerificationInfo.VerificationDoc
+                }
+            }))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = e.ManagerInfo.Address,
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(d => d.CreateChainId, opt => opt.MapFrom(e => ChainHelper.ConvertBase58ToChainId(e.ChainId)));
+
+        CreateMap<SocialRecoveryDto, SocialRecoveryInput>()
+            .ForMember(d => d.GuardiansApproved,
+                opt => opt.MapFrom(e => e.GuardianApproved.Select(g => new Portkey.Contracts.CA.GuardianInfo
+                {
+                    Type = g.Type,
+                    IdentifierHash = g.IdentifierHash,
+                    VerificationInfo = new Portkey.Contracts.CA.VerificationInfo
+                    {
+                        Id = g.VerificationInfo.Id,
+                        Signature = g.VerificationInfo.Signature,
+                        VerificationDoc = g.VerificationInfo.VerificationDoc
+                    }
+                }).ToList()))
+            .ForMember(d => d.ManagerInfo, opt => opt.MapFrom(e => new ManagerInfo
+            {
+                Address = e.ManagerInfo.Address,
+                ExtraData = e.ManagerInfo.ExtraData
+            }))
+            .ForMember(d => d.LoginGuardianIdentifierHash,
+                opt => opt.MapFrom(g => g.LoginGuardianIdentifierHash))
+            .ForMember(t => t.ReferralCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ReferralCode))
+            .ForMember(t => t.ProjectCode,
+                f => f.MapFrom(m => m.ReferralInfo == null ? string.Empty : m.ReferralInfo.ProjectCode));
+
+        CreateMap<GetHolderInfoOutput, ValidateCAHolderInfoWithManagerInfosExistsInput>()
+            .ForMember(d => d.LoginGuardians,
+                opt => opt.MapFrom(e => new RepeatedField<Hash>
+                    { e.GuardianList.Guardians.Where(g => g.IsLoginGuardian).Select(g => g.IdentifierHash).ToList() }))
+            .ForMember(d => d.ManagerInfos, opt => opt.MapFrom(g => g.ManagerInfos))
+            .ForMember(d => d.CaHash,
+                opt => opt.MapFrom(g => g.CaHash))
+            .ForMember(d => d.CreateChainId,
+                opt => opt.MapFrom(g => g.CreateChainId));
+        //end
 
         CreateMap<RegisterRequestDto, RegisterDto>().BeforeMap((src, dest) =>
             {
@@ -371,8 +470,27 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<UserTokenIndex, GetTokenListDto>()
             .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
             .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
+            .ForMember(t => t.Id,
+                m => m.MapFrom(f => f.Id == Guid.Empty ? $"{f.Token.ChainId}-{f.Token.Symbol}" : f.Id.ToString()))
+            .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
+            .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+
+        CreateMap<UserTokenIndex, GetUserTokenDto>()
+            .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
+            .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
             .ForMember(t => t.Id, m => m.MapFrom(f => f.Id.ToString()))
             .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
+            .ForPath(t => t.Address, m => m.MapFrom(f => f.Token.Address))
+            .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
+            .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
+
+        CreateMap<UserTokenItem, GetUserTokenDto>()
+            .ForMember(t => t.IsDefault, m => m.MapFrom(f => f.IsDefault))
+            .ForMember(t => t.IsDisplay, m => m.MapFrom(f => f.IsDisplay))
+            .ForMember(t => t.Id, m => m.MapFrom(f => $"{f.Token.ChainId}-{f.Token.Symbol}"))
+            .ForPath(t => t.Symbol, m => m.MapFrom(f => f.Token.Symbol))
+            .ForPath(t => t.Address, m => m.MapFrom(f => f.Token.Address))
             .ForPath(t => t.ChainId, m => m.MapFrom(f => f.Token.ChainId))
             .ForPath(t => t.Decimals, m => m.MapFrom(f => f.Token.Decimals));
 
@@ -579,32 +697,32 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.ThirdPartOrderNo, m => m.MapFrom(f => f.OrderNo))
             .ForMember(t => t.TransactionId, m => m.MapFrom(f => f.TxHash))
             .ReverseMap();
-        
+
         CreateMap<TelegramAuthReceiveRequest, TelegramAuthDto>()
             .ForMember(t => t.AuthDate, m => m.MapFrom(f => f.Auth_Date))
             .ForMember(t => t.FirstName, m => m.MapFrom(f => f.First_Name))
             .ForMember(t => t.LastName, m => m.MapFrom(f => f.Last_Name))
             .ForMember(t => t.PhotoUrl, m => m.MapFrom(f => f.Photo_Url));
-        
+
         CreateMap<UserExtraInfoResultDto, Verifier.Dtos.UserExtraInfo>()
             .ForMember(t => t.IsPrivateEmail, m => m.MapFrom(f => f.IsPrivate));
-        
+
         CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderRequest>()
             .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
             .ReverseMap();
-        
+
         CreateMap<TreasuryOrderRequest, TreasuryOrderDto>()
             .ForMember(des => des.ToAddress, opt => opt.MapFrom(src => src.Address))
             .ForMember(des => des.CryptoPriceInUsdt, opt => opt.MapFrom(src => src.CryptoPrice))
             .ForMember(des => des.SettlementAmount, opt => opt.MapFrom(src => src.UsdtAmount))
             .ReverseMap();
-        
+
         CreateMap<AlchemyTreasuryOrderRequestDto, TreasuryOrderDto>()
             .ForMember(des => des.ThirdPartOrderId, opt => opt.MapFrom(src => src.OrderNo))
             .ForMember(des => des.CryptoPriceInUsdt, opt => opt.MapFrom(src => src.CryptoPrice))
             .ForMember(des => des.SettlementAmount, opt => opt.MapFrom(src => src.UsdtAmount))
             .ReverseMap();
-        
+
         CreateMap<TreasuryOrderDto, TreasuryOrderIndex>().ReverseMap();
         CreateMap<PendingTreasuryOrderIndex, PendingTreasuryOrderDto>().ReverseMap();
 
@@ -616,7 +734,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<UpgradeGrainDto, CreateUpgradeInfoEto>();
         CreateMap<CreateUpgradeInfoEto, UpgradeInfoIndex>();
 
-        CreateMap<GuideInfo, UserGuideInfo>().ForMember(t => t.GuideType,m => m.MapFrom(f =>(GuideType)f.GuideType));
+        CreateMap<GuideInfo, UserGuideInfo>().ForMember(t => t.GuideType, m => m.MapFrom(f => (GuideType)f.GuideType));
         CreateMap<UserGuideInfo, UserGuideInfoGrainDto>();
         CreateMap<UserGuideInfoGrainDto, UserGuideInfo>();
 
@@ -628,5 +746,21 @@ public class CAServerApplicationAutoMapperProfile : Profile
 
         CreateMap<TwitterUserExtraInfo, Verifier.Dtos.UserExtraInfo>();
         CreateMap<TabCompleteDto, TabCompleteEto>();
+        CreateMap<CAServer.Options.Token, CAServer.Entities.Es.Token>();
+        CreateMap<UserTokenItem, UserTokenIndex>();
+        CreateMap<CAServer.Options.Token, CAServer.Search.Dtos.Token>();
+        CreateMap<UserTokenItem, UserTokenIndexDto>();
+        CreateMap<AuthTokenRequestDto, ETransferAuthTokenRequestDto>().ForMember(des => des.ClientId,
+            opt => opt.MapFrom(f => ETransferConstant.ClientId))
+            .ForMember(des => des.GrantType,
+                opt => opt.MapFrom(f => ETransferConstant.GrantType))
+            .ForMember(des => des.Version,
+                opt => opt.MapFrom(f => ETransferConstant.Version))
+            .ForMember(des => des.Source,
+                opt => opt.MapFrom(f => ETransferConstant.Source))
+            .ForMember(des => des.Scope,
+                opt => opt.MapFrom(f => ETransferConstant.Scope))
+            ;
+        CreateMap<TokenSpender, TokenAllowance>();
     }
 }

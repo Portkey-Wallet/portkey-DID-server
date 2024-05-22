@@ -1,13 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
+using CAServer.UserAssets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
-using Volo.Abp.AspNetCore.Mvc;
 
 namespace CAServer.Controllers;
 
@@ -18,10 +19,12 @@ namespace CAServer.Controllers;
 public class TokenController : CAServerController
 {
     private readonly ITokenAppService _tokenAppService;
+    private readonly ITokenDisplayAppService _tokenDisplayAppService;
 
-    public TokenController(ITokenAppService tokenAppService)
+    public TokenController(ITokenAppService tokenAppService, ITokenDisplayAppService tokenDisplayAppService)
     {
         _tokenAppService = tokenAppService;
+        _tokenDisplayAppService = tokenDisplayAppService;
     }
 
     [HttpGet("prices")]
@@ -39,12 +42,20 @@ public class TokenController : CAServerController
     [Authorize, HttpGet("list")]
     public async Task<List<GetTokenListDto>> GetTokenListAsync(GetTokenListRequestDto input)
     {
-        return await _tokenAppService.GetTokenListAsync(input);
+        return input.Version.IsNullOrEmpty()
+            ? await _tokenAppService.GetTokenListAsync(input)
+            : await _tokenDisplayAppService.GetTokenListAsync(input);
     }
 
     [Authorize, HttpGet("token")]
     public async Task<GetTokenInfoDto> GetTokenInfoAsync([Required] string chainId, [Required] string symbol)
     {
         return await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
+    }
+    
+    [HttpPost("allowances")]
+    public async Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input)
+    {
+        return await _tokenAppService.GetTokenAllowancesAsync(input);
     }
 }

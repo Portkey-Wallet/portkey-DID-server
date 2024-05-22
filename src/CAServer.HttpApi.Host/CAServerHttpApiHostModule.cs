@@ -1,11 +1,15 @@
 using System;
 using System.Linq;
+using CAServer.CoinGeckoApi;
+using CAServer.Commons;
 using CAServer.Grains;
 using CAServer.Hub;
 using CAServer.HubsEventHandler;
 using CAServer.Middleware;
 using CAServer.MongoDB;
 using CAServer.MultiTenancy;
+using CAServer.Nightingale.Http;
+using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Redis;
 using CAServer.ThirdPart.Adaptor;
@@ -25,6 +29,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -34,6 +40,7 @@ using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.AspNetCore.SignalR;
+using Volo.Abp.Auditing;
 using Volo.Abp.Autofac;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
@@ -43,6 +50,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.OpenIddict.Tokens;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Threading;
+using ConfigurationHelper = CAServer.Commons.ConfigurationHelper;
 
 namespace CAServer;
 
@@ -58,6 +66,7 @@ namespace CAServer;
     typeof(CAServerHubModule),
     typeof(CAServerRedisModule),
     typeof(AbpSwashbuckleModule),
+    typeof(CAServerCoinGeckoApiModule),
     typeof(AbpAspNetCoreSignalRModule)
 )]
 public class CAServerHttpApiHostModule : AbpModule
@@ -77,6 +86,9 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<ActivityTypeOptions>(configuration.GetSection("ActivityOptions"));
         Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
         Configure<AuthServerOptions>(configuration.GetSection("AuthServer"));
+        Configure<HubConfigOptions>(configuration.GetSection("HubConfig"));
+        Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
+        Configure<PerformanceMonitorMiddlewareOptions>(configuration.GetSection("PerformanceMonitorMiddleware"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -89,9 +101,13 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        ConfigureOpenTelemetry(context); //config open telemetry info
         context.Services.AddHttpContextAccessor();
         ConfigureTokenCleanupService();
         ConfigureMassTransit(context, configuration);
+        context.Services.AddSignalR().AddStackExchangeRedis(configuration["Redis:Configuration"],
+            options => { options.Configuration.ChannelPrefix = "CAServer"; });
+        ConfigAuditing();
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -201,9 +217,17 @@ public class CAServerHttpApiHostModule : AbpModule
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
                 })
+                .Configure<ClientMessagingOptions>(options =>
+                {
+                    //the default timeout before a request is assumed to have failed.
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
+                })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }
@@ -310,6 +334,33 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
     
+    //enhance performance monitoring capability 
+    private void ConfigureOpenTelemetry(ServiceConfigurationContext context)
+    {
+        context.Services.AddOpenTelemetry()
+            .WithTracing(tracing =>
+            {
+                tracing.AddSource("CAServer")
+                    .SetSampler(new AlwaysOnSampler());
+                // .AddAspNetCoreInstrumentation();
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddMeter("CAServer")
+                    // .AddAspNetCoreInstrumentation()
+                    .AddPrometheusExporter();
+            });
+    }
+
+    //Disables the auditing system
+    private void ConfigAuditing()
+    {
+        Configure<AbpAuditingOptions>(options =>
+        {
+            options.IsEnabled = false;
+        });
+    }
+    
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -325,6 +376,7 @@ public class CAServerHttpApiHostModule : AbpModule
         
         app.UseMiddleware<DeviceInfoMiddleware>();
         app.UseMiddleware<ConditionalIpWhitelistMiddleware>();
+        app.UseMiddleware<PerformanceMonitorMiddleware>();
         app.UseStaticFiles();
         
         app.UseRouting();
@@ -355,15 +407,18 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();      
+        app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         StartOrleans(context.ServiceProvider);
 
         // to start pre heat
         _ = context.ServiceProvider.GetService<TransakAdaptor>().PreHeatCachesAsync();
+
+        ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)

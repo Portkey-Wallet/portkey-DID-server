@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
-using Microsoft.AspNetCore.Http;
+using CAServer.Tokens;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -40,9 +40,14 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         services.AddSingleton(MockCryptoBoxGrain());
         services.AddSingleton(MockRedPackageIndex());
         services.AddSingleton(MockGraphQlOptions());
+        services.AddSingleton(GetMockIGraphQLHelper());
+        
+        services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceWorkerOption());
+        services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
+        services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
     }
-    
-    
     
     protected new IOptionsSnapshot<GraphQLOptions> MockGraphQlOptions()
     {
@@ -55,11 +60,11 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         mock.Setup(o => o.Value).Returns(options);
         return mock.Object;
     }
-
     
     [Fact]
     public async Task GenerateRedPackageAsync_test()
     {
+        Login(userId);
         await Assert.ThrowsAsync<UserFriendlyException>(async () =>
         {
             await _redPackageAppService.GenerateRedPackageAsync(new GenerateRedPackageInputDto()
@@ -90,7 +95,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         var input = NewSendRedPackageInputDto();
         input.ChainId = "AELF";
         input.Symbol = "XXX";
-        var ex = await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
             await _redPackageAppService.SendRedPackageAsync(input);
         });
@@ -146,7 +151,7 @@ public partial class RedPackageTest : CAServerApplicationTestBase
         //chain id error
         input = NewSendRedPackageInputDto();
         input.ChainId = "AELF-1";
-        await Assert.ThrowsAsync<UserFriendlyException>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
             await _redPackageAppService.SendRedPackageAsync(input);
         });

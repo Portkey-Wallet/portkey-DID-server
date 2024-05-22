@@ -27,10 +27,16 @@
         <!--        <ProjectReference Include="..\CAServer.BackGround\CAServer.BackGround.csproj" />-->
         <ProjectReference Include="..\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
         <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
+        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <None Remove="appsettings.json" />
+        <Content Include="appsettings.apollo.json">
+          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
         <Content Include="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
@@ -38,9 +44,6 @@
           <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        </Content>
-        <Content Include="apollo.appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Update="apollo.appsettings.json">
           <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -52,4 +55,7 @@
         </Content>
     </ItemGroup>
 
+    <PropertyGroup>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+    </PropertyGroup>
 </Project>

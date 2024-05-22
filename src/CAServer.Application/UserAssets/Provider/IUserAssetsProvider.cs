@@ -18,6 +18,10 @@ public interface IUserAssetsProvider
 
     Task<IndexerNftInfos> GetUserNftInfoAsync(List<CAAddressInfo> caAddressInfos, string symbol, int inputSkipCount,
         int inputMaxResultCount);
+    
+    Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto, int inputSkipCount, int inputMaxResultCount);
+    
+    Task<IndexerNftItemInfos> GetNftItemInfosAsync(GetNftItemInfosDto getNftItemInfosDto, int inputSkipCount, int inputMaxResultCount); 
 
     Task<IndexerRecentTransactionUsers> GetRecentTransactionUsersAsync(List<CAAddressInfo> caAddressInfos, int inputSkipCount,
         int inputMaxResultCount);
@@ -36,4 +40,6 @@ public interface IUserAssetsProvider
 
     Task<IndexerNftInfos> GetUserNftInfoBySymbolAsync(List<CAAddressInfo> caAddressInfos, string symbol,
         int inputSkipCount, int inputMaxResultCount);
+    
+    
 }

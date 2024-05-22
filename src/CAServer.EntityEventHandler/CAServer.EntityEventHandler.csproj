@@ -21,12 +21,19 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CAServer.CoinGeckoApi\CAServer.CoinGeckoApi.csproj" />
         <ProjectReference Include="..\CAServer.EntityEventHandler.Core\CAServer.EntityEventHandler.Core.csproj" />
         <ProjectReference Include="..\CAServer.MongoDB\CAServer.MongoDB.csproj" />
+        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <None Remove="appsettings.json" />
+        <Content Include="appsettings.apollo.json">
+          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
         <Content Include="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>

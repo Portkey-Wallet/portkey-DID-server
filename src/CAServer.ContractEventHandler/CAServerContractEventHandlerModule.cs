@@ -1,12 +1,14 @@
 using System;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
+using CAServer.Commons;
 using CAServer.ContractEventHandler.Core;
 using CAServer.ContractEventHandler.Core.Application;
 using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Monitor;
+using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Signature;
 using Hangfire;
@@ -17,6 +19,7 @@ using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -89,6 +92,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
         ConfigureHangfire(context, configuration);
+        // ConfigureOpenTelemetry(context);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -131,6 +135,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
+        
+        ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
 
     public override void OnApplicationShutdown(ApplicationShutdownContext context)
@@ -155,17 +161,16 @@ public class CAServerContractEventHandlerModule : AbpModule
                     options.ClusterId = configuration["Orleans:ClusterId"];
                     options.ServiceId = configuration["Orleans:ServiceId"];
                 })
-                .Configure<ClientMessagingOptions>(opt =>
+                .Configure<ClientMessagingOptions>(options =>
                 {
-                    var responseTimeout = configuration.GetValue<int>("Orleans:ResponseTimeout");
-                    if (responseTimeout > 0)
-                    {
-                        opt.ResponseTimeout = TimeSpan.FromSeconds(responseTimeout);
-                    }
+                    options.ResponseTimeout =
+                        TimeSpan.FromSeconds(Commons.ConfigurationHelper.GetValue("Orleans:ResponseTimeout",
+                            MessagingOptions.DEFAULT_RESPONSE_TIMEOUT.Seconds));
                 })
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }
@@ -193,7 +198,7 @@ public class CAServerContractEventHandlerModule : AbpModule
     {
         var mongoType = configuration["Hangfire:MongoType"];
         var connectionString = configuration["Hangfire:ConnectionString"];
-        if(connectionString.IsNullOrEmpty()) return;
+        if (connectionString.IsNullOrEmpty()) return;
 
         if (mongoType.IsNullOrEmpty() ||
             mongoType.Equals(MongoType.MongoDb.ToString(), StringComparison.OrdinalIgnoreCase))
@@ -229,7 +234,7 @@ public class CAServerContractEventHandlerModule : AbpModule
                 config.UseCosmosStorage(mongoClient, mongoUrlBuilder.DatabaseName, opt);
             });
         }
-        
+
         context.Services.AddHangfireServer(opt =>
         {
             opt.SchedulePollingInterval = TimeSpan.FromMilliseconds(3000);

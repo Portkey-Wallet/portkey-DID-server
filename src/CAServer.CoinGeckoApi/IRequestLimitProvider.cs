@@ -1,11 +1,11 @@
 using System;
+using System.Threading.RateLimiting;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Distributed;
-using Volo.Abp.Caching;
+using Microsoft.Extensions.Options;
 using Volo.Abp.DependencyInjection;
 
-namespace CAServer.CoinGeckoApi{
-
+namespace CAServer.CoinGeckoApi
+{
     public interface IRequestLimitProvider
     {
         Task RecordRequestAsync();
@@ -13,36 +13,33 @@ namespace CAServer.CoinGeckoApi{
 
     public class RequestLimitProvider : IRequestLimitProvider, ISingletonDependency
     {
-        private readonly IDistributedCache<RequestTime> _requestTimeCache;
+        private readonly IOptionsMonitor<CoinGeckoOptions> _coinGeckoOptions;
+        private readonly RateLimiter _rateLimiter;
 
-        // The CoinGecko limit 10-30 requests/minute;
-        private const int MaxRequestTime = 100;
-
-        public RequestLimitProvider(IDistributedCache<RequestTime> requestTimeCache)
+        public RequestLimitProvider(IOptionsMonitor<CoinGeckoOptions> coinGeckoOptions)
         {
-            _requestTimeCache = requestTimeCache;
+            _coinGeckoOptions = coinGeckoOptions;
+            _rateLimiter = InitializeRateLimiter();
         }
 
-        public async Task RecordRequestAsync()
+        private RateLimiter InitializeRateLimiter()
         {
-            var requestTime = await _requestTimeCache.GetOrAddAsync(CoinGeckoApiConsts.RequestTimeCacheKey,
-                async () => new RequestTime(), () => new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(1)
-                });
-            requestTime.Time += 1;
+            return new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                ReplenishmentPeriod = TimeSpan.FromSeconds(_coinGeckoOptions.CurrentValue.ReplenishmentPeriod),
+                TokenLimit = _coinGeckoOptions.CurrentValue.TokenLimit,
+                TokensPerPeriod = _coinGeckoOptions.CurrentValue.TokensPerPeriod
+            });
+        }
 
-            if (requestTime.Time > MaxRequestTime)
+        public Task RecordRequestAsync()
+        {
+            var rateLimitLease = _rateLimiter.AttemptAcquire(1);
+            if (!rateLimitLease.IsAcquired)
             {
                 throw new RequestExceedingLimitException("The request exceeded the limit.");
             }
-
-            await _requestTimeCache.SetAsync(CoinGeckoApiConsts.RequestTimeCacheKey, requestTime);
+            return Task.CompletedTask;
         }
-    }
-
-    public class RequestTime
-    {
-        public int Time { get; set; }
     }
 }

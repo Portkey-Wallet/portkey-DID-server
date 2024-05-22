@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Web;
 using CAServer.Commons;
 using CAServer.Http.Dtos;
-using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;

@@ -17,6 +17,7 @@
         <ProjectReference Include="..\CAServer.Application\CAServer.Application.csproj" />
         <ProjectReference Include="..\CAServer.Grains\CAServer.Grains.csproj" />
         <ProjectReference Include="..\CAServer.Monitor\CAServer.Monitor.csproj" />
+        <ProjectReference Include="..\CAServer.Nightingale\CAServer.Nightingale.csproj" />
         <ProjectReference Include="..\CAServer.Signature\CAServer.Signature.csproj" />
         <ProjectReference Include="..\CAServer.Domain\CAServer.Domain.csproj" />
 

@@ -25,7 +25,7 @@ public partial class ThirdPartOrderAppServiceTest
         NetworkFee = "1",
         PayWayCode = "1001"
     };
-
+    
     private readonly TransakRampPrice _transaKPriceUSD = JsonConvert.DeserializeObject<TransakRampPrice>(
         """
         {
@@ -58,7 +58,7 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """
     );
-
+    
     private readonly TransakRampPrice _transaKPriceEUR = JsonConvert.DeserializeObject<TransakRampPrice>(
         """
         {
@@ -91,33 +91,33 @@ public partial class ThirdPartOrderAppServiceTest
         }
         """
     );
-
-
+    
+    
     private void MockRampPrice()
     {
         MockHttpByPath(AlchemyApi.RampOrderQuote, new AlchemyBaseResponseDto<AlchemyOrderQuoteDataDto>
         {
             Data = _alchemyOrderQuote
         });
-
+    
         MockHttpByPath(TransakApi.GetPrice, new TransakBaseResponse<TransakRampPrice>
         {
             Response = _transaKPriceUSD
         }, """ param["fiatCurrency"] =="USD" """);
-
+    
         MockHttpByPath(TransakApi.GetPrice, new TransakBaseResponse<TransakRampPrice>
         {
             Response = _transaKPriceEUR
         }, """ param["fiatCurrency"] =="EUR" """);
     }
-
-
+    
+    
     [Fact]
     public async Task RampPriceTest()
     {
         MockRampLists();
         MockRampPrice();
-
+    
         var price = await _thirdPartOrderAppService.GetRampPriceAsync(new RampDetailRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
@@ -130,14 +130,14 @@ public partial class ThirdPartOrderAppServiceTest
         });
         price.ShouldNotBeNull();
     }
-
+    
     [Fact]
     public async Task ExchangeTest()
     {
         MockRampLists();
         MockRampPrice();
         
-
+    
         var usdExchange = await _thirdPartOrderAppService.GetRampExchangeAsync(new RampExchangeRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
@@ -151,14 +151,14 @@ public partial class ThirdPartOrderAppServiceTest
         usdExchange.Success.ShouldBeTrue();
         usdExchange.Data.Exchange.ShouldBe("0.355717");
     }
-
-
+    
+    
     [Fact]
     public async Task RampLimitTest()
     {
         MockRampLists();
         MockRampPrice();
-
+    
         var sellLimit = await _thirdPartOrderAppService.GetRampLimitAsync(new RampLimitRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
@@ -169,7 +169,7 @@ public partial class ThirdPartOrderAppServiceTest
         });
         sellLimit.ShouldNotBeNull();
         sellLimit.Success.ShouldBeTrue();
-
+    
         var buyLimit = await _thirdPartOrderAppService.GetRampLimitAsync(new RampLimitRequest
         {
             Type = OrderTransDirect.BUY.ToString(),
@@ -181,13 +181,13 @@ public partial class ThirdPartOrderAppServiceTest
         buyLimit.ShouldNotBeNull();
         buyLimit.Success.ShouldBeTrue();
     }
-
+    
     [Fact]
     public async Task RampDetailTest()
     {
         MockRampLists();
         MockRampPrice();
-
+    
         var buyDetail = await _thirdPartOrderAppService.GetRampDetailAsync(new RampDetailRequest
         {
             Type = OrderTransDirect.BUY.ToString(),
@@ -200,7 +200,7 @@ public partial class ThirdPartOrderAppServiceTest
         });
         buyDetail.ShouldNotBeNull();
         buyDetail.Success.ShouldBeTrue();
-
+    
         var sellDetail = await _thirdPartOrderAppService.GetRampDetailAsync(new RampDetailRequest
         {
             Type = OrderTransDirect.SELL.ToString(),
