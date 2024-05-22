@@ -115,38 +115,80 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
             _logger.LogInformation("holderInfo ={0}", JsonConvert.SerializeObject(holderInfo));
             var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
                                                                            && g.GuardianList.Guardians.Count > 0);
+            string nickname = caHolderFromGrain.UserId.ToString("N").Substring(0, 8);
             _logger.LogInformation("guardianInfo ={0}", JsonConvert.SerializeObject(guardianInfo));
             if (guardianInfo == null)
             {
+                await DealWithThirdParty(nickname, chainId, caHash, holder.UserId, identifierHash);
                 return;
             }
-            GuardianInfoBase guardianInfoBase = await GetLoginAccountInfo(caHash, identifierHash);
-            _logger.LogInformation("guardianInfoBase ={0}", JsonConvert.SerializeObject(guardianInfoBase));
-            string nickname = caHolderFromGrain.UserId.ToString("N").Substring(0, 8);
-            _logger.LogInformation("nickname ={0}", nickname);
-            string changedNickname = await GenerateNewAccountFormat(nickname, guardianInfoBase);
-            _logger.LogInformation("changedNickname ={0}", changedNickname);
-            GrainResultDto<CAHolderGrainDto> result = null;
-            if (nickname.Equals(changedNickname))
-            {
-                result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
-            }
-            else
-            {
-                result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, guardianInfoBase.IdentifierHash);
-            }
-            if (result != null && !result.Success)
-            {
-                _logger.LogError("update user nick name failed, nickname={0}, changedNickname={1}", nickname, changedNickname);
-            }
+            await DealWithEmail(nickname,  caHash,  identifierHash, holder.UserId);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "exception occured when modify the nickname, chainId={0}, caHash={1}, identifierHash={2}",chainId, caHash, identifierHash);
         }
     }
+
+    private async Task DealWithThirdParty(string nickname, string chainId, string caHash, Guid userId, string identifierHash)
+    {
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
+        guardianIdentifierDto.ChainId = chainId;
+        guardianIdentifierDto.CaHash = caHash;
+        guardianIdentifierDto.GuardianIdentifier = string.Empty;
+        var guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+        _logger.LogInformation("third party guardianResultDto ={0}", JsonConvert.SerializeObject(guardianResultDto));
+        var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.ThirdPartyEmail.IsNullOrEmpty());
+        _logger.LogInformation("third party guardian ={0}", JsonConvert.SerializeObject(guardian));
+        string changedNickname = null;
+        GrainResultDto<CAHolderGrainDto> result = null;
+        if (guardian == null || guardian.ThirdPartyEmail.IsNullOrEmpty())
+        {
+            result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
+        }
+        else
+        {
+            changedNickname = GetEmailFormat(nickname, guardian.ThirdPartyEmail);
+            if (nickname.Equals(changedNickname))
+            {
+                result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
+            }
+            else
+            {
+                result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, identifierHash);
+            }
+        }
+        if (result != null && !result.Success)
+        {
+            _logger.LogError("update third party user nick name failed, nickname={0}, changedNickname={1}", nickname, changedNickname);
+        }
+    }
+
+    private async Task DealWithEmail(string nickname, string caHash, string identifierHash, Guid userId)
+    {
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        GuardianInfoBase guardianInfoBase = await GetLoginAccountInfo(caHash, identifierHash);
+        _logger.LogInformation("guardianInfoBase ={0}", JsonConvert.SerializeObject(guardianInfoBase));
+        _logger.LogInformation("nickname ={0}", nickname);
+        string changedNickname = GenerateNewAccountFormat(nickname, guardianInfoBase);
+        _logger.LogInformation("changedNickname ={0}", changedNickname);
+        GrainResultDto<CAHolderGrainDto> result = null;
+        if (nickname.Equals(changedNickname))
+        {
+            result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
+        }
+        else
+        {
+            result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, guardianInfoBase.IdentifierHash);
+        }
+        if (result != null && !result.Success)
+        {
+            _logger.LogError("update email user nick name failed, nickname={0}, changedNickname={1}", nickname, changedNickname);
+        }
+    }
     
-    private async Task<string> GenerateNewAccountFormat(string nickname, GuardianInfoBase guardianInfoBase)
+    private string GenerateNewAccountFormat(string nickname, GuardianInfoBase guardianInfoBase)
     {
         if (guardianInfoBase == null)
         {
@@ -175,24 +217,9 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
                 _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
                 return nickname;
             }
-            return GetEmailFormat(guardianIdentifier);
+            return GetEmailFormat(nickname, guardianIdentifier);
         }
-        else //third party
-        {
-            List<UserExtraInfoIndex> userExtraInfoIndices = await GetUserExtraInfoAsync(new List<string>() { guardianIdentifier });
-            UserExtraInfoIndex userExtraInfoIndex = userExtraInfoIndices.FirstOrDefault();
-            if (userExtraInfoIndex == null)
-            {
-                _logger.LogInformation("nickname={0} userExtraInfoIndex of third party is null", nickname);
-                return nickname;
-            }
-            if (!userExtraInfoIndex.Email.Contains("@"))
-            {
-                _logger.LogInformation("nickname={0} userExtraInfoIndex is not login guardian", nickname);
-                return nickname;
-            }
-            return GetEmailFormat(userExtraInfoIndex.Email);
-        }
+        return nickname;
     }
     
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
@@ -224,9 +251,13 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         return new List<UserExtraInfoIndex>();
     }
 
-    private string GetEmailFormat(string guardianIdentifier)
+    private string GetEmailFormat(string nickname, string guardianIdentifier)
     {
         int index = guardianIdentifier.LastIndexOf("@");
+        if (index < 0)
+        {
+            return nickname;
+        }
         string frontPart = guardianIdentifier.Substring(0, index);
         string backPart = guardianIdentifier.Substring(index);
         int frontLength = frontPart.Length;
