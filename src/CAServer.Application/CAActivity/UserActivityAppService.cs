@@ -233,6 +233,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         if (!_activityTypeOptions.MergeTokenBalanceTypes.Contains(indexerTransactionDto.MethodName))
         {
+            _logger.LogInformation("return -1");
             return;
         }
 
@@ -251,9 +252,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
         else
         {
+            _logger.LogInformation("return 0");
             return;
         }
 
+        _logger.LogInformation("need to merge, methodName:{methodName}", indexerTransactionDto.MethodName);
         var tokenInfos = indexerTransactionDto.TokenTransferInfos.Where(t => t.TokenInfo != null)
             .Select(t => t.TokenInfo).ToList();
         var nftInfos = indexerTransactionDto.TokenTransferInfos.Where(t => t.NftInfo != null).Select(t => t.NftInfo)
@@ -261,11 +264,13 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var symbols = tokenInfos.Select(t => t.Symbol).Distinct().ToList();
         if (!nftInfos.IsNullOrEmpty() && nftInfos.Count > 0 && !symbols.IsNullOrEmpty() && symbols.Count > 0)
         {
+            _logger.LogInformation("return 1");
             return;
         }
 
         if ((symbols.IsNullOrEmpty() || symbols.Count() > 1) && (nftInfos.IsNullOrEmpty() || nftInfos.Count > 1))
         {
+            _logger.LogInformation("return 2");
             return;
         }
 
@@ -285,12 +290,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             FromAddress = fromAddress,
             FromCAAddress = fromAddress,
             ToAddress = toAddress,
-            //FromChainId = 
             Amount = amount
         };
 
-
         indexerTransactionDto.TokenTransferInfos.Clear();
+        _logger.LogInformation("end need to merge, count:{count}", indexerTransactionDto.TokenTransferInfos.Count);
     }
 
     private async Task SetOperationsAsync(IndexerTransaction indexerTransactionDto, GetActivityDto activityDto,
