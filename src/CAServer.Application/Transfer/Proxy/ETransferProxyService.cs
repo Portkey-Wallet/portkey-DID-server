@@ -8,6 +8,7 @@ using CAServer.Transfer.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ObjectMapping;
 
@@ -209,5 +210,11 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
         response.TokenList = tokenList;
         return response;
+    }
+
+    public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetNetworkTokensRequestDto request)
+    {
+        return await _clientProvider.GetAsync<ResponseWrapDto<PagedResultDto<OrderIndexDto>>>(ETransferConstant.GetOrderRecordList,
+            request);
     }
 }

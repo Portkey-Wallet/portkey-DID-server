@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using CAServer.Transfer.Dtos;
 using CAServer.Transfer.Proxy;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 
 namespace CAServer.Transfer;
@@ -49,5 +50,10 @@ public class TransferAppService : CAServerAppService, ITransferAppService
     public async Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
     {
         return await _eTransferProxyService.GetNetworkTokensAsync(request);
+    }
+
+    public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetNetworkTokensRequestDto request)
+    {
+        return await _eTransferProxyService.GetRecordListAsync(request);
     }
 }

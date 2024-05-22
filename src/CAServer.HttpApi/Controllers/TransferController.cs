@@ -4,6 +4,7 @@ using CAServer.Transfer.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Controllers;
 
@@ -63,5 +64,11 @@ public class TransferController : CAServerController
     public async Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
     {
         return await _transferAppService.GetNetworkTokensAsync(request);
+    }
+    
+    [HttpGet("record/list")]
+    public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetNetworkTokensRequestDto request)
+    {
+        return await _transferAppService.GetRecordListAsync(request);
     }
 }

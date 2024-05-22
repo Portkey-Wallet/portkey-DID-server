@@ -17,4 +17,5 @@ public static class ETransferConstant
     public const string GetNetworkList = "network/list";
     public const string CalculateDepositRate = "deposit/calculator";
     public const string GetDepositInfo = "deposit/info";
+    public const string GetOrderRecordList = "record/list";
 }
