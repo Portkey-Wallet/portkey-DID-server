@@ -159,7 +159,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             foreach (var tokenDto in tokens)
             {
                 var tokenInnerInfo = tokenDto.ToTokenList
-                    .Where(t => request.Network.IsNullOrEmpty() || t.ChainIdList.Contains(request.Network)).ToList();
+                    .Where(t => request.ChainId.IsNullOrEmpty() || t.ChainIdList.Contains(request.ChainId)).ToList();
 
                 foreach (var item in tokenInnerInfo)
                 {
@@ -167,7 +167,8 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                     {
                         Name = item.Name,
                         Icon = item.Icon,
-                        Symbol = item.Symbol
+                        Symbol = item.Symbol,
+                        ContractAddress = string.Empty// get from indexer if need.
                     });
                 }
             }
@@ -212,9 +213,11 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         return response;
     }
 
-    public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetNetworkTokensRequestDto request)
+    public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(
+        GetNetworkTokensRequestDto request)
     {
-        return await _clientProvider.GetAsync<ResponseWrapDto<PagedResultDto<OrderIndexDto>>>(ETransferConstant.GetOrderRecordList,
+        return await _clientProvider.GetAsync<ResponseWrapDto<PagedResultDto<OrderIndexDto>>>(
+            ETransferConstant.GetOrderRecordList,
             request);
     }
 }
