@@ -184,7 +184,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             // get network
             var networkInfosWrap = await GetNetworkListWithSymbolAsync(new GetNetworkListRequestDto()
             {
-                ChainId = request.ChainId,
+                ChainId = "tDVW",
                 Type = "Deposit",
                 Symbol = tokenDto.Symbol
             });
