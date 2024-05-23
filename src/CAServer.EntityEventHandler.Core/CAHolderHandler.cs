@@ -248,7 +248,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             return nickname;
         }
-        if ("Telegram".Equals(guardian.Type))
+        if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type))
         {
             return GetFirstNameFormat(nickname, guardian.FirstName);
         }
