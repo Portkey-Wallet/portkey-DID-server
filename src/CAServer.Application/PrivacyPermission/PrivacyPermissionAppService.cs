@@ -136,6 +136,15 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
             _logger.LogError(e, "exception occured when modify the nickname, chainId={0}, caHash={1}, identifierHash={2}",chainId, caHash, identifierHash);
         }
     }
+    
+    private string GetFirstNameFormat(string nickname, string firstName)
+    {
+        if (firstName.IsNullOrEmpty())
+        {
+            return nickname;
+        }
+        return firstName + "***";
+    }
 
     private async Task DealWithThirdParty(string nickname, string chainId, string caHash, Guid userId, string identifierHash)
     {
@@ -143,21 +152,39 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
         guardianIdentifierDto.ChainId = chainId;
         guardianIdentifierDto.CaHash = caHash;
-        guardianIdentifierDto.GuardianIdentifier = string.Empty;
         var guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
         _logger.LogInformation("third party guardianResultDto ={0}", JsonConvert.SerializeObject(guardianResultDto));
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.ThirdPartyEmail.IsNullOrEmpty());
         _logger.LogInformation("third party guardian ={0}", JsonConvert.SerializeObject(guardian));
-        string changedNickname = null;
+        string changedNickname = string.Empty;
         GrainResultDto<CAHolderGrainDto> result = null;
-        if (guardian == null || guardian.ThirdPartyEmail.IsNullOrEmpty())
+        if (guardian == null)
         {
             result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
+        }
+        else if (guardian.ThirdPartyEmail.IsNullOrEmpty())
+        {
+            if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type))
+            {
+                changedNickname = GetFirstNameFormat(nickname, guardian.FirstName);
+            }
+            if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
+            {
+                changedNickname = GetEmailFormat(nickname, guardian.GuardianIdentifier);
+            }
+            if (string.Empty.Equals(changedNickname) || nickname.Equals(changedNickname))
+            {
+                result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
+            }
+            else
+            {
+                result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, identifierHash);
+            }
         }
         else
         {
             changedNickname = GetEmailFormat(nickname, guardian.ThirdPartyEmail);
-            if (nickname.Equals(changedNickname))
+            if (string.Empty.Equals(changedNickname) || nickname.Equals(changedNickname))
             {
                 result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
             }
