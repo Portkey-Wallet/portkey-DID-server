@@ -81,7 +81,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             }
             else
             {
-                _logger.LogInformation("third party account, eventData={0}", JsonConvert.SerializeObject(eventData));
+                _logger.LogInformation("email account, eventData={0}", JsonConvert.SerializeObject(eventData));
                 changedNickname = await GenerateNewAccountFormat(nickname, loginGuardianInfoBase);
             }
         }
@@ -143,7 +143,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
         _logger.LogInformation("guardianInfo = {0}", JsonConvert.SerializeObject(guardianInfo));
         GuardianInfoBase guardianInfoBase = guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
-        if (guardianInfoBase == null)
+        if (guardianInfoBase == null || !guardianInfoBase.Type.Equals(((int)GuardianType.GUARDIAN_TYPE_OF_EMAIL) + ""))
         {
             return null;
         }
@@ -222,6 +222,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         guardianIdentifierDto.CaHash = eventData.CaHash;
         guardianIdentifierDto.GuardianIdentifier = string.Empty;
         var guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+        _logger.LogInformation("third party guardianResultDto={}", JsonConvert.SerializeObject(guardianResultDto));
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.ThirdPartyEmail.IsNullOrEmpty());
         if (guardian == null || guardian.ThirdPartyEmail.IsNullOrEmpty())
         {
