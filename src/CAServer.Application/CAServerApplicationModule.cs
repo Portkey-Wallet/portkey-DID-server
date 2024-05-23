@@ -80,6 +80,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<IpfsOptions>(configuration.GetSection("Ipfs"));
         Configure<ContractServiceOptions>(configuration.GetSection("ContractService"));
         Configure<TokenSpenderOptions>(configuration.GetSection("TokenSpender"));
+        Configure<DepositOptions>(configuration.GetSection("Deposit"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));
