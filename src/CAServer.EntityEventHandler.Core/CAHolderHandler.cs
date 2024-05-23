@@ -249,13 +249,9 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             return nickname;
         }
         string address = string.Empty;
-        if (guardianResultDto.ManagerInfos != null)
+        if (!guardianResultDto.CaAddress.IsNullOrEmpty())
         {
-            var managerInfoDto = guardianResultDto.ManagerInfos.FirstOrDefault(m => !m.Address.IsNullOrEmpty());
-            if (managerInfoDto != null)
-            {
-                address = managerInfoDto.Address;
-            }
+            address = guardianResultDto.CaAddress;
         }
         if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type) || "Facebook".Equals(guardian.Type))
         {

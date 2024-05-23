@@ -94,29 +94,31 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
             _logger.LogInformation("DeletePrivacyPermissionAsync is running chainId={0}, caHash={1},  identifierHash={2}", chainId , caHash, identifierHash);
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(holder.UserId);
             var caHolderGrainDto = grain.GetCaHolder();
-            _logger.LogInformation("caHolderGrainDto from grain ={0}", JsonConvert.SerializeObject(caHolderGrainDto));
+            _logger.LogInformation("DeletePrivacyPermissionAsync caHolderGrainDto from grain ={0}", JsonConvert.SerializeObject(caHolderGrainDto));
             if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
             {
-                _logger.LogError("query caHolderGrainDto from ICAHolderGrain is null, caHash={0}", caHash);
+                _logger.LogError("DeletePrivacyPermissionAsync query caHolderGrainDto from ICAHolderGrain is null, caHash={0}", caHash);
                 return;
             }
             var caHolderFromGrain = caHolderGrainDto.Result.Data;
             //condition: not use login account strategy, pass
             if (caHolderFromGrain.IdentifierHash.IsNullOrEmpty() || !caHolderFromGrain.ModifiedNickname)
             {
+                _logger.LogInformation("DeletePrivacyPermissionAsync IdentifierHash is null");
                 return;
             }
             //condition: the identifierHash is not the deleted one, pass
             if (!caHolderFromGrain.IdentifierHash.Equals(identifierHash))
             {
+                _logger.LogInformation("DeletePrivacyPermissionAsync IdentifierHash not equal");
                 return;
             }
             var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
-            _logger.LogInformation("holderInfo ={0}", JsonConvert.SerializeObject(holderInfo));
+            _logger.LogInformation("DeletePrivacyPermissionAsync holderInfo ={0}", JsonConvert.SerializeObject(holderInfo));
             var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
                                                                            && g.GuardianList.Guardians.Count > 0);
             string nickname = caHolderFromGrain.UserId.ToString("N").Substring(0, 8);
-            _logger.LogInformation("guardianInfo ={0}", JsonConvert.SerializeObject(guardianInfo));
+            _logger.LogInformation("DeletePrivacyPermissionAsync guardianInfo ={0}", JsonConvert.SerializeObject(guardianInfo));
             if (guardianInfo == null)
             {
                 await DealWithThirdParty(nickname, chainId, caHash, holder.UserId, identifierHash);
@@ -168,13 +170,9 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         _logger.LogInformation("third party guardian ={0}", JsonConvert.SerializeObject(guardian));
         string changedNickname = string.Empty;
         string address = string.Empty;
-        if (guardianResultDto.ManagerInfos != null)
+        if (!guardianResultDto.CaAddress.IsNullOrEmpty())
         {
-            var managerInfoDto = guardianResultDto.ManagerInfos.FirstOrDefault(m => !m.Address.IsNullOrEmpty());
-            if (managerInfoDto != null)
-            {
-                address = managerInfoDto.Address;
-            }
+            address = guardianResultDto.CaAddress;
         }
         GrainResultDto<CAHolderGrainDto> result = null;
         if (guardian == null)
