@@ -252,6 +252,11 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             return GetFirstNameFormat(nickname, guardian.FirstName);
         }
+
+        if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
+        {
+            return GetEmailFormat(nickname, guardian.GuardianIdentifier);
+        }
         return GetEmailFormat(nickname, guardian.ThirdPartyEmail);
     }
     
