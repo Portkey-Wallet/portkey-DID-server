@@ -314,7 +314,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         int frontLength = frontPart.Length;
         if (frontLength > 4)
         {
-            return frontPart.Substring(0, 4) + GenerateAsterisk(frontLength - 4) + backPart;
+            return frontPart.Substring(0, 4) + "***" + backPart;
         }
         else
         {
@@ -338,21 +338,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             return address.Substring(0, 3) + "***" + address.Substring(length - 3);
         }
         return nickname;
-    }
-
-    private string GenerateAsterisk(int num)
-    {
-        if (num < 0)
-        {
-            return string.Empty;
-        }
-        string result = string.Empty;
-        for (int i = num - 1; i >= 0; i--)
-        {
-            result += "*";
-        }
-
-        return result;
     }
 
     public async Task HandleEventAsync(UpdateCAHolderEto eventData)

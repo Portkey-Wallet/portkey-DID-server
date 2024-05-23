@@ -316,27 +316,12 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         int frontLength = frontPart.Length;
         if (frontLength > 4)
         {
-            return frontPart.Substring(0, 4) + GenerateAsterisk(frontLength - 4) + backPart;
+            return frontPart.Substring(0, 4) + "***" + backPart;
         }
         else
         {
             return frontPart + "***" + backPart;
         }
-    }
-
-    private string GenerateAsterisk(int num)
-    {
-        if (num < 0)
-        {
-            return string.Empty;
-        }
-        string result = string.Empty;
-        for (int i = num - 1; i >= 0; i--)
-        {
-            result += "*";
-        }
-
-        return result;
     }
     
     private async Task<GuardianInfoBase> GetLoginAccountInfo(string caHash, string identifierHash)
