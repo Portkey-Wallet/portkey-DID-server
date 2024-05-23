@@ -204,8 +204,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
     }
 
-    private void SetDAppInfo(string toContractAddress, GetActivityDto activityDto)
+    private void SetDAppInfo(string toContractAddress, GetActivityDto activityDto, string fromAddress)
     {
+        if (activityDto.TransactionType == ActivityConstants.SwapExactTokensForTokensName &&
+            _activityOptions.ETransferConfigs.SelectMany(t => t.Accounts).Contains(fromAddress))
+        {
+            var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault();
+            toContractAddress = eTransferConfig?.ContractAddress;
+        }
+
         if (IsETransfer(activityDto.TransactionType, activityDto.FromChainId, activityDto.FromAddress))
         {
             var eTransferConfig = _activityOptions.ETransferConfigs.FirstOrDefault();
@@ -762,7 +769,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 await MapMethodNameAsync(caAddresses, dto, guardian);
             }
 
-            SetDAppInfo(ht.ToContractAddress, dto);
+            SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress);
             await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
             getActivitiesDto.Add(dto);
         }

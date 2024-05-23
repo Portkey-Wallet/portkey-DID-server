@@ -12,4 +12,5 @@ public static class ActivityConstants
     public const string NotRegisterChainAddManagerName = "Security upgrade-Scan code login";
     public const string ReceiveName = "Receive";
     public const string SendName = "Send";
+    public const string SwapExactTokensForTokensName = "SwapExactTokensForTokens";
 }
