@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Contacts.Provider;
@@ -248,9 +248,18 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             return nickname;
         }
-        if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type))
+        string address = string.Empty;
+        if (guardianResultDto.ManagerInfos != null)
         {
-            return GetFirstNameFormat(nickname, guardian.FirstName);
+            var managerInfoDto = guardianResultDto.ManagerInfos.FirstOrDefault(m => !m.Address.IsNullOrEmpty());
+            if (managerInfoDto != null)
+            {
+                address = managerInfoDto.Address;
+            }
+        }
+        if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type) || "Facebook".Equals(guardian.Type))
+        {
+            return GetFirstNameFormat(nickname, guardian.FirstName, address);
         }
 
         if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
@@ -309,17 +318,26 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
         else
         {
-            return frontPart.Substring(0, 1) + GenerateAsterisk(frontLength - 1) + backPart;
+            return frontPart + "***" + backPart;
         }
     }
     
-    private string GetFirstNameFormat(string nickname, string firstName)
+    private string GetFirstNameFormat(string nickname, string firstName, string address)
     {
-        if (firstName.IsNullOrEmpty())
+        if (firstName.IsNullOrEmpty() && address.IsNullOrEmpty())
         {
             return nickname;
         }
-        return firstName + "***";
+        if (!firstName.IsNullOrEmpty() && Regex.IsMatch(firstName,"^\\w+$"))
+        {
+            return firstName + "***";
+        }
+        if (!address.IsNullOrEmpty())
+        {
+            int length = address.Length;
+            return address.Substring(0, 3) + "***" + address.Substring(length - 3);
+        }
+        return nickname;
     }
 
     private string GenerateAsterisk(int num)

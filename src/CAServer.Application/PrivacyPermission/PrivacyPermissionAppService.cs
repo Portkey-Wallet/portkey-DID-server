@@ -137,13 +137,23 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         }
     }
     
-    private string GetFirstNameFormat(string nickname, string firstName)
+    private string GetFirstNameFormat(string nickname, string firstName, string address)
     {
-        if (firstName.IsNullOrEmpty())
+        if (firstName.IsNullOrEmpty() && address.IsNullOrEmpty())
         {
             return nickname;
         }
-        return firstName + "***";
+        if (!firstName.IsNullOrEmpty() && Regex.IsMatch(firstName,"^\\w+$"))
+        {
+            return firstName + "***";
+        }
+
+        if (!address.IsNullOrEmpty())
+        {
+            int length = address.Length;
+            return address.Substring(0, 3) + "***" + address.Substring(length - 3);
+        }
+        return nickname;
     }
 
     private async Task DealWithThirdParty(string nickname, string chainId, string caHash, Guid userId, string identifierHash)
@@ -157,6 +167,15 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.ThirdPartyEmail.IsNullOrEmpty());
         _logger.LogInformation("third party guardian ={0}", JsonConvert.SerializeObject(guardian));
         string changedNickname = string.Empty;
+        string address = string.Empty;
+        if (guardianResultDto.ManagerInfos != null)
+        {
+            var managerInfoDto = guardianResultDto.ManagerInfos.FirstOrDefault(m => !m.Address.IsNullOrEmpty());
+            if (managerInfoDto != null)
+            {
+                address = managerInfoDto.Address;
+            }
+        }
         GrainResultDto<CAHolderGrainDto> result = null;
         if (guardian == null)
         {
@@ -166,7 +185,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         {
             if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type))
             {
-                changedNickname = GetFirstNameFormat(nickname, guardian.FirstName);
+                changedNickname = GetFirstNameFormat(nickname, guardian.FirstName, address);
             }
             if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
             {
@@ -301,7 +320,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         }
         else
         {
-            return frontPart.Substring(0, 1) + GenerateAsterisk(frontLength - 1) + backPart;
+            return frontPart + "***" + backPart;
         }
     }
 
