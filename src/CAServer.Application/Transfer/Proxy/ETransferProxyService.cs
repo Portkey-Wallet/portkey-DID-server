@@ -168,7 +168,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                         Name = item.Name,
                         Icon = item.Icon,
                         Symbol = item.Symbol,
-                        ContractAddress = string.Empty// get from indexer if need.
+                        ContractAddress = string.Empty // get from indexer if need.
                     });
                 }
             }
@@ -195,16 +195,18 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             }
 
             getNetworkListDto = networkInfosWrap.Data.NetworkList;
-            if (getNetworkListDto.FirstOrDefault(t =>
-                    request.Network.IsNullOrEmpty() || t.Network == request.Network) != null)
+
+            var networkTokenDto =
+                getNetworkListDto.FirstOrDefault(t => !request.Network.IsNullOrEmpty() && t.Network == request.Network);
+            if (networkTokenDto != null || request.Network.IsNullOrEmpty())
             {
                 tokenList.Add(new NetworkTokenInfo()
                 {
                     Name = tokenDto.Name,
-                    ContractAddress = tokenDto.ContractAddress,
+                    ContractAddress = request.Network.IsNullOrEmpty() ? string.Empty : networkTokenDto?.ContractAddress,
                     Symbol = tokenDto.Symbol,
                     Icon = tokenDto.Icon,
-                    NetworkList = getNetworkListDto
+                    NetworkList = request.Network.IsNullOrEmpty() ? getNetworkListDto : new List<NetworkDto>()
                 });
             }
         }
