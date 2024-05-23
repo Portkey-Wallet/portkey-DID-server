@@ -205,7 +205,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                     _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
                     return nickname;
                 }
-                return GetEmailFormat(nickname, guardianIdentifier);
+                return GetEmailFormat(nickname, guardianIdentifier, string.Empty, string.Empty);
             }
         }
         catch (Exception e)
@@ -260,9 +260,9 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
         if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
         {
-            return GetEmailFormat(nickname, guardian.GuardianIdentifier);
+            return GetEmailFormat(nickname, guardian.GuardianIdentifier, guardian.FirstName, address);
         }
-        return GetEmailFormat(nickname, guardian.ThirdPartyEmail);
+        return GetEmailFormat(nickname, guardian.ThirdPartyEmail, guardian.FirstName, address);
     }
     
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
@@ -294,11 +294,11 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         return new List<UserExtraInfoIndex>();
     }
 
-    private string GetEmailFormat(string nickname, string guardianIdentifier)
+    private string GetEmailFormat(string nickname, string guardianIdentifier, string firstName, string address)
     {
         if (guardianIdentifier.IsNullOrEmpty())
         {
-            return nickname;
+            return GetFirstNameFormat( nickname,  firstName,  address);
         }
         int index = guardianIdentifier.LastIndexOf("@");
         if (index < 0)

@@ -187,7 +187,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
             }
             if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
             {
-                changedNickname = GetEmailFormat(nickname, guardian.GuardianIdentifier);
+                changedNickname = GetEmailFormat(nickname, guardian.GuardianIdentifier, guardian.FirstName, guardianResultDto.CaAddress);
             }
             if (string.Empty.Equals(changedNickname) || nickname.Equals(changedNickname))
             {
@@ -200,7 +200,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         }
         else
         {
-            changedNickname = GetEmailFormat(nickname, guardian.ThirdPartyEmail);
+            changedNickname = GetEmailFormat(nickname, guardian.ThirdPartyEmail, guardian.FirstName, guardianResultDto.CaAddress);
             if (string.Empty.Equals(changedNickname) || nickname.Equals(changedNickname))
             {
                 result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
@@ -268,7 +268,7 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
                 _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
                 return nickname;
             }
-            return GetEmailFormat(nickname, guardianIdentifier);
+            return GetEmailFormat(nickname, guardianIdentifier, string.Empty, string.Empty);
         }
         return nickname;
     }
@@ -302,8 +302,12 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         return new List<UserExtraInfoIndex>();
     }
 
-    private string GetEmailFormat(string nickname, string guardianIdentifier)
+    private string GetEmailFormat(string nickname, string guardianIdentifier, string firstName, string address)
     {
+        if (guardianIdentifier.IsNullOrEmpty())
+        {
+            return GetFirstNameFormat(nickname, firstName, address);
+        }
         int index = guardianIdentifier.LastIndexOf("@");
         if (index < 0)
         {
