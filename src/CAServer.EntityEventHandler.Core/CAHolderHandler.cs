@@ -224,7 +224,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             return nickname;
         }
 
-        await Test();
         GuardianResultDto guardianResultDto = null;
         try
         {
@@ -238,30 +237,22 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             _logger.LogError(e, "call GetGuardianIdentifiersAsync error, ChainId={1},CaHash={2}",  eventData.ChainId, eventData.CaHash);
         }
-        _logger.LogInformation("third party guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
-        var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.ThirdPartyEmail.IsNullOrEmpty());
-        if (guardian == null || guardian.ThirdPartyEmail.IsNullOrEmpty())
+
+        if (guardianResultDto == null)
         {
             return nickname;
         }
+        _logger.LogInformation("third party guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
+        var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
+        if (guardian == null)
+        {
+            return nickname;
+        }
+        if ("Telegram".Equals(guardian.Type))
+        {
+            return GetFirstNameFormat(nickname, guardian.FirstName);
+        }
         return GetEmailFormat(nickname, guardian.ThirdPartyEmail);
-    }
-
-    private async Task Test()
-    {
-        try
-        {
-            GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
-            guardianIdentifierDto.ChainId = "AELF";
-            guardianIdentifierDto.CaHash = "2fde33df465f3c3720d4113d3537059a0c1e33854999b4138d7aa9f60e0d8c32";
-            _logger.LogInformation("third party GuardianIdentifierDto={0}", JsonConvert.SerializeObject(guardianIdentifierDto));
-            var guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
-            _logger.LogInformation("fix test guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "fix error chainId={0}, cahash={1}", "AELF", "2fde33df465f3c3720d4113d3537059a0c1e33854999b4138d7aa9f60e0d8c32");
-        }
     }
     
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
@@ -295,6 +286,10 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
     private string GetEmailFormat(string nickname, string guardianIdentifier)
     {
+        if (guardianIdentifier.IsNullOrEmpty())
+        {
+            return nickname;
+        }
         int index = guardianIdentifier.LastIndexOf("@");
         if (index < 0)
         {
@@ -311,6 +306,15 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             return frontPart.Substring(0, 1) + GenerateAsterisk(frontLength - 1) + backPart;
         }
+    }
+    
+    private string GetFirstNameFormat(string nickname, string firstName)
+    {
+        if (firstName.IsNullOrEmpty())
+        {
+            return nickname;
+        }
+        return firstName + "***";
     }
 
     private string GenerateAsterisk(int num)
