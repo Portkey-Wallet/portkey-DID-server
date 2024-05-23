@@ -231,6 +231,30 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private void SetMergeTokenBalance(IndexerTransaction indexerTransactionDto,
         string address)
     {
+        if (indexerTransactionDto.TokenTransferInfos.IsNullOrEmpty() ||
+            indexerTransactionDto.TokenTransferInfos.Count == 1)
+        {
+            return;
+        }
+
+        var transfers = new List<TokenTransferInfo>();
+        foreach (var item in indexerTransactionDto.TokenTransferInfos)
+        {
+            if (item.TransferInfo.FromAddress == address || item.TransferInfo.ToAddress == address)
+            {
+                transfers.Add(item);
+            }
+        }
+
+        indexerTransactionDto.TokenTransferInfos = transfers;
+
+        if (transfers.Count == 1)
+        {
+            indexerTransactionDto.TokenInfo = transfers.First()?.TokenInfo;
+            indexerTransactionDto.NftInfo = transfers.First()?.NftInfo;
+            indexerTransactionDto.TransferInfo = transfers.First()?.TransferInfo;
+        }
+
         if (!_activityTypeOptions.MergeTokenBalanceTypes.Contains(indexerTransactionDto.MethodName))
         {
             _logger.LogInformation("return -1");
@@ -262,7 +286,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var nftInfos = indexerTransactionDto.TokenTransferInfos.Where(t => t.NftInfo != null).Select(t => t.NftInfo)
             .ToList();
         var symbols = tokenInfos.Select(t => t.Symbol).Distinct().ToList();
-        var nftSymbols=nftInfos.Select(t => t.Symbol).Distinct().ToList();
+        var nftSymbols = nftInfos.Select(t => t.Symbol).Distinct().ToList();
         if (!nftInfos.IsNullOrEmpty() && nftInfos.Count > 0 && !symbols.IsNullOrEmpty() && symbols.Count > 0)
         {
             _logger.LogInformation("return 1");
