@@ -224,26 +224,19 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             return nickname;
         }
 
+        await Test();
         GuardianResultDto guardianResultDto = null;
-        for (int i = 0; i < 3; i++)
+        try
         {
-            try
-            {
-                GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
-                guardianIdentifierDto.ChainId = eventData.ChainId;
-                guardianIdentifierDto.CaHash = eventData.CaHash;
-                _logger.LogInformation("third party GuardianIdentifierDto={0}", JsonConvert.SerializeObject(guardianIdentifierDto));
-                guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "time:{0} call GetGuardianIdentifiersAsync error, ChainId={1},CaHash={2}", i, eventData.ChainId, eventData.CaHash);
-            }
-            if (guardianResultDto != null)
-            {
-                break;
-            }
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
+            guardianIdentifierDto.ChainId = eventData.ChainId;
+            guardianIdentifierDto.CaHash = eventData.CaHash;
+            _logger.LogInformation("third party GuardianIdentifierDto={0}", JsonConvert.SerializeObject(guardianIdentifierDto));
+            guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "call GetGuardianIdentifiersAsync error, ChainId={1},CaHash={2}",  eventData.ChainId, eventData.CaHash);
         }
         _logger.LogInformation("third party guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.ThirdPartyEmail.IsNullOrEmpty());
@@ -252,6 +245,23 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             return nickname;
         }
         return GetEmailFormat(nickname, guardian.ThirdPartyEmail);
+    }
+
+    private async Task Test()
+    {
+        try
+        {
+            GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
+            guardianIdentifierDto.ChainId = "AELF";
+            guardianIdentifierDto.CaHash = "2fde33df465f3c3720d4113d3537059a0c1e33854999b4138d7aa9f60e0d8c32";
+            _logger.LogInformation("third party GuardianIdentifierDto={0}", JsonConvert.SerializeObject(guardianIdentifierDto));
+            var guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+            _logger.LogInformation("fix test guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "fix error chainId={0}, cahash={1}", "AELF", "2fde33df465f3c3720d4113d3537059a0c1e33854999b4138d7aa9f60e0d8c32");
+        }
     }
     
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)

@@ -107,7 +107,7 @@ public class ContractProvider : IContractProvider, ISingletonDependency
 
         var client = new AElfClient(chainInfo.BaseUrl);
         await client.IsConnectedAsync();
-
+        _logger.LogDebug("third party call _contractOptions.CommonPrivateKeyForCallTx={0}", _contractOptions.CommonPrivateKeyForCallTx);
         string addressFromPrivateKey = client.GetAddressFromPrivateKey(_contractOptions.CommonPrivateKeyForCallTx);
 
         var generateIndicator = _indicatorScope.Begin(MonitorTag.AelfClient,
