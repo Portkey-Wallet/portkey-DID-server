@@ -122,6 +122,13 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
                 await DealWithThirdParty(nickname, chainId, caHash, holder.UserId, identifierHash);
                 return;
             }
+            var guardianInfoBase = guardianInfo.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
+            if (guardianInfoBase == null || !guardianInfoBase.Type.Equals(((int)GuardianType.GUARDIAN_TYPE_OF_EMAIL) + ""))
+            {
+                await DealWithThirdParty(nickname, chainId, caHash, holder.UserId, identifierHash);
+                return;
+            }
+            
             await DealWithEmail(nickname,  caHash,  identifierHash, holder.UserId);
         }
         catch (Exception e)
