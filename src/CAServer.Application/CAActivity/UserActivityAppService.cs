@@ -228,7 +228,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.DappIcon = tokenSpender.Icon;
     }
 
-    public void SetMergeTokenBalance(IndexerTransaction indexerTransactionDto,
+    private void SetMergeTokenBalance(IndexerTransaction indexerTransactionDto,
         string address)
     {
         if (!_activityTypeOptions.MergeTokenBalanceTypes.Contains(indexerTransactionDto.MethodName))
@@ -241,7 +241,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var toAddress = string.Empty;
         var transferInfos = indexerTransactionDto.TokenTransferInfos.Select(t => t.TransferInfo).ToList();
         var fromCaAddresses = transferInfos.Select(t => t.FromCAAddress).Distinct().ToList();
-        var toAddresses = transferInfos.Select(t => t.ToAddress).ToList();
+        var toAddresses = transferInfos.Select(t => t.ToAddress).Distinct().ToList();
         if (fromCaAddresses.Count() == 1 && fromCaAddresses.First() == address)
         {
             fromAddress = address;
@@ -262,19 +262,20 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var nftInfos = indexerTransactionDto.TokenTransferInfos.Where(t => t.NftInfo != null).Select(t => t.NftInfo)
             .ToList();
         var symbols = tokenInfos.Select(t => t.Symbol).Distinct().ToList();
+        var nftSymbols=nftInfos.Select(t => t.Symbol).Distinct().ToList();
         if (!nftInfos.IsNullOrEmpty() && nftInfos.Count > 0 && !symbols.IsNullOrEmpty() && symbols.Count > 0)
         {
             _logger.LogInformation("return 1");
             return;
         }
 
-        if ((symbols.IsNullOrEmpty() || symbols.Count() > 1) && (nftInfos.IsNullOrEmpty() || nftInfos.Count > 1))
+        if ((symbols.IsNullOrEmpty() || symbols.Count() > 1) && (nftSymbols.IsNullOrEmpty() || nftSymbols.Count > 1))
         {
             _logger.LogInformation("return 2");
             return;
         }
 
-        if (nftInfos.Count == 1)
+        if (nftSymbols.Count == 1)
         {
             indexerTransactionDto.NftInfo = nftInfos.First();
         }
