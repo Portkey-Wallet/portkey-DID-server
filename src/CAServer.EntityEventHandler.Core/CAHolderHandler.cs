@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.Contacts.Provider;
@@ -67,7 +68,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
     public async Task HandleEventAsync(CreateUserEto eventData)
     {
-        string changedNickname = null;
+        string changedNickname = string.Empty;
         string nickname = eventData.UserId.ToString("N").Substring(0, 8);
         GuardianInfoBase loginGuardianInfoBase = null;
         try
@@ -93,7 +94,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
             var caHolderGrainDto = _objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData);
-            if (nickname.Equals(changedNickname))
+            if (changedNickname.IsNullOrEmpty() || nickname.Equals(changedNickname))
             {
                 caHolderGrainDto.Nickname = nickname;
                 caHolderGrainDto.PopedUp = false;
@@ -217,12 +218,34 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
     private async Task<string> GenerateNewAccountFormatForThirdParty(string nickname, CreateUserEto eventData)
     {
-        GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
-        guardianIdentifierDto.ChainId = eventData.ChainId;
-        guardianIdentifierDto.CaHash = eventData.CaHash;
-        guardianIdentifierDto.GuardianIdentifier = string.Empty;
-        var guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
-        _logger.LogInformation("third party guardianResultDto={}", JsonConvert.SerializeObject(guardianResultDto));
+        if (eventData.ChainId.IsNullOrEmpty() || eventData.CaHash.IsNullOrEmpty())
+        {
+            _logger.LogWarning("third party generate account error because of chainId or cahash is null, chainId={0}, cahash={1}", eventData.ChainId, eventData.CaHash);
+            return nickname;
+        }
+
+        GuardianResultDto guardianResultDto = null;
+        for (int i = 0; i < 3; i++)
+        {
+            try
+            {
+                GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
+                guardianIdentifierDto.ChainId = eventData.ChainId;
+                guardianIdentifierDto.CaHash = eventData.CaHash;
+                _logger.LogInformation("third party GuardianIdentifierDto={0}", JsonConvert.SerializeObject(guardianIdentifierDto));
+                guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "time:{0} call GetGuardianIdentifiersAsync error, ChainId={1},CaHash={2}", i, eventData.ChainId, eventData.CaHash);
+            }
+            if (guardianResultDto != null)
+            {
+                break;
+            }
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
+        _logger.LogInformation("third party guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian && !g.ThirdPartyEmail.IsNullOrEmpty());
         if (guardian == null || guardian.ThirdPartyEmail.IsNullOrEmpty())
         {
