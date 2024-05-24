@@ -8,6 +8,8 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Growth;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Users;
 
@@ -25,10 +27,11 @@ public class CAAccountController : CAServerController
     private readonly ICurrentUser _currentUser;
     private readonly IGrowthAppService _growthAppService;
     private readonly Meter _meter;
+    private readonly ILogger<CAAccountController> _logger;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService)
+        IGrowthAppService growthAppService, ILogger<CAAccountController> logger)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
@@ -36,6 +39,7 @@ public class CAAccountController : CAServerController
         _currentUser = currentUser;
         _growthAppService = growthAppService;
         _meter = new Meter("CAServer", "1.0.0");
+        _logger = logger;
     }
 
     [HttpPost("register/request")]
@@ -62,9 +66,12 @@ public class CAAccountController : CAServerController
     public async Task<bool> UpdateUnsetGuardianIdentifierAsync(
         UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
     {
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync is called {0}", JsonConvert.SerializeObject(updateGuardianIdentifierDto));
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         updateGuardianIdentifierDto.UserId = userId;
-        return await _guardianAppService.UpdateUnsetGuardianIdentifierAsync(updateGuardianIdentifierDto);
+        var result = await _guardianAppService.UpdateUnsetGuardianIdentifierAsync(updateGuardianIdentifierDto);
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result {0}", result);
+        return result;
     }
 
     [HttpGet("registerInfo")]
