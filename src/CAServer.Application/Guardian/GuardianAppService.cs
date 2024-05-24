@@ -336,6 +336,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     public async Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
     {
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync is called updateGuardianIdentifierDto={0}", JsonConvert.SerializeObject(updateGuardianIdentifierDto));
         GuardianResultDto guardianResultDto = await GetGuardianIdentifiersAsync(updateGuardianIdentifierDto);
         _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync query result ={0}", JsonConvert.SerializeObject(guardianResultDto));
         if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
@@ -368,7 +369,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
         if (identifierHashFromGrain.IsNullOrEmpty() || !identifierHashFromGrain.Equals(unsetGuardianIdentifierHash))
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync identifierHashFromGrain not equal unsetGuardianIdentifierHash caHash={0}", guardianResultDto.CaAddress);
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync identifierHashFromGrain not equal unsetGuardianIdentifierHash caHash={0}," +
+                             " identifierHashFromGrain={1}, unsetGuardianIdentifierHash={2}", guardianResultDto.CaAddress, identifierHashFromGrain, unsetGuardianIdentifierHash);
             return false;
         }
         var guardians = guardianResultDto.GuardianList.Guardians;
