@@ -356,17 +356,24 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync ModifyNicknameHandler userId={0} cahash={1}", userId.ToString(), guardianResultDto.CaHash);
         var stopwatch = Stopwatch.StartNew();
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
-        var caHolderGrainDto = grain.GetCaHolder();
+        var caHolderGrainDto = await grain.GetCaHolder();
+        if (!caHolderGrainDto.Success)
+        {
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto failed");
+            return false;
+        }
         stopwatch.Stop();
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync ICAHolderGrain cost time={0}", stopwatch.ElapsedMilliseconds);
-        if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync ICAHolderGrain cost time={0}, caHolderGrainDto={1}", stopwatch.ElapsedMilliseconds, JsonConvert.SerializeObject(caHolderGrainDto));
+        if (caHolderGrainDto.Data == null)
         {
             _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null caHash={0}", guardianResultDto.CaAddress);
             return false;
         }
+
+        var caHolder = caHolderGrainDto.Data;
         _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto={0}", JsonConvert.SerializeObject(caHolderGrainDto));
-        var modifiedNickname = caHolderGrainDto.Result.Data.ModifiedNickname;
-        var identifierHashFromGrain = caHolderGrainDto.Result.Data.IdentifierHash;
+        var modifiedNickname = caHolder.ModifiedNickname;
+        var identifierHashFromGrain = caHolder.IdentifierHash;
         if (modifiedNickname && identifierHashFromGrain.IsNullOrEmpty())
         {
             _logger.LogError("UpdateUnsetGuardianIdentifierAsync user has modified nickname by himself caHash={0}", guardianResultDto.CaAddress);
