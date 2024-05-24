@@ -110,9 +110,9 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.ModifiedNickname = true;
                 caHolderGrainDto.IdentifierHash = identifierHash;
             }
-            _logger.LogInformation("before create holder info, hash={}", JsonConvert.SerializeObject(caHolderGrainDto));
+            _logger.LogInformation("before create holder info, hash={0}", JsonConvert.SerializeObject(caHolderGrainDto));
             var result = await grain.AddHolderAsync(caHolderGrainDto);
-            _logger.LogInformation("after create holder info, hash={}", JsonConvert.SerializeObject(result.Data));
+            _logger.LogInformation("after create holder info, hash={0}", JsonConvert.SerializeObject(result.Data));
             if (!result.Success)
             {
                 _logger.LogError("create holder fail: {message}, userId: {userId}, aAHash: {caHash}", result.Message,
