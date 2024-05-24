@@ -334,7 +334,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
     }
 
-    public async Task UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
+    public async Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
     {
         GuardianResultDto guardianResultDto = null;
         for (int i = 0; i < 3; i++)
@@ -354,10 +354,11 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         if (guardianResultDto == null)
         {
             _logger.LogError("call 3 times guardianResultDto is still null");
-            return;
+            return false;
         }
         var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
         _logger.LogInformation("executing result is={0}", result);
+        return result;
     }
 
     private async Task<bool> ModifyNicknameHandler(GuardianResultDto guardianResultDto, Guid userId, string unsetGuardianIdentifierHash)
@@ -366,17 +367,20 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var caHolderGrainDto = grain.GetCaHolder();
         if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
         {
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null");
             return false;
         }
         var identifierHashFromGrain = caHolderGrainDto.Result.Data.IdentifierHash;
         if (identifierHashFromGrain.IsNullOrEmpty() || !identifierHashFromGrain.Equals(unsetGuardianIdentifierHash))
         {
-            return true;
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null");
+            return false;
         }
         var guardians = guardianResultDto.GuardianList.Guardians;
         var guardianDto = guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardianDto == null)
         {
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync guardianDto is null");
             return false;
         }
 

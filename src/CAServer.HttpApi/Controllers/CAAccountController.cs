@@ -59,12 +59,12 @@ public class CAAccountController : CAServerController
     
     [HttpPost("guardianIdentifiers/unset")]
     [Authorize]
-    public async Task UpdateUnsetGuardianIdentifierAsync(
+    public async Task<bool> UpdateUnsetGuardianIdentifierAsync(
         UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
     {
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         updateGuardianIdentifierDto.UserId = userId;
-        await _guardianAppService.UpdateUnsetGuardianIdentifierAsync(updateGuardianIdentifierDto);
+        return await _guardianAppService.UpdateUnsetGuardianIdentifierAsync(updateGuardianIdentifierDto);
     }
 
     [HttpGet("registerInfo")]

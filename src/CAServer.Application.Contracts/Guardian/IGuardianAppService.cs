@@ -9,5 +9,5 @@ public interface IGuardianAppService
     Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto);
     Task<RegisterInfoResultDto> GetRegisterInfoAsync(RegisterInfoDto requestDto);
     Task<List<GuardianIndexDto>> GetGuardianListAsync(List<string> identifierHashList);
-    Task UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto guardianIdentifierDto);
+    Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto guardianIdentifierDto);
 }
