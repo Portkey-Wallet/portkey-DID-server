@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
@@ -24,6 +22,7 @@ using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer.Guardian;
@@ -41,14 +40,16 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly AppleTransferOptions _appleTransferOptions;
     private readonly StopRegisterOptions _stopRegisterOptions;
-
+    private readonly IObjectMapper _objectMapper;
+    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
-        IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions)
+        IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
+        IObjectMapper objectMapper, INESTRepository<CAHolderIndex, Guid> caHolderRepository)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -59,6 +60,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _appleUserProvider = appleUserProvider;
         _appleTransferOptions = appleTransferOptions.Value;
         _stopRegisterOptions = stopRegisterOptions.Value;
+        _objectMapper = objectMapper;
+        _caHolderRepository = caHolderRepository;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -354,7 +357,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private async Task<bool> ModifyNicknameHandler(GuardianResultDto guardianResultDto, Guid userId, string unsetGuardianIdentifierHash)
     {
         _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync ModifyNicknameHandler userId={0} cahash={1}", userId.ToString(), guardianResultDto.CaHash);
-        var stopwatch = Stopwatch.StartNew();
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
         var caHolderGrainDto = await grain.GetCaHolder();
         if (!caHolderGrainDto.Success)
@@ -362,8 +364,6 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto failed");
             return false;
         }
-        stopwatch.Stop();
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync ICAHolderGrain cost time={0}, caHolderGrainDto={1}", stopwatch.ElapsedMilliseconds, JsonConvert.SerializeObject(caHolderGrainDto));
         if (caHolderGrainDto.Data == null)
         {
             _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null caHash={0}", guardianResultDto.CaAddress);
@@ -420,10 +420,21 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, guardianDto.IdentifierHash);
         }
         _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync update result={0}", JsonConvert.SerializeObject(result.Data));
-        if (result == null || !result.Success)
+        if (!result.Success)
         {
             _logger.LogError("update user nick name failed, nickname={0}, changedNickname={1}", nickname, changedNickname);
             return false;
+        }
+        //update es
+        var caHolderIndex = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync update es caholder, caHolderIndex={0}", JsonConvert.SerializeObject(caHolderIndex));
+        try
+        {
+            await _caHolderRepository.UpdateAsync(caHolderIndex);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UpdateUnsetGuardianIdentifierAsync update es caholder failed, caHolderIndex={0}", JsonConvert.SerializeObject(caHolderIndex));
         }
         return true;
     }
