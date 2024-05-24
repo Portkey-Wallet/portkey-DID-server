@@ -69,21 +69,24 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     public async Task HandleEventAsync(CreateUserEto eventData)
     {
         string changedNickname = string.Empty;
+        string identifierHash = string.Empty;
         string nickname = eventData.UserId.ToString("N").Substring(0, 8);
-        GuardianInfoBase loginGuardianInfoBase = null;
         try
         {
-            loginGuardianInfoBase = await GetLoginAccountInfo(eventData.CaHash);
+            var loginGuardianInfoBase = await GetLoginAccountInfo(eventData.CaHash);
             _logger.LogInformation("received create user event {0}", JsonConvert.SerializeObject(loginGuardianInfoBase));
             if (loginGuardianInfoBase == null)
             {
                 _logger.LogInformation("third party account, eventData={0}", JsonConvert.SerializeObject(eventData));
-                changedNickname = await GenerateNewAccountFormatForThirdParty(nickname, eventData);
+                var (name, hash) = await GenerateNewAccountFormatForThirdParty(nickname, eventData);
+                changedNickname = name;
+                identifierHash = hash;
             }
             else
             {
                 _logger.LogInformation("email account, eventData={0}", JsonConvert.SerializeObject(eventData));
                 changedNickname = await GenerateNewAccountFormat(nickname, loginGuardianInfoBase);
+                identifierHash = loginGuardianInfoBase.IdentifierHash;
             }
         }
         catch (Exception e)
@@ -105,13 +108,11 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.Nickname = changedNickname;
                 caHolderGrainDto.PopedUp = true;
                 caHolderGrainDto.ModifiedNickname = true;
+                caHolderGrainDto.IdentifierHash = identifierHash;
             }
-            if (loginGuardianInfoBase != null)
-            {
-                caHolderGrainDto.IdentifierHash = loginGuardianInfoBase.IdentifierHash;
-            }
+            _logger.LogInformation("before create holder info, hash={}", JsonConvert.SerializeObject(caHolderGrainDto));
             var result = await grain.AddHolderAsync(caHolderGrainDto);
-
+            _logger.LogInformation("after create holder info, hash={}", JsonConvert.SerializeObject(result.Data));
             if (!result.Success)
             {
                 _logger.LogError("create holder fail: {message}, userId: {userId}, aAHash: {caHash}", result.Message,
@@ -216,12 +217,12 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         return nickname;
     }
 
-    private async Task<string> GenerateNewAccountFormatForThirdParty(string nickname, CreateUserEto eventData)
+    private async Task<Tuple<string, string>> GenerateNewAccountFormatForThirdParty(string nickname, CreateUserEto eventData)
     {
         if (eventData.ChainId.IsNullOrEmpty() || eventData.CaHash.IsNullOrEmpty())
         {
             _logger.LogWarning("third party generate account error because of chainId or cahash is null, chainId={0}, cahash={1}", eventData.ChainId, eventData.CaHash);
-            return nickname;
+            return new Tuple<string, string>(nickname, string.Empty);
         }
 
         GuardianResultDto guardianResultDto = null;
@@ -240,13 +241,13 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
         if (guardianResultDto == null)
         {
-            return nickname;
+            return new Tuple<string, string>(nickname, string.Empty);
         }
         _logger.LogInformation("third party guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardian == null)
         {
-            return nickname;
+            return new Tuple<string, string>(nickname, string.Empty);
         }
         string address = string.Empty;
         if (!guardianResultDto.CaAddress.IsNullOrEmpty())
@@ -255,14 +256,14 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         }
         if ("Telegram".Equals(guardian.Type) || "Twitter".Equals(guardian.Type) || "Facebook".Equals(guardian.Type))
         {
-            return GetFirstNameFormat(nickname, guardian.FirstName, address);
+            return new Tuple<string, string>(GetFirstNameFormat(nickname, guardian.FirstName, address), guardian.IdentifierHash);
         }
 
         if ("Email".Equals(guardian.Type) && !guardian.GuardianIdentifier.IsNullOrEmpty())
         {
-            return GetEmailFormat(nickname, guardian.GuardianIdentifier, guardian.FirstName, address);
+            return new Tuple<string, string>(GetEmailFormat(nickname, guardian.GuardianIdentifier, guardian.FirstName, address), guardian.IdentifierHash);
         }
-        return GetEmailFormat(nickname, guardian.ThirdPartyEmail, guardian.FirstName, address);
+        return new Tuple<string, string>(GetEmailFormat(nickname, guardian.ThirdPartyEmail, guardian.FirstName, address), guardian.IdentifierHash);
     }
     
     private async Task<List<UserExtraInfoIndex>> GetUserExtraInfoAsync(List<string> identifiers)
