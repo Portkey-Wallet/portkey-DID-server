@@ -347,7 +347,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             return false;
         }
         var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result is={0}, caHash={0}", result, updateGuardianIdentifierDto.CaHash);
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result is={0}, caHash={1}", result, updateGuardianIdentifierDto.CaHash);
         return result;
     }
 
@@ -411,12 +411,15 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         GrainResultDto<CAHolderGrainDto> result = null;
         if (changedNickname.IsNullOrEmpty())
         {
+            _logger.LogInformation("executing default nickname logic");
             result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
         }
         else
         {
+            _logger.LogInformation("executing default nickname logic");
             result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, guardianDto.IdentifierHash);
         }
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync update result={0}", JsonConvert.SerializeObject(result.Data));
         if (result == null || !result.Success)
         {
             _logger.LogError("update user nick name failed, nickname={0}, changedNickname={1}", nickname, changedNickname);
