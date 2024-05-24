@@ -60,6 +60,7 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
 
         State.Nickname = nickname;
         State.ModifiedNickname = true;
+        State.IdentifierHash = string.Empty;
         await WriteStateAsync();
 
         result.Success = true;
@@ -140,6 +141,9 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         {
             State.Avatar = holderInfo.Avatar;
         }
+
+        State.ModifiedNickname = true;
+        State.IdentifierHash = string.Empty;
         await WriteStateAsync();
 
         result.Success = true;

@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using AElf.Indexing.Elasticsearch;
 using CAServer.Common;
 using CAServer.Contacts;
 using CAServer.Contacts.Provider;
-using CAServer.Entities.Es;
 using CAServer.Grains.Grain.PrivacyPermission;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
@@ -36,14 +34,11 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
     private readonly IClusterClient _clusterClient;
     private readonly IContactAppService _contactAppService;
     private readonly ILogger<PrivacyPermissionAppService> _logger;
-    private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
-    private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     
     public PrivacyPermissionAppService(IUserAssetsProvider userAssetsProvider, IGuardianProvider guardianProvider,
         IGuardianAppService guardianAppService, IUserExtraInfoAppService userExtraInfoAppService,
         IContactProvider contactProvider, IContractProvider contractProvider, IClusterClient clusterClient,
-        IContactAppService contactAppService, ILogger<PrivacyPermissionAppService> logger,
-        INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, INESTRepository<GuardianIndex, string> guardianRepository)
+        IContactAppService contactAppService, ILogger<PrivacyPermissionAppService> logger)
     {
         _userAssetsProvider = userAssetsProvider;
         _guardianProvider = guardianProvider;
@@ -54,8 +49,6 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
         _clusterClient = clusterClient;
         _contactAppService = contactAppService;
         _logger = logger;
-        _userExtraInfoRepository = userExtraInfoRepository;
-        _guardianRepository = guardianRepository;
     }
 
     public async Task DeletePrivacyPermissionAsync(string chainId ,string caHash, string identifierHash)

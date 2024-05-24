@@ -358,7 +358,14 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null caHash={0}", guardianResultDto.CaAddress);
             return false;
         }
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto={0}", JsonConvert.SerializeObject(caHolderGrainDto));
+        var modifiedNickname = caHolderGrainDto.Result.Data.ModifiedNickname;
         var identifierHashFromGrain = caHolderGrainDto.Result.Data.IdentifierHash;
+        if (modifiedNickname && identifierHashFromGrain.IsNullOrEmpty())
+        {
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync user has modified nickname by himself caHash={0}", guardianResultDto.CaAddress);
+            return false;
+        }
         if (identifierHashFromGrain.IsNullOrEmpty() || !identifierHashFromGrain.Equals(unsetGuardianIdentifierHash))
         {
             _logger.LogError("UpdateUnsetGuardianIdentifierAsync identifierHashFromGrain not equal unsetGuardianIdentifierHash caHash={0}", guardianResultDto.CaAddress);
@@ -388,7 +395,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         }
         _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync cahash={0} nickname={1}, changedNickname={2}", guardianResultDto.CaAddress, nickname, changedNickname);
         GrainResultDto<CAHolderGrainDto> result = null;
-        if (string.Empty.Equals(changedNickname) || nickname.Equals(changedNickname))
+        if (changedNickname.IsNullOrEmpty())
         {
             result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
         }

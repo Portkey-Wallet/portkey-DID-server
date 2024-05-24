@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 using CAServer.CAAccount;
 using CAServer.Dtos;
 using Microsoft.AspNetCore.Mvc;
@@ -26,8 +25,6 @@ public class CAAccountController : CAServerController
     private readonly ITransactionFeeAppService _transactionFeeAppService;
     private readonly ICurrentUser _currentUser;
     private readonly IGrowthAppService _growthAppService;
-    private readonly Meter _meter;
-    private readonly ILogger<CAAccountController> _logger;
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
@@ -38,8 +35,6 @@ public class CAAccountController : CAServerController
         _transactionFeeAppService = transactionFeeAppService;
         _currentUser = currentUser;
         _growthAppService = growthAppService;
-        _meter = new Meter("CAServer", "1.0.0");
-        _logger = logger;
     }
 
     [HttpPost("register/request")]
@@ -66,12 +61,9 @@ public class CAAccountController : CAServerController
     public async Task<bool> UpdateUnsetGuardianIdentifierAsync(
         UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
     {
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync is called {0}", JsonConvert.SerializeObject(updateGuardianIdentifierDto));
         var userId = _currentUser.Id ?? throw new UserFriendlyException("User not found");
         updateGuardianIdentifierDto.UserId = userId;
-        var result = await _guardianAppService.UpdateUnsetGuardianIdentifierAsync(updateGuardianIdentifierDto);
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result {0}", result);
-        return result;
+        return await _guardianAppService.UpdateUnsetGuardianIdentifierAsync(updateGuardianIdentifierDto);
     }
 
     [HttpGet("registerInfo")]
