@@ -750,5 +750,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<CAServer.Options.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenItem, UserTokenIndexDto>();
         CreateMap<TokenSpender, TokenAllowance>();
+        CreateMap<CAHolderGrainDto, CAHolderIndex>();
     }
 }
