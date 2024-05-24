@@ -41,14 +41,14 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
     public async Task<ResponseWrapDto<WithdrawTokenListDto>> GetTokenListAsync(WithdrawTokenListRequestDto request)
     {
-        return await _clientProvider.GetAsync<ResponseWrapDto<WithdrawTokenListDto>>(ETransferConstant.GetTokenList,
+        return await _clientProvider.GetAsync<WithdrawTokenListDto>(ETransferConstant.GetTokenList,
             request);
     }
 
     public async Task<ResponseWrapDto<GetTokenOptionListDto>> GetTokenOptionListAsync(
         GetTokenOptionListRequestDto request)
     {
-        return await _clientProvider.GetAsync<ResponseWrapDto<GetTokenOptionListDto>>(
+        return await _clientProvider.GetAsync<GetTokenOptionListDto>(
             ETransferConstant.GetTokenOptionList, request);
     }
 
@@ -109,7 +109,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             };
         }
 
-        return await _clientProvider.GetAsync<ResponseWrapDto<GetNetworkListDto>>(ETransferConstant.GetNetworkList,
+        return await _clientProvider.GetAsync<GetNetworkListDto>(ETransferConstant.GetNetworkList,
             request);
     }
 
@@ -119,20 +119,20 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         var url = ETransferConstant.GetNetworkList +
                   $"?type={request.Type}&chainId={request.ChainId}&symbol={request.Symbol}";
 
-        return await _clientProvider.GetAsync<ResponseWrapDto<GetNetworkListDto>>(url,
+        return await _clientProvider.GetAsync<GetNetworkListDto>(url,
             request);
     }
 
     public async Task<ResponseWrapDto<CalculateDepositRateDto>> CalculateDepositRateAsync(
         GetCalculateDepositRateRequestDto request)
     {
-        return await _clientProvider.GetAsync<ResponseWrapDto<CalculateDepositRateDto>>(
+        return await _clientProvider.GetAsync<CalculateDepositRateDto>(
             ETransferConstant.CalculateDepositRate, request);
     }
 
     public async Task<ResponseWrapDto<GetDepositInfoDto>> GetDepositInfoAsync(GetDepositRequestDto request)
     {
-        return await _clientProvider.GetAsync<ResponseWrapDto<GetDepositInfoDto>>(ETransferConstant.GetDepositInfo,
+        return await _clientProvider.GetAsync<GetDepositInfoDto>(ETransferConstant.GetDepositInfo,
             request);
     }
 
@@ -144,7 +144,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
         var url = ETransferConstant.GetTokenOptionList + "?type=Deposit";
 
-        var tokenListWrap = await _clientProvider.GetAsync<ResponseWrapDto<GetTokenOptionListDto>>(url, request);
+        var tokenListWrap = await _clientProvider.GetAsync<GetTokenOptionListDto>(url, request);
 
         if (tokenListWrap.Code != "20000")
         {
@@ -218,7 +218,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
     public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(
         GetNetworkTokensRequestDto request)
     {
-        return await _clientProvider.GetAsync<ResponseWrapDto<PagedResultDto<OrderIndexDto>>>(
+        return await _clientProvider.GetAsync<PagedResultDto<OrderIndexDto>>(
             ETransferConstant.GetOrderRecordList,
             request);
     }
