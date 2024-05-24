@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -352,8 +353,12 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<bool> ModifyNicknameHandler(GuardianResultDto guardianResultDto, Guid userId, string unsetGuardianIdentifierHash)
     {
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync ModifyNicknameHandler userId={0} cahash={1}", userId.ToString(), guardianResultDto.CaHash);
+        var stopwatch = Stopwatch.StartNew();
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
         var caHolderGrainDto = grain.GetCaHolder();
+        stopwatch.Stop();
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync ICAHolderGrain cost time={0}", stopwatch.ElapsedMilliseconds);
         if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
         {
             _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null caHash={0}", guardianResultDto.CaAddress);
