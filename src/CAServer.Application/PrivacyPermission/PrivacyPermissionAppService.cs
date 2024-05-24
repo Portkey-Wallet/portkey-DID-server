@@ -89,54 +89,54 @@ public class PrivacyPermissionAppService : CAServerAppService, IPrivacyPermissio
             "DeletePrivacyPermissionAsync count:{count},cahash:{caHash},identifier:{identifier},type:{type}", count,
             caHash, guardianListDto.First().Identifier, type);
 
-        try
-        {
-            _logger.LogInformation("DeletePrivacyPermissionAsync is running chainId={0}, caHash={1},  identifierHash={2}", chainId , caHash, identifierHash);
-            var grain = _clusterClient.GetGrain<ICAHolderGrain>(holder.UserId);
-            var caHolderGrainDto = grain.GetCaHolder();
-            _logger.LogInformation("DeletePrivacyPermissionAsync caHolderGrainDto from grain ={0}", JsonConvert.SerializeObject(caHolderGrainDto));
-            if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
-            {
-                _logger.LogError("DeletePrivacyPermissionAsync query caHolderGrainDto from ICAHolderGrain is null, caHash={0}", caHash);
-                return;
-            }
-            var caHolderFromGrain = caHolderGrainDto.Result.Data;
-            //condition: not use login account strategy, pass
-            if (caHolderFromGrain.IdentifierHash.IsNullOrEmpty() || !caHolderFromGrain.ModifiedNickname)
-            {
-                _logger.LogInformation("DeletePrivacyPermissionAsync IdentifierHash is null");
-                return;
-            }
-            //condition: the identifierHash is not the deleted one, pass
-            if (!caHolderFromGrain.IdentifierHash.Equals(identifierHash))
-            {
-                _logger.LogInformation("DeletePrivacyPermissionAsync IdentifierHash not equal");
-                return;
-            }
-            var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
-            _logger.LogInformation("DeletePrivacyPermissionAsync holderInfo ={0}", JsonConvert.SerializeObject(holderInfo));
-            var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
-                                                                           && g.GuardianList.Guardians.Count > 0);
-            string nickname = caHolderFromGrain.UserId.ToString("N").Substring(0, 8);
-            _logger.LogInformation("DeletePrivacyPermissionAsync guardianInfo ={0}", JsonConvert.SerializeObject(guardianInfo));
-            if (guardianInfo == null)
-            {
-                await DealWithThirdParty(nickname, chainId, caHash, holder.UserId, identifierHash);
-                return;
-            }
-            var guardianInfoBase = guardianInfo.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
-            if (guardianInfoBase == null || !guardianInfoBase.Type.Equals(((int)GuardianType.GUARDIAN_TYPE_OF_EMAIL) + ""))
-            {
-                await DealWithThirdParty(nickname, chainId, caHash, holder.UserId, identifierHash);
-                return;
-            }
-            
-            await DealWithEmail(nickname,  caHash,  identifierHash, holder.UserId);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "exception occured when modify the nickname, chainId={0}, caHash={1}, identifierHash={2}",chainId, caHash, identifierHash);
-        }
+        // try
+        // {
+        //     _logger.LogInformation("DeletePrivacyPermissionAsync is running chainId={0}, caHash={1},  identifierHash={2}", chainId , caHash, identifierHash);
+        //     var grain = _clusterClient.GetGrain<ICAHolderGrain>(holder.UserId);
+        //     var caHolderGrainDto = grain.GetCaHolder();
+        //     _logger.LogInformation("DeletePrivacyPermissionAsync caHolderGrainDto from grain ={0}", JsonConvert.SerializeObject(caHolderGrainDto));
+        //     if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
+        //     {
+        //         _logger.LogError("DeletePrivacyPermissionAsync query caHolderGrainDto from ICAHolderGrain is null, caHash={0}", caHash);
+        //         return;
+        //     }
+        //     var caHolderFromGrain = caHolderGrainDto.Result.Data;
+        //     //condition: not use login account strategy, pass
+        //     if (caHolderFromGrain.IdentifierHash.IsNullOrEmpty() || !caHolderFromGrain.ModifiedNickname)
+        //     {
+        //         _logger.LogInformation("DeletePrivacyPermissionAsync IdentifierHash is null");
+        //         return;
+        //     }
+        //     //condition: the identifierHash is not the deleted one, pass
+        //     if (!caHolderFromGrain.IdentifierHash.Equals(identifierHash))
+        //     {
+        //         _logger.LogInformation("DeletePrivacyPermissionAsync IdentifierHash not equal");
+        //         return;
+        //     }
+        //     var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
+        //     _logger.LogInformation("DeletePrivacyPermissionAsync holderInfo ={0}", JsonConvert.SerializeObject(holderInfo));
+        //     var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
+        //                                                                    && g.GuardianList.Guardians.Count > 0);
+        //     string nickname = caHolderFromGrain.UserId.ToString("N").Substring(0, 8);
+        //     _logger.LogInformation("DeletePrivacyPermissionAsync guardianInfo ={0}", JsonConvert.SerializeObject(guardianInfo));
+        //     if (guardianInfo == null)
+        //     {
+        //         await DealWithThirdParty(nickname, chainId, caHash, holder.UserId, identifierHash);
+        //         return;
+        //     }
+        //     var guardianInfoBase = guardianInfo.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
+        //     if (guardianInfoBase == null || !guardianInfoBase.Type.Equals(((int)GuardianType.GUARDIAN_TYPE_OF_EMAIL) + ""))
+        //     {
+        //         await DealWithThirdParty(nickname, chainId, caHash, holder.UserId, identifierHash);
+        //         return;
+        //     }
+        //     
+        //     await DealWithEmail(nickname,  caHash,  identifierHash, holder.UserId);
+        // }
+        // catch (Exception e)
+        // {
+        //     _logger.LogError(e, "exception occured when modify the nickname, chainId={0}, caHash={1}, identifierHash={2}",chainId, caHash, identifierHash);
+        // }
     }
     
     private string GetFirstNameFormat(string nickname, string firstName, string address)

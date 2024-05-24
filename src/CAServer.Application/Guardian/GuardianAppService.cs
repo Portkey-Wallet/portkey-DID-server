@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
@@ -8,12 +10,15 @@ using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Grains;
+using CAServer.Grains.Grain;
+using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
@@ -326,6 +331,128 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             guardian.FirstName = userInfo.FirstName;
             guardian.LastName = userInfo.LastName;
+        }
+    }
+
+    public async Task UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
+    {
+        GuardianResultDto guardianResultDto = null;
+        for (int i = 0; i < 3; i++)
+        {
+            guardianResultDto = await GetGuardianIdentifiersAsync(updateGuardianIdentifierDto);
+            _logger.LogInformation("time={0} UpdateUnsetGuardianIdentifierAsync query result ={1}", i, JsonConvert.SerializeObject(guardianResultDto));
+            if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(3));
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (guardianResultDto == null)
+        {
+            _logger.LogError("call 3 times guardianResultDto is still null");
+            return;
+        }
+        var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
+        _logger.LogInformation("executing result is={0}", result);
+    }
+
+    private async Task<bool> ModifyNicknameHandler(GuardianResultDto guardianResultDto, Guid userId, string unsetGuardianIdentifierHash)
+    {
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        var caHolderGrainDto = grain.GetCaHolder();
+        if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
+        {
+            return false;
+        }
+        var identifierHashFromGrain = caHolderGrainDto.Result.Data.IdentifierHash;
+        if (identifierHashFromGrain.IsNullOrEmpty() || !identifierHashFromGrain.Equals(unsetGuardianIdentifierHash))
+        {
+            return true;
+        }
+        var guardians = guardianResultDto.GuardianList.Guardians;
+        var guardianDto = guardians.FirstOrDefault(g => g.IsLoginGuardian);
+        if (guardianDto == null)
+        {
+            return false;
+        }
+
+        string changedNickname;
+        string nickname = userId.ToString("N").Substring(0, 8);
+        if ("Telegram".Equals(guardianDto.Type) || "Twitter".Equals(guardianDto.Type) || "Facebook".Equals(guardianDto.Type))
+        {
+            changedNickname = GetFirstNameFormat(nickname, guardianDto.FirstName, guardianResultDto.CaAddress);
+        }
+        else if ("Email".Equals(guardianDto.Type) && !guardianDto.GuardianIdentifier.IsNullOrEmpty())
+        {
+            changedNickname = GetEmailFormat(nickname, guardianDto.GuardianIdentifier, guardianDto.FirstName, guardianResultDto.CaAddress);
+        }
+        else
+        {
+            changedNickname = GetEmailFormat(nickname, guardianDto.ThirdPartyEmail, guardianDto.FirstName, guardianResultDto.CaAddress);
+        }
+        GrainResultDto<CAHolderGrainDto> result = null;
+        if (string.Empty.Equals(changedNickname) || nickname.Equals(changedNickname))
+        {
+            result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
+        }
+        else
+        {
+            result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, guardianDto.IdentifierHash);
+        }
+        if (result == null || !result.Success)
+        {
+            _logger.LogError("update user nick name failed, nickname={0}, changedNickname={1}", nickname, changedNickname);
+            return false;
+        }
+        return true;
+    }
+    
+    private string GetFirstNameFormat(string nickname, string firstName, string address)
+    {
+        if (firstName.IsNullOrEmpty() && address.IsNullOrEmpty())
+        {
+            return nickname;
+        }
+        if (!firstName.IsNullOrEmpty() && Regex.IsMatch(firstName,"^\\w+$"))
+        {
+            return firstName + "***";
+        }
+    
+        if (!address.IsNullOrEmpty())
+        {
+            int length = address.Length;
+            return address.Substring(0, 3) + "***" + address.Substring(length - 3);
+        }
+        return nickname;
+    }
+
+    private string GetEmailFormat(string nickname, string guardianIdentifier, string firstName, string address)
+    {
+        if (guardianIdentifier.IsNullOrEmpty())
+        {
+            return GetFirstNameFormat(nickname, firstName, address);
+        }
+
+        int index = guardianIdentifier.LastIndexOf("@");
+        if (index < 0)
+        {
+            return nickname;
+        }
+
+        string frontPart = guardianIdentifier.Substring(0, index);
+        string backPart = guardianIdentifier.Substring(index);
+        int frontLength = frontPart.Length;
+        if (frontLength > 4)
+        {
+            return frontPart.Substring(0, 4) + "***" + backPart;
+        }
+        else
+        {
+            return frontPart + "***" + backPart;
         }
     }
 }
