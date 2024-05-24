@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Options;
@@ -64,8 +63,9 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         var extraNodes = depositInfo.DepositInfo.ExtraNotes.Where(t => t.Contains("confirmation"));
         foreach (var extraNote in extraNodes)
         {
-            var nextWord = extraNote.Contains("network confirmations") ? "network" : "confirmation";
-            var words = extraNote.Split(' ').ToList();
+            var infoStr = extraNote.TrimEnd('.', ' ');
+            var nextWord = infoStr.Contains("network confirmations") ? "network" : "confirmation";
+            var words = infoStr.Split(' ').ToList();
             if (int.TryParse(words[words.IndexOf(nextWord) - 1], out var confirmCount))
             {
                 count = confirmCount;
