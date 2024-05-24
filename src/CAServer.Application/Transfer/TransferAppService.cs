@@ -61,10 +61,10 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         var depositInfo = depositInfoWrap.Data;
         var count = 0;
 
-        var extraNodes = depositInfo.DepositInfo.ExtraNotes.Where(t => t.Contains("confirmations"));
+        var extraNodes = depositInfo.DepositInfo.ExtraNotes.Where(t => t.Contains("confirmation"));
         foreach (var extraNote in extraNodes)
         {
-            var nextWord = extraNote.Contains("network confirmations") ? "network" : "confirmations";
+            var nextWord = extraNote.Contains("network confirmations") ? "network" : "confirmation";
             var words = extraNote.Split(' ').ToList();
             if (int.TryParse(words[words.IndexOf(nextWord) - 1], out var confirmCount))
             {

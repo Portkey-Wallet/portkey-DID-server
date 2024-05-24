@@ -163,12 +163,22 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
                 foreach (var item in tokenInnerInfo)
                 {
+                    var networkList = new List<NetworkDto>();
+                    item.ChainIdList?.ForEach(chainId =>
+                    {
+                        networkList.Add(new NetworkDto()
+                        {
+                            Name = chainId,
+                            Network = chainId
+                        });
+                    });
                     tokenList.Add(new NetworkTokenInfo()
                     {
                         Name = item.Name,
                         Icon = item.Icon,
                         Symbol = item.Symbol,
-                        ContractAddress = string.Empty // get from indexer if need.
+                        ContractAddress = string.Empty,
+                        NetworkList = networkList
                     });
                 }
             }
