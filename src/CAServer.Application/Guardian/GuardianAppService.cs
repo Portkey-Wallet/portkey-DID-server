@@ -336,28 +336,16 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     public async Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
     {
-        GuardianResultDto guardianResultDto = null;
-        for (int i = 0; i < 3; i++)
+        GuardianResultDto guardianResultDto = await GetGuardianIdentifiersAsync(updateGuardianIdentifierDto);
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync query result ={0}", JsonConvert.SerializeObject(guardianResultDto));
+        if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
         {
-            guardianResultDto = await GetGuardianIdentifiersAsync(updateGuardianIdentifierDto);
-            _logger.LogInformation("time={0} UpdateUnsetGuardianIdentifierAsync query result ={1}", i, JsonConvert.SerializeObject(guardianResultDto));
-            if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
-            {
-                Thread.Sleep(TimeSpan.FromSeconds(3));
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        if (guardianResultDto == null)
-        {
-            _logger.LogError("call 3 times guardianResultDto is still null");
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync guardianResultDto is null, caHash={0}, unsetGuardianIdentifierHash={1}",
+                updateGuardianIdentifierDto.CaHash, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
             return false;
         }
         var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
-        _logger.LogInformation("executing result is={0}", result);
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result is={0}, caHash={0}", result, updateGuardianIdentifierDto.CaHash);
         return result;
     }
 
@@ -367,20 +355,20 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         var caHolderGrainDto = grain.GetCaHolder();
         if (caHolderGrainDto == null || caHolderGrainDto.Result == null || caHolderGrainDto.Result.Data == null)
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null");
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null caHash={0}", guardianResultDto.CaAddress);
             return false;
         }
         var identifierHashFromGrain = caHolderGrainDto.Result.Data.IdentifierHash;
         if (identifierHashFromGrain.IsNullOrEmpty() || !identifierHashFromGrain.Equals(unsetGuardianIdentifierHash))
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null");
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync identifierHashFromGrain not equal unsetGuardianIdentifierHash caHash={0}", guardianResultDto.CaAddress);
             return false;
         }
         var guardians = guardianResultDto.GuardianList.Guardians;
         var guardianDto = guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardianDto == null)
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync guardianDto is null");
+            _logger.LogError("UpdateUnsetGuardianIdentifierAsync guardianDto is null caHash={0}", guardianResultDto.CaAddress);
             return false;
         }
 
@@ -398,6 +386,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             changedNickname = GetEmailFormat(nickname, guardianDto.ThirdPartyEmail, guardianDto.FirstName, guardianResultDto.CaAddress);
         }
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync cahash={0} nickname={1}, changedNickname={2}", guardianResultDto.CaAddress, nickname, changedNickname);
         GrainResultDto<CAHolderGrainDto> result = null;
         if (string.Empty.Equals(changedNickname) || nickname.Equals(changedNickname))
         {
