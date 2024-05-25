@@ -142,7 +142,8 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
     {
         var response = new ResponseWrapDto<GetNetworkTokensDto>
         {
-            Code = "20000"
+            Code = "20000",
+            Data = new GetNetworkTokensDto()
         };
         var tokenList = new List<NetworkTokenInfo>();
 
