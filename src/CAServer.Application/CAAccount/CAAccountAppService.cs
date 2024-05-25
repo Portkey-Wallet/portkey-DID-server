@@ -529,7 +529,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var tasks = caHolderDto.GuardianAddedCAHolderInfo.Data.Select(
                 t => _userAssetsProvider.GetCaHolderIndexByCahashAsync(t.CaHash));
             await tasks.WhenAll();
-            if (tasks.Count(t => t.Result.CaHash.IsNullOrWhiteSpace() && !t.Result.IsDeleted) > 1)
+            if (tasks.Count(t =>!t.Result.IsDeleted) > 1)
             {
                 validateGuardian = false;
             }
