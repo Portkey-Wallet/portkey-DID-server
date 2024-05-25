@@ -46,7 +46,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IObjectMapper _objectMapper;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
     private readonly IImRequestProvider _imRequestProvider;
-    private readonly HostInfoOptions _hostInfoOptions;
+    // private readonly HostInfoOptions _hostInfoOptions;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
@@ -55,7 +55,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
         IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
         IObjectMapper objectMapper, INESTRepository<CAHolderIndex, Guid> caHolderRepository,
-        IImRequestProvider imRequestProvider, IOptionsSnapshot<HostInfoOptions> hostInfoOptions)
+        IImRequestProvider imRequestProvider/*, IOptionsSnapshot<HostInfoOptions> hostInfoOptions*/)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -69,7 +69,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _objectMapper = objectMapper;
         _caHolderRepository = caHolderRepository;
         _imRequestProvider = imRequestProvider;
-        _hostInfoOptions = hostInfoOptions.Value;
+        // _hostInfoOptions = hostInfoOptions.Value;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -442,17 +442,17 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     
     private async Task UpdateImUserAsync(Guid userId, string nickName, string avatar = "")
     {
-        if (_hostInfoOptions.Environment == Options.Environment.Development)
-        {
-            return;
-        }
-
+        // if (_hostInfoOptions.Environment == Options.Environment.Development)
+        // {
+        //     return;
+        // }
+    
         var imUserUpdateDto = new ImUserUpdateDto
         {
             Name = nickName,
             Avatar = avatar
         };
-
+    
         try
         {
             await _imRequestProvider.PostAsync<object>(ImConstant.UpdateImUserUrl, imUserUpdateDto);
