@@ -55,7 +55,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
         IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
         IObjectMapper objectMapper, INESTRepository<CAHolderIndex, Guid> caHolderRepository,
-        IImRequestProvider imRequestProvider, HostInfoOptions hostInfoOptions)
+        IImRequestProvider imRequestProvider, IOptionsSnapshot<HostInfoOptions> hostInfoOptions)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -69,7 +69,7 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _objectMapper = objectMapper;
         _caHolderRepository = caHolderRepository;
         _imRequestProvider = imRequestProvider;
-        _hostInfoOptions = hostInfoOptions;
+        _hostInfoOptions = hostInfoOptions.Value;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
