@@ -14,5 +14,5 @@ public interface IETransferProxyService
     Task<ResponseWrapDto<GetDepositInfoDto>> GetDepositInfoAsync(GetDepositRequestDto request);
 
     Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request);
-    Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetNetworkTokensRequestDto request);
+    Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetOrderRecordRequestDto request);
 }

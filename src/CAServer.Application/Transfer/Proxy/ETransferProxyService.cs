@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Transfer.Dtos;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -226,10 +228,37 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
     }
 
     public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(
-        GetNetworkTokensRequestDto request)
+        GetOrderRecordRequestDto request)
     {
+
         return await _clientProvider.GetAsync<PagedResultDto<OrderIndexDto>>(
-            ETransferConstant.GetOrderRecordList,
-            request);
+            GetUrl(ETransferConstant.GetOrderRecordList, request));
+    }
+
+    private string GetUrl(string uri, object reqParam)
+    {
+        var url = uri.StartsWith(CommonConstant.ProtocolName)
+            ? uri
+            : $"{_options.BaseUrl.TrimEnd('/')}/{_options.Prefix}/{uri.TrimStart('/')}";
+
+        if (reqParam == null)
+        {
+            return url;
+        }
+
+        url += "?";
+        var props = reqParam.GetType().GetProperties();
+        foreach (var prop in props)
+        {
+            var val = prop.GetValue(reqParam, null);
+            if (val == null) continue;
+
+            var key = prop.Name;
+
+            url += $"{key}={val}&";
+        }
+
+        url = url.TrimEnd('?', '&');
+        return url;
     }
 }

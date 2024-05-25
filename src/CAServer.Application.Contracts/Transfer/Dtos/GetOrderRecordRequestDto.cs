@@ -9,4 +9,5 @@ public class GetOrderRecordRequestDto : PagedAndSortedResultRequestDto
     [Range(0, 3)] [Required] public int? Status { get; set; }
     public long? StartTimestamp { get; set; }
     public long? EndTimestamp { get; set; }
+    public string Symbol { get; set; }
 }

@@ -98,8 +98,23 @@ public class TransferAppService : CAServerAppService, ITransferAppService
     }
 
     public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(
-        GetNetworkTokensRequestDto request)
+        GetOrderRecordRequestDto request)
     {
-        return await _eTransferProxyService.GetRecordListAsync(request);
+        var skipCount = request.SkipCount;
+        var maxResultCount = request.MaxResultCount;
+
+        request.SkipCount = 0;
+        request.MaxResultCount = 1000;
+        
+        var wrapDto = await _eTransferProxyService.GetRecordListAsync(request);
+        if (wrapDto.Code != "20000")
+        {
+            return wrapDto;
+        }
+        var orders = wrapDto.Data;
+        var res = orders.Items.Where(t => t.ToTransfer.Symbol == request.Symbol).ToList();
+        wrapDto.Data.Items = res;
+
+        return wrapDto;
     }
 }
