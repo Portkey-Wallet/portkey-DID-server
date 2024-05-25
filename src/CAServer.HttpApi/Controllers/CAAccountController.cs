@@ -7,8 +7,6 @@ using CAServer.CAAccount.Dtos;
 using CAServer.Growth;
 using CAServer.Guardian;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Users;
 
@@ -28,7 +26,7 @@ public class CAAccountController : CAServerController
 
     public CAAccountController(ICAAccountAppService caAccountService, IGuardianAppService guardianAppService,
         ITransactionFeeAppService transactionFeeAppService, ICurrentUser currentUser,
-        IGrowthAppService growthAppService, ILogger<CAAccountController> logger)
+        IGrowthAppService growthAppService)
     {
         _caAccountService = caAccountService;
         _guardianAppService = guardianAppService;
