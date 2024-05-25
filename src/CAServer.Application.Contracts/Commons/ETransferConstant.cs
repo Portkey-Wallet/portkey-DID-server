@@ -18,6 +18,7 @@ public static class ETransferConstant
     public const int DefaultConfirmBlock = 64;
     public const string Confirmation = "confirmation";
     public const string Network = "network";
+    public const string ToType = "to";
     
 
     public const string GetConnectToken = "connect/token";

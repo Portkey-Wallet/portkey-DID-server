@@ -20,15 +20,18 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
     private readonly ILogger<ETransferProxyService> _logger;
     private readonly ETransferOptions _options;
     private readonly IObjectMapper _objectMapper;
+    private readonly ChainOptions _chainOptions;
 
     public ETransferProxyService(
         ILogger<ETransferProxyService> logger, IOptionsSnapshot<ETransferOptions> options,
-        IETransferClientProvider clientProvider, IObjectMapper objectMapper)
+        IETransferClientProvider clientProvider, IObjectMapper objectMapper,
+        IOptionsSnapshot<ChainOptions> chainOptions)
     {
         _logger = logger;
         _clientProvider = clientProvider;
         _objectMapper = objectMapper;
         _options = options.Value;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task<AuthTokenDto> GetConnectTokenAsync(AuthTokenRequestDto request)
@@ -114,7 +117,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
         return networkList;
     }
-    
+
     public async Task<ResponseWrapDto<CalculateDepositRateDto>> CalculateDepositRateAsync(
         GetCalculateDepositRateRequestDto request)
     {
@@ -136,8 +139,6 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             Data = new GetNetworkTokensDto()
         };
         var tokenList = new List<NetworkTokenInfo>();
-
-
         var url = ETransferConstant.GetTokenOptionList + "?type=Deposit";
 
         var tokenListWrap = await _clientProvider.GetAsync<GetTokenOptionListDto>(url, request);
@@ -148,49 +149,49 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         }
 
         var dto = tokenListWrap.Data;
-        var tokens = dto.TokenList;
-
-        if (request.Type == "to")
+        if (request.Type == ETransferConstant.ToType)
         {
-            foreach (var tokenDto in tokens)
-            {
-                var tokenInnerInfo = tokenDto.ToTokenList
-                    .Where(t => request.ChainId.IsNullOrEmpty() || t.ChainIdList.Contains(request.ChainId)).ToList();
-
-                foreach (var item in tokenInnerInfo)
-                {
-                    var networkList = new List<NetworkDto>();
-                    item.ChainIdList?.ForEach(chainId =>
-                    {
-                        networkList.Add(new NetworkDto()
-                        {
-                            Name = chainId,
-                            Network = chainId
-                        });
-                    });
-                    tokenList.Add(new NetworkTokenInfo()
-                    {
-                        Name = item.Name,
-                        Icon = item.Icon,
-                        Symbol = item.Symbol,
-                        ContractAddress = string.Empty,
-                        NetworkList = networkList
-                    });
-                }
-            }
-
+            tokenList = await GetToNetworkTokenInfosAsync(request, dto.TokenList);
             response.Data.TokenList = tokenList.DistinctBy(t => t.Symbol).ToList();
             return response;
         }
 
-        var getNetworkListDto = new List<NetworkDto>();
+        tokenList = await GetFromNetworkTokenInfosAsync(request, dto.TokenList);
+        response.Data.TokenList = tokenList;
+        return response;
+    }
 
+    private async Task<List<NetworkTokenInfo>> GetFromNetworkTokenInfosAsync(GetNetworkTokensRequestDto request,
+        List<TokenOptionConfigDto> tokens)
+    {
+        if (!request.ChainId.IsNullOrEmpty())
+        {
+            return await GetTokenInfosAsync(tokens, request.Network, request.ChainId);
+        }
+
+        var tokenList = new List<NetworkTokenInfo>();
+        foreach (var chainId in _chainOptions.ChainInfos.Keys)
+        {
+            var tokensDto = await GetTokenInfosAsync(tokens, request.Network, chainId);
+
+            var symbols = tokenList.Select(t => t.Symbol).ToList();
+            tokensDto = tokensDto.Where(t => !symbols.Contains(t.Symbol)).ToList();
+            tokenList.AddRange(tokensDto);
+        }
+
+        return tokenList;
+    }
+
+    private async Task<List<NetworkTokenInfo>> GetTokenInfosAsync(List<TokenOptionConfigDto> tokens,
+        string network, string chainId)
+    {
+        var tokenList = new List<NetworkTokenInfo>();
         foreach (var tokenDto in tokens)
         {
             // get network
             var networkInfosWrap = await GetNetworkListWithSymbolAsync(new GetNetworkListRequestDto()
             {
-                ChainId = "tDVW",
+                ChainId = chainId,
                 Type = ETransferConstant.DepositName,
                 Symbol = tokenDto.Symbol
             });
@@ -200,25 +201,64 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                 throw new UserFriendlyException(networkInfosWrap.Message);
             }
 
-            getNetworkListDto = networkInfosWrap.Data.NetworkList;
-
+            var networkList = networkInfosWrap.Data.NetworkList;
             var networkTokenDto =
-                getNetworkListDto.FirstOrDefault(t => !request.Network.IsNullOrEmpty() && t.Network == request.Network);
-            if (networkTokenDto != null || request.Network.IsNullOrEmpty())
+                networkList.FirstOrDefault(t => !network.IsNullOrEmpty() && t.Network == network);
+            if (networkTokenDto != null || network.IsNullOrEmpty())
             {
+                if (tokenList.FirstOrDefault(t => t.Symbol == tokenDto.Symbol) != null)
+                {
+                    continue;
+                }
+
                 tokenList.Add(new NetworkTokenInfo()
                 {
                     Name = tokenDto.Name,
-                    ContractAddress = request.Network.IsNullOrEmpty() ? string.Empty : networkTokenDto?.ContractAddress,
+                    ContractAddress = network.IsNullOrEmpty()
+                        ? string.Empty
+                        : networkTokenDto?.ContractAddress,
                     Symbol = tokenDto.Symbol,
                     Icon = tokenDto.Icon,
-                    NetworkList = request.Network.IsNullOrEmpty() ? getNetworkListDto : new List<NetworkDto>()
+                    NetworkList = network.IsNullOrEmpty() ? networkList : new List<NetworkDto>()
                 });
             }
         }
 
-        response.Data.TokenList = tokenList;
-        return response;
+        return tokenList;
+    }
+
+    private async Task<List<NetworkTokenInfo>> GetToNetworkTokenInfosAsync(GetNetworkTokensRequestDto request,
+        List<TokenOptionConfigDto> tokens)
+    {
+        var tokenList = new List<NetworkTokenInfo>();
+        foreach (var tokenDto in tokens)
+        {
+            var tokenInnerInfo = tokenDto.ToTokenList
+                .Where(t => request.ChainId.IsNullOrEmpty() || t.ChainIdList.Contains(request.ChainId)).ToList();
+
+            foreach (var item in tokenInnerInfo)
+            {
+                var networkList = new List<NetworkDto>();
+                item.ChainIdList?.ForEach(chainId =>
+                {
+                    networkList.Add(new NetworkDto()
+                    {
+                        Name = chainId,
+                        Network = chainId
+                    });
+                });
+                tokenList.Add(new NetworkTokenInfo()
+                {
+                    Name = item.Name,
+                    Icon = item.Icon,
+                    Symbol = item.Symbol,
+                    ContractAddress = string.Empty,
+                    NetworkList = networkList
+                });
+            }
+        }
+
+        return tokenList;
     }
 
     public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(
@@ -237,7 +277,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         return await _clientProvider.GetAsync<GetNetworkListDto>(url,
             request);
     }
-    
+
     private string GetUrl(string uri, object reqParam)
     {
         var url = uri.StartsWith(CommonConstant.ProtocolName)
