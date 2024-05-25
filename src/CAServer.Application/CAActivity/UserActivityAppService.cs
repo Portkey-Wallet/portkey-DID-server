@@ -767,6 +767,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             SetDAppInfo(ht.ToContractAddress, dto, ht.FromAddress);
             await SetOperationsAsync(ht, dto, caAddresses, chainId, weidth, height);
+
+            if (dto.TransactionType == "CancelOfferListByExpireTime")
+            {
+                dto.TransactionName = "Cancel Offer";
+            }
             getActivitiesDto.Add(dto);
         }
 
