@@ -183,7 +183,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                 }
             }
 
-            response.TokenList = tokenList;
+            response.TokenList = tokenList.DistinctBy(t => t.Symbol).ToList();
             return response;
         }
 
