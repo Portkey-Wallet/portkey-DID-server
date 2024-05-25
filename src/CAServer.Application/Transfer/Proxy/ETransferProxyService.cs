@@ -54,75 +54,67 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
     public async Task<ResponseWrapDto<GetNetworkListDto>> GetNetworkListAsync(GetNetworkListRequestDto request)
     {
-        if (request.Symbol.IsNullOrEmpty())
+        if (!request.Symbol.IsNullOrEmpty())
         {
-            var tokenListWrap = await GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
-            {
-                Type = ETransferConstant.DepositName
-            });
-
-            if (tokenListWrap.Code != ETransferConstant.SuccessCode)
-            {
-                throw new UserFriendlyException(tokenListWrap.Message);
-            }
-
-            var dto = tokenListWrap.Data;
-            var tokens = dto.TokenList;
-
-            var networkResp = new List<NetworkDto>();
-
-            foreach (var tokenDto in tokens)
-            {
-                // get network
-                var networkInfosWrap = await GetNetworkListWithSymbolAsync(new GetNetworkListRequestDto()
-                {
-                    ChainId = request.ChainId,
-                    Type = ETransferConstant.DepositName,
-                    Symbol = tokenDto.Symbol
-                });
-
-                if (networkInfosWrap.Code != ETransferConstant.SuccessCode)
-                {
-                    if (networkInfosWrap.Message.Contains("Invalid symbol"))
-                    {
-                        continue;
-                    }
-
-                    throw new UserFriendlyException(networkInfosWrap.Message);
-                }
-
-                var getNetworkListDto = networkInfosWrap.Data.NetworkList;
-                var networkNames = networkResp.Select(t => t.Network).ToList();
-                getNetworkListDto = getNetworkListDto.Where(t => !networkNames.Contains(t.Network)).ToList();
-
-                networkResp.AddRange(getNetworkListDto);
-            }
-
-            return new ResponseWrapDto<GetNetworkListDto>()
-            {
-                Code = ETransferConstant.SuccessCode,
-                Data = new GetNetworkListDto()
-                {
-                    ChainId = request.ChainId,
-                    NetworkList = networkResp
-                }
-            };
+            return await _clientProvider.GetAsync<GetNetworkListDto>(ETransferConstant.GetNetworkList,
+                request);
         }
 
-        return await _clientProvider.GetAsync<GetNetworkListDto>(ETransferConstant.GetNetworkList,
-            request);
+        var networkList = await GetAllNetworkAsync(request);
+        return new ResponseWrapDto<GetNetworkListDto>()
+        {
+            Code = ETransferConstant.SuccessCode,
+            Data = new GetNetworkListDto
+            {
+                ChainId = request.ChainId,
+                NetworkList = networkList
+            }
+        };
     }
 
-    public async Task<ResponseWrapDto<GetNetworkListDto>> GetNetworkListWithSymbolAsync(
-        GetNetworkListRequestDto request)
+    private async Task<List<NetworkDto>> GetAllNetworkAsync(GetNetworkListRequestDto request)
     {
-        var url = ETransferConstant.GetNetworkList +
-                  $"?type={request.Type}&chainId={request.ChainId}&symbol={request.Symbol}";
+        var tokenListWrap = await GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
+        {
+            Type = ETransferConstant.DepositName
+        });
 
-        return await _clientProvider.GetAsync<GetNetworkListDto>(url,
-            request);
+        if (tokenListWrap.Code != ETransferConstant.SuccessCode)
+        {
+            throw new UserFriendlyException(tokenListWrap.Message);
+        }
+
+        var networkList = new List<NetworkDto>();
+        foreach (var tokenDto in tokenListWrap.Data.TokenList)
+        {
+            // get network
+            var networkInfosWrap = await GetNetworkListWithSymbolAsync(new GetNetworkListRequestDto()
+            {
+                ChainId = request.ChainId,
+                Type = ETransferConstant.DepositName,
+                Symbol = tokenDto.Symbol
+            });
+
+            if (networkInfosWrap.Code != ETransferConstant.SuccessCode)
+            {
+                if (networkInfosWrap.Message.Contains("Invalid symbol"))
+                {
+                    continue;
+                }
+
+                throw new UserFriendlyException(networkInfosWrap.Message);
+            }
+
+            var networkNames = networkList.Select(t => t.Network).ToList();
+            var networkListDto = networkInfosWrap.Data.NetworkList.Where(t => !networkNames.Contains(t.Network))
+                .ToList();
+
+            networkList.AddRange(networkListDto);
+        }
+
+        return networkList;
     }
-
+    
     public async Task<ResponseWrapDto<CalculateDepositRateDto>> CalculateDepositRateAsync(
         GetCalculateDepositRateRequestDto request)
     {
@@ -236,6 +228,16 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         return await _clientProvider.GetAsync<PagedResultDto<OrderIndexDto>>(url);
     }
 
+    private async Task<ResponseWrapDto<GetNetworkListDto>> GetNetworkListWithSymbolAsync(
+        GetNetworkListRequestDto request)
+    {
+        var url = ETransferConstant.GetNetworkList +
+                  $"?type={request.Type}&chainId={request.ChainId}&symbol={request.Symbol}";
+
+        return await _clientProvider.GetAsync<GetNetworkListDto>(url,
+            request);
+    }
+    
     private string GetUrl(string uri, object reqParam)
     {
         var url = uri.StartsWith(CommonConstant.ProtocolName)
