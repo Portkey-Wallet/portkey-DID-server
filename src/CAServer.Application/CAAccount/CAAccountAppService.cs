@@ -181,12 +181,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var resultDto = new RevokeEntranceResultDto();
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHolder.CaHash);
-
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
                                                                        && g.GuardianList.Guardians.Count > 0);
-
         if (guardianInfo == null)
         {
             resultDto.EntranceDisplay = false;

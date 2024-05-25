@@ -9,5 +9,10 @@ public class CAHolderState
     public string Avatar { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime CreateTime { get; set; }
+    
+    public bool PopedUp { get; set; }
+    
+    public bool ModifiedNickname { get; set; }
 
+    public string IdentifierHash { get; set; }
 }

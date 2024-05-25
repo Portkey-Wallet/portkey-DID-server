@@ -762,5 +762,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 opt => opt.MapFrom(f => ETransferConstant.Scope))
             ;
         CreateMap<TokenSpender, TokenAllowance>();
+        CreateMap<CAHolderGrainDto, CAHolderIndex>();
     }
 }
