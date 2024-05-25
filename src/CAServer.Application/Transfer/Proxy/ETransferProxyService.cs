@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Transfer.Dtos;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp;
@@ -60,7 +58,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         {
             var tokenListWrap = await GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
             {
-                Type = "Deposit"
+                Type = ETransferConstant.DepositName
             });
 
             if (tokenListWrap.Code != ETransferConstant.SuccessCode)
@@ -79,7 +77,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                 var networkInfosWrap = await GetNetworkListWithSymbolAsync(new GetNetworkListRequestDto()
                 {
                     ChainId = request.ChainId,
-                    Type = "Deposit",
+                    Type = ETransferConstant.DepositName,
                     Symbol = tokenDto.Symbol
                 });
 
@@ -201,7 +199,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             var networkInfosWrap = await GetNetworkListWithSymbolAsync(new GetNetworkListRequestDto()
             {
                 ChainId = "tDVW",
-                Type = "Deposit",
+                Type = ETransferConstant.DepositName,
                 Symbol = tokenDto.Symbol
             });
 

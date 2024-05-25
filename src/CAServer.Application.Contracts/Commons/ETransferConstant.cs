@@ -14,6 +14,10 @@ public static class ETransferConstant
     public const int DefaultMaxResultCount = 1000;
     public const string SgrName = "SGR-1";
     public const string SgrDisplayName = "SGR";
+    public const string DepositName = "Deposit";
+    public const int DefaultConfirmBlock = 64;
+    public const string Confirmation = "confirmation";
+    public const string Network = "network";
     
 
     public const string GetConnectToken = "connect/token";
