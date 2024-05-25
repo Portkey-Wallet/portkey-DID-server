@@ -9,6 +9,7 @@ public static class ETransferConstant
     public const string Version = "v2";
     public const string Source = "portkey";
     public const string Scope = "ETransferServer";
+    public const string SuccessCode = "20000";
     
 
     public const string GetConnectToken = "connect/token";

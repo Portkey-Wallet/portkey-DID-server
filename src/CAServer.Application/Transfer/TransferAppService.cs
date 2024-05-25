@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Transfer.Dtos;
 using CAServer.Transfer.Proxy;
@@ -52,7 +53,7 @@ public class TransferAppService : CAServerAppService, ITransferAppService
     public async Task<ResponseWrapDto<GetDepositInfoDto>> GetDepositInfoAsync(GetDepositRequestDto request)
     {
         var depositInfoWrap = await _eTransferProxyService.GetDepositInfoAsync(request);
-        if (depositInfoWrap.Code != "20000")
+        if (depositInfoWrap.Code != ETransferConstant.SuccessCode)
         {
             return depositInfoWrap;
         }
@@ -107,7 +108,7 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         request.MaxResultCount = 1000;
 
         var wrapDto = await _eTransferProxyService.GetRecordListAsync(request);
-        if (wrapDto.Code != "20000")
+        if (wrapDto.Code != ETransferConstant.SuccessCode)
         {
             return wrapDto;
         }
