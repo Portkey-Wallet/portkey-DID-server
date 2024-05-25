@@ -63,7 +63,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                 Type = "Deposit"
             });
 
-            if (tokenListWrap.Code != "20000")
+            if (tokenListWrap.Code != ETransferConstant.SuccessCode)
             {
                 throw new UserFriendlyException(tokenListWrap.Message);
             }
@@ -83,7 +83,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                     Symbol = tokenDto.Symbol
                 });
 
-                if (networkInfosWrap.Code != "20000")
+                if (networkInfosWrap.Code != ETransferConstant.SuccessCode)
                 {
                     if (networkInfosWrap.Message.Contains("Invalid symbol"))
                     {
@@ -102,7 +102,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
             return new ResponseWrapDto<GetNetworkListDto>()
             {
-                Code = "20000",
+                Code = ETransferConstant.SuccessCode,
                 Data = new GetNetworkListDto()
                 {
                     ChainId = request.ChainId,
@@ -142,7 +142,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
     {
         var response = new ResponseWrapDto<GetNetworkTokensDto>
         {
-            Code = "20000",
+            Code = ETransferConstant.SuccessCode,
             Data = new GetNetworkTokensDto()
         };
         var tokenList = new List<NetworkTokenInfo>();
@@ -152,7 +152,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
         var tokenListWrap = await _clientProvider.GetAsync<GetTokenOptionListDto>(url, request);
 
-        if (tokenListWrap.Code != "20000")
+        if (tokenListWrap.Code != ETransferConstant.SuccessCode)
         {
             throw new UserFriendlyException(tokenListWrap.Message);
         }
@@ -205,7 +205,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                 Symbol = tokenDto.Symbol
             });
 
-            if (networkInfosWrap.Code != "20000")
+            if (networkInfosWrap.Code != ETransferConstant.SuccessCode)
             {
                 throw new UserFriendlyException(networkInfosWrap.Message);
             }

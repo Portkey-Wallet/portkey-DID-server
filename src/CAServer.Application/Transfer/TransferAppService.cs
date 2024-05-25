@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Transfer.Dtos;
 using CAServer.Transfer.Proxy;
@@ -52,7 +53,7 @@ public class TransferAppService : CAServerAppService, ITransferAppService
     public async Task<ResponseWrapDto<GetDepositInfoDto>> GetDepositInfoAsync(GetDepositRequestDto request)
     {
         var depositInfoWrap = await _eTransferProxyService.GetDepositInfoAsync(request);
-        if (depositInfoWrap.Code != "20000")
+        if (depositInfoWrap.Code != ETransferConstant.SuccessCode)
         {
             return depositInfoWrap;
         }
@@ -73,20 +74,22 @@ public class TransferAppService : CAServerAppService, ITransferAppService
             }
         }
 
+        var symbol = request.Symbol == ETransferConstant.SgrName ? ETransferConstant.SgrDisplayName : request.Symbol;
+        var toSymbol = request.ToSymbol == ETransferConstant.SgrName ? ETransferConstant.SgrDisplayName : request.ToSymbol;
         depositInfo.DepositInfo.ExtraNotes = _options.ExtraNotes;
         depositInfo.DepositInfo.ExtraNotes[0] =
             depositInfo.DepositInfo.ExtraNotes[0].Replace("{BlockNumber}", count.ToString());
         depositInfo.DepositInfo.ExtraNotes[1] =
-            depositInfo.DepositInfo.ExtraNotes[1].Replace("{FromToken}", request.Symbol);
+            depositInfo.DepositInfo.ExtraNotes[1].Replace("{FromToken}", symbol);
 
         if (request.Symbol != request.ToSymbol)
         {
             depositInfo.DepositInfo.ExtraNotes.AddRange(_options.SwapExtraNotes);
             depositInfo.DepositInfo.ExtraNotes[2] =
-                depositInfo.DepositInfo.ExtraNotes[2].Replace("{FromToken}", request.Symbol);
+                depositInfo.DepositInfo.ExtraNotes[2].Replace("{FromToken}", symbol);
             depositInfo.DepositInfo.ExtraNotes[3] = depositInfo.DepositInfo.ExtraNotes[3]
                 .Replace("{FromToken}", request.Symbol)
-                .Replace("{ToToken}", request.ToSymbol);
+                .Replace("{ToToken}", toSymbol);
         }
 
         return depositInfoWrap;
@@ -103,11 +106,11 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         var skipCount = request.SkipCount;
         var maxResultCount = request.MaxResultCount;
 
-        request.SkipCount = 0;
-        request.MaxResultCount = 1000;
+        request.SkipCount = ETransferConstant.DefaultSkipCount;
+        request.MaxResultCount = ETransferConstant.DefaultMaxResultCount;
 
         var wrapDto = await _eTransferProxyService.GetRecordListAsync(request);
-        if (wrapDto.Code != "20000")
+        if (wrapDto.Code != ETransferConstant.SuccessCode)
         {
             return wrapDto;
         }
