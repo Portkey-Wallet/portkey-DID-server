@@ -61,13 +61,13 @@ public class TransferController : CAServerController
     }
 
     [HttpGet("network/tokens")]
-    public async Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
+    public async Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
     {
         return await _transferAppService.GetNetworkTokensAsync(request);
     }
     
     [HttpGet("record/list")]
-    public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetNetworkTokensRequestDto request)
+    public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetOrderRecordRequestDto request)
     {
         return await _transferAppService.GetRecordListAsync(request);
     }

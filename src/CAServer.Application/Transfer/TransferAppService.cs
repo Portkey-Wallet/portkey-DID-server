@@ -92,7 +92,7 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         return depositInfoWrap;
     }
 
-    public async Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
+    public async Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
     {
         return await _eTransferProxyService.GetNetworkTokensAsync(request);
     }
@@ -105,15 +105,20 @@ public class TransferAppService : CAServerAppService, ITransferAppService
 
         request.SkipCount = 0;
         request.MaxResultCount = 1000;
-        
+
         var wrapDto = await _eTransferProxyService.GetRecordListAsync(request);
         if (wrapDto.Code != "20000")
         {
             return wrapDto;
         }
+
         var orders = wrapDto.Data;
-        var res = orders.Items.Where(t => t.ToTransfer.Symbol == request.Symbol).ToList();
-        wrapDto.Data.Items = res;
+        var res = orders.Items
+            .Where(t => t.FromTransfer.Symbol == request.FromSymbol && t.FromTransfer.ToAddress == request.Address)
+            .ToList();
+
+        wrapDto.Data.Items = res.Skip(skipCount).Take(maxResultCount).ToList();
+        wrapDto.Data.TotalCount = res.Count;
 
         return wrapDto;
     }

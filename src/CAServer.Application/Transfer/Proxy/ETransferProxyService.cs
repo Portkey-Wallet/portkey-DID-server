@@ -138,9 +138,12 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             request);
     }
 
-    public async Task<GetNetworkTokensDto> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
+    public async Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)
     {
-        var response = new GetNetworkTokensDto();
+        var response = new ResponseWrapDto<GetNetworkTokensDto>
+        {
+            Code = "20000"
+        };
         var tokenList = new List<NetworkTokenInfo>();
 
 
@@ -185,7 +188,7 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
                 }
             }
 
-            response.TokenList = tokenList.DistinctBy(t => t.Symbol).ToList();
+            response.Data.TokenList = tokenList.DistinctBy(t => t.Symbol).ToList();
             return response;
         }
 
@@ -223,16 +226,15 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
             }
         }
 
-        response.TokenList = tokenList;
+        response.Data.TokenList = tokenList;
         return response;
     }
 
     public async Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(
         GetOrderRecordRequestDto request)
     {
-
-        return await _clientProvider.GetAsync<PagedResultDto<OrderIndexDto>>(
-            GetUrl(ETransferConstant.GetOrderRecordList, request));
+        var url = GetUrl(ETransferConstant.GetOrderRecordList, request);
+        return await _clientProvider.GetAsync<PagedResultDto<OrderIndexDto>>(url);
     }
 
     private string GetUrl(string uri, object reqParam)
