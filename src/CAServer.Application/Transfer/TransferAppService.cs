@@ -59,13 +59,16 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         }
 
         var depositInfo = depositInfoWrap.Data;
-        var count = 0;
+        var count = ETransferConstant.DefaultConfirmBlock;
 
-        var extraNodes = depositInfo.DepositInfo.ExtraNotes.Where(t => t.Contains("confirmation"));
+        var extraNodes = depositInfo.DepositInfo.ExtraNotes.Where(t => t.Contains(ETransferConstant.Confirmation));
         foreach (var extraNote in extraNodes)
         {
             var infoStr = extraNote.TrimEnd('.', ' ');
-            var nextWord = infoStr.Contains("network confirmations") ? "network" : "confirmation";
+            var nextWord = infoStr.Contains("network confirmations")
+                ? ETransferConstant.Network
+                : ETransferConstant.Confirmation;
+            
             var words = infoStr.Split(' ').ToList();
             if (int.TryParse(words[words.IndexOf(nextWord) - 1], out var confirmCount))
             {
@@ -75,7 +78,9 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         }
 
         var symbol = request.Symbol == ETransferConstant.SgrName ? ETransferConstant.SgrDisplayName : request.Symbol;
-        var toSymbol = request.ToSymbol == ETransferConstant.SgrName ? ETransferConstant.SgrDisplayName : request.ToSymbol;
+        var toSymbol = request.ToSymbol == ETransferConstant.SgrName
+            ? ETransferConstant.SgrDisplayName
+            : request.ToSymbol;
         depositInfo.DepositInfo.ExtraNotes = _options.ExtraNotes;
         depositInfo.DepositInfo.ExtraNotes[0] =
             depositInfo.DepositInfo.ExtraNotes[0].Replace("{BlockNumber}", count.ToString());
@@ -108,7 +113,6 @@ public class TransferAppService : CAServerAppService, ITransferAppService
 
         request.SkipCount = ETransferConstant.DefaultSkipCount;
         request.MaxResultCount = ETransferConstant.DefaultMaxResultCount;
-
         var wrapDto = await _eTransferProxyService.GetRecordListAsync(request);
         if (wrapDto.Code != ETransferConstant.SuccessCode)
         {
@@ -116,12 +120,12 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         }
 
         var orders = wrapDto.Data;
-        var res = orders.Items
+        var items = orders.Items
             .Where(t => t.FromTransfer.Symbol == request.FromSymbol && t.FromTransfer.ToAddress == request.Address)
             .ToList();
 
-        wrapDto.Data.Items = res.Skip(skipCount).Take(maxResultCount).ToList();
-        wrapDto.Data.TotalCount = res.Count;
+        wrapDto.Data.Items = items.Skip(skipCount).Take(maxResultCount).ToList();
+        wrapDto.Data.TotalCount = items.Count;
 
         return wrapDto;
     }
