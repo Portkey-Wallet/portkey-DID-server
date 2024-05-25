@@ -235,7 +235,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         activityDto.DappIcon = tokenSpender.Icon;
     }
 
-    private void SetMergeTokenBalance(IndexerTransaction indexerTransactionDto,
+    private void HandleTokenTransferInfos(IndexerTransaction indexerTransactionDto,
         string address)
     {
         if (indexerTransactionDto.TokenTransferInfos.IsNullOrEmpty() ||
@@ -264,7 +264,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         if (!_activityTypeOptions.MergeTokenBalanceTypes.Contains(indexerTransactionDto.MethodName))
         {
-            _logger.LogInformation("return -1");
             return;
         }
 
@@ -283,7 +282,6 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         }
         else
         {
-            _logger.LogInformation("return 0");
             return;
         }
 
@@ -293,16 +291,14 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var nftInfos = indexerTransactionDto.TokenTransferInfos.Where(t => t.NftInfo != null).Select(t => t.NftInfo)
             .ToList();
         var symbols = tokenInfos.Select(t => t.Symbol).Distinct().ToList();
-        var nftSymbols = nftInfos.Select(t => t.Symbol).Distinct().ToList();
         if (!nftInfos.IsNullOrEmpty() && nftInfos.Count > 0 && !symbols.IsNullOrEmpty() && symbols.Count > 0)
         {
-            _logger.LogInformation("return 1");
             return;
         }
 
+        var nftSymbols = nftInfos.Select(t => t.Symbol).Distinct().ToList();
         if ((symbols.IsNullOrEmpty() || symbols.Count() > 1) && (nftSymbols.IsNullOrEmpty() || nftSymbols.Count > 1))
         {
-            _logger.LogInformation("return 2");
             return;
         }
 
@@ -659,7 +655,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         foreach (var ht in indexerTransactions.CaHolderTransaction.Data)
         {
-            SetMergeTokenBalance(ht, caAddresses.First());
+            HandleTokenTransferInfos(ht, caAddresses.First());
             var dto = ObjectMapper.Map<IndexerTransaction, GetActivityDto>(ht);
             var transactionTime = MsToDateTime(ht.Timestamp * 1000);
 
