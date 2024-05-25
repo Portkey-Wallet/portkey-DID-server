@@ -12,6 +12,7 @@ public class ETransferConfig
 {
     public string ChainId { get; set; }
     public List<string> Accounts { get; set; }
+    public string ContractAddress { get; set; }
 }
 
 public class TransactionFeeFix
