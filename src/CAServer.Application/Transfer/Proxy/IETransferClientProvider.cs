@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Options;
+using CAServer.Transfer.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -16,9 +19,8 @@ namespace CAServer.Transfer.Proxy;
 
 public interface IETransferClientProvider
 {
-    Task<T> GetAsync<T>(string uri);
-    Task<T> GetAsync<T>(string uri, object requestParam);
-    Task<T> PostAsync<T>(string uri, object requestParam);
+    Task<ResponseWrapDto<T>> GetAsync<T>(string uri);
+    Task<ResponseWrapDto<T>> GetAsync<T>(string uri, object requestParam);
     Task<T> PostFormAsync<T>(string uri, object requestParam);
 }
 
@@ -38,19 +40,31 @@ public class ETransferClientProvider : IETransferClientProvider, ISingletonDepen
         _logger = logger;
     }
 
-    public async Task<T> GetAsync<T>(string uri)
+    public async Task<ResponseWrapDto<T>> GetAsync<T>(string uri)
     {
-        return await _httpClientService.GetAsync<T>(GetUrl(uri), GetAuthHeader());
+        try
+        {
+            return await _httpClientService.GetAsync<ResponseWrapDto<T>>(GetUrl(uri), GetAuthHeader());
+        }
+        catch (Exception e)
+        {
+            if (e is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized })
+            {
+                return new ResponseWrapDto<T>()
+                {
+                    Code = "40001",
+                    Message = "UnAuthorized"
+                };
+            }
+
+            _logger.LogError(e, "get error, uri:{uri}", uri);
+            throw;
+        }
     }
 
-    public async Task<T> GetAsync<T>(string uri, object requestParam)
+    public async Task<ResponseWrapDto<T>> GetAsync<T>(string uri, object requestParam)
     {
-        return await _httpClientService.GetAsync<T>(GetUrl(uri), GetAuthHeader());
-    }
-
-    public async Task<T> PostAsync<T>(string uri, object requestParam)
-    {
-        return await _httpClientService.PostAsync<T>(GetUrl(uri), requestParam, GetAuthHeader());
+        return await GetAsync<T>(uri);
     }
 
     public async Task<T> PostFormAsync<T>(string uri, object requestParam)
@@ -108,4 +122,6 @@ public class ETransferClientProvider : IETransferClientProvider, ISingletonDepen
 
         return url;
     }
+
+
 }

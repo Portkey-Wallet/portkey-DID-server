@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using CAServer.Transfer.Dtos;
+using Volo.Abp.Application.Dtos;
 
 namespace CAServer.Transfer.Proxy;
 
@@ -13,4 +14,5 @@ public interface IETransferProxyService
     Task<ResponseWrapDto<GetDepositInfoDto>> GetDepositInfoAsync(GetDepositRequestDto request);
 
     Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request);
+    Task<ResponseWrapDto<PagedResultDto<OrderIndexDto>>> GetRecordListAsync(GetOrderRecordRequestDto request);
 }

@@ -4,7 +4,7 @@ namespace CAServer.Transfer.Dtos;
 
 public class GetNetworkTokensDto
 {
-    public List<NetworkTokenInfo> TokenList { get; set; }
+    public List<NetworkTokenInfo> TokenList { get; set; } = new();
 }
 
 public class NetworkTokenInfo
