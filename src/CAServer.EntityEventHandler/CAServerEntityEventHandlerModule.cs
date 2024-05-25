@@ -64,6 +64,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);
         ConfigureMassTransit(context, configuration);
+        Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         context.Services.AddSingleton<IClusterClient>(o =>
         {
             return new ClientBuilder()
