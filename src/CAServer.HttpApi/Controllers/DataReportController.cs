@@ -22,7 +22,7 @@ public class DataReportController : CAServerController
         _eventBus = eventBus;
     }
 
-    [HttpGet("exitWallet"), Authorize]
+    [HttpPost("exitWallet"), Authorize]
     public async Task ExitWalletAsync(ExitWalletDto exitWalletDto)
     {
         await _eventBus.PublishAsync(new ExitWalletEto
