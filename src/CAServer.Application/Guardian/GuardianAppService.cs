@@ -7,6 +7,9 @@ using AElf;
 using AElf.Indexing.Elasticsearch;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
+using CAServer.Commons;
+using CAServer.Contacts;
 using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain;
@@ -42,6 +45,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly StopRegisterOptions _stopRegisterOptions;
     private readonly IObjectMapper _objectMapper;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
+    private readonly IImRequestProvider _imRequestProvider;
+    private readonly HostInfoOptions _hostInfoOptions;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
@@ -49,7 +54,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
         IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
-        IObjectMapper objectMapper, INESTRepository<CAHolderIndex, Guid> caHolderRepository)
+        IObjectMapper objectMapper, INESTRepository<CAHolderIndex, Guid> caHolderRepository,
+        IImRequestProvider imRequestProvider, HostInfoOptions hostInfoOptions)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -62,6 +68,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _stopRegisterOptions = stopRegisterOptions.Value;
         _objectMapper = objectMapper;
         _caHolderRepository = caHolderRepository;
+        _imRequestProvider = imRequestProvider;
+        _hostInfoOptions = hostInfoOptions;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -340,13 +348,9 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     public async Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
     {
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync is called updateGuardianIdentifierDto={0}", JsonConvert.SerializeObject(updateGuardianIdentifierDto));
         GuardianResultDto guardianResultDto = await GetGuardianIdentifiersAsync(updateGuardianIdentifierDto);
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync query result ={0}", JsonConvert.SerializeObject(guardianResultDto));
         if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync guardianResultDto is null, caHash={0}, unsetGuardianIdentifierHash={1}",
-                updateGuardianIdentifierDto.CaHash, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
             return false;
         }
         var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
@@ -356,40 +360,32 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
 
     private async Task<bool> ModifyNicknameHandler(GuardianResultDto guardianResultDto, Guid userId, string unsetGuardianIdentifierHash)
     {
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync ModifyNicknameHandler userId={0} cahash={1}", userId.ToString(), guardianResultDto.CaHash);
         var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
         var caHolderGrainDto = await grain.GetCaHolder();
         if (!caHolderGrainDto.Success)
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto failed");
             return false;
         }
         if (caHolderGrainDto.Data == null)
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto is null caHash={0}", guardianResultDto.CaAddress);
             return false;
         }
 
         var caHolder = caHolderGrainDto.Data;
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync caHolderGrainDto={0}", JsonConvert.SerializeObject(caHolderGrainDto));
         var modifiedNickname = caHolder.ModifiedNickname;
         var identifierHashFromGrain = caHolder.IdentifierHash;
         if (modifiedNickname && identifierHashFromGrain.IsNullOrEmpty())
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync user has modified nickname by himself caHash={0}", guardianResultDto.CaAddress);
             return false;
         }
         if (identifierHashFromGrain.IsNullOrEmpty() || !identifierHashFromGrain.Equals(unsetGuardianIdentifierHash))
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync identifierHashFromGrain not equal unsetGuardianIdentifierHash caHash={0}," +
-                             " identifierHashFromGrain={1}, unsetGuardianIdentifierHash={2}", guardianResultDto.CaAddress, identifierHashFromGrain, unsetGuardianIdentifierHash);
             return false;
         }
         var guardians = guardianResultDto.GuardianList.Guardians;
         var guardianDto = guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardianDto == null)
         {
-            _logger.LogError("UpdateUnsetGuardianIdentifierAsync guardianDto is null caHash={0}", guardianResultDto.CaAddress);
             return false;
         }
 
@@ -411,12 +407,10 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         GrainResultDto<CAHolderGrainDto> result = null;
         if (changedNickname.IsNullOrEmpty())
         {
-            _logger.LogInformation("executing default nickname logic");
             result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
         }
         else
         {
-            _logger.LogInformation("executing default nickname logic");
             result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, guardianDto.IdentifierHash);
         }
         _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync update result={0}", JsonConvert.SerializeObject(result.Data));
@@ -426,17 +420,49 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             return false;
         }
         //update es
-        var caHolderIndex = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
-        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync update es caholder, caHolderIndex={0}", JsonConvert.SerializeObject(caHolderIndex));
         try
         {
-            await _caHolderRepository.UpdateAsync(caHolderIndex);
+            await _caHolderRepository.UpdateAsync(_objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data));
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "UpdateUnsetGuardianIdentifierAsync update es caholder failed, caHolderIndex={0}", JsonConvert.SerializeObject(caHolderIndex));
+            _logger.LogError(e, "UpdateUnsetGuardianIdentifierAsync update es caholder failed, userid={1}, nickname={0}", userId, changedNickname);
+        }
+        //update im user
+        try
+        {
+            await UpdateImUserAsync(userId, changedNickname, caHolder.Avatar);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UpdateUnsetGuardianIdentifierAsync update im user failed, userid={1}, nickname={0}", userId, changedNickname);
         }
         return true;
+    }
+    
+    private async Task UpdateImUserAsync(Guid userId, string nickName, string avatar = "")
+    {
+        if (_hostInfoOptions.Environment == Options.Environment.Development)
+        {
+            return;
+        }
+
+        var imUserUpdateDto = new ImUserUpdateDto
+        {
+            Name = nickName,
+            Avatar = avatar
+        };
+
+        try
+        {
+            await _imRequestProvider.PostAsync<object>(ImConstant.UpdateImUserUrl, imUserUpdateDto);
+            Logger.LogInformation("{userId} update im user : {name}", userId.ToString(), nickName);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}",
+                userId.ToString(), nickName);
+        }
     }
     
     private string GetFirstNameFormat(string nickname, string firstName, string address)

@@ -74,17 +74,14 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         try
         {
             var loginGuardianInfoBase = await GetLoginAccountInfo(eventData.CaHash);
-            _logger.LogInformation("received create user event {0}", JsonConvert.SerializeObject(loginGuardianInfoBase));
             if (loginGuardianInfoBase == null)
             {
-                _logger.LogInformation("third party account, eventData={0}", JsonConvert.SerializeObject(eventData));
                 var (name, hash) = await GenerateNewAccountFormatForThirdParty(nickname, eventData);
                 changedNickname = name;
                 identifierHash = hash;
             }
             else
             {
-                _logger.LogInformation("email account, eventData={0}", JsonConvert.SerializeObject(eventData));
                 changedNickname = await GenerateNewAccountFormat(nickname, loginGuardianInfoBase);
                 identifierHash = loginGuardianInfoBase.IdentifierHash;
             }
@@ -110,9 +107,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.ModifiedNickname = true;
                 caHolderGrainDto.IdentifierHash = identifierHash;
             }
-            _logger.LogInformation("before create holder info, hash={0}", JsonConvert.SerializeObject(caHolderGrainDto));
             var result = await grain.AddHolderAsync(caHolderGrainDto);
-            _logger.LogInformation("after create holder info, hash={0}", JsonConvert.SerializeObject(result.Data));
             if (!result.Success)
             {
                 _logger.LogError("create holder fail: {message}, userId: {userId}, aAHash: {caHash}", result.Message,
@@ -122,8 +117,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
             await _caHolderRepository.AddAsync(_objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data));
 
-            _logger.LogInformation("create holder success, userId: {userId}, aAHash: {caHash}", eventData.UserId,
-                eventData.CaHash);
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
         }
         catch (Exception ex)
@@ -136,14 +129,12 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     {
         //if the guardian type is third party, the holderInfo is null
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHash);
-        _logger.LogInformation("holderInfo = {0}", JsonConvert.SerializeObject(holderInfo));
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
                                                                        && g.GuardianList.Guardians.Count > 0);
         if (guardianInfo == null)
         {
             return null;
         }
-        _logger.LogInformation("guardianInfo = {0}", JsonConvert.SerializeObject(guardianInfo));
         GuardianInfoBase guardianInfoBase = guardianInfo?.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardianInfoBase == null || !guardianInfoBase.Type.Equals(((int)GuardianType.GUARDIAN_TYPE_OF_EMAIL) + ""))
         {
@@ -152,9 +143,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         var list = new List<string>();
         list.Add(guardianInfoBase.IdentifierHash);
         var hashDic = await GetIdentifiersAsync(list);
-        _logger.LogInformation("hashDic = {0}", JsonConvert.SerializeObject(hashDic));
         guardianInfoBase.GuardianIdentifier = hashDic[guardianInfoBase.IdentifierHash];
-        _logger.LogInformation("guardianInfoBase = {0}", JsonConvert.SerializeObject(guardianInfoBase));
         return guardianInfoBase;
     }
     
@@ -179,13 +168,11 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     {
         if (guardianInfoBase == null)
         {
-            _logger.LogInformation("nickname={0} guardianInfoBase is null", nickname);
             return nickname;
         }
 
         if (!guardianInfoBase.IsLoginGuardian)
         {
-            _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
             return nickname;
         }
 
@@ -193,7 +180,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         string guardianType = guardianInfoBase.Type;
         if (guardianIdentifier == null)
         {
-            _logger.LogInformation("nickname={0} guardianIdentifier is null", nickname);
             return nickname;
         }
         //email  according to GuardianType
@@ -203,7 +189,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             {
                 if (!guardianIdentifier.Contains("@"))
                 {
-                    _logger.LogInformation("nickname={0} guardianInfoBase is not login guardian", nickname);
                     return nickname;
                 }
                 return GetEmailFormat(nickname, guardianIdentifier, string.Empty, string.Empty);
@@ -221,7 +206,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     {
         if (eventData.ChainId.IsNullOrEmpty() || eventData.CaHash.IsNullOrEmpty())
         {
-            _logger.LogWarning("third party generate account error because of chainId or cahash is null, chainId={0}, cahash={1}", eventData.ChainId, eventData.CaHash);
             return new Tuple<string, string>(nickname, string.Empty);
         }
 
@@ -231,7 +215,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             GuardianIdentifierDto guardianIdentifierDto = new GuardianIdentifierDto();
             guardianIdentifierDto.ChainId = eventData.ChainId;
             guardianIdentifierDto.CaHash = eventData.CaHash;
-            _logger.LogInformation("third party GuardianIdentifierDto={0}", JsonConvert.SerializeObject(guardianIdentifierDto));
             guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(guardianIdentifierDto);
         }
         catch (Exception e)
