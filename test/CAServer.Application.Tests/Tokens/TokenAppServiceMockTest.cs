@@ -180,6 +180,15 @@ public partial class TokenAppServiceTest
                     };
                 }
 
+                if (symbol == "ELF")
+                {
+                    return new GetTokenInfoDto
+                    {
+                        Symbol = "ELF",
+                        Decimals = 8
+                    };
+                }
+
                 return new GetTokenInfoDto();
             });
         return mockTokenCacheProvider.Object;
