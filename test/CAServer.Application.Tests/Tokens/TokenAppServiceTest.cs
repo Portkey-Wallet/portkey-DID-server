@@ -153,9 +153,10 @@ public partial class TokenAppServiceTest : CAServerApplicationTestBase
         });
         tokenAllowanceResult.Data.Count.ShouldBe(1);
         tokenAllowanceResult.TotalRecordCount.ShouldBe(1);
-        tokenAllowanceResult.Data[0].Allowance.ShouldBe(1);
+        tokenAllowanceResult.Data[0].Allowance.ShouldBe(0);
         tokenAllowanceResult.Data[0].ContractAddress.ShouldBe("XXXXX");
         tokenAllowanceResult.Data[0].Name.ShouldBe("Dapp1");
+        tokenAllowanceResult.Data[0].SymbolApproveList.Count.ShouldBe(2);
         
         var tokenAllowanceResult1 = await _tokenAppService.GetTokenAllowancesAsync(new GetAssetsBase()
         {
