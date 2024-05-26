@@ -4,7 +4,7 @@ namespace CAServer.Tokens.Dtos;
 
 public class GetTokenAllowancesDto
 {
-    public List<TokenAllowance> Data { get; set; }
+    public List<TokenAllowance> Data { get; set; } = new();
     public long TotalRecordCount { get; set; }
 }
 
