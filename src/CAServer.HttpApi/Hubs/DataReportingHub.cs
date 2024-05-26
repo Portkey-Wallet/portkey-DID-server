@@ -115,7 +115,7 @@ public class DataReportingHub : AbpHub
         }
 
         var userId = CurrentUser.GetId();
-        await _dataReportingAppService.ExitWalletAsync(Context.ConnectionId, CurrentUser.GetId());
+        await _dataReportingAppService.ExitWalletAsync(deviceId, CurrentUser.GetId());
         _logger.LogInformation("ExitWallet, deviceId:{deviceId}, userId:{userId}", deviceId, userId);
     }
 
