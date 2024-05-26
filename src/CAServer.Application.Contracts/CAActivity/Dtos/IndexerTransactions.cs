@@ -40,6 +40,15 @@ public class IndexerTransaction
     public string FromAddress { get; set; }
     public List<IndexerTransactionFee> TransactionFees { get; set; }
     public bool IsManagerConsumer { get; set; }
+    public string ToContractAddress { get; set; }
+    public List<TokenTransferInfo> TokenTransferInfos { get; set; }
+}
+
+public class TokenTransferInfo
+{
+    public TokenInfo TokenInfo { get; set; }
+    public NftInfo NftInfo { get; set; }
+    public TransferInfo TransferInfo { get; set; }
 }
 
 public class TransferInfo
