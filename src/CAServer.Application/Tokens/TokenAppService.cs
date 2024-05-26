@@ -16,6 +16,7 @@ using CAServer.UserAssets;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nito.AsyncEx;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
@@ -253,13 +254,38 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     public async Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input)
     {
         var tokenApproved = await _tokenProvider.GetTokenApprovedAsync("", 
-            input.CaAddressInfos.Select(t => t.CaAddress).ToList(), input.SkipCount, input.MaxResultCount);
-        var tokenAllowanceList = tokenApproved.CaHolderTokenApproved.Data.Select(t => new TokenAllowance
+            input.CaAddressInfos.Select(t => t.CaAddress).ToList());
+        if (tokenApproved.CaHolderTokenApproved.Data.Count == 0)
         {
-            ContractAddress = t.Spender,
-            Allowance = t.BatchApprovedAmount,
-            ChainId = t.ChainId
+            return new GetTokenAllowancesDto();
+        }
+
+        var symbolList = tokenApproved.CaHolderTokenApproved.Data.Select(t
+            => t.Symbol.Replace("-*", "-1")).Distinct().ToList();
+        var tokenInfoTasks = symbolList.Select(t =>
+                _tokenCacheProvider.GetTokenInfoAsync(CAServerConsts.AElfMainChainId, t, TokenHelper.GetTokenType(t)))
+            .ToList();
+        var tokenInfoDtos = await tokenInfoTasks.WhenAll();
+        var tokenAllowanceList = tokenApproved.CaHolderTokenApproved.Data.GroupBy(t => new
+        {
+            t.ChainId, t.Spender
+        }).Select(g => new
+        {
+            g.Key,
+            Items = g.ToList()
+        }).Select(t => new TokenAllowance()
+        {
+            ChainId = t.Key.ChainId,
+            ContractAddress = t.Key.Spender,
+            SymbolApproveList = t.Items.Select(s => new SymbolApprove()
+            {
+                Symbol = s.Symbol,
+                Amount = s.BatchApprovedAmount,
+                Decimals = tokenInfoDtos.FirstOrDefault(i => i.Symbol == s.Symbol.Replace("-*", "-1")) == null ? 0 : 
+                    tokenInfoDtos.First(i => i.Symbol == s.Symbol.Replace("-*", "-1")).Decimals
+            }).ToList()
         }).ToList();
+        
         foreach (var tokenAllowance in tokenAllowanceList)
         {
             var tokenSpender = _tokenSpenderOptions.CurrentValue.TokenSpenderList.FirstOrDefault(t
@@ -275,7 +301,7 @@ public class TokenAppService : CAServerAppService, ITokenAppService
         return new GetTokenAllowancesDto
         {
             Data = tokenAllowanceList,
-            TotalRecordCount = tokenApproved.CaHolderTokenApproved.TotalRecordCount
+            TotalRecordCount = tokenAllowanceList.Count
         };
     }
 }

@@ -160,7 +160,7 @@ public partial class TokenAppServiceTest
     {
         var mockTokenCacheProvider = new Mock<ITokenCacheProvider>();
         mockTokenCacheProvider.Setup(o =>
-            o.GetTokenInfoAsync(It.IsAny<string>(), It.IsAny<string>(), TokenType.Token))
+            o.GetTokenInfoAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TokenType>()))
             .ReturnsAsync((string chainId, string symbol, TokenType tokenType) =>
             {
                 if (symbol == "AXX")
@@ -168,6 +168,14 @@ public partial class TokenAppServiceTest
                     return new GetTokenInfoDto
                     {
                         Symbol = "AXX",
+                        Decimals = 8
+                    };
+                }
+                if (symbol == "SGR-1")
+                {
+                    return new GetTokenInfoDto
+                    {
+                        Symbol = "SGR-1",
                         Decimals = 8
                     };
                 }
@@ -315,10 +323,18 @@ public partial class TokenAppServiceTest
                             {
                                 ChainId = "AELF",
                                 Spender = "XXXXX",
-                                BatchApprovedAmount = 1
+                                BatchApprovedAmount = 1,
+                                Symbol = "SGR-*"
+                            },
+                            new ()
+                            {
+                                ChainId = "AELF",
+                                Spender = "XXXXX",
+                                BatchApprovedAmount = 1,
+                                Symbol = "ELF"
                             }
                         },
-                        TotalRecordCount = 1
+                        TotalRecordCount = 2
                     }
                 };
             });
