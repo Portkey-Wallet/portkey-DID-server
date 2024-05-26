@@ -84,7 +84,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         _managerCountLimitOptions = managerCountLimitOptions.Value;
         _chainOptions = chainOptions.Value;
     }
-
+    
     public async Task<AccountResultDto> RegisterRequestAsync(RegisterRequestDto input)
     {
         var guardianGrainDto = GetGuardian(input.LoginGuardianIdentifier);
@@ -181,12 +181,9 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
         var resultDto = new RevokeEntranceResultDto();
 
         var caHolder = await _userAssetsProvider.GetCaHolderIndexAsync(CurrentUser.GetId());
-
         var holderInfo = await _guardianProvider.GetGuardiansAsync(null, caHolder.CaHash);
-
         var guardianInfo = holderInfo.CaHolderInfo.FirstOrDefault(g => g.GuardianList != null
                                                                        && g.GuardianList.Guardians.Count > 0);
-
         if (guardianInfo == null)
         {
             resultDto.EntranceDisplay = false;
@@ -284,7 +281,6 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             ValidatedGuardian = validateGuardian
         };
     }
-
 
     public async Task<RevokeResultDto> RevokeAsync(RevokeDto input)
     {
@@ -533,7 +529,7 @@ public class CAAccountAppService : CAServerAppService, ICAAccountAppService
             var tasks = caHolderDto.GuardianAddedCAHolderInfo.Data.Select(
                 t => _userAssetsProvider.GetCaHolderIndexByCahashAsync(t.CaHash));
             await tasks.WhenAll();
-            if (tasks.Count(t => t.Result.CaHash.IsNullOrWhiteSpace() && !t.Result.IsDeleted) > 1)
+            if (tasks.Count(t =>!t.Result.IsDeleted) > 1)
             {
                 validateGuardian = false;
             }

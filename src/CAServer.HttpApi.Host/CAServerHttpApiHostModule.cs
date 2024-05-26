@@ -7,6 +7,7 @@ using CAServer.Hub;
 using CAServer.HubsEventHandler;
 using CAServer.Middleware;
 using CAServer.MongoDB;
+using CAServer.Monitor.Interceptor;
 using CAServer.MultiTenancy;
 using CAServer.Nightingale.Http;
 using CAServer.Nightingale.Orleans.Filters;
@@ -29,6 +30,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -99,6 +102,7 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        ConfigureOpenTelemetry(context); //config open telemetry info
         context.Services.AddHttpContextAccessor();
         ConfigureTokenCleanupService();
         ConfigureMassTransit(context, configuration);
@@ -330,6 +334,33 @@ public class CAServerHttpApiHostModule : AbpModule
     {
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
+    
+    //enhance performance monitoring capability 
+    private void ConfigureOpenTelemetry(ServiceConfigurationContext context)
+    {
+        IServiceCollection services = context.Services;
+        services.OnRegistred(options =>
+        {
+            if (options.ImplementationType.IsDefined(typeof(MonitorAttribute), true))
+            {
+                options.Interceptors.TryAdd<MonitorInterceptor>();
+            }
+        });
+        
+        services.AddOpenTelemetry()
+            .WithTracing(tracing =>
+            {
+                tracing.AddSource("CAServer")
+                    .SetSampler(new AlwaysOnSampler());
+                // .AddAspNetCoreInstrumentation();
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddMeter("CAServer")
+                    // .AddAspNetCoreInstrumentation()
+                    .AddPrometheusExporter();
+            });
+    }
 
     //Disables the auditing system
     private void ConfigAuditing()
@@ -390,6 +421,7 @@ public class CAServerHttpApiHostModule : AbpModule
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         StartOrleans(context.ServiceProvider);
 

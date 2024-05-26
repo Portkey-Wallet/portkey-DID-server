@@ -102,7 +102,7 @@ public class ContractService : IContractService, ISingletonDependency
                 MonitorAelfClientType.GetTransactionResultAsync.ToString());
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             _indicatorScope.End(getIndicator);
-
+            
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -117,7 +117,7 @@ public class ContractService : IContractService, ISingletonDependency
 
                 _indicatorScope.End(retryGetIndicator);
             }
-
+            
             return new TransactionInfoDto
             {
                 Transaction = transaction,
@@ -151,7 +151,7 @@ public class ContractService : IContractService, ISingletonDependency
             await Task.Delay(_contractServiceOptions.Delay);
 
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-
+            
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -161,7 +161,7 @@ public class ContractService : IContractService, ISingletonDependency
                 await Task.Delay(_contractServiceOptions.CryptoBoxRetryDelay);
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             }
-
+            
             return new TransactionInfoDto
             {
                 TransactionResultDto = transactionResult
@@ -403,7 +403,7 @@ public class ContractService : IContractService, ISingletonDependency
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             _logger.LogInformation("SendTransferRedPacketToChainAsync transactionResult: {transactionResult}",
                 JsonConvert.SerializeObject(transactionResult));
-
+            
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
