@@ -255,18 +255,20 @@ public class TokenAppService : CAServerAppService, ITokenAppService
     {
         var tokenApproved = await _tokenProvider.GetTokenApprovedAsync("", 
             input.CaAddressInfos.Select(t => t.CaAddress).ToList());
-        if (tokenApproved.CaHolderTokenApproved.Data.Count == 0)
+        var tokenApprovedList = tokenApproved.CaHolderTokenApproved.Data.Where(t
+            => !t.Symbol.IsNullOrWhiteSpace()).ToList();
+        if (tokenApprovedList.Count == 0)
         {
             return new GetTokenAllowancesDto();
         }
 
-        var symbolList = tokenApproved.CaHolderTokenApproved.Data.Select(t
+        var symbolList = tokenApprovedList.Select(t
             => t.Symbol.Replace("-*", "-1")).Distinct().ToList();
         var tokenInfoTasks = symbolList.Select(t =>
                 _tokenCacheProvider.GetTokenInfoAsync(CAServerConsts.AElfMainChainId, t, TokenHelper.GetTokenType(t)))
             .ToList();
         var tokenInfoDtos = await tokenInfoTasks.WhenAll();
-        var tokenAllowanceList = tokenApproved.CaHolderTokenApproved.Data.GroupBy(t => new
+        var tokenAllowanceList = tokenApprovedList.GroupBy(t => new
         {
             t.ChainId, t.Spender
         }).Select(g => new
