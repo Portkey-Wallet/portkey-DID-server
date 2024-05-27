@@ -79,6 +79,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(),
             userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>(),
             userTokenBalanceCache: GetRequiredService<IDistributedCache<string>>(),
+            userNftTraitsCountCache: GetRequiredService<IDistributedCache<string>>(),
             getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(),
             nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(),
             searchAppService: searchAppServiceMock.Object,
@@ -275,4 +276,12 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var result = await _userAssetsAppService.GetTokenBalanceAsync(input);
         result.Balance.ShouldBe(null);
     }
+
+    [Fact]
+    public async Task NftTraitsProportionCalculateAsync_test()
+    {
+       await  _userAssetsAppService.NftTraitsProportionCalculateAsync();
+    }
+
+
 }

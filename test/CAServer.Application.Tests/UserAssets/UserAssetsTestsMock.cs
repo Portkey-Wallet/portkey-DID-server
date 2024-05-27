@@ -236,6 +236,12 @@ public partial class UserAssetsTests
         mockUserAssetsProvider.Setup(m => m.GetUserNotDisplayTokenAsync(It.IsAny<Guid>()))
             .ReturnsAsync(new List<(string, string)>());
 
+
+        mockUserAssetsProvider.Setup(m =>
+            m.GetNftItemTraitsInfoAsync(It.IsAny<GetNftItemInfosDto>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
+            new IndexerNftItemInfos());
+        
+        
         return mockUserAssetsProvider.Object;
     }
 

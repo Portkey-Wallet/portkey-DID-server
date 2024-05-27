@@ -19,24 +19,29 @@ public class NftTraitsProportionCalculateWorker : AsyncPeriodicBackgroundWorkerB
     private readonly ContractSyncOptions _contractSyncOptions;
     private readonly IBackgroundWorkerRegistrarProvider _registrarProvider;
     private readonly N9EClientFactory _n9EClientFactory;
+    private readonly NFTTraitsSyncOptions _nftTraitsSyncOptions;
 
     private const string WorkerName = "NftTraitsProportionCalculateWorker";
 
     public NftTraitsProportionCalculateWorker(AbpAsyncTimer timer, IServiceScopeFactory serviceScopeFactory,
-        IUserAssetsAppService userAssetsAppService, ContractSyncOptions contractSyncOptions,
-        IBackgroundWorkerRegistrarProvider registrarProvider, N9EClientFactory n9EClientFactory) : base(timer,
+        IUserAssetsAppService userAssetsAppService,
+        IBackgroundWorkerRegistrarProvider registrarProvider, N9EClientFactory n9EClientFactory,
+        IOptionsSnapshot<NFTTraitsSyncOptions> nftTraitsSyncOptions,
+        IOptionsSnapshot<ContractSyncOptions> contractSyncOptions) : base(timer,
         serviceScopeFactory)
     {
         _userAssetsAppService = userAssetsAppService;
-        _contractSyncOptions = contractSyncOptions;
         _registrarProvider = registrarProvider;
         _n9EClientFactory = n9EClientFactory;
+        _contractSyncOptions = contractSyncOptions.Value;
+        _nftTraitsSyncOptions = nftTraitsSyncOptions.Value;
+        Timer.Period = 1000 * _nftTraitsSyncOptions.Sync;
     }
 
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _contractSyncOptions.Sync,
+        if (!await _registrarProvider.RegisterUniqueWorkerNodeAsync(WorkerName, _nftTraitsSyncOptions.Sync,
                 _contractSyncOptions.WorkerNodeExpirationTime))
         {
             return;
