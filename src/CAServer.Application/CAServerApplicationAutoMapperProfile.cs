@@ -63,6 +63,7 @@ using CAServer.ThirdPart.Etos;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
+using CAServer.Transfer.Dtos;
 using CAServer.Upgrade.Dtos;
 using CAServer.Upgrade.Etos;
 using CAServer.UserAssets.Dtos;
@@ -749,6 +750,18 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<UserTokenItem, UserTokenIndex>();
         CreateMap<CAServer.Options.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenItem, UserTokenIndexDto>();
+        CreateMap<AuthTokenRequestDto, ETransferAuthTokenRequestDto>().ForMember(des => des.ClientId,
+            opt => opt.MapFrom(f => ETransferConstant.ClientId))
+            .ForMember(des => des.GrantType,
+                opt => opt.MapFrom(f => ETransferConstant.GrantType))
+            .ForMember(des => des.Version,
+                opt => opt.MapFrom(f => ETransferConstant.Version))
+            .ForMember(des => des.Source,
+                opt => opt.MapFrom(f => ETransferConstant.Source))
+            .ForMember(des => des.Scope,
+                opt => opt.MapFrom(f => ETransferConstant.Scope))
+            ;
         CreateMap<TokenSpender, TokenAllowance>();
+        CreateMap<CAHolderGrainDto, CAHolderIndex>();
     }
 }

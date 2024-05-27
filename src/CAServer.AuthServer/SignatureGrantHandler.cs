@@ -102,7 +102,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         if (user == null)
         {
             var userId = Guid.NewGuid();
-            var createUserResult = await CreateUserAsync(userManager, userId, caHash);
+            var createUserResult = await CreateUserAsync(userManager, userId, caHash, chainId);
             if (!createUserResult)
             {
                 return GetForbidResult(OpenIddictConstants.Errors.ServerError, "Create user failed.");
@@ -189,7 +189,7 @@ public class SignatureGrantHandler : ITokenExtensionGrant
         return message;
     }
 
-    private async Task<bool> CreateUserAsync(IdentityUserManager userManager, Guid userId, string caHash)
+    private async Task<bool> CreateUserAsync(IdentityUserManager userManager, Guid userId, string caHash, string chainId)
     {
         var result = false;
         await using var handle =
@@ -208,7 +208,8 @@ public class SignatureGrantHandler : ITokenExtensionGrant
                     Id = userId,
                     UserId = userId,
                     CaHash = caHash,
-                    CreateTime = DateTime.UtcNow
+                    CreateTime = DateTime.UtcNow,
+                    ChainId = chainId
                 });
 
                 _logger.LogDebug($"create user success: {userId.ToString()}");

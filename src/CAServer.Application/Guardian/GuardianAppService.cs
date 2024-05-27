@@ -1,23 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
+using CAServer.Common;
+using CAServer.Commons;
+using CAServer.Contacts;
 using CAServer.Entities.Es;
 using CAServer.Grains;
+using CAServer.Grains.Grain;
+using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using Newtonsoft.Json;
 using Orleans;
 using Portkey.Contracts.CA;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 
 namespace CAServer.Guardian;
@@ -35,14 +43,19 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly AppleTransferOptions _appleTransferOptions;
     private readonly StopRegisterOptions _stopRegisterOptions;
-
+    private readonly IObjectMapper _objectMapper;
+    private readonly INESTRepository<CAHolderIndex, Guid> _caHolderRepository;
+    private readonly IImRequestProvider _imRequestProvider;
+    // private readonly HostInfoOptions _hostInfoOptions;
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
-        IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions)
+        IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
+        IObjectMapper objectMapper, INESTRepository<CAHolderIndex, Guid> caHolderRepository,
+        IImRequestProvider imRequestProvider/*, IOptionsSnapshot<HostInfoOptions> hostInfoOptions*/)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -53,6 +66,10 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _appleUserProvider = appleUserProvider;
         _appleTransferOptions = appleTransferOptions.Value;
         _stopRegisterOptions = stopRegisterOptions.Value;
+        _objectMapper = objectMapper;
+        _caHolderRepository = caHolderRepository;
+        _imRequestProvider = imRequestProvider;
+        // _hostInfoOptions = hostInfoOptions.Value;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -326,6 +343,170 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         {
             guardian.FirstName = userInfo.FirstName;
             guardian.LastName = userInfo.LastName;
+        }
+    }
+
+    public async Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
+    {
+        GuardianResultDto guardianResultDto = await GetGuardianIdentifiersAsync(updateGuardianIdentifierDto);
+        if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
+        {
+            return false;
+        }
+        var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result is={0}, caHash={1}", result, updateGuardianIdentifierDto.CaHash);
+        return result;
+    }
+
+    private async Task<bool> ModifyNicknameHandler(GuardianResultDto guardianResultDto, Guid userId, string unsetGuardianIdentifierHash)
+    {
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        var caHolderGrainDto = await grain.GetCaHolder();
+        if (!caHolderGrainDto.Success)
+        {
+            return false;
+        }
+        if (caHolderGrainDto.Data == null)
+        {
+            return false;
+        }
+
+        var caHolder = caHolderGrainDto.Data;
+        var modifiedNickname = caHolder.ModifiedNickname;
+        var identifierHashFromGrain = caHolder.IdentifierHash;
+        if (modifiedNickname && identifierHashFromGrain.IsNullOrEmpty())
+        {
+            return false;
+        }
+        if (identifierHashFromGrain.IsNullOrEmpty() || !identifierHashFromGrain.Equals(unsetGuardianIdentifierHash))
+        {
+            return false;
+        }
+        var guardians = guardianResultDto.GuardianList.Guardians;
+        var guardianDto = guardians.FirstOrDefault(g => g.IsLoginGuardian);
+        if (guardianDto == null)
+        {
+            return false;
+        }
+
+        string changedNickname;
+        string nickname = userId.ToString("N").Substring(0, 8);
+        if ("Telegram".Equals(guardianDto.Type) || "Twitter".Equals(guardianDto.Type) || "Facebook".Equals(guardianDto.Type))
+        {
+            changedNickname = GetFirstNameFormat(nickname, guardianDto.FirstName, guardianResultDto.CaAddress);
+        }
+        else if ("Email".Equals(guardianDto.Type) && !guardianDto.GuardianIdentifier.IsNullOrEmpty())
+        {
+            changedNickname = GetEmailFormat(nickname, guardianDto.GuardianIdentifier, guardianDto.FirstName, guardianResultDto.CaAddress);
+        }
+        else
+        {
+            changedNickname = GetEmailFormat(nickname, guardianDto.ThirdPartyEmail, guardianDto.FirstName, guardianResultDto.CaAddress);
+        }
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync cahash={0} nickname={1}, changedNickname={2}", guardianResultDto.CaAddress, nickname, changedNickname);
+        GrainResultDto<CAHolderGrainDto> result = null;
+        if (changedNickname.IsNullOrEmpty())
+        {
+            result = await grain.UpdateNicknameAndMarkBitAsync(nickname, false, string.Empty);
+        }
+        else
+        {
+            result = await grain.UpdateNicknameAndMarkBitAsync(changedNickname, true, guardianDto.IdentifierHash);
+        }
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync update result={0}", JsonConvert.SerializeObject(result.Data));
+        if (!result.Success)
+        {
+            _logger.LogError("update user nick name failed, nickname={0}, changedNickname={1}", nickname, changedNickname);
+            return false;
+        }
+        //update es
+        try
+        {
+            await _caHolderRepository.UpdateAsync(_objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UpdateUnsetGuardianIdentifierAsync update es caholder failed, userid={1}, nickname={0}", userId, changedNickname);
+        }
+        //update im user
+        try
+        {
+            await UpdateImUserAsync(userId, changedNickname, caHolder.Avatar);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "UpdateUnsetGuardianIdentifierAsync update im user failed, userid={1}, nickname={0}", userId, changedNickname);
+        }
+        return true;
+    }
+    
+    private async Task UpdateImUserAsync(Guid userId, string nickName, string avatar = "")
+    {
+        // if (_hostInfoOptions.Environment == Options.Environment.Development)
+        // {
+        //     return;
+        // }
+    
+        var imUserUpdateDto = new ImUserUpdateDto
+        {
+            Name = nickName,
+            Avatar = avatar
+        };
+    
+        try
+        {
+            await _imRequestProvider.PostAsync<object>(ImConstant.UpdateImUserUrl, imUserUpdateDto);
+            Logger.LogInformation("{userId} update im user : {name}", userId.ToString(), nickName);
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e, ImConstant.ImServerErrorPrefix + " update im user fail : {userId}, {name}",
+                userId.ToString(), nickName);
+        }
+    }
+    
+    private string GetFirstNameFormat(string nickname, string firstName, string address)
+    {
+        if (firstName.IsNullOrEmpty() && address.IsNullOrEmpty())
+        {
+            return nickname;
+        }
+        if (!firstName.IsNullOrEmpty() && Regex.IsMatch(firstName,"^\\w+$"))
+        {
+            return firstName + "***";
+        }
+    
+        if (!address.IsNullOrEmpty())
+        {
+            int length = address.Length;
+            return address.Substring(0, 3) + "***" + address.Substring(length - 3);
+        }
+        return nickname;
+    }
+
+    private string GetEmailFormat(string nickname, string guardianIdentifier, string firstName, string address)
+    {
+        if (guardianIdentifier.IsNullOrEmpty())
+        {
+            return GetFirstNameFormat(nickname, firstName, address);
+        }
+
+        int index = guardianIdentifier.LastIndexOf("@");
+        if (index < 0)
+        {
+            return nickname;
+        }
+
+        string frontPart = guardianIdentifier.Substring(0, index);
+        string backPart = guardianIdentifier.Substring(index);
+        int frontLength = frontPart.Length;
+        if (frontLength > 4)
+        {
+            return frontPart.Substring(0, 4) + "***" + backPart;
+        }
+        else
+        {
+            return frontPart + "***" + backPart;
         }
     }
 }
