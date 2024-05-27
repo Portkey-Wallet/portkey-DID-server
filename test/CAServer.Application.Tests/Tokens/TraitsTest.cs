@@ -55,8 +55,8 @@ public class TempTest
         indexerNftInfo.NftInfo.Symbol = "aa-1";
         indexerNftInfo.NftInfo.Supply = 1;
         indexerNftInfo.NftInfo.Traits = @"[{""traitType"":""background"",""value"":""red""},{""traitType"":""color"",""value"":""blue""}]";
-
         indexerNftInfos.CaHolderNFTBalanceInfo.Data.Add(indexerNftInfo);
+        
         
         indexerNftInfo = new IndexerNftInfo();
         indexerNftInfo.NftInfo = new NftInfo();

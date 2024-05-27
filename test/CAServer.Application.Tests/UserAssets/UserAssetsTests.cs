@@ -109,6 +109,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
         services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
+        services.AddSingleton(GetMockSearchAppService());
     }
 
     private void Login(Guid userId)
@@ -281,6 +282,27 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
     public async Task NftTraitsProportionCalculateAsync_test()
     {
        await  _userAssetsAppService.NftTraitsProportionCalculateAsync();
+    }
+
+    [Fact]
+    public async Task SearchUserPackageAssetsAsync_Test()
+    {
+
+        var infos = new List<CAAddressInfo>
+        {
+            new CAAddressInfo()
+            {
+                ChainId = "AELF",
+                CaAddress = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+            }
+        };
+        var param = new SearchUserPackageAssetsRequestDto
+        {
+            CaAddressInfos = infos
+        };
+        await _userAssetsAppService.SearchUserPackageAssetsAsync(param);
+
+
     }
 
 

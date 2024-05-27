@@ -5,6 +5,8 @@ using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Options;
+using CAServer.Search;
+using CAServer.Search.Dtos;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Provider;
@@ -12,6 +14,7 @@ using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
 using Token = CAServer.Entities.Es.Token;
@@ -379,4 +382,43 @@ public partial class UserAssetsTests
             });
         return tokenProvider.Object;
     }
+
+    private ISearchAppService GetMockSearchAppService()
+    {
+        var page = new PagedResultDto<UserTokenIndexDto>
+        {
+            TotalCount = 10,
+            Items = new List<UserTokenIndexDto>
+            {
+                new UserTokenIndexDto()
+                {
+                    Id = Guid.NewGuid(),
+                    IsDefault = true,
+                    SortWeight = 1,
+                    UserId = Guid.NewGuid(),
+                    Token = new Search.Dtos.Token()
+                    {
+                        Address = "NJRa6TYqvAgfDsLnsKXCA2jt3bYLEA8rUgPPzwMAG3YYXviHY",
+                        ChainId = "AELF",
+                        Decimals = 10,
+                        Symbol = "SEED-0",
+                        ImageUrl = "MockUrl"
+                    }
+                    
+                }
+            }
+        };
+        var jsonStr = JsonConvert.SerializeObject(page);
+        
+        var searchAppService = new Mock<ISearchAppService>();
+
+        searchAppService.Setup(t => t.GetListByLucenceAsync(It.IsAny<string>(), It.IsAny<GetListInput>()))
+            .ReturnsAsync(jsonStr);
+
+        return searchAppService.Object;
+
+    }
+        
+        
+
 }
