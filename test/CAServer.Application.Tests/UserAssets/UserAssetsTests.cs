@@ -301,8 +301,26 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             CaAddressInfos = infos
         };
         await _userAssetsAppService.SearchUserPackageAssetsAsync(param);
+    }
 
-
+    [Fact]
+    public async Task GetNFTItemAsync_Test()
+    {
+        var requestDto = new GetNftItemRequestDto
+        {
+            Symbol = "SEED-0",
+            Width = 100,
+            Height = 100,
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    ChainId = "AELF",
+                    CaAddress = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+                }
+            }
+        };
+        await _userAssetsAppService.GetNFTItemAsync(requestDto);
     }
 
 

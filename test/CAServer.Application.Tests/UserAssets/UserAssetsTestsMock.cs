@@ -234,6 +234,44 @@ public partial class UserAssetsTests
                 }
             });
 
+        mockUserAssetsProvider.Setup(m => m.GetUserNftInfoBySymbolAsync(It.IsAny<List<CAAddressInfo>>(),
+            It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new IndexerNftInfos
+        {
+            // CaHolderNFTBalanceInfo =
+            // {
+            //     TotalRecordCount = 10,
+            //     Data = new List<IndexerNftInfo>()
+            //     {
+            //         new IndexerNftInfo()
+            //         {
+            //             Balance = 10,
+            //             CaAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+            //             ChainId = "AELF",
+            //             NftInfo = new NftInfo()
+            //             {
+            //                 Symbol = "SEED-01",
+            //                 Decimals = 10,
+            //                 ImageUrl = "MockImageUrl",
+            //                 CollectionSymbol = "MockSymbol",
+            //                 CollectionName = "Seed-02",
+            //                 TokenName = "MockToken",
+            //                 TotalSupply = 10000,
+            //                 Supply = 1,
+            //                 TokenContractAddress = "c1pPpwKdVaYjEsS5VLMTkiXf76wxW9YY2qaDBPowpa8zX2oEo",
+            //                 InscriptionName = "SGR-01",
+            //                 Lim = "Lim",
+            //                 Expires = "10",
+            //                 SeedOwnedSymbol = "Seed-03",
+            //                 Generation = "MockGeneration",
+            //                 Traits =
+            //                     @"[{""traitType"":""background"",""value"":""red""},{""traitType"":""color"",""value"":""blue""}]"
+            //             }
+            //         }
+            //     }
+            // }
+        });
+
+
         mockUserAssetsProvider.Setup(m => m.GetUserIsDisplayTokenSymbolAsync(It.IsAny<Guid>()))
             .ReturnsAsync(new List<UserTokenIndex>());
         mockUserAssetsProvider.Setup(m => m.GetUserNotDisplayTokenAsync(It.IsAny<Guid>()))
@@ -243,8 +281,8 @@ public partial class UserAssetsTests
         mockUserAssetsProvider.Setup(m =>
             m.GetNftItemTraitsInfoAsync(It.IsAny<GetNftItemInfosDto>(), It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(
             new IndexerNftItemInfos());
-        
-        
+
+
         return mockUserAssetsProvider.Object;
     }
 
@@ -336,7 +374,7 @@ public partial class UserAssetsTests
             TokenInfos = dict
         });
     }
-    
+
     private IOptions<AssetsInfoOptions> GetMockAssetsInfoOptions()
     {
         return new OptionsWrapper<AssetsInfoOptions>(new AssetsInfoOptions()
@@ -345,7 +383,7 @@ public partial class UserAssetsTests
             ImageUrlSuffix = "/info/logo.png"
         });
     }
-    
+
     private IOptionsSnapshot<SeedImageOptions> GetMockSeedImageOptions()
     {
         var mockOptionsSnapshot = new Mock<IOptionsSnapshot<SeedImageOptions>>();
@@ -371,8 +409,8 @@ public partial class UserAssetsTests
             {
                 new UserTokenIndex()
                 {
-                    IsDisplay=true,
-                    IsDefault=true,
+                    IsDisplay = true,
+                    IsDefault = true,
                     Token = new Token()
                     {
                         Symbol = "ELF",
@@ -404,21 +442,16 @@ public partial class UserAssetsTests
                         Symbol = "SEED-0",
                         ImageUrl = "MockUrl"
                     }
-                    
                 }
             }
         };
         var jsonStr = JsonConvert.SerializeObject(page);
-        
+
         var searchAppService = new Mock<ISearchAppService>();
 
         searchAppService.Setup(t => t.GetListByLucenceAsync(It.IsAny<string>(), It.IsAny<GetListInput>()))
             .ReturnsAsync(jsonStr);
 
         return searchAppService.Object;
-
     }
-        
-        
-
 }

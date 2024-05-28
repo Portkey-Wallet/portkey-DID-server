@@ -715,6 +715,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
         }
 
+        _logger.LogInformation("TotalCount of NftItems is {count}", resultCount);
         return itemInfos;
     }
 
@@ -1367,7 +1368,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traits, traitTypeCounts[traits].ToString());
         }
-        
+
 
         var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
             .ToDictionary(g => g.Key, g => g.Count());
