@@ -1361,7 +1361,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var allItemsTraitsList = allItemsTraitsListInCollection
             .Select(traits =>
             {
-                _logger.LogInformation("traits json string is {jsonStr}",traits);
                 return JsonHelper.DeserializeJson<List<Trait>>(traits);
             })
             .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
