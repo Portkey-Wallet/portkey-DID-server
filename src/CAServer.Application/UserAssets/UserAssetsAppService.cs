@@ -715,7 +715,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
         }
 
-        _logger.LogInformation("TotalCount of NftItems is {count}", resultCount);
+        _logger.LogInformation("TotalCount of NftItems is {count}", skipCount);
         return itemInfos;
     }
 
@@ -1356,7 +1356,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             .GroupBy(nftItem => nftItem.Symbol)
             .Select(group => group.First().Traits)
             .ToList() ?? new List<string>();
-
+        foreach (var coll in allItemsTraitsListInCollection)
+        {
+            _logger.LogDebug("allItemsTraitsListInCollection is {collection}",coll);
+        }
+        
         var allItemsTraitsList = allItemsTraitsListInCollection
             .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
             .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
