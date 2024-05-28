@@ -88,6 +88,19 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
         return result;
     }
+    
+    public async Task UpdatePopUpAsync(bool poppedUp)
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return ;
+        }
+
+        State.PopedUp = poppedUp;
+        await WriteStateAsync();
+    }
 
     public async Task<GrainResultDto<CAHolderGrainDto>> DeleteAsync()
     {
