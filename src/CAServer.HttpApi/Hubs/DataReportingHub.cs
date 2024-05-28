@@ -18,21 +18,21 @@ public class DataReportingHub : AbpHub
 {
     private readonly ILogger<DataReportingHub> _logger;
     private readonly IHubService _hubService;
-    private readonly IDataReportingAppService _dataReportingAppService;
+    private readonly IDeviceInfoReportAppService _deviceInfoReportAppService;
     private readonly IObjectMapper _objectMapper;
     private readonly IConnectionProvider _connectionProvider;
     private readonly MessagePushOptions _messagePushOptions;
 
     public DataReportingHub(ILogger<DataReportingHub> logger,
         IHubService hubService,
-        IDataReportingAppService dataReportingAppService,
+        IDeviceInfoReportAppService deviceInfoReportAppService,
         IObjectMapper objectMapper,
         IConnectionProvider connectionProvider,
         IOptionsSnapshot<MessagePushOptions> messagePushOptions)
     {
         _logger = logger;
         _hubService = hubService;
-        _dataReportingAppService = dataReportingAppService;
+        _deviceInfoReportAppService = deviceInfoReportAppService;
         _objectMapper = objectMapper;
         _connectionProvider = connectionProvider;
         _messagePushOptions = messagePushOptions.Value;
@@ -75,7 +75,7 @@ public class DataReportingHub : AbpHub
         var deviceDto = _objectMapper.Map<UserDeviceReportingRequestDto, UserDeviceReportingDto>(input);
         deviceDto.UserId = CurrentUser.GetId();
 
-        await _dataReportingAppService.ReportDeviceInfoAsync(deviceDto);
+        await _deviceInfoReportAppService.ReportDeviceInfoAsync(deviceDto);
         _logger.LogInformation("report deviceInfo, userId:{userId}, deviceId:{deviceId}", deviceDto.UserId,
             input.DeviceId);
     }
@@ -100,7 +100,7 @@ public class DataReportingHub : AbpHub
         appStatusDto.UserId = CurrentUser.GetId();
         appStatusDto.DeviceId = deviceId;
 
-        await _dataReportingAppService.ReportAppStatusAsync(appStatusDto);
+        await _deviceInfoReportAppService.ReportAppStatusAsync(appStatusDto);
         _logger.LogDebug(
             "report status, userId: {userId}, deviceId:{deviceId}, appStatus:{appStatus}, unreadCount:{unreadCount}",
             appStatusDto.UserId, appStatusDto.DeviceId ?? string.Empty, input.Status, input.UnreadCount);
@@ -115,7 +115,7 @@ public class DataReportingHub : AbpHub
         }
 
         var userId = CurrentUser.GetId();
-        await _dataReportingAppService.ExitWalletAsync(deviceId, CurrentUser.GetId());
+        await _deviceInfoReportAppService.ExitWalletAsync(deviceId, CurrentUser.GetId());
         _logger.LogInformation("ExitWallet, deviceId:{deviceId}, userId:{userId}", deviceId, userId);
     }
 
@@ -133,7 +133,7 @@ public class DataReportingHub : AbpHub
         }
 
         var userId = CurrentUser.GetId();
-        await _dataReportingAppService.SwitchNetworkAsync(Context.ConnectionId, CurrentUser.GetId());
+        await _deviceInfoReportAppService.SwitchNetworkAsync(Context.ConnectionId, CurrentUser.GetId());
         _logger.LogInformation("SwitchNetwork, deviceId:{deviceId}, userId:{userId}", deviceId, userId);
     }
 
@@ -146,7 +146,7 @@ public class DataReportingHub : AbpHub
         {
             return;
         }
-        await _dataReportingAppService.OnDisconnectedAsync(deviceId, CurrentUser.GetId());
+        await _deviceInfoReportAppService.OnDisconnectedAsync(deviceId, CurrentUser.GetId());
         _logger.LogInformation("disconnected, clientId:{clientId}", deviceId ?? "");
     }
 

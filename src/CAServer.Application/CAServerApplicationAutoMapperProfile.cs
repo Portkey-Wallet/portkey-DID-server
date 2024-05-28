@@ -15,6 +15,7 @@ using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
 using CAServer.DataReporting.Dtos;
+using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -763,5 +764,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
             ;
         CreateMap<TokenSpender, TokenAllowance>();
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
+        CreateMap<TransactionReportDto, TransactionReportEto>();
     }
 }
