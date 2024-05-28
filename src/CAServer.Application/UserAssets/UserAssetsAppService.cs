@@ -1356,13 +1356,13 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             .GroupBy(nftItem => nftItem.Symbol)
             .Select(group => group.First().Traits)
             .ToList() ?? new List<string>();
-        foreach (var coll in allItemsTraitsListInCollection)
-        {
-            _logger.LogDebug("allItemsTraitsListInCollection is {collection}",coll);
-        }
         
         var allItemsTraitsList = allItemsTraitsListInCollection
-            .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
+            .Select(traits =>
+            {
+                _logger.LogInformation("traits json string is {jsonStr}",traits);
+                return JsonHelper.DeserializeJson<List<Trait>>(traits);
+            })
             .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
             .SelectMany(curTraitsList => curTraitsList)
             .ToList();
