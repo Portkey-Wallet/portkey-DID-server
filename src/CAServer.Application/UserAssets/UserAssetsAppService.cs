@@ -733,7 +733,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             if (traitsTyperCount != null && traitsTypeValueCount != null)
             {
                 var percentage =
-                    PercentageHelper.CalculatePercentage(int.Parse(traitsTyperCount), int.Parse(traitsTypeValueCount));
+                    PercentageHelper.CalculatePercentage(int.Parse(traitsTypeValueCount), int.Parse(traitsTyperCount));
                 trait.Percent = percentage;
             }
             else
