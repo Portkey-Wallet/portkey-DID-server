@@ -1353,7 +1353,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         };
         var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
         var allItemsTraitsListInCollection = itemInfos.NftItemInfos?
-            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits) && !IsValidJson(nftItem.Traits))
+            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits) && IsValidJson(nftItem.Traits))
             .GroupBy(nftItem => nftItem.Symbol)
             .Select(group => group.First().Traits)
             .ToList() ?? new List<string>();
