@@ -4,7 +4,7 @@ using CAServer.DataReporting.Dtos;
 
 namespace CAServer.DataReporting;
 
-public interface IDataReportingAppService
+public interface IDeviceInfoReportAppService
 {
     Task ReportDeviceInfoAsync(UserDeviceReportingDto input);
     Task ReportAppStatusAsync(AppStatusReportingDto input);
