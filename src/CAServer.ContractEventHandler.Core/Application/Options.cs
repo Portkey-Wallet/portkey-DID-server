@@ -46,3 +46,8 @@ public class ContractSyncOptions
     public int AutoReceive { get; set; }
     public int WorkerNodeExpirationTime { get; set; } = 300;
 }
+
+public class NFTTraitsSyncOptions
+{
+    public int Sync { get; set; }
+}

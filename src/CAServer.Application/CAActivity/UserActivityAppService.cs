@@ -500,6 +500,15 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             activityDto.NftInfo.ImageUrl =
                 IpfsImageUrlHelper.TryGetIpfsImageUrl(activityDto.NftInfo.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
+            activityDto.ListIcon = activityDto.NftInfo.ImageUrl;
+        }
+
+        if (activityDto.Operations.IsNullOrEmpty()) return;
+        
+        foreach (var itemInfo in activityDto.Operations.Where(itemInfo => itemInfo.NftInfo != null))
+        {
+            itemInfo.NftInfo.ImageUrl=
+                IpfsImageUrlHelper.TryGetIpfsImageUrl(itemInfo.NftInfo.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
         }
     }
 

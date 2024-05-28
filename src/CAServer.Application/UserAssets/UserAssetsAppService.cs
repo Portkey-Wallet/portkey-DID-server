@@ -61,6 +61,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     private readonly ITokenCacheProvider _tokenCacheProvider;
     private readonly IpfsOptions _ipfsOptions;
     private readonly ITokenPriceService _tokenPriceService;
+    private readonly IDistributedCache<string> _userNftTraitsCountCache;
+    private const string TraitsCachePrefix = "PortKey:NFTtraits:";
 
     public UserAssetsAppService(
         ILogger<UserAssetsAppService> logger, IUserAssetsProvider userAssetsProvider, ITokenAppService tokenAppService,
@@ -73,7 +75,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         IOptionsSnapshot<NftItemDisplayOption> nftItemDisplayOption,
         ISearchAppService searchAppService, ITokenCacheProvider tokenCacheProvider,
-        IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService)
+        IOptionsSnapshot<IpfsOptions> ipfsOption, ITokenPriceService tokenPriceService,
+        IDistributedCache<string> userNftTraitsCountCache)
     {
         _logger = logger;
         _userAssetsProvider = userAssetsProvider;
@@ -96,6 +99,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         _tokenCacheProvider = tokenCacheProvider;
         _ipfsOptions = ipfsOption.Value;
         _tokenPriceService = tokenPriceService;
+        _userNftTraitsCountCache = userNftTraitsCountCache;
     }
 
     public async Task<GetTokenDto> GetTokenAsync(GetTokenRequestDto requestDto)
@@ -666,7 +670,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
     {
         foreach (var item in nftItems.Where(item => !string.IsNullOrEmpty(item.Traits)))
         {
-            item.TraitsPercentages =  new List<Trait>();
+            item.TraitsPercentages = new List<Trait>();
         }
     }
 
@@ -681,39 +685,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 nftItem.TraitsPercentages = new List<Trait>();
             }
 
-            var allItemsTraitsList = await GetAllTraitsInCollectionAsync(nftItem.CollectionSymbol);
-
-            var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
-
-            var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
-                .ToDictionary(g => g.Key, g => g.Count());
-
-            CalculateTraitsPercentages(nftItem, traitsList, traitTypeCounts, traitTypeValueCounts);
+            await CalculateTraitsPercentagesAsync(nftItem, traitsList);
         }
-    }
-
-    private async Task<List<Trait>> GetAllTraitsInCollectionAsync(string collectionSymbol)
-    {
-        var getNftItemInfosDto = new GetNftItemInfosDto();
-        getNftItemInfosDto.GetNftItemInfos = new List<GetNftItemInfo>();
-        getNftItemInfosDto.GetNftItemInfos.Add(new GetNftItemInfo()
-        {
-            CollectionSymbol = collectionSymbol
-        });
-        var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
-        List<string> allItemsTraitsListInCollection = itemInfos.NftItemInfos?
-            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
-            .GroupBy(nftItem => nftItem.Symbol)
-            .Select(group => group.First().Traits)
-            .ToList() ?? new List<string>();
-
-        List<Trait> allItemsTraitsList = allItemsTraitsListInCollection
-            .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
-            .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
-            .SelectMany(curTraitsList => curTraitsList)
-            .ToList();
-
-        return allItemsTraitsList;
     }
 
     private async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto)
@@ -726,36 +699,40 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         const int resultCount = 2000;
         while (true)
         {
-            var nftItemInfos = await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
-            if (nftItemInfos?.NftItemInfos?.Count == 0)
+            var nftItemInfos =
+                await _userAssetsProvider.GetNftItemTraitsInfoAsync(getNftItemInfosDto, skipCount, resultCount);
+            if (nftItemInfos?.NftItemInfos?.Count == 0 || nftItemInfos?.NftItemInfos == null)
             {
                 break;
             }
+
             skipCount += resultCount;
-        
+
             var list = nftItemInfos?.NftItemInfos;
             if (list != null)
             {
                 itemInfos.NftItemInfos.AddRange(list);
             }
         }
+
+        _logger.LogInformation("TotalCount of NftItems is {count}", resultCount);
         return itemInfos;
     }
 
-    private void CalculateTraitsPercentages(NftItem nftItem, List<Trait> traitsList,
-        Dictionary<string, int> traitTypeCounts,
-        Dictionary<string, int> traitTypeValueCounts)
+    private async Task CalculateTraitsPercentagesAsync(NftItem nftItem, List<Trait> traitsList)
     {
         foreach (var trait in traitsList)
         {
             var traitType = trait.TraitType;
             var traitTypeValue = $"{trait.TraitType}-{trait.Value}";
 
-            if (traitTypeCounts.ContainsKey(traitType) && traitTypeValueCounts.ContainsKey(traitTypeValue))
+            var traitsTyperCount = await _userNftTraitsCountCache.GetAsync(TraitsCachePrefix + traitType);
+            var traitsTypeValueCount = await _userNftTraitsCountCache.GetAsync(TraitsCachePrefix + traitTypeValue);
+
+            if (traitsTyperCount != null && traitsTypeValueCount != null)
             {
-                var numerator = traitTypeValueCounts[traitTypeValue];
-                var denominator = traitTypeCounts[traitType];
-                var percentage = PercentageHelper.CalculatePercentage(numerator, denominator);
+                var percentage =
+                    PercentageHelper.CalculatePercentage(int.Parse(traitsTyperCount), int.Parse(traitsTypeValueCount));
                 trait.Percent = percentage;
             }
             else
@@ -1320,12 +1297,11 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var caAddressInfos = new List<CAAddressInfo>();
         foreach (var chainInfo in _chainOptions.ChainInfos)
         {
-            
             if (!string.IsNullOrEmpty(requestDto.ChainId) && !requestDto.ChainId.Equals(chainInfo.Value.ChainId))
             {
                 continue;
             }
-            
+
             try
             {
                 var output =
@@ -1352,9 +1328,9 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             0, MaxResultCount);
         var resCaHolderTokenBalanceInfo = res.CaHolderTokenBalanceInfo.Data;
         var totalBalance = resCaHolderTokenBalanceInfo.Sum(tokenInfo => tokenInfo.Balance);
-        
+
         var totalBalanceInUsd = await CalculateTotalBalanceInUsdAsync(resCaHolderTokenBalanceInfo);
-        
+
         return new TokenInfoDto
         {
             Balance = totalBalance.ToString(),
@@ -1362,7 +1338,47 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             BalanceInUsd = totalBalanceInUsd.ToString()
         };
     }
-    
+
+    public async Task NftTraitsProportionCalculateAsync()
+    {
+        var getNftItemInfosDto = new GetNftItemInfosDto
+        {
+            GetNftItemInfos = new List<GetNftItemInfo>
+            {
+                new GetNftItemInfo
+                {
+                }
+            }
+        };
+        var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
+        var allItemsTraitsListInCollection = itemInfos.NftItemInfos?
+            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
+            .GroupBy(nftItem => nftItem.Symbol)
+            .Select(group => group.First().Traits)
+            .ToList() ?? new List<string>();
+
+        var allItemsTraitsList = allItemsTraitsListInCollection
+            .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
+            .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
+            .SelectMany(curTraitsList => curTraitsList)
+            .ToList();
+
+        var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
+        foreach (var traits in traitTypeCounts.Keys)
+        {
+            await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traits, traitTypeCounts[traits].ToString());
+        }
+
+
+        var traitTypeValueCounts = allItemsTraitsList.GroupBy(t => $"{t.TraitType}-{t.Value}")
+            .ToDictionary(g => g.Key, g => g.Count());
+        foreach (var traitsValues in traitTypeValueCounts.Keys)
+        {
+            await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traitsValues,
+                traitTypeCounts[traitsValues].ToString());
+        }
+    }
+
     private async Task<decimal> CalculateTotalBalanceInUsdAsync(List<IndexerTokenInfo> tokenInfos)
     {
         var totalBalanceInUsd = 0m;
@@ -1374,18 +1390,19 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
 
             var currentTokenPrice = await GetCurrentTokenPriceAsync(tokenInfo.TokenInfo.Symbol);
-            totalBalanceInUsd += GetCurrentPriceInUsd(tokenInfo.Balance, tokenInfo.TokenInfo.Decimals, currentTokenPrice);
+            totalBalanceInUsd +=
+                GetCurrentPriceInUsd(tokenInfo.Balance, tokenInfo.TokenInfo.Decimals, currentTokenPrice);
         }
 
         return totalBalanceInUsd;
     }
-    
+
     private async Task<decimal> GetCurrentTokenPriceAsync(string symbol)
     {
         var priceResult = await _tokenPriceService.GetCurrentPriceAsync(symbol);
         return priceResult?.PriceInUsd ?? 0;
     }
-    
+
     private decimal GetCurrentPriceInUsd(long tokenBalance, int tokenDecimals, decimal currentBalanceInUsd)
     {
         if (decimal.TryParse(tokenBalance.ToString(), out var amount))
@@ -1393,7 +1410,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             var baseValue = (decimal)Math.Pow(10, tokenDecimals);
             return amount / baseValue * currentBalanceInUsd;
         }
-        
+
         throw new ArgumentException("Invalid input values");
     }
 
