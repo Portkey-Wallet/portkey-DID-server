@@ -1380,7 +1380,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         foreach (var traitsValues in traitTypeValueCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traitsValues,
-                traitTypeCounts[traitsValues].ToString());
+                traitTypeValueCounts[traitsValues].ToString());
         }
     }
 
