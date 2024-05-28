@@ -21,6 +21,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -1352,7 +1353,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         };
         var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
         var allItemsTraitsListInCollection = itemInfos.NftItemInfos?
-            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
+            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits) && !IsValidJson(nftItem.Traits))
             .GroupBy(nftItem => nftItem.Symbol)
             .Select(group => group.First().Traits)
             .ToList() ?? new List<string>();
@@ -1471,4 +1472,20 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return -1;
         }
     }
+    
+    
+    private bool IsValidJson(string strInput)
+    {
+        try
+        {
+            var json = JToken.Parse(strInput);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    
 }
