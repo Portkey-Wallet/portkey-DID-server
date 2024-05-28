@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using CAServer.Common;
@@ -6,7 +5,6 @@ using CAServer.ContractEventHandler.Core.Application;
 using CAServer.Nightingale;
 using CAServer.UserAssets;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Volo.Abp.BackgroundWorkers;
