@@ -77,6 +77,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<PayRedPackageAccount>(configuration.GetSection("RedPackagePayAccount"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         Configure<GrabRedPackageOptions>(configuration.GetSection("GrabRedPackage"));
+        Configure<NFTTraitsSyncOptions>(configuration.GetSection("NFTTraitsSync"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
@@ -135,6 +136,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
+        context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
