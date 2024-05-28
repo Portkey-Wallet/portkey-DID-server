@@ -16,5 +16,6 @@ public interface IUserAssetsAppService
     Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(SearchUserPackageAssetsRequestDto requestDto);
     SymbolImagesDto GetSymbolImagesAsync();
     Task<TokenInfoDto> GetTokenBalanceAsync(GetTokenBalanceRequestDto requestDto);
-    
+
+    Task NftTraitsProportionCalculateAsync();
 }
