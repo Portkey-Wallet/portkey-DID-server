@@ -4,12 +4,15 @@ using CAServer.Dtos;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.Entities.Es;
 using CAServer.Etos;
+using CAServer.Grains.Grain;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Guardian;
 using CAServer.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -33,10 +36,13 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
     private readonly IImRequestProvider _imRequestProvider;
     private readonly HostInfoOptions _hostInfoOptions;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly INicknameProvider _nicknameProvider;
+    private readonly IGuardianAppService _guardianAppService;
 
     public NickNameAppService(IDistributedEventBus distributedEventBus, IClusterClient clusterClient,
         INESTRepository<CAHolderIndex, Guid> holderRepository, IImRequestProvider imRequestProvider,
-        IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IHttpContextAccessor httpContextAccessor)
+        IOptionsSnapshot<HostInfoOptions> hostInfoOptions, IHttpContextAccessor httpContextAccessor,
+        INicknameProvider nicknameProvider, IGuardianAppService guardianAppService)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -44,6 +50,8 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         _imRequestProvider = imRequestProvider;
         _hostInfoOptions = hostInfoOptions.Value;
         _httpContextAccessor = httpContextAccessor;
+        _nicknameProvider = nicknameProvider;
+        _guardianAppService = guardianAppService;
     }
 
     public async Task<CAHolderResultDto> SetNicknameAsync(UpdateNickNameDto nickNameDto)
@@ -134,5 +142,65 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         await UpdateImUserAsync(userId, holderInfo.NickName, holderInfo.Avatar);
         
         return ObjectMapper.Map<CAHolderGrainDto, CAHolderResultDto>(result.Data);
+    }
+
+    public async Task<bool> GetPoppedUpAccountAsync()
+    {
+        var userId = CurrentUser.GetId();
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        GrainResultDto<CAHolderGrainDto> result = await grain.GetCaHolder();
+        if (!result.Success || result.Data == null)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+        
+        var caHolderGrainDto = result.Data;
+        string nickname = caHolderGrainDto.UserId.ToString("N").Substring(0, 8);
+        return !caHolderGrainDto.PopedUp && !caHolderGrainDto.ModifiedNickname &&
+               caHolderGrainDto.Nickname.Equals(nickname);
+    }
+
+    public async Task<bool> GetBubblingAccountAsync()
+    {
+        var userId = CurrentUser.GetId();
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        GrainResultDto<CAHolderGrainDto> result = await grain.GetCaHolder();
+        if (!result.Success || result.Data == null)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+        var caHolderGrainDto = result.Data;
+        return caHolderGrainDto.PopedUp && !caHolderGrainDto.ModifiedNickname;
+    }
+
+    public async Task ReplaceUserNicknameAsync(ReplaceNicknameDto replaceNicknameDto)
+    {
+        var userId = CurrentUser.GetId();
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        GrainResultDto<CAHolderGrainDto> result = await grain.GetCaHolder();
+        if (!result.Success || result.Data == null)
+        {
+            throw new UserFriendlyException(result.Message);
+        }
+        
+        var caHolderGrainDto = result.Data;
+        if (!replaceNicknameDto.SetLoginAccount)
+        {
+            await grain.UpdatePopUpAsync(true);
+        }
+        else
+        {
+            GuardianResultDto guardianResultDto = await _guardianAppService.GetGuardianIdentifiersAsync(new UpdateGuardianIdentifierDto()
+            {
+                UserId = userId,
+                CaHash = replaceNicknameDto.CaHash,
+                ChainId = replaceNicknameDto.ChainId
+            });
+            if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
+            {
+                throw new UserFriendlyException("can't find login guardian list, set login account failed");
+            }
+            await _nicknameProvider.ModifyNicknameHandler(guardianResultDto, userId, caHolderGrainDto);
+        }
     }
 }
