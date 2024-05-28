@@ -21,6 +21,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -1352,13 +1353,17 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         };
         var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
         var allItemsTraitsListInCollection = itemInfos.NftItemInfos?
-            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
+            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits) && IsValidJson(nftItem.Traits))
             .GroupBy(nftItem => nftItem.Symbol)
             .Select(group => group.First().Traits)
             .ToList() ?? new List<string>();
-
+        
         var allItemsTraitsList = allItemsTraitsListInCollection
-            .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
+            .Select(traits =>
+            {
+                _logger.LogInformation("traits json string is {jsonStr}",traits);
+                return JsonHelper.DeserializeJson<List<Trait>>(traits);
+            })
             .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
             .SelectMany(curTraitsList => curTraitsList)
             .ToList();
@@ -1375,7 +1380,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         foreach (var traitsValues in traitTypeValueCounts.Keys)
         {
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traitsValues,
-                traitTypeCounts[traitsValues].ToString());
+                traitTypeValueCounts[traitsValues].ToString());
         }
     }
 
@@ -1467,4 +1472,20 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return -1;
         }
     }
+    
+    
+    private bool IsValidJson(string strInput)
+    {
+        try
+        {
+            var json = JToken.Parse(strInput);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    
 }
