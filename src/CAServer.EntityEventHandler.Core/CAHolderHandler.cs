@@ -136,7 +136,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             }
 
             var index = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
-            _logger.LogInformation("=============index={0}", index);
+            _logger.LogInformation("=============index={0}", JsonConvert.SerializeObject(index));
             await _caHolderRepository.AddAsync(index);
 
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
