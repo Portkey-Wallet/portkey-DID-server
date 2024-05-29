@@ -42,6 +42,7 @@ using CAServer.ImTransfer.Dtos;
 using CAServer.ImTransfer.Etos;
 using CAServer.ImUser.Dto;
 using CAServer.IpInfo;
+using CAServer.Market;
 using CAServer.Message.Dtos;
 using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
@@ -76,6 +77,7 @@ using CAServer.ValidateOriginChainId.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
+using CoinGecko.Entities.Response.Coins;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.AutoMapper;
@@ -764,6 +766,11 @@ public class CAServerApplicationAutoMapperProfile : Profile
             ;
         CreateMap<TokenSpender, TokenAllowance>();
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
+        CreateMap<CoinMarkets, MarketCryptocurrencyDto> ().ForMember(t => t.MarketCap, s =>
+        s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue) ? string.Empty
+            : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000000) + "B"
+            : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000) + "M"
+            : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
     }
 }
