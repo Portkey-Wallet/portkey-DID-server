@@ -16,7 +16,7 @@ public class CAMarketController : CAServerController
 {
     private readonly IMarketAppService _marketAppService;
 
-    CAMarketController(IMarketAppService marketAppService)
+    public CAMarketController(IMarketAppService marketAppService)
     {
         _marketAppService = marketAppService;
     }
