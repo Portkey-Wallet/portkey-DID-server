@@ -184,7 +184,7 @@ public class NickNameAppService : CAServerAppService, INickNameAppService
         }
         
         var caHolderGrainDto = result.Data;
-        if (!replaceNicknameDto.SetLoginAccount)
+        if (!replaceNicknameDto.ReplaceNickname)
         {
             await grain.UpdatePopUpAsync(true);
         }
