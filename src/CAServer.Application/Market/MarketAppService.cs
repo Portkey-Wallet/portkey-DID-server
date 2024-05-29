@@ -19,19 +19,19 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 {
     private readonly IClusterClient _clusterClient;
     private readonly IObjectMapper _objectMapper;
-    private readonly IEnumerable<IMarketDataProvider> _marketDataProviders;
+    // private readonly IEnumerable<IMarketDataProvider> _marketDataProviders;
     private readonly IDistributedCache<string> _distributedCache;
     private readonly ILogger<MarketAppService> _logger;
     private readonly ITransferAppService _transferAppService;
     
     public MarketAppService(IObjectMapper objectMapper,
-        IClusterClient clusterClient, IEnumerable<IMarketDataProvider> marketDataProviders,
+        IClusterClient clusterClient, /*IEnumerable<IMarketDataProvider> marketDataProviders,*/
         IDistributedCache<string> distributedCache, ILogger<MarketAppService> logger,
         ITransferAppService transferAppService)
     {
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
-        _marketDataProviders = marketDataProviders;
+        // _marketDataProviders = marketDataProviders;
         _distributedCache = distributedCache;
         _logger = logger;
         _transferAppService = transferAppService;
@@ -112,22 +112,22 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task<List<MarketCryptocurrencyDto>> GetHotListings()
     {
-        foreach (var marketDataProvider in _marketDataProviders)
-        {
-            try
-            {
-                List<CoinMarkets> markets = await marketDataProvider.GetHotListingsAsync();
-                if (!markets.IsNullOrEmpty())
-                {
-                    //todo add cache _distributedCache
-                    return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(markets);
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "invoke GetHotListingsAsync error");
-            }
-        }
+        // foreach (var marketDataProvider in _marketDataProviders)
+        // {
+        //     try
+        //     {
+        //         List<CoinMarkets> markets = await marketDataProvider.GetHotListingsAsync();
+        //         if (!markets.IsNullOrEmpty())
+        //         {
+        //             //todo add cache _distributedCache
+        //             return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(markets);
+        //         }
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         _logger.LogError(e, "invoke GetHotListingsAsync error");
+        //     }
+        // }
 
         return new List<MarketCryptocurrencyDto>();
     }
@@ -135,39 +135,39 @@ public class MarketAppService : CAServerAppService, IMarketAppService
     private async Task<List<MarketCryptocurrencyDto>> GetTrendingList()
     {
         string[] coinIds = null;
-        foreach (var marketDataProvider in _marketDataProviders)
-        {
-            try
-            {
-                var trendingList = await marketDataProvider.GetTrendingListingsAsync();
-                coinIds = trendingList.TrendingItems
-                    .Select(t => t.TrendingItem)
-                    .Select(t => t.CoinId + "")
-                    .ToArray();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "invoke GetTrendingListingsAsync error");
-            }
-        }
+        // foreach (var marketDataProvider in _marketDataProviders)
+        // {
+        //     try
+        //     {
+        //         var trendingList = await marketDataProvider.GetTrendingListingsAsync();
+        //         coinIds = trendingList.TrendingItems
+        //             .Select(t => t.TrendingItem)
+        //             .Select(t => t.CoinId + "")
+        //             .ToArray();
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         _logger.LogError(e, "invoke GetTrendingListingsAsync error");
+        //     }
+        // }
         
         if (coinIds == null || coinIds.Length == 0)
         {
             return new List<MarketCryptocurrencyDto>();
         }
 
-        List<CoinMarkets> coinMarkets = null;
-        foreach (var marketDataProvider in _marketDataProviders)
-        {
-            try
-            {
-                coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(coinIds, 15);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "invoke GetHotListingsAsync after trending error");
-            }
-        }
+        List<CoinMarkets> coinMarkets = new List<CoinMarkets>();
+        // foreach (var marketDataProvider in _marketDataProviders)
+        // {
+        //     try
+        //     {
+        //         coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(coinIds, 15);
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         _logger.LogError(e, "invoke GetHotListingsAsync after trending error");
+        //     }
+        // }
         return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(coinMarkets);
     }
 
@@ -186,17 +186,17 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             .OrderByDescending(f => f.CollectTimestamp)
             .Select(f => f.CoingeckoId).ToArray();
         List<CoinMarkets> coinMarkets = null;
-        foreach (var marketDataProvider in _marketDataProviders)
-        {
-            try
-            {
-                coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(sortedCoinIds, 50);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "invoke GetHotListingsAsync after collecting error");
-            }
-        }
+        // foreach (var marketDataProvider in _marketDataProviders)
+        // {
+        //     try
+        //     {
+        //         coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(sortedCoinIds, 50);
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         _logger.LogError(e, "invoke GetHotListingsAsync after collecting error");
+        //     }
+        // }
 
         if (coinMarkets.IsNullOrEmpty())
         {
