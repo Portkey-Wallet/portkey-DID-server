@@ -101,7 +101,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
             var caHolderGrainDto = _objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData);
             var pictures = _userProfilePictureProvider.GetDefaultUserPictures();
-            _logger.LogInformation("================pictures:{0}", JsonConvert.SerializeObject(pictures));
             string picture;
             if (!pictures.IsNullOrEmpty())
             {
@@ -127,7 +126,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.Avatar = picture;
             }
             var result = await grain.AddHolderAsync(caHolderGrainDto);
-            _logger.LogInformation("=================caHolderGrainDto save result={0}", JsonConvert.SerializeObject(result));
             if (!result.Success)
             {
                 _logger.LogError("create holder fail: {message}, userId: {userId}, aAHash: {caHash}", result.Message,
@@ -136,7 +134,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
             }
 
             var index = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
-            _logger.LogInformation("=============index={0}", JsonConvert.SerializeObject(index));
             await _caHolderRepository.AddAsync(index);
 
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());

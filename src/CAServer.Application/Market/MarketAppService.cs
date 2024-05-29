@@ -49,7 +49,6 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         if (MarketChosenType.Hot.ToString().Equals(type))
         {
             result = await GetHotListings();
-            _logger.LogInformation("=============Get Hot Listings:{0}", JsonConvert.SerializeObject(result));
         }
         else if (MarketChosenType.Trending.ToString().Equals(type))
         {
@@ -66,13 +65,11 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
         //deal with the collected logic
         await CollectedStatusHandler(result);
-        _logger.LogInformation("=============Get Hot Listings after Collection:{0}", JsonConvert.SerializeObject(result));
 
         //deal with the sort strategy 
         if (!"Favorites".Equals(type) || !sort.IsNullOrEmpty())
         {
             result = CryptocurrencyDataSortHandler(result, sort, sortDir);
-            _logger.LogInformation("=============Get Hot Listings after sort:{0}", JsonConvert.SerializeObject(result));
         }
 
         //invoke etransfer for the SupportEtransfer field
@@ -143,15 +140,15 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task<List<MarketCryptocurrencyDto>> GetTrendingList()
     {
-        string[] coinIds = null;
+        string[] ids = null;
         foreach (var marketDataProvider in _marketDataProviders)
         {
             try
             {
                 var trendingList = await marketDataProvider.GetTrendingListingsAsync();
-                coinIds = trendingList.TrendingItems
+                ids = trendingList.TrendingItems
                     .Select(t => t.TrendingItem)
-                    .Select(t => t.CoinId + "")
+                    .Select(t => t.Id)
                     .ToArray();
             }
             catch (Exception e)
@@ -160,7 +157,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             }
         }
 
-        if (coinIds == null || coinIds.Length == 0)
+        if (ids == null || ids.Length == 0)
         {
             return new List<MarketCryptocurrencyDto>();
         }
@@ -170,7 +167,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         {
             try
             {
-                coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(coinIds, 15);
+                coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(ids, 15);
             }
             catch (Exception e)
             {
