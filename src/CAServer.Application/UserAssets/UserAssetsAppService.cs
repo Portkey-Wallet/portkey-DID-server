@@ -690,6 +690,30 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
+    private async Task<List<Trait>> GetAllTraitsInCollectionAsync(string collectionSymbol)
+    {
+        var getNftItemInfosDto = new GetNftItemInfosDto();
+        getNftItemInfosDto.GetNftItemInfos = new List<GetNftItemInfo>();
+        getNftItemInfosDto.GetNftItemInfos.Add(new GetNftItemInfo()
+        {
+            CollectionSymbol = collectionSymbol
+        });
+        var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
+        List<string> allItemsTraitsListInCollection = itemInfos.NftItemInfos?
+            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits))
+            .GroupBy(nftItem => nftItem.Symbol)
+            .Select(group => group.First().Traits)
+            .ToList() ?? new List<string>();
+
+        List<Trait> allItemsTraitsList = allItemsTraitsListInCollection
+            .Select(traits => JsonHelper.DeserializeJson<List<Trait>>(traits))
+            .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
+            .SelectMany(curTraitsList => curTraitsList)
+            .ToList();
+
+        return allItemsTraitsList;
+    }
+
     private async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto)
     {
         var itemInfos = new IndexerNftItemInfos
@@ -1483,8 +1507,8 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return -1;
         }
     }
-
-
+    
+    
     private bool IsValidJson(string strInput)
     {
         try
@@ -1497,4 +1521,6 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             return false;
         }
     }
+    
+    
 }
