@@ -9,6 +9,7 @@ using CAServer.Transfer;
 using CAServer.Transfer.Dtos;
 using CoinGecko.Entities.Response.Coins;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
@@ -48,6 +49,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         if (MarketChosenType.Hot.ToString().Equals(type))
         {
             result = await GetHotListings();
+            _logger.LogInformation("=============Get Hot Listings:{0}", JsonConvert.SerializeObject(result));
         }
         else if (MarketChosenType.Trending.ToString().Equals(type))
         {
@@ -64,11 +66,13 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
         //deal with the collected logic
         await CollectedStatusHandler(result);
+        _logger.LogInformation("=============Get Hot Listings after Collection:{0}", JsonConvert.SerializeObject(result));
 
         //deal with the sort strategy 
         if (!"Favorites".Equals(type) || !sort.IsNullOrEmpty())
         {
             result = CryptocurrencyDataSortHandler(result, sort, sortDir);
+            _logger.LogInformation("=============Get Hot Listings after sort:{0}", JsonConvert.SerializeObject(result));
         }
 
         //invoke etransfer for the SupportEtransfer field
