@@ -17,6 +17,7 @@ using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -47,6 +48,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly TokenSpenderOptions _tokenSpenderOptions;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -55,7 +57,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
         IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
         IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
-        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions)
+        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -71,6 +73,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _activityTypeOptions = activityTypeOptions.Value;
         _ipfsOptions = ipfsOptions.Value;
         _tokenPriceService = tokenPriceService;
+        _httpContextAccessor = httpContextAccessor;
         _tokenSpenderOptions = tokenSpenderOptions.CurrentValue;
     }
 
@@ -113,13 +116,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
-            var transactions = new IndexerTransactions
-            {
-                CaHolderTransaction = new CaHolderTransaction()
-            };
-
-            await GetActivitiesAsync(request, transactions);
-            var indexerTransaction2Dto = await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId,
+            var transactionInfos = await GetTransactionInfosAsync(request);
+            var indexerTransaction2Dto = await IndexerTransaction2Dto(caAddresses, transactionInfos.transactions,
+                request.ChainId,
                 request.Width,
                 request.Height, needMap: true);
 
@@ -129,41 +128,48 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             TryUpdateImageUrlForActivityDtoList(indexerTransaction2Dto.Data);
 
+            indexerTransaction2Dto.HasNextPage = transactionInfos.haxNextPage;
             return indexerTransaction2Dto;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "GetActivitiesAsync Error. {dto}", request);
+            _logger.LogError(e, "GetActivitiesAsync Error. {dto}", JsonConvert.SerializeObject(request));
             return new GetActivitiesDto { Data = new List<GetActivityDto>(), TotalRecordCount = 0 };
         }
     }
 
-    private async Task GetActivitiesAsync(GetActivitiesRequestDto request,
-        IndexerTransactions result)
-    {
-        try
-        {
-            var transactionsInfo = await GetTransactionsAsync(request);
-            if (transactionsInfo.data.IsNullOrEmpty())
-            {
-                return;
-            }
-
-            result.CaHolderTransaction.Data = transactionsInfo.data;
-            result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetActivitiesAsync Error. {dto}", JsonConvert.SerializeObject(request));
-            throw new UserFriendlyException("get activities error.");
-        }
-    }
-
-    private async Task<(List<IndexerTransaction> data, long totalCount)> GetTransactionsAsync(
+    private async Task<(IndexerTransactions transactions, bool haxNextPage)> GetTransactionInfosAsync(
         GetActivitiesRequestDto request)
     {
+        var transactions = new IndexerTransactions
+        {
+            CaHolderTransaction = new CaHolderTransaction()
+        };
+
+        var transactionsInfo = await GetTransactionsAsync(request);
+        if (transactionsInfo.data.IsNullOrEmpty())
+        {
+            return (transactions, false);
+        }
+
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
+        var m = VersionContentHelper.CompareVersion(version, CommonConstant.ActivitiesStartVersion);
+
+        transactions.CaHolderTransaction.Data = transactionsInfo.data;
+        transactions.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
+        return (transactions, transactionsInfo.hasNextPage);
+    }
+
+    private async Task<(List<IndexerTransaction> data, long totalCount, bool hasNextPage)> GetTransactionsAsync(
+        GetActivitiesRequestDto request)
+    {
+        var hasNextPage = true;
         var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddressInfos, request.ChainId,
             request.Symbol, null, request.SkipCount, request.MaxResultCount);
+        if (transactions.CaHolderTransaction.Data.Count < request.MaxResultCount)
+        {
+            hasNextPage = false;
+        }
 
         var crossChainTransactions = transactions.CaHolderTransaction.Data
             .Where(t => t.MethodName == CommonConstant.CrossChainTransferMethodName).ToList();
@@ -201,7 +207,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         transactions?.CaHolderTransaction?.Data?
             .RemoveAll(t => _activityTypeOptions.NoShowTypes.Contains(t.MethodName));
 
-        return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
+        return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount, hasNextPage);
     }
 
     private void SetDAppInfo(string toContractAddress, GetActivityDto activityDto, string fromAddress)

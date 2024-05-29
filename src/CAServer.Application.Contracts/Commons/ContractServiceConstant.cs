@@ -98,5 +98,6 @@ public static class CommonConstant
     public const string TwitterUserInfoUrl = "https://api.twitter.com/2/users/me";
     public const string JwtTokenPrefix = "Bearer";
     public const int TwitterLimitCount = 200;
-
+    
+    public const string ActivitiesStartVersion = "1.17.0";
 }
