@@ -12,7 +12,7 @@ namespace CAServer.Controllers;
 [ControllerName("CAMarket")]
 [Route("api/app/cryptocurrency/")]
 [Authorize]
-public class CAMarketController
+public class CAMarketController : CAServerController
 {
     private readonly IMarketAppService _marketAppService;
 
