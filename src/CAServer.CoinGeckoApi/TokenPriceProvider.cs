@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Commons;
@@ -191,8 +190,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "Can not get hot listings");
-            return JsonConvert.DeserializeObject<List<CoinMarkets>>(JsonConvert.SerializeObject(_coinGeckoOptions.CurrentValue.CoinMarketsList));
-            // throw;
+            throw;
         }
 
         return response;
@@ -203,7 +201,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         List<CoinMarkets> response;
         try
         {
-            response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol, ids, "market_cap_desc", perPage, 1, false, "24h", "layer-1");
+            response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol, ids, "market_cap_desc", perPage, 1, false, "24h", "");
         }
         catch (Exception e)
         {
