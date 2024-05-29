@@ -8,6 +8,8 @@ using CAServer.Signature.Options;
 using CAServer.Signature.Provider;
 using CAServer.Tokens.TokenPrice;
 using CoinGecko.Clients;
+using CoinGecko.Entities.Response.Coins;
+using CoinGecko.Entities.Response.Search;
 using CoinGecko.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -142,7 +144,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             var coinData =
                 await RequestAsync(async () => await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
                     dateTime, "false"));
-
+            
             if (coinData.MarketData == null)
             {
                 _logger.LogError("get history price error: {symbol}, {dateTime}", symbol, dateTime);
