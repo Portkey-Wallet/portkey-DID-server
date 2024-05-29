@@ -41,8 +41,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     private readonly IGuardianAppService _guardianAppService;
-    private readonly IUserProfilePictureProvider _userProfilePictureProvider;
-    private readonly Random _random;
+    // private readonly IUserProfilePictureProvider _userProfilePictureProvider;
+    // private readonly Random _random;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
@@ -54,8 +54,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         IGuardianProvider guardianProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
         INESTRepository<GuardianIndex, string> guardianRepository,
-        IGuardianAppService guardianAppService,
-        IUserProfilePictureProvider userProfilePictureProvider)
+        IGuardianAppService guardianAppService/*,
+        IUserProfilePictureProvider userProfilePictureProvider*/)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -68,8 +68,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _userExtraInfoRepository = userExtraInfoRepository;
         _guardianRepository = guardianRepository;
         _guardianAppService = guardianAppService;
-        _userProfilePictureProvider = userProfilePictureProvider;
-        _random = new Random();
+        // _userProfilePictureProvider = userProfilePictureProvider;
+        // _random = new Random();
     }
 
     public async Task HandleEventAsync(CreateUserEto eventData)
