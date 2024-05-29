@@ -72,22 +72,22 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         }
 
         //invoke etransfer for the SupportEtransfer field
-        var responseFromEtransfer = _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
-        {
-            Type = "Deposit"
-        });
-        if (responseFromEtransfer != null && responseFromEtransfer.Result.Data != null)
-        {
-            GetTokenOptionListDto getTokenOptionListDto = responseFromEtransfer.Result.Data;
-            var symbolToToken = getTokenOptionListDto.TokenList.ToDictionary(t => t.Symbol, t => t);
-            foreach (var marketCryptocurrencyDto in result)
-            {
-                if (symbolToToken.ContainsKey(marketCryptocurrencyDto.Symbol))
-                {
-                    marketCryptocurrencyDto.SupportEtransfer = true;
-                }
-            }
-        }
+        // var responseFromEtransfer = _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
+        // {
+        //     Type = "Deposit"
+        // });
+        // if (responseFromEtransfer != null && responseFromEtransfer.Result.Data != null)
+        // {
+        //     GetTokenOptionListDto getTokenOptionListDto = responseFromEtransfer.Result.Data;
+        //     var symbolToToken = getTokenOptionListDto.TokenList.ToDictionary(t => t.Symbol, t => t);
+        //     foreach (var marketCryptocurrencyDto in result)
+        //     {
+        //         if (symbolToToken.ContainsKey(marketCryptocurrencyDto.Symbol))
+        //         {
+        //             marketCryptocurrencyDto.SupportEtransfer = true;
+        //         }
+        //     }
+        // }
         return result;
     }
 
