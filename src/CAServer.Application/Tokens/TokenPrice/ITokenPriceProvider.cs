@@ -13,4 +13,10 @@ public interface ITokenPriceProvider
     Task<decimal> GetHistoryPriceAsync(string symbol, string dateTime);
     bool IsAvailable();
     int GetPriority();
+    
+    Task<List<CoinMarkets>> GetHotListingsAsync();
+
+    Task<List<CoinMarkets>> GetCoinMarketsByCoinIdsAsync(string[] ids, int perPage);
+    
+    Task<TrendingList> GetTrendingListingsAsync();
 }
