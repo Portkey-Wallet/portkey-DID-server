@@ -15,6 +15,7 @@ using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
 using CAServer.DataReporting.Dtos;
+using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -770,6 +771,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
             : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000000) + "B"
             : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000) + "M"
             : m.MarketCap.ToString()));
-        
+        CreateMap<TransactionReportDto, TransactionReportEto>();
     }
 }

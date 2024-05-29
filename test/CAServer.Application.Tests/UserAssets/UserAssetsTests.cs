@@ -79,6 +79,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
             assetsLibraryProvider: GetRequiredService<IAssetsLibraryProvider>(),
             userTokenCache: GetRequiredService<IDistributedCache<List<Token>>>(),
             userTokenBalanceCache: GetRequiredService<IDistributedCache<string>>(),
+            userNftTraitsCountCache: GetRequiredService<IDistributedCache<string>>(),
             getBalanceFromChainOption: GetRequiredService<IOptionsSnapshot<GetBalanceFromChainOption>>(),
             nftItemDisplayOption: GetRequiredService<IOptionsSnapshot<NftItemDisplayOption>>(),
             searchAppService: searchAppServiceMock.Object,
@@ -108,6 +109,7 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockDistributedCache());
         services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceProvider());
+        services.AddSingleton(GetMockSearchAppService());
     }
 
     private void Login(Guid userId)
@@ -275,4 +277,51 @@ public partial class UserAssetsTests : CAServerApplicationTestBase
         var result = await _userAssetsAppService.GetTokenBalanceAsync(input);
         result.Balance.ShouldBe(null);
     }
+
+    [Fact]
+    public async Task NftTraitsProportionCalculateAsync_test()
+    {
+       await  _userAssetsAppService.NftTraitsProportionCalculateAsync();
+    }
+
+    [Fact]
+    public async Task SearchUserPackageAssetsAsync_Test()
+    {
+
+        var infos = new List<CAAddressInfo>
+        {
+            new CAAddressInfo()
+            {
+                ChainId = "AELF",
+                CaAddress = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+            }
+        };
+        var param = new SearchUserPackageAssetsRequestDto
+        {
+            CaAddressInfos = infos
+        };
+        await _userAssetsAppService.SearchUserPackageAssetsAsync(param);
+    }
+
+    [Fact]
+    public async Task GetNFTItemAsync_Test()
+    {
+        var requestDto = new GetNftItemRequestDto
+        {
+            Symbol = "SEED-0",
+            Width = 100,
+            Height = 100,
+            CaAddressInfos = new List<CAAddressInfo>()
+            {
+                new CAAddressInfo()
+                {
+                    ChainId = "AELF",
+                    CaAddress = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
+                }
+            }
+        };
+        await _userAssetsAppService.GetNFTItemAsync(requestDto);
+    }
+
+
 }

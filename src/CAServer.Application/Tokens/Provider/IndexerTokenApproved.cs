@@ -18,5 +18,6 @@ public class CAHolderTokenApprovedDto
     public string ChainId { get; set; }
     public string Spender { get; set; }
     public string CaAddress { get; set; }
+    public string Symbol { get; set; }
     public long BatchApprovedAmount { get; set; }
 }

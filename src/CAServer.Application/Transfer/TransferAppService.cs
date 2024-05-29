@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Commons;
@@ -59,23 +60,7 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         }
 
         var depositInfo = depositInfoWrap.Data;
-        var count = ETransferConstant.DefaultConfirmBlock;
-
-        var extraNodes = depositInfo.DepositInfo.ExtraNotes.Where(t => t.Contains(ETransferConstant.Confirmation));
-        foreach (var extraNote in extraNodes)
-        {
-            var infoStr = extraNote.TrimEnd('.', ' ');
-            var nextWord = infoStr.Contains("network confirmations")
-                ? ETransferConstant.Network
-                : ETransferConstant.Confirmation;
-            
-            var words = infoStr.Split(' ').ToList();
-            if (int.TryParse(words[words.IndexOf(nextWord) - 1], out var confirmCount))
-            {
-                count = confirmCount;
-                break;
-            }
-        }
+        var count = GetConfirmations(request.Network, depositInfo);
 
         var symbol = request.Symbol == ETransferConstant.SgrName ? ETransferConstant.SgrDisplayName : request.Symbol;
         var toSymbol = request.ToSymbol == ETransferConstant.SgrName
@@ -98,6 +83,31 @@ public class TransferAppService : CAServerAppService, ITransferAppService
         }
 
         return depositInfoWrap;
+    }
+
+    private int GetConfirmations(string network, GetDepositInfoDto depositInfo)
+    {
+        var count = ETransferConstant.DefaultConfirmBlock;
+
+        var reflectionInfo = _options.Reflection.GetOrDefault(network);
+        if (reflectionInfo == null)
+        {
+            return count;
+        }
+
+        var extraNodes = depositInfo.DepositInfo.ExtraNotes.Where(t => t.Contains(reflectionInfo.Include));
+        foreach (var extraNote in extraNodes)
+        {
+            var infoStr = extraNote.TrimEnd('.', ',', ' ');
+            var words = infoStr.Split(' ').ToList();
+            if (int.TryParse(words[words.IndexOf(reflectionInfo.NextWord) - 1], out var confirmCount))
+            {
+                count = confirmCount;
+                break;
+            }
+        }
+
+        return count;
     }
 
     public async Task<ResponseWrapDto<GetNetworkTokensDto>> GetNetworkTokensAsync(GetNetworkTokensRequestDto request)

@@ -12,12 +12,12 @@ using Volo.Abp.Auditing;
 namespace CAServer.DataReporting;
 
 [RemoteService(false), DisableAuditing]
-public class DataReportingAppService : CAServerAppService, IDataReportingAppService
+public class DeviceInfoReportAppService : CAServerAppService, IDeviceInfoReportAppService
 {
     private readonly IMessagePushRequestProvider _requestProvider;
     private readonly HostInfoOptions _options;
 
-    public DataReportingAppService(IMessagePushRequestProvider requestProvider,
+    public DeviceInfoReportAppService(IMessagePushRequestProvider requestProvider,
         IOptionsSnapshot<HostInfoOptions> options)
     {
         _requestProvider = requestProvider;

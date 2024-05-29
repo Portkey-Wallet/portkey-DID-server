@@ -21,7 +21,7 @@ public interface ITokenProvider
     Task<List<UserTokenIndex>> GetUserTokenInfoListAsync(Guid userId, string chainId, string symbol);
 
     Task<IndexerTokenApproved> GetTokenApprovedAsync(string chainId, List<string> caAddresses,
-        int skipCount = 0, int maxResultCount = 200);
+        int skipCount = 0, int maxResultCount = 2000);
 }
 
 public class TokenProvider : ITokenProvider, ISingletonDependency
@@ -61,14 +61,14 @@ public class TokenProvider : ITokenProvider, ISingletonDependency
     }
     
     public async Task<IndexerTokenApproved> GetTokenApprovedAsync(string chainId, List<string> caAddresses,
-        int skipCount = 0, int maxResultCount = 200)
+        int skipCount = 0, int maxResultCount = 2000)
     {
         return await _graphQlHelper.QueryAsync<IndexerTokenApproved>(new GraphQLRequest
         {
             Query = @"
 			    query($chainId:String,$caAddresses:[String],$skipCount:Int!,$maxResultCount:Int!) {
                     caHolderTokenApproved(dto: {chainId:$chainId,caAddresses:$caAddresses,,skipCount:$skipCount,maxResultCount:$maxResultCount}){
-                        data{chainId,caAddress,spender,batchApprovedAmount}, totalRecordCount
+                        data{chainId,caAddress,spender,symbol,batchApprovedAmount}, totalRecordCount
                     }
                 }",
             Variables = new

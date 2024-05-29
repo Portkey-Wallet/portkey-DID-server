@@ -40,4 +40,23 @@ public class NickNameController : CAServerController
     {
         return await _nickNameService.UpdateHolderInfoAsync(holderInfo);
     }
+    
+    [HttpGet("poppedUp")]
+    public async Task<bool> GetPoppedUpAccountAsync()
+    {
+        return await _nickNameService.GetPoppedUpAccountAsync();
+    }
+    
+    [HttpGet("bubbling")]
+    public async Task<bool> GetBubblingAccountAsync()
+    {
+        return await _nickNameService.GetBubblingAccountAsync();
+    }
+    
+    [HttpPost("replace")]
+    public async Task<string> ReplaceUserNicknameAsync(ReplaceNicknameDto replaceNicknameDto)
+    {
+        await _nickNameService.ReplaceUserNicknameAsync(replaceNicknameDto);
+        return "success";
+    }
 }
