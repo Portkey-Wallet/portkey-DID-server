@@ -3,6 +3,8 @@ using AElf;
 using AElf.Types;
 using AutoMapper;
 using CAServer.Bookmark.Etos;
+using CAServer.ContractEventHandler.Core.Application;
+using CAServer.DataReporting.Etos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
 using CAServer.Grains.Grain.ApplicationHandler;
@@ -52,5 +54,7 @@ public class CAServerContractEventHandlerAutoMapperProfile : Profile
             }))
             .ForMember(d => d.LoginGuardianIdentifierHash,
                 opt => opt.MapFrom(g => Hash.LoadFromHex(g.LoginGuardianIdentifierHash)));
+
+        CreateMap<TransactionReportEto, TransactionReportContext>();
     }
 }
