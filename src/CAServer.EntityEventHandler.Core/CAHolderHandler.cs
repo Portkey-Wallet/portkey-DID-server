@@ -41,8 +41,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     private readonly IGuardianAppService _guardianAppService;
-    // private readonly IUserProfilePictureProvider _userProfilePictureProvider;
-    // private readonly Random _random;
+    private readonly IUserProfilePictureProvider _userProfilePictureProvider;
+    private readonly Random _random;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
@@ -54,8 +54,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         IGuardianProvider guardianProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
         INESTRepository<GuardianIndex, string> guardianRepository,
-        IGuardianAppService guardianAppService/*,
-        IUserProfilePictureProvider userProfilePictureProvider*/)
+        IGuardianAppService guardianAppService,
+        IUserProfilePictureProvider userProfilePictureProvider)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -68,8 +68,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _userExtraInfoRepository = userExtraInfoRepository;
         _guardianRepository = guardianRepository;
         _guardianAppService = guardianAppService;
-        // _userProfilePictureProvider = userProfilePictureProvider;
-        // _random = new Random();
+        _userProfilePictureProvider = userProfilePictureProvider;
+        _random = new Random();
     }
 
     public async Task HandleEventAsync(CreateUserEto eventData)
@@ -100,14 +100,22 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
             var caHolderGrainDto = _objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData);
-            // var pictures = _userProfilePictureProvider.GetDefaultUserPictures();
-            // var picture = pictures[_random.Next(pictures.Count)];
+            var pictures = _userProfilePictureProvider.GetDefaultUserPictures();
+            string picture;
+            if (!pictures.IsNullOrEmpty())
+            {
+                picture = pictures[_random.Next(pictures.Count)];
+            }
+            else
+            {
+                picture = string.Empty;
+            }
             if (changedNickname.IsNullOrEmpty() || nickname.Equals(changedNickname))
             {
                 caHolderGrainDto.Nickname = nickname;
                 caHolderGrainDto.PopedUp = false;
                 caHolderGrainDto.ModifiedNickname = false;
-                // caHolderGrainDto.Avatar = picture;
+                caHolderGrainDto.Avatar = picture;
             }
             else
             {
@@ -115,7 +123,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.PopedUp = true;
                 caHolderGrainDto.ModifiedNickname = true;
                 caHolderGrainDto.IdentifierHash = identifierHash;
-                // caHolderGrainDto.Avatar = picture;
+                caHolderGrainDto.Avatar = picture;
             }
             var result = await grain.AddHolderAsync(caHolderGrainDto);
             if (!result.Success)

@@ -71,7 +71,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
-        // Configure<UserProfilePictureOptions>(configuration.GetSection("UserPictures"));
+        Configure<UserProfilePictureOptions>(configuration.GetSection("UserPictures"));
         
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));
