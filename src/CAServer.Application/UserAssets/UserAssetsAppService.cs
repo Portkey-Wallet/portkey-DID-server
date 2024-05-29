@@ -690,6 +690,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         }
     }
 
+
     private async Task<IndexerNftItemInfos> GetNftItemTraitsInfoAsync(GetNftItemInfosDto getNftItemInfosDto)
     {
         var itemInfos = new IndexerNftItemInfos
@@ -716,7 +717,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             }
         }
 
-        _logger.LogInformation("TotalCount of NftItems is {count}", resultCount);
+        _logger.LogInformation("TotalCount of NftItems is {count}", skipCount);
         return itemInfos;
     }
 
@@ -1353,16 +1354,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         };
         var itemInfos = await GetNftItemTraitsInfoAsync(getNftItemInfosDto);
         var allItemsTraitsListInCollection = itemInfos.NftItemInfos?
-            .Where(nftItem => nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits) && IsValidJson(nftItem.Traits))
+            .Where(nftItem =>
+                nftItem.Supply > 0 && !string.IsNullOrEmpty(nftItem.Traits) && IsValidJson(nftItem.Traits))
             .GroupBy(nftItem => nftItem.Symbol)
             .Select(group => group.First().Traits)
             .ToList() ?? new List<string>();
-        
+
         var allItemsTraitsList = allItemsTraitsListInCollection
-            .Select(traits =>
-            {
-                return JsonHelper.DeserializeJson<List<Trait>>(traits);
-            })
+            .Select(traits => { return JsonHelper.DeserializeJson<List<Trait>>(traits); })
             .Where(curTraitsList => curTraitsList != null && curTraitsList.Any())
             .SelectMany(curTraitsList => curTraitsList)
             .ToList();
@@ -1370,7 +1369,14 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
         var traitTypeCounts = allItemsTraitsList.GroupBy(t => t.TraitType).ToDictionary(g => g.Key, g => g.Count());
         foreach (var traits in traitTypeCounts.Keys)
         {
-            await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traits, traitTypeCounts[traits].ToString());
+            _logger.LogDebug("Current traits set to redis is  {traits}", TraitsCachePrefix + traits);
+            await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traits, traitTypeCounts[traits].ToString(),
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpiration = DateTimeOffset.Now.AddHours(1)
+                });
+            var result = await _userNftTraitsCountCache.GetAsync(TraitsCachePrefix + traits);
+            _logger.LogDebug("Current traits get from redis is {result}", result);
         }
 
 
@@ -1378,8 +1384,15 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
             .ToDictionary(g => g.Key, g => g.Count());
         foreach (var traitsValues in traitTypeValueCounts.Keys)
         {
+            _logger.LogDebug("Current traitsValues set to redis is  {traits}", TraitsCachePrefix + traitsValues);
             await _userNftTraitsCountCache.SetAsync(TraitsCachePrefix + traitsValues,
-                traitTypeValueCounts[traitsValues].ToString());
+                traitTypeValueCounts[traitsValues].ToString(),new DistributedCacheEntryOptions()
+                {
+                    AbsoluteExpiration = DateTimeOffset.Now.AddHours(1)
+                });
+            var result = await _userNftTraitsCountCache.GetAsync(TraitsCachePrefix + traitsValues);
+            _logger.LogDebug("Current traitsValues get from redis is {result}", result);
+            
         }
     }
 
