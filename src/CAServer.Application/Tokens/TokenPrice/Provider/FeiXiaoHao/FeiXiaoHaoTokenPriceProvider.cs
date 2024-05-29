@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Common;
+using CoinGecko.Entities.Response.Coins;
+using CoinGecko.Entities.Response.Search;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -125,5 +127,25 @@ public class FeiXiaoHaoTokenPriceProvider : ITokenPriceProvider, ISingletonDepen
     public int GetPriority()
     {
         return _feiXiaoHaoOptions.CurrentValue.Priority;
+    }
+    
+    public async Task<List<CoinMarkets>> GetHotListingsAsync()
+    {
+        throw new NotSupportedException(" 'FeiXiaoHao' does not support hot listings query");
+    }
+
+    public async Task<List<CoinMarkets>> GetCoinMarketsByCoinIdsAsync(string[] ids, int perPage)
+    {
+        throw new NotSupportedException(" 'FeiXiaoHao' does not support markets by coin ids query");
+    }
+
+    public async Task<TrendingList> GetTrendingListingsAsync()
+    {
+        throw new NotSupportedException(" 'FeiXiaoHao' does not support trendings query");
+    }
+
+    public async Task<MarketChartById> GetMarketChartsByCoinIdAsync(string coinId, string vsCurrency, string days)
+    {
+        throw new NotSupportedException(" 'FeiXiaoHao' does not support market chart query");
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grains.Grain.Market;
 using CAServer.Market.enums;
+using CAServer.Tokens.TokenPrice;
 using CAServer.Transfer;
 using CAServer.Transfer.Dtos;
 using CoinGecko.Entities.Response.Coins;
@@ -19,24 +20,24 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 {
     private readonly IClusterClient _clusterClient;
     private readonly IObjectMapper _objectMapper;
-    // private readonly IEnumerable<IMarketDataProvider> _marketDataProviders;
+    private readonly IEnumerable<ITokenPriceProvider> _marketDataProviders;
     private readonly IDistributedCache<string> _distributedCache;
     private readonly ILogger<MarketAppService> _logger;
     private readonly ITransferAppService _transferAppService;
-    
+
     public MarketAppService(IObjectMapper objectMapper,
-        IClusterClient clusterClient, /*IEnumerable<IMarketDataProvider> marketDataProviders,*/
+        IClusterClient clusterClient, IEnumerable<ITokenPriceProvider> marketDataProviders,
         IDistributedCache<string> distributedCache, ILogger<MarketAppService> logger,
         ITransferAppService transferAppService)
     {
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
-        // _marketDataProviders = marketDataProviders;
+        _marketDataProviders = marketDataProviders;
         _distributedCache = distributedCache;
         _logger = logger;
         _transferAppService = transferAppService;
     }
-    
+
     public async Task<List<MarketCryptocurrencyDto>> GetMarketCryptocurrencyDataByType(string type, string sort, string sortDir)
     {
         List<MarketCryptocurrencyDto> result = new List<MarketCryptocurrencyDto>();
@@ -56,16 +57,16 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         {
             return result;
         }
-        
+
         //deal with the collected logic
         await CollectedStatusHandler(result);
-        
+
         //deal with the sort strategy 
         if (!"Favorites".Equals(type) || !sort.IsNullOrEmpty())
         {
             result = CryptocurrencyDataSortHandler(result, sort, sortDir);
         }
-        
+
         //invoke etransfer for the SupportEtransfer field
         var responseFromEtransfer = _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
         {
@@ -112,22 +113,22 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task<List<MarketCryptocurrencyDto>> GetHotListings()
     {
-        // foreach (var marketDataProvider in _marketDataProviders)
-        // {
-        //     try
-        //     {
-        //         List<CoinMarkets> markets = await marketDataProvider.GetHotListingsAsync();
-        //         if (!markets.IsNullOrEmpty())
-        //         {
-        //             //todo add cache _distributedCache
-        //             return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(markets);
-        //         }
-        //     }
-        //     catch (Exception e)
-        //     {
-        //         _logger.LogError(e, "invoke GetHotListingsAsync error");
-        //     }
-        // }
+        foreach (var marketDataProvider in _marketDataProviders)
+        {
+            try
+            {
+                List<CoinMarkets> markets = await marketDataProvider.GetHotListingsAsync();
+                if (!markets.IsNullOrEmpty())
+                {
+                    //todo add cache _distributedCache
+                    return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(markets);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "invoke GetHotListingsAsync error");
+            }
+        }
 
         return new List<MarketCryptocurrencyDto>();
     }
@@ -135,39 +136,39 @@ public class MarketAppService : CAServerAppService, IMarketAppService
     private async Task<List<MarketCryptocurrencyDto>> GetTrendingList()
     {
         string[] coinIds = null;
-        // foreach (var marketDataProvider in _marketDataProviders)
-        // {
-        //     try
-        //     {
-        //         var trendingList = await marketDataProvider.GetTrendingListingsAsync();
-        //         coinIds = trendingList.TrendingItems
-        //             .Select(t => t.TrendingItem)
-        //             .Select(t => t.CoinId + "")
-        //             .ToArray();
-        //     }
-        //     catch (Exception e)
-        //     {
-        //         _logger.LogError(e, "invoke GetTrendingListingsAsync error");
-        //     }
-        // }
-        
+        foreach (var marketDataProvider in _marketDataProviders)
+        {
+            try
+            {
+                var trendingList = await marketDataProvider.GetTrendingListingsAsync();
+                coinIds = trendingList.TrendingItems
+                    .Select(t => t.TrendingItem)
+                    .Select(t => t.CoinId + "")
+                    .ToArray();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "invoke GetTrendingListingsAsync error");
+            }
+        }
+
         if (coinIds == null || coinIds.Length == 0)
         {
             return new List<MarketCryptocurrencyDto>();
         }
 
-        List<CoinMarkets> coinMarkets = new List<CoinMarkets>();
-        // foreach (var marketDataProvider in _marketDataProviders)
-        // {
-        //     try
-        //     {
-        //         coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(coinIds, 15);
-        //     }
-        //     catch (Exception e)
-        //     {
-        //         _logger.LogError(e, "invoke GetHotListingsAsync after trending error");
-        //     }
-        // }
+        List<CoinMarkets> coinMarkets = null;
+        foreach (var marketDataProvider in _marketDataProviders)
+        {
+            try
+            {
+                coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(coinIds, 15);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "invoke GetHotListingsAsync after trending error");
+            }
+        }
         return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(coinMarkets);
     }
 
@@ -186,17 +187,17 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             .OrderByDescending(f => f.CollectTimestamp)
             .Select(f => f.CoingeckoId).ToArray();
         List<CoinMarkets> coinMarkets = null;
-        // foreach (var marketDataProvider in _marketDataProviders)
-        // {
-        //     try
-        //     {
-        //         coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(sortedCoinIds, 50);
-        //     }
-        //     catch (Exception e)
-        //     {
-        //         _logger.LogError(e, "invoke GetHotListingsAsync after collecting error");
-        //     }
-        // }
+        foreach (var marketDataProvider in _marketDataProviders)
+        {
+            try
+            {
+                coinMarkets = await marketDataProvider.GetCoinMarketsByCoinIdsAsync(sortedCoinIds, 50);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "invoke GetHotListingsAsync after collecting error");
+            }
+        }
 
         if (coinMarkets.IsNullOrEmpty())
         {
@@ -277,7 +278,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             }
         }
     }
-    
+
     public async Task UserCollectMarketFavoriteToken(string id, string symbol)
     {
         if (id.IsNullOrEmpty() || symbol.IsNullOrEmpty())
