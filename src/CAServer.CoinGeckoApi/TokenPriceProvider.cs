@@ -191,7 +191,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         catch (Exception e)
         {
             _logger.LogError(e, "Can not get hot listings");
-            return _coinGeckoOptions.CurrentValue.CoinMarketsList;
+            return JsonConvert.DeserializeObject<List<CoinMarkets>>(JsonConvert.SerializeObject(_coinGeckoOptions.CurrentValue.CoinMarketsList));
             // throw;
         }
 
