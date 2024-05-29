@@ -10,12 +10,16 @@ using CAServer.Transfer.Dtos;
 using CoinGecko.Entities.Response.Coins;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Users;
 
 namespace CAServer.Market;
 
+[RemoteService(false)]
+[DisableAuditing]
 public class MarketAppService : CAServerAppService, IMarketAppService
 {
     private readonly IClusterClient _clusterClient;

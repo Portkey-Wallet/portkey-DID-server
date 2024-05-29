@@ -54,7 +54,7 @@ public class NickNameController : CAServerController
     }
     
     [HttpPost("replace")]
-    public async Task<string> ReplaceUserNicknameAsync(ReplaceNicknameDto replaceNicknameDto)
+    public async Task<string> ReplaceUserNicknameAsync([FromBody] ReplaceNicknameDto replaceNicknameDto)
     {
         await _nickNameService.ReplaceUserNicknameAsync(replaceNicknameDto);
         return "success";
