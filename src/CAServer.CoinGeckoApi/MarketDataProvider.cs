@@ -17,7 +17,7 @@ using Volo.Abp.Threading;
 
 namespace CAServer.CoinGeckoApi;
 
-public class MarketDataProvider : IMarketDataProvider, ISingletonDependency
+public class MarketDataProvider : IMarketDataProvider, ITransientDependency
 {
     private readonly ILogger<MarketDataProvider> _logger;
     private readonly ICoinGeckoClient _coinGeckoClient;
