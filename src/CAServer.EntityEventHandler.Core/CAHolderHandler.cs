@@ -115,7 +115,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.Nickname = nickname;
                 caHolderGrainDto.PopedUp = false;
                 caHolderGrainDto.ModifiedNickname = false;
-                caHolderGrainDto.Avatar = picture;
+                // caHolderGrainDto.Avatar = picture;
             }
             else
             {
@@ -123,8 +123,9 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.PopedUp = true;
                 caHolderGrainDto.ModifiedNickname = true;
                 caHolderGrainDto.IdentifierHash = identifierHash;
-                caHolderGrainDto.Avatar = picture;
+                // caHolderGrainDto.Avatar = picture;
             }
+            _logger.LogInformation("===========before add caHolderGrainDto={0}", JsonConvert.SerializeObject(caHolderGrainDto));
             var result = await grain.AddHolderAsync(caHolderGrainDto);
             if (!result.Success)
             {
@@ -132,8 +133,9 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                     eventData.UserId, eventData.CaHash);
                 return;
             }
-
+            _logger.LogInformation("===========afte add result={0}", JsonConvert.SerializeObject(result.Data));
             var index = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
+            _logger.LogInformation("===========before add es index={0}", JsonConvert.SerializeObject(index));
             await _caHolderRepository.AddAsync(index);
 
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
@@ -245,7 +247,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             return new Tuple<string, string>(nickname, string.Empty);
         }
-        _logger.LogInformation("third party guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardian == null)
         {

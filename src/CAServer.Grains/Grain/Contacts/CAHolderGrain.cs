@@ -43,7 +43,7 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         State.ModifiedNickname = caHolderDto.ModifiedNickname;
         State.PopedUp = caHolderDto.PopedUp;
         State.IdentifierHash = caHolderDto.IdentifierHash;
-        State.Avatar = caHolderDto.Avatar;
+        // State.Avatar = caHolderDto.Avatar;
 
         await WriteStateAsync();
 
