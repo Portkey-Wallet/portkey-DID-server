@@ -213,14 +213,14 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                     Collected = true,
                     CollectTimestamp = currentTime,
                     Symbol = "ELF"
-                }/*,
+                },
                 new DefaultFavoriteDto()
                 {
-                    CoingeckoId = "sgr",
+                    CoingeckoId = "schrodinger-2",
                     Collected = true,
                     CollectTimestamp = currentTime,
                     Symbol = "SGR"
-                }*/
+                }
             };
             var defaultTokens = await grain.UserCollectDefaultTokenAsync(userDefaultFavorites);
             if (defaultTokens != null && defaultTokens.Data != null)
