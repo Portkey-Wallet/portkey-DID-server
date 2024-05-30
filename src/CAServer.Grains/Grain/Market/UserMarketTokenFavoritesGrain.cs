@@ -38,17 +38,13 @@ public class UserMarketTokenFavoritesGrain : Grain<UserMarketTokenFavoritesState
         }
         State.Id = this.GetPrimaryKey();
         State.UserId = userMarketTokenFavorites.UserId;
-        var items = new List<MarketToken>
+        State.Favorites.Add(new MarketToken()
         {
-            new MarketToken()
-            {
-                CoingeckoId = userMarketTokenFavorites.CoingeckoId,
-                Symbol = userMarketTokenFavorites.Symbol,
-                Collected = userMarketTokenFavorites.Collected,
-                CollectTimestamp = userMarketTokenFavorites.CollectTimestamp
-            }
-        };
-        State.Favorites = items;
+            CoingeckoId = userMarketTokenFavorites.CoingeckoId,
+            Symbol = userMarketTokenFavorites.Symbol,
+            Collected = userMarketTokenFavorites.Collected,
+            CollectTimestamp = userMarketTokenFavorites.CollectTimestamp
+        });
         await WriteStateAsync();
 
         result.Success = true;
@@ -100,8 +96,13 @@ public class UserMarketTokenFavoritesGrain : Grain<UserMarketTokenFavoritesState
             return result;
         }
 
-        var item = State.Favorites.Find(f => f.CoingeckoId.Equals(coingeckoId) && f.Collected);
-        item.Collected = false;
+        foreach (var stateFavorite in State.Favorites)
+        {
+            if (stateFavorite.CoingeckoId.Equals(coingeckoId) && stateFavorite.Collected)
+            {
+                stateFavorite.Collected = false;
+            }
+        }
         await WriteStateAsync();
         
         result.Success = true;
@@ -118,8 +119,13 @@ public class UserMarketTokenFavoritesGrain : Grain<UserMarketTokenFavoritesState
             result.Message = "there is no record";
             return result;
         }
-        var item = State.Favorites.Find(f => f.CoingeckoId.Equals(coingeckoId) && f.Collected);
-        item.Collected = true;
+        foreach (var stateFavorite in State.Favorites)
+        {
+            if (stateFavorite.CoingeckoId.Equals(coingeckoId) && !stateFavorite.Collected)
+            {
+                stateFavorite.Collected = true;
+            }
+        }
         await WriteStateAsync();
         
         result.Success = true;
