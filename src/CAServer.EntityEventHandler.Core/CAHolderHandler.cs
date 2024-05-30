@@ -74,6 +74,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
     public async Task HandleEventAsync(CreateUserEto eventData)
     {
+        _logger.LogInformation("==========receive create user event={0}", JsonConvert.SerializeObject(eventData));
         string changedNickname = string.Empty;
         string identifierHash = string.Empty;
         string nickname = eventData.UserId.ToString("N").Substring(0, 8);
@@ -115,7 +116,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.Nickname = nickname;
                 caHolderGrainDto.PopedUp = false;
                 caHolderGrainDto.ModifiedNickname = false;
-                // caHolderGrainDto.Avatar = picture;
+                caHolderGrainDto.Avatar = picture;
             }
             else
             {
@@ -123,10 +124,10 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.PopedUp = true;
                 caHolderGrainDto.ModifiedNickname = true;
                 caHolderGrainDto.IdentifierHash = identifierHash;
-                // caHolderGrainDto.Avatar = picture;
+                caHolderGrainDto.Avatar = picture;
             }
             _logger.LogInformation("===========before add caHolderGrainDto={0}", JsonConvert.SerializeObject(caHolderGrainDto));
-            var result = await grain.AddHolderAsync(caHolderGrainDto);
+            var result = await grain.AddHolderWithAvatarAsync(caHolderGrainDto);
             if (!result.Success)
             {
                 _logger.LogError("create holder fail: {message}, userId: {userId}, aAHash: {caHash}", result.Message,
