@@ -68,7 +68,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         await CollectedStatusHandler(result);
 
         //deal with the sort strategy 
-        if (!"Favorites".Equals(type) || !sort.IsNullOrEmpty())
+        if (!sort.IsNullOrEmpty())
         {
             result = CryptocurrencyDataSortHandler(result, sort, sortDir);
         }
@@ -200,7 +200,9 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
         var favoritesGrainDto = grainResultDto.Data;
         //use the elf and sgr as the default token
-        if (grainResultDto.Data.Favorites.IsNullOrEmpty())
+        if (grainResultDto.Data.Favorites.IsNullOrEmpty() ||
+            !grainResultDto.Data.Favorites.Exists(f => f.CoingeckoId.Equals("aelf"))
+            && !grainResultDto.Data.Favorites.Exists(f => f.CoingeckoId.Equals("schrodinger-2")))
         {
             UserDefaultFavoritesDto userDefaultFavorites = new UserDefaultFavoritesDto();
             userDefaultFavorites.UserId = CurrentUser.GetId();
@@ -228,10 +230,8 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                 favoritesGrainDto.Favorites.AddRange(defaultTokens.Data.Favorites);
             }
         }
-        var sortedCoinIds = favoritesGrainDto.Favorites
-            .Where(f => f.Collected && !f.CoingeckoId.IsNullOrEmpty())
-            .OrderByDescending(f => f.CollectTimestamp)
-            .Select(f => f.CoingeckoId).ToArray();
+
+        var sortedCoinIds = ExtractSortedCoinIds(favoritesGrainDto);
         List<CoinMarkets> coinMarkets = null;
         foreach (var marketDataProvider in _marketDataProviders)
         {
@@ -267,6 +267,19 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         {
             return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(coinMarkets);
         }
+    }
+
+    private string[] ExtractSortedCoinIds(UserMarketTokenFavoritesGrainDto favoritesGrainDto)
+    {
+        var sortedIds = new List<string>();
+        sortedIds.Add("aelf");
+        sortedIds.Add("schrodinger-2");
+        var sortedOtherIds = favoritesGrainDto.Favorites
+            .Where(f => !sortedIds.Contains(f.CoingeckoId) && f.Collected && !f.CoingeckoId.IsNullOrEmpty())
+            .OrderByDescending(f => f.CollectTimestamp)
+            .Select(f => f.CoingeckoId).ToList();
+        sortedIds.AddRange(sortedOtherIds);
+        return  sortedIds.ToArray();
     }
 
     private List<MarketCryptocurrencyDto> CryptocurrencyDataSortHandler(List<MarketCryptocurrencyDto> result, string sort, string sortDir)
@@ -372,9 +385,9 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         var userId = CurrentUser.GetId();
         var grain = _clusterClient.GetGrain<IUserMarketTokenFavoritesGrain>(userId);
         var grainResult = await grain.GetUserTokenFavorites(userId, id, true);
-        if (grainResult.Success)
+        if (!grainResult.Success)
         {
-            return;
+            throw new UserFriendlyException("you collect the token failed, please try again later");
         }
 
         await grain.UserCancelFavoriteTokenAsync(userId, id);
