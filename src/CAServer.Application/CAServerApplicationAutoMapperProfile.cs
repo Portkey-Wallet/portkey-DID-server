@@ -766,11 +766,18 @@ public class CAServerApplicationAutoMapperProfile : Profile
             ;
         CreateMap<TokenSpender, TokenAllowance>();
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
-        CreateMap<CoinMarkets, MarketCryptocurrencyDto> ().ForMember(t => t.MarketCap, s =>
-        s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue) ? string.Empty
-            : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000000) + "B"
-            : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000) + "M"
-            : m.MarketCap.ToString()));
+        CreateMap<CoinMarkets, MarketCryptocurrencyDto> ()
+            .ForMember(t => t.PriceChangePercentage24H, s => 
+                s.MapFrom(m => !m.PriceChangePercentage24H.HasValue ? Decimal.Zero : Math.Round((decimal)m.PriceChangePercentage24H, 1)))
+            .ForMember(t => t.CurrentPrice, s =>
+                s.MapFrom(m => (m.CurrentPrice == null || !m.CurrentPrice.HasValue) ? Decimal.Zero
+                    : Decimal.Compare((decimal)m.CurrentPrice, Decimal.One) >= 0 ? Math.Round((decimal)m.CurrentPrice, 2) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.00001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 7) : (decimal)m.CurrentPrice))
+            .ForMember(t => t.MarketCap, s => 
+                s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue) ? string.Empty
+                : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000000).ToString("0.00") + "B"
+                : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000).ToString("0.00") + "M"
+                : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
     }
 }
