@@ -86,7 +86,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                 var symbolToToken = getTokenOptionListDto.TokenList.ToDictionary(t => t.Symbol, t => t);
                 foreach (var marketCryptocurrencyDto in result)
                 {
-                    if (symbolToToken.ContainsKey(marketCryptocurrencyDto.Symbol))
+                    if (symbolToToken.ContainsKey(marketCryptocurrencyDto.Symbol.ToUpper()))
                     {
                         marketCryptocurrencyDto.SupportEtransfer = true;
                     }
