@@ -28,16 +28,16 @@ public class CAMarketController : CAServerController
     }
 
     [HttpPost("mark")]
-    public async Task<string> MarkUserMarketFavoriteToken(string id, string symbol)
+    public async Task<string> MarkUserMarketFavoriteToken([FromBody] UserCollectFavoriteTokenDto dto)
     {
-        await _marketAppService.UserCollectMarketFavoriteToken(id, symbol);
+        await _marketAppService.UserCollectMarketFavoriteToken(dto.Id, dto.Symbol);
         return "success";
     }
     
     [HttpPost("unmark")]
-    public async Task<string> UnMarkUserMarketFavoriteToken(string id, string symbol)
+    public async Task<string> UnMarkUserMarketFavoriteToken([FromBody] UserCollectFavoriteTokenDto dto)
     {
-        await _marketAppService.UserCancelMarketFavoriteToken(id, symbol);
+        await _marketAppService.UserCancelMarketFavoriteToken(dto.Id, dto.Symbol);
         return "success";
     }
 }
