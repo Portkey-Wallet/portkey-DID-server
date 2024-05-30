@@ -3,7 +3,7 @@
 public static class ActivityConstants
 {
     public static readonly string Zero = "0";
-    public const string DepositName = "Deposit";
+    public const string DepositName = "Cross-Chain Receive";
     public const string TransferName = "Transfer";
     public const string CrossChainTransferName = "CrossChainTransfer";
     public const string AddGuardianName = "AddGuardian";
