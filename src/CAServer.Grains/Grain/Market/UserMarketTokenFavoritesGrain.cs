@@ -38,13 +38,51 @@ public class UserMarketTokenFavoritesGrain : Grain<UserMarketTokenFavoritesState
         }
         State.Id = this.GetPrimaryKey();
         State.UserId = userMarketTokenFavorites.UserId;
-        var items = new MarketToken()
+        var items = new List<MarketToken>
         {
-            CoingeckoId = userMarketTokenFavorites.CoingeckoId,
-            Symbol = userMarketTokenFavorites.Symbol,
-            Collected = userMarketTokenFavorites.Collected,
-            CollectTimestamp = userMarketTokenFavorites.CollectTimestamp
+            new MarketToken()
+            {
+                CoingeckoId = userMarketTokenFavorites.CoingeckoId,
+                Symbol = userMarketTokenFavorites.Symbol,
+                Collected = userMarketTokenFavorites.Collected,
+                CollectTimestamp = userMarketTokenFavorites.CollectTimestamp
+            }
         };
+        State.Favorites = items;
+        await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<UserMarketTokenFavoritesState, UserMarketTokenFavoritesGrainDto>(State);
+        return result;
+    }
+
+    public async Task<GrainResultDto<UserMarketTokenFavoritesGrainDto>> UserCollectDefaultTokenAsync(
+        UserDefaultFavoritesDto userDefaultFavorites)
+    {
+        var defaultCoinIds = userDefaultFavorites.DefaultFavorites.Select(f => f.CoingeckoId).ToList();
+        var storedCoinIds = State.Favorites.Select(f => f.CoingeckoId).ToList();
+        var result = new GrainResultDto<UserMarketTokenFavoritesGrainDto>();
+        if (userDefaultFavorites.UserId.Equals(State.UserId) && !defaultCoinIds.Except(storedCoinIds).Any())
+        {
+            result.Success = false;
+            result.Message = "user has collected default token";
+            return result;
+        }
+        State.Id = this.GetPrimaryKey();
+        State.UserId = userDefaultFavorites.UserId;
+        var items = new List<MarketToken>();
+        foreach (var defaultFavoriteDto in userDefaultFavorites.DefaultFavorites)
+        {
+            items.Add(new MarketToken()
+            {
+                CoingeckoId = defaultFavoriteDto.CoingeckoId,
+                Symbol = defaultFavoriteDto.Symbol,
+                Collected = defaultFavoriteDto.Collected,
+                CollectTimestamp = defaultFavoriteDto.CollectTimestamp
+            });
+        }
+
+        State.Favorites = items;
         await WriteStateAsync();
 
         result.Success = true;

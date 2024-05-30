@@ -767,6 +767,9 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TokenSpender, TokenAllowance>();
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
         CreateMap<CoinMarkets, MarketCryptocurrencyDto> ()
+            .ForMember(t => t.Symbol, s => s.MapFrom(m => m.Symbol.ToUpper()))
+            .ForMember(t => t.OriginalMarketCap, s => s.MapFrom(m => m.MarketCap))
+            .ForMember(t => t.OriginalCurrentPrice, s => s.MapFrom(m => m.CurrentPrice))
             .ForMember(t => t.PriceChangePercentage24H, s => 
                 s.MapFrom(m => !m.PriceChangePercentage24H.HasValue ? Decimal.Zero : Math.Round((decimal)m.PriceChangePercentage24H, 1)))
             .ForMember(t => t.CurrentPrice, s =>

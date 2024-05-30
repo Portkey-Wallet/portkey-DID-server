@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Grains.Grain.Market;
+using CAServer.Grains.State.Market;
 using CAServer.Market.enums;
 using CAServer.Tokens.TokenPrice;
 using CAServer.Transfer;
@@ -189,13 +190,45 @@ public class MarketAppService : CAServerAppService, IMarketAppService
     {
         var userId = CurrentUser.GetId();
         var grain = _clusterClient.GetGrain<IUserMarketTokenFavoritesGrain>(userId);
+        var result = new List<MarketCryptocurrencyDto>();
         //get user favorites tokens from mongo
         var grainResultDto = await grain.ListUserFavoritesToken(userId);
-        if (!grainResultDto.Success || grainResultDto.Data == null || grainResultDto.Data.Favorites.IsNullOrEmpty())
+        if (!grainResultDto.Success || grainResultDto.Data == null)
         {
-            return new List<MarketCryptocurrencyDto>();
+            return result;
         }
-        var sortedCoinIds = grainResultDto.Data.Favorites
+
+        var favoritesGrainDto = grainResultDto.Data;
+        //use the elf and sgr as the default token
+        if (grainResultDto.Data.Favorites.IsNullOrEmpty())
+        {
+            UserDefaultFavoritesDto userDefaultFavorites = new UserDefaultFavoritesDto();
+            userDefaultFavorites.UserId = CurrentUser.GetId();
+            var currentTime = (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000;
+            userDefaultFavorites.DefaultFavorites = new List<DefaultFavoriteDto>()
+            {
+                new DefaultFavoriteDto()
+                {
+                    CoingeckoId = "aelf",
+                    Collected = true,
+                    CollectTimestamp = currentTime,
+                    Symbol = "ELF"
+                }/*,
+                new DefaultFavoriteDto()
+                {
+                    CoingeckoId = "sgr",
+                    Collected = true,
+                    CollectTimestamp = currentTime,
+                    Symbol = "SGR"
+                }*/
+            };
+            var defaultTokens = await grain.UserCollectDefaultTokenAsync(userDefaultFavorites);
+            if (defaultTokens != null && defaultTokens.Data != null)
+            {
+                favoritesGrainDto.Favorites.AddRange(defaultTokens.Data.Favorites);
+            }
+        }
+        var sortedCoinIds = favoritesGrainDto.Favorites
             .Where(f => f.Collected && !f.CoingeckoId.IsNullOrEmpty())
             .OrderByDescending(f => f.CollectTimestamp)
             .Select(f => f.CoingeckoId).ToArray();
@@ -214,7 +247,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
         if (coinMarkets.IsNullOrEmpty())
         {
-            return new List<MarketCryptocurrencyDto>();
+            return result;
         }
         // user the default sort strategy, sorted by user collect time
         if (sort.IsNullOrEmpty())
@@ -283,11 +316,11 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         {
             if (sortDir.Equals("desc"))
             {
-                return result.OrderByDescending(r => r.MarketCap).ToList();
+                return result.OrderByDescending(r => r.OriginalMarketCap).ToList();
             }
             else
             {
-                return result.OrderBy(r => r.MarketCap).ToList();
+                return result.OrderBy(r => r.OriginalMarketCap).ToList();
             }
         }
     }
