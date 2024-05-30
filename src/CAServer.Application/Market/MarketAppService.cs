@@ -75,14 +75,14 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         //invoke etransfer for the SupportEtransfer field
         try
         {
-            var responseFromEtransfer = _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
+            var responseFromEtransfer = await _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
             {
                 Type = "Deposit"
             });
-            _logger.LogInformation("============responseFromEtransfer={0}", JsonConvert.SerializeObject(responseFromEtransfer));
-            if (responseFromEtransfer != null && responseFromEtransfer.Result.Data != null)
+            _logger.LogInformation("============responseFromEtransfer={0}", JsonConvert.SerializeObject(responseFromEtransfer.Data));
+            if (responseFromEtransfer != null && responseFromEtransfer.Data != null)
             {
-                GetTokenOptionListDto getTokenOptionListDto = responseFromEtransfer.Result.Data;
+                GetTokenOptionListDto getTokenOptionListDto = responseFromEtransfer.Data;
                 var symbolToToken = getTokenOptionListDto.TokenList.ToDictionary(t => t.Symbol, t => t);
                 foreach (var marketCryptocurrencyDto in result)
                 {
