@@ -15,6 +15,9 @@ public class MarketCryptocurrencyDto
     public bool SupportEtransfer { get; set; }
     public bool Collected { get; set; }
     public Decimal? CurrentPrice { get; set; }
+    public Decimal? OriginalCurrentPrice { get; set; }
+    
+    public Decimal? OriginalMarketCap { get; set; }
     
     public Decimal? PriceChangePercentage24HInCurrency { get; set; }
     

@@ -6,6 +6,9 @@ namespace CAServer.Grains.Grain.Market;
 public interface IUserMarketTokenFavoritesGrain : IGrainWithGuidKey
 {
     public Task<GrainResultDto<UserMarketTokenFavoritesGrainDto>> UserCollectTokenAsync(UserMarketTokenFavoritesDto userMarketTokenFavorites);
+
+    public Task<GrainResultDto<UserMarketTokenFavoritesGrainDto>> UserCollectDefaultTokenAsync(
+        UserDefaultFavoritesDto userDefaultFavorites);
     
     public Task<GrainResultDto<UserMarketTokenFavoritesGrainDto>> UserCancelFavoriteTokenAsync(Guid userId, string coingeckoId);
 
