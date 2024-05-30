@@ -79,7 +79,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             {
                 Type = "Deposit"
             });
-            _logger.LogInformation("============responseFromEtransfer={0}", JsonConvert.SerializeObject(responseFromEtransfer));
+            _logger.LogInformation("============responseFromEtransfer={0}", JsonConvert.SerializeObject(responseFromEtransfer.Data));
             if (responseFromEtransfer != null && responseFromEtransfer.Data != null)
             {
                 GetTokenOptionListDto getTokenOptionListDto = responseFromEtransfer.Data;
