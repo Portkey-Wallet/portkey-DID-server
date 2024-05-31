@@ -231,7 +231,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         if (!resultFromCache.IsNullOrEmpty())
         {
             var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
-            _logger.LogInformation("Favorite cachedResult={0}", cachedResult);
+            _logger.LogInformation("Favorite cachedResult={0}", JsonConvert.SerializeObject(cachedResult));
             return cachedResult;
         }
         
@@ -239,6 +239,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         var result = new List<MarketCryptocurrencyDto>();
         //get user favorites tokens from mongo
         var grainResultDto = await grain.ListUserFavoritesToken(userId);
+        _logger.LogInformation("Favorite grainResultDto={0}", JsonConvert.SerializeObject(grainResultDto));
         if (!grainResultDto.Success || grainResultDto.Data == null)
         {
             return result;
@@ -306,6 +307,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                 dtos.Add(_objectMapper.Map<CoinMarkets, MarketCryptocurrencyDto>(item));
             }
         }
+        _logger.LogInformation("Favorite MarketCryptocurrencyDto={0}", JsonConvert.SerializeObject(dtos));
         if (!dtos.IsNullOrEmpty())
         {
             await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId, JsonConvert.SerializeObject(result), new DistributedCacheEntryOptions()
