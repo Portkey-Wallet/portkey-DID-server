@@ -137,13 +137,13 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task<List<MarketCryptocurrencyDto>> GetHotListings()
     {
-        var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Hot));
-        if (!resultFromCache.IsNullOrEmpty())
-        {
-            var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
-            _logger.LogInformation("Hot cachedResult={0}", cachedResult);
-            return cachedResult;
-        }
+        // var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Hot));
+        // if (!resultFromCache.IsNullOrEmpty())
+        // {
+        //     var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
+        //     _logger.LogInformation("Hot cachedResult={0}", cachedResult);
+        //     return cachedResult;
+        // }
         List<MarketCryptocurrencyDto> result = new List<MarketCryptocurrencyDto>();
         foreach (var marketDataProvider in _marketDataProviders)
         {
@@ -228,6 +228,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
     private async Task<List<MarketCryptocurrencyDto>> GetFavoritesList(Guid userId)
     {
         var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId);
+        _logger.LogInformation("Favorite resultFromCache={0}", resultFromCache);
         if (!resultFromCache.IsNullOrEmpty())
         {
             var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
@@ -310,7 +311,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         _logger.LogInformation("Favorite MarketCryptocurrencyDto={0}", JsonConvert.SerializeObject(dtos));
         if (!dtos.IsNullOrEmpty())
         {
-            await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId, JsonConvert.SerializeObject(result), new DistributedCacheEntryOptions()
+            await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId, JsonConvert.SerializeObject(dtos), new DistributedCacheEntryOptions()
             {
                 AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(5)
             });
