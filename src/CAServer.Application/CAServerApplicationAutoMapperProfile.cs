@@ -765,5 +765,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<TokenSpender, TokenAllowance>();
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
         CreateMap<TransactionReportDto, TransactionReportEto>();
+        CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
     }
 }

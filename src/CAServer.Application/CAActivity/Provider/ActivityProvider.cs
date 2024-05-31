@@ -163,7 +163,8 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         });
     }
 
-    public async Task<List<IndexerTransaction>> GetNotSuccessTransactionAsync(string caAddress, long startBlockHeight,
+    public async Task<List<CaHolderTransactionIndex>> GetNotSuccessTransactionsAsync(string caAddress,
+        long startBlockHeight,
         long endBlockHeight)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CaHolderTransactionIndex>, QueryContainer>>() { };
@@ -173,22 +174,16 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
 
         QueryContainer Filter(QueryContainerDescriptor<CaHolderTransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
         var transactions = await _transactionRepository.GetListAsync(Filter);
-        var list = new List<IndexerTransaction>();
+        return transactions.Item2 ?? new List<CaHolderTransactionIndex>();
+    }
 
-        foreach (var item in transactions.Item2)
-        {
-            list.Add(new IndexerTransaction()
-            {
-                ChainId = item.ChainId,
-                TransactionId = item.TransactionId,
-                MethodName = item.MethodName,
-                Status = item.Status,
-                Timestamp = item.Timestamp,
-                BlockHash = item.BlockHash,
-                BlockHeight = item.BlockHeight
-            });
-        }
-
-        return list;
+    public async Task<CaHolderTransactionIndex> GetNotSuccessTransactionAsync(string caAddress, string transactionId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CaHolderTransactionIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.CaAddress).Value(caAddress)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.TransactionId).Value(transactionId)));
+        
+        QueryContainer Filter(QueryContainerDescriptor<CaHolderTransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
+        return await _transactionRepository.GetAsync(Filter);
     }
 }
