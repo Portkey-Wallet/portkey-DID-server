@@ -163,16 +163,18 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
         });
     }
 
-    public async Task<List<IndexerTransaction>> GetNotSuccessTransactionAsync()
+    public async Task<List<IndexerTransaction>> GetNotSuccessTransactionAsync(string caAddress, long startBlockHeight,
+        long endBlockHeight)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<CaHolderTransactionIndex>, QueryContainer>>() { };
-        // mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
-        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.CaAddress).Value(caAddress)));
+        mustQuery.Add(q => q.Range(i => i.Field(f => f.BlockHeight).GreaterThanOrEquals(startBlockHeight)));
+        mustQuery.Add(q => q.Range(i => i.Field(f => f.BlockHeight).LessThanOrEquals(endBlockHeight)));
 
         QueryContainer Filter(QueryContainerDescriptor<CaHolderTransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
         var transactions = await _transactionRepository.GetListAsync(Filter);
         var list = new List<IndexerTransaction>();
-        
+
         foreach (var item in transactions.Item2)
         {
             list.Add(new IndexerTransaction()
