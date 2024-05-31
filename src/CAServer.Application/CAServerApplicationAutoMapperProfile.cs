@@ -775,10 +775,10 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(t => t.CurrentPrice, s =>
                 s.MapFrom(m => (m.CurrentPrice == null || !m.CurrentPrice.HasValue) ? Decimal.Zero
                     : Decimal.Compare((decimal)m.CurrentPrice, Decimal.One) >= 0 ? Math.Round((decimal)m.CurrentPrice, 2) 
-                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.1) >= 0 ? Math.Round((decimal)m.CurrentPrice, 4) 
-                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.01) >= 0 ? Math.Round((decimal)m.CurrentPrice, 5) 
-                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 6) 
-                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.0001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 7) : (decimal)m.CurrentPrice))
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.1) >= 0 ? Math.Round((decimal)m.CurrentPrice, 4, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.01) >= 0 ? Math.Round((decimal)m.CurrentPrice, 5, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 6, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.0001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 7, MidpointRounding.ToZero) : (decimal)m.CurrentPrice))
             .ForMember(t => t.MarketCap, s => 
                 s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue) ? string.Empty
                 : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000000).ToString("0.00") + "B"

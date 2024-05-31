@@ -192,8 +192,20 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             _logger.LogError(e, "Can not get hot listings");
             throw;
         }
-
+        DealWithSgrMarketCap(response);
         return response;
+    }
+
+    private static void DealWithSgrMarketCap(List<CoinMarkets> response)
+    {
+        foreach (var coinMarketse in response)
+        {
+            if (CommonConstant.SgrCoingeckoId.Equals(coinMarketse.Id) && coinMarketse.CurrentPrice.HasValue
+                                                                      && (!coinMarketse.MarketCap.HasValue || Decimal.Compare(coinMarketse.MarketCap.Value, Decimal.Zero) == 0))
+            {
+                coinMarketse.MarketCap = Decimal.Multiply(21000000, (decimal)coinMarketse.CurrentPrice);
+            }
+        }
     }
 
     public async Task<List<CoinMarkets>> GetCoinMarketsByCoinIdsAsync(string[] ids, int perPage)
@@ -208,7 +220,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             _logger.LogError(e, "Can not get hot listings");
             throw;
         }
-
+        DealWithSgrMarketCap(response);
         return response;
     }
 

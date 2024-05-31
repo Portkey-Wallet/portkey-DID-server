@@ -55,6 +55,11 @@ public static class CommonConstant
     public const double DefaultAchFee = 0.39;
     public const double DefaultCrossChainFee = 0.35;
     public const double DefaultMaxFee = 0.39;
+    
+    public const string AelfCoingeckoId = "aelf";
+    public const string AelfSymbol = "ELF";
+    public const string SgrCoingeckoId = "schrodinger-2";
+    public const string SgrSymbol = "SGR";
 
     public const string AppleTransferMessage =
         "We are currently upgrading our system to serve you better. During this period, the Apple ID service is temporarily unavailable.";
