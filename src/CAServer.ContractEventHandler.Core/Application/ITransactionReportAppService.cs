@@ -97,6 +97,9 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
 
         var transactionIndex = GetTransactionIndex(eventData, transactionResult);
         await _transactionRepository.AddOrUpdateAsync(transactionIndex);
+        _logger.LogInformation(
+            "add transaction success, status:{status}, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
+            transactionResult.Status, eventData.ChainId, eventData.CaAddress, eventData.TransactionId);
     }
 
     private CaHolderTransactionIndex GetTransactionIndex(TransactionReportEto eventData,
@@ -177,11 +180,17 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
         if (transactionResult.Status == TransactionState.Mined)
         {
             await _transactionRepository.DeleteAsync(transaction);
+            _logger.LogInformation(
+                "delete transaction success, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
+                transaction.ChainId, transaction.CaAddress, transaction.TransactionId);
             return;
         }
 
         transaction.Status = TransactionState.Failed;
         await _transactionRepository.AddOrUpdateAsync(transaction);
+        _logger.LogInformation(
+            "set transaction status to fail, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
+            transaction.ChainId, transaction.CaAddress, transaction.TransactionId);
     }
 
     private async Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId)
