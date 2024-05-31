@@ -152,11 +152,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
             return (transactions, false);
         }
 
-        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
-        var m = VersionContentHelper.CompareVersion(version, CommonConstant.ActivitiesStartVersion);
-
         transactions.CaHolderTransaction.Data = transactionsInfo.data;
         transactions.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
+
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
+        var needAdd = VersionContentHelper.CompareVersion(version, CommonConstant.ActivitiesStartVersion);
+        if (VersionContentHelper.CompareVersion(version, CommonConstant.ActivitiesStartVersion))
+        {
+            var list = await _activityProvider.GetNotSuccessTransactionAsync();
+            transactions.CaHolderTransaction.Data.AddRange(list);
+        }
+
         return (transactions, transactionsInfo.hasNextPage);
     }
 
