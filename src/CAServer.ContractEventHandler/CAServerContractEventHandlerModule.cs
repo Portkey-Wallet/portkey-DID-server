@@ -77,6 +77,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<PayRedPackageAccount>(configuration.GetSection("RedPackagePayAccount"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         Configure<GrabRedPackageOptions>(configuration.GetSection("GrabRedPackage"));
+        Configure<TransactionReportOptions>(configuration.GetSection("TransactionReport"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();

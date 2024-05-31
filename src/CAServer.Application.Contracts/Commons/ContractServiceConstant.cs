@@ -14,6 +14,7 @@ public static class AElfContractMethodName
     public const string AddGuardian = "AddGuardian";
     public const string CreateCAHolderOnNonCreateChain = "ReportPreCrossChainSyncHolderInfo";
     public const string SocialRecovery = "SocialRecovery";
+    public const string ManagerForwardCall = "ManagerForwardCall";
 }
 
 public static class CommonConstant
