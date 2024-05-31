@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Grains.Grain.Market;
-using CAServer.Grains.State.Market;
 using CAServer.Market.enums;
 using CAServer.Tokens.TokenPrice;
 using CAServer.Transfer;
 using CAServer.Transfer.Dtos;
 using CoinGecko.Entities.Response.Coins;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Orleans;
@@ -57,7 +58,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         }
         else if (MarketChosenType.Favorites.ToString().Equals(type))
         {
-            result = await GetFavoritesList(sort);
+            result = await GetFavoritesList(CurrentUser.GetId());
         }
         else
         {
@@ -74,13 +75,23 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         }
 
         //invoke etransfer for the SupportEtransfer field
+        await DealWithEtransferMarkBit(result);
+        return result;
+    }
+
+    private string GetCachePrefix(MarketChosenType chosenType)
+    {
+        return "DiscoverMarket:" + chosenType + ":";
+    }
+
+    private async Task DealWithEtransferMarkBit(List<MarketCryptocurrencyDto> result)
+    {
         try
         {
             var responseFromEtransfer = await _transferAppService.GetTokenOptionListAsync(new GetTokenOptionListRequestDto()
             {
                 Type = "Deposit"
             });
-            _logger.LogInformation("============responseFromEtransfer={0}", JsonConvert.SerializeObject(responseFromEtransfer.Data));
             if (responseFromEtransfer != null && responseFromEtransfer.Data != null)
             {
                 GetTokenOptionListDto getTokenOptionListDto = responseFromEtransfer.Data;
@@ -98,7 +109,6 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         {
             _logger.LogError(e, "invoke etransfer error");
         }
-        return result;
     }
 
     private async Task CollectedStatusHandler(List<MarketCryptocurrencyDto> result)
@@ -127,6 +137,14 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task<List<MarketCryptocurrencyDto>> GetHotListings()
     {
+        var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Hot));
+        if (!resultFromCache.IsNullOrEmpty())
+        {
+            var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
+            _logger.LogInformation("Hot cachedResult={0}", cachedResult);
+            return cachedResult;
+        }
+        List<MarketCryptocurrencyDto> result = new List<MarketCryptocurrencyDto>();
         foreach (var marketDataProvider in _marketDataProviders)
         {
             try
@@ -134,8 +152,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                 List<CoinMarkets> markets = await marketDataProvider.GetHotListingsAsync();
                 if (!markets.IsNullOrEmpty())
                 {
-                    //todo add cache _distributedCache
-                    return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(markets);
+                    result = _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(markets);
                 }
             }
             catch (Exception e)
@@ -143,12 +160,26 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                 _logger.LogError(e, "invoke GetHotListingsAsync error");
             }
         }
-
-        return new List<MarketCryptocurrencyDto>();
+        if (!result.IsNullOrEmpty())
+        {
+            await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Hot), JsonConvert.SerializeObject(result), new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(5)
+            });
+        }
+        return result;
     }
 
     private async Task<List<MarketCryptocurrencyDto>> GetTrendingList()
     {
+        var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Trending));
+        if (!resultFromCache.IsNullOrEmpty())
+        {
+            var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
+            _logger.LogInformation("Trending cachedResult={0}", cachedResult);
+            return cachedResult;
+        }
+        
         string[] ids = null;
         foreach (var marketDataProvider in _marketDataProviders)
         {
@@ -183,12 +214,27 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                 _logger.LogError(e, "invoke GetHotListingsAsync after trending error");
             }
         }
-        return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(coinMarkets);
+        List<MarketCryptocurrencyDto> result = _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(coinMarkets);
+        if (!result.IsNullOrEmpty())
+        {
+            await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Trending), JsonConvert.SerializeObject(result), new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(5)
+            });
+        }
+        return result;
     }
 
-    private async Task<List<MarketCryptocurrencyDto>> GetFavoritesList(string sort)
+    private async Task<List<MarketCryptocurrencyDto>> GetFavoritesList(Guid userId)
     {
-        var userId = CurrentUser.GetId();
+        var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId);
+        if (!resultFromCache.IsNullOrEmpty())
+        {
+            var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
+            _logger.LogInformation("Favorite cachedResult={0}", cachedResult);
+            return cachedResult;
+        }
+        
         var grain = _clusterClient.GetGrain<IUserMarketTokenFavoritesGrain>(userId);
         var result = new List<MarketCryptocurrencyDto>();
         //get user favorites tokens from mongo
@@ -207,25 +253,26 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             UserDefaultFavoritesDto userDefaultFavorites = new UserDefaultFavoritesDto();
             userDefaultFavorites.UserId = CurrentUser.GetId();
             var currentTime = (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000;
-            userDefaultFavorites.DefaultFavorites = new List<DefaultFavoriteDto>()
-            {
+            userDefaultFavorites.DefaultFavorites =
+            [
                 new DefaultFavoriteDto()
                 {
-                    CoingeckoId = "aelf",
+                    CoingeckoId = CommonConstant.AelfCoingeckoId,
                     Collected = true,
                     CollectTimestamp = currentTime,
-                    Symbol = "ELF"
+                    Symbol = CommonConstant.AelfSymbol
                 },
+
                 new DefaultFavoriteDto()
                 {
-                    CoingeckoId = "schrodinger-2",
+                    CoingeckoId = CommonConstant.SgrCoingeckoId,
                     Collected = true,
                     CollectTimestamp = currentTime,
-                    Symbol = "SGR"
+                    Symbol = CommonConstant.SgrSymbol
                 }
-            };
+            ];
             var defaultTokens = await grain.UserCollectDefaultTokenAsync(userDefaultFavorites);
-            if (defaultTokens != null && defaultTokens.Data != null)
+            if (defaultTokens is { Data: not null })
             {
                 favoritesGrainDto.Favorites.AddRange(defaultTokens.Data.Favorites);
             }
@@ -250,23 +297,24 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             return result;
         }
         // user the default sort strategy, sorted by user collect time
-        if (sort.IsNullOrEmpty())
+        var coinIdToMarket = coinMarkets.ToDictionary(c => c.Id, c => c);
+        
+        List<MarketCryptocurrencyDto> dtos = new List<MarketCryptocurrencyDto>();
+        foreach (var coinId in sortedCoinIds)
         {
-            var coinIdToMarket = coinMarkets.ToDictionary(c => c.Id, c => c);
-            List<MarketCryptocurrencyDto> dtos = new List<MarketCryptocurrencyDto>();
-            foreach (var coinId in sortedCoinIds)
+            if (coinIdToMarket.TryGetValue(coinId, out var item))
             {
-                if (coinIdToMarket.TryGetValue(coinId, out var item))
-                {
-                    dtos.Add(_objectMapper.Map<CoinMarkets, MarketCryptocurrencyDto>(item));
-                }
+                dtos.Add(_objectMapper.Map<CoinMarkets, MarketCryptocurrencyDto>(item));
             }
-            return dtos;
         }
-        else
+        if (!dtos.IsNullOrEmpty())
         {
-            return _objectMapper.Map<List<CoinMarkets>, List<MarketCryptocurrencyDto>>(coinMarkets);
+            await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId, JsonConvert.SerializeObject(result), new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(5)
+            });
         }
+        return dtos;
     }
 
     private string[] ExtractSortedCoinIds(UserMarketTokenFavoritesGrainDto favoritesGrainDto)
@@ -369,6 +417,8 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                 Symbol = symbol
             });
         }
+        //clear cache
+        await _distributedCache.RemoveAsync(GetCachePrefix(MarketChosenType.Favorites) + userId);
     }
 
     public async Task UserCancelMarketFavoriteToken(string id, string symbol)
@@ -391,5 +441,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         }
 
         await grain.UserCancelFavoriteTokenAsync(userId, id);
+        //clear cache
+        await _distributedCache.RemoveAsync(GetCachePrefix(MarketChosenType.Favorites) + userId);
     }
 }
