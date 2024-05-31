@@ -30,4 +30,6 @@ public interface IActivityProvider
 
     Task<AutoReceiveTransactions> GetAutoReceiveTransactionsAsync(List<string> transferTransactionIds,
         int inputSkipCount = 0, int inputMaxResultCount = 10);
+
+    Task<List<IndexerTransaction>> GetNotSuccessTransactionAsync();
 }

@@ -16,12 +16,14 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
+    private readonly INESTRepository<CaHolderTransactionIndex, string> _transactionRepository;
 
-
-    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
+    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
+        INESTRepository<CaHolderTransactionIndex, string> transactionRepository)
     {
         _graphQlHelper = graphQlHelper;
         _caHolderIndexRepository = caHolderIndexRepository;
+        _transactionRepository = transactionRepository;
     }
 
 
@@ -159,5 +161,32 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
                 transferTransactionIds, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
             }
         });
+    }
+
+    public async Task<List<IndexerTransaction>> GetNotSuccessTransactionAsync()
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CaHolderTransactionIndex>, QueryContainer>>() { };
+        // mustQuery.Add(q => q.Term(i => i.Field(f => f.UserId).Value(userId)));
+        //mustQuery.Add(q => q.Term(i => i.Field(f => f.IsDeleted).Value(false)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CaHolderTransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var transactions = await _transactionRepository.GetListAsync(Filter);
+        var list = new List<IndexerTransaction>();
+        
+        foreach (var item in transactions.Item2)
+        {
+            list.Add(new IndexerTransaction()
+            {
+                ChainId = item.ChainId,
+                TransactionId = item.TransactionId,
+                MethodName = item.MethodName,
+                Status = item.Status,
+                Timestamp = item.Timestamp,
+                BlockHash = item.BlockHash,
+                BlockHeight = item.BlockHeight
+            });
+        }
+
+        return list;
     }
 }
