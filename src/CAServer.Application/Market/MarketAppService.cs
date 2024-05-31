@@ -253,8 +253,8 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             UserDefaultFavoritesDto userDefaultFavorites = new UserDefaultFavoritesDto();
             userDefaultFavorites.UserId = CurrentUser.GetId();
             var currentTime = (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000;
-            userDefaultFavorites.DefaultFavorites =
-            [
+            userDefaultFavorites.DefaultFavorites = new List<DefaultFavoriteDto>()
+            {
                 new DefaultFavoriteDto()
                 {
                     CoingeckoId = CommonConstant.AelfCoingeckoId,
@@ -262,7 +262,6 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                     CollectTimestamp = currentTime,
                     Symbol = CommonConstant.AelfSymbol
                 },
-
                 new DefaultFavoriteDto()
                 {
                     CoingeckoId = CommonConstant.SgrCoingeckoId,
@@ -270,7 +269,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                     CollectTimestamp = currentTime,
                     Symbol = CommonConstant.SgrSymbol
                 }
-            ];
+            };
             var defaultTokens = await grain.UserCollectDefaultTokenAsync(userDefaultFavorites);
             if (defaultTokens is { Data: not null })
             {
