@@ -785,5 +785,6 @@ public class CAServerApplicationAutoMapperProfile : Profile
                 : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000).ToString("0.00") + "M"
                 : m.MarketCap.ToString()));
         CreateMap<TransactionReportDto, TransactionReportEto>();
+        CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
     }
 }

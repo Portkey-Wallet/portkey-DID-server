@@ -8,6 +8,7 @@ using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -158,11 +159,12 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
         if (VersionContentHelper.CompareVersion(version, CommonConstant.ActivitiesStartVersion))
         {
-            var notSuccessList = await _activityProvider.GetNotSuccessTransactionAsync(
+            var notSuccessList = await _activityProvider.GetNotSuccessTransactionsAsync(
                 request.CaAddressInfos.FirstOrDefault()?.CaAddress ?? "-",
                 transactionsInfo.data.Min(t => t.BlockHeight),
                 transactionsInfo.data.Max(t => t.BlockHeight));
-            transactions.CaHolderTransaction.Data.AddRange(notSuccessList);
+            transactions.CaHolderTransaction.Data.AddRange(ObjectMapper
+                .Map<List<CaHolderTransactionIndex>, List<IndexerTransaction>>(notSuccessList));
         }
 
         transactions.CaHolderTransaction.Data =
@@ -416,6 +418,20 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
+
+            if (indexerTransactions.CaHolderTransaction.Data.IsNullOrEmpty())
+            {
+                var indexerTransaction =
+                    ObjectMapper.Map<CaHolderTransactionIndex, IndexerTransaction>(
+                        await _activityProvider.GetNotSuccessTransactionAsync(caAddresses.First(),
+                            request.TransactionId));
+
+                if (indexerTransaction != null)
+                {
+                    indexerTransactions.CaHolderTransaction.Data.Add(indexerTransaction);
+                }
+            }
+
             var activitiesDto =
                 await IndexerTransaction2Dto(caAddresses, indexerTransactions, chainId, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)
