@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AElf.Client.Dto;
 using AElf.Indexing.Elasticsearch;
@@ -29,16 +30,18 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
     private readonly INESTRepository<CaHolderTransactionIndex, string> _transactionRepository;
     private readonly IObjectMapper _objectMapper;
     private readonly IOptionsMonitor<TransactionReportOptions> _transactionReportOptions;
+    private readonly ChainOptions _chainOptions;
 
     public TransactionReportAppService(IContractProvider contractProvider, ILogger<DataReportHandler> logger,
         INESTRepository<CaHolderTransactionIndex, string> transactionRepository, IObjectMapper objectMapper,
-        IOptionsMonitor<TransactionReportOptions> transactionReportOptions)
+        IOptionsMonitor<TransactionReportOptions> transactionReportOptions, IOptionsSnapshot<ChainOptions> chainOptions)
     {
         _contractProvider = contractProvider;
         _logger = logger;
         _transactionRepository = transactionRepository;
         _objectMapper = objectMapper;
         _transactionReportOptions = transactionReportOptions;
+        _chainOptions = chainOptions.Value;
     }
 
     public async Task HandleTransactionAsync(TransactionReportEto eventData)
@@ -60,13 +63,14 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
                     transactionResult.Status, eventData.ChainId, eventData.CaAddress, eventData.TransactionId);
                 return;
             }
-            
+
             if (transactionResult.Status == TransactionState.Mined)
             {
                 return;
             }
+
             await SaveTransactionAsync(eventData, transactionResult);
-            
+
             if (transactionResult.Status == TransactionState.Pending)
             {
                 BackgroundJob.Enqueue(() =>
@@ -93,6 +97,9 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
 
         var transactionIndex = GetTransactionIndex(eventData, transactionResult);
         await _transactionRepository.AddOrUpdateAsync(transactionIndex);
+        _logger.LogInformation(
+            "add transaction success, status:{status}, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
+            transactionResult.Status, eventData.ChainId, eventData.CaAddress, eventData.TransactionId);
     }
 
     private CaHolderTransactionIndex GetTransactionIndex(TransactionReportEto eventData,
@@ -106,11 +113,25 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
             BlockHash = transactionResult.BlockHash,
             BlockHeight = transactionResult.BlockNumber,
             MethodName = GetMethodName(transactionResult),
-            ToContractAddress = transactionResult.Transaction.To,
+            ToContractAddress = GetToContractAddress(eventData.ChainId, transactionResult.Transaction.To,
+                transactionResult.Transaction.MethodName, transactionResult.Transaction.Params),
             Status = GetStatus(transactionResult.Status),
             Timestamp = TimeHelper.GetTimeStampInSeconds(),
             TransactionId = eventData.TransactionId
         };
+    }
+
+    private string GetToContractAddress(string chainId, string to, string methodName, string parameter)
+    {
+        if (to == _chainOptions.ChainInfos.First(c => c.Key == chainId).Value.ContractAddress &&
+            methodName == AElfContractMethodName.ManagerForwardCall)
+        {
+            var managerForwardCallInfo =
+                JsonConvert.DeserializeObject<ManagerForwardCallInfoDto>(parameter);
+            return managerForwardCallInfo.ContractAddress;
+        }
+
+        return to;
     }
 
     private string GetStatus(string status)
@@ -159,11 +180,17 @@ public class TransactionReportAppService : ITransactionReportAppService, ISingle
         if (transactionResult.Status == TransactionState.Mined)
         {
             await _transactionRepository.DeleteAsync(transaction);
+            _logger.LogInformation(
+                "delete transaction success, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
+                transaction.ChainId, transaction.CaAddress, transaction.TransactionId);
             return;
         }
 
         transaction.Status = TransactionState.Failed;
         await _transactionRepository.AddOrUpdateAsync(transaction);
+        _logger.LogInformation(
+            "set transaction status to fail, chainId:{chainId}, caAddress:{caAddress}, transactionId:{transactionId}",
+            transaction.ChainId, transaction.CaAddress, transaction.TransactionId);
     }
 
     private async Task<TransactionResultDto> GetTransactionResultAsync(string chainId, string transactionId)
