@@ -7,5 +7,4 @@ public class TransactionReportDto
     [Required] public string ChainId { get; set; }
     [Required] public string CaAddress { get; set; }
     [Required] public string TransactionId { get; set; }
-    [Required] public string RanTransaction { get; set; }
 }
