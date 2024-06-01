@@ -74,7 +74,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
 
     public async Task HandleEventAsync(CreateUserEto eventData)
     {
-        _logger.LogInformation("==========receive create user event={0}", JsonConvert.SerializeObject(eventData));
         string changedNickname = string.Empty;
         string identifierHash = string.Empty;
         string nickname = eventData.UserId.ToString("N").Substring(0, 8);
@@ -126,7 +125,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.IdentifierHash = identifierHash;
                 caHolderGrainDto.Avatar = picture;
             }
-            _logger.LogInformation("===========before add caHolderGrainDto={0}", JsonConvert.SerializeObject(caHolderGrainDto));
             var result = await grain.AddHolderWithAvatarAsync(caHolderGrainDto);
             if (!result.Success)
             {
@@ -134,9 +132,7 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                     eventData.UserId, eventData.CaHash);
                 return;
             }
-            _logger.LogInformation("===========afte add result={0}", JsonConvert.SerializeObject(result.Data));
             var index = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
-            _logger.LogInformation("===========before add es index={0}", JsonConvert.SerializeObject(index));
             await _caHolderRepository.AddAsync(index);
 
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
