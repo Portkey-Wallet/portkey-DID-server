@@ -11,6 +11,7 @@ using CAServer.DataReporting;
 using CAServer.Facebook;
 using CAServer.Grains;
 using CAServer.IpInfo;
+using CAServer.Market;
 using CAServer.Options;
 using CAServer.RedPackage;
 using CAServer.Search;
@@ -72,6 +73,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<HostInfoOptions>(configuration.GetSection("HostInfo"));
         Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
         Configure<UserProfilePictureOptions>(configuration.GetSection("UserPictures"));
+        Configure<MarketCacheOptions>(configuration.GetSection("MarketCache"));
         
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));

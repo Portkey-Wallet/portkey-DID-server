@@ -31,11 +31,13 @@ public class MarketAppService : CAServerAppService, IMarketAppService
     private readonly IDistributedCache<string> _distributedCache;
     private readonly ILogger<MarketAppService> _logger;
     private readonly ITransferAppService _transferAppService;
+    private readonly IMarketCacheProvider _marketCacheProvider;
 
     public MarketAppService(IObjectMapper objectMapper,
         IClusterClient clusterClient, IEnumerable<ITokenPriceProvider> marketDataProviders,
         IDistributedCache<string> distributedCache, ILogger<MarketAppService> logger,
-        ITransferAppService transferAppService)
+        ITransferAppService transferAppService,
+        IMarketCacheProvider marketCacheProvider)
     {
         _objectMapper = objectMapper;
         _clusterClient = clusterClient;
@@ -43,6 +45,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         _distributedCache = distributedCache;
         _logger = logger;
         _transferAppService = transferAppService;
+        _marketCacheProvider = marketCacheProvider;
     }
 
     public async Task<List<MarketCryptocurrencyDto>> GetMarketCryptocurrencyDataByType(string type, string sort, string sortDir)
@@ -137,13 +140,13 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task<List<MarketCryptocurrencyDto>> GetHotListings()
     {
-        // var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Hot));
-        // if (!resultFromCache.IsNullOrEmpty())
-        // {
-        //     var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
-        //     _logger.LogInformation("Hot cachedResult={0}", cachedResult);
-        //     return cachedResult;
-        // }
+        var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Hot));
+        if (!resultFromCache.IsNullOrEmpty())
+        {
+            var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
+            _logger.LogInformation("Hot cachedResult={0}", cachedResult);
+            return cachedResult;
+        }
         List<MarketCryptocurrencyDto> result = new List<MarketCryptocurrencyDto>();
         foreach (var marketDataProvider in _marketDataProviders)
         {
@@ -164,7 +167,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         {
             await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Hot), JsonConvert.SerializeObject(result), new DistributedCacheEntryOptions()
             {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(5)
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(_marketCacheProvider.GetExpirationMinutes())
             });
         }
         return result;
@@ -219,7 +222,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         {
             await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Trending), JsonConvert.SerializeObject(result), new DistributedCacheEntryOptions()
             {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(5)
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(_marketCacheProvider.GetExpirationMinutes())
             });
         }
         return result;
@@ -311,9 +314,10 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         _logger.LogInformation("Favorite MarketCryptocurrencyDto={0}", JsonConvert.SerializeObject(dtos));
         if (!dtos.IsNullOrEmpty())
         {
+            _logger.LogInformation("========Favorites Cached Minutes:{0}", _marketCacheProvider.GetExpirationMinutes());
             await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId, JsonConvert.SerializeObject(dtos), new DistributedCacheEntryOptions()
             {
-                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(5)
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(_marketCacheProvider.GetExpirationMinutes())
             });
         }
         return dtos;
