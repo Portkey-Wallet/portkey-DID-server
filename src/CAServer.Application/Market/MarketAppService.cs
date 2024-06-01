@@ -143,9 +143,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Hot));
         if (!resultFromCache.IsNullOrEmpty())
         {
-            var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
-            _logger.LogInformation("Hot cachedResult={0}", cachedResult);
-            return cachedResult;
+            return JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
         }
         List<MarketCryptocurrencyDto> result = new List<MarketCryptocurrencyDto>();
         foreach (var marketDataProvider in _marketDataProviders)
@@ -178,9 +176,7 @@ public class MarketAppService : CAServerAppService, IMarketAppService
         var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Trending));
         if (!resultFromCache.IsNullOrEmpty())
         {
-            var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
-            _logger.LogInformation("Trending cachedResult={0}", cachedResult);
-            return cachedResult;
+            return JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
         }
         
         string[] ids = null;
@@ -231,19 +227,15 @@ public class MarketAppService : CAServerAppService, IMarketAppService
     private async Task<List<MarketCryptocurrencyDto>> GetFavoritesList(Guid userId)
     {
         var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId);
-        _logger.LogInformation("Favorite resultFromCache={0}", resultFromCache);
         if (!resultFromCache.IsNullOrEmpty())
         {
-            var cachedResult = JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
-            _logger.LogInformation("Favorite cachedResult={0}", JsonConvert.SerializeObject(cachedResult));
-            return cachedResult;
+            return JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
         }
         
         var grain = _clusterClient.GetGrain<IUserMarketTokenFavoritesGrain>(userId);
         var result = new List<MarketCryptocurrencyDto>();
         //get user favorites tokens from mongo
         var grainResultDto = await grain.ListUserFavoritesToken(userId);
-        _logger.LogInformation("Favorite grainResultDto={0}", JsonConvert.SerializeObject(grainResultDto));
         if (!grainResultDto.Success || grainResultDto.Data == null)
         {
             return result;
@@ -260,14 +252,14 @@ public class MarketAppService : CAServerAppService, IMarketAppService
             var currentTime = (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000;
             userDefaultFavorites.DefaultFavorites = new List<DefaultFavoriteDto>()
             {
-                new DefaultFavoriteDto()
+                new()
                 {
                     CoingeckoId = CommonConstant.AelfCoingeckoId,
                     Collected = true,
                     CollectTimestamp = currentTime,
                     Symbol = CommonConstant.AelfSymbol
                 },
-                new DefaultFavoriteDto()
+                new()
                 {
                     CoingeckoId = CommonConstant.SgrCoingeckoId,
                     Collected = true,
@@ -311,10 +303,8 @@ public class MarketAppService : CAServerAppService, IMarketAppService
                 dtos.Add(_objectMapper.Map<CoinMarkets, MarketCryptocurrencyDto>(item));
             }
         }
-        _logger.LogInformation("Favorite MarketCryptocurrencyDto={0}", JsonConvert.SerializeObject(dtos));
         if (!dtos.IsNullOrEmpty())
         {
-            _logger.LogInformation("========Favorites Cached Minutes:{0}", _marketCacheProvider.GetExpirationMinutes());
             await _distributedCache.SetAsync(GetCachePrefix(MarketChosenType.Favorites) + userId, JsonConvert.SerializeObject(dtos), new DistributedCacheEntryOptions()
             {
                 AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(_marketCacheProvider.GetExpirationMinutes())
@@ -326,8 +316,8 @@ public class MarketAppService : CAServerAppService, IMarketAppService
     private string[] ExtractSortedCoinIds(UserMarketTokenFavoritesGrainDto favoritesGrainDto)
     {
         var sortedIds = new List<string>();
-        sortedIds.Add("aelf");
-        sortedIds.Add("schrodinger-2");
+        sortedIds.Add(CommonConstant.AelfCoingeckoId);
+        sortedIds.Add(CommonConstant.SgrCoingeckoId);
         var sortedOtherIds = favoritesGrainDto.Favorites
             .Where(f => !sortedIds.Contains(f.CoingeckoId) && f.Collected && !f.CoingeckoId.IsNullOrEmpty())
             .OrderByDescending(f => f.CollectTimestamp)
@@ -338,57 +328,29 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private List<MarketCryptocurrencyDto> CryptocurrencyDataSortHandler(List<MarketCryptocurrencyDto> result, string sort, string sortDir)
     {
-        if (result.IsNullOrEmpty())
+        if (result.IsNullOrEmpty() || sort.IsNullOrEmpty())
         {
             return result;
         }
-        if (sort.IsNullOrEmpty())
+        if (MarketSort.symbol.ToString().Equals(sort))
         {
-            return result;
+            return MarketSortDir.desc.ToString().Equals(sortDir) ? result.OrderByDescending(r => r.Symbol).ToList() 
+                : result.OrderBy(r => r.Symbol).ToList();
         }
-        if (sort.Equals("symbol"))
+        else if (MarketSort.currentPrice.ToString().Equals(sort))
         {
-            if (sortDir.Equals("desc"))
-            {
-                return result.OrderByDescending(r => r.Symbol).ToList();
-            }
-            else
-            {
-                return result.OrderBy(r => r.Symbol).ToList();
-            }
+            return MarketSortDir.desc.ToString().Equals(sortDir) ? result.OrderByDescending(r => r.CurrentPrice).ToList() 
+                : result.OrderBy(r => r.CurrentPrice).ToList();
         }
-        else if (sort.Equals("currentPrice"))
+        else if (MarketSort.priceChangePercentage24H.ToString().Equals(sort))
         {
-            if (sortDir.Equals("desc"))
-            {
-                return result.OrderByDescending(r => r.CurrentPrice).ToList();
-            }
-            else
-            {
-                return result.OrderBy(r => r.CurrentPrice).ToList();
-            }
-        }
-        else if (sort.Equals("priceChangePercentage24H"))
-        {
-            if (sortDir.Equals("desc"))
-            {
-                return result.OrderByDescending(r => r.PriceChangePercentage24H).ToList();
-            }
-            else
-            {
-                return result.OrderBy(r => r.PriceChangePercentage24H).ToList();
-            }
+            return MarketSortDir.desc.ToString().Equals(sortDir) ? result.OrderByDescending(r => r.PriceChangePercentage24H).ToList()
+                : result.OrderBy(r => r.PriceChangePercentage24H).ToList();
         }
         else
         {
-            if (sortDir.Equals("desc"))
-            {
-                return result.OrderByDescending(r => r.OriginalMarketCap).ToList();
-            }
-            else
-            {
-                return result.OrderBy(r => r.OriginalMarketCap).ToList();
-            }
+            return MarketSortDir.desc.ToString().Equals(sortDir) ? result.OrderByDescending(r => r.OriginalMarketCap).ToList() 
+                : result.OrderBy(r => r.OriginalMarketCap).ToList();
         }
     }
 
