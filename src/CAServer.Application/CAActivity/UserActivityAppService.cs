@@ -118,19 +118,19 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         {
             var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
             var transactionInfos = await GetTransactionInfosAsync(request);
-            var indexerTransaction2Dto = await IndexerTransaction2Dto(caAddresses, transactionInfos.transactions,
+            var activitiesDto = await IndexerTransaction2Dto(caAddresses, transactionInfos.transactions,
                 request.ChainId,
                 request.Width,
                 request.Height, needMap: true);
 
-            SetSeedStatusAndTypeForActivityDtoList(indexerTransaction2Dto.Data);
+            SetSeedStatusAndTypeForActivityDtoList(activitiesDto.Data);
 
-            OptimizeSeedAliasDisplay(indexerTransaction2Dto.Data);
+            OptimizeSeedAliasDisplay(activitiesDto.Data);
 
-            TryUpdateImageUrlForActivityDtoList(indexerTransaction2Dto.Data);
+            TryUpdateImageUrlForActivityDtoList(activitiesDto.Data);
 
-            indexerTransaction2Dto.HasNextPage = transactionInfos.haxNextPage;
-            return indexerTransaction2Dto;
+            activitiesDto.HasNextPage = transactionInfos.haxNextPage;
+            return activitiesDto;
         }
         catch (Exception e)
         {
@@ -167,8 +167,9 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 .Map<List<CaHolderTransactionIndex>, List<IndexerTransaction>>(notSuccessList));
         }
 
-        transactions.CaHolderTransaction.Data =
-            transactions.CaHolderTransaction.Data.OrderByDescending(t => t.BlockHeight).ToList();
+        transactions.CaHolderTransaction.Data = transactions.CaHolderTransaction.Data
+            .OrderBy(t => t.ChainId)
+            .ThenByDescending(t => t.BlockHeight).ToList();
 
         return (transactions, transactionsInfo.hasNextPage);
     }
