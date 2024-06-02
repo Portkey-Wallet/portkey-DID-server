@@ -155,23 +155,31 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         transactions.CaHolderTransaction.Data = transactionsInfo.data;
         transactions.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
-
-        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
-        if (VersionContentHelper.CompareVersion(version, CommonConstant.ActivitiesStartVersion))
-        {
-            var notSuccessList = await _activityProvider.GetNotSuccessTransactionsAsync(
-                request.CaAddressInfos.FirstOrDefault()?.CaAddress ?? "-",
-                transactionsInfo.data.Min(t => t.BlockHeight),
-                transactionsInfo.data.Max(t => t.BlockHeight));
-            transactions.CaHolderTransaction.Data.AddRange(ObjectMapper
-                .Map<List<CaHolderTransactionIndex>, List<IndexerTransaction>>(notSuccessList));
-        }
-
-        transactions.CaHolderTransaction.Data = transactions.CaHolderTransaction.Data
-            .OrderBy(t => t.ChainId)
-            .ThenByDescending(t => t.BlockHeight).ToList();
+        await InsertNotSuccessAsync(request, transactionsInfo.data, transactions);
 
         return (transactions, transactionsInfo.hasNextPage);
+    }
+
+    private async Task InsertNotSuccessAsync(GetActivitiesRequestDto request,
+        List<IndexerTransaction> transactionsInfo, IndexerTransactions transactions)
+    {
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
+        if (!VersionContentHelper.CompareVersion(version, CommonConstant.ActivitiesStartVersion))
+        {
+            return;
+        }
+
+        var notSuccessList = await _activityProvider.GetNotSuccessTransactionsAsync(
+            request.CaAddressInfos.FirstOrDefault()?.CaAddress ?? "-",
+            transactionsInfo.Min(t => t.BlockHeight),
+            transactionsInfo.Max(t => t.BlockHeight));
+
+        foreach (var item in ObjectMapper
+                     .Map<List<CaHolderTransactionIndex>, List<IndexerTransaction>>(notSuccessList))
+        {
+            transactions.CaHolderTransaction.Data.InsertAfter(
+                t => t.ChainId == item.ChainId && t.BlockHeight >= item.BlockHeight, item);
+        }
     }
 
     private async Task<(List<IndexerTransaction> data, long totalCount, bool hasNextPage)> GetTransactionsAsync(
