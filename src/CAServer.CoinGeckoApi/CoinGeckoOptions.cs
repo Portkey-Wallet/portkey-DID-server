@@ -11,6 +11,8 @@ namespace CAServer.CoinGeckoApi
         public int Priority { get; set; } = 0;
         public bool IsAvailable { get; set; } = true;
         public int Timeout { get; set; } = 10000;
+        
+        public string ProdApiKey { get; set; }
 
         public string DemoApiKey { get; set; }
 
