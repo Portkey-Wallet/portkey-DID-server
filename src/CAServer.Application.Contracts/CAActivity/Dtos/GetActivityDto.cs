@@ -6,6 +6,7 @@ namespace CAServer.CAActivity.Dto;
 public class GetActivitiesDto
 {
     public List<GetActivityDto> Data { get; set; }
+    public bool HasNextPage { get; set; }
     public long TotalRecordCount { get; set; }
 }
 

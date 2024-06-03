@@ -715,8 +715,7 @@ public class UserAssetsAppService : CAServerAppService, IUserAssetsAppService
                 itemInfos.NftItemInfos.AddRange(list);
             }
         }
-
-        _logger.LogInformation("TotalCount of NftItems is {count}", resultCount);
+        _logger.LogInformation("TotalCount of NftItems is {count}", skipCount);
         return itemInfos;
     }
 

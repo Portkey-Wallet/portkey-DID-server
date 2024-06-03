@@ -15,6 +15,7 @@ using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
 using CAServer.DataReporting.Dtos;
+using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -41,6 +42,7 @@ using CAServer.ImTransfer.Dtos;
 using CAServer.ImTransfer.Etos;
 using CAServer.ImUser.Dto;
 using CAServer.IpInfo;
+using CAServer.Market;
 using CAServer.Message.Dtos;
 using CAServer.Message.Etos;
 using CAServer.Notify.Dtos;
@@ -75,6 +77,7 @@ using CAServer.ValidateOriginChainId.Dtos;
 using CAServer.Verifier;
 using CAServer.Verifier.Dtos;
 using CAServer.Verifier.Etos;
+using CoinGecko.Entities.Response.Coins;
 using Portkey.Contracts.CA;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.AutoMapper;
@@ -763,5 +766,25 @@ public class CAServerApplicationAutoMapperProfile : Profile
             ;
         CreateMap<TokenSpender, TokenAllowance>();
         CreateMap<CAHolderGrainDto, CAHolderIndex>();
+        CreateMap<CoinMarkets, MarketCryptocurrencyDto> ()
+            .ForMember(t => t.Symbol, s => s.MapFrom(m => m.Symbol.ToUpper()))
+            .ForMember(t => t.OriginalMarketCap, s => s.MapFrom(m => m.MarketCap))
+            .ForMember(t => t.OriginalCurrentPrice, s => s.MapFrom(m => m.CurrentPrice))
+            .ForMember(t => t.PriceChangePercentage24H, s => 
+                s.MapFrom(m => !m.PriceChangePercentage24H.HasValue ? Decimal.Zero : Math.Round((decimal)m.PriceChangePercentage24H, 1)))
+            .ForMember(t => t.CurrentPrice, s =>
+                s.MapFrom(m => (m.CurrentPrice == null || !m.CurrentPrice.HasValue) ? Decimal.Zero
+                    : Decimal.Compare((decimal)m.CurrentPrice, Decimal.One) >= 0 ? Math.Round((decimal)m.CurrentPrice, 2) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.1) >= 0 ? Math.Round((decimal)m.CurrentPrice, 4, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.01) >= 0 ? Math.Round((decimal)m.CurrentPrice, 5, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 6, MidpointRounding.ToZero) 
+                    : Decimal.Compare((decimal)m.CurrentPrice, (decimal)0.0001) >= 0 ? Math.Round((decimal)m.CurrentPrice, 7, MidpointRounding.ToZero) : (decimal)m.CurrentPrice))
+            .ForMember(t => t.MarketCap, s => 
+                s.MapFrom(m => (m.MarketCap == null || !m.MarketCap.HasValue) ? string.Empty
+                : (Decimal.Compare((decimal)m.MarketCap, 1000000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000000).ToString("0.00") + "B"
+                : (Decimal.Compare((decimal)m.MarketCap, 1000000) > 0) ? Decimal.Divide((decimal)m.MarketCap, 1000000).ToString("0.00") + "M"
+                : m.MarketCap.ToString()));
+        CreateMap<TransactionReportDto, TransactionReportEto>();
+        CreateMap<CaHolderTransactionIndex, IndexerTransaction>();
     }
 }

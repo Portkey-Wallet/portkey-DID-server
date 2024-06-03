@@ -14,6 +14,7 @@ public static class AElfContractMethodName
     public const string AddGuardian = "AddGuardian";
     public const string CreateCAHolderOnNonCreateChain = "ReportPreCrossChainSyncHolderInfo";
     public const string SocialRecovery = "SocialRecovery";
+    public const string ManagerForwardCall = "ManagerForwardCall";
 }
 
 public static class CommonConstant
@@ -55,6 +56,11 @@ public static class CommonConstant
     public const double DefaultAchFee = 0.39;
     public const double DefaultCrossChainFee = 0.35;
     public const double DefaultMaxFee = 0.39;
+    
+    public const string AelfCoingeckoId = "aelf";
+    public const string AelfSymbol = "ELF";
+    public const string SgrCoingeckoId = "schrodinger-2";
+    public const string SgrSymbol = "SGR";
 
     public const string AppleTransferMessage =
         "We are currently upgrading our system to serve you better. During this period, the Apple ID service is temporarily unavailable.";
@@ -98,5 +104,6 @@ public static class CommonConstant
     public const string TwitterUserInfoUrl = "https://api.twitter.com/2/users/me";
     public const string JwtTokenPrefix = "Bearer";
     public const int TwitterLimitCount = 200;
-
+    
+    public const string ActivitiesStartVersion = "1.17.0";
 }

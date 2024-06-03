@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
+using CAServer.CAAccount.Provider;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -40,6 +41,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
     private readonly INESTRepository<UserExtraInfoIndex, string> _userExtraInfoRepository;
     private readonly INESTRepository<GuardianIndex, string> _guardianRepository;
     private readonly IGuardianAppService _guardianAppService;
+    private readonly IUserProfilePictureProvider _userProfilePictureProvider;
+    private readonly Random _random;
 
     public CAHolderHandler(INESTRepository<CAHolderIndex, Guid> caHolderRepository,
         IObjectMapper objectMapper,
@@ -51,7 +54,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         IGuardianProvider guardianProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository,
         INESTRepository<GuardianIndex, string> guardianRepository,
-        IGuardianAppService guardianAppService)
+        IGuardianAppService guardianAppService,
+        IUserProfilePictureProvider userProfilePictureProvider)
     {
         _caHolderRepository = caHolderRepository;
         _objectMapper = objectMapper;
@@ -64,6 +68,8 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         _userExtraInfoRepository = userExtraInfoRepository;
         _guardianRepository = guardianRepository;
         _guardianAppService = guardianAppService;
+        _userProfilePictureProvider = userProfilePictureProvider;
+        _random = new Random();
     }
 
     public async Task HandleEventAsync(CreateUserEto eventData)
@@ -94,11 +100,22 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             var grain = _clusterClient.GetGrain<ICAHolderGrain>(eventData.UserId);
             var caHolderGrainDto = _objectMapper.Map<CreateUserEto, CAHolderGrainDto>(eventData);
+            var pictures = _userProfilePictureProvider.GetDefaultUserPictures();
+            string picture;
+            if (!pictures.IsNullOrEmpty())
+            {
+                picture = pictures[_random.Next(pictures.Count)];
+            }
+            else
+            {
+                picture = string.Empty;
+            }
             if (changedNickname.IsNullOrEmpty() || nickname.Equals(changedNickname))
             {
                 caHolderGrainDto.Nickname = nickname;
                 caHolderGrainDto.PopedUp = false;
                 caHolderGrainDto.ModifiedNickname = false;
+                caHolderGrainDto.Avatar = picture;
             }
             else
             {
@@ -106,16 +123,17 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
                 caHolderGrainDto.PopedUp = true;
                 caHolderGrainDto.ModifiedNickname = true;
                 caHolderGrainDto.IdentifierHash = identifierHash;
+                caHolderGrainDto.Avatar = picture;
             }
-            var result = await grain.AddHolderAsync(caHolderGrainDto);
+            var result = await grain.AddHolderWithAvatarAsync(caHolderGrainDto);
             if (!result.Success)
             {
                 _logger.LogError("create holder fail: {message}, userId: {userId}, aAHash: {caHash}", result.Message,
                     eventData.UserId, eventData.CaHash);
                 return;
             }
-
-            await _caHolderRepository.AddAsync(_objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data));
+            var index = _objectMapper.Map<CAHolderGrainDto, CAHolderIndex>(result.Data);
+            await _caHolderRepository.AddAsync(index);
 
             await _userTokenAppService.AddUserTokenAsync(eventData.UserId, new AddUserTokenInput());
         }
@@ -226,7 +244,6 @@ public class CAHolderHandler : IDistributedEventHandler<CreateUserEto>,
         {
             return new Tuple<string, string>(nickname, string.Empty);
         }
-        _logger.LogInformation("third party guardianResultDto={0}", JsonConvert.SerializeObject(guardianResultDto));
         var guardian = guardianResultDto.GuardianList.Guardians.FirstOrDefault(g => g.IsLoginGuardian);
         if (guardian == null)
         {

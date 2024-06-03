@@ -16,12 +16,14 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
 {
     private readonly IGraphQLHelper _graphQlHelper;
     private readonly INESTRepository<CAHolderIndex, Guid> _caHolderIndexRepository;
+    private readonly INESTRepository<CaHolderTransactionIndex, string> _transactionRepository;
 
-
-    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository)
+    public ActivityProvider(IGraphQLHelper graphQlHelper, INESTRepository<CAHolderIndex, Guid> caHolderIndexRepository,
+        INESTRepository<CaHolderTransactionIndex, string> transactionRepository)
     {
         _graphQlHelper = graphQlHelper;
         _caHolderIndexRepository = caHolderIndexRepository;
+        _transactionRepository = transactionRepository;
     }
 
 
@@ -159,5 +161,29 @@ public class ActivityProvider : IActivityProvider, ISingletonDependency
                 transferTransactionIds, skipCount = inputSkipCount, maxResultCount = inputMaxResultCount
             }
         });
+    }
+
+    public async Task<List<CaHolderTransactionIndex>> GetNotSuccessTransactionsAsync(string caAddress,
+        long startBlockHeight,
+        long endBlockHeight)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CaHolderTransactionIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.CaAddress).Value(caAddress)));
+        mustQuery.Add(q => q.Range(i => i.Field(f => f.BlockHeight).GreaterThanOrEquals(startBlockHeight)));
+        mustQuery.Add(q => q.Range(i => i.Field(f => f.BlockHeight).LessThanOrEquals(endBlockHeight)));
+
+        QueryContainer Filter(QueryContainerDescriptor<CaHolderTransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var transactions = await _transactionRepository.GetListAsync(Filter);
+        return transactions.Item2 ?? new List<CaHolderTransactionIndex>();
+    }
+
+    public async Task<CaHolderTransactionIndex> GetNotSuccessTransactionAsync(string caAddress, string transactionId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<CaHolderTransactionIndex>, QueryContainer>>() { };
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.CaAddress).Value(caAddress)));
+        mustQuery.Add(q => q.Term(i => i.Field(f => f.TransactionId).Value(transactionId)));
+        
+        QueryContainer Filter(QueryContainerDescriptor<CaHolderTransactionIndex> f) => f.Bool(b => b.Must(mustQuery));
+        return await _transactionRepository.GetAsync(Filter);
     }
 }

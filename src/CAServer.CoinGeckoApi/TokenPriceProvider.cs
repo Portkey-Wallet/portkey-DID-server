@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CAServer.Commons;
@@ -8,6 +7,8 @@ using CAServer.Signature.Options;
 using CAServer.Signature.Provider;
 using CAServer.Tokens.TokenPrice;
 using CoinGecko.Clients;
+using CoinGecko.Entities.Response.Coins;
+using CoinGecko.Entities.Response.Search;
 using CoinGecko.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -142,7 +143,7 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
             var coinData =
                 await RequestAsync(async () => await _coinGeckoClient.CoinsClient.GetHistoryByCoinId(coinId,
                     dateTime, "false"));
-
+            
             if (coinData.MarketData == null)
             {
                 _logger.LogError("get history price error: {symbol}, {dateTime}", symbol, dateTime);
@@ -177,5 +178,80 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
     {
         await _requestLimitProvider.RecordRequestAsync();
         return await task();
+    }
+    
+    public async Task<List<CoinMarkets>> GetHotListingsAsync()
+    {
+        List<CoinMarkets> response;
+        try
+        {
+            response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Can not get hot listings");
+            throw;
+        }
+        DealWithSgrMarketCap(response);
+        return response;
+    }
+
+    private static void DealWithSgrMarketCap(List<CoinMarkets> response)
+    {
+        foreach (var coinMarketse in response)
+        {
+            if (CommonConstant.SgrCoingeckoId.Equals(coinMarketse.Id) && coinMarketse.CurrentPrice.HasValue
+                                                                      && (!coinMarketse.MarketCap.HasValue || Decimal.Compare(coinMarketse.MarketCap.Value, Decimal.Zero) == 0))
+            {
+                coinMarketse.MarketCap = Decimal.Multiply(21000000, (decimal)coinMarketse.CurrentPrice);
+            }
+        }
+    }
+
+    public async Task<List<CoinMarkets>> GetCoinMarketsByCoinIdsAsync(string[] ids, int perPage)
+    {
+        List<CoinMarkets> response;
+        try
+        {
+            response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol, ids, "market_cap_desc", perPage, 1, false, "24h", "");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Can not get hot listings");
+            throw;
+        }
+        DealWithSgrMarketCap(response);
+        return response;
+    }
+
+    public async Task<TrendingList> GetTrendingListingsAsync()
+    {
+        TrendingList trendingList;
+        try
+        {
+            trendingList = await _coinGeckoClient.SearchClient.GetSearchTrending();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Can not get trending listings");
+            throw;
+        }
+
+        return trendingList;
+    }
+
+    public async Task<MarketChartById> GetMarketChartsByCoinIdAsync(string coinId, string vsCurrency, string days)
+    {
+        MarketChartById marketChartById;
+        try
+        {
+            marketChartById = await _coinGeckoClient.CoinsClient.GetMarketChartsByCoinId(coinId, vsCurrency, days);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Can not get market charts by coin id, coinId={0}, vsCurrency={1}, days={2}", coinId, vsCurrency, days);
+            throw;
+        }
+        return marketChartById;
     }
 }

@@ -51,8 +51,8 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
     public async Task<ResponseWrapDto<GetTokenOptionListDto>> GetTokenOptionListAsync(
         GetTokenOptionListRequestDto request)
     {
-        return await _clientProvider.GetAsync<GetTokenOptionListDto>(
-            ETransferConstant.GetTokenOptionList, request);
+        var url = GetUrl(ETransferConstant.GetTokenOptionList, request);
+        return await _clientProvider.GetAsync<GetTokenOptionListDto>(url);
     }
 
     public async Task<ResponseWrapDto<GetNetworkListDto>> GetNetworkListAsync(GetNetworkListRequestDto request)

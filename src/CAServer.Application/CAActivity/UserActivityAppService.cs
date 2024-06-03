@@ -8,6 +8,7 @@ using CAServer.CAActivity.Dtos;
 using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -17,6 +18,7 @@ using CAServer.UserAssets;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -47,6 +49,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly TokenSpenderOptions _tokenSpenderOptions;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -55,7 +58,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
         IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
         IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
-        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions)
+        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -71,6 +74,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _activityTypeOptions = activityTypeOptions.Value;
         _ipfsOptions = ipfsOptions.Value;
         _tokenPriceService = tokenPriceService;
+        _httpContextAccessor = httpContextAccessor;
         _tokenSpenderOptions = tokenSpenderOptions.CurrentValue;
     }
 
@@ -113,57 +117,81 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         try
         {
             var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
-            var transactions = new IndexerTransactions
-            {
-                CaHolderTransaction = new CaHolderTransaction()
-            };
-
-            await GetActivitiesAsync(request, transactions);
-            var indexerTransaction2Dto = await IndexerTransaction2Dto(caAddresses, transactions, request.ChainId,
+            var transactionInfos = await GetTransactionInfosAsync(request);
+            var activitiesDto = await IndexerTransaction2Dto(caAddresses, transactionInfos.transactions,
+                request.ChainId,
                 request.Width,
                 request.Height, needMap: true);
 
-            SetSeedStatusAndTypeForActivityDtoList(indexerTransaction2Dto.Data);
+            SetSeedStatusAndTypeForActivityDtoList(activitiesDto.Data);
 
-            OptimizeSeedAliasDisplay(indexerTransaction2Dto.Data);
+            OptimizeSeedAliasDisplay(activitiesDto.Data);
 
-            TryUpdateImageUrlForActivityDtoList(indexerTransaction2Dto.Data);
+            TryUpdateImageUrlForActivityDtoList(activitiesDto.Data);
 
-            return indexerTransaction2Dto;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "GetActivitiesAsync Error. {dto}", request);
-            return new GetActivitiesDto { Data = new List<GetActivityDto>(), TotalRecordCount = 0 };
-        }
-    }
-
-    private async Task GetActivitiesAsync(GetActivitiesRequestDto request,
-        IndexerTransactions result)
-    {
-        try
-        {
-            var transactionsInfo = await GetTransactionsAsync(request);
-            if (transactionsInfo.data.IsNullOrEmpty())
-            {
-                return;
-            }
-
-            result.CaHolderTransaction.Data = transactionsInfo.data;
-            result.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
+            activitiesDto.HasNextPage = transactionInfos.haxNextPage;
+            return activitiesDto;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "GetActivitiesAsync Error. {dto}", JsonConvert.SerializeObject(request));
-            throw new UserFriendlyException("get activities error.");
+            return new GetActivitiesDto { Data = new List<GetActivityDto>(), TotalRecordCount = 0 };
         }
     }
 
-    private async Task<(List<IndexerTransaction> data, long totalCount)> GetTransactionsAsync(
+    private async Task<(IndexerTransactions transactions, bool haxNextPage)> GetTransactionInfosAsync(
         GetActivitiesRequestDto request)
     {
+        var transactions = new IndexerTransactions
+        {
+            CaHolderTransaction = new CaHolderTransaction()
+        };
+
+        var transactionsInfo = await GetTransactionsAsync(request);
+        if (transactionsInfo.data.IsNullOrEmpty())
+        {
+            return (transactions, false);
+        }
+
+        transactions.CaHolderTransaction.Data = transactionsInfo.data;
+        transactions.CaHolderTransaction.TotalRecordCount = transactionsInfo.totalCount;
+        await InsertNotSuccessAsync(request, transactionsInfo.data, transactions);
+
+        return (transactions, transactionsInfo.hasNextPage);
+    }
+
+    private async Task InsertNotSuccessAsync(GetActivitiesRequestDto request,
+        List<IndexerTransaction> transactionsInfo, IndexerTransactions transactions)
+    {
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
+        if (!VersionContentHelper.CompareVersion(version, CommonConstant.ActivitiesStartVersion))
+        {
+            return;
+        }
+
+        var notSuccessList = await _activityProvider.GetNotSuccessTransactionsAsync(
+            request.CaAddressInfos.FirstOrDefault()?.CaAddress ?? "-",
+            transactionsInfo.Min(t => t.BlockHeight),
+            transactionsInfo.Max(t => t.BlockHeight));
+
+        foreach (var item in ObjectMapper
+                     .Map<List<CaHolderTransactionIndex>, List<IndexerTransaction>>(notSuccessList))
+        {
+            transactions.CaHolderTransaction.Data.InsertAfter(
+                t => t.ChainId == item.ChainId && t.BlockHeight >= item.BlockHeight, item);
+        }
+    }
+
+    private async Task<(List<IndexerTransaction> data, long totalCount, bool hasNextPage)> GetTransactionsAsync(
+        GetActivitiesRequestDto request)
+    {
+        var hasNextPage = true;
         var transactions = await _activityProvider.GetActivitiesAsync(request.CaAddressInfos, request.ChainId,
             request.Symbol, null, request.SkipCount, request.MaxResultCount);
+        if (transactions.CaHolderTransaction.Data.Count < request.MaxResultCount)
+        {
+            hasNextPage = false;
+        }
 
         var crossChainTransactions = transactions.CaHolderTransaction.Data
             .Where(t => t.MethodName == CommonConstant.CrossChainTransferMethodName).ToList();
@@ -201,7 +229,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         transactions?.CaHolderTransaction?.Data?
             .RemoveAll(t => _activityTypeOptions.NoShowTypes.Contains(t.MethodName));
 
-        return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount);
+        return (transactions.CaHolderTransaction.Data, transactions.CaHolderTransaction.TotalRecordCount, hasNextPage);
     }
 
     private void SetDAppInfo(string toContractAddress, GetActivityDto activityDto, string fromAddress)
@@ -399,6 +427,20 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             var indexerTransactions =
                 await _activityProvider.GetActivityAsync(request.TransactionId, request.BlockHash, caAddressInfos);
+
+            if (indexerTransactions.CaHolderTransaction.Data.IsNullOrEmpty())
+            {
+                var indexerTransaction =
+                    ObjectMapper.Map<CaHolderTransactionIndex, IndexerTransaction>(
+                        await _activityProvider.GetNotSuccessTransactionAsync(caAddresses.First(),
+                            request.TransactionId));
+
+                if (indexerTransaction != null)
+                {
+                    indexerTransactions.CaHolderTransaction.Data.Add(indexerTransaction);
+                }
+            }
+
             var activitiesDto =
                 await IndexerTransaction2Dto(caAddresses, indexerTransactions, chainId, 0, 0, true);
             if (activitiesDto == null || activitiesDto.TotalRecordCount == 0)

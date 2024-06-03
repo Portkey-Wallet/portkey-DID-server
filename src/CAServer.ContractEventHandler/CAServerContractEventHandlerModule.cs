@@ -78,6 +78,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         Configure<GrabRedPackageOptions>(configuration.GetSection("GrabRedPackage"));
         Configure<NFTTraitsSyncOptions>(configuration.GetSection("NFTTraitsSync"));
+        Configure<TransactionReportOptions>(configuration.GetSection("TransactionReport"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
