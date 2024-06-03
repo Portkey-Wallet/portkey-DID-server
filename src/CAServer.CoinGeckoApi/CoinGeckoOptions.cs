@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CoinGecko.Entities.Response.Coins;
 
 namespace CAServer.CoinGeckoApi
 {
@@ -18,5 +19,7 @@ namespace CAServer.CoinGeckoApi
         public int ReplenishmentPeriod { get; set; } = 60;
         public int TokenLimit { get; set; } = 100;
         public int TokensPerPeriod { get; set; } = 100;
+
+        public List<CoinMarkets> CoinMarketsList { get; set; } = new List<CoinMarkets>();
     }
 }

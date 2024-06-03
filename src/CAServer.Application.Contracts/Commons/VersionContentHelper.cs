@@ -6,10 +6,19 @@ namespace CAServer.Commons;
 
 public static class VersionContentHelper
 {
-    public static SearchUserPackageAssetsDto FilterUserPackageAssetsByVersion(string version, SearchUserPackageAssetsDto userPackageAssets)
+    public static SearchUserPackageAssetsDto FilterUserPackageAssetsByVersion(string version,
+        SearchUserPackageAssetsDto userPackageAssets)
     {
         var inputVersion = GetInputVersion(version);
-        return inputVersion == null || inputVersion >= new Version("1.8.1") ? userPackageAssets : FilterUserPackageAssets(userPackageAssets);
+        return inputVersion == null || inputVersion >= new Version("1.8.1")
+            ? userPackageAssets
+            : FilterUserPackageAssets(userPackageAssets);
+    }
+
+    public static bool CompareVersion(string version, string compareVersion)
+    {
+        var inputVersion = GetInputVersion(version);
+        return inputVersion != null && inputVersion >= new Version(compareVersion);
     }
 
     private static Version GetInputVersion(string version)
@@ -18,24 +27,23 @@ public static class VersionContentHelper
         {
             return null;
         }
-        
+
         try
         {
-            return new Version(version.Trim().TrimStart('v'));
+            return new Version(version.ToLower().Trim().TrimStart('v'));
         }
-        catch (ArgumentException)
+        catch (Exception)
         {
             return null;
         }
-        
     }
 
     private static SearchUserPackageAssetsDto FilterUserPackageAssets(SearchUserPackageAssetsDto userPackageAssets)
     {
         var filteredData = userPackageAssets.Data
-            .Where(asset => asset.AssetType != (int) AssetType.NFT
-                            ||  (!string.IsNullOrEmpty(asset.ImageUrl)
-                                 && asset.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)))
+            .Where(asset => asset.AssetType != (int)AssetType.NFT
+                            || (!string.IsNullOrEmpty(asset.ImageUrl)
+                                && asset.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)))
             .ToList();
 
         int ftRecordCount = 0;
@@ -43,7 +51,7 @@ public static class VersionContentHelper
 
         foreach (var asset in filteredData)
         {
-            if (asset.AssetType == (int) AssetType.FT)
+            if (asset.AssetType == (int)AssetType.FT)
             {
                 ftRecordCount++;
             }

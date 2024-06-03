@@ -10,12 +10,12 @@ namespace CAServer.HubsEventHandler;
 
 public class DataReportHandler : IDistributedEventHandler<ExitWalletEto>, ITransientDependency
 {
-    private readonly IDataReportingAppService _dataReportingAppService;
+    private readonly IDeviceInfoReportAppService _deviceInfoReportAppService;
     private readonly ILogger<DataReportHandler> _logger;
 
-    public DataReportHandler(IDataReportingAppService dataReportingAppService, ILogger<DataReportHandler> logger)
+    public DataReportHandler(IDeviceInfoReportAppService deviceInfoReportAppService, ILogger<DataReportHandler> logger)
     {
-        _dataReportingAppService = dataReportingAppService;
+        _deviceInfoReportAppService = deviceInfoReportAppService;
         _logger = logger;
     }
 
@@ -30,7 +30,7 @@ public class DataReportHandler : IDistributedEventHandler<ExitWalletEto>, ITrans
                 return;
             }
 
-            await _dataReportingAppService.ExitWalletAsync(eventData.DeviceId, eventData.UserId);
+            await _deviceInfoReportAppService.ExitWalletAsync(eventData.DeviceId, eventData.UserId);
             _logger.LogWarning("exist wallet success, deviceId:{deviceId},userId:{userId}",
                 eventData.DeviceId, eventData.UserId);
         }

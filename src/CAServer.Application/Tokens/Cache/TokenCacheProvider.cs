@@ -56,8 +56,10 @@ public class TokenCacheProvider : ITokenCacheProvider, ISingletonDependency
                         Issuer = output.Issuer.ToBase58(),
                         IsBurnable = output.IsBurnable,
                         IssueChainId = output.IssueChainId,
-                        Expires = output.ExternalInfo?.Value["__seed_exp_time"],
-                        SeedOwnedSymbol = output.ExternalInfo?.Value["__seed_owned_symbol"]
+                        Expires = output.ExternalInfo?.Value.TryGetValue("__seed_exp_time", out _) == true ?
+                            output.ExternalInfo?.Value["__seed_exp_time"] : "",
+                        SeedOwnedSymbol = output.ExternalInfo?.Value.TryGetValue("__seed_owned_symbol", out _) == true ?
+                            output.ExternalInfo?.Value?["__seed_owned_symbol"] : ""
                     }
                     : new GetTokenInfoDto();
                 await _tokenInfoCache.SetAsync(cacheKey, tokenInfoCache, new DistributedCacheEntryOptions

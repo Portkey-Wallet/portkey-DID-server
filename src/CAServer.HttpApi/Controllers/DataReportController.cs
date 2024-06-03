@@ -1,11 +1,9 @@
 using System.Threading.Tasks;
+using CAServer.DataReporting;
 using CAServer.DataReporting.Dtos;
-using CAServer.DataReporting.Etos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
-using Volo.Abp.EventBus.Distributed;
-using Volo.Abp.Users;
 
 namespace CAServer.Controllers;
 
@@ -15,20 +13,22 @@ namespace CAServer.Controllers;
 [Route("api/app/report")]
 public class DataReportController : CAServerController
 {
-    private readonly IDistributedEventBus _eventBus;
+    private readonly IDataReportAppService _dataReportAppService;
 
-    public DataReportController(IDistributedEventBus eventBus)
+    public DataReportController(IDataReportAppService dataReportAppService)
     {
-        _eventBus = eventBus;
+        _dataReportAppService = dataReportAppService;
     }
 
     [HttpPost("exitWallet"), Authorize]
-    public async Task ExitWalletAsync(ExitWalletDto exitWalletDto)
+    public async Task ExitWalletAsync(ExitWalletDto input)
     {
-        await _eventBus.PublishAsync(new ExitWalletEto
-        {
-            UserId = CurrentUser.GetId(),
-            DeviceId = exitWalletDto.DeviceId
-        });
+        await _dataReportAppService.ExitWalletAsync(input);
+    }
+
+    [HttpPost("transaction")]
+    public async Task ReportTransactionAsync(TransactionReportDto input)
+    {
+        await _dataReportAppService.ReportTransactionAsync(input);
     }
 }
