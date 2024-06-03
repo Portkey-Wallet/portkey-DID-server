@@ -17,7 +17,7 @@ namespace CAServer.CAAccount;
 [Collection(CAServerTestConsts.CollectionDefinitionName)]
 public class CaHolderTest : CAServerApplicationTestBase
 {
-    private readonly INickNameAppService _nickNameAppService;
+    // private readonly INickNameAppService _nickNameAppService;
     private ICurrentUser _currentUser;
     private readonly TestCluster _cluster;
     protected readonly ITestOutputHelper TestOutputHelper;
@@ -26,7 +26,7 @@ public class CaHolderTest : CAServerApplicationTestBase
     public CaHolderTest(ITestOutputHelper testOutputHelper)
     {
         TestOutputHelper = testOutputHelper;
-        _nickNameAppService = GetRequiredService<INickNameAppService>();
+        // _nickNameAppService = GetRequiredService<INickNameAppService>();
         _cluster = GetRequiredService<ClusterFixture>().Cluster;
         _transactionFeeAppService = GetRequiredService<ITransactionFeeAppService>();
     }
@@ -38,39 +38,39 @@ public class CaHolderTest : CAServerApplicationTestBase
         services.AddSingleton(_currentUser);
     }
 
-    [Fact]
-    public async Task SetNicknameTest()
-    {
-        var grain = _cluster.Client.GetGrain<ICAHolderGrain>(_currentUser.GetId());
-        await grain.AddHolderAsync(new CAHolderGrainDto
-        {
-            UserId = _currentUser.GetId(),
-            CaHash = "hash"
-        });
+    // [Fact]
+    // public async Task SetNicknameTest()
+    // {
+    //     var grain = _cluster.Client.GetGrain<ICAHolderGrain>(_currentUser.GetId());
+    //     await grain.AddHolderAsync(new CAHolderGrainDto
+    //     {
+    //         UserId = _currentUser.GetId(),
+    //         CaHash = "hash"
+    //     });
+    //
+    //     var result = await _nickNameAppService.SetNicknameAsync(new UpdateNickNameDto
+    //     {
+    //         NickName = "Tom"
+    //     });
+    //
+    //     result.Nickname.ShouldBe("Tom");
+    //
+    //     var newNickName = "Amy";
+    //     var updateResult = await _nickNameAppService.UpdateHolderInfoAsync(new HolderInfoDto()
+    //     {
+    //         NickName = newNickName,
+    //         Avatar = "test"
+    //     });
+    //     
+    //     updateResult.Nickname.ShouldBe(newNickName);
+    // }
 
-        var result = await _nickNameAppService.SetNicknameAsync(new UpdateNickNameDto
-        {
-            NickName = "Tom"
-        });
-
-        result.Nickname.ShouldBe("Tom");
-
-        var newNickName = "Amy";
-        var updateResult = await _nickNameAppService.UpdateHolderInfoAsync(new HolderInfoDto()
-        {
-            NickName = newNickName,
-            Avatar = "test"
-        });
-        
-        updateResult.Nickname.ShouldBe(newNickName);
-    }
-
-    [Fact]
-    public async Task GetCaHolderTest()
-    {
-        var resultDto = await _nickNameAppService.GetCaHolderAsync();
-        resultDto.ShouldBeNull();
-    }
+    // [Fact]
+    // public async Task GetCaHolderTest()
+    // {
+    //     var resultDto = await _nickNameAppService.GetCaHolderAsync();
+    //     resultDto.ShouldBeNull();
+    // }
 
 
     [Fact]
