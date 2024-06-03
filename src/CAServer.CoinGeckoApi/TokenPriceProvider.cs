@@ -43,8 +43,9 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 
     private HttpClient InitCoinGeckoClient(IHttpClientFactory httpClientFactory)
     {
-        var apiKey = AsyncHelper.RunSync(() =>
-            _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.CoinGecko));
+        // var apiKey = AsyncHelper.RunSync(() =>
+        //     _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.CoinGecko));
+        var apiKey = _coinGeckoOptions.CurrentValue.ProdApiKey;
         var httpClient = httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         if (_coinGeckoOptions.CurrentValue.Timeout > 0)
