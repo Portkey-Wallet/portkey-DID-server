@@ -13,6 +13,7 @@ using CoinGecko.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using RestSharp;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Threading;
 
@@ -43,8 +44,9 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 
     private HttpClient InitCoinGeckoClient(IHttpClientFactory httpClientFactory)
     {
-        var apiKey = AsyncHelper.RunSync(() =>
-            _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.CoinGecko));
+        // var apiKey = AsyncHelper.RunSync(() =>
+        //     _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.CoinGecko));
+        var apiKey = _coinGeckoOptions.CurrentValue.ProdApiKey;
         var httpClient = httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         if (_coinGeckoOptions.CurrentValue.Timeout > 0)
@@ -180,12 +182,45 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         return await task();
     }
     
+    private RestRequest GetCoingeckoRequest() {
+        RestRequest request = new RestRequest("");
+        request.AddHeader("accept", "application/json");
+        if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
+        {
+            request.AddHeader("x-cg-pro-api-key", _coinGeckoOptions.CurrentValue.ProdApiKey);
+        }
+        else if (!_coinGeckoOptions.CurrentValue.DemoApiKey.IsNullOrWhiteSpace())
+        {
+            // test environment uses the demo api-key
+            request.AddHeader("x-cg-demo-api-key", _coinGeckoOptions.CurrentValue.DemoApiKey);
+        }
+
+        return request;
+    }
+
+    private RestClient GetRestClient(string uri)
+    {
+        var options = new RestClientOptions(_coinGeckoOptions.CurrentValue.BaseUrl + uri);
+        var client = new RestClient(options);
+        return client;
+    }
+    
     public async Task<List<CoinMarkets>> GetHotListingsAsync()
     {
         List<CoinMarkets> response;
         try
         {
-            response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol);
+            // return 403 forbidden error
+            // response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol);
+            var client = GetRestClient("coins/markets?vs_currency=usd");
+            var request = GetCoingeckoRequest();
+            var responseFromApi = await client.GetAsync(request);
+            var content = responseFromApi.Content;
+            if (content.IsNullOrEmpty())
+            {
+                return new List<CoinMarkets>();
+            }
+            response = JsonConvert.DeserializeObject<List<CoinMarkets>>(content);
         }
         catch (Exception e)
         {
@@ -213,7 +248,19 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         List<CoinMarkets> response;
         try
         {
-            response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol, ids, "market_cap_desc", perPage, 1, false, "24h", "");
+            // return 403 forbidden error
+            // response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol, ids, "market_cap_desc", perPage, 1, false, "24h", "");
+            var joinedIds = string.Join("%2C", ids);
+            var uri = $"coins/markets?vs_currency=usd&ids={joinedIds}&per_page={perPage}";
+            var client = GetRestClient(uri);
+            var request = GetCoingeckoRequest();
+            var responseFromApi = await client.GetAsync(request);
+            var content = responseFromApi.Content;
+            if (content.IsNullOrEmpty())
+            {
+                return new List<CoinMarkets>();
+            }
+            response = JsonConvert.DeserializeObject<List<CoinMarkets>>(content);
         }
         catch (Exception e)
         {
@@ -229,7 +276,17 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         TrendingList trendingList;
         try
         {
-            trendingList = await _coinGeckoClient.SearchClient.GetSearchTrending();
+            // return 403 forbidden error
+            // trendingList = await _coinGeckoClient.SearchClient.GetSearchTrending();
+            var client = GetRestClient("search/trending");
+            var request = GetCoingeckoRequest();
+            var response = await client.GetAsync(request);
+            var content = response.Content;
+            if (content.IsNullOrEmpty())
+            {
+                return new TrendingList();
+            }
+            trendingList = JsonConvert.DeserializeObject<TrendingList>(content);
         }
         catch (Exception e)
         {
