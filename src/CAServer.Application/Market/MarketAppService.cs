@@ -140,11 +140,11 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task<List<MarketCryptocurrencyDto>> GetHotListings()
     {
-        // var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Hot));
-        // if (!resultFromCache.IsNullOrEmpty())
-        // {
-        //     return JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
-        // }
+        var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Hot));
+        if (!resultFromCache.IsNullOrEmpty())
+        {
+            return JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
+        }
         List<MarketCryptocurrencyDto> result = new List<MarketCryptocurrencyDto>();
         foreach (var marketDataProvider in _marketDataProviders)
         {
@@ -173,11 +173,11 @@ public class MarketAppService : CAServerAppService, IMarketAppService
 
     private async Task<List<MarketCryptocurrencyDto>> GetTrendingList()
     {
-        // var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Trending));
-        // if (!resultFromCache.IsNullOrEmpty())
-        // {
-        //     return JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
-        // }
+        var resultFromCache = await _distributedCache.GetAsync(GetCachePrefix(MarketChosenType.Trending));
+        if (!resultFromCache.IsNullOrEmpty())
+        {
+            return JsonConvert.DeserializeObject<List<MarketCryptocurrencyDto>>(resultFromCache);
+        }
         
         string[] ids = null;
         foreach (var marketDataProvider in _marketDataProviders)

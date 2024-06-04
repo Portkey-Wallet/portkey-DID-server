@@ -185,24 +185,22 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
     private RestRequest GetCoingeckoRequest() {
         RestRequest request = new RestRequest("");
         request.AddHeader("accept", "application/json");
-        // if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
-        // {
-        // request.AddHeader("x-cg-pro-api-key", _coinGeckoOptions.CurrentValue.ProdApiKey);
-        request.AddHeader("x-cg-pro-api-key", "CG-w7chQ539gL346ZAF8EMngh7k");
-        // }
-        // else if (!_coinGeckoOptions.CurrentValue.DemoApiKey.IsNullOrWhiteSpace())
-        // {
-        //     // test environment uses the demo api-key
-        //     request.AddHeader("x-cg-demo-api-key", _coinGeckoOptions.CurrentValue.DemoApiKey);
-        // }
+        if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
+        {
+        request.AddHeader("x-cg-pro-api-key", _coinGeckoOptions.CurrentValue.ProdApiKey);
+        }
+        else if (!_coinGeckoOptions.CurrentValue.DemoApiKey.IsNullOrWhiteSpace())
+        {
+            // test environment uses the demo api-key
+            request.AddHeader("x-cg-demo-api-key", _coinGeckoOptions.CurrentValue.DemoApiKey);
+        }
 
         return request;
     }
 
     private RestClient GetRestClient(string uri)
     {
-        // var options = new RestClientOptions(_coinGeckoOptions.CurrentValue.BaseUrl + uri);
-        var options = new RestClientOptions("https://pro-api.coingecko.com/api/v3/" + uri);
+        var options = new RestClientOptions(_coinGeckoOptions.CurrentValue.BaseUrl + uri);
         var client = new RestClient(options);
         return client;
     }
