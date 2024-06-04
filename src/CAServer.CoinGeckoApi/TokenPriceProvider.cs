@@ -187,7 +187,8 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         request.AddHeader("accept", "application/json");
         // if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
         // {
-        request.AddHeader("x-cg-pro-api-key", _coinGeckoOptions.CurrentValue.ProdApiKey);
+        // request.AddHeader("x-cg-pro-api-key", _coinGeckoOptions.CurrentValue.ProdApiKey);
+        request.AddHeader("x-cg-pro-api-key", "CG-w7chQ539gL346ZAF8EMngh7k");
         // }
         // else if (!_coinGeckoOptions.CurrentValue.DemoApiKey.IsNullOrWhiteSpace())
         // {
