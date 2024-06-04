@@ -189,14 +189,14 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         List<CoinMarkets> response;
         try
         {
-            response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol);
-            // var options = new RestClientOptions("https://pro-api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
-            // var client = new RestClient(options);
-            // var request = new RestRequest("");
-            // request.AddHeader("accept", "application/json");
-            // request.AddHeader("x-cg-pro-api-key", "CG-w7chQ539gL346ZAF8EMngh7k");
-            // var responseFromApi = await client.GetAsync(request);
-            // response = JsonConvert.DeserializeObject<List<CoinMarkets>>(responseFromApi.Content);
+            // response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol);
+            var options = new RestClientOptions("https://pro-api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
+            var client = new RestClient(options);
+            var request = new RestRequest("");
+            request.AddHeader("accept", "application/json");
+            request.AddHeader("x-cg-pro-api-key", "CG-w7chQ539gL346ZAF8EMngh7k");
+            var responseFromApi = await client.GetAsync(request);
+            response = JsonConvert.DeserializeObject<List<CoinMarkets>>(responseFromApi.Content);
         }
         catch (Exception e)
         {
@@ -240,7 +240,14 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         TrendingList trendingList;
         try
         {
-            trendingList = await _coinGeckoClient.SearchClient.GetSearchTrending();
+            // trendingList = await _coinGeckoClient.SearchClient.GetSearchTrending();
+            var options = new RestClientOptions("https://pro-api.coingecko.com/api/v3/search/trending");
+            var client = new RestClient(options);
+            var request = new RestRequest("");
+            request.AddHeader("accept", "application/json");
+            request.AddHeader("x-cg-pro-api-key", "CG-w7chQ539gL346ZAF8EMngh7k");
+            var response = await client.GetAsync(request);
+            trendingList = JsonConvert.DeserializeObject<TrendingList>(response.Content);
         }
         catch (Exception e)
         {
