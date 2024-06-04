@@ -46,7 +46,8 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
     {
         // var apiKey = AsyncHelper.RunSync(() =>
         //     _secretProvider.GetSecretWithCacheAsync(_signatureOptions.CurrentValue.KeyIds.CoinGecko));
-        var apiKey = _coinGeckoOptions.CurrentValue.ProdApiKey;
+        // var apiKey = _coinGeckoOptions.CurrentValue.ProdApiKey;
+        var apiKey = "CG-w7chQ539gL346ZAF8EMngh7k";
         var httpClient = httpClientFactory.CreateClient();
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         if (_coinGeckoOptions.CurrentValue.Timeout > 0)
@@ -56,18 +57,19 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
 
         if (_coinGeckoOptions.CurrentValue.BaseUrl.NotNullOrEmpty())
         {
-            httpClient.BaseAddress = new Uri(_coinGeckoOptions.CurrentValue.BaseUrl);
+            // httpClient.BaseAddress = new Uri(_coinGeckoOptions.CurrentValue.BaseUrl);
+            httpClient.BaseAddress = new Uri("https://pro-api.coingecko.com/api/v3");
         }
 
-        if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
-        {
-            httpClient.DefaultRequestHeaders.Add("x-cg-pro-api-key", apiKey);
-        }
-        else if (!_coinGeckoOptions.CurrentValue.DemoApiKey.IsNullOrWhiteSpace())
-        {
-            // test environment uses the demo api-key
-            httpClient.DefaultRequestHeaders.Add("x-cg-demo-api-key", _coinGeckoOptions.CurrentValue.DemoApiKey);
-        }
+        // if ((_coinGeckoOptions.CurrentValue.BaseUrl ?? "").Contains("pro"))
+        // {
+        httpClient.DefaultRequestHeaders.Add("x-cg-pro-api-key", apiKey);
+        // }
+        // else if (!_coinGeckoOptions.CurrentValue.DemoApiKey.IsNullOrWhiteSpace())
+        // {
+        //     // test environment uses the demo api-key
+        //     httpClient.DefaultRequestHeaders.Add("x-cg-demo-api-key", _coinGeckoOptions.CurrentValue.DemoApiKey);
+        // }
 
         return httpClient;
     }
@@ -187,14 +189,14 @@ public class TokenPriceProvider : ITokenPriceProvider, ITransientDependency
         List<CoinMarkets> response;
         try
         {
-            // response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol);
-            var options = new RestClientOptions("https://pro-api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
-            var client = new RestClient(options);
-            var request = new RestRequest("");
-            request.AddHeader("accept", "application/json");
-            request.AddHeader("x-cg-pro-api-key", "CG-w7chQ539gL346ZAF8EMngh7k");
-            var responseFromApi = await client.GetAsync(request);
-            response = JsonConvert.DeserializeObject<List<CoinMarkets>>(responseFromApi.Content);
+            response = await _coinGeckoClient.CoinsClient.GetCoinMarkets(UsdSymbol);
+            // var options = new RestClientOptions("https://pro-api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
+            // var client = new RestClient(options);
+            // var request = new RestRequest("");
+            // request.AddHeader("accept", "application/json");
+            // request.AddHeader("x-cg-pro-api-key", "CG-w7chQ539gL346ZAF8EMngh7k");
+            // var responseFromApi = await client.GetAsync(request);
+            // response = JsonConvert.DeserializeObject<List<CoinMarkets>>(responseFromApi.Content);
         }
         catch (Exception e)
         {
