@@ -12,6 +12,7 @@ using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
 using CAServer.UserAssets;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -37,6 +38,8 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     private readonly IDistributedCache<List<Token>> _userTokenCache;
     private readonly ITokenProvider _tokenProvider;
     private readonly IAssetsLibraryProvider _assetsLibraryProvider;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly NftToFtOptions _nftToFtOptions;
 
     public UserTokenAppService(
         IClusterClient clusterClient,
@@ -44,7 +47,8 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         IDistributedEventBus distributedEventBus,
         IDistributedCache<List<string>> distributedCache,
         ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache,
-        IAssetsLibraryProvider assetsLibraryProvider)
+        IAssetsLibraryProvider assetsLibraryProvider, IHttpContextAccessor httpContextAccessor,
+        IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
@@ -52,6 +56,8 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         _tokenProvider = tokenProvider;
         _userTokenCache = userTokenCache;
         _assetsLibraryProvider = assetsLibraryProvider;
+        _httpContextAccessor = httpContextAccessor;
+        _nftToFtOptions = nftToFtOptions.Value;
         _tokenListOptions = tokenListOptions.Value;
     }
 
@@ -121,6 +127,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
     public async Task<PagedResultDto<GetUserTokenDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
     {
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
         var userId = CurrentUser.GetId();
         var userTokens =
             await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
@@ -142,6 +149,11 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             tokens.Add(ObjectMapper.Map<UserTokenItem, GetUserTokenDto>(item));
         }
 
+        if (!VersionContentHelper.CompareVersion(version, CommonConstant.NftToFtStartVersion))
+        {
+            tokens = tokens.Where(t => !_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)).ToList();
+        }
+
         if (!requestDto.Keyword.IsNullOrEmpty())
         {
             tokens = tokens.Where(t => t.Symbol.Trim().ToUpper().Contains(requestDto.Keyword.ToUpper())).ToList();
@@ -154,6 +166,14 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
         foreach (var token in tokens)
         {
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(token.Symbol);
+            if (nftToFtInfo != null)
+            {
+                token.Label = nftToFtInfo.Label;
+                token.ImageUrl = nftToFtInfo.ImageUrl;
+                continue;
+            }
+
             token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
         }
 

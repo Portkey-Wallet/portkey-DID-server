@@ -10,4 +10,5 @@ public class GetUserTokenDto
     public int Decimals { get; set; }
     public bool IsDefault { get; set; }
     public bool IsDisplay { get; set; }
+    public string Label { get; set; }
 }
