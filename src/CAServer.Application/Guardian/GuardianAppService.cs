@@ -6,8 +6,10 @@ using AElf;
 using AElf.Indexing.Elasticsearch;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Dtos;
+using CAServer.CAAccount.Provider;
 using CAServer.Entities.Es;
 using CAServer.Grains;
+using CAServer.Grains.Grain.Contacts;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
@@ -35,14 +37,16 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
     private readonly IAppleUserProvider _appleUserProvider;
     private readonly AppleTransferOptions _appleTransferOptions;
     private readonly StopRegisterOptions _stopRegisterOptions;
-
+    private readonly INicknameProvider _nicknameProvider;
+    
 
     public GuardianAppService(
         INESTRepository<GuardianIndex, string> guardianRepository, IAppleUserProvider appleUserProvider,
         INESTRepository<UserExtraInfoIndex, string> userExtraInfoRepository, ILogger<GuardianAppService> logger,
         IOptions<ChainOptions> chainOptions, IGuardianProvider guardianProvider, IClusterClient clusterClient,
         IOptionsSnapshot<AppleTransferOptions> appleTransferOptions,
-        IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions)
+        IOptionsSnapshot<StopRegisterOptions> stopRegisterOptions,
+        INicknameProvider nicknameProvider)
     {
         _guardianRepository = guardianRepository;
         _userExtraInfoRepository = userExtraInfoRepository;
@@ -52,7 +56,8 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
         _clusterClient = clusterClient;
         _appleUserProvider = appleUserProvider;
         _appleTransferOptions = appleTransferOptions.Value;
-        _stopRegisterOptions = stopRegisterOptions.Value;
+        _stopRegisterOptions = stopRegisterOptions.Value; 
+        _nicknameProvider = nicknameProvider;
     }
 
     public async Task<GuardianResultDto> GetGuardianIdentifiersAsync(GuardianIdentifierDto guardianIdentifierDto)
@@ -327,5 +332,48 @@ public class GuardianAppService : CAServerAppService, IGuardianAppService
             guardian.FirstName = userInfo.FirstName;
             guardian.LastName = userInfo.LastName;
         }
+    }
+
+    public async Task<bool> UpdateUnsetGuardianIdentifierAsync(UpdateGuardianIdentifierDto updateGuardianIdentifierDto)
+    {
+        GuardianResultDto guardianResultDto = await GetGuardianIdentifiersAsync(updateGuardianIdentifierDto);
+        if (guardianResultDto == null || guardianResultDto.GuardianList == null || guardianResultDto.GuardianList.Guardians.IsNullOrEmpty())
+        {
+            return false;
+        }
+        var result = await ModifyNicknameHandler(guardianResultDto, updateGuardianIdentifierDto.UserId, updateGuardianIdentifierDto.UnsetGuardianIdentifierHash);
+        _logger.LogInformation("UpdateUnsetGuardianIdentifierAsync result is={0}, caHash={1}", result, updateGuardianIdentifierDto.CaHash);
+        return result;
+    }
+
+    private async Task<bool> ModifyNicknameHandler(GuardianResultDto guardianResultDto, Guid userId,
+        string unsetGuardianIdentifierHash)
+    {
+        var grain = _clusterClient.GetGrain<ICAHolderGrain>(userId);
+        var caHolderGrainDto = await grain.GetCaHolder();
+        if (!caHolderGrainDto.Success)
+        {
+            return false;
+        }
+
+        if (caHolderGrainDto.Data == null)
+        {
+            return false;
+        }
+
+        var caHolder = caHolderGrainDto.Data;
+        var modifiedNickname = caHolder.ModifiedNickname;
+        var identifierHashFromGrain = caHolder.IdentifierHash;
+        if (modifiedNickname && identifierHashFromGrain.IsNullOrEmpty())
+        {
+            return false;
+        }
+
+        if (identifierHashFromGrain.IsNullOrEmpty() || !identifierHashFromGrain.Equals(unsetGuardianIdentifierHash))
+        {
+            return false;
+        }
+
+        return await _nicknameProvider.ModifyNicknameHandler(guardianResultDto, userId, caHolder);
     }
 }

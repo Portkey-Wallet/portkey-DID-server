@@ -11,6 +11,7 @@ using CAServer.Grains.Grain.CrossChain;
 using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
+using CAServer.Grains.Grain.Market;
 using CAServer.Grains.Grain.Notify;
 using CAServer.Grains.Grain.RedDot;
 using CAServer.Grains.Grain.ThirdPart;
@@ -24,6 +25,7 @@ using CAServer.Grains.State.Contacts;
 using CAServer.Grains.State.CrossChain;
 using CAServer.Grains.State.Growth;
 using CAServer.Grains.State.ImTransfer;
+using CAServer.Grains.State.Market;
 using CAServer.Grains.State.Notify;
 using CAServer.Grains.State.Order;
 using CAServer.Grains.State.PrivacyPermission;
@@ -50,6 +52,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<RegisterInfo, RegisterGrainDto>().ReverseMap();
         CreateMap<RecoveryInfo, RecoveryGrainDto>().ReverseMap();
         CreateMap<CAHolderState, CAHolderGrainDto>().ReverseMap();
+        CreateMap<UserMarketTokenFavoritesState, UserMarketTokenFavoritesGrainDto>().ReverseMap();
         CreateMap<ChainState, ChainGrainDto>().ReverseMap();
         CreateMap<ContactAddress, ContactAddressDto>().ReverseMap();
         CreateMap<ContactState, ContactGrainDto>().ForMember(c => c.ModificationTime,

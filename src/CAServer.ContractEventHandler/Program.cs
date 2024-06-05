@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using CAServer.Commons;
+using CAServer.Nightingale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 
@@ -41,6 +43,7 @@ namespace CAServer.ContractEventHandler
                 {
                     services.AddApplication<CAServerContractEventHandlerModule>();
                 })
+                .UseNightingaleMonitoring()
                 .UseAutofac()
                 .UseSerilog();
     }

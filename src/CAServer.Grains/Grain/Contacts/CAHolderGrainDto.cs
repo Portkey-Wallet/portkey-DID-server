@@ -4,4 +4,5 @@ namespace CAServer.Grains.Grain.Contacts;
 
 public class CAHolderGrainDto : CAHolderDto
 {
+    
 }

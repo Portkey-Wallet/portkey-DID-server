@@ -11,4 +11,7 @@ public interface INickNameAppService
     Task<CAHolderResultDto> GetCaHolderAsync();
     Task<CAHolderResultDto> UpdateHolderInfoAsync(HolderInfoDto holderInfo);
     Task<CAHolderResultDto> DeleteAsync();
+    Task<bool> GetPoppedUpAccountAsync();
+    Task<bool> GetBubblingAccountAsync();
+    Task ReplaceUserNicknameAsync(ReplaceNicknameDto replaceNicknameDto);
 }

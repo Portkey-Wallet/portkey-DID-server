@@ -8,6 +8,7 @@ using CAServer.ContractEventHandler.Core.Worker;
 using CAServer.Grains;
 using CAServer.MongoDB;
 using CAServer.Monitor;
+using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Signature;
 using Hangfire;
@@ -18,6 +19,7 @@ using Hangfire.Mongo.Migration.Strategies;
 using Hangfire.Mongo.Migration.Strategies.Backup;
 using Medallion.Threading;
 using Medallion.Threading.Redis;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -75,6 +77,8 @@ public class CAServerContractEventHandlerModule : AbpModule
         Configure<PayRedPackageAccount>(configuration.GetSection("RedPackagePayAccount"));
         Configure<GraphQLOptions>(configuration.GetSection("GraphQL"));
         Configure<GrabRedPackageOptions>(configuration.GetSection("GrabRedPackage"));
+        Configure<NFTTraitsSyncOptions>(configuration.GetSection("NFTTraitsSync"));
+        Configure<TransactionReportOptions>(configuration.GetSection("TransactionReport"));
         context.Services.AddHostedService<CAServerContractEventHandlerHostedService>();
         ConfigureOrleans(context, configuration);
         ConfigureTokenCleanupService();
@@ -90,6 +94,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         ConfigureDataProtection(context, configuration, hostingEnvironment);
         ConfigureDistributedLocking(context, configuration);
         ConfigureHangfire(context, configuration);
+        // ConfigureOpenTelemetry(context);
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -132,6 +137,7 @@ public class CAServerContractEventHandlerModule : AbpModule
         //StartOrleans(context.ServiceProvider);
         context.AddBackgroundWorkerAsync<ContractSyncWorker>();
         context.AddBackgroundWorkerAsync<TransferAutoReceiveWorker>();
+        context.AddBackgroundWorkerAsync<NftTraitsProportionCalculateWorker>();
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
@@ -167,6 +173,7 @@ public class CAServerContractEventHandlerModule : AbpModule
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }

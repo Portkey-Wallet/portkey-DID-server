@@ -64,10 +64,20 @@ public class MockCacheProvider : ICacheProvider
         return Task.CompletedTask;
     }
 
+    public Task Set<T>(string key, T value, TimeSpan? expire) where T : class
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<RedisValue> Get(string key)
     {
         _localCache.TryGetValue(key, out var val);
         return Task.FromResult(new RedisValue(val));
+    }
+
+    public Task<T> Get<T>(string key) where T : class
+    {
+        throw new NotImplementedException();
     }
 
     public Task Delete(string key)

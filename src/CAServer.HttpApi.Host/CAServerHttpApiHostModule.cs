@@ -7,7 +7,10 @@ using CAServer.Hub;
 using CAServer.HubsEventHandler;
 using CAServer.Middleware;
 using CAServer.MongoDB;
+using CAServer.Monitor.Interceptor;
 using CAServer.MultiTenancy;
+using CAServer.Nightingale.Http;
+using CAServer.Nightingale.Orleans.Filters;
 using CAServer.Options;
 using CAServer.Redis;
 using CAServer.ThirdPart.Adaptor;
@@ -27,6 +30,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Providers.MongoDB.Configuration;
@@ -36,6 +41,7 @@ using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.AspNetCore.SignalR;
+using Volo.Abp.Auditing;
 using Volo.Abp.Autofac;
 using Volo.Abp.Caching;
 using Volo.Abp.Caching.StackExchangeRedis;
@@ -82,6 +88,8 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<IpWhiteListOptions>(configuration.GetSection("IpWhiteList"));
         Configure<AuthServerOptions>(configuration.GetSection("AuthServer"));
         Configure<HubConfigOptions>(configuration.GetSection("HubConfig"));
+        Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
+        Configure<PerformanceMonitorMiddlewareOptions>(configuration.GetSection("PerformanceMonitorMiddleware"));
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
         ConfigureLocalization();
@@ -94,11 +102,13 @@ public class CAServerHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureOrleans(context, configuration);
+        ConfigureOpenTelemetry(context); //config open telemetry info
         context.Services.AddHttpContextAccessor();
         ConfigureTokenCleanupService();
         ConfigureMassTransit(context, configuration);
         context.Services.AddSignalR().AddStackExchangeRedis(configuration["Redis:Configuration"],
             options => { options.Configuration.ChannelPrefix = "CAServer"; });
+        ConfigAuditing();
     }
 
     private void ConfigureCache(IConfiguration configuration)
@@ -218,6 +228,7 @@ public class CAServerHttpApiHostModule : AbpModule
                 .ConfigureApplicationParts(parts =>
                     parts.AddApplicationPart(typeof(CAServerGrainsModule).Assembly).WithReferences())
                 .ConfigureLogging(builder => builder.AddProvider(o.GetService<ILoggerProvider>()))
+                .AddNightingaleMethodFilter(o)
                 .Build();
         });
     }
@@ -324,6 +335,42 @@ public class CAServerHttpApiHostModule : AbpModule
         Configure<TokenCleanupOptions>(x => x.IsCleanupEnabled = false);
     }
     
+    //enhance performance monitoring capability 
+    private void ConfigureOpenTelemetry(ServiceConfigurationContext context)
+    {
+        IServiceCollection services = context.Services;
+        services.OnRegistred(options =>
+        {
+            if (options.ImplementationType.IsDefined(typeof(MonitorAttribute), true))
+            {
+                options.Interceptors.TryAdd<MonitorInterceptor>();
+            }
+        });
+        
+        services.AddOpenTelemetry()
+            .WithTracing(tracing =>
+            {
+                tracing.AddSource("CAServer")
+                    .SetSampler(new AlwaysOnSampler());
+                // .AddAspNetCoreInstrumentation();
+            })
+            .WithMetrics(metrics =>
+            {
+                metrics.AddMeter("CAServer")
+                    // .AddAspNetCoreInstrumentation()
+                    .AddPrometheusExporter();
+            });
+    }
+
+    //Disables the auditing system
+    private void ConfigAuditing()
+    {
+        Configure<AbpAuditingOptions>(options =>
+        {
+            options.IsEnabled = false;
+        });
+    }
+    
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
@@ -339,6 +386,7 @@ public class CAServerHttpApiHostModule : AbpModule
         
         app.UseMiddleware<DeviceInfoMiddleware>();
         app.UseMiddleware<ConditionalIpWhitelistMiddleware>();
+        app.UseMiddleware<PerformanceMonitorMiddleware>();
         app.UseStaticFiles();
         
         app.UseRouting();
@@ -369,10 +417,11 @@ public class CAServerHttpApiHostModule : AbpModule
             });
         }
 
-        app.UseAuditing();      
+        app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseUnitOfWork();
         app.UseConfiguredEndpoints();
+        app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
         StartOrleans(context.ServiceProvider);
 

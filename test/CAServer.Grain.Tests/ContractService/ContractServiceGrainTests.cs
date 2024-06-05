@@ -1,32 +1,37 @@
 using AElf;
-using AElf.Client.Dto;
-using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.RedPackage;
-using CAServer.Grains.State.ApplicationHandler;
 using CAServer.RedPackage;
 using CAServer.RedPackage.Dtos;
 using Google.Protobuf;
 using Google.Protobuf.Collections;
-using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Portkey.Contracts.CA;
 using Portkey.Contracts.CryptoBox;
 using Shouldly;
 using Xunit;
+using CAServer.Grains.State.ApplicationHandler;
+using Xunit.Abstractions;
 
 namespace CAServer.Grain.Tests.ContractService;
 
+[Collection(ClusterCollection.Name)]
 public class ContractServiceGrainTests : CAServerGrainTestBase
 {
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public ContractServiceGrainTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+    }
+
     [Fact]
     public async Task CreateHolderInfoAsyncTests()
     {
         var grain = Cluster.Client.GetGrain<IContractServiceGrain>(Guid.NewGuid());
 
-        await grain.CreateHolderInfoAsync(new CreateHolderDto
+        var result = await grain.CreateHolderInfoAsync(new CreateHolderDto
         {
             ChainId = "AELF",
             GuardianInfo = new GuardianInfo

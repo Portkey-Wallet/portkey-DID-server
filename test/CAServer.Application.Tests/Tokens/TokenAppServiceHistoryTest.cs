@@ -38,6 +38,7 @@ public partial class TokenAppServiceHistoryTest : CAServerApplicationTestBase
         services.AddSingleton(GetMockTokenPriceProvider());
         services.AddSingleton(GetMockIGraphQLHelper());
         services.AddSingleton(TokenAppServiceTest.GetMockCoinGeckoOptions());
+        services.AddSingleton(TokenAppServiceTest.GetMockTokenPriceWorkerOption());
         services.AddSingleton(TokenAppServiceTest.GetMockSignatureServerOptions());
         services.AddSingleton(TokenAppServiceTest.GetMockRequestLimitProvider());
         services.AddSingleton(TokenAppServiceTest.GetMockSecretProvider());

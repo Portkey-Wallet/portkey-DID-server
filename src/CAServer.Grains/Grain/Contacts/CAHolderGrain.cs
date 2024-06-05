@@ -40,6 +40,35 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         State.CreateTime = caHolderDto.CreateTime;
         State.CaHash = caHolderDto.CaHash;
         State.Nickname = caHolderDto.Nickname;
+        State.ModifiedNickname = caHolderDto.ModifiedNickname;
+        State.PopedUp = caHolderDto.PopedUp;
+        State.IdentifierHash = caHolderDto.IdentifierHash;
+
+        await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
+        return result;
+    }
+
+    public async Task<GrainResultDto<CAHolderGrainDto>> AddHolderWithAvatarAsync(CAHolderGrainDto caHolderDto)
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (!string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.ExistedMessage;
+            return result;
+        }
+
+        State.Id = this.GetPrimaryKey();
+        State.UserId = caHolderDto.UserId;
+        State.CreateTime = caHolderDto.CreateTime;
+        State.CaHash = caHolderDto.CaHash;
+        State.Nickname = caHolderDto.Nickname;
+        State.ModifiedNickname = caHolderDto.ModifiedNickname;
+        State.PopedUp = caHolderDto.PopedUp;
+        State.IdentifierHash = caHolderDto.IdentifierHash;
+        State.Avatar = caHolderDto.Avatar;
 
         await WriteStateAsync();
 
@@ -58,11 +87,45 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         }
 
         State.Nickname = nickname;
+        State.ModifiedNickname = true;
+        State.IdentifierHash = string.Empty;
         await WriteStateAsync();
 
         result.Success = true;
         result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
         return result;
+    }
+
+    public async Task<GrainResultDto<CAHolderGrainDto>> UpdateNicknameAndMarkBitAsync(string nickname, bool modifiedNickname, string identifierHash)
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return result;
+        }
+
+        State.Nickname = nickname;
+        State.ModifiedNickname = modifiedNickname;
+        State.IdentifierHash = identifierHash;
+        await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
+        return result;
+    }
+    
+    public async Task UpdatePopUpAsync(bool poppedUp)
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return ;
+        }
+
+        State.PopedUp = poppedUp;
+        await WriteStateAsync();
     }
 
     public async Task<GrainResultDto<CAHolderGrainDto>> DeleteAsync()
@@ -119,6 +182,9 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         {
             State.Avatar = holderInfo.Avatar;
         }
+
+        State.ModifiedNickname = true;
+        State.IdentifierHash = string.Empty;
         await WriteStateAsync();
 
         result.Success = true;

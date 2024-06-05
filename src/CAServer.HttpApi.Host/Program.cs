@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using CAServer.Commons;
 using CAServer.Hubs;
+using CAServer.Nightingale;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,10 +25,12 @@ public class Program
             builder.Configuration.AddJsonFile("ramp.json");
             builder.Configuration.AddJsonFile("seedurl.json");
             builder.Configuration.AddJsonFile("activity.json");
+            builder.Configuration.AddJsonFile("userToken.json");
 
             var hostBuilder = builder.Host.AddAppSettingsSecretsJson()
                 .InitAppConfiguration(false)
                 .UseApolloForConfigureHostBuilder()
+                .UseNightingaleMonitoring()
                 .UseAutofac()
                 .UseSerilog();
 

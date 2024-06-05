@@ -11,12 +11,14 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.EventBus.Distributed;
 using ChainOptions = CAServer.Options.ChainOptions;
 
 namespace CAServer.ThirdPart.Processor.Ramp;
 
+[DisableAuditing]
 public class TransakOrderProcessor : AbstractRampOrderProcessor
 {
     private readonly TransakProvider _transakProvider;

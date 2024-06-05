@@ -76,7 +76,7 @@ public abstract class AbstractTreasuryProcessor : IThirdPartTreasuryProcessor
 
 
     /// <summary>
-    ///     ThirdPart provider name enum
+    ///     ThirdPart provider name enums
     /// </summary>
     /// <returns></returns>
     public abstract ThirdPartNameType ThirdPartName();

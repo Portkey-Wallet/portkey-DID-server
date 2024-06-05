@@ -15,5 +15,7 @@ public class ActivityTypeOptions
     public List<string> RedPacketTypes { get; set; }
 
     public List<string> NoShowTypes { get; set; }
+    public List<string> SystemTypes { get; set; }
     public string Zero { get; set; }
+    public List<string> MergeTokenBalanceTypes { get; set; }
 }

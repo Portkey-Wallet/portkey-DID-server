@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf.Indexing.Elasticsearch;
-using AElf.Types;
 using CAServer.Commons;
 using CAServer.Contacts.Provider;
 using CAServer.Entities.Es;
@@ -20,16 +19,16 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Orleans;
-using Orleans.Runtime;
 using Volo.Abp;
+using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
 using Volo.Abp.Users;
-using Volo.Abp.Users;
 
 namespace CAServer.RedPackage;
 
+[RemoteService(isEnabled: false), DisableAuditing]
 public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 {
     private readonly RedPackageOptions _redPackageOptions;
@@ -136,7 +135,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         };
     }
 
-
     public async Task<SendRedPackageOutputDto> SendRedPackageAsync(SendRedPackageInputDto input)
     {
         Stopwatch watcher = Stopwatch.StartNew();
@@ -222,7 +220,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             _logger.LogInformation("#monitor# send:{redpackageId},{cost},{startTime}:", input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
         }
     }
-
+    
     public async Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId)
     {
         GetCreationResultOutputDto res = null;

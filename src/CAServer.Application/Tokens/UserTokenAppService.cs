@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Commons;
+using CAServer.Entities.Es;
 using CAServer.Grains;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Options;
 using CAServer.Tokens.Dtos;
 using CAServer.Tokens.Etos;
 using CAServer.Tokens.Provider;
+using CAServer.UserAssets;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
 using Volo.Abp;
+using Volo.Abp.Application.Dtos;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.EventBus.Distributed;
@@ -33,19 +36,22 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
     private readonly IDistributedCache<List<string>> _distributedCache;
     private readonly IDistributedCache<List<Token>> _userTokenCache;
     private readonly ITokenProvider _tokenProvider;
+    private readonly IAssetsLibraryProvider _assetsLibraryProvider;
 
     public UserTokenAppService(
         IClusterClient clusterClient,
         IOptionsSnapshot<TokenListOptions> tokenListOptions,
         IDistributedEventBus distributedEventBus,
         IDistributedCache<List<string>> distributedCache,
-        ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache)
+        ITokenProvider tokenProvider, IDistributedCache<List<Token>> userTokenCache,
+        IAssetsLibraryProvider assetsLibraryProvider)
     {
         _clusterClient = clusterClient;
         _distributedEventBus = distributedEventBus;
         _distributedCache = distributedCache;
         _tokenProvider = tokenProvider;
         _userTokenCache = userTokenCache;
+        _assetsLibraryProvider = assetsLibraryProvider;
         _tokenListOptions = tokenListOptions.Value;
     }
 
@@ -66,7 +72,7 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
         {
             throw new UserFriendlyException(tokenResult.Message);
         }
-        
+
         await HandleTokenCacheAsync(userId, tokenResult.Data);
         await PublishAsync(tokenResult.Data, false);
         return ObjectMapper.Map<UserTokenGrainDto, UserTokenDto>(tokenResult.Data);
@@ -111,6 +117,58 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
             await InitialUserToken(userId, userTokenItem));
         await Task.WhenAll(list);
         return new UserTokenDto();
+    }
+
+    public async Task<PagedResultDto<GetUserTokenDto>> GetTokensAsync(GetTokenInfosRequestDto requestDto)
+    {
+        var userId = CurrentUser.GetId();
+        var userTokens =
+            await _tokenProvider.GetUserTokenInfoListAsync(userId, string.Empty, string.Empty);
+
+        var sourceSymbols = _tokenListOptions.SourceToken.Select(t => t.Token.Symbol).Distinct().ToList();
+        // hide source tokens.
+        userTokens.RemoveAll(t => sourceSymbols.Contains(t.Token.Symbol) && !t.IsDisplay);
+
+        var tokens = ObjectMapper.Map<List<UserTokenIndex>, List<GetUserTokenDto>>(userTokens);
+        foreach (var item in _tokenListOptions.UserToken)
+        {
+            var token = tokens.FirstOrDefault(t =>
+                t.ChainId == item.Token.ChainId && t.Symbol == item.Token.Symbol);
+            if (token != null)
+            {
+                continue;
+            }
+
+            tokens.Add(ObjectMapper.Map<UserTokenItem, GetUserTokenDto>(item));
+        }
+
+        if (!requestDto.Keyword.IsNullOrEmpty())
+        {
+            tokens = tokens.Where(t => t.Symbol.Trim().ToUpper().Contains(requestDto.Keyword.ToUpper())).ToList();
+        }
+
+        if (!requestDto.ChainIds.IsNullOrEmpty())
+        {
+            tokens = tokens.Where(t => requestDto.ChainIds.Contains(t.ChainId)).ToList();
+        }
+
+        foreach (var token in tokens)
+        {
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+        }
+
+        var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
+        tokens = tokens.OrderBy(t => t.Symbol != CommonConstant.ELF)
+            .ThenBy(t => !t.IsDisplay)
+            .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
+            .ThenBy(t => sourceSymbols.Contains(t.Symbol))
+            .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
+            .ThenBy(t => t.Symbol)
+            .ThenBy(t => t.ChainId)
+            .ToList();
+
+        return new PagedResultDto<GetUserTokenDto>(tokens.Count,
+            tokens.Skip(requestDto.SkipCount).Take(requestDto.MaxResultCount).ToList());
     }
 
     private (string chainId, string symbol) GetTokenInfoFromId(string tokenId)

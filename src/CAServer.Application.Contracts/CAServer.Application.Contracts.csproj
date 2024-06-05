@@ -60,6 +60,7 @@
     
 
     <ItemGroup>
+      <Folder Include="Market\atc\" />
       <Folder Include="UserBehavior\Dtos\" />
     </ItemGroup>
     

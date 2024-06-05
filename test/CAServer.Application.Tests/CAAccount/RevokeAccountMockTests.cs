@@ -1,13 +1,20 @@
 using System;
 using System.Collections.Generic;
+using AElf;
+using AElf.Types;
 using CAServer.AppleAuth.Provider;
 using CAServer.CAAccount.Provider;
+using CAServer.Common;
 using CAServer.Entities.Es;
 using CAServer.Guardian;
 using CAServer.Guardian.Provider;
+using CAServer.Options;
 using CAServer.UserAssets;
 using CAServer.UserAssets.Provider;
+using Microsoft.Extensions.Options;
 using Moq;
+using Nethereum.Hex.HexConvertors.Extensions;
+using Portkey.Contracts.CA;
 using GuardianDto = CAServer.Guardian.Provider.GuardianDto;
 
 namespace CAServer.CAAccount;
@@ -29,6 +36,13 @@ public partial class RevokeAccountTests
                     totalRecordCount = 0,
                     Data = new List<IndexerTokenInfo>()
                 }
+            });
+        
+        mockUserAssetsProvider.Setup(m =>
+                m.GetCaHolderIndexByCahashAsync(It.IsAny<string>()))
+            .ReturnsAsync(new CAHolderIndex()
+            {
+                CaHash = "a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"
             });
         
         
@@ -63,7 +77,8 @@ public partial class RevokeAccountTests
     {
         var mockGuardianProvider = new Mock<IGuardianProvider>();
         mockGuardianProvider.Setup(m => m.GetGuardiansAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(
-            new GuardiansDto()
+           
+            new GuardiansDto    
             {
                 CaHolderInfo = new List<GuardianDto>()
                 {
@@ -71,6 +86,14 @@ public partial class RevokeAccountTests
                     {
                         OriginChainId = "AELF",
                         ChainId = "AELF",
+                        ManagerInfos = new List<ManagerInfoDBase>
+                        {
+                            new ManagerInfoDBase()
+                            {
+                                Address = "123",
+                                ExtraData = "234"
+                            }
+                        },
                         GuardianList = new GuardianBaseListDto
                         {
                             Guardians = new List<GuardianInfoBase>
@@ -110,16 +133,13 @@ public partial class RevokeAccountTests
         });
         
         mockCaAccountProvider
-            .Setup(m => m.GetGuardianAddedCAHolderAsync("MockIdentifierHash", It.IsAny<int>(), It.IsAny<int>()))
+            .Setup(m => m.GetGuardianAddedCAHolderAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new GuardianAddedCAHolderDto
             {
                 GuardianAddedCAHolderInfo = new GuardianAddedHolderInfo
                 {
                     TotalRecordCount = 0,
-                    Data = new List<Guardian.GuardianDto>
-                    {
-                        new()
-                    }
+                    Data = new List<GuardianResultDto>()
                 }
             });
 
@@ -142,4 +162,55 @@ public partial class RevokeAccountTests
 
         return mockCaAccountProvider.Object;
     }
+
+    private IContractProvider GetMockContractProvider()
+    {
+        var mockContractProvider = new Mock<IContractProvider>();
+        mockContractProvider.Setup(m => m.GetHolderInfoAsync(It.IsAny<Hash>(), It.IsAny<Hash>(), "AELF"))
+            .ReturnsAsync(
+                new GetHolderInfoOutput
+                {
+                    CreateChainId = 9992731,
+                    CaHash = Hash.LoadFromHex("a8ae393ecb7cba148d269c262993eacb6a1b25b4dc55270b55a9be7fc2412033"),
+                    GuardianList = new GuardianList()
+                    {
+                        Guardians =
+                        {
+                            new Portkey.Contracts.CA.Guardian
+                            {
+                                IsLoginGuardian = true,
+                                IdentifierHash = Hash.LoadFromHex("0d12a5264e650c245c647738c27f30a75efc5b74e87c85e46fc29dd5d2bc9fe4"),
+                                Salt = "MockSalt",
+                                VerifierId = Hash.LoadFromHex("dbf9d0dedaec2474f89c096ff75c01dc5cdbce0e21567252e99a7f4a88428ae8"),
+                                Type = GuardianType.OfEmail
+                            }
+                            
+                        }
+                    }
+                    
+                }
+
+            );
+
+        return mockContractProvider.Object;
+    }
+    
+    private IOptionsSnapshot<ManagerCountLimitOptions> GetMockManagerCountLimitOptions()
+    {
+        var mockOptions = new Mock<IOptionsSnapshot<ManagerCountLimitOptions>>();
+
+        mockOptions.Setup(o => o.Value).Returns(
+            new ManagerCountLimitOptions()
+            {
+                Limit = 1
+            });
+           
+        return mockOptions.Object;
+    }
+
+    
+    
+    
+   
+    
 }
