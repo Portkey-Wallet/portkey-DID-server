@@ -357,6 +357,19 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
 
         foreach (var asset in userPackageNftAssetsWithPositiveBalance)
         {
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(asset.Symbol);
+            if (nftToFtInfo != null)
+            {
+                var ftAsset =
+                    userPackageAssets.FirstOrDefault(t => t.Symbol == asset.Symbol && t.ChainId == asset.ChainId);
+                if (ftAsset != null)
+                {
+                    ftAsset.Balance = asset.NftInfo?.Balance;
+                }
+
+                continue;
+            }
+
             var userPackageAsset = new UserPackageAsset
             {
                 ChainId = asset.ChainId,
@@ -402,6 +415,13 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                 Balance = "0",
                 IsDisplay = item.IsDisplay
             };
+
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(item.Token.Symbol);
+            if (nftToFtInfo != null)
+            {
+                userPackageAsset.Label = nftToFtInfo.Label;
+                userPackageAsset.ImageUrl = nftToFtInfo.ImageUrl;
+            }
 
             userPackageAssets.Add(userPackageAsset);
         }
@@ -656,7 +676,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                         dto.Data.Add(item);
                         continue;
                     }
-                    
+
                     item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
                     item.NftInfo.Balance = nftBalance;
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();

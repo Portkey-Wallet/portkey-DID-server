@@ -286,8 +286,9 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
 
         ftTokens.RemoveAll(t => !t.IsDisplay && sourceSymbols.Contains(t.Token.Symbol));
         AddDefaultAssertTokens(ftTokens, requestDto.Keyword);
+        ftTokens = ftTokens.Where(t => !_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Token.Symbol)).ToList();
+        
         var userPackageAssets = await GetUserPackageAssetsAsync(requestDto);
-
         var userPackageFtAssetsWithPositiveBalance = userPackageAssets.Data
             .Where(asset => asset.TokenInfo?.Balance != null && long.Parse(asset.TokenInfo.Balance) > 0)
             .ToList();

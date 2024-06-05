@@ -79,11 +79,9 @@ public class UserAssetsController
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(
         SearchUserPackageAssetsRequestDto requestDto)
     {
-        var headers = _httpContextAccessor?.HttpContext?.Request.Headers;
-        var version = headers != null && headers.ContainsKey("version") ? (string)headers["version"] : string.Empty;
-
-        var userPackageAssets = requestDto.Version.IsNullOrEmpty()
-            ? await _userAssetsAppService.SearchUserPackageAssetsAsync(requestDto)
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
+        var userPackageAssets =  VersionContentHelper.CompareVersion(version, CommonConstant.NftToFtStartVersion)
+            ? await _tokenNftAppService.SearchUserPackageAssetsAsync(requestDto)
             : await _tokenDisplayAppService.SearchUserPackageAssetsAsync(requestDto);
 
         return VersionContentHelper.FilterUserPackageAssetsByVersion(version, userPackageAssets);
