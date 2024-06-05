@@ -19,4 +19,5 @@ public class Token
     public string BalanceInUsd { get; set; }
     public string TokenContractAddress { get; set; }
     public string ImageUrl { get; set; }
+    public string Label { get; set; }
 }
