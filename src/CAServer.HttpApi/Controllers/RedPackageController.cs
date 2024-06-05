@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.Monitor.Interceptor;
 using CAServer.RedPackage;
@@ -6,6 +7,7 @@ using CAServer.RedPackage.Dtos;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Volo.Abp;
 
 namespace CAServer.Controllers;
@@ -18,10 +20,13 @@ namespace CAServer.Controllers;
 public class RedPackageController : CAServerController
 {
     private readonly IRedPackageAppService _redPackageAppService;
+    private readonly ILogger<RedPackageController> _logger;
 
-    public RedPackageController(IRedPackageAppService redPackageAppService)
+    public RedPackageController(IRedPackageAppService redPackageAppService,
+        ILogger<RedPackageController> logger)
     {
         _redPackageAppService = redPackageAppService;
+        _logger = logger;
     }
 
     [HttpPost("generate")]
@@ -70,7 +75,18 @@ public class RedPackageController : CAServerController
     [HttpGet("ip")]
     public string GetRemoteIp()
     {
-        string ipAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+        var remoteIpAddress = Request.HttpContext.Connection.RemoteIpAddress;
+        _logger.LogInformation("IsIPv6Multicast:{0},IsIPv6Teredo:{1},IsIPv6LinkLocal:{2}," +
+                               "IsIPv6SiteLocal:{3},IsIPv6UniqueLocal:{4},IsIPv4MappedToIPv6:{5}",
+            remoteIpAddress.IsIPv6Multicast,
+            remoteIpAddress.IsIPv6Teredo,
+            remoteIpAddress.IsIPv6LinkLocal,
+            remoteIpAddress.IsIPv6SiteLocal,
+            remoteIpAddress.IsIPv6UniqueLocal,
+            remoteIpAddress.IsIPv4MappedToIPv6);
+        _logger.LogInformation("MapToIPv4:{0}", remoteIpAddress.MapToIPv4().ToString());
+        _logger.LogInformation("MapToIPv6:{0}", remoteIpAddress.MapToIPv6().ToString());
+        string ipAddress = remoteIpAddress?.ToString();
         return ipAddress;
     }
     
@@ -78,6 +94,11 @@ public class RedPackageController : CAServerController
     public async Task<string> GetRemoteIpAsync()
     {
         string ipAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+        if (Request.HttpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+        {
+            ipAddress = forwardedFor.FirstOrDefault();
+        }
+
         return ipAddress;
     }
 }
