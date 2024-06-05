@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf;
+using AElf.Contracts.CrossChain;
 using CAServer.Commons;
 using CAServer.Options;
 using CAServer.Transfer.Dtos;
@@ -57,20 +59,26 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
 
     public async Task<ResponseWrapDto<GetNetworkListDto>> GetNetworkListAsync(GetNetworkListRequestDto request)
     {
+        var isMainChain = IsMainChain(request.ChainId);
         if (!request.Symbol.IsNullOrEmpty())
         {
-            return await _clientProvider.GetAsync<GetNetworkListDto>(ETransferConstant.GetNetworkList,
+            var wrapDto = await _clientProvider.GetAsync<GetNetworkListDto>(ETransferConstant.GetNetworkList,
                 request);
+            var list = ReRangeList(wrapDto.Data.NetworkList, isMainChain);
+            wrapDto.Data.NetworkList = list;
+            return wrapDto;
         }
-
+        
         var networkList = await GetAllNetworkAsync(request);
-        return new ResponseWrapDto<GetNetworkListDto>()
+        var reRangeList = ReRangeList(networkList, isMainChain);
+        return new ResponseWrapDto<GetNetworkListDto>
         {
+            
             Code = ETransferConstant.SuccessCode,
             Data = new GetNetworkListDto
             {
                 ChainId = request.ChainId,
-                NetworkList = networkList
+                NetworkList = reRangeList
             }
         };
     }
@@ -304,4 +312,34 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         url = url.TrimEnd('?', '&');
         return url;
     }
+
+    private bool IsMainChain(string chainId)
+    {
+        var currentChainId = ChainHelper.ConvertBase58ToChainId(chainId);
+        var chainInfoList = _chainOptions.ChainInfos.Where(t => t.Value.IsMainChain).ToList();
+        var chainIdStr = chainInfoList.FirstOrDefault().Key;
+        return currentChainId == ChainHelper.ConvertBase58ToChainId(chainIdStr);
+    }
+
+    private List<NetworkDto> ReRangeList(List<NetworkDto> list,bool isMainChain)
+    {
+        if (isMainChain)
+        {
+            return list;
+        }
+
+        var networkDto = list.Where(t=>t.Network == ETransferConstant.TronName).ToList().FirstOrDefault();
+        var index = list.IndexOf(networkDto);
+        if (index == -1)
+        {
+            return list;
+        }
+
+        list.Remove(networkDto); 
+        list.Insert(0, networkDto);
+        return list;
+
+    }
+
+
 }

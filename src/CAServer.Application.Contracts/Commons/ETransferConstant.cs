@@ -19,6 +19,7 @@ public static class ETransferConstant
     public const string Confirmation = "confirmation";
     public const string Network = "network";
     public const string ToType = "to";
+    public const string TronName = "TRX";
     
 
     public const string GetConnectToken = "connect/token";
