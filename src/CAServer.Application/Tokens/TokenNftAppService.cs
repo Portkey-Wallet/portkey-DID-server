@@ -138,7 +138,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             var tokenList = new List<Token>();
             await SetNftToFtAsync(tokenList, caAddressInfos, userTokenSymbols);
             await SetFtAsync(tokenList, caAddressInfos, userTokenSymbols, indexerTokenInfos);
-            
+
             var userTokensWithBalance =
                 ObjectMapper.Map<List<IndexerTokenInfo>, List<Token>>(indexerTokenInfos.CaHolderTokenBalanceInfo.Data);
 
@@ -633,14 +633,32 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                         continue;
                     }
 
-                    item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
+                    var nftBalance = searchItem.Balance.ToString();
                     if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(item.Symbol))
                     {
                         var correctBalance =
                             await CorrectTokenBalanceAsync(item.Symbol, searchItem.CaAddress, searchItem.ChainId);
-                        item.NftInfo.Balance = correctBalance >= 0 ? correctBalance.ToString() : item.NftInfo.Balance;
+                        nftBalance = correctBalance >= 0 ? correctBalance.ToString() : nftBalance;
                     }
 
+                    var ftInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(searchItem.NftInfo.Symbol);
+                    if (ftInfo != null)
+                    {
+                        item.TokenInfo = new TokenInfoDto
+                        {
+                            Balance = nftBalance,
+                            Decimals = searchItem.NftInfo.Decimals.ToString(),
+                            ImageUrl = ftInfo.ImageUrl
+                        };
+
+                        item.Label = ftInfo.Label;
+                        item.NftInfo = null;
+                        dto.Data.Add(item);
+                        continue;
+                    }
+                    
+                    item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
+                    item.NftInfo.Balance = nftBalance;
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
 
                     item.NftInfo.ImageUrl =

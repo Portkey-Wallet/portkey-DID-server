@@ -37,8 +37,8 @@ public class UserAssetsController
     {
         var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
         return VersionContentHelper.CompareVersion(version, CommonConstant.NftToFtStartVersion)
-            ? await _tokenDisplayAppService.GetTokenAsync(requestDto)
-            : await _tokenNftAppService.GetTokenAsync(requestDto);
+            ? await _tokenNftAppService.GetTokenAsync(requestDto)
+            : await _tokenDisplayAppService.GetTokenAsync(requestDto);
     }
 
     [HttpPost("nftCollections")]
@@ -69,7 +69,10 @@ public class UserAssetsController
     [HttpPost("searchUserAssets")]
     public async Task<SearchUserAssetsDto> SearchUserAssetsAsync(SearchUserAssetsRequestDto requestDto)
     {
-        return await _userAssetsAppService.SearchUserAssetsAsync(requestDto);
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
+        return VersionContentHelper.CompareVersion(version, CommonConstant.NftToFtStartVersion)
+            ? await _tokenNftAppService.SearchUserAssetsAsync(requestDto)
+            : await _userAssetsAppService.SearchUserAssetsAsync(requestDto);
     }
 
     [HttpPost("searchUserPackageAssets")]

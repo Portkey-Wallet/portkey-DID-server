@@ -16,6 +16,7 @@ public class UserAsset
     public string Address { get; set; }
     public TokenInfoDto TokenInfo { get; set; }
     public NftInfoDto NftInfo { get; set; }
+    public string Label { get; set; }
 }
 
 public class TokenInfoDto
