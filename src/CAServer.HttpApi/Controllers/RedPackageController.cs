@@ -65,5 +65,19 @@ public class RedPackageController : CAServerController
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)
     {
         return await _redPackageAppService.GrabRedPackageAsync(input);
-    } 
+    }
+
+    [HttpGet("ip")]
+    public string GetRemoteIp()
+    {
+        string ipAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+        return ipAddress;
+    }
+    
+    [HttpGet("ip/async")]
+    public async Task<string> GetRemoteIpAsync()
+    {
+        string ipAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+        return ipAddress;
+    }
 }
