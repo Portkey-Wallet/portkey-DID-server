@@ -545,6 +545,13 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                 Balance = correspondingAsset.TokenInfo.Balance,
                 IsDisplay = item.IsDisplay
             };
+            
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(item.Token.Symbol);
+            if (nftToFtInfo != null)
+            {
+                userPackageAsset.Label = nftToFtInfo.Label;
+                userPackageAsset.ImageUrl = nftToFtInfo.ImageUrl;
+            }
 
             userPackageAssets.Add(userPackageAsset);
         }
