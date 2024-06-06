@@ -255,7 +255,8 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
         foreach (var ftInfo in _nftToFtOptions.NftToFtInfos)
         {
             var nftBalanceInfo =
-                await _userAssetsProvider.GetUserNftInfoAsync(caAddressInfos, ftInfo.Key, 0, 10);
+                await _userAssetsProvider.GetUserNftInfoBySymbolAsync(caAddressInfos, ftInfo.Key, 0,
+                    _chainOptions.ChainInfos.Keys.Count);
             var nfts = userTokenSymbols.Where(t => t.Token.Symbol == ftInfo.Key)
                 .ToList();
 
