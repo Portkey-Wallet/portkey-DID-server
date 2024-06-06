@@ -669,6 +669,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                         {
                             Balance = nftBalance,
                             Decimals = searchItem.NftInfo.Decimals.ToString(),
+                            TokenContractAddress = searchItem.NftInfo.TokenContractAddress,
                             ImageUrl = ftInfo.ImageUrl
                         };
 
