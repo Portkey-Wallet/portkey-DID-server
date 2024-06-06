@@ -691,7 +691,10 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                 dto.Data.Add(item);
             }
 
+            var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
             dto.Data = dto.Data.Where(t => t.TokenInfo != null).OrderBy(t => t.Symbol != CommonConstant.DefaultSymbol)
+                .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
+                .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
                 .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
                 .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
 
