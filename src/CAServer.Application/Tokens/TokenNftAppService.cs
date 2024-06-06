@@ -310,15 +310,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
 
         var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
-        foreach (var nffItem in tokenInfoList.Where(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)))
-        {
-            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(nffItem.Symbol);
-            if (nftToFtInfo != null)
-            {
-                nffItem.Label = nftToFtInfo.Label;
-            }
-        }
-        
+
         // Check and adjust SkipCount and MaxResultCount
         var skipCount = input.SkipCount < TokensConstants.SkipCountDefault
             ? TokensConstants.SkipCountDefault
@@ -327,7 +319,23 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             ? TokensConstants.MaxResultCountDefault
             : input.MaxResultCount;
 
-        return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
+        tokenInfoList = tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
+        foreach (var token in tokenInfoList)
+        {
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+        }
+
+        foreach (var nffItem in tokenInfoList.Where(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)))
+        {
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(nffItem.Symbol);
+            if (nftToFtInfo != null)
+            {
+                nffItem.Label = nftToFtInfo.Label;
+                nffItem.ImageUrl = nftToFtInfo.ImageUrl;
+            }
+        }
+
+        return tokenInfoList;
     }
 
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(
