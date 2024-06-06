@@ -265,6 +265,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
 
         var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
+        // remove nft to ft token
+        tokenInfoList.RemoveAll(t =>_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol));
 
         // Check and adjust SkipCount and MaxResultCount
         var skipCount = input.SkipCount < TokensConstants.SkipCountDefault

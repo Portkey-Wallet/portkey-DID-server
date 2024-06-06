@@ -310,7 +310,15 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
             await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
 
         var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
-
+        foreach (var nffItem in tokenInfoList.Where(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)))
+        {
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(nffItem.Symbol);
+            if (nftToFtInfo != null)
+            {
+                nffItem.Label = nftToFtInfo.Label;
+            }
+        }
+        
         // Check and adjust SkipCount and MaxResultCount
         var skipCount = input.SkipCount < TokensConstants.SkipCountDefault
             ? TokensConstants.SkipCountDefault
@@ -545,7 +553,7 @@ public class TokenNftAppService : CAServerAppService, ITokenNftAppService
                 Balance = correspondingAsset.TokenInfo.Balance,
                 IsDisplay = item.IsDisplay
             };
-            
+
             var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(item.Token.Symbol);
             if (nftToFtInfo != null)
             {

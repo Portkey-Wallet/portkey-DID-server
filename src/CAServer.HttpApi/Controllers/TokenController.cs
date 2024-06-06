@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using CAServer.Commons;
 using CAServer.Tokens;
 using CAServer.Tokens.Dtos;
 using CAServer.UserAssets;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -20,11 +22,16 @@ public class TokenController : CAServerController
 {
     private readonly ITokenAppService _tokenAppService;
     private readonly ITokenDisplayAppService _tokenDisplayAppService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ITokenNftAppService _tokenNftAppService;
 
-    public TokenController(ITokenAppService tokenAppService, ITokenDisplayAppService tokenDisplayAppService)
+    public TokenController(ITokenAppService tokenAppService, ITokenDisplayAppService tokenDisplayAppService,
+        IHttpContextAccessor httpContextAccessor, ITokenNftAppService tokenNftAppService)
     {
         _tokenAppService = tokenAppService;
         _tokenDisplayAppService = tokenDisplayAppService;
+        _httpContextAccessor = httpContextAccessor;
+        _tokenNftAppService = tokenNftAppService;
     }
 
     [HttpGet("prices")]
@@ -42,8 +49,9 @@ public class TokenController : CAServerController
     [Authorize, HttpGet("list")]
     public async Task<List<GetTokenListDto>> GetTokenListAsync(GetTokenListRequestDto input)
     {
-        return input.Version.IsNullOrEmpty()
-            ? await _tokenAppService.GetTokenListAsync(input)
+        var version = _httpContextAccessor.HttpContext?.Request.Headers["version"].ToString();
+        return VersionContentHelper.CompareVersion(version, CommonConstant.NftToFtStartVersion)
+            ? await _tokenNftAppService.GetTokenListAsync(input)
             : await _tokenDisplayAppService.GetTokenListAsync(input);
     }
 
@@ -52,7 +60,7 @@ public class TokenController : CAServerController
     {
         return await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
     }
-    
+
     [HttpPost("allowances")]
     public async Task<GetTokenAllowancesDto> GetTokenAllowancesAsync(GetAssetsBase input)
     {
