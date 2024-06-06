@@ -64,13 +64,13 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         {
             var wrapDto = await _clientProvider.GetAsync<GetNetworkListDto>(ETransferConstant.GetNetworkList,
                 request);
-            var list = ReRangeList(wrapDto.Data.NetworkList, isMainChain);
+            var list = ReRangeList(wrapDto.Data.NetworkList, isMainChain, request.Symbol);
             wrapDto.Data.NetworkList = list;
             return wrapDto;
         }
         
         var networkList = await GetAllNetworkAsync(request);
-        var reRangeList = ReRangeList(networkList, isMainChain);
+        var reRangeList = ReRangeList(networkList, isMainChain, request.Symbol);
         return new ResponseWrapDto<GetNetworkListDto>
         {
             
@@ -321,9 +321,9 @@ public class ETransferProxyService : IETransferProxyService, ISingletonDependenc
         return currentChainId == ChainHelper.ConvertBase58ToChainId(chainIdStr);
     }
 
-    private List<NetworkDto> ReRangeList(List<NetworkDto> list,bool isMainChain)
+    private List<NetworkDto> ReRangeList(List<NetworkDto> list,bool isMainChain,string symbol)
     {
-        if (isMainChain)
+        if (isMainChain && symbol == ETransferConstant.DefaultToken)
         {
             return list;
         }
