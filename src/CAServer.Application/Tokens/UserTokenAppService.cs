@@ -212,6 +212,13 @@ public class UserTokenAppService : CAServerAppService, IUserTokenAppService
 
     private async Task<Guid> AddTokenAsync(string symbol, string chainId)
     {
+        if (_nftToFtOptions.NftToFtInfos.Keys.Contains(symbol))
+        {
+            var userTokenInfo =
+                _tokenListOptions.UserToken.FirstOrDefault(t => t.Token.Symbol == symbol && t.Token.ChainId == chainId);
+            return await InitialUserToken(CurrentUser.GetId(), userTokenInfo);
+        }
+
         var indexerTokens = await _tokenProvider.GetTokenInfosAsync(chainId, symbol, string.Empty, 0, 1);
         var tokenInfo = indexerTokens?.TokenInfo?.FirstOrDefault();
         if (tokenInfo == null)
