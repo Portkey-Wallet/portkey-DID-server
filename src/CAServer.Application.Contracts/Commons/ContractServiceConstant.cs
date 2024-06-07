@@ -61,6 +61,7 @@ public static class CommonConstant
     public const string AelfSymbol = "ELF";
     public const string SgrCoingeckoId = "schrodinger-2";
     public const string SgrSymbol = "SGR";
+    public const string SgrSymbolName = "SGR-1";
 
     public const string AppleTransferMessage =
         "We are currently upgrading our system to serve you better. During this period, the Apple ID service is temporarily unavailable.";
