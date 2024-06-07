@@ -33,7 +33,7 @@ namespace CAServer.Tokens;
 
 [RemoteService(IsEnabled = false)]
 [DisableAuditing]
-public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppService
+public class TokenNftAppService : CAServerAppService, ITokenNftAppService
 {
     private readonly ILogger<TokenDisplayAppService> _logger;
     private readonly ITokenAppService _tokenAppService;
@@ -53,14 +53,15 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
     private readonly IContractProvider _contractProvider;
     private readonly NftToFtOptions _nftToFtOptions;
 
-    public TokenDisplayAppService(
+    public TokenNftAppService(
         ILogger<TokenDisplayAppService> logger, IUserAssetsProvider userAssetsProvider,
         ITokenAppService tokenAppService,
         IImageProcessProvider imageProcessProvider, IOptions<ChainOptions> chainOptions,
         IContractProvider contractProvider, IDistributedEventBus distributedEventBus,
         IUserTokenAppService userTokenAppService, ITokenProvider tokenProvider,
         IAssetsLibraryProvider assetsLibraryProvider, IDistributedCache<List<Token>> userTokenCache,
-        IDistributedCache<string> userTokenBalanceCache, IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
+        IDistributedCache<string> userTokenBalanceCache,
+        IOptionsSnapshot<GetBalanceFromChainOption> getBalanceFromChainOption,
         ISearchAppService searchAppService, IOptionsSnapshot<IpfsOptions> ipfsOption,
         IOptionsSnapshot<TokenListOptions> tokenListOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions)
     {
@@ -118,7 +119,7 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             var tokenCacheList = await _userTokenCache.GetAsync(tokenKey);
             await CheckNeedAddTokenAsync(userId, indexerTokenInfos, userTokens, tokenCacheList);
 
-            var chainIds = _chainOptions.ChainInfos.Keys.ToList();
+
             var dto = new GetTokenDto
             {
                 Data = new List<Token>(),
@@ -126,9 +127,6 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             };
 
             AddDefaultTokens(userTokens);
-
-            // remove nft to ft token
-            userTokens.RemoveAll(t =>_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Token.Symbol));
             var userTokenSymbols = userTokens.Where(t => t.IsDefault || t.IsDisplay).ToList();
 
             if (userTokenSymbols.IsNullOrEmpty())
@@ -138,44 +136,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             }
 
             var tokenList = new List<Token>();
-            foreach (var symbol in userTokenSymbols)
-            {
-                if (!chainIds.Contains(symbol.Token.ChainId))
-                {
-                    continue;
-                }
-
-                var tokenInfo = indexerTokenInfos.CaHolderTokenBalanceInfo.Data.FirstOrDefault(t =>
-                    t.TokenInfo.Symbol == symbol.Token.Symbol && t.ChainId == symbol.Token.ChainId);
-
-                if (tokenInfo == null)
-                {
-                    var data = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos,
-                        symbol.Token.Symbol, 0, caAddressInfos.Count);
-                    tokenInfo = data.CaHolderTokenBalanceInfo.Data.FirstOrDefault(
-                        t => t.ChainId == symbol.Token.ChainId);
-                    tokenInfo ??= new IndexerTokenInfo
-                    {
-                        Balance = 0,
-                        ChainId = symbol.Token.ChainId,
-                        TokenInfo = new TokenInfo
-                        {
-                            Decimals = symbol.Token.Decimals,
-                            Symbol = symbol.Token.Symbol,
-                            TokenContractAddress = symbol.Token.Address
-                        }
-                    };
-                }
-                else
-                {
-                    indexerTokenInfos.CaHolderTokenBalanceInfo.Data.Remove(tokenInfo);
-                }
-
-                var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
-                token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
-
-                tokenList.Add(token);
-            }
+            await SetNftToFtAsync(tokenList, caAddressInfos, userTokenSymbols);
+            await SetFtAsync(tokenList, caAddressInfos, userTokenSymbols, indexerTokenInfos);
 
             var userTokensWithBalance =
                 ObjectMapper.Map<List<IndexerTokenInfo>, List<Token>>(indexerTokenInfos.CaHolderTokenBalanceInfo.Data);
@@ -243,6 +205,89 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
         }
     }
 
+    private async Task SetFtAsync(List<Token> tokenList, List<CAAddressInfo> caAddressInfos,
+        List<UserTokenIndex> userTokenSymbols, IndexerTokenInfos indexerTokenInfos)
+    {
+        var chainIds = _chainOptions.ChainInfos.Keys.ToList();
+        foreach (var symbol in userTokenSymbols)
+        {
+            if (!chainIds.Contains(symbol.Token.ChainId))
+            {
+                continue;
+            }
+
+            var tokenInfo = indexerTokenInfos.CaHolderTokenBalanceInfo.Data.FirstOrDefault(t =>
+                t.TokenInfo.Symbol == symbol.Token.Symbol && t.ChainId == symbol.Token.ChainId);
+
+            if (tokenInfo == null)
+            {
+                var data = await _userAssetsProvider.GetUserTokenInfoAsync(caAddressInfos,
+                    symbol.Token.Symbol, 0, caAddressInfos.Count);
+                tokenInfo = data.CaHolderTokenBalanceInfo.Data.FirstOrDefault(
+                    t => t.ChainId == symbol.Token.ChainId);
+                tokenInfo ??= new IndexerTokenInfo
+                {
+                    Balance = 0,
+                    ChainId = symbol.Token.ChainId,
+                    TokenInfo = new TokenInfo
+                    {
+                        Decimals = symbol.Token.Decimals,
+                        Symbol = symbol.Token.Symbol,
+                        TokenContractAddress = symbol.Token.Address
+                    }
+                };
+            }
+            else
+            {
+                indexerTokenInfos.CaHolderTokenBalanceInfo.Data.Remove(tokenInfo);
+            }
+
+            var token = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+
+            tokenList.Add(token);
+        }
+    }
+
+    private async Task SetNftToFtAsync(List<Token> tokenList, List<CAAddressInfo> caAddressInfos,
+        List<UserTokenIndex> userTokenSymbols)
+    {
+        foreach (var ftInfo in _nftToFtOptions.NftToFtInfos)
+        {
+            var nftBalanceInfo =
+                await _userAssetsProvider.GetUserNftInfoBySymbolAsync(caAddressInfos, ftInfo.Key, 0,
+                    _chainOptions.ChainInfos.Keys.Count);
+            var nfts = userTokenSymbols.Where(t => t.Token.Symbol == ftInfo.Key)
+                .ToList();
+
+            foreach (var nftItem in nfts)
+            {
+                var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(nftItem.Token.Symbol);
+                var balance = nftBalanceInfo.CaHolderNFTBalanceInfo.Data?
+                    .FirstOrDefault(t =>
+                        t.NftInfo.Symbol == nftItem.Token.Symbol && t.ChainId == nftItem.Token.ChainId);
+
+                var tokenInfo = new IndexerTokenInfo
+                {
+                    Balance = balance?.Balance ?? 0,
+                    ChainId = nftItem.Token.ChainId,
+                    TokenInfo = new TokenInfo
+                    {
+                        Decimals = nftItem.Token.Decimals,
+                        Symbol = nftItem.Token.Symbol,
+                        TokenContractAddress = nftItem.Token.Address
+                    }
+                };
+                var nftToken = ObjectMapper.Map<IndexerTokenInfo, Token>(tokenInfo);
+                nftToken.Label = nftToFtInfo.Label;
+                nftToken.ImageUrl = nftToFtInfo.ImageUrl;
+                tokenList.Add(nftToken);
+            }
+        }
+
+        userTokenSymbols.RemoveAll(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Token.Symbol));
+    }
+
     private string CalculateTotalBalanceInUsd(List<Token> tokens)
     {
         var totalBalanceInUsd = tokens
@@ -265,8 +310,6 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             await _tokenProvider.GetTokenInfosAsync(chainId, string.Empty, input.Symbol.Trim().ToUpper());
 
         var tokenInfoList = GetTokenInfoList(userTokensDto, indexerToken.TokenInfo);
-        // remove nft to ft token
-        tokenInfoList.RemoveAll(t =>_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol));
 
         // Check and adjust SkipCount and MaxResultCount
         var skipCount = input.SkipCount < TokensConstants.SkipCountDefault
@@ -276,7 +319,23 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
             ? TokensConstants.MaxResultCountDefault
             : input.MaxResultCount;
 
-        return tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
+        tokenInfoList = tokenInfoList.Skip(skipCount).Take(maxResultCount).ToList();
+        foreach (var token in tokenInfoList)
+        {
+            token.ImageUrl = _assetsLibraryProvider.buildSymbolImageUrl(token.Symbol);
+        }
+
+        foreach (var nffItem in tokenInfoList.Where(t => _nftToFtOptions.NftToFtInfos.Keys.Contains(t.Symbol)))
+        {
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(nffItem.Symbol);
+            if (nftToFtInfo != null)
+            {
+                nffItem.Label = nftToFtInfo.Label;
+                nffItem.ImageUrl = nftToFtInfo.ImageUrl;
+            }
+        }
+
+        return tokenInfoList;
     }
 
     public async Task<SearchUserPackageAssetsDto> SearchUserPackageAssetsAsync(
@@ -288,9 +347,8 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
 
         ftTokens.RemoveAll(t => !t.IsDisplay && sourceSymbols.Contains(t.Token.Symbol));
         AddDefaultAssertTokens(ftTokens, requestDto.Keyword);
-        ftTokens = ftTokens.Where(t => !_nftToFtOptions.NftToFtInfos.Keys.Contains(t.Token.Symbol)).ToList();
-        
         var userPackageAssets = await GetUserPackageAssetsAsync(requestDto);
+
         var userPackageFtAssetsWithPositiveBalance = userPackageAssets.Data
             .Where(asset => asset.TokenInfo?.Balance != null && long.Parse(asset.TokenInfo.Balance) > 0)
             .ToList();
@@ -316,6 +374,19 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
 
         foreach (var asset in userPackageNftAssetsWithPositiveBalance)
         {
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(asset.Symbol);
+            if (nftToFtInfo != null)
+            {
+                var ftAsset =
+                    userPackageAssets.FirstOrDefault(t => t.Symbol == asset.Symbol && t.ChainId == asset.ChainId);
+                if (ftAsset != null)
+                {
+                    ftAsset.Balance = asset.NftInfo?.Balance;
+                }
+
+                continue;
+            }
+
             var userPackageAsset = new UserPackageAsset
             {
                 ChainId = asset.ChainId,
@@ -361,6 +432,13 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 Balance = "0",
                 IsDisplay = item.IsDisplay
             };
+
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(item.Token.Symbol);
+            if (nftToFtInfo != null)
+            {
+                userPackageAsset.Label = nftToFtInfo.Label;
+                userPackageAsset.ImageUrl = nftToFtInfo.ImageUrl;
+            }
 
             userPackageAssets.Add(userPackageAsset);
         }
@@ -484,6 +562,13 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 IsDisplay = item.IsDisplay
             };
 
+            var nftToFtInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(item.Token.Symbol);
+            if (nftToFtInfo != null)
+            {
+                userPackageAsset.Label = nftToFtInfo.Label;
+                userPackageAsset.ImageUrl = nftToFtInfo.ImageUrl;
+            }
+
             userPackageAssets.Add(userPackageAsset);
         }
 
@@ -592,14 +677,33 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                         continue;
                     }
 
-                    item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
+                    var nftBalance = searchItem.Balance.ToString();
                     if (_getBalanceFromChainOption.IsOpen && _getBalanceFromChainOption.Symbols.Contains(item.Symbol))
                     {
                         var correctBalance =
                             await CorrectTokenBalanceAsync(item.Symbol, searchItem.CaAddress, searchItem.ChainId);
-                        item.NftInfo.Balance = correctBalance >= 0 ? correctBalance.ToString() : item.NftInfo.Balance;
+                        nftBalance = correctBalance >= 0 ? correctBalance.ToString() : nftBalance;
                     }
 
+                    var ftInfo = _nftToFtOptions.NftToFtInfos.GetOrDefault(searchItem.NftInfo.Symbol);
+                    if (ftInfo != null)
+                    {
+                        item.TokenInfo = new TokenInfoDto
+                        {
+                            Balance = nftBalance,
+                            Decimals = searchItem.NftInfo.Decimals.ToString(),
+                            TokenContractAddress = searchItem.NftInfo.TokenContractAddress,
+                            ImageUrl = ftInfo.ImageUrl
+                        };
+
+                        item.Label = ftInfo.Label;
+                        item.NftInfo = null;
+                        dto.Data.Add(item);
+                        continue;
+                    }
+
+                    item.NftInfo = ObjectMapper.Map<IndexerSearchTokenNft, NftInfoDto>(searchItem);
+                    item.NftInfo.Balance = nftBalance;
                     item.NftInfo.TokenId = searchItem.NftInfo.Symbol.Split("-").Last();
 
                     item.NftInfo.ImageUrl =
@@ -611,7 +715,10 @@ public class TokenDisplayAppService : CAServerAppService, ITokenDisplayAppServic
                 dto.Data.Add(item);
             }
 
+            var defaultSymbols = _tokenListOptions.UserToken.Select(t => t.Token.Symbol).Distinct().ToList();
             dto.Data = dto.Data.Where(t => t.TokenInfo != null).OrderBy(t => t.Symbol != CommonConstant.DefaultSymbol)
+                .ThenBy(t => !defaultSymbols.Contains(t.Symbol))
+                .ThenBy(t => Array.IndexOf(defaultSymbols.ToArray(), t.Symbol))
                 .ThenBy(t => t.Symbol).ThenBy(t => t.ChainId)
                 .Union(dto.Data.Where(f => f.NftInfo != null).OrderBy(e => e.Symbol).ThenBy(t => t.ChainId)).ToList();
 
