@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.CryptoGift.Dtos;
-using CAServer.Grains.State.RedPackage;
 using CAServer.RedPackage.Dtos;
 
 namespace CAServer.CryptoGift;
@@ -17,7 +16,7 @@ public interface ICryptoGiftAppService
 
     public Task<string> PreGrabCryptoGift(Guid redPackageId);
 
-    public Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, BucketItem bucket, int amountDecimal);
+    public Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal);
 
     public Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId);
 

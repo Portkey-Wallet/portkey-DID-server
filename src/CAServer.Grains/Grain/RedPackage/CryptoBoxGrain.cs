@@ -175,7 +175,7 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
             Amount = bucket.Amount.ToString(),
             Decimal = State.Decimal,
             Status = State.Status,
-            BucketItem = bucket
+            BucketItem = _objectMapper.Map<BucketItem, BucketItemDto>(bucket)
         };
 
         await WriteStateAsync();

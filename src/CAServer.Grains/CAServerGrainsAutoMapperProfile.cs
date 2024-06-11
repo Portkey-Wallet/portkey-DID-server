@@ -203,6 +203,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => long.Parse(src.Amount)));
         CreateMap<BucketItemDto, PreGrabBucketItemDto>();
+        CreateMap<BucketItem, BucketItemDto>();
         CreateMap<TransferGrainDto, ImTransferState>().ReverseMap();
         CreateMap<NftOrderGrainDto, NftOrderState>().ReverseMap();
         CreateMap<OrderSettlementState, OrderSettlementGrainDto>().ReverseMap();

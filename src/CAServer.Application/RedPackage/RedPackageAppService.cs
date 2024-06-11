@@ -486,7 +486,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 Status = result.Data.Status
             };
             //add the crypto gift logic
-            await PreGrabCryptoGiftAfterLogging(input.Id, CurrentUser.GetId(), input.RedPackageDisplayType, result.Data.BucketItem, result.Data.Decimal);
+            await PreGrabCryptoGiftAfterLogging(input.Id, CurrentUser.GetId(), input.RedPackageDisplayType, result.Data.BucketItem.Index, result.Data.Decimal);
             if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
             {
                 res.Result = RedPackageGrabStatus.Success;
@@ -502,14 +502,14 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
-    private async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, RedPackageDisplayType displayType, BucketItem bucketItem, int amountDecimal)
+    private async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, RedPackageDisplayType displayType, int index, int amountDecimal)
     {
         if (!Enum.IsDefined(displayType) || !RedPackageDisplayType.CryptoGift.Equals(displayType))
         {
             return;
         }
 
-        await _cryptoGiftAppService.PreGrabCryptoGiftAfterLogging(redPackageId, userId, bucketItem, amountDecimal);
+        await _cryptoGiftAppService.PreGrabCryptoGiftAfterLogging(redPackageId, userId, index, amountDecimal);
     }
     
     private void CheckLuckKing(RedPackageDetailDto input)

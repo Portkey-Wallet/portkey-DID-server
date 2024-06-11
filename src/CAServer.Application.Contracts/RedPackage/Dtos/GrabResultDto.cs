@@ -12,5 +12,5 @@ public class GrabResultDto
     
     public long ExpireTime { get; set; }
     
-    public BucketItem BucketItem { get; set; }
+    public BucketItemDto BucketItem { get; set; }
 }

@@ -12,10 +12,8 @@ using CAServer.EnumType;
 using CAServer.Grains.Grain.CryptoGift;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Grains.State;
-using CAServer.Grains.State.RedPackage;
 using CAServer.IpInfo;
 using CAServer.RedPackage.Dtos;
-using GraphQL;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
@@ -257,7 +255,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         return !preGrabItems.IsNullOrEmpty();
     }
 
-    public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, BucketItem bucket, int amountDecimal)
+    public async Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal)
     {
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         if (ipAddress.IsNullOrEmpty())
@@ -272,7 +270,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging the crypto gift does not exist");
         }
         var cryptoGiftDto = cryptoGiftResultDto.Data;
-        PreGrabBucketItemDto preGrabBucketItemDto = GetBucketByIndex(cryptoGiftDto, bucket.Index, userId, identityCode);
+        PreGrabBucketItemDto preGrabBucketItemDto = GetBucketByIndex(cryptoGiftDto, index, userId, identityCode);
         cryptoGiftDto.Items.Add(new PreGrabItem()
         {
             Index = preGrabBucketItemDto.Index,
