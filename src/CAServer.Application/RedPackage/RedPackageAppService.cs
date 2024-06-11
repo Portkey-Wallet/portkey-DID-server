@@ -11,7 +11,6 @@ using CAServer.Entities.Es;
 using CAServer.EnumType;
 using CAServer.Grains.Grain.CryptoGift;
 using CAServer.Grains.Grain.RedPackage;
-using CAServer.Grains.State.RedPackage;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
 using CAServer.RedPackage.Etos;
