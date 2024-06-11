@@ -40,6 +40,7 @@ public class UserPackageAsset
     
     public int SeedType { get; set; }  
     public bool IsDisplay { get; set; }
+    public string Label { get; set; }
 }
 
 public enum AssetType

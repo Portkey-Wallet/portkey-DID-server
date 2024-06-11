@@ -87,6 +87,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<ContractServiceOptions>(configuration.GetSection("ContractService"));
         Configure<TokenSpenderOptions>(configuration.GetSection("TokenSpender"));
         Configure<DepositOptions>(configuration.GetSection("Deposit"));
+        Configure<NftToFtOptions>(configuration.GetSection("NftToFt"));
 
         context.Services.AddMemoryCache();
         context.Services.AddSingleton(typeof(ILocalMemoryCache<>), typeof(LocalMemoryCache<>));

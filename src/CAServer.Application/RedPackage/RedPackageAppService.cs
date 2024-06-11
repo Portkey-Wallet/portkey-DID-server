@@ -38,7 +38,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly RedPackageOptions _redPackageOptions;
     private readonly ChainOptions _chainOptions;
     private readonly IClusterClient _clusterClient;
-    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository; 
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IObjectMapper _objectMapper;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -47,6 +47,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly ITokenAppService _tokenAppService;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly IpfsOptions _ipfsOptions;
+    private readonly NftToFtOptions _nftToFtOptions;
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
@@ -57,7 +58,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IContactProvider contactProvider,
         IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger,
         ITokenAppService tokenAppService, IUserAssetsProvider userAssetsProvider,
-        IOptionsSnapshot<IpfsOptions> ipfsOptions,
+        IOptionsSnapshot<IpfsOptions> ipfsOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
         ICryptoGiftAppService cryptoGiftAppService)
     {
         _redPackageOptions = redPackageOptions.Value;
@@ -71,11 +72,12 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _logger = logger;
         _tokenAppService = tokenAppService;
         _userAssetsProvider = userAssetsProvider;
+        _nftToFtOptions = nftToFtOptions.Value;
         _ipfsOptions = ipfsOptions.Value;
         _cryptoGiftAppService = cryptoGiftAppService;
     }
 
-    public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol,string chainId)
+    public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol, string chainId)
     {
         var result = _redPackageOptions.TokenInfo.Where(x =>
                 string.Equals(x.Symbol, symbol, StringComparison.OrdinalIgnoreCase) &&
@@ -83,7 +85,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             .ToList().FirstOrDefault();
         if (result == null)
         {
-            var tokenInfo =  await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
+            var tokenInfo = await _tokenAppService.GetTokenInfoAsync(chainId, symbol);
             if (tokenInfo != null && chainId == tokenInfo.ChainId && symbol == tokenInfo.Symbol)
             {
                 return CreateRedPackageTokenInfo(tokenInfo.Decimals);
@@ -103,9 +105,10 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
             throw new UserFriendlyException("Symbol not found");
         }
+
         return result;
     }
-    
+
     private RedPackageTokenInfo CreateRedPackageTokenInfo(int decimals)
     {
         return new RedPackageTokenInfo
@@ -148,17 +151,18 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         var startTime = DateTime.Now.Ticks;
         try
         {
-            _logger.LogInformation("SendRedPackageAsync start input param is {input}", JsonConvert.SerializeObject(input));
-            
+            _logger.LogInformation("SendRedPackageAsync start input param is {input}",
+                JsonConvert.SerializeObject(input));
+
             var validationResult = ValidateAndAdaptAssetType(input);
             if (!validationResult.Item1)
             {
                 throw new UserFriendlyException(validationResult.Item2);
             }
-            
+
             var result = await GetRedPackageOptionAsync(input.Symbol, input.ChainId);
             _logger.LogInformation("GetRedPackageOptionAsync result: " + JsonConvert.SerializeObject(result));
-            
+
             var checkResult =
                 await CheckSendRedPackageInputAsync(input, long.Parse(result.MinAmount), _redPackageOptions.MaxCount);
             if (!checkResult.Item1)
@@ -185,7 +189,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
             var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
             var createResult = await grain.CreateRedPackage(input, result.Decimal, long.Parse(result.MinAmount),
-                CurrentUser.Id.Value,_redPackageOptions.ExpireTimeMs);
+                CurrentUser.Id.Value, _redPackageOptions.ExpireTimeMs);
             _logger.LogInformation("SendRedPackageAsync CreateRedPackage input param is {input}", input);
             _logger.LogInformation("CreateRedPackage createResult:" + JsonConvert.SerializeObject(createResult));
             if (!createResult.Success)
@@ -234,11 +238,13 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         finally
         {
             watcher.Stop();
-            _logger.LogInformation("send end:{0},{1}:", input.Id.ToString(),(DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
-            _logger.LogInformation("#monitor# send:{redpackageId},{cost},{startTime}:", input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
+            _logger.LogInformation("send end:{0},{1}:", input.Id.ToString(),
+                (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+            _logger.LogInformation("#monitor# send:{redpackageId},{cost},{startTime}:", input.Id.ToString(),
+                watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
         }
     }
-    
+
     public async Task<GetCreationResultOutputDto> GetCreationResultAsync(Guid sessionId)
     {
         GetCreationResultOutputDto res = null;
@@ -246,8 +252,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         Stopwatch watcher = Stopwatch.StartNew();
         try
         {
-            _logger.LogInformation("GetCreationResultAsync sessionId is {sessionId}",sessionId.ToByteArray());
-            
+            _logger.LogInformation("GetCreationResultAsync sessionId is {sessionId}", sessionId.ToByteArray());
+
             redPackageIndex = await _redPackageIndexRepository.GetAsync(sessionId);
             if (redPackageIndex == null)
             {
@@ -257,7 +263,9 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                     Message = "Session not found"
                 };
             }
-            _logger.LogInformation("GetCreationResultAsync redPackageIndex is {redPackageIndex}",JsonConvert.SerializeObject(redPackageIndex));
+
+            _logger.LogInformation("GetCreationResultAsync redPackageIndex is {redPackageIndex}",
+                JsonConvert.SerializeObject(redPackageIndex));
 
             res = new GetCreationResultOutputDto()
             {
@@ -275,13 +283,23 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             {
                 if (res != null && res.Status == RedPackageTransactionStatus.Success)
                 {
-                    _logger.LogInformation("getCreationResult success:{0},{1}:",redPackageIndex.RedPackageId.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
-                    _logger.LogInformation("#monitor# getCreationResult success:{redpackageId},{status},{cost},{endTime}:", redPackageIndex.RedPackageId.ToString(), res.Status.ToString(), watcher.Elapsed.Milliseconds.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                    _logger.LogInformation("getCreationResult success:{0},{1}:",
+                        redPackageIndex.RedPackageId.ToString(),
+                        (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                    _logger.LogInformation(
+                        "#monitor# getCreationResult success:{redpackageId},{status},{cost},{endTime}:",
+                        redPackageIndex.RedPackageId.ToString(), res.Status.ToString(),
+                        watcher.Elapsed.Milliseconds.ToString(),
+                        (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
                 }
                 else
                 {
-                    _logger.LogInformation("#monitor# getCreationResult other:{redpackageId},{status},{cost},{endTime}:", redPackageIndex.RedPackageId.ToString(), res.Status.ToString(), watcher.Elapsed.Milliseconds.ToString(), (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
-                }             
+                    _logger.LogInformation(
+                        "#monitor# getCreationResult other:{redpackageId},{status},{cost},{endTime}:",
+                        redPackageIndex.RedPackageId.ToString(), res.Status.ToString(),
+                        watcher.Elapsed.Milliseconds.ToString(),
+                        (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond).ToString());
+                }
             }
         }
     }
@@ -292,19 +310,20 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             return new RedPackageDetailDto();
         }
-        
+
         if (skipCount < 0)
         {
             skipCount = 0;
         }
+
         //we allow maxResultCount = 0，this means just fetch metadata
         if (maxResultCount < 0 || maxResultCount > RedPackageConsts.MaxRedPackageGrabberCount)
         {
             maxResultCount = RedPackageConsts.DefaultRedPackageGrabberCount;
         }
-        
+
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(id);
-        var detail =  (await grain.GetRedPackage(skipCount, maxResultCount,CurrentUser.Id.Value, displayType)).Data;
+        var detail =  (await grain.GetRedPackage(skipCount, maxResultCount, CurrentUser.Id.Value, displayType)).Data;
         _logger.LogInformation("GetRedPackage detail: " + JsonConvert.SerializeObject(detail));
         try
         {
@@ -314,7 +333,6 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 if (item.UserId == CurrentUser.GetId())
                 {
                     detail.CurrentUserGrabbedAmount = item.Amount;
-
                 }
             });
         }
@@ -323,7 +341,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             _logger.LogError(e, "getredpackage failed, id={id}", id);
         }
 
-        if (detail.AssetType == (int) AssetType.NFT)
+        if (detail.AssetType == (int)AssetType.NFT)
         {
             var getNftItemInfosDto = CreateGetNftItemInfosDto(detail.Symbol, detail.ChainId);
             var indexerNftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
@@ -341,18 +359,18 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         CheckIsMe(detail); //check if the sender is the grabber
         
         await BuildAvatarAndNameAsync(detail);
-        
+
         if (detail.Status == RedPackageStatus.Expired)
         {
             detail.IsRedPackageExpired = true;
             detail.Status = RedPackageStatus.Expired;
         }
-        
+
         if (detail.Status == RedPackageStatus.FullyClaimed || detail.Grabbed == detail.Count)
         {
             detail.IsRedPackageFullyClaimed = true;
         }
-        
+
         SetSeedStatusAndTypeForDetail(detail);
 
         TryUpdateImageUrlForDetail(detail);
@@ -375,16 +393,16 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
     private void SetSeedStatusAndTypeForDetail(RedPackageDetailDto detail)
     {
+        detail.IsSeed = detail.AssetType == (int)AssetType.NFT &&
+                        detail.Symbol.StartsWith(TokensConstants.SeedNamePrefix);
 
-        detail.IsSeed = detail.AssetType == (int)AssetType.NFT && detail.Symbol.StartsWith(TokensConstants.SeedNamePrefix);
-        
         if (detail.IsSeed)
         {
             detail.SeedType = (int)SeedType.FT;
 
             if (!string.IsNullOrEmpty(detail.Alias) && detail.Alias.StartsWith(TokensConstants.SeedNamePrefix))
             {
-                detail.SeedType = detail.Alias.Remove(0, 5).Contains("-") ? (int) SeedType.NFT : (int) SeedType.FT;
+                detail.SeedType = detail.Alias.Remove(0, 5).Contains("-") ? (int)SeedType.NFT : (int)SeedType.FT;
             }
         }
     }
@@ -393,7 +411,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     {
         detail.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(detail.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
     }
-    
+
     private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)
     {
         var getNftItemInfosDto = new GetNftItemInfosDto();
@@ -406,9 +424,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         return getNftItemInfosDto;
     }
 
-    public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId ,string token)
+    public async Task<RedPackageConfigOutput> GetRedPackageConfigAsync(string chainId, string token)
     {
-
         var contractAddressList = new List<ContractAddressInfo>();
         foreach (var item in _chainOptions.ChainInfos)
         {
@@ -427,9 +444,9 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 RedPackageContractAddress = contractAddressList
             };
         }
+
         var result = _redPackageOptions.TokenInfo.AsQueryable();
 
-        
 
         if (!string.IsNullOrEmpty(token))
         {
@@ -442,8 +459,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
 
         var resultList = result.ToList();
-        
-        
+
+
         return new RedPackageConfigOutput()
         {
             TokenInfo = resultList,
@@ -474,9 +491,9 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
                 await _distributedEventBus.PublishAsync(new PayRedPackageEto()
                 {
                     RedPackageId = input.Id
-
                 });
             }
+
             var res = new GrabRedPackageOutputDto()
             {
                 Result = result.Data.Result,
@@ -498,7 +515,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         finally
         {
             watcher.Stop();
-            _logger.LogInformation("#monitor# grabRedPackage:{redpackageId},{cost},{endTime}:", input.Id.ToString(), watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
+            _logger.LogInformation("#monitor# grabRedPackage:{redpackageId},{cost},{endTime}:", input.Id.ToString(),
+                watcher.Elapsed.Milliseconds.ToString(), (startTime / TimeSpan.TicksPerMillisecond).ToString());
         }
     }
 
@@ -557,7 +575,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             item.Avatar = users.FirstOrDefault(x => x.UserId == item.UserId)?.Avatar;
             item.Username = users.FirstOrDefault(x => x.UserId == item.UserId)?.NickName;
         });
-        
+
         //fill remark
         var tasks = input.Items?.Select(async grabItemDto =>
         {
@@ -574,7 +592,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
     }
 
-    private async Task<(bool, string)> CheckSendRedPackageInputAsync(SendRedPackageInputDto input, long min, int maxCount)
+    private async Task<(bool, string)> CheckSendRedPackageInputAsync(SendRedPackageInputDto input, long min,
+        int maxCount)
     {
         var isNotInEnum = !Enum.IsDefined(typeof(RedPackageType), input.Type);
 
@@ -582,7 +601,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             return (false, RedPackageConsts.RedPackageTypeError);
         }
-        
+
         if (input.Id == Guid.Empty)
         {
             return (false, RedPackageConsts.RedPackageIdInvalid);
@@ -605,10 +624,10 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
         var grain = _clusterClient.GetGrain<IRedPackageKeyGrain>(input.Id);
         if (string.IsNullOrEmpty(await grain.GetPublicKey()))
-        { 
+        {
             return (false, RedPackageConsts.RedPackageKeyError);
         }
-        
+
         return (true, "");
     }
 
@@ -617,6 +636,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         if (!Enum.IsDefined(typeof(AssetType), input.AssetType))
         {
             input.AssetType = (int)AssetType.FT;
+        }
+
+        if (input.AssetType == (int)AssetType.FT && _nftToFtOptions.NftToFtInfos.Keys.Contains(input.Symbol))
+        {
+            input.AssetType = (int)AssetType.NFT;
         }
 
         return ValidateAssetDetails(input);
@@ -638,5 +662,4 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
 
         return (true, "");
     }
-    
 }

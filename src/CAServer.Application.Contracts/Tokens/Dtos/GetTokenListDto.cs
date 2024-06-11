@@ -9,4 +9,6 @@ public class GetTokenListDto
     public string TokenName { get; set; }
     public bool IsDefault { get; set; }
     public bool IsDisplay { get; set; }
+    public string Label { get; set; }
+    public string ImageUrl { get; set; }
 }
