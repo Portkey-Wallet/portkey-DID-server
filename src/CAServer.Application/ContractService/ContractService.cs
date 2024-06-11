@@ -102,7 +102,7 @@ public class ContractService : IContractService, ISingletonDependency
                 MonitorAelfClientType.GetTransactionResultAsync.ToString());
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             _indicatorScope.End(getIndicator);
-            
+
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -117,7 +117,7 @@ public class ContractService : IContractService, ISingletonDependency
 
                 _indicatorScope.End(retryGetIndicator);
             }
-            
+
             return new TransactionInfoDto
             {
                 Transaction = transaction,
@@ -151,7 +151,7 @@ public class ContractService : IContractService, ISingletonDependency
             await Task.Delay(_contractServiceOptions.Delay);
 
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
-            
+
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -161,7 +161,7 @@ public class ContractService : IContractService, ISingletonDependency
                 await Task.Delay(_contractServiceOptions.CryptoBoxRetryDelay);
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             }
-            
+
             return new TransactionInfoDto
             {
                 TransactionResultDto = transactionResult
@@ -373,19 +373,19 @@ public class ContractService : IContractService, ISingletonDependency
                 await client.GenerateTransactionAsync(ownAddress, redPackageContractAddress, methodName,
                     param);
 
-            var refBlockNumber = transaction.RefBlockNumber;
-
-            refBlockNumber -= _contractServiceOptions.SafeBlockHeight;
-
-            if (refBlockNumber < 0)
-            {
-                refBlockNumber = 0;
-            }
-
-            var blockDto = await client.GetBlockByHeightAsync(refBlockNumber);
-
-            transaction.RefBlockNumber = refBlockNumber;
-            transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
+            // var refBlockNumber = transaction.RefBlockNumber;
+            //
+            // refBlockNumber -= _contractServiceOptions.SafeBlockHeight;
+            //
+            // if (refBlockNumber < 0)
+            // {
+            //     refBlockNumber = 0;
+            // }
+            //
+            // var blockDto = await client.GetBlockByHeightAsync(refBlockNumber);
+            //
+            // transaction.RefBlockNumber = refBlockNumber;
+            // transaction.RefBlockPrefix = BlockHelper.GetRefBlockPrefix(Hash.LoadFromHex(blockDto.BlockHash));
 
             var txWithSign = await _signatureProvider.SignTxMsg(payRedPackageFrom, transaction.GetHash().ToHex());
             _logger.LogInformation("signature provider sign result: {txWithSign}", txWithSign);
@@ -395,6 +395,10 @@ public class ContractService : IContractService, ISingletonDependency
             {
                 RawTransaction = transaction.ToByteArray().ToHex()
             });
+
+            _logger.LogInformation("SendTransferRedPacketToChainAsync raw: {raw}",
+                transaction.ToByteArray().ToHex());
+
             _logger.LogInformation("SendTransferRedPacketToChainAsync result: {result}",
                 JsonConvert.SerializeObject(result));
 
@@ -403,7 +407,7 @@ public class ContractService : IContractService, ISingletonDependency
             var transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
             _logger.LogInformation("SendTransferRedPacketToChainAsync transactionResult: {transactionResult}",
                 JsonConvert.SerializeObject(transactionResult));
-            
+
             var times = 0;
             while ((transactionResult.Status == TransactionState.Pending ||
                     transactionResult.Status == TransactionState.NotExisted) &&
@@ -413,6 +417,9 @@ public class ContractService : IContractService, ISingletonDependency
                 await Task.Delay(_contractServiceOptions.RetryDelay);
 
                 transactionResult = await client.GetTransactionResultAsync(result.TransactionId);
+                _logger.LogInformation(
+                    "SendTransferRedPacketToChainAsync transactionResult: {transactionResult}, times:{times}",
+                    JsonConvert.SerializeObject(transactionResult), times);
             }
 
             return new TransactionInfoDto

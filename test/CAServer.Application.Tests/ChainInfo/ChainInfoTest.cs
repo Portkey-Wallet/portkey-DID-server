@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AElf;
+using AElf.Client.Dto;
+using AElf.Client.Service;
 using AElf.Types;
 using CAServer.Chain;
 using CAServer.Common;
@@ -17,6 +19,8 @@ using Xunit;
 using ChainOptions = CAServer.Grains.Grain.ApplicationHandler.ChainOptions;
 using IChainAppService = CAServer.Chain.IChainAppService;
 using Google.Protobuf;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
+using Portkey.Contracts.CryptoBox;
 using Xunit.Abstractions;
 
 namespace CAServer.ChainInfo;
@@ -53,16 +57,22 @@ public class ChainInfoTest : CAServerApplicationTestBase
     public async Task GetInfo()
     {
         var raw =
-            "0a220a203000800ce18e6de0fc576a48759d9dc90a23f0ded388316b0f9f1274a45b809b12220a20f06d8236fbd12d260d783b9e7eac1d6f15880e594b65bdc25d131f9a66b2dc4318c683dc042204d946e09c2a0d476574486f6c646572496e666f32240a220a20024ab37e06c4342de4896e957df9b9be8feeb9ed95f83233176ab3a45c26289d82f1044161d2002b945b7e09ec2d2a460b1bb00157a6523f429d4a7babd01967eac4e9c4189e2cf601f7e6959d07d0fd5ba0b17c1f166d7081e34ede24a0c9a8788832a700";
+            "0a220a2025de51e236960213ffe916183a89f32b30b99be808c5dbc6a8fcab4d2eb0812312220a20c20db44e9239a8e374da2d75cf508f60c9249f5279d5a5ecc38b82e1300a5ff518c7c2ca3a2204130ff0092a0f526566756e6443727970746f426f7832b0010a2433363638353639362d646533372d346164342d383435382d3636646434623132623332381080ade2041a82013036353937316261613939346239313064343464323561633837353633356336366561613635306266396461643438393233393939303162656166633738386633306439336133343864343934333366663336326463656634356366333832333636643463363939373264313931633436303431396233363730373730343333303182f1044139f93d31e7b44a6110a60ba4ca34422f29d0c5876392faaab8aa97c1f4cce56804cc06fb139dfa94efe312456d4d83ab3564663e64e70afce2f1cdb1bace439301";
         var transaction =
             Transaction.Parser.ParseFrom(ByteArrayHelper.HexStringToByteArray(raw));
 
-        // var client = new AElfClient("http://192.168.66.106:8000");
-        // await client.IsConnectedAsync();
-        // var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
-        // {
-        //     RawTransaction = raw
-        // });
+        var param = RefundCryptoBoxInput.Parser.ParseFrom(transaction.Params);
+        var client = new AElfClient("https://tdvw-test-node.aelf.io");
+        await client.IsConnectedAsync();
+        var result = await client.ExecuteTransactionAsync(new ExecuteTransactionDto
+        {
+            RawTransaction = raw
+        });
+
+        var res = await client.GetTransactionResultAsync("5eeee4e65abaf0975d0189c225f655e7995de52796def8ecb80db8c60515197f");
+
+        var add = GetAddress(
+            "048fee2f5fd656c2c5bd13f86b691747ef3b1960347e7d0f0569873b104afef95d45de22586fe4a3639a0b78cc61a1e29f62c8327e108ead00f42c7f692ce5bdfc");
 
         GetHolderInfoOutput output = new GetHolderInfoOutput();
         output.MergeFrom(AElf.ByteArrayHelper.HexStringToByteArray(
