@@ -18,6 +18,7 @@ using CAServer.DataReporting.Dtos;
 using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Etos;
 using CAServer.Etos.Chain;
 using CAServer.Grains.Grain.Account;
@@ -33,6 +34,7 @@ using CAServer.Grains.Grain.ThirdPart;
 using CAServer.Grains.Grain.Tokens.UserTokens;
 using CAServer.Grains.Grain.Upgrade;
 using CAServer.Grains.Grain.UserExtraInfo;
+using CAServer.Grains.State;
 using CAServer.Grains.State.UserGuide;
 using CAServer.Grains.State.ValidateOriginChainId;
 using CAServer.Growth.Etos;
@@ -621,6 +623,14 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ReverseMap()
             .ForMember(dest => dest.TotalAmount,
                 opt => opt.MapFrom(src => long.Parse(src.TotalAmount)));
+        CreateMap<RedPackageIndex, CryptoGiftHistoryItemDto>()
+            .ForMember(dest => dest.Id, src => src.MapFrom(m => m.RedPackageId));
+        CreateMap<PreGrabItem, PreGrabbedItemDto>()
+            .ForMember(dest => dest.Username, src => src.MapFrom(m => "Pending Deposit"));
+        CreateMap<PreGrabbedItemDto, GrabItemDto>()
+            .ForMember(dest => dest.DisplayType, src => src.MapFrom(m => CryptoGiftDisplayType.Pending));
+        CreateMap<RedPackageDetailDto, CryptoGiftHistoryItemDto>()
+            .ForMember(dest => dest.Status, src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
             .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));

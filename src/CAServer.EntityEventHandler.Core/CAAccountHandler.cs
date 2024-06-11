@@ -4,6 +4,7 @@ using AElf.Indexing.Elasticsearch;
 using CAServer.Account;
 using CAServer.CAAccount.Dtos;
 using CAServer.ContractEventHandler;
+using CAServer.CryptoGift;
 using CAServer.Dtos;
 using CAServer.Entities.Es;
 using CAServer.Etos;
@@ -41,6 +42,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     private readonly IDistributedEventBus _distributedEventBus;
     private readonly IIndicatorLogger _indicatorLogger;
     private readonly IGrowthAppService _growthAppService;
+    private readonly ICryptoGiftAppService _cryptoGiftAppService;
 
     public CaAccountHandler(INESTRepository<AccountRegisterIndex, Guid> registerRepository,
         INESTRepository<AccountRecoverIndex, Guid> recoverRepository,
@@ -50,7 +52,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         IClusterClient clusterClient,
         IIndicatorLogger indicatorLogger, IGrowthAppService growthAppService,
         INESTRepository<AccelerateRegisterIndex, string> accelerateRegisterRepository,
-        INESTRepository<AccelerateRecoverIndex, string> accelerateRecoverRepository)
+        INESTRepository<AccelerateRecoverIndex, string> accelerateRecoverRepository,
+        ICryptoGiftAppService cryptoGiftAppService)
     {
         _registerRepository = registerRepository;
         _recoverRepository = recoverRepository;
@@ -62,6 +65,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _growthAppService = growthAppService;
         _accelerateRegisterRepository = accelerateRegisterRepository;
         _accelerateRecoverRepository = accelerateRecoverRepository;
+        _cryptoGiftAppService = cryptoGiftAppService;
+
     }
 
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
@@ -73,7 +78,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
 
             register.RegisterStatus = AccountOperationStatus.Pending;
             await _registerRepository.AddAsync(register);
-
+            _logger.LogInformation("AccountRegisterCreateEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
+            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.CaHash, eventData.CaAddress, eventData.ReferralInfo, true);
             _logger.LogDebug($"register add success: {JsonConvert.SerializeObject(register)}");
         }
         catch (Exception ex)
@@ -92,7 +98,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
 
             recover.RecoveryStatus = AccountOperationStatus.Pending;
             await _recoverRepository.AddAsync(recover);
-
+            _logger.LogInformation("AccountRecoverCreateEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
+            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.CaHash, eventData.CaAddress, eventData.ReferralInfo, false);
             _logger.LogDebug($"recovery add success: {JsonConvert.SerializeObject(recover)}");
         }
         catch (Exception ex)

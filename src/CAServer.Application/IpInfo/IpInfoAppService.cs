@@ -96,4 +96,23 @@ public class IpInfoAppService : CAServerAppService, IIpInfoAppService
     }
 
     private bool Match(string ip) => new Regex(_ipPattern).IsMatch(ip);
+
+    public string GetRemoteIp()
+    {
+        var clientIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(clientIp))
+        {
+            return clientIp;
+        }
+
+        var remoteIpAddress = _httpContextAccessor?.HttpContext?.Request.HttpContext.Connection.RemoteIpAddress;
+        if (remoteIpAddress == null)
+        {
+            return string.Empty;
+        }
+
+        return remoteIpAddress.IsIPv4MappedToIPv6
+            ? remoteIpAddress.MapToIPv4().ToString()
+            : remoteIpAddress.MapToIPv6().ToString();
+    }
 }

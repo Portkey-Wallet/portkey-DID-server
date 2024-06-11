@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using CAServer.EnumType;
+using Newtonsoft.Json;
 
 namespace CAServer.RedPackage.Dtos;
 
 public class SendRedPackageInputDto
 {
+    public RedPackageDisplayType RedPackageDisplayType { get; set; }
+    public bool IsNewUsersOnly { get; set; }
     [Required] public Guid Id { get; set; }
     [Required] public string TotalAmount { get; set; }
     [Required] public RedPackageType Type { get; set; }
@@ -14,6 +19,7 @@ public class SendRedPackageInputDto
     [Required] public string ChainId { get; set; }
     [Required] public string ChannelUuid { get; set; }
     [Required] public string RawTransaction { get; set; }
-    [Required] public string Message { get; set; }
+    // [Required] im scene required, crypto gift not required
+    public string Message { get; set; }
     public int AssetType { get; set; }
 }

@@ -9,4 +9,6 @@ public class GrabResultDto
     public RedPackageStatus Status { get; set; }
     
     public long ExpireTime { get; set; }
+    
+    public BucketItemDto BucketItem { get; set; }
 }
