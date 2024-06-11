@@ -7,6 +7,7 @@ using CAServer.CAAccount.Provider;
 using CAServer.Cache;
 using CAServer.Common;
 using CAServer.Commons;
+using CAServer.CryptoGift;
 using CAServer.DataReporting;
 using CAServer.Facebook;
 using CAServer.Grains;
@@ -74,6 +75,7 @@ public class CAServerApplicationModule : AbpModule
         Configure<AwsS3Option>(configuration.GetSection("AwsS3"));
         Configure<UserProfilePictureOptions>(configuration.GetSection("UserPictures"));
         Configure<MarketCacheOptions>(configuration.GetSection("MarketCache"));
+        Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
         
         Configure<SeedImageOptions>(configuration.GetSection("SeedSymbolImage"));
         Configure<SecurityOptions>(configuration.GetSection("Security"));

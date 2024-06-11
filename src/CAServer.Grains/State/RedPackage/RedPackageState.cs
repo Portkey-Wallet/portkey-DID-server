@@ -1,9 +1,11 @@
-using CAServer.RedPackage.Dtos;
+using CAServer.EnumType;
 
 namespace CAServer.Grains.State.RedPackage;
 [Serializable]
 public class RedPackageState
 {
+    public RedPackageDisplayType RedPackageDisplayType { get; set; }
+    public bool IsNewUsersOnly { get; set; }
     public Guid Id { get; set; }
     public long TotalAmount { get; set; }
     public long GrabbedAmount { get; set; }
@@ -47,6 +49,7 @@ public class GrabItem
 
 public class BucketItem
 {
+    public int Index { get; set; }
     public long Amount { get; set; }
     public bool IsLuckyKing { get; set; }
     public Guid UserId { get; set; }

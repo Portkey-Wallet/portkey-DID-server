@@ -1,3 +1,5 @@
+using CAServer.Grains.State.RedPackage;
+
 namespace CAServer.RedPackage.Dtos;
 
 public class GrabResultDto
@@ -9,4 +11,6 @@ public class GrabResultDto
     public RedPackageStatus Status { get; set; }
     
     public long ExpireTime { get; set; }
+    
+    public BucketItem BucketItem { get; set; }
 }

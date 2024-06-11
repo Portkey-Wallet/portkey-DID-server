@@ -177,6 +177,11 @@ public class ContractAppService : IContractAppService
 
         try
         {
+            //todo make sure whether the contract logic need to deal
+            if (message.ReferralInfo is { ProjectCode: CommonConstant.CryptoGiftProjectCode })
+            {
+                message.ReferralInfo = null;
+            }
             createHolderDto = _objectMapper.Map<AccountRegisterCreateEto, CreateHolderDto>(message);
         }
         catch (Exception e)
@@ -287,6 +292,10 @@ public class ContractAppService : IContractAppService
 
         try
         {
+            if (message.ReferralInfo is { ProjectCode: CommonConstant.CryptoGiftProjectCode })
+            {
+                message.ReferralInfo = null;
+            }
             socialRecoveryDto = _objectMapper.Map<AccountRecoverCreateEto, SocialRecoveryDto>(message);
         }
         catch (Exception e)
