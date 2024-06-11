@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using CAServer.EnumType;
-using CAServer.Grains.State.RedPackage;
 
 namespace CAServer.RedPackage.Dtos;
 [Serializable]

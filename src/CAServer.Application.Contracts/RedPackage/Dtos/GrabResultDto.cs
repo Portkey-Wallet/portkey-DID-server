@@ -1,5 +1,3 @@
-using CAServer.Grains.State.RedPackage;
-
 namespace CAServer.RedPackage.Dtos;
 
 public class GrabResultDto
