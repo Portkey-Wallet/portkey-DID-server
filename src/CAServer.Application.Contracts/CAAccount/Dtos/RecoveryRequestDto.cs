@@ -19,7 +19,7 @@ public class RecoveryRequestDto : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (ReferralInfo is { ProjectCode: "20000" } && ReferralInfo.ReferralCode.IsNullOrEmpty())
+        if (ReferralInfo is { ProjectCode: CommonConstant.CryptoGiftProjectCode } && ReferralInfo.ReferralCode.IsNullOrEmpty())
         {
             yield return new ValidationResult(
                 "Invalid ReferralCode.",

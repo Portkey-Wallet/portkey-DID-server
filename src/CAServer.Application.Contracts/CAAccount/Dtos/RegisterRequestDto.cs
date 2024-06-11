@@ -50,7 +50,7 @@ public class RegisterRequestDto : IValidatableObject
         //         new[] { "LoginGuardianIdentifier" }
         //     );
         // }
-        if (ReferralInfo is { ProjectCode: "20000" } && ReferralInfo.ReferralCode.IsNullOrEmpty())
+        if (ReferralInfo is { ProjectCode: CommonConstant.CryptoGiftProjectCode } && ReferralInfo.ReferralCode.IsNullOrEmpty())
         {
             yield return new ValidationResult(
                 "Invalid ReferralCode.",
