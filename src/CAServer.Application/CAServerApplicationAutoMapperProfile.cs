@@ -630,6 +630,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
         CreateMap<PreGrabbedItemDto, GrabItemDto>()
             .ForMember(dest => dest.DisplayType, src => src.MapFrom(m => CryptoGiftDisplayType.Pending));
         CreateMap<RedPackageDetailDto, CryptoGiftHistoryItemDto>()
+            .ForMember(dest => dest.Exist, src => src.MapFrom(m => true))
             .ForMember(dest => dest.Status, src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
