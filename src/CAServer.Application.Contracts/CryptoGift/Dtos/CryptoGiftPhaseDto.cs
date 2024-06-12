@@ -14,6 +14,8 @@ public class CryptoGiftPhaseDto
     
     public long RemainingWaitingSeconds { get; set; }
     
+    public long RemainingExpirationSeconds { get; set; }
+    
     public UserInfoDto Sender { get; set; }
 }
 
