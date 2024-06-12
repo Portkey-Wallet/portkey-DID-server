@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CryptoGift;
 using CAServer.CryptoGift.Dtos;
@@ -32,7 +33,7 @@ public class CryptoGiftController : CAServerController
         _logger = logger;
     }
     
-    [HttpGet("history/fist")]
+    [HttpGet("history/first")]
     [Authorize]
     public async Task<CryptoGiftHistoryItemDto> GetFirstCryptoGiftHistoryDetailAsync()
     {
@@ -78,5 +79,40 @@ public class CryptoGiftController : CAServerController
             throw new UserFriendlyException("current user not exist!");
         }
         return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(receiverId, id);
+    }
+    
+    [HttpGet("ip")]
+    public string GetRemoteIp()
+    {
+        var remoteIpAddress = Request.HttpContext.Connection.RemoteIpAddress;
+        _logger.LogInformation("IsIPv6Multicast:{0},IsIPv6Teredo:{1},IsIPv6LinkLocal:{2}," +
+                               "IsIPv6SiteLocal:{3},IsIPv6UniqueLocal:{4},IsIPv4MappedToIPv6:{5}",
+            remoteIpAddress.IsIPv6Multicast,
+            remoteIpAddress.IsIPv6Teredo,
+            remoteIpAddress.IsIPv6LinkLocal,
+            remoteIpAddress.IsIPv6SiteLocal,
+            remoteIpAddress.IsIPv6UniqueLocal,
+            remoteIpAddress.IsIPv4MappedToIPv6);
+        _logger.LogInformation("MapToIPv4:{0}", remoteIpAddress.MapToIPv4().ToString());
+        _logger.LogInformation("MapToIPv6:{0}", remoteIpAddress.MapToIPv6().ToString());
+        string ipAddress = remoteIpAddress?.ToString();
+        return ipAddress;
+    }
+    
+    [HttpGet("ip/async")]
+    public async Task<string> GetRemoteIpAsync()
+    {
+        var clientIp = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(clientIp))
+        {
+            return clientIp;
+        }
+
+        var remoteIpAddress = Request.HttpContext.Connection.RemoteIpAddress;
+        if (remoteIpAddress == null)
+        {
+            return string.Empty;
+        }
+        return remoteIpAddress.IsIPv4MappedToIPv6 ? remoteIpAddress.MapToIPv4().ToString() : remoteIpAddress.MapToIPv6().ToString();
     }
 }
