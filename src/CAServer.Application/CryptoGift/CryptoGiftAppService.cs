@@ -332,6 +332,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{redPackageDetailDto.SenderName} sent you a Crypto Gift",
                 SubPrompt = "Congratulations! You have claimed successfully",
                 RemainingWaitingSeconds = 0,
+                RemainingExpirationSeconds = claimedPreGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds(),
                 Sender = new UserInfoDto()
                 {
                     Avatar = redPackageDetailDto.SenderAvatar,
