@@ -17,7 +17,8 @@ public class SendRedPackageInputDto
     [Required] public string Symbol { get; set; } = string.Empty;
     [Required] public int Count { get; set; }
     [Required] public string ChainId { get; set; }
-    [Required] public string ChannelUuid { get; set; }
+    // [Required] 
+    public string ChannelUuid { get; set; }
     [Required] public string RawTransaction { get; set; }
     // [Required] im scene required, crypto gift not required
     public string Message { get; set; }

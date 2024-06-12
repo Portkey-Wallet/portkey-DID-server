@@ -4,6 +4,7 @@ namespace CAServer.RedPackage.Dtos;
 
 public class CryptoGiftHistoryItemDto
 {
+    public bool Exist { get; set; }
     public Guid Id { get; set; }
     public string TotalAmount { get; set; }
     public string GrabbedAmount { get; set; }
