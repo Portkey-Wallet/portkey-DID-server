@@ -101,6 +101,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     {
         List<CryptoGiftHistoryItemDto> result = new List<CryptoGiftHistoryItemDto>();
         var cryptoGiftIndices = await GetCryptoGiftHistoriesFromEs(senderId);
+        _logger.LogInformation("senderId:{0} history from es records:{1}", senderId, JsonConvert.SerializeObject(cryptoGiftIndices));
         if (cryptoGiftIndices.IsNullOrEmpty())
         {
             return result;
