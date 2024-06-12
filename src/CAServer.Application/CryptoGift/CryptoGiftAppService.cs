@@ -89,8 +89,8 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
         mustQuery.Add(q =>
             q.Term(i => i.Field(f => f.SenderId).Value(senderId)));
-        mustQuery.Add(q => 
-            q.Term(i => i.Field(f => f.DisplayType).Value(RedPackageDisplayType.CryptoGift)));
+        // mustQuery.Add(q => 
+        //     q.Term(i => i.Field(f => f.DisplayType).Value(RedPackageDisplayType.CryptoGift)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         _logger.LogInformation("history from es records:{0}", JsonConvert.SerializeObject(cryptoGiftIndices));
