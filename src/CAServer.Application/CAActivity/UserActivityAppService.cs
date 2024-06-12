@@ -819,10 +819,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 dto.IsSystem = true;
             }
 
-            if (_activityTypeOptions.RedPacketTypes.Contains(dto.TransactionType))
-            {
-                var redPackageIndex = await GetCryptoGiftHistoriesFromEs(dto.TransactionId);
-            }
+            // if (_activityTypeOptions.RedPacketTypes.Contains(dto.TransactionType))
+            // {
+            //     var redPackageIndex = await CheckCryptoGiftByTransactionId(dto.TransactionId);
+            // }
 
             if (needMap)
             {
@@ -839,7 +839,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return result;
     }
     
-    private async Task<RedPackageIndex> GetCryptoGiftHistoriesFromEs(string transactionId)
+    private async Task<RedPackageIndex> CheckCryptoGiftByTransactionId(string transactionId)
     {
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
         mustQuery.Add(q =>
