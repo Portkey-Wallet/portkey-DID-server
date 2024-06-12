@@ -122,6 +122,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     {
         try
         {
+            _logger.LogInformation("=========_activityOptions:{0}", JsonConvert.SerializeObject(_activityOptions));
+            _logger.LogInformation("=========_activityTypeOptions:{0}", JsonConvert.SerializeObject(_activityTypeOptions));
             var caAddresses = request.CaAddressInfos.Select(t => t.CaAddress).ToList();
             var transactionInfos = await GetTransactionInfosAsync(request);
             var activitiesDto = await IndexerTransaction2Dto(caAddresses, transactionInfos.transactions,
@@ -817,10 +819,10 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 dto.IsSystem = true;
             }
 
-            if (_activityTypeOptions.RedPacketTypes.Contains(dto.TransactionType))
-            {
-                
-            }
+            // if (_activityTypeOptions.RedPacketTypes.Contains(dto.TransactionType))
+            // {
+            //     var redPackageIndex = await CheckCryptoGiftByTransactionId(dto.TransactionId);
+            // }
 
             if (needMap)
             {
@@ -837,19 +839,17 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         return result;
     }
     
-    // private async Task<List<RedPackageIndex>> GetCryptoGiftHistoriesFromEs(string transactionId)
-    // {
-    //     var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
-    //     mustQuery.Add(q =>
-    //         q.Term(i => i.Field(f => f.TransactionId).Value(transactionId)));
-    //     mustQuery.Add(q => 
-    //         q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
-    //     QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
-    //     var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
-    //     return cryptoGiftIndices.Where(crypto => Guid.Parse("7d911f61-0511-4121-8cf3-1443d057999e").Equals(crypto.RedPackageId)
-    //                                              || Guid.Parse("6c1eda46-f2d0-440b-82db-ed1abc2f0261").Equals(crypto.RedPackageId)
-    //                                              || RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType)).ToList();
-    // }
+    private async Task<RedPackageIndex> CheckCryptoGiftByTransactionId(string transactionId)
+    {
+        var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+        mustQuery.Add(q =>
+            q.Term(i => i.Field(f => f.TransactionId).Value(transactionId)));
+        mustQuery.Add(q => 
+            q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+        QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+        var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        return cryptoGiftIndices.FirstOrDefault(crypto => RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType));
+    }
 
     private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
         GuardiansDto guardian = null)
