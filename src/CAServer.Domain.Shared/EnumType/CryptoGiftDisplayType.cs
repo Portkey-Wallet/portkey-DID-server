@@ -2,6 +2,6 @@ namespace CAServer.EnumType;
 
 public enum CryptoGiftDisplayType
 {
-    Common = 1,
-    Pending = 2,
+    Common = 0,
+    Pending = 1,
 }
