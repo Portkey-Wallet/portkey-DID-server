@@ -8,7 +8,7 @@ namespace CAServer.Entities.Es;
 
 public class RedPackageIndex : CAServerEsEntity<Guid>, IIndexBuild
 {
-    [Keyword] public RedPackageDisplayType DisplayType { get; set; }
+    [Keyword] public RedPackageDisplayType RedPackageDisplayType { get; set; }
     public bool IsNewUsersOnly { get; set; }
     [Keyword] public Guid RedPackageId { get; set; }
     public long TotalAmount { get; set; }
