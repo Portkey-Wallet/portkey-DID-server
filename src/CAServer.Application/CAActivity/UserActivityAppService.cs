@@ -811,6 +811,11 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
                 dto.IsSystem = true;
             }
 
+            if (_activityTypeOptions.RedPacketTypes.Contains(dto.TransactionType))
+            {
+                //todo add the crypto gift logic
+            }
+
             if (needMap)
             {
                 await MapMethodNameAsync(caAddresses, dto, guardian);

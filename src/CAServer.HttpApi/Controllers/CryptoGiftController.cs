@@ -42,6 +42,7 @@ public class CryptoGiftController : CAServerController
         {
             throw new UserFriendlyException("current sender user not exist!");
         }
+        _logger.LogInformation("sender:{0} is querying first crypto gift", senderId);
         return await _cryptoGiftAppService.GetFirstCryptoGiftHistoryDetailAsync(senderId);
     }
     
