@@ -60,6 +60,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     public async Task<CryptoGiftHistoryItemDto> GetFirstCryptoGiftHistoryDetailAsync(Guid senderId)
     {
         CryptoGiftHistoryItemDto firstDetail = new CryptoGiftHistoryItemDto();
+        _logger.LogInformation("GetFirstCryptoGiftHistoryDetailAsync firstDetail:{0}", JsonConvert.SerializeObject(firstDetail));
         var cryptoGiftIndices = await GetCryptoGiftHistoriesFromEs(senderId);
         if (cryptoGiftIndices.IsNullOrEmpty())
         {
@@ -91,6 +92,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             q.Term(i => i.Field(f => f.DisplayType).Value(RedPackageDisplayType.CryptoGift)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+        _logger.LogInformation("history from es records:{0}", JsonConvert.SerializeObject(cryptoGiftIndices));
         return cryptoGiftIndices;
     }
 
