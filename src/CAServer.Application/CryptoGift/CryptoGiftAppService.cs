@@ -94,7 +94,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
         _logger.LogInformation("history from es records:{0}", JsonConvert.SerializeObject(cryptoGiftIndices));
-        return cryptoGiftIndices;
+        return cryptoGiftIndices.Where(crypto => RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType)).ToList();
     }
 
     public async Task<List<CryptoGiftHistoryItemDto>> ListCryptoGiftHistoriesAsync(Guid senderId)
@@ -188,8 +188,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             IpAddress = ipAddress,
             IdentityCode = identityCode
         });
-        cryptoGiftDto.BucketClaimed.Add(preGrabBucketItemDto);
-        cryptoGiftDto.BucketNotClaimed.Remove(preGrabBucketItemDto);
         cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
         _logger.LogInformation("PreGrabCryptoGift before update:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
         var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
