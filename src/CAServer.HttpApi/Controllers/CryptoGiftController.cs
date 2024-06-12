@@ -17,7 +17,7 @@ namespace CAServer.Controllers;
 
 [RemoteService]
 [Area("app")]
-[ControllerName("RedPackage")]
+[ControllerName("CryptoGift")]
 [Route("api/app/cryptogift/")]
 [IgnoreAntiforgeryToken]
 public class CryptoGiftController : CAServerController
@@ -25,8 +25,10 @@ public class CryptoGiftController : CAServerController
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
     private readonly ILogger<CryptoGiftController> _logger;
 
-    public CryptoGiftController(ILogger<CryptoGiftController> logger)
+    public CryptoGiftController(ICryptoGiftAppService cryptoGiftAppService,
+        ILogger<CryptoGiftController> logger)
     {
+        _cryptoGiftAppService = cryptoGiftAppService;
         _logger = logger;
     }
     
