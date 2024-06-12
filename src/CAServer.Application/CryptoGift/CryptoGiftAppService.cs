@@ -93,14 +93,16 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         //     q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
-        _logger.LogInformation("history from es records:{0}", JsonConvert.SerializeObject(cryptoGiftIndices));
-        return cryptoGiftIndices.Where(crypto => RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType)).ToList();
+        return cryptoGiftIndices.Where(crypto => Guid.Parse("7d911f61-0511-4121-8cf3-1443d057999e").Equals(crypto.RedPackageId)
+            || Guid.Parse("6c1eda46-f2d0-440b-82db-ed1abc2f0261").Equals(crypto.RedPackageId)
+            || RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType)).ToList();
     }
 
     public async Task<List<CryptoGiftHistoryItemDto>> ListCryptoGiftHistoriesAsync(Guid senderId)
     {
         List<CryptoGiftHistoryItemDto> result = new List<CryptoGiftHistoryItemDto>();
         var cryptoGiftIndices = await GetCryptoGiftHistoriesFromEs(senderId);
+        _logger.LogInformation("senderId:{0} history from es records:{1}", senderId, JsonConvert.SerializeObject(cryptoGiftIndices));
         if (cryptoGiftIndices.IsNullOrEmpty())
         {
             return result;
