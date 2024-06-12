@@ -188,8 +188,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             IpAddress = ipAddress,
             IdentityCode = identityCode
         });
-        cryptoGiftDto.BucketClaimed.Add(preGrabBucketItemDto);
-        cryptoGiftDto.BucketNotClaimed.Remove(preGrabBucketItemDto);
         cryptoGiftDto.PreGrabbedAmount += preGrabBucketItemDto.Amount;
         _logger.LogInformation("PreGrabCryptoGift before update:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
         var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
