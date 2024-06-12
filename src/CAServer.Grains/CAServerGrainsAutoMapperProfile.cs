@@ -56,6 +56,7 @@ public class CAServerGrainsAutoMapperProfile : Profile
         CreateMap<CAHolderState, CAHolderGrainDto>().ReverseMap();
         CreateMap<UserMarketTokenFavoritesState, UserMarketTokenFavoritesGrainDto>().ReverseMap();
         CreateMap<CryptoGiftState, CryptoGiftDto>();
+        CreateMap<CryptoGiftDto, CryptoGiftState>();
         CreateMap<ChainState, ChainGrainDto>().ReverseMap();
         CreateMap<ContactAddress, ContactAddressDto>().ReverseMap();
         CreateMap<ContactState, ContactGrainDto>().ForMember(c => c.ModificationTime,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AElf.Indexing.Elasticsearch;
 using AElf.Types;
 using CAServer.CAActivity.Dto;
 using CAServer.CAActivity.Dtos;
@@ -9,6 +10,7 @@ using CAServer.CAActivity.Provider;
 using CAServer.Common;
 using CAServer.Commons;
 using CAServer.Entities.Es;
+using CAServer.EnumType;
 using CAServer.Guardian.Provider;
 using CAServer.Options;
 using CAServer.Tokens;
@@ -21,6 +23,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Nest;
 using Newtonsoft.Json;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
@@ -50,6 +53,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
     private readonly ITokenPriceService _tokenPriceService;
     private readonly TokenSpenderOptions _tokenSpenderOptions;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly INESTRepository<RedPackageIndex, Guid> _redPackageIndexRepository;
 
     public UserActivityAppService(ILogger<UserActivityAppService> logger, ITokenAppService tokenAppService,
         IActivityProvider activityProvider, IUserContactProvider userContactProvider,
@@ -58,7 +62,8 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         IOptions<ActivityOptions> activityOptions, IUserAssetsProvider userAssetsProvider,
         IOptions<ActivityTypeOptions> activityTypeOptions, IOptionsSnapshot<IpfsOptions> ipfsOptions,
         IAssetsLibraryProvider assetsLibraryProvider, ITokenPriceService tokenPriceService,
-        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor)
+        IOptionsMonitor<TokenSpenderOptions> tokenSpenderOptions, IHttpContextAccessor httpContextAccessor,
+        INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository)
     {
         _logger = logger;
         _tokenAppService = tokenAppService;
@@ -76,6 +81,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
         _tokenPriceService = tokenPriceService;
         _httpContextAccessor = httpContextAccessor;
         _tokenSpenderOptions = tokenSpenderOptions.CurrentValue;
+        _redPackageIndexRepository = redPackageIndexRepository;
     }
 
 
@@ -813,7 +819,7 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
             if (_activityTypeOptions.RedPacketTypes.Contains(dto.TransactionType))
             {
-                //todo add the crypto gift logic
+                
             }
 
             if (needMap)
@@ -830,6 +836,20 @@ public class UserActivityAppService : CAServerAppService, IUserActivityAppServic
 
         return result;
     }
+    
+    // private async Task<List<RedPackageIndex>> GetCryptoGiftHistoriesFromEs(string transactionId)
+    // {
+    //     var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
+    //     mustQuery.Add(q =>
+    //         q.Term(i => i.Field(f => f.TransactionId).Value(transactionId)));
+    //     mustQuery.Add(q => 
+    //         q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
+    //     QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
+    //     var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
+    //     return cryptoGiftIndices.Where(crypto => Guid.Parse("7d911f61-0511-4121-8cf3-1443d057999e").Equals(crypto.RedPackageId)
+    //                                              || Guid.Parse("6c1eda46-f2d0-440b-82db-ed1abc2f0261").Equals(crypto.RedPackageId)
+    //                                              || RedPackageDisplayType.CryptoGift.Equals(crypto.RedPackageDisplayType)).ToList();
+    // }
 
     private async Task MapMethodNameAsync(List<string> caAddresses, GetActivityDto activityDto,
         GuardiansDto guardian = null)
