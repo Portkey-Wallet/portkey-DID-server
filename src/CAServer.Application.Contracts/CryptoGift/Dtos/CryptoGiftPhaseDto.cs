@@ -12,6 +12,8 @@ public class CryptoGiftPhaseDto
     
     public long Amount { get; set; }
     
+    public string Memo { get; set; }
+    
     public long RemainingWaitingSeconds { get; set; }
     
     public long RemainingExpirationSeconds { get; set; }
