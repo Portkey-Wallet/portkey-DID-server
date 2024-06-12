@@ -59,22 +59,21 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
 
     public async Task<CryptoGiftHistoryItemDto> GetFirstCryptoGiftHistoryDetailAsync(Guid senderId)
     {
-        CryptoGiftHistoryItemDto firstDetail = new CryptoGiftHistoryItemDto();
-        _logger.LogInformation("GetFirstCryptoGiftHistoryDetailAsync firstDetail:{0}", JsonConvert.SerializeObject(firstDetail));
         var cryptoGiftIndices = await GetCryptoGiftHistoriesFromEs(senderId);
         if (cryptoGiftIndices.IsNullOrEmpty())
         {
-            return firstDetail;
+            return null;
         }
         var historiesFromEs = cryptoGiftIndices.OrderByDescending(crypto => crypto.CreateTime).ToList();
         var firstItem = historiesFromEs.FirstOrDefault();
         if (firstItem == null)
         {
-            return firstDetail;
+            return null;
         }
 
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(firstItem.RedPackageId);
         var redPackageDetail = await grain.GetRedPackage(firstItem.RedPackageId);
+        var firstDetail = new CryptoGiftHistoryItemDto();
         if (redPackageDetail.Success && redPackageDetail.Data != null)
         {
             firstDetail = _objectMapper.Map<RedPackageDetailDto, CryptoGiftHistoryItemDto>(redPackageDetail.Data);
