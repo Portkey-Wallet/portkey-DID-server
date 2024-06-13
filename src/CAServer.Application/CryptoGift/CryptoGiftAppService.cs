@@ -341,6 +341,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
+        _logger.LogInformation("===========GetCryptoGiftDetailAsync redPackageId:{0} cryptoGiftDto:{1}", redPackageId,  JsonConvert.SerializeObject(cryptoGiftDto));
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString();
         await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
