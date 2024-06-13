@@ -2,7 +2,7 @@ namespace CAServer.EnumType;
 
 public enum GrabbedStatus
 {
-    Created,
-    Claimed,
-    Expired
+    Created = 0,
+    Claimed = 1,
+    Expired = 2
 }

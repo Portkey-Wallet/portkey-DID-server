@@ -341,9 +341,9 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
-        _logger.LogInformation("===========GetCryptoGiftDetailAsync redPackageId:{0} cryptoGiftDto:{1}", redPackageId,  JsonConvert.SerializeObject(cryptoGiftDto));
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString();
+        _logger.LogInformation("===========identityCode:{0} ipAddress:{1} redPackageId:{2} cryptoGiftDto:{3}", identityCode, ipAddress, redPackageId,  JsonConvert.SerializeObject(cryptoGiftDto));
         await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
         //get the sender info
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
@@ -380,14 +380,9 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                                                                               && GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus));
         if (claimedPreGrabItem != null)
         {
-            var dollarValue = string.Empty;
-            var tokenPriceData = await _tokenPriceService.GetCurrentPriceAsync(redPackageDetailDto.Symbol);
-            if (tokenPriceData != null)
-            {
-                dollarValue = "≈$ " + Decimal.Multiply(tokenPriceData.PriceInUsd, claimedPreGrabItem.Amount);
-            }
+            var dollarValue = await GetDollarValue(redPackageDetailDto, claimedPreGrabItem);
             var remainingExpirationSeconds = claimedPreGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() -
-                                              DateTimeOffset.Now.ToUnixTimeSeconds();
+                                             DateTimeOffset.Now.ToUnixTimeSeconds();
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "You will get",  dollarValue, claimedPreGrabItem.Amount,
                 0, remainingExpirationSeconds);
@@ -415,8 +410,9 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                     0, 0);
             }
             var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
+            var dollarValue = await GetDollarValue(redPackageDetailDto, preGrabItem);
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.GrabbedQuota, redPackageDetailDto,
-                caHolderDto, nftInfoDto, "Claim and Join Portkey", "", preGrabItem.Amount,
+                caHolderDto, nftInfoDto, "Claim and Join Portkey", dollarValue, preGrabItem.Amount,
                 remainingWaitingSeconds, 0);
         }
         
@@ -431,7 +427,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             {
                 throw new UserFriendlyException("Sorry, crypto gift status occured error");
             }
-
             var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.NoQuota, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
@@ -439,7 +434,19 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
         throw new UserFriendlyException("there is no crypto gift condition like this");
     }
-    
+
+    private async Task<string> GetDollarValue(RedPackageDetailDto redPackageDetailDto, PreGrabItem claimedPreGrabItem)
+    {
+        var dollarValue = string.Empty;
+        var tokenPriceData = await _tokenPriceService.GetCurrentPriceAsync(redPackageDetailDto.Symbol);
+        if (tokenPriceData != null)
+        {
+            dollarValue = "≈$ " + Decimal.Multiply(tokenPriceData.PriceInUsd, claimedPreGrabItem.Amount);
+        }
+
+        return dollarValue;
+    }
+
     private CryptoGiftPhaseDto GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase cryptoGiftPhase, RedPackageDetailDto redPackageDetailDto,
         CAHolderGrainDto caHolderGrainDto, NftInfoDto nftInfoDto, string subPrompt, string dollarValue, long amount,
         long remainingWaitingSeconds, long remainingExpirationSeconds) {
