@@ -340,6 +340,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
                 SubPrompt = "Congratulations! You have claimed successfully",
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 RemainingWaitingSeconds = 0,
                 RemainingExpirationSeconds = claimedPreGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds(),
                 Sender = new UserInfoDto()
@@ -357,6 +358,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
                 SubPrompt = "Oops! The crypto gift has been expired",
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 RemainingWaitingSeconds = 0,
                 Sender = new UserInfoDto()
                 {
@@ -375,6 +377,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
                 SubPrompt = "Oops! None left...",
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 RemainingWaitingSeconds = 0,
                 Sender = new UserInfoDto()
                 {
@@ -399,6 +402,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                     Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
                     SubPrompt = "Claim and Join Portkey",
                     Memo = redPackageDetailDto.Memo,
+                    IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                     RemainingWaitingSeconds = 0,
                     Sender = new UserInfoDto()
                     {
@@ -413,6 +417,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
                 SubPrompt = "Claim and Join Portkey",
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Amount = preGrabItem.Amount,
                 RemainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000,
                 Sender = new UserInfoDto()
@@ -440,6 +445,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
                 SubPrompt = "Don't worry,it hasn't been claimed yet! You can keep trying to claim after",
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 RemainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000,
                 Sender = new UserInfoDto()
                 {
@@ -488,6 +494,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
                 SubPrompt = $"You have already claimed {grabItemDto.Amount} {redPackageDetailDto.Symbol} of this Crypto Gift and can't reclaim it.",
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Sender = new UserInfoDto()
                 {
                     Avatar = caHolderGrainDto.Avatar,
@@ -504,6 +511,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
                 SubPrompt = "Oops! The crypto gift has been expired",
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Sender = new UserInfoDto()
                 {
                     Avatar = caHolderGrainDto.Avatar,
@@ -520,6 +528,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
                 SubPrompt = "Oops! None left...",
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Sender = new UserInfoDto()
                 {
                     Avatar = caHolderGrainDto.Avatar,
@@ -544,6 +553,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                     Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
                     SubPrompt = "Claim and Join Portkey",
                     Memo = redPackageDetailDto.Memo,
+                    IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                     Sender = new UserInfoDto()
                     {
                         Avatar = caHolderGrainDto.Avatar,
@@ -557,6 +567,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
                 SubPrompt = "Sorry, you miss the claim expiration time.", 
                 Memo = redPackageDetailDto.Memo,
+                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Sender = new UserInfoDto()
                 {
                     Avatar = caHolderGrainDto.Avatar,

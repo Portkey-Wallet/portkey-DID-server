@@ -37,7 +37,9 @@
       "TransferToken": "Withdraw",
       "CreateCryptoBox": "Send Crypto Box",
       "TransferCryptoBoxes": "Claim Crypto Box",
-      "RefundCryptoBox": "Return Crypto Box"
+      "RefundCryptoBox": "Return Crypto Box",
+      "CreateCryptoGift": "Crypto Gift Sent",
+      "TransferCryptoGift": "Crypto Gift Claim"
     },
     "TransactionTypeMap": {
       "TransferToken": "Transfer",
