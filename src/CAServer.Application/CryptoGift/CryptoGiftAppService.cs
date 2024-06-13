@@ -467,11 +467,12 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         };
     }
 
-    public async Task<CryptoGiftDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
+    public async Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
     {
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
-        return cryptoGiftResultDto.Data;
+        _logger.LogInformation("=========GetCryptoGiftDetailFromGrainAsync:{0}", JsonConvert.SerializeObject(cryptoGiftResultDto.Data));
+        return _objectMapper.Map<CryptoGiftDto, CryptoGiftAppDto>(cryptoGiftResultDto.Data);
     }
 
     public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(Guid receiverId, Guid redPackageId)

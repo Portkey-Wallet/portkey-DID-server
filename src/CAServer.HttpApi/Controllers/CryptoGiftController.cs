@@ -82,7 +82,7 @@ public class CryptoGiftController : CAServerController
     }
 
     [HttpGet("origin/detail")]
-    public async Task<CryptoGiftDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
+    public async Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
     {
         return await _cryptoGiftAppService.GetCryptoGiftDetailFromGrainAsync(redPackageId);
     }
