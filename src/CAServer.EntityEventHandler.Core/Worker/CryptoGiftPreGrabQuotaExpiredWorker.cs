@@ -71,7 +71,11 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
             }
             if (modified)
             {
-                await grain.UpdateCryptoGift(cryptoGiftDto);
+                var updateCryptoGift = await grain.UpdateCryptoGift(cryptoGiftDto);
+                if (updateCryptoGift.Success && updateCryptoGift.Data != null)
+                {
+                    _logger.LogInformation("CryptoGiftPreGrabQuotaExpiredWorker updateCryptoGift result:{0}", JsonConvert.SerializeObject(updateCryptoGift));
+                }
             }
         }
     }
