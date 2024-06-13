@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CAServer.EnumType;
 using CAServer.Options;
 using CAServer.RedPackage.Dtos;
 using CAServer.Tokens;
@@ -183,13 +184,13 @@ public partial class RedPackageTest : CAServerApplicationTestBase
     [Fact]
     public async Task GetRedPackageDetailAsync_test()
     {
-        var res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, 0, 0);
+        var res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, RedPackageDisplayType.Common, 0, 0);
         res.Id.ShouldBe(Guid.Empty);
         
         Login(userId);
         var input = NewSendRedPackageInputDto();
         await _redPackageAppService.SendRedPackageAsync(input);
-        res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, -1, -1);
+        res = await _redPackageAppService.GetRedPackageDetailAsync(redPackageId, RedPackageDisplayType.Common, -1, -1);
         res.Id.ShouldBe(redPackageId);
     }
 

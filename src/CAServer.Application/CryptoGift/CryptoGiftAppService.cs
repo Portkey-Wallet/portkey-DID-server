@@ -149,7 +149,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         };
     }
 
-    public async Task<string> PreGrabCryptoGift(Guid redPackageId)
+    public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift(Guid redPackageId)
     {
         //todo make sure if the user red package id is available
         await using var handle = await _distributedLock.TryAcquireAsync("CryptoGift:DistributionLock:" + redPackageId, TimeSpan.FromSeconds(3));
@@ -195,7 +195,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         _logger.LogInformation("PreGrabCryptoGift before update:{0}", JsonConvert.SerializeObject(cryptoGiftDto));
         var updateResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
         _logger.LogInformation("PreGrabCryptoGift updateResult:{0}", JsonConvert.SerializeObject(updateResult));
-        return identityCode;
+        return new CryptoGiftIdentityCodeDto() { IdentityCode = identityCode };
     }
     
     private PreGrabBucketItemDto GetBucket(CryptoGiftDto cryptoGiftDto, string identityCode)

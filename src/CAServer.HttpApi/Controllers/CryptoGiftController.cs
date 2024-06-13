@@ -59,7 +59,7 @@ public class CryptoGiftController : CAServerController
     }
 
     [HttpPost("grab")]
-    public async Task<string> PreGrabCryptoGift([FromBody] PreGrabCryptoGiftCmd preGrabCryptoGiftCmd)
+    public async Task<CryptoGiftIdentityCodeDto> PreGrabCryptoGift([FromBody] PreGrabCryptoGiftCmd preGrabCryptoGiftCmd)
     {
         return await _cryptoGiftAppService.PreGrabCryptoGift(preGrabCryptoGiftCmd.Id);
     }
