@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.CryptoGift.Dtos;
-using CAServer.Grains.Grain.CryptoGift;
 using CAServer.RedPackage.Dtos;
 
 namespace CAServer.CryptoGift;
