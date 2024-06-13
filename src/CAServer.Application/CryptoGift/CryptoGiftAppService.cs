@@ -178,7 +178,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         {
             throw new UserFriendlyException("the red package does not exist");
         }
-        var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString().Replace("\"", "");
+        var identityCode = GetIdentityCode(redPackageId, ipAddress);
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -275,7 +275,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         {
             throw new UserFriendlyException("PreGrabCryptoGiftAfterLogging portkey can't get your ip, grab failed~");
         }
-        var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString();
+        var identityCode = GetIdentityCode(redPackageId, ipAddress);
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -342,8 +342,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         var ipAddress = _ipInfoAppService.GetRemoteIp();
-        var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString();
-        _logger.LogInformation("===========identityCode:{0} ipAddress:{1} redPackageId:{2} cryptoGiftDto:{3}", identityCode, ipAddress, redPackageId,  JsonConvert.SerializeObject(cryptoGiftDto));
+        var identityCode = GetIdentityCode(redPackageId, ipAddress);
         await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
         //get the sender info
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
@@ -394,14 +393,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             var preGrabItem = cryptoGiftDto.Items
                 .FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
                                           && GrabbedStatus.Created.Equals(crypto.GrabbedStatus));
-            _logger.LogInformation("=====================");
-            foreach (var grabItem in cryptoGiftDto.Items)
-            {
-                _logger.LogInformation("grabItem:{0}", JsonConvert.SerializeObject(grabItem));
-                _logger.LogInformation("crypto.IdentityCode.Equals(identityCode):{0}", grabItem.IdentityCode.Equals(identityCode));
-                _logger.LogInformation("GrabbedStatus.Created.Equals(crypto.GrabbedStatus):{0}", GrabbedStatus.Created.Equals(grabItem.GrabbedStatus));
-            }
-           
             if (preGrabItem != null)
             {
                 var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
@@ -440,6 +431,11 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
             caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0,
             0, 0);
+    }
+
+    private static string GetIdentityCode(Guid redPackageId, string ipAddress)
+    {
+        return HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString().Replace("\"", "");
     }
 
     private async Task<string> GetDollarValue(RedPackageDetailDto redPackageDetailDto, PreGrabItem claimedPreGrabItem)
@@ -507,7 +503,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
         var ipAddress = _ipInfoAppService.GetRemoteIp();
-        var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString();
+        var identityCode = GetIdentityCode(redPackageId, ipAddress);
         await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
         
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
