@@ -674,7 +674,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             throw new UserFriendlyException($"return red package:{cryptoGiftDto.Id} is not crypto gift, identityCode:{identityCode}");
         }
         PreGrabBucketItemDto preGrabBucketItemDto = cryptoGiftDto.BucketClaimed[preGrabItem.Index];
-        cryptoGiftDto.BucketNotClaimed.Insert(preGrabItem.Index, preGrabBucketItemDto);
+        cryptoGiftDto.BucketNotClaimed.Add(preGrabBucketItemDto);
         cryptoGiftDto.BucketClaimed.Remove(preGrabBucketItemDto);
     }
 
