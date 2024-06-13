@@ -214,7 +214,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var index = random.Next(cryptoGiftDto.BucketNotClaimed.Count);
         var bucket = cryptoGiftDto.BucketNotClaimed[index];
         bucket.IdentityCode = identityCode;
-        bucket.Index = index;
         cryptoGiftDto.BucketNotClaimed.Remove(bucket);
         cryptoGiftDto.BucketClaimed.Add(bucket);
         return bucket;
@@ -354,8 +353,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
 
         var caHolderDto = caHolderGrainDto.Data;
-        var claimedPreGrabItem = cryptoGiftDto.Items.FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
-                                                     && GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus));
         // get nft info
         var nftInfoDto = new NftInfoDto();
         if (redPackageDetailDto.AssetType == (int)AssetType.NFT)
@@ -371,6 +368,15 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 nftInfoDto.ImageUrl = nftItemInfos[0].ImageUrl;
             }
         }
+        if (RedPackageStatus.Expired.Equals(redPackageDetailDto.Status))
+        {
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Expired, redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Oops, the crypto gift has expired.", "", 0,
+                0, 0);
+        }
+        
+        var claimedPreGrabItem = cryptoGiftDto.Items.FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
+                                                                              && GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus));
         if (claimedPreGrabItem != null)
         {
             var dollarValue = string.Empty;
@@ -381,21 +387,15 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             }
             var remainingExpirationSeconds = claimedPreGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() -
                                               DateTimeOffset.Now.ToUnixTimeSeconds();
-            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "You will get",  dollarValue, claimedPreGrabItem.Amount,
                 0, remainingExpirationSeconds);
-        }
-        if (RedPackageStatus.Expired.Equals(redPackageDetailDto.Status))
-        {
-            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
-                caHolderDto, nftInfoDto, "Oops, the crypto gift has expired.", "", 0,
-                0, 0);
         }
 
         if (RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status)
             || cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
         {
-            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.FullyClaimed, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "Oh no, all the crypto gifts have been claimed.", "", 0,
                 0, 0);
         }
@@ -409,12 +409,12 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                                           && GrabbedStatus.Created.Equals(crypto.GrabbedStatus));
             if (preGrabItem == null)
             {
-                return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+                return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
                     caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0,
                     0, 0);
             }
             var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
-            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.GrabbedQuota, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "Claim and Join Portkey", "", preGrabItem.Amount,
                 remainingWaitingSeconds, 0);
         }
@@ -432,19 +432,19 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             }
 
             var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
-            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.NoQuota, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
                 remainingWaitingSeconds, 0);
         }
         throw new UserFriendlyException("there is no crypto gift condition like this");
     }
     
-    private CryptoGiftPhaseDto GetUnLoginCryptoGiftPhaseDto(RedPackageDetailDto redPackageDetailDto,
+    private CryptoGiftPhaseDto GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase cryptoGiftPhase, RedPackageDetailDto redPackageDetailDto,
         CAHolderGrainDto caHolderGrainDto, NftInfoDto nftInfoDto, string subPrompt, string dollarValue, long amount,
         long remainingWaitingSeconds, long remainingExpirationSeconds) {
         return new CryptoGiftPhaseDto() 
         {
-            CryptoGiftPhase = CryptoGiftPhase.Claimed,
+            CryptoGiftPhase = cryptoGiftPhase,
             Prompt = $"{caHolderGrainDto.Nickname} sent you a crypto gift",
             SubPrompt = subPrompt,
             Amount = amount,
