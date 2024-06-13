@@ -349,7 +349,11 @@ public class CryptoBoxGrain : Orleans.Grain<RedPackageState>, ICryptoBoxGrain
     private BucketItem GetBucketByIndex(Guid userId, PreGrabBucketItemDto preGrabBucketItemDto)
     {
         var index = preGrabBucketItemDto.Index;
-        var bucket = State.BucketNotClaimed[index];
+        var bucket = State.BucketNotClaimed.FirstOrDefault(bucket => bucket.Index.Equals(index));
+        if (bucket == null)
+        {
+            throw new UserFriendlyException("CryptoGiftTransferToRedPackage GetBucketByIndex Failed");
+        }
         if (index != 0 && State.BucketNotClaimed[0].IsLuckyKing)
         {
             if (bucket.Amount.CompareTo(State.BucketNotClaimed[0].Amount) == 0)
