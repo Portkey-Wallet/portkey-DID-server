@@ -14,6 +14,7 @@ using CAServer.Chain;
 using CAServer.Commons;
 using CAServer.Contacts;
 using CAServer.ContractEventHandler;
+using CAServer.CryptoGift.Dtos;
 using CAServer.DataReporting.Dtos;
 using CAServer.DataReporting.Etos;
 using CAServer.Dtos;
@@ -25,6 +26,7 @@ using CAServer.Grains.Grain.Account;
 using CAServer.Grains.Grain.ApplicationHandler;
 using CAServer.Grains.Grain.Bookmark.Dtos;
 using CAServer.Grains.Grain.Contacts;
+using CAServer.Grains.Grain.CryptoGift;
 using CAServer.Grains.Grain.Growth;
 using CAServer.Grains.Grain.Guardian;
 using CAServer.Grains.Grain.ImTransfer;
@@ -633,6 +635,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(dest => dest.Exist, src => src.MapFrom(m => true))
             .ForMember(dest => dest.Decimals, src => src.MapFrom(m => m.Decimal))
             .ForMember(dest => dest.DisplayStatus, src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
+        CreateMap<CryptoGiftDto, CryptoGiftAppDto>();
         CreateMap<CAServer.Entities.Es.Token, CAServer.Search.Dtos.Token>();
         CreateMap<UserTokenIndex, UserTokenIndexDto>()
             .ForMember(t => t.Token, m => m.MapFrom(src => src.Token));
