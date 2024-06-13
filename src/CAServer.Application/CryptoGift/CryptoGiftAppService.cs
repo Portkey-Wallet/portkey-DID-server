@@ -389,8 +389,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
 
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
-             || RedPackageStatus.Claimed.Equals(redPackageDetailDto.Status))
-            && cryptoGiftDto.PreGrabbedAmount < cryptoGiftDto.TotalAmount)
+             || RedPackageStatus.Claimed.Equals(redPackageDetailDto.Status)))
         {
             var preGrabItem = cryptoGiftDto.Items
                 .FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
@@ -403,17 +402,14 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 _logger.LogInformation("GrabbedStatus.Created.Equals(crypto.GrabbedStatus):{0}", GrabbedStatus.Created.Equals(grabItem.GrabbedStatus));
             }
            
-            if (preGrabItem == null)
+            if (preGrabItem != null)
             {
-                return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
-                    caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0,
-                    0, 0);
+                var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
+                var dollarValue = await GetDollarValue(redPackageDetailDto, preGrabItem);
+                return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.GrabbedQuota, redPackageDetailDto,
+                    caHolderDto, nftInfoDto, "Claim and Join Portkey", dollarValue, preGrabItem.Amount,
+                    remainingWaitingSeconds, 0);
             }
-            var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
-            var dollarValue = await GetDollarValue(redPackageDetailDto, preGrabItem);
-            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.GrabbedQuota, redPackageDetailDto,
-                caHolderDto, nftInfoDto, "Claim and Join Portkey", dollarValue, preGrabItem.Amount,
-                remainingWaitingSeconds, 0);
         }
         
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
@@ -440,7 +436,10 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 caHolderDto, nftInfoDto, "Oh no, all the crypto gifts have been claimed.", "", 0,
                 0, 0);
         }
-        throw new UserFriendlyException("there is no crypto gift condition like this");
+        
+        return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
+            caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0,
+            0, 0);
     }
 
     private async Task<string> GetDollarValue(RedPackageDetailDto redPackageDetailDto, PreGrabItem claimedPreGrabItem)
