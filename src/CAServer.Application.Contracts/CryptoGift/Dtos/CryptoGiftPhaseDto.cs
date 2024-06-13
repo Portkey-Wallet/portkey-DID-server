@@ -1,4 +1,5 @@
 using CAServer.EnumType;
+using CAServer.UserAssets.Dtos;
 
 namespace CAServer.CryptoGift.Dtos;
 
@@ -11,6 +12,18 @@ public class CryptoGiftPhaseDto
     public string SubPrompt { get; set; }
     
     public long Amount { get; set; }
+    
+    public string Symbol { get; set; }
+    
+    public string DollarValue { get; set; }
+    
+    public string NftAlias { get; set; }
+    
+    public string NftTokenId { get; set; }
+    
+    public string NftImageUrl { get; set; }
+    
+    public int AssetType { get; set; }
     
     public string Memo { get; set; }
     

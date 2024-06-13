@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CAServer.CAAccount.Dtos;
 using CAServer.CryptoGift.Dtos;
+using CAServer.Grains.Grain.CryptoGift;
 using CAServer.RedPackage.Dtos;
 
 namespace CAServer.CryptoGift;
@@ -23,4 +24,6 @@ public interface ICryptoGiftAppService
     public Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(Guid receiverId, Guid redPackageId);
 
     public Task CryptoGiftTransferToRedPackage(string caHash, string caAddress, ReferralInfo referralInfo, bool isNewUser);
+
+    public Task<CryptoGiftDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId);
 }

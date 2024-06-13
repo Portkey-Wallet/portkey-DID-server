@@ -15,6 +15,9 @@ using CAServer.Grains.Grain.RedPackage;
 using CAServer.Grains.State;
 using CAServer.IpInfo;
 using CAServer.RedPackage.Dtos;
+using CAServer.Tokens.TokenPrice;
+using CAServer.UserAssets.Dtos;
+using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
@@ -24,6 +27,7 @@ using Volo.Abp.Auditing;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
+using NftInfoDto = CAServer.UserAssets.Dtos.NftInfoDto;
 
 namespace CAServer.CryptoGift;
 
@@ -37,6 +41,8 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     private readonly IIpInfoAppService _ipInfoAppService;
     private readonly IAbpDistributedLock _distributedLock;
     private readonly IdentityUserManager _userManager;
+    private readonly ITokenPriceService _tokenPriceService;
+    private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly ILogger<CryptoGiftAppService> _logger;
 
     public CryptoGiftAppService(INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -46,6 +52,8 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         IIpInfoAppService ipInfoAppService,
         IAbpDistributedLock distributedLock,
         IdentityUserManager userManager,
+        ITokenPriceService tokenPriceService,
+        IUserAssetsProvider userAssetsProvider,
         ILogger<CryptoGiftAppService> logger)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
@@ -55,6 +63,8 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         _ipInfoAppService = ipInfoAppService;
         _distributedLock = distributedLock;
         _userManager = userManager;
+        _tokenPriceService = tokenPriceService;
+        _userAssetsProvider = userAssetsProvider;
         _logger = logger;
     }
 
@@ -294,15 +304,27 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     }
     
     private PreGrabBucketItemDto GetBucketByIndex(CryptoGiftDto cryptoGiftDto, int index, Guid userId, string identityCode)
-        {
-            var bucket = cryptoGiftDto.BucketNotClaimed[index];
-            bucket.IdentityCode = identityCode;
-            bucket.Index = index;
-            bucket.UserId = userId;
-            cryptoGiftDto.BucketNotClaimed.Remove(bucket);
-            cryptoGiftDto.BucketClaimed.Add(bucket);
-            return bucket;
-        }
+    {
+        var bucket = cryptoGiftDto.BucketNotClaimed[index];
+        bucket.IdentityCode = identityCode;
+        bucket.Index = index;
+        bucket.UserId = userId;
+        cryptoGiftDto.BucketNotClaimed.Remove(bucket);
+        cryptoGiftDto.BucketClaimed.Add(bucket);
+        return bucket;
+    }
+    
+    private GetNftItemInfosDto CreateGetNftItemInfosDto(string symbol, string chainId)
+    {
+        var getNftItemInfosDto = new GetNftItemInfosDto();
+        getNftItemInfosDto.GetNftItemInfos = new List<GetNftItemInfo>();
+        var nftItemInfo = new GetNftItemInfo();
+        nftItemInfo.Symbol = symbol;
+        nftItemInfo.ChainId = chainId;
+        getNftItemInfosDto.GetNftItemInfos.Add(nftItemInfo);
+
+        return getNftItemInfosDto;
+    }
 
     public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId)
     {
@@ -323,68 +345,59 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var ipAddress = _ipInfoAppService.GetRemoteIp();
         var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString();
         await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
-        
+        //get the sender info
         var caHolderGrain = _clusterClient.GetGrain<ICAHolderGrain>(redPackageDetailDto.SenderId);
         var caHolderGrainDto = await caHolderGrain.GetCaHolder();
         if (!caHolderGrainDto.Success || caHolderGrainDto.Data == null)
         {
             throw new UserFriendlyException("the crypto gift sender does not exist");
         }
+
+        var caHolderDto = caHolderGrainDto.Data;
         var claimedPreGrabItem = cryptoGiftDto.Items.FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
                                                      && GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus));
+        // get nft info
+        var nftInfoDto = new NftInfoDto();
+        if (redPackageDetailDto.AssetType == (int)AssetType.NFT)
+        {
+            var getNftItemInfosDto = CreateGetNftItemInfosDto(redPackageDetailDto.Symbol, redPackageDetailDto.ChainId);
+            var indexerNftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
+            List<NftItemInfo> nftItemInfos = indexerNftItemInfos.NftItemInfos;
+
+            if (nftItemInfos != null && nftItemInfos.Count > 0)
+            {
+                nftInfoDto.Alias = nftItemInfos[0].TokenName;
+                nftInfoDto.TokenId = redPackageDetailDto.Symbol.Split('-')[1];
+                nftInfoDto.ImageUrl = nftItemInfos[0].ImageUrl;
+            }
+        }
         if (claimedPreGrabItem != null)
         {
-            return new CryptoGiftPhaseDto()
+            var dollarValue = string.Empty;
+            var tokenPriceData = await _tokenPriceService.GetCurrentPriceAsync(redPackageDetailDto.Symbol);
+            if (tokenPriceData != null)
             {
-                CryptoGiftPhase = CryptoGiftPhase.Claimed,
-                Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
-                SubPrompt = "Congratulations! You have claimed successfully",
-                Memo = redPackageDetailDto.Memo,
-                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
-                RemainingWaitingSeconds = 0,
-                RemainingExpirationSeconds = claimedPreGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds(),
-                Sender = new UserInfoDto()
-                {
-                    Avatar = caHolderGrainDto.Data.Avatar,
-                    Nickname = caHolderGrainDto.Data.Nickname
-                }
-            };
+                dollarValue = "≈$ " + Decimal.Multiply(tokenPriceData.PriceInUsd, claimedPreGrabItem.Amount);
+            }
+            var remainingExpirationSeconds = claimedPreGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() -
+                                              DateTimeOffset.Now.ToUnixTimeSeconds();
+            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+                caHolderDto, nftInfoDto, "You will get",  dollarValue, claimedPreGrabItem.Amount,
+                0, remainingExpirationSeconds);
         }
         if (RedPackageStatus.Expired.Equals(redPackageDetailDto.Status))
         {
-            return new CryptoGiftPhaseDto()
-            {
-                CryptoGiftPhase = CryptoGiftPhase.Expired,
-                Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
-                SubPrompt = "Oops! The crypto gift has been expired",
-                Memo = redPackageDetailDto.Memo,
-                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
-                RemainingWaitingSeconds = 0,
-                Sender = new UserInfoDto()
-                {
-                    Avatar = caHolderGrainDto.Data.Avatar,
-                    Nickname = caHolderGrainDto.Data.Nickname
-                }
-            };
+            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Oops, the crypto gift has expired.", "", 0,
+                0, 0);
         }
 
         if (RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status)
             || cryptoGiftDto.PreGrabbedAmount >= cryptoGiftDto.TotalAmount)
         {
-            return new CryptoGiftPhaseDto()
-            {
-                CryptoGiftPhase = CryptoGiftPhase.FullyClaimed,
-                Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
-                SubPrompt = "Oops! None left...",
-                Memo = redPackageDetailDto.Memo,
-                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
-                RemainingWaitingSeconds = 0,
-                Sender = new UserInfoDto()
-                {
-                    Avatar = caHolderGrainDto.Data.Avatar,
-                    Nickname = caHolderGrainDto.Data.Nickname
-                }
-            };
+            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Oh no, all the crypto gifts have been claimed.", "", 0,
+                0, 0);
         }
 
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
@@ -396,36 +409,14 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                                           && GrabbedStatus.Created.Equals(crypto.GrabbedStatus));
             if (preGrabItem == null)
             {
-                return new CryptoGiftPhaseDto()
-                {
-                    CryptoGiftPhase = CryptoGiftPhase.Available,
-                    Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
-                    SubPrompt = "Claim and Join Portkey",
-                    Memo = redPackageDetailDto.Memo,
-                    IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
-                    RemainingWaitingSeconds = 0,
-                    Sender = new UserInfoDto()
-                    {
-                        Avatar = caHolderGrainDto.Data.Avatar,
-                        Nickname = caHolderGrainDto.Data.Nickname
-                    }
-                };
+                return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+                    caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0,
+                    0, 0);
             }
-            return new CryptoGiftPhaseDto()
-            {
-                CryptoGiftPhase = CryptoGiftPhase.GrabbedQuota,
-                Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
-                SubPrompt = "Claim and Join Portkey",
-                Memo = redPackageDetailDto.Memo,
-                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
-                Amount = preGrabItem.Amount,
-                RemainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000,
-                Sender = new UserInfoDto()
-                {
-                    Avatar = caHolderGrainDto.Data.Avatar,
-                    Nickname = caHolderGrainDto.Data.Nickname
-                }
-            };
+            var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
+            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Claim and Join Portkey", "", preGrabItem.Amount,
+                remainingWaitingSeconds, 0);
         }
         
         if ((RedPackageStatus.NotClaimed.Equals(redPackageDetailDto.Status)
@@ -439,23 +430,47 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             {
                 throw new UserFriendlyException("Sorry, crypto gift status occured error");
             }
-            return new CryptoGiftPhaseDto()
-            {
-                CryptoGiftPhase = CryptoGiftPhase.NoQuota,
-                Prompt = $"{caHolderGrainDto.Data.Nickname} sent you a Crypto Gift",
-                SubPrompt = "Don't worry,it hasn't been claimed yet! You can keep trying to claim after",
-                Memo = redPackageDetailDto.Memo,
-                IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
-                RemainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000,
-                Sender = new UserInfoDto()
-                {
-                    Avatar = caHolderGrainDto.Data.Avatar,
-                    Nickname = caHolderGrainDto.Data.Nickname
-                }
-            };
+
+            var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
+            return GetUnLoginCryptoGiftPhaseDto(redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
+                remainingWaitingSeconds, 0);
         }
-        
         throw new UserFriendlyException("there is no crypto gift condition like this");
+    }
+    
+    private CryptoGiftPhaseDto GetUnLoginCryptoGiftPhaseDto(RedPackageDetailDto redPackageDetailDto,
+        CAHolderGrainDto caHolderGrainDto, NftInfoDto nftInfoDto, string subPrompt, string dollarValue, long amount,
+        long remainingWaitingSeconds, long remainingExpirationSeconds) {
+        return new CryptoGiftPhaseDto() 
+        {
+            CryptoGiftPhase = CryptoGiftPhase.Claimed,
+            Prompt = $"{caHolderGrainDto.Nickname} sent you a crypto gift",
+            SubPrompt = subPrompt,
+            Amount = amount,
+            Symbol = redPackageDetailDto.Symbol,
+            DollarValue = dollarValue,
+            NftAlias = nftInfoDto.Alias,
+            NftTokenId = nftInfoDto.TokenId,
+            NftImageUrl = nftInfoDto.ImageUrl,
+            AssetType = redPackageDetailDto.AssetType,
+            Memo = redPackageDetailDto.Memo,
+            IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
+            RemainingWaitingSeconds = remainingWaitingSeconds,
+            RemainingExpirationSeconds = remainingExpirationSeconds,
+            Sender = new UserInfoDto()
+            {
+                Avatar = caHolderGrainDto.Avatar,
+                Nickname = caHolderGrainDto.Nickname
+            }
+        };
+    }
+
+    public async Task<CryptoGiftDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
+    {
+        var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
+        var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
+        return cryptoGiftResultDto.Data;
     }
 
     public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(Guid receiverId, Guid redPackageId)
@@ -486,13 +501,32 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
         var caHolderGrainDto = caHolderResult.Data;
         var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(receiverId));
+        // get nft info
+        var nftTokenId = string.Empty;
+        var nftImageUrl = string.Empty;
+        if (redPackageDetailDto.AssetType == (int)AssetType.NFT)
+        {
+            var getNftItemInfosDto = CreateGetNftItemInfosDto(redPackageDetailDto.Symbol, redPackageDetailDto.ChainId);
+            var indexerNftItemInfos = await _userAssetsProvider.GetNftItemInfosAsync(getNftItemInfosDto, 0, 1000);
+            List<NftItemInfo> nftItemInfos = indexerNftItemInfos.NftItemInfos;
+
+            if (nftItemInfos != null && nftItemInfos.Count > 0)
+            {
+                // detail.Alias = nftItemInfos[0].TokenName;
+                nftTokenId = redPackageDetailDto.Symbol.Split('-')[1];
+                nftImageUrl = nftItemInfos[0].ImageUrl;
+            }
+        }
         if (grabItemDto != null)
         {
             return new CryptoGiftPhaseDto()
             {
                 CryptoGiftPhase = CryptoGiftPhase.Claimed,
-                Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
-                SubPrompt = $"You have already claimed {grabItemDto.Amount} {redPackageDetailDto.Symbol} of this Crypto Gift and can't reclaim it.",
+                Prompt = $"{caHolderGrainDto.Nickname} sent you a crypto gift",
+                SubPrompt = $"You've already claimed this crypto gift and received {grabItemDto.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.",
+                NftTokenId = nftTokenId,
+                NftImageUrl = nftImageUrl,
+                AssetType = redPackageDetailDto.AssetType,
                 Memo = redPackageDetailDto.Memo,
                 IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Sender = new UserInfoDto()
@@ -508,8 +542,11 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             return new CryptoGiftPhaseDto()
             {
                 CryptoGiftPhase = CryptoGiftPhase.Expired,
-                Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
-                SubPrompt = "Oops! The crypto gift has been expired",
+                Prompt = $"{caHolderGrainDto.Nickname} sent you a crypto gift",
+                SubPrompt = "Oops, the crypto gift has expired.",
+                NftTokenId = nftTokenId,
+                NftImageUrl = nftImageUrl,
+                AssetType = redPackageDetailDto.AssetType,
                 Memo = redPackageDetailDto.Memo,
                 IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Sender = new UserInfoDto()
@@ -525,8 +562,11 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             return new CryptoGiftPhaseDto()
             {
                 CryptoGiftPhase = CryptoGiftPhase.FullyClaimed,
-                Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
-                SubPrompt = "Oops! None left...",
+                Prompt = $"{caHolderGrainDto.Nickname} sent you a crypto gift",
+                SubPrompt = "Oh no, all the crypto gifts have been claimed.",
+                NftTokenId = nftTokenId,
+                NftImageUrl = nftImageUrl,
+                AssetType = redPackageDetailDto.AssetType,
                 Memo = redPackageDetailDto.Memo,
                 IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Sender = new UserInfoDto()
@@ -550,8 +590,11 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 return new CryptoGiftPhaseDto()
                 {
                     CryptoGiftPhase = CryptoGiftPhase.Available,
-                    Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
+                    Prompt = $"{caHolderGrainDto.Nickname} sent you a crypto gift",
                     SubPrompt = "Claim and Join Portkey",
+                    NftTokenId = nftTokenId,
+                    NftImageUrl = nftImageUrl,
+                    AssetType = redPackageDetailDto.AssetType,
                     Memo = redPackageDetailDto.Memo,
                     IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                     Sender = new UserInfoDto()
@@ -564,8 +607,11 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             return new CryptoGiftPhaseDto()
             {
                 CryptoGiftPhase = CryptoGiftPhase.ExpiredReleased,
-                Prompt = $"{caHolderGrainDto.Nickname} sent you a Crypto Gift",
-                SubPrompt = "Sorry, you miss the claim expiration time.", 
+                Prompt = $"{caHolderGrainDto.Nickname} sent you a crypto gift",
+                SubPrompt = "Oops, the crypto gift has expired.", 
+                NftTokenId = nftTokenId,
+                NftImageUrl = nftImageUrl,
+                AssetType = redPackageDetailDto.AssetType,
                 Memo = redPackageDetailDto.Memo,
                 IsNewUsersOnly = redPackageDetailDto.IsNewUsersOnly,
                 Sender = new UserInfoDto()
