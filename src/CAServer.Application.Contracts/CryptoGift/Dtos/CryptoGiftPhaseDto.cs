@@ -14,6 +14,8 @@ public class CryptoGiftPhaseDto
     
     public string Memo { get; set; }
     
+    public bool IsNewUsersOnly { get; set; }
+    
     public long RemainingWaitingSeconds { get; set; }
     
     public long RemainingExpirationSeconds { get; set; }
