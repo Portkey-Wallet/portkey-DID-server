@@ -393,6 +393,13 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             var preGrabItem = cryptoGiftDto.Items
                 .FirstOrDefault(crypto => crypto.IdentityCode.Equals(identityCode)
                                           && GrabbedStatus.Created.Equals(crypto.GrabbedStatus));
+            _logger.LogInformation("=====================");
+            foreach (var grabItem in cryptoGiftDto.Items)
+            {
+                _logger.LogInformation("identityCode:{0} grabItem:{1}", identityCode, JsonConvert.SerializeObject(grabItem));
+                _logger.LogInformation("crypto.IdentityCode.Equals(identityCode):{0}", grabItem.IdentityCode.Equals(identityCode));
+                _logger.LogInformation("GrabbedStatus.Created.Equals(crypto.GrabbedStatus):{0}", GrabbedStatus.Created.Equals(grabItem.GrabbedStatus));
+            }
             if (preGrabItem != null)
             {
                 var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
