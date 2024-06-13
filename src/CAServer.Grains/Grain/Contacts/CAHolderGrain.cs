@@ -95,6 +95,23 @@ public class CAHolderGrain : Grain<CAHolderState>, ICAHolderGrain
         result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
         return result;
     }
+    
+    public async Task<GrainResultDto<CAHolderGrainDto>> UpdateNewUserMarkAsync(bool isNewUserRegistered)
+    {
+        var result = new GrainResultDto<CAHolderGrainDto>();
+        if (string.IsNullOrWhiteSpace(State.CaHash))
+        {
+            result.Message = CAHolderMessage.NotExistMessage;
+            return result;
+        }
+
+        State.IsNewUserRegistered = isNewUserRegistered;
+        await WriteStateAsync();
+
+        result.Success = true;
+        result.Data = _objectMapper.Map<CAHolderState, CAHolderGrainDto>(State);
+        return result;
+    }
 
     public async Task<GrainResultDto<CAHolderGrainDto>> UpdateNicknameAndMarkBitAsync(string nickname, bool modifiedNickname, string identifierHash)
     {
