@@ -5,8 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CryptoGift;
 using CAServer.CryptoGift.Dtos;
-using CAServer.EnumType;
-using CAServer.RedPackage;
+using CAServer.Grains.Grain.CryptoGift;
 using CAServer.RedPackage.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -80,6 +79,12 @@ public class CryptoGiftController : CAServerController
             throw new UserFriendlyException("current user not exist!");
         }
         return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(receiverId, id);
+    }
+
+    [HttpGet("origin/detail")]
+    public async Task<CryptoGiftDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
+    {
+        return await _cryptoGiftAppService.GetCryptoGiftDetailFromGrainAsync(redPackageId);
     }
     
     [HttpGet("ip")]
