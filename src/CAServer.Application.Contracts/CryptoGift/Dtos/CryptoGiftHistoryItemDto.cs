@@ -10,11 +10,11 @@ public class CryptoGiftHistoryItemDto
     public string GrabbedAmount { get; set; }
     public string Memo { get; set; } = string.Empty;
     public long CreateTime { get; set; }
-    public string Status { get; set; }
+    public string DisplayStatus { get; set; }
     
     public string Symbol { get; set; }
     
-    public int Decimal { get; set; }
+    public int Decimals { get; set; }
     
-    public RedPackageStatus RedPackageStatus { get; set; }
+    public RedPackageStatus Status { get; set; }
 }
