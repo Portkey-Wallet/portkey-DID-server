@@ -13,6 +13,8 @@ public class CryptoGiftPhaseDto
     
     public long Amount { get; set; }
     
+    public int Decimals { get; set; }
+    
     public string Symbol { get; set; }
     
     public string DollarValue { get; set; }

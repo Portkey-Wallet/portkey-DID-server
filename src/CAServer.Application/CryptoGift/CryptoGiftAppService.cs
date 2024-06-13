@@ -448,6 +448,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             Prompt = $"{caHolderGrainDto.Nickname} sent you a crypto gift",
             SubPrompt = subPrompt,
             Amount = amount,
+            Decimals = redPackageDetailDto.Decimal,
             Symbol = redPackageDetailDto.Symbol,
             DollarValue = dollarValue,
             NftAlias = nftInfoDto.Alias,
