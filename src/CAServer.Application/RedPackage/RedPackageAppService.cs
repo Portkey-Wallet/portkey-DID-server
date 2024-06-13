@@ -370,6 +370,8 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             detail.IsRedPackageFullyClaimed = true;
         }
 
+        detail.DisplayStatus = RedPackageDisplayStatus.GetDisplayStatus(detail.Status);
+
         SetSeedStatusAndTypeForDetail(detail);
 
         TryUpdateImageUrlForDetail(detail);

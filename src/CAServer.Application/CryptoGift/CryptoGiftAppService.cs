@@ -168,7 +168,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         {
             throw new UserFriendlyException("the red package does not exist");
         }
-        var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString();
+        var identityCode = HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString().Replace("\"", "");
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
