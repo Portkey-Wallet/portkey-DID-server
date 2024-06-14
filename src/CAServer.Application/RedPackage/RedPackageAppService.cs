@@ -377,24 +377,28 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         TryUpdateImageUrlForDetail(detail);
 
         await CryptoGiftHandler(id, displayType, detail, skipCount, maxResultCount);
-        _logger.LogInformation("GetRedPackageDetailAsync {0}", JsonConvert.SerializeObject(detail));
-        return detail; 
+        _logger.LogInformation("RedPackageId:{0} GetRedPackageItems:{1} BucketNotClaimed:{2} BucketClaimed:{3}",
+            id, JsonConvert.SerializeObject(detail.Items), JsonConvert.SerializeObject(detail.BucketNotClaimed), JsonConvert.SerializeObject(detail.BucketClaimed));
+        return detail;
     }
 
     private async Task CryptoGiftHandler(Guid id, RedPackageDisplayType displayType, RedPackageDetailDto detail,
         int skipCount, int maxResultCount)
     {
+        _logger.LogInformation("CryptoGiftHandler RedPackageId:{0}", id);
         if (!RedPackageDisplayType.CryptoGift.Equals(displayType))
         {
             return;
         }
         
         var preGrabbedDto = await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(id);
+        _logger.LogInformation("CryptoGiftHandler RedPackageId:{0} preGrabbedDto:{1}", id, JsonConvert.SerializeObject(preGrabbedDto));
         foreach (var grabItemDto in detail.Items)
         {
             grabItemDto.DisplayType = CryptoGiftDisplayType.Common;
         }
         detail.Items.AddRange(_objectMapper.Map<List<PreGrabbedItemDto>, List<GrabItemDto>>(preGrabbedDto.Items));
+        _logger.LogInformation("CryptoGiftHandler RedPackageId:{0} detail.Items:{1}", id, JsonConvert.SerializeObject(detail.Items));
         detail.Items = detail.Items.Skip(skipCount).Take(maxResultCount).ToList();
     }
 
