@@ -32,8 +32,10 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
     
     public async Task HandleEventAsync(UserLoginEto eventData)
     {
-        try 
+        try
         {
+            await _distributedCache.SetAsync($"UserLoginHandler:{eventData.CaHash}", eventData.UserId.ToString());
+            
             await _contractAppService.SyncOriginChainIdAsync(eventData);
 
             var cacheResult = await _distributedCache.GetAsync($"CryptoGiftReferral:{eventData.CaHash}");
@@ -42,7 +44,6 @@ public class UserLoginHandler : IDistributedEventHandler<UserLoginEto>,ITransien
                 _logger.LogInformation("UserLoginHandler cacheResult is null, eventData:{0}", eventData);
                 return;
             }
-
             var cryptoGiftReferralDto = JsonConvert.DeserializeObject<CryptoGiftReferralDto>(cacheResult);
             await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.UserId, cryptoGiftReferralDto.CaAddress, cryptoGiftReferralDto.ReferralInfo, cryptoGiftReferralDto.IsNewUser);
         }
