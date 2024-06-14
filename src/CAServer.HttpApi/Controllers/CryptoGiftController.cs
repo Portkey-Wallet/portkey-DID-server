@@ -81,10 +81,16 @@ public class CryptoGiftController : CAServerController
         return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(receiverId, id);
     }
 
-    [HttpGet("origin/detail")]
+    [HttpGet("test/detail")]
     public async Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
     {
         return await _cryptoGiftAppService.GetCryptoGiftDetailFromGrainAsync(redPackageId);
+    }
+
+    [HttpGet("test/items")]
+    public async Task<PreGrabbedDto> ListCryptoPreGiftGrabbedItems(Guid redPackageId)
+    {
+        return await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(redPackageId);
     }
     
     [HttpGet("ip")]
