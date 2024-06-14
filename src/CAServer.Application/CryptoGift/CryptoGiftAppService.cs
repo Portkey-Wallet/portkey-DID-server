@@ -619,7 +619,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         };
     }
     
-    public async Task CryptoGiftTransferToRedPackage(string caHash, string caAddress, ReferralInfo referralInfo, bool isNewUser)
+    public async Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser)
     {
         if (referralInfo is not { ProjectCode: CommonConstant.CryptoGiftProjectCode } || referralInfo.ReferralCode.IsNullOrEmpty())
         {
@@ -627,29 +627,9 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             return;
         }
 
-        if (caHash.IsNullOrEmpty() || caAddress.IsNullOrEmpty())
-        {
-            throw new UserFriendlyException($"cahash:{caHash} and caAddress:{caAddress} are required", caHash, caAddress);
-        }
-        Guid userId = Guid.Empty;
-        for (int i = 0; i < 3; i++)
-        {
-            var user = await _userManager.FindByNameAsync(caHash);
-            if (user == null)
-            {
-                _logger.LogError("the user cahash:{0} doesn't exist", caHash);
-                Thread.Sleep(TimeSpan.FromSeconds(3));
-            }
-            else
-            {
-                userId = user.Id;
-                break;
-            }
-        }
-
         if (Guid.Empty.Equals(userId))
         {
-            throw new UserFriendlyException($"the user cahash:{caHash} doesn't exist");
+            throw new UserFriendlyException($"the user userId:{userId} doesn't exist");
         }
         var infos = referralInfo.ReferralCode.Split("#");
         string identityCode = infos[1];

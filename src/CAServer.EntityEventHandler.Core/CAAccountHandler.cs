@@ -15,9 +15,11 @@ using CAServer.Growth;
 using CAServer.Hubs;
 using CAServer.Monitor;
 using CAServer.Monitor.Logger;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Orleans;
+using Volo.Abp.Caching;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
 using Volo.Abp.ObjectMapping;
@@ -43,6 +45,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
     private readonly IIndicatorLogger _indicatorLogger;
     private readonly IGrowthAppService _growthAppService;
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
+    private readonly IDistributedCache<string> _distributedCache;
 
     public CaAccountHandler(INESTRepository<AccountRegisterIndex, Guid> registerRepository,
         INESTRepository<AccountRecoverIndex, Guid> recoverRepository,
@@ -53,7 +56,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         IIndicatorLogger indicatorLogger, IGrowthAppService growthAppService,
         INESTRepository<AccelerateRegisterIndex, string> accelerateRegisterRepository,
         INESTRepository<AccelerateRecoverIndex, string> accelerateRecoverRepository,
-        ICryptoGiftAppService cryptoGiftAppService)
+        ICryptoGiftAppService cryptoGiftAppService,
+        IDistributedCache<string> distributedCache)
     {
         _registerRepository = registerRepository;
         _recoverRepository = recoverRepository;
@@ -66,7 +70,7 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
         _accelerateRegisterRepository = accelerateRegisterRepository;
         _accelerateRecoverRepository = accelerateRecoverRepository;
         _cryptoGiftAppService = cryptoGiftAppService;
-
+        _distributedCache = distributedCache;
     }
 
     public async Task HandleEventAsync(AccountRegisterCreateEto eventData)
@@ -141,7 +145,16 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             await AddGrowthInfoAsync(eventData.CaHash, eventData.ReferralInfo);
             
             _logger.LogInformation("CreateHolderEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
-            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.CaHash, eventData.CaAddress, eventData.ReferralInfo, true);
+            await _distributedCache.SetAsync($"CryptoGiftReferral:{eventData.CaHash}", JsonConvert.SerializeObject(new CryptoGiftReferralDto
+            {
+                CaHash = eventData.CaHash,
+                CaAddress = eventData.CaAddress,
+                ReferralInfo = eventData.ReferralInfo,
+                IsNewUser = true
+            }), new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+            });
         }
         catch (Exception ex)
         {
@@ -193,7 +206,16 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
             _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
             _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
-            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.CaHash, eventData.CaAddress, eventData.ReferralInfo, false);
+            await _distributedCache.SetAsync($"CryptoGiftReferral:{eventData.CaHash}", JsonConvert.SerializeObject(new CryptoGiftReferralDto
+            {
+                CaHash = eventData.CaHash,
+                CaAddress = eventData.CaAddress,
+                ReferralInfo = eventData.ReferralInfo,
+                IsNewUser = false
+            }), new DistributedCacheEntryOptions()
+            {
+                AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+            });
         }
         catch (Exception ex)
         {
