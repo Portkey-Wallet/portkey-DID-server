@@ -631,7 +631,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(dest => dest.Username, src => src.MapFrom(m => "Pending Deposit"));
         CreateMap<PreGrabbedItemDto, GrabItemDto>();
         CreateMap<RedPackageDetailDto, CryptoGiftHistoryItemDto>()
-            .ForMember(dest => dest.Label, src => src.MapFrom(m => ETransferConstant.SgrName.Equals(m.Symbol) ? ETransferConstant.SgrDisplayName : string.Empty))
+            .ForMember(dest => dest.Label, src => src.MapFrom(m => ETransferConstant.SgrName.Equals(m.Symbol) ? ETransferConstant.SgrDisplayName : null))
             .ForMember(dest => dest.Exist, src => src.MapFrom(m => true))
             .ForMember(dest => dest.Decimals, src => src.MapFrom(m => m.Decimal))
             .ForMember(dest => dest.DisplayStatus, src => src.MapFrom(m => RedPackageDisplayStatus.GetDisplayStatus(m.Status)));
