@@ -4,6 +4,7 @@ using System.Linq;
 using AElf.Indexing.Elasticsearch.Options;
 using CAServer.CoinGeckoApi;
 using CAServer.Commons;
+using CAServer.CryptoGift;
 using CAServer.EntityEventHandler.Core;
 using CAServer.EntityEventHandler.Core.Worker;
 using CAServer.Grains;
@@ -60,6 +61,7 @@ public class CAServerEntityEventHandlerModule : AbpModule
         Configure<ImServerOptions>(configuration.GetSection("ImServer"));
         Configure<TokenPriceWorkerOption>(configuration.GetSection("TokenPriceWorker"));
         Configure<FeiXiaoHaoOptions>(configuration.GetSection("FeiXiaoHao"));
+        Configure<CryptoGiftOptions>(configuration.GetSection("CryptoGiftExpiration"));
         ConfigureCache(configuration);
         ConfigureGraphQl(context, configuration);
         ConfigureDistributedLocking(context, configuration);

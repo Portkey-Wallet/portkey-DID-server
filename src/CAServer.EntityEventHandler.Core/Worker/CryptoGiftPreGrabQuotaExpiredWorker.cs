@@ -42,7 +42,7 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
 
     protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
     {
-        _logger.LogInformation("CryptoGiftPreGrabQuotaExpiredWorker is beginning");
+        _logger.LogInformation("CryptoGiftWorker is beginning");
         var mustQuery = new List<Func<QueryContainerDescriptor<RedPackageIndex>, QueryContainer>>();
         mustQuery.Add(q => 
             q.Term(i => i.Field(f => f.RedPackageDisplayType).Value((int)RedPackageDisplayType.CryptoGift)));
@@ -50,7 +50,7 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
             q.Term(i => i.Field(f => f.CreateTime > DateTimeOffset.Now.Subtract(TimeSpan.FromDays(1)).ToUnixTimeMilliseconds())));
         QueryContainer Filter(QueryContainerDescriptor<RedPackageIndex> f) => f.Bool(b => b.Must(mustQuery));
         var (totalCount, cryptoGiftIndices) = await _redPackageIndexRepository.GetListAsync(Filter);
-        _logger.LogInformation("CryptoGiftPreGrabQuotaExpiredWorker cryptoGiftIndices:{0}", JsonConvert.SerializeObject(cryptoGiftIndices));
+        _logger.LogInformation("CryptoWorker cryptoGiftIndices:{0}", JsonConvert.SerializeObject(cryptoGiftIndices));
         if (cryptoGiftIndices.IsNullOrEmpty())
         {
             return;
@@ -61,12 +61,14 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
         {
             var redPackageGrain = _clusterClient.GetGrain<ICryptoBoxGrain>(cryptoGiftIndex.RedPackageId);
             var resultDto = await redPackageGrain.GetRedPackage(cryptoGiftIndex.RedPackageId);
+            _logger.LogInformation("CryptoWorker redPackageGrain:{0}", JsonConvert.SerializeObject(resultDto));
             if (!resultDto.Success || resultDto.Data == null)
             {
                 continue;
             }
             var grain = _clusterClient.GetGrain<ICryptoGiftGran>(cryptoGiftIndex.RedPackageId);
             var ctrCryptoGiftResult = await grain.GetCryptoGift(cryptoGiftIndex.RedPackageId);
+            _logger.LogInformation("CryptoWorker ctrCryptoGiftResult:{0}", JsonConvert.SerializeObject(ctrCryptoGiftResult));
             if (!ctrCryptoGiftResult.Success || ctrCryptoGiftResult.Data == null)
             {
                 continue;
@@ -108,6 +110,6 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
     private bool PreGrabItemCondition(PreGrabItem preGrabItem, long expiredTimeLimitMillis)
     {
         return GrabbedStatus.Created.Equals(preGrabItem.GrabbedStatus)
-               && (preGrabItem.GrabTime + expiredTimeLimitMillis) >= DateTimeOffset.Now.ToUnixTimeMilliseconds();
+               && (preGrabItem.GrabTime + expiredTimeLimitMillis) <= DateTimeOffset.Now.ToUnixTimeMilliseconds();
     }
 }
