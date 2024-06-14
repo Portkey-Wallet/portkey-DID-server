@@ -147,7 +147,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
 
         var cryptoGiftDto = cryptoGiftGrainDto.Data;
-        var grabbedItemDtos = _objectMapper.Map<List<PreGrabItem>, List<PreGrabbedItemDto>>(cryptoGiftDto.Items);
+        var grabbedItemDtos = _objectMapper.Map<List<PreGrabItem>, List<PreGrabbedItemDto>>(cryptoGiftDto.Items.Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus)).ToList());
         var expireMilliseconds = _cryptoGiftProvider.GetExpirationSeconds() * 1000;
         foreach (var preGrabbedItemDto in grabbedItemDtos)
         {
@@ -390,11 +390,11 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             }
             if (preGrabItem != null)
             {
-                var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
+                var remainingExpirationSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
                 var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabItem.Amount);
                 return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.GrabbedQuota, redPackageDetailDto,
                     caHolderDto, nftInfoDto, "Claim and Join Portkey", dollarValue, preGrabItem.Amount,
-                    remainingWaitingSeconds, 0);
+                    0, remainingExpirationSeconds);
             }
         }
         

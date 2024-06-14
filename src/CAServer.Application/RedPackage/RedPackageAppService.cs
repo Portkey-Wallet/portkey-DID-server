@@ -377,6 +377,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         TryUpdateImageUrlForDetail(detail);
 
         await CryptoGiftHandler(id, displayType, detail, skipCount, maxResultCount);
+        _logger.LogInformation("GetRedPackageDetailAsync {0}", JsonConvert.SerializeObject(detail));
         return detail; 
     }
 
@@ -387,6 +388,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         {
             return;
         }
+        
         var preGrabbedDto = await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(id);
         detail.Items.AddRange(_objectMapper.Map<List<PreGrabbedItemDto>, List<GrabItemDto>>(preGrabbedDto.Items));
         detail.Items = detail.Items.Skip(skipCount).Take(maxResultCount).ToList();
