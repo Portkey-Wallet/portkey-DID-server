@@ -411,15 +411,14 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             var preGrabItem = cryptoGiftDto.Items
                 .Where(crypto => GrabbedStatus.Created.Equals(crypto.GrabbedStatus))
                 .MinBy(crypto => crypto.GrabTime);
-            if (preGrabItem == null)
+            if (preGrabItem != null)
             {
-                throw new UserFriendlyException("Sorry, crypto gift status occured error");
+                var remainingWaitingSeconds = preGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
+                            remainingWaitingSeconds = remainingWaitingSeconds > 0 ? remainingWaitingSeconds : 0;
+                return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.NoQuota, redPackageDetailDto,
+                    caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
+                    remainingWaitingSeconds, 0);
             }
-            var remainingWaitingSeconds = preGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
-            remainingWaitingSeconds = remainingWaitingSeconds > 0 ? remainingWaitingSeconds : 0;
-            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.NoQuota, redPackageDetailDto,
-                caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
-                remainingWaitingSeconds, 0);
         }
         
         if (RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status)
