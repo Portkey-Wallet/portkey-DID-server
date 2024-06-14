@@ -152,6 +152,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var expireMilliseconds = _cryptoGiftProvider.GetExpirationSeconds() * 1000;
         foreach (var preGrabbedItemDto in grabbedItemDtos)
         {
+            preGrabbedItemDto.DisplayType = CryptoGiftDisplayType.Pending;
             preGrabbedItemDto.ExpirationTime = preGrabbedItemDto.GrabTime + expireMilliseconds;
         }
         return new PreGrabbedDto()

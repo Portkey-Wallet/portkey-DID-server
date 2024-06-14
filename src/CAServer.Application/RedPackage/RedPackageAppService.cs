@@ -390,6 +390,10 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         }
         
         var preGrabbedDto = await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(id);
+        foreach (var grabItemDto in detail.Items)
+        {
+            grabItemDto.DisplayType = CryptoGiftDisplayType.Common;
+        }
         detail.Items.AddRange(_objectMapper.Map<List<PreGrabbedItemDto>, List<GrabItemDto>>(preGrabbedDto.Items));
         detail.Items = detail.Items.Skip(skipCount).Take(maxResultCount).ToList();
     }
