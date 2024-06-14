@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using CAServer.CryptoGift;
 using CAServer.CryptoGift.Dtos;
-using CAServer.Grains.Grain.CryptoGift;
 using CAServer.RedPackage.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
