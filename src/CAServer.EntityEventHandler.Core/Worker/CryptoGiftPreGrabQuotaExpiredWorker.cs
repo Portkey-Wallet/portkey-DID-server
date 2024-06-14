@@ -73,15 +73,19 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
             {
                 continue;
             }
-
-            bool modified = false;
+            
             var cryptoGiftDto = ctrCryptoGiftResult.Data;
             var redPackageDetailDto = resultDto.Data;
-            var needReturnQuota = GetNoNeedReturnQuotaStatus(redPackageDetailDto);
-            foreach (var preGrabItem in cryptoGiftDto.Items.Where(preGrabItem => PreGrabItemCondition(preGrabItem, expiredTimeLimitMillis)))
+            var expiredPreGrabItems = cryptoGiftDto.Items.Where(preGrabItem => PreGrabItemCondition(preGrabItem, expiredTimeLimitMillis)).ToList();
+            if (expiredPreGrabItems.IsNullOrEmpty())
+            {
+                continue;
+            }
+            bool modified = false;
+            var needReturnQuota = GetNeedReturnQuotaStatus(redPackageDetailDto);
+            foreach (var preGrabItem in expiredPreGrabItems)
             {
                 modified = true;
-                preGrabItem.GrabbedStatus = GrabbedStatus.Expired;
                 if (needReturnQuota)
                 {
                     PreGrabBucketItemDto preGrabBucketItemDto = cryptoGiftDto.BucketClaimed[preGrabItem.Index];
@@ -89,6 +93,7 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
                     cryptoGiftDto.BucketClaimed.Remove(preGrabBucketItemDto);
                 }
             }
+            cryptoGiftDto.Items.RemoveAll(expiredPreGrabItems);
             if (modified)
             {
                 var updateCryptoGift = await grain.UpdateCryptoGift(cryptoGiftDto);
@@ -100,16 +105,17 @@ public class CryptoGiftPreGrabQuotaExpiredWorker : AsyncPeriodicBackgroundWorker
         }
     }
 
-    private bool GetNoNeedReturnQuotaStatus(RedPackageDetailDto redPackageDetailDto)
+    private bool GetNeedReturnQuotaStatus(RedPackageDetailDto redPackageDetailDto)
     {
-        return !RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status)
-               && !RedPackageStatus.Cancelled.Equals(redPackageDetailDto.Status)
-               && !RedPackageStatus.Expired.Equals(redPackageDetailDto.Status);
+        return !(RedPackageStatus.FullyClaimed.Equals(redPackageDetailDto.Status)
+               || RedPackageStatus.Cancelled.Equals(redPackageDetailDto.Status)
+               || RedPackageStatus.Expired.Equals(redPackageDetailDto.Status));
     }
 
     private bool PreGrabItemCondition(PreGrabItem preGrabItem, long expiredTimeLimitMillis)
     {
-        return GrabbedStatus.Created.Equals(preGrabItem.GrabbedStatus)
-               && (preGrabItem.GrabTime + expiredTimeLimitMillis) <= DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        return GrabbedStatus.Expired.Equals(preGrabItem.GrabbedStatus)
+               || (GrabbedStatus.Created.Equals(preGrabItem.GrabbedStatus)
+                   && (preGrabItem.GrabTime + expiredTimeLimitMillis) >= DateTimeOffset.Now.ToUnixTimeMilliseconds());
     }
 }
