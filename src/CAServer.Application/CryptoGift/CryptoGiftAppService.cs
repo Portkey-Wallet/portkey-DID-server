@@ -576,11 +576,13 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var user = await _userManager.FindByNameAsync(caHash);
         if (user != null)
         {
+            _logger.LogInformation("===============get from user manager cahash:{0}", caHash);
             return user.Id;
         }
         var userIdStr = await _distributedCache.GetAsync($"UserLoginHandler:{caHash}");
         if (!userIdStr.IsNullOrEmpty())
         {
+            _logger.LogInformation("===============get from cache cahash:{0}", caHash);
             return Guid.Parse(userIdStr);
         }
         throw new UserFriendlyException("the user doesn't exist");
