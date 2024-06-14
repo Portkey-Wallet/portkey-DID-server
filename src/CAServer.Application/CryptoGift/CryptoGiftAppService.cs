@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
@@ -22,6 +23,7 @@ using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
+using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.DistributedLocking;
@@ -90,9 +92,6 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         if (redPackageDetail.Success && redPackageDetail.Data != null)
         {
             firstDetail = _objectMapper.Map<RedPackageDetailDto, CryptoGiftHistoryItemDto>(redPackageDetail.Data);
-            firstDetail.Label = ETransferConstant.SgrName.Equals(firstDetail.Symbol)
-                ? ETransferConstant.SgrDisplayName
-                : string.Empty;
         }
 
         return firstDetail;
@@ -627,12 +626,26 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         {
             throw new UserFriendlyException($"cahash:{caHash} and caAddress:{caAddress} are required", caHash, caAddress);
         }
-        var user = await _userManager.FindByNameAsync(caHash);
-        if (user == null)
+        Guid userId = Guid.Empty;
+        for (int i = 0; i < 3; i++)
         {
-            throw new UserFriendlyException($"the user cahash:{caHash} doesn't exist", caHash);
+            var user = await _userManager.FindByNameAsync(caHash);
+            if (user == null)
+            {
+                _logger.LogError("the user cahash:{0} doesn't exist", caHash);
+                Thread.Sleep(TimeSpan.FromSeconds(3));
+            }
+            else
+            {
+                userId = user.Id;
+                break;
+            }
         }
-        Guid userId = user.Id;
+
+        if (Guid.Empty.Equals(userId))
+        {
+            throw new UserFriendlyException($"the user cahash:{caHash} doesn't exist");
+        }
         var infos = referralInfo.ReferralCode.Split("#");
         string identityCode = infos[1];
         Guid redPackageId = Guid.Parse(infos[0]);
