@@ -59,11 +59,12 @@ public class RedPackageController : CAServerController
     [Authorize]
     public async Task<RedPackageDetailDto> GetRedPackageDetailAsync(Guid id, RedPackageDisplayType displayType, int skipCount = 0, int maxResultCount = 0)
     {
+        _logger.LogInformation("Controller redPackageId:{0} displayType:{1} Enum.IsDefined(displayType):{2}", id, displayType, Enum.IsDefined(displayType));
         if (!Enum.IsDefined(displayType))
         {
             displayType = RedPackageDisplayType.Common;
         }
-        return await _redPackageAppService.GetRedPackageDetailAsync(id, displayType,skipCount, maxResultCount);
+        return await _redPackageAppService.GetRedPackageDetailAsync(id, displayType, skipCount, maxResultCount);
     }
     
     [HttpGet("config")]

@@ -392,7 +392,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             }
             if (preGrabItem != null)
             {
-                var remainingExpirationSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
+                var remainingExpirationSeconds = preGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
                 var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabItem.Amount);
                 return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.GrabbedQuota, redPackageDetailDto,
                     caHolderDto, nftInfoDto, "Claim and Join Portkey", dollarValue, preGrabItem.Amount,

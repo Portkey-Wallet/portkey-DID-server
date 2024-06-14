@@ -386,11 +386,11 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         int skipCount, int maxResultCount)
     {
         _logger.LogInformation("CryptoGiftHandler RedPackageId:{0}", id);
-        if (!RedPackageDisplayType.CryptoGift.Equals(displayType))
-        {
-            return;
-        }
-        
+        // if (!RedPackageDisplayType.CryptoGift.Equals(displayType))
+        // {
+        //     return;
+        // }
+        _logger.LogInformation("CryptoGiftHandler RedPackageId:{0} displayType:{1}", id, displayType);
         var preGrabbedDto = await _cryptoGiftAppService.ListCryptoPreGiftGrabbedItems(id);
         _logger.LogInformation("CryptoGiftHandler RedPackageId:{0} preGrabbedDto:{1}", id, JsonConvert.SerializeObject(preGrabbedDto));
         foreach (var grabItemDto in detail.Items)
