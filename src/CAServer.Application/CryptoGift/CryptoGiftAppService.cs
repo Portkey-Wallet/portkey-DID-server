@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Indexing.Elasticsearch;
@@ -23,9 +22,9 @@ using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
-using Orleans.Runtime;
 using Volo.Abp;
 using Volo.Abp.Auditing;
+using Volo.Abp.Caching;
 using Volo.Abp.DistributedLocking;
 using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
@@ -45,6 +44,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     private readonly IdentityUserManager _userManager;
     private readonly ITokenPriceService _tokenPriceService;
     private readonly IUserAssetsProvider _userAssetsProvider;
+    private readonly IDistributedCache<string> _distributedCache;
     private readonly ILogger<CryptoGiftAppService> _logger;
 
     public CryptoGiftAppService(INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -56,6 +56,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         IdentityUserManager userManager,
         ITokenPriceService tokenPriceService,
         IUserAssetsProvider userAssetsProvider,
+        IDistributedCache<string> distributedCache,
         ILogger<CryptoGiftAppService> logger)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
@@ -67,6 +68,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         _userManager = userManager;
         _tokenPriceService = tokenPriceService;
         _userAssetsProvider = userAssetsProvider;
+        _distributedCache = distributedCache;
         _logger = logger;
     }
 
@@ -531,12 +533,8 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 0);
         }
 
-        var user = await _userManager.FindByNameAsync(caHash);
-        if (user == null)
-        {
-            throw new UserFriendlyException("the user doesn't exist");
-        }
-        var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(user.Id));
+        Guid userId = await GetUserId(caHash);
+        var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(userId));
         if (grabItemDto != null)
         {
             var subPrompt = $"You've already claimed this crypto gift and received" +
@@ -572,6 +570,21 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
                         caHolderGrainDto, nftInfoDto,  "Claim and Join Portkey", "",
                         0);
+    }
+
+    private async Task<Guid> GetUserId(string caHash)
+    {
+        var user = await _userManager.FindByNameAsync(caHash);
+        if (user != null)
+        {
+            return user.Id;
+        }
+        var userIdStr = await _distributedCache.GetAsync($"UserLoginHandler:{caHash}");
+        if (!userIdStr.IsNullOrEmpty())
+        {
+            return Guid.Parse(userIdStr);
+        }
+        throw new UserFriendlyException("the user doesn't exist");
     }
 
     private async Task<NftInfoDto> GetNftInfo(RedPackageDetailDto redPackageDetailDto)
@@ -666,7 +679,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         //1 crypto gift: amount/item
         var preGrabBucketItemDto = GetClaimedCryptoGift(userId, identityCode, redPackageId, cryptoGiftDto);
         _logger.LogInformation("CryptoGiftTransferToRedPackage GetClaimedCryptoGift:{0}", JsonConvert.SerializeObject(preGrabBucketItemDto));
-        var updateCryptoGiftResult = cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
+        var updateCryptoGiftResult = await cryptoGiftGrain.UpdateCryptoGift(cryptoGiftDto);
         _logger.LogInformation("CryptoGiftTransferToRedPackage updateCryptoGiftResult:{0}", JsonConvert.SerializeObject(updateCryptoGiftResult));
         
         //2 red package: amount/item
