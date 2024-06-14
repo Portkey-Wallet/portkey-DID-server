@@ -629,8 +629,7 @@ public class CAServerApplicationAutoMapperProfile : Profile
             .ForMember(dest => dest.Id, src => src.MapFrom(m => m.RedPackageId));
         CreateMap<PreGrabItem, PreGrabbedItemDto>()
             .ForMember(dest => dest.Username, src => src.MapFrom(m => "Pending Deposit"));
-        CreateMap<PreGrabbedItemDto, GrabItemDto>()
-            .ForMember(dest => dest.DisplayType, src => src.MapFrom(m => CryptoGiftDisplayType.Pending));
+        CreateMap<PreGrabbedItemDto, GrabItemDto>();
         CreateMap<RedPackageDetailDto, CryptoGiftHistoryItemDto>()
             .ForMember(dest => dest.Exist, src => src.MapFrom(m => true))
             .ForMember(dest => dest.Decimals, src => src.MapFrom(m => m.Decimal))
