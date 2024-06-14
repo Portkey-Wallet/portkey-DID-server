@@ -106,4 +106,6 @@ public static class CommonConstant
     public const int TwitterLimitCount = 200;
     
     public const string ActivitiesStartVersion = "1.17.0";
+
+    public const string ReferralKey = "Portkey:ReferralBank";
 }

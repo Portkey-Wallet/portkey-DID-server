@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using CAServer.EnumType;
 using CAServer.Growth;
 using CAServer.Growth.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -45,4 +46,33 @@ public class GrowthController : CAServerController
     {
         return await _statisticAppService.GetReferralInfoAsync(input);
     }
+
+    [HttpGet("referralRecordList"), Authorize]
+    public async Task<ReferralRecordResponseDto> GetReferralRecordList(ReferralRecordRequestDto input)
+    {
+        return await _statisticAppService.GetReferralRecordList(input);
+    }
+    
+    [HttpGet("referralTotalCount"), Authorize]
+    public async Task<int> GetReferralTotalCount(ReferralRecordRequestDto input)
+    {
+        return await _statisticAppService.GetReferralTotalCountAsync(input);
+    }
+    
+    
+    [HttpGet("referralRecordRank"), Authorize]
+    public async Task<ReferralRecordsRankResponseDto> GetReferralRecordRankAsync(ReferralRecordRankRequestDto input)
+    {
+        return await _statisticAppService.GetReferralRecordRankAsync(input);
+    }
+    
+    [HttpGet("activityDateRange"), Authorize]
+    public async Task<ActivityDateRangeResponseDto> GetActivityDateRange(ActivityEnums activityEnum)
+    {
+        return await _growthAppService.GetActivityDateRangeAsync(activityEnum);
+    }
+    
+    
+
+
 }

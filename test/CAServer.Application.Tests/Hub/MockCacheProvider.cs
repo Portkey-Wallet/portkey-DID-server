@@ -107,4 +107,24 @@ public class MockCacheProvider : ICacheProvider
         }
         return !val.IsNullOrEmpty() ? Task.FromResult(long.Parse(val)) : null;
     }
+
+    public Task AddScoreAsync(string leaderboardKey, string member, double score)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<double> GetScoreAsync(string leaderboardKey, string member)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<long> GetRankAsync(string leaderboardKey, string member, bool highToLow = true)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<SortedSetEntry[]> GetTopAsync(string leaderboardKey, long startRank, long stopRank, bool highToLow = true)
+    {
+        throw new NotImplementedException();
+    }
 }

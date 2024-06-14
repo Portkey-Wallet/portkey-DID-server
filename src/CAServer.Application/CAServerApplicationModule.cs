@@ -164,6 +164,8 @@ public class CAServerApplicationModule : AbpModule
         Configure<GrowthOptions>(configuration.GetSection("Growth"));
         Configure<PortkeyV1Options>(configuration.GetSection("PortkeyV1"));
         Configure<ETransferOptions>(configuration.GetSection("ETransfer"));
+        Configure<ActivityDateRangeOptions>(configuration.GetSection("ETransfer"));
+        
         AddMessagePushService(context, configuration);
     }
 

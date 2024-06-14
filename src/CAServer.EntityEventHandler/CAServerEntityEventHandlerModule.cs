@@ -170,6 +170,9 @@ public class CAServerEntityEventHandlerModule : AbpModule
         var backgroundWorkerManger = context.ServiceProvider.GetRequiredService<IBackgroundWorkerManager>();
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<LoginGuardianChangeRecordReceiveWorker>());
         backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<TokenPriceBackgroundWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<InitReferralRankWorker>());
+        backgroundWorkerManger.AddAsync(context.ServiceProvider.GetService<ReferralRankWorker>());
+        
         
         ConfigurationProvidersHelper.DisplayConfigurationProviders(context);
     }
