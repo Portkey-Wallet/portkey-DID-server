@@ -13,6 +13,7 @@ public class CryptoGiftHistoryItemDto
     public string DisplayStatus { get; set; }
     
     public string Symbol { get; set; }
+    public string Label { get; set; }
     
     public int Decimals { get; set; }
     

@@ -90,6 +90,9 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         if (redPackageDetail.Success && redPackageDetail.Data != null)
         {
             firstDetail = _objectMapper.Map<RedPackageDetailDto, CryptoGiftHistoryItemDto>(redPackageDetail.Data);
+            firstDetail.Label = ETransferConstant.SgrName.Equals(firstDetail.Symbol)
+                ? ETransferConstant.SgrDisplayName
+                : string.Empty;
         }
 
         return firstDetail;
