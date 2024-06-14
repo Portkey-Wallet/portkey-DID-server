@@ -78,8 +78,6 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
 
             register.RegisterStatus = AccountOperationStatus.Pending;
             await _registerRepository.AddAsync(register);
-            _logger.LogInformation("AccountRegisterCreateEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
-            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.CaHash, eventData.CaAddress, eventData.ReferralInfo, true);
             _logger.LogDebug($"register add success: {JsonConvert.SerializeObject(register)}");
         }
         catch (Exception ex)
@@ -98,8 +96,6 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
 
             recover.RecoveryStatus = AccountOperationStatus.Pending;
             await _recoverRepository.AddAsync(recover);
-            _logger.LogInformation("AccountRecoverCreateEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
-            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.CaHash, eventData.CaAddress, eventData.ReferralInfo, false);
             _logger.LogDebug($"recovery add success: {JsonConvert.SerializeObject(recover)}");
         }
         catch (Exception ex)
@@ -143,6 +139,9 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
                 register.RegisterStatus);
 
             await AddGrowthInfoAsync(eventData.CaHash, eventData.ReferralInfo);
+            
+            _logger.LogInformation("CreateHolderEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
+            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.CaHash, eventData.CaAddress, eventData.ReferralInfo, true);
         }
         catch (Exception ex)
         {
@@ -193,6 +192,8 @@ public class CaAccountHandler : IDistributedEventHandler<AccountRegisterCreateEt
 
             _logger.LogDebug("register update success: id: {id}, status: {status}", recover.Id.ToString(),
                 recover.RecoveryStatus);
+            _logger.LogInformation("SocialRecoveryEto CryptoGiftTransferToRedPackage eventData:{0}", JsonConvert.SerializeObject(eventData));
+            await _cryptoGiftAppService.CryptoGiftTransferToRedPackage(eventData.CaHash, eventData.CaAddress, eventData.ReferralInfo, false);
         }
         catch (Exception ex)
         {

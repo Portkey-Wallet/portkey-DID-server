@@ -618,6 +618,11 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             _logger.LogInformation("CryptoGiftTransferToRedPackage ProjectCode isn't 20000, referralInfo={0}", JsonConvert.SerializeObject(referralInfo));
             return;
         }
+
+        if (caHash.IsNullOrEmpty() || caAddress.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException($"cahash:{caHash} and caAddress:{caAddress} are required", caHash, caAddress);
+        }
         var user = await _userManager.FindByNameAsync(caHash);
         if (user == null)
         {

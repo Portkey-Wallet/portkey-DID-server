@@ -170,14 +170,14 @@ public class ContractAppService : IContractAppService
         {
             Id = message.Id,
             Context = message.Context,
-            GrainId = message.GrainId
+            GrainId = message.GrainId,
+            ReferralInfo = message.ReferralInfo
         };
 
         CreateHolderDto createHolderDto;
 
         try
         {
-            //todo make sure whether the contract logic need to deal
             if (message.ReferralInfo is { ProjectCode: CommonConstant.CryptoGiftProjectCode })
             {
                 message.ReferralInfo = null;
@@ -285,7 +285,8 @@ public class ContractAppService : IContractAppService
         {
             Id = message.Id,
             Context = message.Context,
-            GrainId = message.GrainId
+            GrainId = message.GrainId,
+            ReferralInfo = message.ReferralInfo
         };
 
         SocialRecoveryDto socialRecoveryDto;

@@ -1,4 +1,5 @@
 using System;
+using CAServer.CAAccount.Dtos;
 using Volo.Abp.EventBus;
 
 namespace CAServer.ContractEventHandler;
@@ -16,4 +17,5 @@ public class SocialRecoveryEto : ContractServiceEto
     public DateTime RecoveryTime { get; set; }
     public string RecoveryMessage { get; set; }
     public bool? RecoverySuccess { get; set; }
+    public ReferralInfo ReferralInfo { get; set; }
 }
