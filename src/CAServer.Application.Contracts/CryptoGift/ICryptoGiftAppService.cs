@@ -18,7 +18,7 @@ public interface ICryptoGiftAppService
 
     public Task PreGrabCryptoGiftAfterLogging(Guid redPackageId, Guid userId, int index, int amountDecimal);
 
-    public Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId);
+    public Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId, string ipAddressParam);
 
     public Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(Guid receiverId, Guid redPackageId);
 

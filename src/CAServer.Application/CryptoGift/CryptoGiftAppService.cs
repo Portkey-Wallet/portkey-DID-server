@@ -325,7 +325,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         return getNftItemInfosDto;
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftDetailAsync(Guid redPackageId, string ipAddressParam)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -341,7 +341,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
-        var ipAddress = _ipInfoAppService.GetRemoteIp();
+        var ipAddress = ipAddressParam.IsNullOrEmpty() ? _ipInfoAppService.GetRemoteIp() : ipAddressParam;
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
         //get the sender info
