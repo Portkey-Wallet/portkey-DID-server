@@ -411,7 +411,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             {
                 throw new UserFriendlyException("Sorry, crypto gift status occured error");
             }
-            var remainingWaitingSeconds = DateTimeOffset.Now.ToUnixTimeSeconds() - preGrabItem.GrabTime / 1000;
+            var remainingWaitingSeconds = preGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.NoQuota, redPackageDetailDto,
                 caHolderDto, nftInfoDto, "Unclaimed gifts may be up for grabs! Try to claim once the countdown ends.", "", 0,
                 remainingWaitingSeconds, 0);
