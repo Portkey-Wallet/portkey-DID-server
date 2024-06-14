@@ -486,7 +486,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         return _objectMapper.Map<CryptoGiftDto, CryptoGiftAppDto>(cryptoGiftResultDto.Data);
     }
 
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(Guid receiverId, Guid redPackageId)
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync(string caHash, Guid redPackageId)
     {
         var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(redPackageId);
         var redPackageDetail = await grain.GetRedPackage(redPackageId);
@@ -530,8 +530,13 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 caHolderGrainDto, nftInfoDto, "Oops, the crypto gift has expired.", "",
                 0);
         }
-        
-        var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(receiverId));
+
+        var user = await _userManager.FindByNameAsync(caHash);
+        if (user == null)
+        {
+            throw new UserFriendlyException("the user doesn't exist");
+        }
+        var grabItemDto = redPackageDetailDto.Items.FirstOrDefault(red => red.UserId.Equals(user.Id));
         if (grabItemDto != null)
         {
             var subPrompt = $"You've already claimed this crypto gift and received" +

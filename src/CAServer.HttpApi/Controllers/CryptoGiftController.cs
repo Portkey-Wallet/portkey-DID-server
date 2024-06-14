@@ -69,15 +69,15 @@ public class CryptoGiftController : CAServerController
     }
     
     [HttpGet("login/detail")]
-    [Authorize]
-    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync([Required] Guid id)
+    // [Authorize]
+    public async Task<CryptoGiftPhaseDto> GetCryptoGiftLoginDetailAsync([Required] Guid id, [Required]string caHash)
     {
-        var receiverId = CurrentUser.GetId();
-        if (Guid.Empty.Equals(receiverId))
-        {
-            throw new UserFriendlyException("current user not exist!");
-        }
-        return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(receiverId, id);
+        // var receiverId = CurrentUser.GetId();
+        // if (Guid.Empty.Equals(receiverId))
+        // {
+        //     throw new UserFriendlyException("current user not exist!");
+        // }
+        return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(caHash, id);
     }
 
     [HttpGet("test/detail")]
