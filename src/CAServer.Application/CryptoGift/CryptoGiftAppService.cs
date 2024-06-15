@@ -18,6 +18,7 @@ using CAServer.RedPackage.Dtos;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
@@ -185,6 +186,10 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             throw new UserFriendlyException("the red package does not exist");
         }
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
+        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+        });
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -347,6 +352,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
+        //todo remove ipAddresssParam before online
         var ipAddress = ipAddressParam.IsNullOrEmpty() ? _ipInfoAppService.GetRemoteIp() : ipAddressParam;
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
@@ -361,6 +367,14 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         var caHolderDto = caHolderGrainDto.Data;
         // get nft info
         var nftInfoDto = await GetNftInfo(redPackageDetailDto);
+        
+        //before claiming, show the available crypto gift status
+        var claimedResult = await _distributedCache.GetAsync(identityCode);
+        if (claimedResult.IsNullOrEmpty())
+        {
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0, 0, 0);
+        }
         
         if (RedPackageStatus.Expired.Equals(redPackageDetailDto.Status))
         {
