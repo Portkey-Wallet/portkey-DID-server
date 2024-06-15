@@ -80,6 +80,14 @@ public class CryptoGiftController : CAServerController
         return await _cryptoGiftAppService.GetCryptoGiftLoginDetailAsync(caHash, id);
     }
 
+    [HttpGet("test/transfer")]
+    public async Task TestCryptoGiftTransferToRedPackage(string caHash, string caAddress,
+        Guid id, string identityCode, bool isNewUser)
+    {
+        await _cryptoGiftAppService.TestCryptoGiftTransferToRedPackage(caHash, caAddress,
+            id, identityCode, isNewUser);
+    }
+
     [HttpGet("test/detail")]
     public async Task<CryptoGiftAppDto> GetCryptoGiftDetailFromGrainAsync(Guid redPackageId)
     {
