@@ -14,12 +14,14 @@ using CAServer.Grains.Grain.CryptoGift;
 using CAServer.Grains.Grain.RedPackage;
 using CAServer.Grains.State;
 using CAServer.IpInfo;
+using CAServer.Options;
 using CAServer.RedPackage.Dtos;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using Orleans;
@@ -46,6 +48,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
     private readonly ITokenPriceService _tokenPriceService;
     private readonly IUserAssetsProvider _userAssetsProvider;
     private readonly IDistributedCache<string> _distributedCache;
+    private readonly IpfsOptions _ipfsOptions;
     private readonly ILogger<CryptoGiftAppService> _logger;
 
     public CryptoGiftAppService(INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -58,6 +61,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         ITokenPriceService tokenPriceService,
         IUserAssetsProvider userAssetsProvider,
         IDistributedCache<string> distributedCache,
+        IOptionsSnapshot<IpfsOptions> ipfsOptions,
         ILogger<CryptoGiftAppService> logger)
     {
         _redPackageIndexRepository = redPackageIndexRepository;
@@ -70,6 +74,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         _tokenPriceService = tokenPriceService;
         _userAssetsProvider = userAssetsProvider;
         _distributedCache = distributedCache;
+        _ipfsOptions = ipfsOptions.Value;
         _logger = logger;
     }
 
@@ -622,6 +627,9 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                 nftInfoDto.Alias = nftItemInfos[0].TokenName;
                 nftInfoDto.TokenId = redPackageDetailDto.Symbol.Split('-')[1];
                 nftInfoDto.ImageUrl = nftItemInfos[0].ImageUrl;
+                _logger.LogInformation("_ipfsOptions?.ReplacedIpfsPrefix:{0}", _ipfsOptions?.ReplacedIpfsPrefix);
+                nftInfoDto.ImageUrl = IpfsImageUrlHelper.TryGetIpfsImageUrl(nftInfoDto.ImageUrl, _ipfsOptions?.ReplacedIpfsPrefix);
+                _logger.LogInformation("cryptogift nftInfo imageUrl:{0}", nftInfoDto.ImageUrl);
             }
         }
 
