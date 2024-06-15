@@ -25,6 +25,7 @@ using Orleans;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.Identity;
 using Volo.Abp.ObjectMapping;
 using ChainOptions = CAServer.Options.ChainOptions;
 using Volo.Abp.Users;
@@ -48,6 +49,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
     private readonly IpfsOptions _ipfsOptions;
     private readonly NftToFtOptions _nftToFtOptions;
     private readonly ICryptoGiftAppService _cryptoGiftAppService;
+    private readonly IdentityUserManager _userManager;
 
     public RedPackageAppService(IClusterClient clusterClient, IDistributedEventBus distributedEventBus,
         INESTRepository<RedPackageIndex, Guid> redPackageIndexRepository,
@@ -58,7 +60,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         IOptionsSnapshot<ChainOptions> chainOptions, ILogger<RedPackageAppService> logger,
         ITokenAppService tokenAppService, IUserAssetsProvider userAssetsProvider,
         IOptionsSnapshot<IpfsOptions> ipfsOptions, IOptionsSnapshot<NftToFtOptions> nftToFtOptions,
-        ICryptoGiftAppService cryptoGiftAppService)
+        ICryptoGiftAppService cryptoGiftAppService, IdentityUserManager userManager)
     {
         _redPackageOptions = redPackageOptions.Value;
         _chainOptions = chainOptions.Value;
@@ -74,6 +76,7 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
         _nftToFtOptions = nftToFtOptions.Value;
         _ipfsOptions = ipfsOptions.Value;
         _cryptoGiftAppService = cryptoGiftAppService;
+        _userManager = userManager;
     }
 
     public async Task<RedPackageTokenInfo> GetRedPackageOptionAsync(String symbol, string chainId)
@@ -477,6 +480,56 @@ public class RedPackageAppService : CAServerAppService, IRedPackageAppService
             TokenInfo = resultList,
             RedPackageContractAddress = contractAddressList
         };
+    }
+
+    public async Task<GrabRedPackageOutputDto> LoggedGrabRedPackageAsync(GrabRedPackageInputDto input)
+    {
+        if (input.CaHash.IsNullOrEmpty())
+        {
+            throw new UserFriendlyException("caHash is required~");
+        }
+        var user = await _userManager.FindByNameAsync(input.CaHash);
+        if (user == null)
+        {
+            throw new UserFriendlyException("user doesn't exist~");
+        }
+        var userId = user.Id;
+        if (Guid.Empty.Equals(userId))
+        {
+            return new GrabRedPackageOutputDto()
+            {
+                Result = RedPackageGrabStatus.Fail,
+                ErrorMessage = RedPackageConsts.UserNotExist
+            };
+        }
+
+        var grain = _clusterClient.GetGrain<ICryptoBoxGrain>(input.Id);
+        var result = await grain.GrabRedPackage(userId, input.UserCaAddress);
+        if (result.Success)
+        {
+            await _distributedEventBus.PublishAsync(new PayRedPackageEto()
+            {
+                RedPackageId = input.Id
+            });
+        }
+
+        var res = new GrabRedPackageOutputDto()
+        {
+            Result = result.Data.Result,
+            ErrorMessage = result.Data.ErrorMessage,
+            Amount = result.Data.Amount,
+            Decimal = result.Data.Decimal,
+            Status = result.Data.Status
+        };
+        //add the crypto gift logic
+        await PreGrabCryptoGiftAfterLogging(input.Id, userId, input.RedPackageDisplayType, result.Data.BucketItem.Index, result.Data.Decimal);
+        if (!result.Success && !string.IsNullOrWhiteSpace(result.Data.Amount))
+        {
+            res.Result = RedPackageGrabStatus.Success;
+            res.ErrorMessage = "";
+        }
+
+        return res;
     }
 
     public async Task<GrabRedPackageOutputDto> GrabRedPackageAsync(GrabRedPackageInputDto input)

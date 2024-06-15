@@ -18,6 +18,7 @@ using CAServer.RedPackage.Dtos;
 using CAServer.Tokens.TokenPrice;
 using CAServer.UserAssets.Dtos;
 using CAServer.UserAssets.Provider;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Nest;
 using Newtonsoft.Json;
@@ -185,6 +186,10 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             throw new UserFriendlyException("the red package does not exist");
         }
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
+        await _distributedCache.SetAsync(identityCode, "Claimed", new DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+        });
         var cryptoGiftGrain = _clusterClient.GetGrain<ICryptoGiftGran>(redPackageId);
         var cryptoGiftResultDto = await cryptoGiftGrain.GetCryptoGift(redPackageId);
         if (!cryptoGiftResultDto.Success || cryptoGiftResultDto.Data == null)
@@ -347,6 +352,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         }
         var redPackageDetailDto = redPackageDetail.Data;
         var cryptoGiftDto = cryptoGiftResultDto.Data;
+        //todo remove ipAddresssParam before online
         var ipAddress = ipAddressParam.IsNullOrEmpty() ? _ipInfoAppService.GetRemoteIp() : ipAddressParam;
         var identityCode = GetIdentityCode(redPackageId, ipAddress);
         await CheckAndUpdateCryptoGiftExpirationStatus(cryptoGiftGrain, cryptoGiftDto, identityCode);
@@ -362,6 +368,14 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         // get nft info
         var nftInfoDto = await GetNftInfo(redPackageDetailDto);
         
+        //before claiming, show the available crypto gift status
+        var claimedResult = await _distributedCache.GetAsync(identityCode);
+        if (claimedResult.IsNullOrEmpty())
+        {
+            return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Available, redPackageDetailDto,
+                caHolderDto, nftInfoDto, "Claim and Join Portkey", "", 0, 0, 0);
+        }
+        
         if (RedPackageStatus.Expired.Equals(redPackageDetailDto.Status))
         {
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Expired, redPackageDetailDto,
@@ -373,7 +387,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
                                                                               && GrabbedStatus.Claimed.Equals(crypto.GrabbedStatus));
         if (claimedPreGrabItem != null)
         {
-            var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, claimedPreGrabItem.Amount);
+            var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, claimedPreGrabItem.Amount, redPackageDetailDto.Decimal);
             var remainingExpirationSeconds = claimedPreGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() -
                                              DateTimeOffset.Now.ToUnixTimeSeconds();
             return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
@@ -397,7 +411,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             if (preGrabItem != null)
             {
                 var remainingExpirationSeconds = preGrabItem.GrabTime / 1000 + _cryptoGiftProvider.GetExpirationSeconds() - DateTimeOffset.Now.ToUnixTimeSeconds();
-                var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabItem.Amount);
+                var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, preGrabItem.Amount, redPackageDetailDto.Decimal);
                 return GetUnLoginCryptoGiftPhaseDto(CryptoGiftPhase.GrabbedQuota, redPackageDetailDto,
                     caHolderDto, nftInfoDto, "Claim and Join Portkey", dollarValue, preGrabItem.Amount,
                     0, remainingExpirationSeconds);
@@ -439,13 +453,18 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         return HashHelper.ComputeFrom(ipAddress + "#" + redPackageId).ToString().Replace("\"", "");
     }
 
-    private async Task<string> GetDollarValue(string symbol, long amount)
+    private async Task<string> GetDollarValue(string symbol, long amount, int decimals)
     {
         var dollarValue = string.Empty;
         var tokenPriceData = await _tokenPriceService.GetCurrentPriceAsync(symbol);
         if (tokenPriceData != null)
         {
-            dollarValue = "≈$ " + Decimal.Multiply(tokenPriceData.PriceInUsd, amount);
+            var finalAmount = decimal.Multiply(tokenPriceData.PriceInUsd, amount);
+            if (decimals > 0)
+            {
+                finalAmount = decimal.Multiply(finalAmount, (decimal)Math.Pow(10, -decimals));
+            }
+            dollarValue = "≈$ " + finalAmount;
         }
 
         return dollarValue;
@@ -538,7 +557,7 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
         {
             var subPrompt = $"You've already claimed this crypto gift and received" +
                             $" {grabItemDto.Amount} {redPackageDetailDto.Symbol}. You can't claim it again.";
-            var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, long.Parse(grabItemDto.Amount));
+            var dollarValue = await GetDollarValue(redPackageDetailDto.Symbol, long.Parse(grabItemDto.Amount), redPackageDetailDto.Decimal);
             return GetLoggedCryptoGiftPhaseDto(CryptoGiftPhase.Claimed, redPackageDetailDto,
                 caHolderGrainDto, nftInfoDto,  subPrompt, dollarValue,
                 long.Parse(grabItemDto.Amount));
