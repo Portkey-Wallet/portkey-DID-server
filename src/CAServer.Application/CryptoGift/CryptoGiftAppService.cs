@@ -632,6 +632,16 @@ public class CryptoGiftAppService : CAServerAppService, ICryptoGiftAppService
             }
         };
     }
+
+    public async Task TestCryptoGiftTransferToRedPackage(string caHash, string caAddress,
+        Guid id, string identityCode, bool isNewUser)
+    {
+        var user = await _userManager.FindByNameAsync(caHash);
+        await CryptoGiftTransferToRedPackage(user.Id, caAddress, new ReferralInfo(){
+            ReferralCode = id.ToString() + "#" + identityCode,
+            ProjectCode = "20000"
+            }, isNewUser);
+    }
     
     public async Task CryptoGiftTransferToRedPackage(Guid userId, string caAddress, ReferralInfo referralInfo, bool isNewUser)
     {
